@@ -9,9 +9,9 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.35            # 0.35 SOL/operacion (2026-07-28, wallet ampliada)
-  buy_slippage: 0.15
-  sell_slippage: 0.30
+  buy_amount: 0.5             # 0.5 SOL/operacion (2026-07-28)
+  buy_slippage: 0.35         # 35% (2026-07-28, devs pumpean rapido)
+  sell_slippage: 0.35        # 35%
   exit_strategy: "tp_sl"
   take_profit_percentage: 0.5      # +50% -> vende 40%
   take_profit_sell_percentage: 0.40
@@ -29,9 +29,9 @@ trade:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  fixed_amount: 50_000_000         # 0.005 SOL/tx
+  fixed_amount: 150_000_000        # 0.015 SOL/tx (subido 2026-07-28 para aterrizar compras)
   extra_percentage: 0.0
-  hard_cap: 50_000_000
+  hard_cap: 150_000_000
 
 retries:
   wait_after_creation: 3           # bajado 6->3s (2026-07-28): entrar antes sin extreme_fast (que compraba polvo)
