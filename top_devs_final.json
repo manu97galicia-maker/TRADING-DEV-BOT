@@ -1,6 +1,6 @@
 {
- "_README": "ELITE (20 mediana>=25K) + devs con >=2 monedas >120K esta semana (real, no wash). Dune 2026-07-28.",
- "_count": 35,
+ "_README": "ELITE 20 (mediana>=25K) + moonshot: >=2 monedas >120K y <=50 lanz/sem (sin spammers). Dune 2026-07-28.",
+ "_count": 27,
  "wallets": [
   {
    "wallet": "8gxNUi3uDnqPdpVciCAf8EDD6Bc1e5spQijXBzwGjRsW",
@@ -146,91 +146,43 @@
    "wallet": "yHCxHBEaJW5tbndqC8JciSThr7U1cqLpdcsvHcx6PRe",
    "median_peak": 31054,
    "coins_over_120k": 4,
-   "best_peak_usd": 790154
-  },
-  {
-   "wallet": "bwamJzztZsepfkteWRChggmXuiiCQvpLqPietdNfSXa",
-   "median_peak": 31054,
-   "coins_over_120k": 4,
-   "best_peak_usd": 317427
-  },
-  {
-   "wallet": "69aiAKU3uJMxMLRkUEGFNt6nQ43PiVimE4ZbErJ7VSM1",
-   "median_peak": 31054,
-   "coins_over_120k": 3,
-   "best_peak_usd": 247717
-  },
-  {
-   "wallet": "744BxRKs7WKdb6T7jDNxLcJW8vqisRWQM5WfkjFqGf2v",
-   "median_peak": 31054,
-   "coins_over_120k": 2,
-   "best_peak_usd": 11770485
-  },
-  {
-   "wallet": "D9gQ6RhKEpnobPBUdWY5bPQt2p3zGk3iVz6ChpUi2ArA",
-   "median_peak": 31054,
-   "coins_over_120k": 2,
-   "best_peak_usd": 8973888
-  },
-  {
-   "wallet": "GeBJSHK4WsGrz2HRvTbqvWGx4JRMpHfJG2ikzrYBDuwR",
-   "median_peak": 31054,
-   "coins_over_120k": 2,
-   "best_peak_usd": 2093449
+   "por_dia": 3.1
   },
   {
    "wallet": "Eh3q5AXnopCFULMLGv6QeVqpZhRvPgkWHBMKqNGQvQTX",
    "median_peak": 31054,
    "coins_over_120k": 2,
-   "best_peak_usd": 682555
+   "por_dia": 0.4
   },
   {
-   "wallet": "6ujZxnphRxTqveaQtLAQHFoWz16xhLWZbTijcgZN4fRp",
+   "wallet": "GeBJSHK4WsGrz2HRvTbqvWGx4JRMpHfJG2ikzrYBDuwR",
    "median_peak": 31054,
    "coins_over_120k": 2,
-   "best_peak_usd": 640663
-  },
-  {
-   "wallet": "5RQ1UWATaMjjXC34BW6UusEUdEoCuNRECBW8nnHPiCGH",
-   "median_peak": 31054,
-   "coins_over_120k": 2,
-   "best_peak_usd": 405372
+   "por_dia": 1.0
   },
   {
    "wallet": "FVZRwUp6E4m9jV4VumF8q7m8q3mF9fpikRrJSCCfFAdP",
    "median_peak": 31054,
    "coins_over_120k": 2,
-   "best_peak_usd": 315540
+   "por_dia": 5.3
   },
   {
    "wallet": "3iM6FfJiwnCj5s1TwKK2qNBg8zr6VEv12X3Gp2e2pRQ4",
    "median_peak": 31054,
    "coins_over_120k": 2,
-   "best_peak_usd": 259525
+   "por_dia": 0.7
   },
   {
-   "wallet": "C8BdBLW1GdnCR86nSpcfRMbshvHqwKq9qSTTdSn71AeV",
+   "wallet": "744BxRKs7WKdb6T7jDNxLcJW8vqisRWQM5WfkjFqGf2v",
    "median_peak": 31054,
    "coins_over_120k": 2,
-   "best_peak_usd": 237795
-  },
-  {
-   "wallet": "8i5U2uNBEuTc4zskYP14zbebDg2RSwrrG8REhEnJb97K",
-   "median_peak": 31054,
-   "coins_over_120k": 2,
-   "best_peak_usd": 200542
+   "por_dia": 0.3
   },
   {
    "wallet": "DAEdBmTPEKM6xkwfzC3d411QUe6coKpkND6UURa4CvHC",
    "median_peak": 31054,
    "coins_over_120k": 2,
-   "best_peak_usd": 184985
-  },
-  {
-   "wallet": "9ncm3MfxC3b2HYxP8NrijRZSeE36vFfxgJvGRd16Buwi",
-   "median_peak": 31054,
-   "coins_over_120k": 2,
-   "best_peak_usd": 141245
+   "por_dia": 1.4
   }
  ]
 }
