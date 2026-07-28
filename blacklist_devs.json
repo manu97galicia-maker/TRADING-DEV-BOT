@@ -1,6 +1,9 @@
 {
- "_README": "NO-EDGE: tras tu entrada apenas se mueven (~1.09x). El pico es bundle insider. NO snipear.",
+ "_README": "BLACKLIST DURA (manual + no-edge): devs que NO se compran nunca. Cableada en universal_trader (_manual_blacklist). Los primeros son bloqueos manuales de Manu; el resto no-edge (~1.09x, bundle insider).",
  "wallets": [
+  "3h3hszvcjKmPDLocAbUCvFLedRKqmGBPKTWuWhAXn41u",
+  "D8wzgSwRNnq8bnZpmhzpqcRvZDEQyRK1MC1jEQqQBC2k",
+  "CLwRLFSQgnyreYaqbQuQdmhWzEmrFJMMDgD6UoqjZXFr",
   "AoGefnxF5CbZvbd2cvxv4Ex1E5j86dqEjehazRuMcMFe",
   "5ZuV8eqkvzYFVEKbLvGBdexL2tFv7E5BCd2HZpjqbdg",
   "ARW9NzhpuBVYaYBZo6fW1P1U6LTNwUY6jfi7XC37Sa97",

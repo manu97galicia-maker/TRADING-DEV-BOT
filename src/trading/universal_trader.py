@@ -535,6 +535,16 @@ class UniversalTrader:
         # Auto-baneo: {dev: rugs_consecutivos}. Con 2 rugs seguidos (sin un TP en
         # medio) el dev queda bloqueado y no se le compra más.
         self._blocked_devs_path = Path(f"blocked_devs{_sfx}.json")
+        # Blacklist DURA manual (blacklist_devs.json): devs que NUNCA se compran,
+        # bloqueo permanente compartido por todos los bots (no depende del auto-baneo).
+        try:
+            self._manual_blacklist = _load_creator_file("blacklist_devs.json")
+        except Exception:  # noqa: BLE001 - sin blacklist = set vacío
+            self._manual_blacklist = set()
+        if self._manual_blacklist:
+            logger.info(
+                f"Blacklist manual: {len(self._manual_blacklist)} dev(s) vetados"
+            )
 
         # State tracking
         self.traded_mints: set[Pubkey] = set()
@@ -1289,6 +1299,19 @@ class UniversalTrader:
             if str(token_info.mint) in self.bought_mints:
                 logger.info(
                     f"Evitado {token_info.symbol}: ya comprada antes (no repetir)"
+                )
+                return
+
+            # Blacklist DURA manual: dev vetado a mano -> nunca se compra.
+            _dev_user = str(token_info.user)
+            _dev_creator = str(getattr(token_info, "creator", "") or "")
+            if (
+                _dev_user in self._manual_blacklist
+                or _dev_creator in self._manual_blacklist
+            ):
+                logger.info(
+                    f"Evitado {token_info.symbol}: dev {_dev_user[:8]} en "
+                    f"BLACKLIST manual (bloqueo permanente)"
                 )
                 return
 
