@@ -498,6 +498,9 @@ class UniversalTrader:
         # Moonbags retenidos (no se auto-venden): el avisador manda un aviso a
         # Telegram cada 5 min mientras sigan en la wallet, para venderlos a mano.
         self._moonbags_path = Path(f"moonbags{_sfx}.json")
+        # Auto-baneo: {dev: rugs_consecutivos}. Con 2 rugs seguidos (sin un TP en
+        # medio) el dev queda bloqueado y no se le compra más.
+        self._blocked_devs_path = Path(f"blocked_devs{_sfx}.json")
 
         # State tracking
         self.traded_mints: set[Pubkey] = set()
@@ -1255,6 +1258,14 @@ class UniversalTrader:
                 )
                 return
 
+            # Auto-baneo: dev que ha rugeado 2 veces seguidas -> no se le compra.
+            if self._is_dev_blocked(str(token_info.user)):
+                logger.info(
+                    f"Evitado {token_info.symbol}: dev "
+                    f"{str(token_info.user)[:8]} BLOQUEADO (2 rugs seguidos)"
+                )
+                return
+
             # Avoid pump.fun "mayhem mode" tokens unless this strategy allows them.
             if not self.allow_mayhem and getattr(token_info, "is_mayhem_mode", False):
                 logger.info(f"Evitado {token_info.symbol}: mayhem mode")
@@ -1666,6 +1677,8 @@ class UniversalTrader:
             else None
         )
         moonbag = moonbag_fraction(tiers)
+        had_tp = False  # ¿disparó algún TP? (para el auto-baneo de devs)
+        hit_sl = False  # ¿saltó el stop-loss sin TP previo? = rug
         logger.info(
             f"Tiered exit active for {token_info.symbol}: "
             f"tiers={[(f'+{t.gain*100:.0f}%', f'{t.sell*100:.0f}%') for t in tiers]} "
@@ -1743,6 +1756,7 @@ class UniversalTrader:
                 # priced at the LIVE price. El moonbag NUNCA se auto-vende, ni en
                 # stop-loss: se registra para avisar por Telegram y lo vende el usuario.
                 if sl_price is not None and price <= sl_price:
+                    hit_sl = True  # rug si no hubo TP antes
                     keep = original_qty * moonbag
                     to_sell = remaining - keep
                     logger.info(
@@ -1782,6 +1796,7 @@ class UniversalTrader:
                     if await self._sell_amount(token_info, amount, price, reason):
                         executed[i] = True
                         remaining -= amount
+                        had_tp = True  # el dev entregó un pump -> no es rug
 
                 if remaining <= 1e-9:
                     fully_exited = True
@@ -1848,6 +1863,11 @@ class UniversalTrader:
             except Exception:
                 logger.exception("Error in tiered exit monitor")
                 await asyncio.sleep(self.price_check_interval)
+
+        # Auto-baneo de devs: registra el resultado. rug (SL sin TP) suma; una
+        # ganadora (algún TP) resetea y desbloquea; neutral (max-hold) no cambia.
+        _outcome = "win" if had_tp else ("rug" if hit_sl else "neutral")
+        self._bump_dev_rug(str(token_info.user), _outcome)
 
         # C2: monitor ended (sold / moonbag / abandoned) — no longer an actively
         # managed position, so clear the crash-recovery marker.
@@ -2055,6 +2075,44 @@ class UniversalTrader:
             logger.info(f"Token information saved to {file_path}")
         except OSError:
             logger.exception("Failed to save token information")
+
+    def _load_blocked_devs(self) -> dict:
+        """{dev: rugs_consecutivos}. >=2 => bloqueado."""
+        try:
+            if self._blocked_devs_path.is_file():
+                return json.loads(self._blocked_devs_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            pass
+        return {}
+
+    def _is_dev_blocked(self, dev: str) -> bool:
+        """True si el dev ha rugeado 2+ veces seguidas."""
+        return int(self._load_blocked_devs().get(dev, 0)) >= 2
+
+    def _bump_dev_rug(self, dev: str, outcome: str) -> None:
+        """Actualiza el contador de rugs del dev.
+
+        outcome: 'rug' (+1), 'win' (resetea a 0 y desbloquea), 'neutral' (sin cambio).
+        """
+        if not dev or outcome == "neutral":
+            return
+        data = self._load_blocked_devs()
+        prev = int(data.get(dev, 0))
+        if outcome == "win":
+            if prev:
+                data.pop(dev, None)  # una buena limpia el historial y desbloquea
+        else:  # rug
+            data[dev] = prev + 1
+            if data[dev] >= 2:
+                logger.warning(
+                    "DEV BLOQUEADO %s: %s rugs seguidos -> no se le compra mas",
+                    dev,
+                    data[dev],
+                )
+        try:
+            self._blocked_devs_path.write_text(json.dumps(data), encoding="utf-8")
+        except OSError:
+            logger.debug("no pude escribir blocked_devs", exc_info=True)
 
     def _record_moonbag(
         self,
