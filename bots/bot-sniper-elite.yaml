@@ -9,7 +9,7 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.3             # 0.3 SOL/operacion (2026-07-28, wallet ampliada)
+  buy_amount: 0.35            # 0.35 SOL/operacion (2026-07-28, wallet ampliada)
   buy_slippage: 0.15
   sell_slippage: 0.30
   exit_strategy: "tp_sl"
