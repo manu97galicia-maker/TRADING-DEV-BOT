@@ -1,0 +1,33 @@
+{
+  "_README": "El bot vigila estas wallets: cuando UNA crea moneda en pump.fun, la compra. Solo se usa el campo 'wallet'; el resto son notas. Para dejar de vigilar a una, deja su 'wallet' en \"\". Con el archivo vacio el bot NO compra nada (seguro). Datos GMGN 2026-07-25 (27 devs analizadas). med = mediana ATH market cap (metrica fiable). ACTIVAS: 23. APAGADAS: 4 (mediana <$20K = ruido).",
+  "wallets": [
+    { "wallet": "ANq7FDQrELwS9nMcT5foN9EZn8hR1SFHjjswcPnHuS1s", "alias": "ANq7", "mig": 1.00,  "per_day": 0.21, "med": "$654.5K", "nota": "TOP: 100% mig, mediana mas alta del dataset" },
+    { "wallet": "6h4Mk1hhuQpUxSKZaSEX6RC23C77Bpi3ZvWmdLQkEMyv", "alias": "6h4M", "mig": 1.00,  "per_day": 0.038, "med": "$464.6K", "nota": "100% mig, mediana altisima" },
+    { "wallet": "yHCxHBEaJW5tbndqC8JciSThr7U1cqLpdcsvHcx6PRe", "alias": "yHCx", "mig": 0.284, "per_day": 8.19, "med": "$386.8K", "nota": "EXPERIMENTO: volumen brutal, tasa baja pero mediana alta" },
+    { "wallet": "9bRXg6zNYB5uW1JEZdbpKBVZLQRyRDXNnB5Ugi1nLQm7", "alias": "9bRX", "mig": 1.00,  "per_day": 0.056, "med": "$290.2K", "nota": "100% mig" },
+    { "wallet": "4Q5LLWkgkpJ4McQ5C16fj5szFAhXEpqBUmYtpRZnAUei", "alias": "4Q5L", "mig": 1.00,  "per_day": 0.07, "med": "$202.8K", "nota": "100% mig" },
+    { "wallet": "Cx3CBLZrBiAZUCz5KCidKKsPhuExmHVWrz67ymE1a3gk", "alias": "Cx3C", "mig": 0.944, "per_day": 0.04, "med": "$194.4K", "nota": "Maxima calidad" },
+    { "wallet": "GeBJSHK4WsGrz2HRvTbqvWGx4JRMpHfJG2ikzrYBDuwR", "alias": "GeBJ", "mig": 0.31,  "per_day": 2.10, "med": "$168.3K", "nota": "Volumen alto, mediana alta pese a 31%" },
+    { "wallet": "DqJdZcTCXtMx6H6SZMV2CSBLVdfvdHG9rLciJB1VoLTd", "alias": "DqJd", "mig": 0.80,  "per_day": 0.23, "med": "$127.7K", "nota": "80% mig, buen volumen" },
+    { "wallet": "HyYNVYmnFmi87NsQqWzLJhUTPBKQUfgfhdbBa554nMFF", "alias": "HyYN", "mig": 0.524, "per_day": 0.96, "med": "$126.3K", "nota": "Leyenda Fartcoin $1.7B" },
+    { "wallet": "ARW9NzhpuBVYaYBZo6fW1P1U6LTNwUY6jfi7XC37Sa97", "alias": "ARW9", "mig": 0.629, "per_day": 0.49, "med": "$88.2K", "nota": "Tasa alta, activa" },
+    { "wallet": "HssxU1tv66q1AVDSexK2rro37tjaag83y61iBTinp7ns", "alias": "Hssx", "mig": 1.00,  "per_day": 0.026, "med": "$71.7K", "nota": "100% mig" },
+    { "wallet": "DPiQs7yP5WnBxN7RwttMKkrndmeTzeVZ69sxeAswxm8r", "alias": "DPiQ", "mig": 0.419, "per_day": 0.08, "med": "$63.0K", "nota": "Media" },
+    { "wallet": "3vU5HSbmB4k29ezFPYeLxLtmzG2Z5Fqph1FtegMcptYd", "alias": "3vU5", "mig": 0.857, "per_day": 0.41, "med": "$61.2K", "nota": "Dev nuevo (17d) muy productivo, 85.7% mig" },
+    { "wallet": "G4krkerMkeYw7ffTUgdf7qXEXnuMGHpWUESBQpYqvtwU", "alias": "G4kr", "mig": 0.654, "per_day": 0.20, "med": "$59.85K", "nota": "Tasa alta" },
+    { "wallet": "8jmPNzP5ioMWm4WsRsuxaYHfVc9DqjecnaVwMUSFuMJz", "alias": "8jmP", "mig": 0.667, "per_day": 0.13, "med": "$59.4K", "nota": "Tasa buena" },
+    { "wallet": "5dUXg97Ltrjid2KVTQAb6p6PVZXBneHcgV1Z8A9xzKgg", "alias": "5dUX", "mig": 0.585, "per_day": 3.61, "med": "$49.2K", "nota": "Mejor balance volumen+calidad" },
+    { "wallet": "5KTX7LZyoewhQ2keNCNQ6qQCXW9uermzr8r5K6uss4PY", "alias": "5KTX", "mig": 0.778, "per_day": 0.10, "med": "$45.9K", "nota": "Tasa muy alta" },
+    { "wallet": "4x3ePr8EEryyvxRavnkJaqCPF9Pd3BxdsJTQkndYeqCZ", "alias": "4x3e", "mig": 0.80,  "per_day": 0.10, "med": "$45.0K", "nota": "80% mig" },
+    { "wallet": "4wcLkscW59MJUAoPAu5zA6aiKMZnbBRbVf5vm8BcGeVs", "alias": "4wcL", "mig": 0.667, "per_day": 0.095, "med": "$39.6K", "nota": "Tasa buena" },
+    { "wallet": "BSY59UH2CvMAcE6hRpg4wgxJ81MryBRkY9GtpJ846wzp", "alias": "BSY5", "mig": 0.667, "per_day": 0.15, "med": "$36.7K", "nota": "Tasa buena" },
+    { "wallet": "8SGpzbiPyRBJCmDw9BeJuuHG1f6K2Bu8Aij6Wia7n1Xg", "alias": "8SGp", "mig": 0.667, "per_day": 0.064, "med": "$36.3K", "nota": "Tasa buena" },
+    { "wallet": "39ZPo8CUxAXQFuc57EymAKVMTYtAXYsCnAKw74BW2Rac", "alias": "39ZP", "mig": 0.909, "per_day": 0.16, "med": "$35.4K", "nota": "Tasa altisima" },
+    { "wallet": "6rCzKkKyYUTEX4cw3yBS9ShLYrvPUoo9Hb67wfkhB1Wc", "alias": "6rCz", "mig": 0.562, "per_day": 0.06, "med": "$33.75K", "nota": "Tasa decente" },
+
+    { "wallet": "", "alias": "FePS", "addr": "FePSGRavtQty99PFUty5WnaK6M7eibcEEpZRcrmZ6Xi1", "mig": 0.40,  "med": "$19.4K", "nota": "APAGADA: mediana <$20K" },
+    { "wallet": "", "alias": "GKVh", "addr": "GKVhR9BuJUTDkV6KC2i6QGujJ1PZjVn9KR66fsi1jwBp", "mig": 0.375, "med": "$16.9K", "nota": "APAGADA: mediana <$20K" },
+    { "wallet": "", "alias": "HH7j", "addr": "HH7jLETzcSBnFQcAG5D4VUiFYPSATTyhu5R3QCgzW2M",  "mig": 0.323, "med": "$15.65K", "nota": "APAGADA: mediana <$20K" },
+    { "wallet": "", "alias": "4q4G", "addr": "4q4GKBpVmXGhXYNaR4DetQjf5WjHEHhbJ9Wgybt7F8Yu", "mig": 0.327, "med": "$12.4K", "nota": "APAGADA: mediana <$20K, 6/dia mucho ruido" }
+  ]
+}

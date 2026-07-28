@@ -1,0 +1,616 @@
+{
+ "_README": "Devs pump.fun OPERABLES (edge real >=1.25x con entrada realista ~1s tras creacion). Estrategia SWING: entrar 1-3s, HOLD hasta pico ~54s, vender en la subida. Fuente Dune 2026-07-25. snipe_x=move mediano capturable; peak_sec=cuando hace pico. El bot solo usa wallet.",
+ "_total_per_day": 80.7,
+ "_count": 87,
+ "wallets": [
+  {
+   "wallet": "73BHz8F9DSy3NiJa2x6Jow35M1jkend9Aa7NgX1wJWov",
+   "snipe_x": 13.95,
+   "peak_sec": 46.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "EL8zSAncePrCE4kJKkTNofX4aX97aoJmxH4GeYNAQnay",
+   "snipe_x": 2.15,
+   "peak_sec": 50.0,
+   "per_day": 3.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "77sfKgMStSGGidSspbKCpVFDQFVVygBF7AKfyGTkJAyu",
+   "snipe_x": 1.25,
+   "peak_sec": 2.0,
+   "per_day": 5.43,
+   "cat": "FLIP-RAPIDO"
+  },
+  {
+   "wallet": "66onmcvu5jpN4dJoe9sYQYCnMbB5oWXHNAtoQfG2peki",
+   "snipe_x": 15.47,
+   "peak_sec": 55.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "B6btiuEgrwa5MHNkxH7csA7paDfCXns8ZTUJr3nds3CZ",
+   "snipe_x": 4.16,
+   "peak_sec": 67.0,
+   "per_day": 1.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "FYppjNLMbq4ruUnoLL9HS4xEE9fhRWLdNTRZgUCxbdjW",
+   "snipe_x": 1.34,
+   "peak_sec": 8.0,
+   "per_day": 4.86,
+   "cat": "MEDIO"
+  },
+  {
+   "wallet": "B3ZNdoxQB5zSro19P97nGyQM8b7roReprRw3EiFX3SvC",
+   "snipe_x": 3.24,
+   "peak_sec": 66.0,
+   "per_day": 2.0,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "BmBpkdYtqADEo9SdEyMg7riQQvV3DiF7aeniv7t6zKG3",
+   "snipe_x": 1.46,
+   "peak_sec": 24.0,
+   "per_day": 4.14,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "HwKvWbr7KZYQF5DK1n3HXcyKNgytbP5obrH9cDV5eChH",
+   "snipe_x": 9.0,
+   "peak_sec": 25.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "uH9FY1StsAHWbDQaHNu2ZcHtBtWXqkNtwzi83MSFgmC",
+   "snipe_x": 1.52,
+   "peak_sec": 48.0,
+   "per_day": 2.29,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "DxQ1iNidsGap2kr14VdEzA8NheqXabfh6fRkvZQbnZVY",
+   "snipe_x": 1.7,
+   "peak_sec": 40.0,
+   "per_day": 2.0,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "2rnm81cudERhgG9V4fQixGYtZEAb35M9X7s8SmM714FR",
+   "snipe_x": 7.31,
+   "peak_sec": 35.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "7ufmve7ZSFCzuNcKRunYrGtyb2Ka1MXzkWwf7jZhVsmL",
+   "snipe_x": 1.28,
+   "peak_sec": 1.0,
+   "per_day": 2.43,
+   "cat": "FLIP-RAPIDO"
+  },
+  {
+   "wallet": "8tr2RQBBt3hGNbKNrCwvb7MwcHsW1JDwPEkjH35U7t8w",
+   "snipe_x": 3.49,
+   "peak_sec": 62.0,
+   "per_day": 0.86,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "CM1YeKEVqMe1ZyLGmMtqTYXi4RsKcoZcQH1ThDyZUpV5",
+   "snipe_x": 2.61,
+   "peak_sec": 31.0,
+   "per_day": 1.14,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "Dzp1SrZ474xwGp6ZEP6cNKo39u9zeXe1YAuTkyZyv3t4",
+   "snipe_x": 1.43,
+   "peak_sec": 15.0,
+   "per_day": 1.86,
+   "cat": "MEDIO"
+  },
+  {
+   "wallet": "AMRsSeU5JpqwQWJGNLMpZzRCZSFEwYQYbMnms3dD4311",
+   "snipe_x": 2.1,
+   "peak_sec": 87.0,
+   "per_day": 1.14,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "AYJSaJiDbxZjPjTKWdLjpFfoqMBvivp8uHEHqvabPFvb",
+   "snipe_x": 1.66,
+   "peak_sec": 83.0,
+   "per_day": 1.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "HDSWjRcHxCxHePYqA3XPqxc8deL6jF8dgDeS6T9TZpZB",
+   "snipe_x": 1.77,
+   "peak_sec": 22.0,
+   "per_day": 1.29,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "3FiWnNDTZrKPbjPeMiTe2r5m5zygxSu57ePck5LUQp7d",
+   "snipe_x": 1.64,
+   "peak_sec": 30.0,
+   "per_day": 1.29,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "7VzKD7nTQg9ypcJtT1cA34aa9wLGRHzjGvZNQx53r8WA",
+   "snipe_x": 3.68,
+   "peak_sec": 63.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "9BjcGY9ZfMvS13ozDRMwCaR2toE71hiLBXXvqBcGmeiU",
+   "snipe_x": 1.76,
+   "peak_sec": 28.0,
+   "per_day": 1.14,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "BQCwVjdgxM3G9E5ETxghFvLJvy3g432egZhCEWTYenNv",
+   "snipe_x": 2.28,
+   "peak_sec": 63.0,
+   "per_day": 0.86,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "6kkjU6JUUwP7v3wsZPvXbmEjvTTQvfAiUhWZTCQ8p1Qh",
+   "snipe_x": 1.43,
+   "peak_sec": 27.0,
+   "per_day": 1.29,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "FnW6MLyu5UX1G4fYcmmBrPy46foBi6vm4GTWNZQkxUrF",
+   "snipe_x": 1.27,
+   "peak_sec": 11.0,
+   "per_day": 1.43,
+   "cat": "MEDIO"
+  },
+  {
+   "wallet": "9X1VTHyNdLcZNG66QkCRJVQinohBpPvktbxAxJAVQpu8",
+   "snipe_x": 3.13,
+   "peak_sec": 71.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "GZJW9JYdN1fmS8ukW7r2bvGtvt2nioVRURwdFZk3WmoJ",
+   "snipe_x": 4.11,
+   "peak_sec": 46.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "CmCeodBTk8wCn1P3mhgEwBVyrWfLR7khrJbvfag2h6pv",
+   "snipe_x": 2.99,
+   "peak_sec": 80.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "6vfjyr6XGWKm5qkv7o77D4cgJrEB5Mozu8VHWA2xAdoz",
+   "snipe_x": 3.84,
+   "peak_sec": 58.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "CzwWvTVn39dSd4LiVc6W9gZxgu36737M2fcX4EWhquh4",
+   "snipe_x": 1.26,
+   "peak_sec": 32.0,
+   "per_day": 1.29,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "A1jmc6mZGgCEJSSyj2BULXgYTHvAEShZERSiDQmnkufX",
+   "snipe_x": 1.42,
+   "peak_sec": 33.0,
+   "per_day": 1.14,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "BwAMXudDjLeAc9SoFdjyrPZCKWWQxarEWuMKwf1MDPFV",
+   "snipe_x": 2.81,
+   "peak_sec": 59.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "DtCR4w3WREYJPo76pCmLt4boPPhCjVJHaHU4RmGSZg9b",
+   "snipe_x": 3.68,
+   "peak_sec": 32.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "EKC7HLR6ZkC1vVsnFP7gyRMfsefSXJUYTmwjFXMsp7dn",
+   "snipe_x": 3.6,
+   "peak_sec": 55.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "DAEdBmTPEKM6xkwfzC3d411QUe6coKpkND6UURa4CvHC",
+   "snipe_x": 1.77,
+   "peak_sec": 15.0,
+   "per_day": 0.86,
+   "cat": "MEDIO"
+  },
+  {
+   "wallet": "7VMjBvvn1Qsg9RiYGwhHfTmgn9dXcQqLvBVN3UzLkqic",
+   "snipe_x": 1.73,
+   "peak_sec": 14.0,
+   "per_day": 0.86,
+   "cat": "MEDIO"
+  },
+  {
+   "wallet": "9Q18hhGJxvy16VAa8Th8Lua4WUSxnW1E1mYmqS16aPFN",
+   "snipe_x": 2.49,
+   "peak_sec": 65.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "26Dpsf1diayaKzBezHHVWKDwwyetDT1eATqyaQY1ju7s",
+   "snipe_x": 2.49,
+   "peak_sec": 32.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "9b9yJc1FjxHfDy3xhVes4Bns5esDzHHHzaEUAYcekUnA",
+   "snipe_x": 1.96,
+   "peak_sec": 43.0,
+   "per_day": 0.71,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "4fZFcK8ms3bFMpo1ACzEUz8bH741fQW4zhAMGd5yZMHu",
+   "snipe_x": 2.41,
+   "peak_sec": 79.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "9DL1JJZMZbPAaaqkGwzS2LWTtHYveVmjsJkH93aLnWNU",
+   "snipe_x": 2.37,
+   "peak_sec": 85.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "D4zWzEUHVwtMYww17fYD9wp1YzVAh8B31ByWyHGCinVZ",
+   "snipe_x": 1.57,
+   "peak_sec": 59.0,
+   "per_day": 0.86,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "862TYSvRYoiHAK3F3WwTRYAfuGiQaGdxedN9AGvRGWo2",
+   "snipe_x": 1.34,
+   "peak_sec": 57.0,
+   "per_day": 1.0,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "GATbxwUSPRhN7GERjLNJv1hwkg1iuJdj7KCc8gVd9eXc",
+   "snipe_x": 3.04,
+   "peak_sec": 38.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "7hmGyLvVgjiZf2uMRAMWwvATKfgswtxF1SUYWhaT3sE2",
+   "snipe_x": 1.49,
+   "peak_sec": 4.0,
+   "per_day": 0.86,
+   "cat": "FLIP-RAPIDO"
+  },
+  {
+   "wallet": "4k28wcLy46XFikvjzZg4NTnG34KFTvrAEBP2ujRFXBKD",
+   "snipe_x": 2.21,
+   "peak_sec": 33.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "4LXAFVZUUTdcqLCmgHq2NZmgLB2arRxp9wuYVa6rnx5C",
+   "snipe_x": 2.17,
+   "peak_sec": 83.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "9LUgfzet43ZdwdAzbvV5msQjGzx9g6sqvtgLaQyQAEog",
+   "snipe_x": 1.73,
+   "peak_sec": 21.0,
+   "per_day": 0.71,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "GCc5qzbbN8xjARVJPovDxfKTCyeqXeeRzhwPH5csKwY6",
+   "snipe_x": 2.05,
+   "peak_sec": 31.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "Ff278N6vp23QuCFyMjCpB86Ug5w3jDh4K1wuDSJRHw2N",
+   "snipe_x": 2.7,
+   "peak_sec": 12.0,
+   "per_day": 0.43,
+   "cat": "MEDIO"
+  },
+  {
+   "wallet": "AwkDaC2n9YfdmUru8J8sFCjsDmqqj7LrpLFo3SjB9DZ4",
+   "snipe_x": 2.0,
+   "peak_sec": 65.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "ALJ4P5QNyHeLEjpKGmA1eUfJHSEGQMjY8HLnDkSgjczb",
+   "snipe_x": 1.99,
+   "peak_sec": 18.0,
+   "per_day": 0.57,
+   "cat": "MEDIO"
+  },
+  {
+   "wallet": "9PQ9kNKj4hztTN26N3JaZ1To3rZRDu6rGiyzfC4JPETw",
+   "snipe_x": 1.59,
+   "peak_sec": 85.0,
+   "per_day": 0.71,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "6Vs63D3UVdXqNVvmx3Gd4wk9hPArbeicrZ2JvnMJtKhd",
+   "snipe_x": 1.98,
+   "peak_sec": 70.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "BLK1ZJ3Ad2DKtsKMtz2urdJDnmxog9Hi2DTVnaDGrzVX",
+   "snipe_x": 2.62,
+   "peak_sec": 75.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "3fKF8cbyWKU56fpFkrQ1E6zJoAh4mqArdsPoUE6ycTKL",
+   "snipe_x": 1.57,
+   "peak_sec": 64.0,
+   "per_day": 0.71,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "8gxNUi3uDnqPdpVciCAf8EDD6Bc1e5spQijXBzwGjRsW",
+   "snipe_x": 1.55,
+   "peak_sec": 9.0,
+   "per_day": 0.71,
+   "cat": "MEDIO"
+  },
+  {
+   "wallet": "F5ExBJxM7zJhowwSBYGMTQVesxWvNzsPJhJTuXxLHiyZ",
+   "snipe_x": 2.5,
+   "peak_sec": 12.0,
+   "per_day": 0.43,
+   "cat": "MEDIO"
+  },
+  {
+   "wallet": "C2rtJGcqnyxYBHEougCzFyVw1eUq6GpBLXKRmq5W8apW",
+   "snipe_x": 1.86,
+   "peak_sec": 73.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "2hcbvVnPutVmXW6TbNEx6U1KuMiyFPWKwSjknzwCYiwX",
+   "snipe_x": 1.47,
+   "peak_sec": 4.0,
+   "per_day": 0.71,
+   "cat": "FLIP-RAPIDO"
+  },
+  {
+   "wallet": "7Ezd7dSkzCRWPQrwiwGCq2JjaoZ1NuKTjq9hmJmcDffo",
+   "snipe_x": 1.82,
+   "peak_sec": 41.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "HoKiWhcU3YBN9f5Uxj1bBLkcWkw5iDEQbPiiU6EnYCwQ",
+   "snipe_x": 1.81,
+   "peak_sec": 42.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "CiJSXoLCDJ2UHdRk4bTuXCESvrmjo27iD5NUQbMgiByg",
+   "snipe_x": 1.8,
+   "peak_sec": 77.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "2dU5gswrNoHXXTbJycpE3ZMUeoVEW9BEFMNKkhjRTByt",
+   "snipe_x": 1.77,
+   "peak_sec": 89.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "6FCpd6KMKKrPLzgtQEcT3YCzEpwykqT2a6pKp8RpFGaA",
+   "snipe_x": 1.74,
+   "peak_sec": 62.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "8RH4d1EHzEB7Gfyykdaf5nY4yPwBFT2D2ceREp2ovtcG",
+   "snipe_x": 1.35,
+   "peak_sec": 41.0,
+   "per_day": 0.71,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "912kspVUFKRxTBAVRjZ2ikbiVHj6ahgewkHQqViehJf",
+   "snipe_x": 1.56,
+   "peak_sec": 32.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "G68jPUQFQvUyQLTp2WsiNPckceT3X1meXYvWbpCXYCL4",
+   "snipe_x": 1.5,
+   "peak_sec": 67.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "4xsSjKMyoGeJDnxYXKHUF2YPyRqAKFdraWJcHpzDtBJf",
+   "snipe_x": 1.5,
+   "peak_sec": 84.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "Accyhhx8z4kbhobAcwpASqh8miUxaay4L8mB6UNwzZt4",
+   "snipe_x": 1.97,
+   "peak_sec": 86.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "56dQSiMeu8FX2gAADbLEXhfSv63k3SuLJg9YJrLs9G3c",
+   "snipe_x": 1.46,
+   "peak_sec": 7.0,
+   "per_day": 0.57,
+   "cat": "MEDIO"
+  },
+  {
+   "wallet": "2kBJEUNjWNgDJwMjWbxgEeZ7krvH324mxwagoJgtmgGR",
+   "snipe_x": 1.9,
+   "peak_sec": 62.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "49nSpmxwnTTyXujNm3zHqoin1mg1y1rKd1THXwJjYdLa",
+   "snipe_x": 1.43,
+   "peak_sec": 44.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "B8Y2oTnKQwerkbPeViXsiYbB32HYmnXuzgrzzHV3tE4R",
+   "snipe_x": 1.89,
+   "peak_sec": 89.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "CsmK5qscvCGcjixBvkb4PTYKrtENpt4TGfiBS6c7qBw8",
+   "snipe_x": 1.85,
+   "peak_sec": 81.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "5uPpZMo6W9odwUCJxeLwR8RgDCG1SHcwj6522NvfHZf6",
+   "snipe_x": 1.83,
+   "peak_sec": 48.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "Etv7bs3Yoh88CzQu1BwxstSrJ5jokeN29XS8L5aUfLNv",
+   "snipe_x": 1.82,
+   "peak_sec": 6.0,
+   "per_day": 0.43,
+   "cat": "FLIP-RAPIDO"
+  },
+  {
+   "wallet": "2yfmGfDPtBzAGYtZALejXvH3Xkfz49f6iJhP3QxB8EAS",
+   "snipe_x": 1.78,
+   "peak_sec": 49.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "9bxz5DWGmPTYTMmBxYnZZGoJ2BJMtyqbKn85vq96sfzo",
+   "snipe_x": 1.34,
+   "peak_sec": 25.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "4X7ntRP7NbUz8dU3YYfRfz46C1bF3byUbKNNbeF6pL45",
+   "snipe_x": 1.3,
+   "peak_sec": 88.0,
+   "per_day": 0.57,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "z5Hxs28tB9PqMKxuz8swPRGS4m9JTehEPS6sT5Hv1tf",
+   "snipe_x": 1.7,
+   "peak_sec": 7.0,
+   "per_day": 0.43,
+   "cat": "MEDIO"
+  },
+  {
+   "wallet": "3YxvtPQ1G84us76A3PK8LaJeizjrFjfJb8jjWQtSKQFv",
+   "snipe_x": 1.67,
+   "peak_sec": 53.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "BhKodmPaiWX5T2zXXv3CJW6skk4b1hNWwSEEqH8fqGFd",
+   "snipe_x": 1.53,
+   "peak_sec": 1.0,
+   "per_day": 0.43,
+   "cat": "FLIP-RAPIDO"
+  },
+  {
+   "wallet": "2rpmssicN8sQ8rwjxiB3Q12CXwUAJwWHzCEsQrMfwsVY",
+   "snipe_x": 1.49,
+   "peak_sec": 10.0,
+   "per_day": 0.43,
+   "cat": "MEDIO"
+  },
+  {
+   "wallet": "Aj6cr5Q3iKpkuujnabSQyKfEb1ZQ1Z1LeeK6LEpTV8Xs",
+   "snipe_x": 1.44,
+   "peak_sec": 32.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "7zH6nQN4C8G1sH7LH1sz8ZKhTPmiA5wTbYcWkikUSKw",
+   "snipe_x": 1.34,
+   "peak_sec": 45.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  },
+  {
+   "wallet": "4ExeHvDVoBvgzHKzXEkWwWqv646tYeY4TE93MUtXcACf",
+   "snipe_x": 1.29,
+   "peak_sec": 45.0,
+   "per_day": 0.43,
+   "cat": "SWING-LENTO"
+  }
+ ]
+}

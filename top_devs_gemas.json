@@ -1,0 +1,177 @@
+{
+ "_README": "GEMAS v2 pump.fun: climbers REALES (suben ~4K->20K y SOSTIENEN, no pump&dump). Filtro: pico >=$20K, MC TIPICO (mediana de trades) >=$9K, >=5 lanz/7d, >=15 trades/token, volumen >=5 SOL. pct_sostiene = MC tipico/pico (alto = aguanta arriba). Dune 2026-07-26, 7d.",
+ "_count": 17,
+ "_total_per_day": 17.4,
+ "wallets": [
+  {
+   "wallet": "G4krkerMkeYw7ffTUgdf7qXEXnuMGHpWUESBQpYqvtwU",
+   "per_day": 0.71,
+   "launches_7d": 5,
+   "median_peak": 31054,
+   "mc_sostenido": 20828,
+   "pct_sostiene": 67,
+   "median_vol_sol": 268.2,
+   "median_trades": 1757
+  },
+  {
+   "wallet": "3fKF8cbyWKU56fpFkrQ1E6zJoAh4mqArdsPoUE6ycTKL",
+   "per_day": 0.71,
+   "launches_7d": 5,
+   "median_peak": 31054,
+   "mc_sostenido": 20513,
+   "pct_sostiene": 66,
+   "median_vol_sol": 475.6,
+   "median_trades": 635
+  },
+  {
+   "wallet": "9PQ9kNKj4hztTN26N3JaZ1To3rZRDu6rGiyzfC4JPETw",
+   "per_day": 0.71,
+   "launches_7d": 5,
+   "median_peak": 31054,
+   "mc_sostenido": 17569,
+   "pct_sostiene": 57,
+   "median_vol_sol": 101.6,
+   "median_trades": 113
+  },
+  {
+   "wallet": "D2hrzDdF5JDeunEyfKC74PuERdfT3NomExBYmgfNFhaZ",
+   "per_day": 0.71,
+   "launches_7d": 5,
+   "median_peak": 27658,
+   "mc_sostenido": 15604,
+   "pct_sostiene": 56,
+   "median_vol_sol": 107.0,
+   "median_trades": 247
+  },
+  {
+   "wallet": "CmCeodBTk8wCn1P3mhgEwBVyrWfLR7khrJbvfag2h6pv",
+   "per_day": 0.71,
+   "launches_7d": 5,
+   "median_peak": 31054,
+   "mc_sostenido": 16507,
+   "pct_sostiene": 53,
+   "median_vol_sol": 90.4,
+   "median_trades": 114
+  },
+  {
+   "wallet": "5qNfUyBsz3AZZzJFJJBNiPs8a7oC1YofHYwqvzKREbYN",
+   "per_day": 0.86,
+   "launches_7d": 6,
+   "median_peak": 21894,
+   "mc_sostenido": 11135,
+   "pct_sostiene": 51,
+   "median_vol_sol": 559.7,
+   "median_trades": 1159
+  },
+  {
+   "wallet": "862TYSvRYoiHAK3F3WwTRYAfuGiQaGdxedN9AGvRGWo2",
+   "per_day": 0.86,
+   "launches_7d": 6,
+   "median_peak": 31054,
+   "mc_sostenido": 15116,
+   "pct_sostiene": 49,
+   "median_vol_sol": 1128.7,
+   "median_trades": 2746
+  },
+  {
+   "wallet": "9BjcGY9ZfMvS13ozDRMwCaR2toE71hiLBXXvqBcGmeiU",
+   "per_day": 1.43,
+   "launches_7d": 10,
+   "median_peak": 20082,
+   "mc_sostenido": 9602,
+   "pct_sostiene": 48,
+   "median_vol_sol": 812.7,
+   "median_trades": 1543
+  },
+  {
+   "wallet": "8gxNUi3uDnqPdpVciCAf8EDD6Bc1e5spQijXBzwGjRsW",
+   "per_day": 0.86,
+   "launches_7d": 6,
+   "median_peak": 29595,
+   "mc_sostenido": 13297,
+   "pct_sostiene": 45,
+   "median_vol_sol": 2057.2,
+   "median_trades": 5305
+  },
+  {
+   "wallet": "GCc5qzbbN8xjARVJPovDxfKTCyeqXeeRzhwPH5csKwY6",
+   "per_day": 0.71,
+   "launches_7d": 5,
+   "median_peak": 31054,
+   "mc_sostenido": 13869,
+   "pct_sostiene": 45,
+   "median_vol_sol": 997.1,
+   "median_trades": 2262
+  },
+  {
+   "wallet": "GihG1WciMf5JMmKBpkCiBqwYLvkX5D8Sayof2TQAB5GQ",
+   "per_day": 0.86,
+   "launches_7d": 6,
+   "median_peak": 31054,
+   "mc_sostenido": 13539,
+   "pct_sostiene": 44,
+   "median_vol_sol": 1005.1,
+   "median_trades": 2145
+  },
+  {
+   "wallet": "CugnUeoVe2oX6ER8vNSFy1pTYF6ZDVJTkHbwTSYtiCZs",
+   "per_day": 0.71,
+   "launches_7d": 5,
+   "median_peak": 31054,
+   "mc_sostenido": 13617,
+   "pct_sostiene": 44,
+   "median_vol_sol": 285.1,
+   "median_trades": 358
+  },
+  {
+   "wallet": "7ufmve7ZSFCzuNcKRunYrGtyb2Ka1MXzkWwf7jZhVsmL",
+   "per_day": 2.29,
+   "launches_7d": 16,
+   "median_peak": 31054,
+   "mc_sostenido": 11674,
+   "pct_sostiene": 38,
+   "median_vol_sol": 837.5,
+   "median_trades": 1716
+  },
+  {
+   "wallet": "DxQ1iNidsGap2kr14VdEzA8NheqXabfh6fRkvZQbnZVY",
+   "per_day": 2.0,
+   "launches_7d": 14,
+   "median_peak": 29524,
+   "mc_sostenido": 11121,
+   "pct_sostiene": 38,
+   "median_vol_sol": 1221.4,
+   "median_trades": 2570
+  },
+  {
+   "wallet": "3FiWnNDTZrKPbjPeMiTe2r5m5zygxSu57ePck5LUQp7d",
+   "per_day": 1.29,
+   "launches_7d": 9,
+   "median_peak": 30702,
+   "mc_sostenido": 11750,
+   "pct_sostiene": 38,
+   "median_vol_sol": 980.1,
+   "median_trades": 1722
+  },
+  {
+   "wallet": "CzwWvTVn39dSd4LiVc6W9gZxgu36737M2fcX4EWhquh4",
+   "per_day": 1.14,
+   "launches_7d": 8,
+   "median_peak": 31054,
+   "mc_sostenido": 9485,
+   "pct_sostiene": 31,
+   "median_vol_sol": 688.1,
+   "median_trades": 1115
+  },
+  {
+   "wallet": "49nSpmxwnTTyXujNm3zHqoin1mg1y1rKd1THXwJjYdLa",
+   "per_day": 0.86,
+   "launches_7d": 6,
+   "median_peak": 31054,
+   "mc_sostenido": 9119,
+   "pct_sostiene": 29,
+   "median_vol_sol": 963.1,
+   "median_trades": 2030
+  }
+ ]
+}

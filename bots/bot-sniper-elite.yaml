@@ -1,0 +1,78 @@
+name: "ELITE - mediana +25K (90pct pumpean) 0.25 SOL"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.2             # 0.2 SOL/operacion (2026-07-28)
+  buy_slippage: 0.15
+  sell_slippage: 0.30
+  exit_strategy: "tp_sl"
+  take_profit_percentage: 0.5      # +50% -> vende 40%
+  take_profit_sell_percentage: 0.40
+  tp2_gain: 1.5                    # +150% -> vende 25%
+  tp2_sell: 0.25
+  tp3_gain: 3.0                    # +300% -> vende 15%
+  tp3_sell: 0.15                   # moonbag 20% corre a por el 4.5x
+  stop_loss_percentage: 0.40       # -40% (data: -30% saca del 29% de ganadores)
+  max_hold_time: 120
+  price_check_interval: 2
+  extreme_fast_mode: false
+  extreme_fast_token_amount: 20
+  min_reserve_sol: 0.03
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 50_000_000         # 0.005 SOL/tx
+  extra_percentage: 0.0
+  hard_cap: 50_000_000
+
+retries:
+  wait_after_creation: 3           # bajado 6->3s (2026-07-28): entrar antes sin extreme_fast (que compraba polvo)
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 30
+  match_string: null
+  bro_address: "top_devs_final.json"   # 38 devs: sobreviven 5min + pagan DEX/CTO, no granja (~39 lanz/dia) Dune+DexScreener 2026-07-28
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false           # <<< EN VIVO (REAL)
+  min_curve_sol: 0.5
+  max_entry_mc: 0               # DESACTIVADO (2026-07-28): sin tope de MC, entra aunque haya pumpeado rapido (lista vetada)
+  min_holders: 0               # DESACTIVADO (2026-07-28): sin mínimo de holders (lista vetada)
+  max_holder_pct: 0             # DESACTIVADO (2026-07-28): sin límite de concentración (lista vetada; devs suelen tener 1 holder gordo al inicio)
+  holder_bypass_ratio: 3       # permite holder >5% si la MEDIANA del dev >= 3x el MC actual
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 6

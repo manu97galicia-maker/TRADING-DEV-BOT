@@ -1,0 +1,66 @@
+name: "Estrategia COPY - 2 wallets flip"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: false          # COPY desactivada (reducir carga RPC)
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.03             # 0,03 SOL por copia
+  buy_slippage: 0.5            # slippage alto (da igual, queremos entrar)
+  sell_slippage: 0.5
+
+  exit_strategy: "tp_sl"
+  take_profit_percentage: 5.0        # 500% (no se toca; salimos por tiempo)
+  take_profit_sell_percentage: 1.0
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  stop_loss_percentage: 0.9          # -90% (no se toca; salimos por tiempo)
+  max_hold_time: 1                   # vender ~lo antes posible tras la compra
+  price_check_interval: 1
+
+  extreme_fast_mode: false
+  extreme_fast_token_amount: 20
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 1_500_000            # fee alto = mas velocidad
+  extra_percentage: 0.0
+  hard_cap: 1_500_000
+
+filters:
+  listener_type: "pumpportal"
+  max_token_age: 999999              # copy no filtra por edad
+  match_string: null
+  bro_address: null
+  marry_mode: false
+  yolo_mode: false
+  paper_trade: false
+  min_curve_sol: 0
+
+  # COPY-TRADING: copiar las compras pump.fun de estas wallets
+  copy_wallets:
+    follow_funded: true          # si una wallet envia SOL a otra, vigilo esa tambien
+    min_funding_sol: 0.05        # umbral de "fondeo"
+    max_discovered: 40           # tope de wallets descubiertas
+    enabled: true
+    wallets:
+      - d6bVjHy1EDioAnSGwFPJbnLU9qxJ64Eq7mLagUZB242
+      - DWocMG9LHkFRtLGfgU5nD5AayKHSjpi2uqDGaGYNFXNB
+
+  dexscreener:
+    enabled: false
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 6

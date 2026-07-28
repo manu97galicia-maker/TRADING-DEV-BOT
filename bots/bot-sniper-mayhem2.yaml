@@ -1,0 +1,76 @@
+name: "MAYHEM - solo monedas mayhem 0.15 SOL"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: false               # QUITADO por el usuario 2026-07-26
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.15
+  buy_slippage: 0.30
+  sell_slippage: 0.30
+  exit_strategy: "tp_sl"
+  take_profit_percentage: 0.8
+  take_profit_sell_percentage: 0.4
+  tp2_gain: 1.5
+  tp2_sell: 0.4
+  tp3_gain: 0
+  tp3_sell: 0
+  stop_loss_percentage: 0.30
+  max_hold_time: 120
+  price_check_interval: 2
+  extreme_fast_mode: false
+  extreme_fast_token_amount: 20
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 30_000_000     # 0.003 SOL/tx
+  extra_percentage: 0.0
+  hard_cap: 30_000_000
+
+retries:
+  wait_after_creation: 6
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 60
+  match_string: null
+  bro_address: null
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false           # <<< EN VIVO (REAL)
+  min_curve_sol: 0
+  max_holder_pct: 0.05         # no comprar si un holder (no-curva) tiene >5% del supply
+  holder_bypass_ratio: 3       # permite holder >5% si la MEDIANA del dev >= 3x el MC actual (solo aplica con lista de devs; aqui no hay -> bloquea a secas)
+  require_mayhem: true         # SOLO compra monedas en modo mayhem
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 6

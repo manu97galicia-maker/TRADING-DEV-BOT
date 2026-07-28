@@ -1,0 +1,386 @@
+{
+ "_README": "Watchlist v2 PODADO por ROI ESPERADO>0 (no por mediana - la mediana no predice ROI, corr +0.11). Fuente Dune 2026-07-25, modelo swing TP+80/+150 SL-30.",
+ "_count": 54,
+ "_total_per_day": 38.6,
+ "_roi_medio": 19.8,
+ "wallets": [
+  {
+   "wallet": "CmCeodBTk8wCn1P3mhgEwBVyrWfLR7khrJbvfag2h6pv",
+   "exp_roi": 61.5,
+   "winrate": 75.0,
+   "median_usd": 31054,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "F5ExBJxM7zJhowwSBYGMTQVesxWvNzsPJhJTuXxLHiyZ",
+   "exp_roi": 61.3,
+   "winrate": 67.0,
+   "median_usd": 31054,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "GATbxwUSPRhN7GERjLNJv1hwkg1iuJdj7KCc8gVd9eXc",
+   "exp_roi": 61.3,
+   "winrate": 67.0,
+   "median_usd": 21057,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "Ff278N6vp23QuCFyMjCpB86Ug5w3jDh4K1wuDSJRHw2N",
+   "exp_roi": 51.3,
+   "winrate": 67.0,
+   "median_usd": 14496,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "EKC7HLR6ZkC1vVsnFP7gyRMfsefSXJUYTmwjFXMsp7dn",
+   "exp_roi": 51.3,
+   "winrate": 67.0,
+   "median_usd": 14465,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "2kBJEUNjWNgDJwMjWbxgEeZ7krvH324mxwagoJgtmgGR",
+   "exp_roi": 41.3,
+   "winrate": 67.0,
+   "median_usd": 31054,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "9Q18hhGJxvy16VAa8Th8Lua4WUSxnW1E1mYmqS16aPFN",
+   "exp_roi": 39.0,
+   "winrate": 75.0,
+   "median_usd": 16041,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "B6btiuEgrwa5MHNkxH7csA7paDfCXns8ZTUJr3nds3CZ",
+   "exp_roi": 37.8,
+   "winrate": 56.0,
+   "median_usd": 31054,
+   "per_day": 1.57
+  },
+  {
+   "wallet": "8tr2RQBBt3hGNbKNrCwvb7MwcHsW1JDwPEkjH35U7t8w",
+   "exp_roi": 36.0,
+   "winrate": 50.0,
+   "median_usd": 25587,
+   "per_day": 0.86
+  },
+  {
+   "wallet": "EL8zSAncePrCE4kJKkTNofX4aX97aoJmxH4GeYNAQnay",
+   "exp_roi": 32.2,
+   "winrate": 52.0,
+   "median_usd": 14116,
+   "per_day": 3.57
+  },
+  {
+   "wallet": "BQCwVjdgxM3G9E5ETxghFvLJvy3g432egZhCEWTYenNv",
+   "exp_roi": 31.3,
+   "winrate": 67.0,
+   "median_usd": 12880,
+   "per_day": 0.86
+  },
+  {
+   "wallet": "5uPpZMo6W9odwUCJxeLwR8RgDCG1SHcwj6522NvfHZf6",
+   "exp_roi": 31.3,
+   "winrate": 67.0,
+   "median_usd": 31054,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "HwKvWbr7KZYQF5DK1n3HXcyKNgytbP5obrH9cDV5eChH",
+   "exp_roi": 31.0,
+   "winrate": 50.0,
+   "median_usd": 23120,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "BwAMXudDjLeAc9SoFdjyrPZCKWWQxarEWuMKwf1MDPFV",
+   "exp_roi": 31.0,
+   "winrate": 50.0,
+   "median_usd": 15709,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "7VzKD7nTQg9ypcJtT1cA34aa9wLGRHzjGvZNQx53r8WA",
+   "exp_roi": 31.0,
+   "winrate": 50.0,
+   "median_usd": 31054,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "HoKiWhcU3YBN9f5Uxj1bBLkcWkw5iDEQbPiiU6EnYCwQ",
+   "exp_roi": 23.5,
+   "winrate": 50.0,
+   "median_usd": 31054,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "4fZFcK8ms3bFMpo1ACzEUz8bH741fQW4zhAMGd5yZMHu",
+   "exp_roi": 23.5,
+   "winrate": 50.0,
+   "median_usd": 24920,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "26Dpsf1diayaKzBezHHVWKDwwyetDT1eATqyaQY1ju7s",
+   "exp_roi": 23.5,
+   "winrate": 50.0,
+   "median_usd": 19529,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "7Ezd7dSkzCRWPQrwiwGCq2JjaoZ1NuKTjq9hmJmcDffo",
+   "exp_roi": 23.5,
+   "winrate": 50.0,
+   "median_usd": 28680,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "6Vs63D3UVdXqNVvmx3Gd4wk9hPArbeicrZ2JvnMJtKhd",
+   "exp_roi": 23.5,
+   "winrate": 50.0,
+   "median_usd": 21711,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "4X7ntRP7NbUz8dU3YYfRfz46C1bF3byUbKNNbeF6pL45",
+   "exp_roi": 23.0,
+   "winrate": 25.0,
+   "median_usd": 31054,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "CsmK5qscvCGcjixBvkb4PTYKrtENpt4TGfiBS6c7qBw8",
+   "exp_roi": 21.3,
+   "winrate": 67.0,
+   "median_usd": 25707,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "Accyhhx8z4kbhobAcwpASqh8miUxaay4L8mB6UNwzZt4",
+   "exp_roi": 21.3,
+   "winrate": 67.0,
+   "median_usd": 22098,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "B3ZNdoxQB5zSro19P97nGyQM8b7roReprRw3EiFX3SvC",
+   "exp_roi": 20.2,
+   "winrate": 41.0,
+   "median_usd": 25824,
+   "per_day": 2.0
+  },
+  {
+   "wallet": "9b9yJc1FjxHfDy3xhVes4Bns5esDzHHHzaEUAYcekUnA",
+   "exp_roi": 19.2,
+   "winrate": 60.0,
+   "median_usd": 27831,
+   "per_day": 0.71
+  },
+  {
+   "wallet": "BLK1ZJ3Ad2DKtsKMtz2urdJDnmxog9Hi2DTVnaDGrzVX",
+   "exp_roi": 18.8,
+   "winrate": 40.0,
+   "median_usd": 31054,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "GCc5qzbbN8xjARVJPovDxfKTCyeqXeeRzhwPH5csKwY6",
+   "exp_roi": 16.5,
+   "winrate": 75.0,
+   "median_usd": 31054,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "9DL1JJZMZbPAaaqkGwzS2LWTtHYveVmjsJkH93aLnWNU",
+   "exp_roi": 16.5,
+   "winrate": 75.0,
+   "median_usd": 15405,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "2dU5gswrNoHXXTbJycpE3ZMUeoVEW9BEFMNKkhjRTByt",
+   "exp_roi": 15.5,
+   "winrate": 25.0,
+   "median_usd": 31054,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "9bxz5DWGmPTYTMmBxYnZZGoJ2BJMtyqbKn85vq96sfzo",
+   "exp_roi": 15.5,
+   "winrate": 25.0,
+   "median_usd": 15671,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "6kkjU6JUUwP7v3wsZPvXbmEjvTTQvfAiUhWZTCQ8p1Qh",
+   "exp_roi": 12.3,
+   "winrate": 50.0,
+   "median_usd": 18997,
+   "per_day": 1.29
+  },
+  {
+   "wallet": "AYJSaJiDbxZjPjTKWdLjpFfoqMBvivp8uHEHqvabPFvb",
+   "exp_roi": 10.9,
+   "winrate": 44.0,
+   "median_usd": 13948,
+   "per_day": 1.43
+  },
+  {
+   "wallet": "D4zWzEUHVwtMYww17fYD9wp1YzVAh8B31ByWyHGCinVZ",
+   "exp_roi": 10.7,
+   "winrate": 33.0,
+   "median_usd": 12994,
+   "per_day": 0.86
+  },
+  {
+   "wallet": "ALJ4P5QNyHeLEjpKGmA1eUfJHSEGQMjY8HLnDkSgjczb",
+   "exp_roi": 10.7,
+   "winrate": 33.0,
+   "median_usd": 31054,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "912kspVUFKRxTBAVRjZ2ikbiVHj6ahgewkHQqViehJf",
+   "exp_roi": 10.7,
+   "winrate": 33.0,
+   "median_usd": 12226,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "CiJSXoLCDJ2UHdRk4bTuXCESvrmjo27iD5NUQbMgiByg",
+   "exp_roi": 10.7,
+   "winrate": 33.0,
+   "median_usd": 31054,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "DtCR4w3WREYJPo76pCmLt4boPPhCjVJHaHU4RmGSZg9b",
+   "exp_roi": 10.7,
+   "winrate": 33.0,
+   "median_usd": 17431,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "2rnm81cudERhgG9V4fQixGYtZEAb35M9X7s8SmM714FR",
+   "exp_roi": 10.7,
+   "winrate": 33.0,
+   "median_usd": 15845,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "BhKodmPaiWX5T2zXXv3CJW6skk4b1hNWwSEEqH8fqGFd",
+   "exp_roi": 10.7,
+   "winrate": 33.0,
+   "median_usd": 31054,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "z5Hxs28tB9PqMKxuz8swPRGS4m9JTehEPS6sT5Hv1tf",
+   "exp_roi": 10.7,
+   "winrate": 33.0,
+   "median_usd": 12265,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "9LUgfzet43ZdwdAzbvV5msQjGzx9g6sqvtgLaQyQAEog",
+   "exp_roi": 6.8,
+   "winrate": 40.0,
+   "median_usd": 31054,
+   "per_day": 0.71
+  },
+  {
+   "wallet": "8RH4d1EHzEB7Gfyykdaf5nY4yPwBFT2D2ceREp2ovtcG",
+   "exp_roi": 6.4,
+   "winrate": 20.0,
+   "median_usd": 16202,
+   "per_day": 0.71
+  },
+  {
+   "wallet": "3FiWnNDTZrKPbjPeMiTe2r5m5zygxSu57ePck5LUQp7d",
+   "exp_roi": 4.0,
+   "winrate": 33.0,
+   "median_usd": 17640,
+   "per_day": 1.29
+  },
+  {
+   "wallet": "6FCpd6KMKKrPLzgtQEcT3YCzEpwykqT2a6pKp8RpFGaA",
+   "exp_roi": 3.2,
+   "winrate": 3.0,
+   "median_usd": 14003,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "7hmGyLvVgjiZf2uMRAMWwvATKfgswtxF1SUYWhaT3sE2",
+   "exp_roi": 0.7,
+   "winrate": 33.0,
+   "median_usd": 12827,
+   "per_day": 0.86
+  },
+  {
+   "wallet": "2rpmssicN8sQ8rwjxiB3Q12CXwUAJwWHzCEsQrMfwsVY",
+   "exp_roi": 0.7,
+   "winrate": 33.0,
+   "median_usd": 19752,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "7zH6nQN4C8G1sH7LH1sz8ZKhTPmiA5wTbYcWkikUSKw",
+   "exp_roi": 0.7,
+   "winrate": 33.0,
+   "median_usd": 31054,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "4ExeHvDVoBvgzHKzXEkWwWqv646tYeY4TE93MUtXcACf",
+   "exp_roi": 0.7,
+   "winrate": 33.0,
+   "median_usd": 12299,
+   "per_day": 0.43
+  },
+  {
+   "wallet": "CM1YeKEVqMe1ZyLGmMtqTYXi4RsKcoZcQH1ThDyZUpV5",
+   "exp_roi": 0.5,
+   "winrate": 25.0,
+   "median_usd": 12438,
+   "per_day": 1.14
+  },
+  {
+   "wallet": "56dQSiMeu8FX2gAADbLEXhfSv63k3SuLJg9YJrLs9G3c",
+   "exp_roi": 0.5,
+   "winrate": 25.0,
+   "median_usd": 14345,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "4LXAFVZUUTdcqLCmgHq2NZmgLB2arRxp9wuYVa6rnx5C",
+   "exp_roi": 0.5,
+   "winrate": 25.0,
+   "median_usd": 31054,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "73BHz8F9DSy3NiJa2x6Jow35M1jkend9Aa7NgX1wJWov",
+   "exp_roi": 0.5,
+   "winrate": 25.0,
+   "median_usd": 30256,
+   "per_day": 0.57
+  },
+  {
+   "wallet": "9PQ9kNKj4hztTN26N3JaZ1To3rZRDu6rGiyzfC4JPETw",
+   "exp_roi": 0.4,
+   "winrate": 20.0,
+   "median_usd": 31054,
+   "per_day": 0.71
+  },
+  {
+   "wallet": "49nSpmxwnTTyXujNm3zHqoin1mg1y1rKd1THXwJjYdLa",
+   "exp_roi": 0.4,
+   "winrate": 20.0,
+   "median_usd": 31054,
+   "per_day": 0.57
+  }
+ ]
+}

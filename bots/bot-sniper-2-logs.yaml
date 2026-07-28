@@ -1,0 +1,78 @@
+name: "Estrategia REAL - Dex Paid bajo 15K"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: false          # ELIMINADA (<15K era la zona plana, perdedora)
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.15             # 0,15 SOL (zona peor, apuesta menor)
+  buy_slippage: 0.35           # slippage compra 35%  (SLIP)
+  sell_slippage: 0.35          # slippage venta 35%   (SLIP)
+
+  exit_strategy: "tp_sl"
+  # TP/SL: vender 50% al +50% . 25% al +140% . resto (25%) HOLD (moonbag)
+  take_profit_percentage: 0.2        # +20% (lo mas probable en <15K)
+  take_profit_sell_percentage: 1.0   # VENDER TODO
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  stop_loss_percentage: 0.35         # SL -35% (deja respirar a las ganadoras)
+  max_hold_time: 1800                # 30 min max
+  price_check_interval: 2
+
+  extreme_fast_mode: false      # false = buy_amount real (no polvo)
+  extreme_fast_token_amount: 20 # (sin efecto con extreme_fast_mode: false)
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 1_000_000
+  extra_percentage: 0.0
+  hard_cap: 1_000_000
+
+filters:
+  listener_type: "logs"
+  max_token_age: 0.001          # antiguedad max (ajusta si usas filtro de dev)
+  match_string: null
+  bro_address: null
+  marry_mode: false
+  yolo_mode: false               # 1 SOLA compra
+  paper_trade: false             # EN VIVO (real)
+  min_curve_sol: 0               # sin filtro de bundle: estudiar TODA llamada dex-paid
+  paper_watch_secs: 3600         # seguir 1h cada token tras la llamada
+
+  # Estrategia B: comprar cuando una moneda acaba de pagar DexScreener
+  buy_on_dex_paid:
+    enabled: true
+    poll_interval: 30
+    max_age_minutes: 180           # realista: es lo mas fresco que expone el feed (~73min)
+
+  # Entrada LIMPIA - todos los filtros apagados. Actívalos por estrategia.
+  dexscreener:
+    enabled: true                # filtro MC de entrada
+    enforce: true
+    block_on_error: true
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 50
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 2000         # >= $2K (evitar polvo insalvable)
+    max_market_cap: 15000        # < $15K
+    min_dev_migration_rate: 0
+    min_dev_launches: 3
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 6           # bajo: 2 estrategias comparten el RPC publico

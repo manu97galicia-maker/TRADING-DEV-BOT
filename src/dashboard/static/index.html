@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Sniper Bot</title>
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Sniper Bot" />
+<meta name="theme-color" content="#0b0f17" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230b0f17'/%3E%3Crect x='46' y='58' width='88' height='72' rx='20' fill='%23131a2b' stroke='%234f8cff' stroke-width='5'/%3E%3Ccircle cx='72' cy='94' r='10' fill='%233ddc84'/%3E%3Ccircle cx='108' cy='94' r='10' fill='%233ddc84'/%3E%3Cline x1='90' y1='40' x2='90' y2='26' stroke='%234f8cff' stroke-width='6'/%3E%3Ccircle cx='90' cy='22' r='7' fill='%23ff5470'/%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230b0f17'/%3E%3Crect x='46' y='58' width='88' height='72' rx='20' fill='%23131a2b' stroke='%234f8cff' stroke-width='5'/%3E%3Ccircle cx='72' cy='94' r='10' fill='%233ddc84'/%3E%3Ccircle cx='108' cy='94' r='10' fill='%233ddc84'/%3E%3Cline x1='90' y1='40' x2='90' y2='26' stroke='%234f8cff' stroke-width='6'/%3E%3Ccircle cx='90' cy='22' r='7' fill='%23ff5470'/%3E%3C/svg%3E" />
+<style>
+  :root{
+    --bg:#0b0f17; --card:#141b2b; --card2:#1a2233; --line:#26304a;
+    --ink:#e8edf7; --dim:#8a97b4; --blue:#4f8cff; --green:#3ddc84; --red:#ff5470; --amber:#ffc247;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--blue); text-decoration:none;}
+  .wrap{max-width:760px; margin:0 auto; padding:14px 14px 90px;}
+  .pos{color:var(--green);} .neg{color:var(--red);} .dim{color:var(--dim);}
+  .tabnum{font-variant-numeric:tabular-nums;}
+
+  /* Header */
+  header{display:flex; align-items:center; gap:12px; padding:6px 2px 14px;}
+  .logo{width:64px;height:64px;border-radius:16px;background:var(--card);display:grid;place-items:center;font-size:36px;border:1px solid var(--line);}
+  .brand{font-weight:700; letter-spacing:.3px;}
+  .brand small{display:block; color:var(--dim); font-weight:500; font-size:11px;}
+  .hspace{margin-left:auto;}
+  .iconbtn{background:var(--card); border:1px solid var(--line); color:var(--dim); width:38px;height:38px;border-radius:11px;font-size:16px;cursor:pointer;}
+  .iconbtn:active{transform:scale(.95);}
+
+  /* Cards */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px; margin-bottom:14px;}
+  .card h2{margin:0 0 12px; font-size:13px; letter-spacing:.4px; color:var(--dim); text-transform:uppercase; font-weight:600;}
+
+  /* Balance + bot control (hero) */
+  .hero{display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+  .hero .bal{flex:1; min-width:150px;}
+  .hero .bal .lbl{color:var(--dim); font-size:12px;}
+  .hero .bal .v{font-size:32px; font-weight:800; line-height:1.1;}
+  .hero .bal .v small{font-size:15px; color:var(--dim); font-weight:600;}
+  .botbtn{border:none; border-radius:12px; padding:14px 20px; font-size:15px; font-weight:700; cursor:pointer; color:#fff; min-width:130px;}
+  .botbtn.go{background:linear-gradient(180deg,#2fb567,#26935240);background:var(--green); color:#06210f;}
+  .botbtn.stop{background:var(--red); color:#fff;}
+  .botbtn:disabled{opacity:.6;}
+  .botstate{font-size:12px; color:var(--dim); margin-top:6px;}
+  .botstate b.on{color:var(--green);} .botstate b.off{color:var(--red);}
+
+  /* Stats grid */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+  .stat{background:var(--card2); border-radius:12px; padding:12px;}
+  .stat .lbl{color:var(--dim); font-size:11px;}
+  .stat .v{font-size:20px; font-weight:800; margin-top:2px;}
+
+  /* Command box */
+  .cmd-wrap textarea{width:100%; background:var(--card2); border:1px solid var(--line); color:var(--ink); border-radius:12px; padding:13px; font:inherit; font-size:16px; resize:vertical; min-height:52px;}
+  .cmd-wrap textarea:focus{outline:none; border-color:var(--blue);}
+  .cmd-row{display:flex; gap:10px; margin-top:10px; align-items:center;}
+  select{background:var(--card2); border:1px solid var(--line); color:var(--ink); border-radius:10px; padding:11px; font:inherit; font-size:14px;}
+  .btn{background:var(--blue); border:none; color:#fff; border-radius:11px; padding:12px 18px; font:inherit; font-weight:700; font-size:15px; cursor:pointer;}
+  .btn:active{transform:scale(.98);} .btn:disabled{opacity:.6;}
+  .btn.ghost{background:var(--card2); color:var(--ink); border:1px solid var(--line);}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+  .chip{background:var(--card2); border:1px solid var(--line); color:var(--dim); border-radius:999px; padding:7px 12px; font-size:13px; cursor:pointer;}
+  .chip:active{border-color:var(--blue); color:var(--ink);}
+  .cmd-out{margin-top:10px; font-size:13px; min-height:0;}
+  .cmd-out .ok{color:var(--green);} .cmd-hist{margin-top:8px; display:flex; flex-direction:column; gap:5px;}
+  .cmd-hist .h{font-size:12px; color:var(--dim); border-left:2px solid var(--blue); padding-left:9px;}
+  .cmd-hist .h b{color:var(--ink);}
+
+  /* Strategy rows */
+  .strat{display:flex; align-items:center; gap:12px; padding:12px 0; border-top:1px solid var(--line);}
+  .strat:first-child{border-top:none;}
+  .strat .info{flex:1; min-width:0;}
+  .strat .info .nm{font-weight:700;}
+  .strat .info .sub{color:var(--dim); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .toggle{border:none; border-radius:999px; padding:9px 16px; font-weight:700; font-size:13px; cursor:pointer; min-width:74px;}
+  .toggle.on{background:var(--green); color:#06210f;} .toggle.off{background:var(--card2); color:var(--dim); border:1px solid var(--line);}
+
+  /* Lists / rows */
+  .row{display:flex; align-items:center; gap:10px; padding:11px 0; border-top:1px solid var(--line); font-size:14px;}
+  .row:first-child{border-top:none;}
+  .row .sym{font-weight:700;}
+  .row .r{margin-left:auto; text-align:right;}
+  .row .sub{color:var(--dim); font-size:12px;}
+  .pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; background:var(--card2); color:var(--dim); border:1px solid var(--line);}
+  .pill.pf{color:var(--green);} .pill.lb{color:var(--amber);}
+  .empty{color:var(--dim); text-align:center; padding:16px; font-size:14px;}
+  .subtabs{display:flex; gap:8px; margin-bottom:8px;}
+  .subtabs button{flex:1; background:var(--card2); border:1px solid var(--line); color:var(--dim); border-radius:10px; padding:9px; font:inherit; font-size:13px; font-weight:600; cursor:pointer;}
+  .subtabs button.on{background:var(--blue); color:#fff; border-color:var(--blue);}
+
+  details{margin-bottom:14px;} details summary{cursor:pointer; list-style:none; padding:14px 16px; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); font-weight:600; color:var(--ink);}
+  details[open] summary{border-radius:var(--radius) var(--radius) 0 0; border-bottom:none;}
+  details summary::-webkit-details-marker{display:none;}
+  details summary::after{content:"▾"; float:right; color:var(--dim);}
+  details .card{border-radius:0 0 var(--radius) var(--radius); margin-bottom:0; border-top:none;}
+
+  input[type=text], input[type=number], input[type=password]{background:var(--card2); border:1px solid var(--line); color:var(--ink); border-radius:10px; padding:12px; font:inherit; font-size:16px; width:100%;}
+  input:focus{outline:none; border-color:var(--blue);}
+  label.f{display:block; margin-bottom:10px;} label.f span{display:block; color:var(--dim); font-size:12px; margin-bottom:5px;}
+  .addr{display:flex; gap:8px; align-items:center; background:var(--card2); border:1px solid var(--line); border-radius:10px; padding:10px;}
+  .addr code{flex:1; color:var(--blue); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px;}
+  .note{color:var(--dim); font-size:12px;} .warn{color:var(--amber); font-size:12px;}
+
+  /* Bottom nav */
+  nav.bn{position:fixed; left:0; right:0; bottom:0; background:#0d1320f2; border-top:1px solid var(--line); display:flex; z-index:40; backdrop-filter:blur(10px); padding-bottom:env(safe-area-inset-bottom);}
+  nav.bn button{flex:1; background:none; border:none; color:var(--dim); font:inherit; font-size:11px; padding:9px 4px; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer;}
+  nav.bn button .ic{font-size:19px;} nav.bn button.on{color:var(--blue);}
+
+  /* Login */
+  .login{position:fixed; inset:0; background:#0a0e16f2; display:none; align-items:center; justify-content:center; z-index:60; padding:20px;}
+  .login.show{display:flex;} .login .box{background:var(--card); border:1px solid var(--line); border-radius:20px; padding:26px; width:100%; max-width:300px; text-align:center;}
+  .login .box h3{margin:6px 0 2px;} .login input{margin-top:10px; text-align:center;}
+
+  .conn{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--dim);}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--green);} .dot.off{background:var(--red);}
+  @media(max-width:520px){ .stats{grid-template-columns:repeat(2,1fr);} }
+  @media(prefers-reduced-motion:reduce){ *{transition:none!important;} }
+</style>
+</head>
+<body>
+<!-- LOGIN -->
+<div class="login" id="login"><div class="box">
+  <div style="font-size:38px">🤖</div>
+  <h3>Sniper Bot</h3>
+  <div class="note">Inicia sesión</div>
+  <input type="text" id="login-user" placeholder="usuario" autocomplete="username" />
+  <input type="password" id="login-pin" inputmode="numeric" placeholder="PIN" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" />
+  <label style="display:flex;align-items:center;gap:8px;justify-content:center;margin:12px 0;color:var(--dim);font-size:13px"><input type="checkbox" id="login-remember" checked style="width:auto" /> Recordarme</label>
+  <button class="btn" style="width:100%" onclick="doLogin()">Entrar</button>
+  <div id="login-err" class="neg" style="font-size:12px;margin-top:8px"></div>
+</div></div>
+
+<div class="wrap">
+  <header>
+    <div class="logo">🤖</div>
+    <div class="brand">Sniper Bot<small>pump.fun · solana</small></div>
+    <div class="hspace"></div>
+    <div class="conn"><span class="dot" id="dot"></span><span id="conn-txt">en vivo</span></div>
+    <button class="iconbtn" onclick="manualRefresh()" title="Actualizar">⟳</button>
+  </header>
+
+  <!-- HERO: balance + bot -->
+  <section class="card" id="top">
+    <div class="hero">
+      <div class="bal">
+        <div class="lbl">Saldo de la wallet</div>
+        <div class="v tabnum" id="balance">— <small>SOL</small></div>
+      </div>
+      <div>
+        <button class="botbtn go" id="botbtn" onclick="toggleBot()" disabled>▶ Arrancar</button>
+        <div class="botstate" id="botstate">bot: —</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="card">
+    <h2>Resultados</h2>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <!-- COMMAND (primary control) -->
+  <section class="card" id="control">
+    <h2>Dile al bot qué hacer</h2>
+    <div class="cmd-wrap">
+      <textarea id="cmd-text" placeholder="Ej: compra 0.05 sol, market cap 5k-250k, liquidez bloqueada, vende 80% al 40%, sl 18%, slippage 20%"></textarea>
+      <div class="cmd-row">
+        <select id="cfg-select" title="A qué bot aplica"></select>
+        <button class="btn" style="flex:1" onclick="sendCommand()">Aplicar orden</button>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="cmd-out" id="cmd-out"></div>
+      <div class="cmd-hist" id="cmd-hist"></div>
+    </div>
+  </section>
+
+  <!-- MANUAL BUY -->
+  <section class="card" id="buy">
+    <h2>Comprar al momento</h2>
+    <input type="text" id="buy-ca" placeholder="pega el contrato (…pump)" style="margin-bottom:10px" />
+    <div class="chips">
+      <span class="chip" onclick="setBuyAmt(0.05)">0.05 SOL</span>
+      <span class="chip" onclick="setBuyAmt(0.1)">0.1 SOL</span>
+      <span class="chip" onclick="setBuyAmt(0.15)">0.15 SOL</span>
+    </div>
+    <div class="cmd-row" style="margin-top:10px">
+      <input type="number" id="buy-amt" placeholder="SOL" step="0.01" value="0.05" style="max-width:120px" />
+      <button class="btn" style="flex:1;background:var(--green);color:#06210f" onclick="manualBuy()">Comprar ahora</button>
+    </div>
+    <div id="buy-out" class="cmd-out"></div>
+    <div class="warn" style="margin-top:6px">Compra real. pump.fun · no migrados. Empieza con poco.</div>
+  </section>
+
+  <!-- STRATEGIES -->
+  <section class="card">
+    <h2>Estrategias (enciende las que quieras)</h2>
+    <div id="strategies"><div class="empty">cargando…</div></div>
+  </section>
+
+  <!-- POSITIONS -->
+  <section class="card" id="positions">
+    <h2>Posiciones</h2>
+    <div class="subtabs">
+      <button id="tab-open" class="on" onclick="posTab('open')">Abiertas</button>
+      <button id="tab-closed" onclick="posTab('closed')">Cerradas</button>
+    </div>
+    <div id="pos-list"><div class="empty">sin posiciones</div></div>
+  </section>
+
+  <!-- FEEDS (secondary, collapsed) -->
+  <details>
+    <summary>📣 Señales en vivo (compras · dex paid · telegram)</summary>
+    <div class="card">
+      <h2>🐳 GMGN — smart money / KOLs comprando</h2><div id="gmgn"><div class="empty">cargando…</div></div>
+      <h2 style="margin-top:16px">Últimas compras</h2><div id="live-buys"><div class="empty">—</div></div>
+      <h2 style="margin-top:16px">🔥 Pagaron dex (recientes)</h2><div id="dexpaid"><div class="empty">cargando…</div></div>
+      <h2 style="margin-top:16px">Calls de Telegram</h2><div id="tg-calls"><div class="empty">—</div></div>
+    </div>
+  </details>
+
+  <!-- WALLET (collapsed) -->
+  <details id="wallet-sec">
+    <summary>◈ Wallet — depósito / retiro / importar</summary>
+    <div class="card" id="wallet"><div class="note">cargando…</div></div>
+  </details>
+
+  <p class="note" style="text-align:center;margin:14px 0">Panel local · el trading real lo ejecuta el bot · empieza con importes pequeños.</p>
+</div>
+
+<!-- BOTTOM NAV (mobile) -->
+<nav class="bn" id="bn">
+  <button class="on" onclick="go('top',this)"><span class="ic">💰</span>Resumen</button>
+  <button onclick="go('control',this)"><span class="ic">⌨️</span>Control</button>
+  <button onclick="go('positions',this)"><span class="ic">📊</span>Posiciones</button>
+  <button onclick="go('wallet-sec',this)"><span class="ic">◈</span>Wallet</button>
+</nav>
+
+<script>
+const REFRESH_MS=4000;
+let lastOk=0, connected=false, isLocal=true, autoTried=false, botRunning=false, botBusy=false, CONFIGS=[], posMode="open", lastState=null;
+
+const fmtSol=v=>(v==null)?"—":(Math.abs(v)<1e-6&&v!==0?v.toExponential(1):Number(v).toFixed(4));
+const fmtPct=v=>(v==null)?"—":(v>=0?"+":"")+Number(v).toFixed(0)+"%";
+const cls=v=>v>0?"pos":(v<0?"neg":"dim");
+const short=m=>m?m.slice(0,4)+"…"+m.slice(-4):"";
+const plat=p=>p==="lets_bonk"?'<span class="pill lb">bonk</span>':'<span class="pill pf">pump</span>';
+const sx=m=>`https://solscan.io/token/${m}`;
+const pct=v=>v==null?null:Math.round(v*100);
+function ago(t){if(!t)return"";const s=Math.max(0,Math.floor((Date.now()-new Date(t).getTime())/1000));return s<60?`${s}s`:s<3600?`${Math.floor(s/60)}m`:`${Math.floor(s/3600)}h`;}
+function go(id,btn){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});if(id==="control")setTimeout(()=>document.getElementById("cmd-text").focus(),350);document.querySelectorAll("#bn button").forEach(b=>b.classList.remove("on"));if(btn)btn.classList.add("on");}
+
+/* ---- Login ---- */
+function showLogin(){const s=localStorage.getItem("dash_creds");if(s){try{document.getElementById("login-user").value=JSON.parse(s).user||"";}catch(e){}}document.getElementById("login").classList.add("show");}
+function hideLogin(){document.getElementById("login").classList.remove("show");}
+async function tryAutoLogin(){const s=localStorage.getItem("dash_creds");if(!s)return false;try{const{user,password}=JSON.parse(s);const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user,password})});return (await r.json()).ok===true;}catch(e){return false;}}
+async function doLogin(){const user=document.getElementById("login-user").value.trim();const password=document.getElementById("login-pin").value.trim();const remember=document.getElementById("login-remember").checked;const err=document.getElementById("login-err");err.textContent="";try{const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user,password})});const j=await r.json();if(j.ok){if(remember)localStorage.setItem("dash_creds",JSON.stringify({user,password}));else localStorage.removeItem("dash_creds");hideLogin();document.getElementById("login-pin").value="";await tick();await loadConfigs();}else err.textContent=j.error||"error";}catch(e){err.textContent=""+e;}}
+
+/* ---- Main tick ---- */
+function setConn(ok){connected=ok;document.getElementById("dot").className="dot"+(ok?"":" off");document.getElementById("conn-txt").textContent=ok?"en vivo":"sin conexión";}
+async function tick(){
+  try{
+    const r=await fetch("/api/state");
+    if(r.status===401){setConn(true);if(!autoTried){autoTried=true;if(await tryAutoLogin())return tick();}showLogin();return;}
+    autoTried=false;hideLogin();
+    const s=await r.json();lastState=s;setConn(true);lastOk=Date.now();
+    isLocal=!s.session||s.session.local;
+    renderBalance(s.wallet);renderStats(s.results);renderBot(s.bot);renderPositions(s);renderLiveBuys(s.live_buys);renderWallet(s.wallet);
+  }catch(e){setConn(false);}
+}
+function renderBalance(w){document.getElementById("balance").innerHTML=(w&&w.balance_sol!=null?Number(w.balance_sol).toFixed(4):"—")+' <small>SOL</small>';}
+function renderStats(r){
+  const items=[
+    ["Resultado",fmtSol(r.total_realized_sol)+" SOL",cls(r.total_realized_sol)],
+    ["Win rate",Math.round(r.win_rate_pct)+"%",r.win_rate_pct>=50?"pos":(r.closed_count?"neg":"dim")],
+    ["Abiertas",r.open_count,"dim"],
+    ["Invertido",fmtSol(r.total_invested_sol)+" SOL","dim"],
+  ];
+  document.getElementById("stats").innerHTML=items.map(([l,v,c])=>`<div class="stat"><div class="lbl">${l}</div><div class="v ${c}">${v}</div></div>`).join("");
+}
+function renderBot(b){
+  botRunning=!!(b&&b.running);
+  const btn=document.getElementById("botbtn"),st=document.getElementById("botstate");
+  if(botRunning){btn.className="botbtn stop";btn.textContent="■ Parar";st.innerHTML=`bot: <b class="on">ENCENDIDO</b>${b.uptime_seconds!=null?" · "+Math.floor(b.uptime_seconds)+"s":""}`;}
+  else{btn.className="botbtn go";btn.textContent="▶ Arrancar";st.innerHTML=`bot: <b class="off">APAGADO</b>`;}
+  btn.disabled=botBusy;
+}
+async function toggleBot(){
+  if(botBusy)return;
+  if(!botRunning&&!confirm("¿Arrancar el bot? Operará con SOL real según las estrategias encendidas."))return;
+  if(botRunning&&!confirm("¿Parar el bot?"))return;
+  botBusy=true;const btn=document.getElementById("botbtn");btn.disabled=true;btn.textContent="…";
+  try{const r=await fetch(botRunning?"/api/bot/stop":"/api/bot/start",{method:"POST"});const j=await r.json();if(j.error)alert(j.error);}catch(e){alert(e);}
+  botBusy=false;await tick();
+}
+async function manualRefresh(){await tick();await loadDexpaid();await loadTelegram();}
+
+/* ---- Positions ---- */
+function posTab(m){posMode=m;document.getElementById("tab-open").className=m==="open"?"on":"";document.getElementById("tab-closed").className=m==="closed"?"on":"";if(lastState)renderPositions(lastState);}
+function renderPositions(s){
+  const el=document.getElementById("pos-list");
+  const rows=posMode==="open"?s.open_positions:s.closed_positions;
+  if(!rows.length){el.innerHTML=`<div class="empty">${posMode==="open"?"sin posiciones abiertas":"sin historial"}</div>`;return;}
+  if(posMode==="open"){
+    el.innerHTML=rows.map(p=>`<div style="padding:12px 0;border-top:1px solid var(--line)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="sym">${p.symbol}</span> ${plat(p.platform)}
+        <a class="sub" href="https://dexscreener.com/solana/${p.mint}" target="_blank" title="Ver en DexScreener">📈 DexScreener</a>
+        <div class="r" style="margin-left:auto"><div>${fmtSol(p.invested_sol)} SOL</div><div class="sub">${ago(p.entry_time)}</div></div>
+      </div>
+      ${isLocal?`<div class="chips" style="margin-top:8px">
+        <span class="chip" onclick="manualSell('${p.mint}',25)">Vender 25%</span>
+        <span class="chip" onclick="manualSell('${p.mint}',50)">50%</span>
+        <span class="chip" onclick="manualSell('${p.mint}',75)">75%</span>
+        <span class="chip" style="border-color:var(--red);color:var(--red)" onclick="manualSell('${p.mint}',100)">100%</span>
+      </div><div class="cmd-out" id="sell-${p.mint}"></div>`:""}
+    </div>`).join("");
+  } else {
+    el.innerHTML=rows.map(p=>`<div class="row"><span class="sym">${p.symbol}</span> ${plat(p.platform)}<a class="sub" href="https://dexscreener.com/solana/${p.mint}" target="_blank">📈</a><div class="r"><div class="${cls(p.realized_pnl_sol)}">${fmtSol(p.realized_pnl_sol)} SOL · ${fmtPct(p.realized_pnl_pct)}</div><div class="sub">${p.hold_seconds!=null?Math.round(p.hold_seconds)+"s":""}</div></div></div>`).join("");
+  }
+}
+function renderLiveBuys(rows){
+  const el=document.getElementById("live-buys");
+  if(!rows||!rows.length){el.innerHTML='<div class="empty">sin compras</div>';return;}
+  el.innerHTML=rows.map(b=>`<div class="row"><span class="sym">${b.symbol}</span> ${plat(b.platform)}<div class="r"><div>${fmtSol(b.spent_sol)} SOL</div><div class="sub">${ago(b.timestamp)}</div></div></div>`).join("");
+}
+
+/* ---- Manual buy / sell ---- */
+function setBuyAmt(v){document.getElementById("buy-amt").value=v;}
+async function manualBuy(){
+  const mint=document.getElementById("buy-ca").value.trim();
+  const amount_sol=parseFloat(document.getElementById("buy-amt").value);
+  const out=document.getElementById("buy-out");
+  if(!mint){out.innerHTML='<span class="neg">pega un contrato</span>';return;}
+  if(!(amount_sol>0)){out.innerHTML='<span class="neg">cantidad inválida</span>';return;}
+  if(!confirm(`¿Comprar ${amount_sol} SOL de ${short(mint)}? (compra REAL)`))return;
+  out.textContent="comprando…";
+  try{const r=await fetch("/api/manual/buy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mint,amount_sol})});const j=await r.json();
+    out.innerHTML=j.ok?`<span class="ok">✓ Comprado · <a href="https://solscan.io/tx/${j.signature}" target="_blank">tx</a></span>`:`<span class="neg">${j.error}</span>`;
+    if(j.ok){document.getElementById("buy-ca").value="";await tick();}
+  }catch(e){out.innerHTML=`<span class="neg">${e}</span>`;}
+}
+async function manualSell(mint,pct){
+  if(!confirm(`¿Vender ${pct}% de la posición a mercado? (venta REAL)`))return;
+  const out=document.getElementById("sell-"+mint);if(out)out.textContent="vendiendo…";
+  try{const r=await fetch("/api/manual/sell",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mint,pct})});const j=await r.json();
+    if(out)out.innerHTML=j.ok?`<span class="ok">✓ Vendido ${pct}% · <a href="https://solscan.io/tx/${j.signature}" target="_blank">tx</a></span>`:`<span class="neg">${j.error}</span>`;
+    if(j.ok)await tick();
+  }catch(e){if(out)out.innerHTML=`<span class="neg">${e}</span>`;}
+}
+
+/* ---- Config / strategies / command ---- */
+async function loadConfigs(){
+  try{const r=await fetch("/api/configs");if(r.status===401)return;CONFIGS=(await r.json()).configs||[];
+    const sel=document.getElementById("cfg-select");
+    if(sel.options.length!==CONFIGS.length)sel.innerHTML=CONFIGS.map((c,i)=>`<option value="${i}">${c.bot_name}</option>`).join("");
+    renderStrategies();
+  }catch(e){}
+}
+function currentCfg(){return CONFIGS[parseInt(document.getElementById("cfg-select").value)||0];}
+function modeDesc(c){
+  if(c.mode==="telegram")return "📣 Compra contratos posteados en tus canales de Telegram";
+  if(c.mode==="dexpaid")return "🔥 Compra tokens que acaban de pagar dex";
+  return `🎯 Snipe de tokens nuevos (${c.listener||"logs"})`;
+}
+function filterDesc(c){
+  const t=c.trade||{},d=c.dexscreener||{};const f=[];
+  f.push(`compra <b>${t.buy_amount??"?"} SOL</b>`);
+  if(d.enabled){
+    if(d.require_dex_paid)f.push("dex paid");
+    if(d.require_liquidity_locked)f.push("liquidez bloqueada");
+    if(d.min_market_cap||d.max_market_cap)f.push(`mc $${d.min_market_cap?(d.min_market_cap/1000)+"k":"0"}–${d.max_market_cap?(d.max_market_cap/1000)+"k":"∞"}`);
+    if(d.min_dev_migration_rate)f.push(`dev migró ≥${Math.round(d.min_dev_migration_rate*100)}%`);
+    if(d.min_boosts)f.push(`boosts≥${d.min_boosts}`);
+  } else f.push("sin filtros");
+  return f.join(" · ");
+}
+function exitDesc(c){
+  const t=c.trade||{};if(t.exit_strategy!=="tp_sl")return "salida: "+(t.exit_strategy||"—");
+  const tiers=[];
+  if(t.take_profit_percentage)tiers.push(`${pct(t.take_profit_sell_percentage)??100}% al +${pct(t.take_profit_percentage)}%`);
+  if(t.tp2_gain)tiers.push(`${pct(t.tp2_sell)}% al x2`);
+  if(t.tp3_gain)tiers.push(`${pct(t.tp3_sell)}% al x${(t.tp3_gain+1)}`);
+  const sl=t.stop_loss_percentage?` · SL −${pct(t.stop_loss_percentage)}%`:"";
+  return "vende "+(tiers.join(" · ")||"—")+sl;
+}
+function renderStrategies(){
+  const el=document.getElementById("strategies");
+  if(!CONFIGS.length){el.innerHTML='<div class="empty">sin bots</div>';return;}
+  el.innerHTML=CONFIGS.map(c=>`<div class="strat"><div class="info">
+      <div class="nm">${c.bot_name} ${plat(c.platform)}</div>
+      <div class="sub" style="color:var(--ink);white-space:normal">${modeDesc(c)}</div>
+      <div class="sub" style="white-space:normal">💰 ${filterDesc(c)}</div>
+      <div class="sub" style="white-space:normal">🎯 ${exitDesc(c)}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <button class="toggle" style="min-width:auto;padding:8px 11px;background:var(--card2);color:var(--dim);border:1px solid var(--line)" onclick="renameStrategy('${c.name}','${(c.bot_name||"").replace(/'/g,"")}')" title="Renombrar">✏️</button>
+      <button class="toggle ${c.enabled?"on":"off"}" onclick="toggleStrategy('${c.name}',${!c.enabled})">${c.enabled?"ON":"OFF"}</button>
+    </div></div>`).join("");
+}
+async function renameStrategy(file,current){
+  const nn=prompt("Nuevo nombre de la estrategia:",current);
+  if(!nn||nn.trim()===current)return;
+  try{const r=await fetch("/api/config",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({file,new_name:nn.trim()})});const j=await r.json();
+    if(j.ok)await loadConfigs();else alert(j.error||"error");}catch(e){alert(e);}
+}
+function strategyDetail(c){
+  const t=c.trade||{},d=c.dexscreener||{};
+  const L=[];
+  L.push("⚠️  ACTIVAR ESTRATEGIA — OPERARÁ CON SOL REAL");
+  L.push("");
+  L.push("📛  "+c.bot_name+"  ("+(c.platform==="lets_bonk"?"letsbonk":"pump.fun")+")");
+  L.push("");
+  L.push("QUÉ VA A HACER:");
+  L.push("• "+(c.mode==="telegram"?"Comprar contratos de tus canales de Telegram":c.mode==="gmgn"||c.mode==="dexpaid"?(c.mode==="gmgn"?"Copiar compras de smart money / KOLs (GMGN)":"Comprar tokens que acaban de pagar dex"):"Snipe de tokens nuevos ("+(c.listener||"logs")+")"));
+  L.push("• Comprar "+(t.buy_amount??"?")+" SOL por cada token");
+  L.push("• Slippage "+(pct(t.buy_slippage)??"?")+"% compra / "+(pct(t.sell_slippage)??"?")+"% venta");
+  L.push("");
+  L.push("FILTROS (antes de comprar):");
+  if(d.enabled){
+    if(d.require_dex_paid)L.push("• Solo si el token pagó dex");
+    if(d.require_liquidity_locked)L.push("• Solo si la liquidez está bloqueada (≥"+(d.min_lp_locked_pct||50)+"%)");
+    if(d.min_market_cap||d.max_market_cap)L.push("• Market cap entre $"+(d.min_market_cap||0)+" y $"+(d.max_market_cap||"∞"));
+    if(d.min_dev_migration_rate)L.push("• Solo devs que migraron ≥"+Math.round(d.min_dev_migration_rate*100)+"% de sus tokens");
+    if(d.min_boosts)L.push("• Boosts mínimos: "+d.min_boosts);
+    if(d.min_liquidity_usd)L.push("• Liquidez mínima: $"+d.min_liquidity_usd);
+    if(!(d.require_dex_paid||d.require_liquidity_locked||d.min_market_cap||d.max_market_cap||d.min_dev_migration_rate||d.min_boosts||d.min_liquidity_usd))L.push("• Filtro activo, sin criterios (compra todo)");
+  } else L.push("• SIN filtros (compra sin comprobar seguridad)");
+  L.push("");
+  L.push("CÓMO VENDE:");
+  if(t.exit_strategy==="tp_sl"){
+    const tiers=[];
+    if(t.take_profit_percentage)tiers.push("vende "+(pct(t.take_profit_sell_percentage)??100)+"% al +"+pct(t.take_profit_percentage)+"%");
+    if(t.tp2_gain)tiers.push((pct(t.tp2_sell))+"% al x2");
+    if(t.tp3_gain)tiers.push((pct(t.tp3_sell))+"% al x"+(t.tp3_gain+1));
+    L.push("• "+(tiers.join(" · ")||"TP/SL")+(tiers.length?" · resto se mantiene (moonbag)":""));
+    if(t.stop_loss_percentage)L.push("• Stop-loss: vende TODO si cae -"+pct(t.stop_loss_percentage)+"%");
+    L.push("• Si el token migra → vende igual por Jupiter");
+  } else L.push("• Estrategia de salida: "+(t.exit_strategy||"?"));
+  L.push("");
+  L.push("Se ejecutará cuando pulses ARRANCAR. ¿Aceptas y activas esta estrategia?");
+  return L.join("\n");
+}
+async function toggleStrategy(name,enabled){
+  const c=CONFIGS.find(x=>x.name===name);
+  if(enabled){
+    if(!c||!confirm(strategyDetail(c)))return;
+  }
+  try{const r=await fetch("/api/config",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({file:name,enabled})});const j=await r.json();
+    if(j.ok){await loadConfigs();if(botRunning&&enabled)alert("Activada ✓. Reinicia el bot (Parar → Arrancar) para que empiece a operar con ella.");}else alert(j.error||"error");}catch(e){alert(e);}
+}
+const CHIPS=["compra 0.05 sol","market cap 5k-250k","liquidez bloqueada","dev migró 24%","vende 80% al 40%, 10% al x2, 10% al x5","sl 18%","slippage 20%","vende todas las posiciones"];
+function renderChips(){document.getElementById("chips").innerHTML=CHIPS.map(c=>`<span class="chip" onclick="fillCmd('${c.replace(/'/g,"\\'")}')">${c}</span>`).join("");}
+function fillCmd(t){const b=document.getElementById("cmd-text");b.value=b.value?b.value+", "+t:t;b.focus();}
+async function sendCommand(){
+  const c=currentCfg();if(!c)return;const text=document.getElementById("cmd-text").value.trim();const out=document.getElementById("cmd-out");
+  if(!text)return;out.textContent="…";
+  try{const r=await fetch("/api/command",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({file:c.name,text})});const j=await r.json();
+    if(!j.ok){out.innerHTML=`<span class="neg">${j.note||j.error}</span>`;return;}
+    out.innerHTML='<span class="ok">✓ Aplicado:</span> '+j.actions.map(a=>a.human).join(" · ");
+    document.getElementById("cmd-hist").insertAdjacentHTML("afterbegin",`<div class="h"><b>“${text}”</b></div>`);
+    document.getElementById("cmd-text").value="";await loadConfigs();await tick();
+  }catch(e){out.innerHTML=`<span class="neg">${e}</span>`;}
+}
+
+/* ---- Feeds ---- */
+async function loadDexpaid(){try{const r=await fetch("/api/dexpaid");if(r.status===401)return;const rows=(await r.json()).candidates||[];const el=document.getElementById("dexpaid");
+  if(!rows.length){el.innerHTML='<div class="empty">sin candidatos</div>';return;}
+  el.innerHTML=rows.map(r=>`<div class="row"><span class="sym">${r.symbol}</span> ${r.migrated?'<span class="pill lb">migrado</span>':'<span class="pill pf">en curva</span>'}<div class="r"><div>${r.liquidity_usd?"$"+Math.round(r.liquidity_usd).toLocaleString():"—"}</div><div class="sub">pagó hace ${r.payment_age_min}m ${r.lp_locked_pct!=null?"· 🔒"+Math.round(r.lp_locked_pct)+"%":""}</div></div></div>`).join("");}catch(e){}}
+async function loadGmgn(){try{const r=await fetch("/api/gmgn");if(r.status===401)return;const rows=(await r.json()).signals||[];const el=document.getElementById("gmgn");
+  if(!rows.length){el.innerHTML='<div class="empty">sin señales ahora</div>';return;}
+  el.innerHTML=rows.map(s=>`<div class="row"><span class="sym">${s.symbol}</span> <span class="pill" style="color:var(--green)">${s.source==="kol"?"KOL":"smart"}</span>
+    <a class="sub" href="https://dexscreener.com/solana/${s.mint}" target="_blank">📈</a>
+    <div class="r"><div>$${s.usd}</div><div class="sub">${(s.tags||[]).slice(0,2).join(", ")}</div></div></div>`).join("");}catch(e){}}
+async function loadTelegram(){try{const r=await fetch("/api/telegram-calls");if(r.status===401)return;const rows=(await r.json()).calls||[];const el=document.getElementById("tg-calls");
+  if(!rows.length){el.innerHTML='<div class="empty">sin calls</div>';return;}
+  el.innerHTML=rows.map(c=>`<div class="row"><span class="sym">${c.chat||"?"}</span><a class="sub" href="${sx(c.address)}" target="_blank">${short(c.address)}</a><div class="r">${c.bought_attempt?'<span class="pos">🛒 compra</span>':'<span class="dim">aviso</span>'}<div class="sub">${ago(c.timestamp)}</div></div></div>`).join("");}catch(e){}}
+
+/* ---- Wallet ---- */
+function renderWallet(w){
+  const el=document.getElementById("wallet");
+  if(!w||!w.configured){el.innerHTML='<div class="note">Wallet no configurada (SOLANA_PRIVATE_KEY en .env).</div>';return;}
+  el.innerHTML=`
+    <label class="f"><span>Balance</span><div class="v" style="font-size:26px;font-weight:800">${w.balance_sol!=null?Number(w.balance_sol).toFixed(4):"—"} <small class="dim">SOL</small></div></label>
+    <label class="f"><span>Dirección de depósito (envía SOL aquí)</span><div class="addr"><code>${w.address}</code><button class="btn ghost" onclick="navigator.clipboard.writeText('${w.address}')">copiar</button></div></label>
+    ${isLocal?`
+    <label class="f"><span>Retirar SOL (deja 0.03 de reserva)</span><input type="text" id="wd-dest" placeholder="dirección destino" /></label>
+    <div style="display:flex;gap:10px"><input type="number" id="wd-amt" placeholder="cantidad SOL" step="0.001" /><button class="btn" style="background:var(--red)" onclick="doWithdraw()">Retirar</button></div>
+    <div id="wd-res" class="note" style="margin-top:6px"></div>
+    <details style="margin-top:14px"><summary>Importar wallet (12/24 palabras)</summary><div class="card" style="border-radius:12px;margin-top:8px">
+      <label class="f"><span>Frase semilla</span><textarea id="mn" style="width:100%;background:var(--card2);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:10px" rows="2" placeholder="palabra1 palabra2 …"></textarea></label>
+      <button class="btn" onclick="importWallet()">Importar y activar</button>
+      <div class="warn" style="margin-top:8px">Sustituye la wallet del bot. Reinícialo para aplicar. La frase no se guarda.</div>
+      <div id="mn-res" class="note" style="margin-top:6px"></div>
+    </div></details>
+    `:'<div class="note">🔒 Retiro e importación: solo desde el PC.</div>'}`;
+}
+async function doWithdraw(){const destination=document.getElementById("wd-dest").value.trim();const amount_sol=parseFloat(document.getElementById("wd-amt").value);const out=document.getElementById("wd-res");
+  if(!destination||!(amount_sol>0)){out.textContent="destino/cantidad inválidos";return;}
+  if(!confirm(`¿Enviar ${amount_sol} SOL a ${destination}?`))return;out.textContent="enviando…";
+  try{const r=await fetch("/api/withdraw",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({destination,amount_sol})});const j=await r.json();
+    out.innerHTML=j.ok?`<span class="pos">OK · <a href="https://solscan.io/tx/${j.signature}" target="_blank">tx</a></span>`:`<span class="neg">${j.error}</span>`;}catch(e){out.innerHTML=`<span class="neg">${e}</span>`;}}
+async function importWallet(){const mnemonic=document.getElementById("mn").value.trim();const out=document.getElementById("mn-res");const n=mnemonic.split(/\s+/).filter(Boolean).length;
+  if(n!==12&&n!==24){out.innerHTML=`<span class="neg">Pon 12 o 24 palabras (${n})</span>`;return;}
+  if(!confirm("¿Importar esta wallet? Sustituye la actual."))return;out.textContent="derivando…";
+  try{const r=await fetch("/api/wallet/import",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mnemonic,account:0})});const j=await r.json();
+    if(j.ok){out.innerHTML=`<span class="pos">✓ ${j.address}</span>`;document.getElementById("mn").value="";await tick();}else out.innerHTML=`<span class="neg">${j.error}</span>`;}catch(e){out.innerHTML=`<span class="neg">${e}</span>`;}}
+
+renderChips();
+tick();loadConfigs();loadDexpaid();loadTelegram();loadGmgn();
+setInterval(tick,REFRESH_MS);setInterval(loadDexpaid,30000);setInterval(loadTelegram,12000);setInterval(loadGmgn,15000);
+</script>
+</body>
+</html>

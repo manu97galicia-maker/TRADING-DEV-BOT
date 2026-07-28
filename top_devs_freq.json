@@ -1,0 +1,547 @@
+{
+ "_README": "Devs pump.fun ordenados por FRECUENCIA de lanzamiento (ROI esperado>5%). Maximiza trades/dia. Dune 2026-07-25.",
+ "_count": 90,
+ "_total_per_day": 482.2,
+ "wallets": [
+  {
+   "wallet": "2bRoascfGCKkRnyZLmzJh7cKpiD45zyEzUmg9XPZzueC",
+   "per_day": 64.14,
+   "exp_roi": 6.2,
+   "median_peak": 2518
+  },
+  {
+   "wallet": "EW26DFmQHRuSpGshU8okzDBnsz85bYyeGQqXtARzJmSH",
+   "per_day": 27.86,
+   "exp_roi": 5.1,
+   "median_peak": 2323
+  },
+  {
+   "wallet": "CmwFWFQsK2tuNpz3HAbjoxDVSf5miY5vbP425UTRg5Rd",
+   "per_day": 16.43,
+   "exp_roi": 6.1,
+   "median_peak": 3744
+  },
+  {
+   "wallet": "BBhFEWSC9x2HBqP8Uk6ig8MxzobrXUanATnuTY5oM9B5",
+   "per_day": 15.71,
+   "exp_roi": 10.1,
+   "median_peak": 3835
+  },
+  {
+   "wallet": "DWHEZ8JnfGtud25Gjhn3MndpTMshNEd12WMu2ciCa7ri",
+   "per_day": 14.57,
+   "exp_roi": 5.2,
+   "median_peak": 3892
+  },
+  {
+   "wallet": "3GQAxh9s4nBptW2FWdHdR3VZTRGqQoJm5yTrNLeksP7h",
+   "per_day": 13.43,
+   "exp_roi": 5.3,
+   "median_peak": 3519
+  },
+  {
+   "wallet": "8inTY66csRNgKNtGhqGhd4odAV2VeJBDcRVuF7UE3Eeh",
+   "per_day": 12.57,
+   "exp_roi": 10.5,
+   "median_peak": 3114
+  },
+  {
+   "wallet": "CookPL9hQND815Nfv35sUvh799WpufS1pJ61c4hWGCrK",
+   "per_day": 12.14,
+   "exp_roi": 5.9,
+   "median_peak": 2330
+  },
+  {
+   "wallet": "x6i3AtbEhpgn93voJbZpA6GR4cuB9n5sPUUdfPYyE3n",
+   "per_day": 12.0,
+   "exp_roi": 5.2,
+   "median_peak": 2536
+  },
+  {
+   "wallet": "3fSRsEqS3i9hbWUvppbQXqBPphcmYtNb5bnhGoLG32iu",
+   "per_day": 11.29,
+   "exp_roi": 6.2,
+   "median_peak": 2383
+  },
+  {
+   "wallet": "54hp7CA1zLtqJnDR6udP2BG51Q4mdofmvZwDDUnETU8V",
+   "per_day": 11.14,
+   "exp_roi": 10.3,
+   "median_peak": 2567
+  },
+  {
+   "wallet": "EuNjvkPZDqNgALEC9Jhuw1oQMQJoQmpUHnnxYxK92mrC",
+   "per_day": 10.86,
+   "exp_roi": 5.3,
+   "median_peak": 2672
+  },
+  {
+   "wallet": "24XmpY1Xk2miETKYwFpLnHyqKLyewcQujMWXcfz6hHiv",
+   "per_day": 9.57,
+   "exp_roi": 5.6,
+   "median_peak": 3044
+  },
+  {
+   "wallet": "HJKuPTUV8eG8xzHJhqfwzmwZ4keRfSdNmnTXT7pmQCdP",
+   "per_day": 9.14,
+   "exp_roi": 7.8,
+   "median_peak": 2646
+  },
+  {
+   "wallet": "5htGpHK2oV9g2BcDqLdRBqjCLdy8mc3fsESfR5DU73eM",
+   "per_day": 9.0,
+   "exp_roi": 5.4,
+   "median_peak": 4748
+  },
+  {
+   "wallet": "9dkeTBYaHJzxVgVZqympcHmPeQvHtQv1sArZiZuwmhgp",
+   "per_day": 8.71,
+   "exp_roi": 11.5,
+   "median_peak": 2113
+  },
+  {
+   "wallet": "GNAQc9HuHCdgBz7YF4AHi6VUb9c67RC7M3bPBY8LNEzz",
+   "per_day": 7.57,
+   "exp_roi": 10.3,
+   "median_peak": 2269
+  },
+  {
+   "wallet": "BGzbJD4ERLpkgdt5peJui4H49iQgSR4YnMZbXSFXvvMb",
+   "per_day": 7.43,
+   "exp_roi": 7.1,
+   "median_peak": 2782
+  },
+  {
+   "wallet": "8EmAjS1VMH37ftj5UpgRR8HJSms9g5uezF2NqsA2BtT3",
+   "per_day": 7.0,
+   "exp_roi": 5.8,
+   "median_peak": 3016
+  },
+  {
+   "wallet": "EHFGraJiDaWnxYHVu1s9sFx1oeMKieWVhTiDRezqZXCj",
+   "per_day": 6.86,
+   "exp_roi": 8.4,
+   "median_peak": 2130
+  },
+  {
+   "wallet": "Ao9D9xuKxhHfTGCd3ZeBPJ3aBRUAicKKnXZ3feH6uuGC",
+   "per_day": 6.86,
+   "exp_roi": 6.6,
+   "median_peak": 3325
+  },
+  {
+   "wallet": "46zGJ2ATgfXdiUXGJE3qZrWs9jerrmvgAodAKY79haGU",
+   "per_day": 6.86,
+   "exp_roi": 5.3,
+   "median_peak": 3294
+  },
+  {
+   "wallet": "2sK7gtAGoHsBKPkTY8pXnmEBoCYnyPrLrZjBr4SXp96E",
+   "per_day": 6.14,
+   "exp_roi": 8.0,
+   "median_peak": 3193
+  },
+  {
+   "wallet": "BwPFmWgirMuf7RDyxxBg8eBHwFuqSTupSdtgG3DRNpDd",
+   "per_day": 6.14,
+   "exp_roi": 6.6,
+   "median_peak": 2960
+  },
+  {
+   "wallet": "7SuVLBv3iijvZ8kF3tgYAvNzfPTGk2ftM44WATb4z6VD",
+   "per_day": 5.43,
+   "exp_roi": 6.5,
+   "median_peak": 2737
+  },
+  {
+   "wallet": "5kTfix6dceRuznzExRBjZoxUxwfNb6ShpwFE8qcN5VuJ",
+   "per_day": 5.43,
+   "exp_roi": 5.1,
+   "median_peak": 2720
+  },
+  {
+   "wallet": "77jmkjD9vXziZd6NhYmUNmyw7ZAjpriFe5sksHgpLnmc",
+   "per_day": 5.29,
+   "exp_roi": 5.8,
+   "median_peak": 2484
+  },
+  {
+   "wallet": "57NGiaGFPtY5joayjBwmyW8wDR5S2SL52uh6zcMi6NvZ",
+   "per_day": 4.86,
+   "exp_roi": 10.4,
+   "median_peak": 3883
+  },
+  {
+   "wallet": "2SaShcvKTBfhetQxYyu9oNjSg43HkTSD87R8AJpfGLBm",
+   "per_day": 4.29,
+   "exp_roi": 8.6,
+   "median_peak": 2611
+  },
+  {
+   "wallet": "BG671J7MZYWmqXLaQtALftnYoDnM6Lb4LnTQN3UfcoLn",
+   "per_day": 4.0,
+   "exp_roi": 8.6,
+   "median_peak": 2401
+  },
+  {
+   "wallet": "7qABRPS7WU4Zw9EhgtqowvHoc3QeRxoW75nkyUySugbi",
+   "per_day": 4.0,
+   "exp_roi": 6.0,
+   "median_peak": 2280
+  },
+  {
+   "wallet": "7AM6EAp6UebGLuf18ZarB2kWEBspMtiMyyP78vEyBS5C",
+   "per_day": 3.86,
+   "exp_roi": 9.2,
+   "median_peak": 2689
+  },
+  {
+   "wallet": "FVZRwUp6E4m9jV4VumF8q7m8q3mF9fpikRrJSCCfFAdP",
+   "per_day": 3.71,
+   "exp_roi": 17.9,
+   "median_peak": 4106
+  },
+  {
+   "wallet": "EL8zSAncePrCE4kJKkTNofX4aX97aoJmxH4GeYNAQnay",
+   "per_day": 3.57,
+   "exp_roi": 32.2,
+   "median_peak": 12250
+  },
+  {
+   "wallet": "H5DJzRYRxAMUa1Waa51bqgms96g98EFoQDyFrsPdE55c",
+   "per_day": 3.57,
+   "exp_roi": 6.5,
+   "median_peak": 2858
+  },
+  {
+   "wallet": "DwyEawtMyDDVFxgLvaLrDkbQYi8hTb6YWgrpJCKB6UVC",
+   "per_day": 3.43,
+   "exp_roi": 18.9,
+   "median_peak": 3603
+  },
+  {
+   "wallet": "DtFYiKSkFzWdhZ3UVKxNGstLtoweESiUwRKFuVLLcndR",
+   "per_day": 3.43,
+   "exp_roi": 5.2,
+   "median_peak": 3166
+  },
+  {
+   "wallet": "9jJS1HJSWBt4HA42Au2r4pDLdQApxZks1WCapzfyMddY",
+   "per_day": 3.43,
+   "exp_roi": 5.2,
+   "median_peak": 2259
+  },
+  {
+   "wallet": "2n5W5K7V3GiQmgHZhr2QrzBCrNNn8QFf9yXMavYH91F5",
+   "per_day": 3.14,
+   "exp_roi": 11.3,
+   "median_peak": 2332
+  },
+  {
+   "wallet": "4bAiCbhacGkZZsmLr1kiTijEDscTKGB98aVy7d4ZDgz3",
+   "per_day": 3.14,
+   "exp_roi": 5.6,
+   "median_peak": 2253
+  },
+  {
+   "wallet": "AJ1mupa5Dkt682tmPVCbGUTW6S41D7ywqkpCFZCXdD3a",
+   "per_day": 3.0,
+   "exp_roi": 8.8,
+   "median_peak": 2401
+  },
+  {
+   "wallet": "3u4jcvf1UaoCVQH8o4etCVktSGHshYZm5hCdy6eJpYs2",
+   "per_day": 3.0,
+   "exp_roi": 6.0,
+   "median_peak": 2398
+  },
+  {
+   "wallet": "7GsNmZKY7LvjC878No73NBeZmmkfKEyWSkKQXR8YbvwP",
+   "per_day": 2.86,
+   "exp_roi": 6.6,
+   "median_peak": 2199
+  },
+  {
+   "wallet": "LsncTghJVoo2kKQvAWQvyqm1SRSqHyFqfyxs4KDicBY",
+   "per_day": 2.71,
+   "exp_roi": 5.8,
+   "median_peak": 2670
+  },
+  {
+   "wallet": "7aBFBZi5oXHiQr3597pbs6FMEx1xL55PfS9d6iF3DvWx",
+   "per_day": 2.71,
+   "exp_roi": 5.1,
+   "median_peak": 2669
+  },
+  {
+   "wallet": "JDLD5H8QzZfjSo9pz3VksbaQdXV1k2HBkAcSxdT3PZcr",
+   "per_day": 2.57,
+   "exp_roi": 10.2,
+   "median_peak": 2306
+  },
+  {
+   "wallet": "2qCTKxYgk9tMvcwcQ3CanhCxGe1CrKoBfRsC8EzkTUba",
+   "per_day": 2.57,
+   "exp_roi": 10.2,
+   "median_peak": 3226
+  },
+  {
+   "wallet": "ySxRtyoGStGA1hFAeS7FZ7c8cx8rtdFbDRFFKVhmQEM",
+   "per_day": 2.57,
+   "exp_roi": 6.1,
+   "median_peak": 2415
+  },
+  {
+   "wallet": "BaH4BQTGJ4s7xpbpj7Dz19W5CsNRj8fmQLX26aBAPJPn",
+   "per_day": 2.57,
+   "exp_roi": 5.1,
+   "median_peak": 2154
+  },
+  {
+   "wallet": "B3ZNdoxQB5zSro19P97nGyQM8b7roReprRw3EiFX3SvC",
+   "per_day": 2.43,
+   "exp_roi": 20.2,
+   "median_peak": 22748
+  },
+  {
+   "wallet": "3EB6xsPrnz2AA3MZEJ8UqdfHuTTvhT1pdkZmRJfuVyGx",
+   "per_day": 2.43,
+   "exp_roi": 11.1,
+   "median_peak": 3639
+  },
+  {
+   "wallet": "8B7mFegNdGdJCfdZuyWzxSbLuvFm9DbWFmyxw35oVcDm",
+   "per_day": 2.29,
+   "exp_roi": 17.6,
+   "median_peak": 3920
+  },
+  {
+   "wallet": "81QHrRXPwXKyQ2TLTzxgLaU9hNN9ARSi1x4ku2WQ14Tq",
+   "per_day": 2.29,
+   "exp_roi": 17.3,
+   "median_peak": 3361
+  },
+  {
+   "wallet": "GAxVkMenXRaNh44M58Ce67oCYEiUDFcFjVG4wEUwuHpv",
+   "per_day": 2.29,
+   "exp_roi": 9.6,
+   "median_peak": 2717
+  },
+  {
+   "wallet": "H3C1km4FQSKBJhdg5tf1h7nig3nYWfrG3v1MvGsiThGE",
+   "per_day": 2.29,
+   "exp_roi": 6.3,
+   "median_peak": 4275
+  },
+  {
+   "wallet": "BFQb35WwJkmELdXHJoZVazRW9fnYp2vgwndLdYmdH7vp",
+   "per_day": 2.29,
+   "exp_roi": 5.8,
+   "median_peak": 2694
+  },
+  {
+   "wallet": "AbP2ehbJtoJ221y1vQjUmWYGNGQvzeeUPL41YuZ1uJY1",
+   "per_day": 2.14,
+   "exp_roi": 10.8,
+   "median_peak": 8987
+  },
+  {
+   "wallet": "5vM3eUw1YvDwpYgTCcPQibfBmpsw65UY2ZPeK4f2uHJH",
+   "per_day": 2.14,
+   "exp_roi": 10.7,
+   "median_peak": 7372
+  },
+  {
+   "wallet": "98g51S3TGLQgdbd5wfHtLSLMMLsgRbgixzvopoh9r9Pw",
+   "per_day": 2.14,
+   "exp_roi": 8.9,
+   "median_peak": 2343
+  },
+  {
+   "wallet": "8y83ZUQH8gsbYa9qEyYF6Wdqw3so7L9ThsWREuCVXWTr",
+   "per_day": 2.14,
+   "exp_roi": 8.7,
+   "median_peak": 8486
+  },
+  {
+   "wallet": "6qpibeHxrDQp87dYKdXR3Cx4CmXJtRTmTu5bGKM38GqZ",
+   "per_day": 2.14,
+   "exp_roi": 7.1,
+   "median_peak": 2118
+  },
+  {
+   "wallet": "9Gg6Mf8tq9zLSpK8qccrQiue3iE7wmyeogKkGZpnz2w5",
+   "per_day": 2.14,
+   "exp_roi": 7.1,
+   "median_peak": 2113
+  },
+  {
+   "wallet": "BboyZc87VbMyumaqV32XCTVXUZVViDCFp8S4j5bASBFD",
+   "per_day": 2.14,
+   "exp_roi": 6.6,
+   "median_peak": 2271
+  },
+  {
+   "wallet": "5f7mtVGTJ4X7DGC2z3TzHcTXWSamqwCrFKs6h9rJtQiY",
+   "per_day": 2.0,
+   "exp_roi": 14.0,
+   "median_peak": 3321
+  },
+  {
+   "wallet": "6p9AKca8UkEpuWNfWXWvEiPnqEchNQLrmPBgMP8wUop8",
+   "per_day": 2.0,
+   "exp_roi": 13.6,
+   "median_peak": 4319
+  },
+  {
+   "wallet": "Ac7Up2npwtpnJgpc4ANLWgEJXgX7u4P5UpajzMpY755D",
+   "per_day": 2.0,
+   "exp_roi": 11.1,
+   "median_peak": 2936
+  },
+  {
+   "wallet": "2McpFbHbw8vpRWWnYx9sn15YkxWL88gT7p9Sn5D4fqHz",
+   "per_day": 2.0,
+   "exp_roi": 8.9,
+   "median_peak": 3861
+  },
+  {
+   "wallet": "CBcgh1hwzCZgSJWPgi3sSBXzn88eKTWar4UHZY4pdkFa",
+   "per_day": 2.0,
+   "exp_roi": 8.9,
+   "median_peak": 3588
+  },
+  {
+   "wallet": "E4LgyDHLkkdXuwYG4Es6vsdYdDATdVjfzhMiNG3JAGQq",
+   "per_day": 2.0,
+   "exp_roi": 6.9,
+   "median_peak": 4193
+  },
+  {
+   "wallet": "Biv8VF2WVQFyPAMSPRo5A6MMQ3oGANaHup17B1SvDbZV",
+   "per_day": 2.0,
+   "exp_roi": 6.2,
+   "median_peak": 2211
+  },
+  {
+   "wallet": "CqwzsajXDAsudy36VH7gYWAfyDHFJeWzFr62oKfwcgCe",
+   "per_day": 2.0,
+   "exp_roi": 5.3,
+   "median_peak": 2254
+  },
+  {
+   "wallet": "7y7ByEZEi1zafQVyfT3mAH8M4LbBFfTJ1HkukDzogiyJ",
+   "per_day": 1.86,
+   "exp_roi": 10.3,
+   "median_peak": 2537
+  },
+  {
+   "wallet": "C2TFeiRyzzApUxvjrfaXF1RLfad2SfaHvSqGaEPmmxfv",
+   "per_day": 1.86,
+   "exp_roi": 5.2,
+   "median_peak": 7452
+  },
+  {
+   "wallet": "EYfdt8cNFyyTEJKp18dcoVbgUHDnM1SK3bT2uKj9XXHc",
+   "per_day": 1.71,
+   "exp_roi": 22.7,
+   "median_peak": 7982
+  },
+  {
+   "wallet": "9uGdPFn5AedYjtyJVQvGwNiu2Aqhwm3pCSkUJkaKWHM",
+   "per_day": 1.71,
+   "exp_roi": 18.3,
+   "median_peak": 5694
+  },
+  {
+   "wallet": "E11BrsVdTAaKZetQjnpD1aU2AWrqw37ftDyNQhQuZdxK",
+   "per_day": 1.71,
+   "exp_roi": 10.5,
+   "median_peak": 3248
+  },
+  {
+   "wallet": "GXRWtaee4dmqnq5Xjzkka8DCnVP3jNPNamEprcb8hpwC",
+   "per_day": 1.71,
+   "exp_roi": 10.3,
+   "median_peak": 3027
+  },
+  {
+   "wallet": "p1nkfL18G3otUjJ5oMureh7XTAgrhetYqRgfYVTobBj",
+   "per_day": 1.71,
+   "exp_roi": 10.3,
+   "median_peak": 2193
+  },
+  {
+   "wallet": "AUNHCLjHYrgSSUG8MTRsJvR8nz1WgVgwbfR9Q1DtH8UA",
+   "per_day": 1.71,
+   "exp_roi": 10.3,
+   "median_peak": 2473
+  },
+  {
+   "wallet": "AcmGq4GochBjC4cssaf3f5MioBUCk7oxnQewEf5Pv7RH",
+   "per_day": 1.71,
+   "exp_roi": 9.2,
+   "median_peak": 2410
+  },
+  {
+   "wallet": "1mQj8VLFYLP9LFXedmCjhqad4hKXQ4S2PJRnRL2Xsai",
+   "per_day": 1.71,
+   "exp_roi": 8.0,
+   "median_peak": 3378
+  },
+  {
+   "wallet": "CnZy6vSUUX5j3RxTvDKm3Lxwcmq6sLnnpQU9j7hRm9zk",
+   "per_day": 1.71,
+   "exp_roi": 8.0,
+   "median_peak": 4733
+  },
+  {
+   "wallet": "7L3pwHJLSep5n2MmfKty4aWjBjqivpGVoRY2HNXMGnaw",
+   "per_day": 1.71,
+   "exp_roi": 7.8,
+   "median_peak": 3240
+  },
+  {
+   "wallet": "2QVGjBS3stfb8WaY9oQ8E8TbCpSoW9ax1Dg9cPGFWz4d",
+   "per_day": 1.71,
+   "exp_roi": 7.7,
+   "median_peak": 2320
+  },
+  {
+   "wallet": "5232H1gE6JPZKw9xjfupEVNFXMCkCdkFYHCDkppqkXVo",
+   "per_day": 1.71,
+   "exp_roi": 7.7,
+   "median_peak": 2113
+  },
+  {
+   "wallet": "FfZFXyzU1F11Mycsxxe2HriRvmoe22bG5ycqKzNsdBkk",
+   "per_day": 1.71,
+   "exp_roi": 5.5,
+   "median_peak": 8583
+  },
+  {
+   "wallet": "C7mHXbY63MiW2UAwr12g3TGXNx88hErReHXoSxznLQnJ",
+   "per_day": 1.71,
+   "exp_roi": 5.3,
+   "median_peak": 2555
+  },
+  {
+   "wallet": "B6btiuEgrwa5MHNkxH7csA7paDfCXns8ZTUJr3nds3CZ",
+   "per_day": 1.57,
+   "exp_roi": 37.8,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "6YSMJad1g2DmYhQ4pHXye2wLK3scvcQJkJmtUUBzWYfN",
+   "per_day": 1.57,
+   "exp_roi": 14.2,
+   "median_peak": 2864
+  },
+  {
+   "wallet": "2ZmV6eMrx7DCVG1TFsofXoVHigUmUug7buaS4KgWnxzk",
+   "per_day": 1.57,
+   "exp_roi": 14.2,
+   "median_peak": 3515
+  }
+ ]
+}

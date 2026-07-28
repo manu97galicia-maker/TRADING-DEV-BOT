@@ -1,0 +1,402 @@
+{
+ "_README": "GIGA-200K: devs con >=2 monedas que superaron $200K (post-migracion) esta semana. Los que hacen moonshots de verdad. Dune 2026-07-27.",
+ "_count": 66,
+ "wallets": [
+  {
+   "wallet": "J6FAJ2Pz2htqoKUD1WLZJC9RTsRuF9oQYo8RxS3s6dnH",
+   "coins_over_200k": 10,
+   "best_peak_usd": 28872212,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "yHCxHBEaJW5tbndqC8JciSThr7U1cqLpdcsvHcx6PRe",
+   "coins_over_200k": 7,
+   "best_peak_usd": 14401720,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "HhH3m3GjvQKrSF4auLHCTCJsKgXqBWnoqB2nMeBXFJsM",
+   "coins_over_200k": 6,
+   "best_peak_usd": 53338911,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "GeBJSHK4WsGrz2HRvTbqvWGx4JRMpHfJG2ikzrYBDuwR",
+   "coins_over_200k": 5,
+   "best_peak_usd": 43594694,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "5dwwJkyF2KUcsgH8ndE3sYaZzS4KLQdCrxgARgzc9b3s",
+   "coins_over_200k": 5,
+   "best_peak_usd": 18178284,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "9C5qBGDMDrqU5SiJeWVvb3zy7uFaUQEgYqLinEhtZBSJ",
+   "coins_over_200k": 5,
+   "best_peak_usd": 9856346,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "FxUrNcTKrTzYRk4W4MxygXRtNmE8r3S5Vm7kMtoP9cdr",
+   "coins_over_200k": 4,
+   "best_peak_usd": 273262819,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "EaZC5U93bbSn44kvuAno75qc3TeLbcPNDP58JVsYZDb7",
+   "coins_over_200k": 4,
+   "best_peak_usd": 73181820,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "4LUcoS2imfQ14t4dmH273d6FV7Lx16ihV1wdagEdYjmR",
+   "coins_over_200k": 4,
+   "best_peak_usd": 18290229,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "ArSrjXsRUsLMjBTVKPrZsSKZtLAswMqC5C4G9t4NuNgo",
+   "coins_over_200k": 4,
+   "best_peak_usd": 14776254,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "3iM6FfJiwnCj5s1TwKK2qNBg8zr6VEv12X3Gp2e2pRQ4",
+   "coins_over_200k": 4,
+   "best_peak_usd": 347026,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "HWqpVCy2UDiY7N79qVumTMUeaXVXSQyDpoMmQ46ug1pX",
+   "coins_over_200k": 3,
+   "best_peak_usd": 49334097,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "CKPaVEHqGNB8BUdWPr6J4PsbuHXs8EN455EkEtEYQCpk",
+   "coins_over_200k": 3,
+   "best_peak_usd": 36587473,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "GF3aWh5zc5EX2LGhLDmVpPPrKdDN1qo5kXHbStEkXwyS",
+   "coins_over_200k": 3,
+   "best_peak_usd": 23463509,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "4a7XiutQp7spcV14sLw1uMw3GijUchp7oW5TVKJbkc52",
+   "coins_over_200k": 3,
+   "best_peak_usd": 21889675,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "5hoVSrmowAW7cSEC5Zhe3GbkMPXwgZc784UJNRQLjgxv",
+   "coins_over_200k": 3,
+   "best_peak_usd": 21221153,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "HwgrAEFZgHqbeZJc4LfJpg3T4YQmChDuH2bNHsYQU9g3",
+   "coins_over_200k": 3,
+   "best_peak_usd": 12696727,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "55Perpb3rnWxV6LsjZux3cmtXUossXQ4PDHVm4T2tca1",
+   "coins_over_200k": 3,
+   "best_peak_usd": 678999,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "bwamJzztZsepfkteWRChggmXuiiCQvpLqPietdNfSXa",
+   "coins_over_200k": 3,
+   "best_peak_usd": 388905,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "C6uo2BAAdtTfYWj1EBhD432ahSstaLGEXw1wdEntzowZ",
+   "coins_over_200k": 2,
+   "best_peak_usd": 160762413,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "7G1SVcxsXNygh5MevMTbE58pnDFpnP7Bcmc7K4nAX2r8",
+   "coins_over_200k": 2,
+   "best_peak_usd": 115358683,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "AhRQM2TuofHF7zFEPLaTprpa5DazFQxktS5wQRWbWjKL",
+   "coins_over_200k": 2,
+   "best_peak_usd": 113849199,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "5dUXg97Ltrjid2KVTQAb6p6PVZXBneHcgV1Z8A9xzKgg",
+   "coins_over_200k": 2,
+   "best_peak_usd": 93053408,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "61gFM1uGBPvhgFW6bYmYp1obwzS61HtSuhqHkZfEg4ra",
+   "coins_over_200k": 2,
+   "best_peak_usd": 91718387,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "BxHEFAn1Yvow5VbYpAZZjfMvU7PAi36GQ5dYJ9qNrLYE",
+   "coins_over_200k": 2,
+   "best_peak_usd": 73152600,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "G733t5zje3EUKuuefaqdbksFksANm8Gvk6ZhH9yxzUen",
+   "coins_over_200k": 2,
+   "best_peak_usd": 68832874,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "8iTKSnCRQDpXwBPFGcxWAKiHeiH8aVxE73ML4fZwWqUo",
+   "coins_over_200k": 2,
+   "best_peak_usd": 67668512,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "5ypur73ENyiyEcWKeaqq37WZ8UhuoMmrEtDha2Tf8vPv",
+   "coins_over_200k": 2,
+   "best_peak_usd": 57401255,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "6QdGrtAeJNpMQaUJk82B7xezm4HevQ46Sh4QM9pRXnA3",
+   "coins_over_200k": 2,
+   "best_peak_usd": 54361956,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "6ErrkoyeoSBRENuZjvwdgf2R11qkXxJnzZRmRrhzehDK",
+   "coins_over_200k": 2,
+   "best_peak_usd": 51189609,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "31prhJC8UkEgNRnA4RDyxnQ4FybDELcxiCKrZXKNpAku",
+   "coins_over_200k": 2,
+   "best_peak_usd": 47765959,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "AvRhdGY3iFgPFZJuuYUEqj1eCoRKjwjYAHaUQwyuFEJu",
+   "coins_over_200k": 2,
+   "best_peak_usd": 43101084,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "BL8rKuoGS36MYuwLjmMqYAz7GSzm1CTQhao5LoQqxDhG",
+   "coins_over_200k": 2,
+   "best_peak_usd": 36183609,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "5xWaFvZUPtoJkGD8GgrAn27pr3oWzKMTNVrAaobpbXVu",
+   "coins_over_200k": 2,
+   "best_peak_usd": 33425783,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "AQWHvQY39NE2RF1Rgrwv6TuwgFugjLeU34wtZqtsJ2EC",
+   "coins_over_200k": 2,
+   "best_peak_usd": 32870018,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "4AMjDhoagg9sCTgn8wDQUGkmRbzfABqCUJNDrPDitqnY",
+   "coins_over_200k": 2,
+   "best_peak_usd": 31801608,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "3k5TjhPUfHZCNF6sKfqLaYeKVocNHeApBQekH6UXe9MN",
+   "coins_over_200k": 2,
+   "best_peak_usd": 31447548,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "G9iXafCCT7WaqZmxHZ1XU6a8rNYAL6SudG2AtytneDHf",
+   "coins_over_200k": 2,
+   "best_peak_usd": 28282349,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "2BbxFPC2pDcuaLxnpeuDzsQ3H3Aud21jANxcw8VnhJAV",
+   "coins_over_200k": 2,
+   "best_peak_usd": 27802399,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "2sRRtYn9rKjCJPszWZWzxpxZ6P7oTjMQwYPWMC6UhgGg",
+   "coins_over_200k": 2,
+   "best_peak_usd": 26740410,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "FMfqyahthPEaWdh9FU53ieJEwpMszufgASnWtyLTmH82",
+   "coins_over_200k": 2,
+   "best_peak_usd": 26720125,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "DFTmbMUNkXzf33EwqtQCnpJmaPVZN7KuhBFJV99jrckg",
+   "coins_over_200k": 2,
+   "best_peak_usd": 24302685,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "3dqHDyVmDtsxe7nnWAZRaKPeJCF1WVUUXsiQ5SYnr4HD",
+   "coins_over_200k": 2,
+   "best_peak_usd": 21821595,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "29eukVTGhYXp95Z2wdUS2mc6N2TV4Ar8owBs75q5jfwD",
+   "coins_over_200k": 2,
+   "best_peak_usd": 20392909,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "EmDm3susPtXSgRLwAYAWYCKNrCGjjje4UBxUQJvgsBDi",
+   "coins_over_200k": 2,
+   "best_peak_usd": 19739012,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "Gdr5hDtzhmNcMAEfAPzM66AuemTPoic5VUQuQ8EtY5aD",
+   "coins_over_200k": 2,
+   "best_peak_usd": 17864117,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "AviDCL8uPGhK1drahEaiVUVEcJS97yuKoou4582ZDXmM",
+   "coins_over_200k": 2,
+   "best_peak_usd": 16595911,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "744BxRKs7WKdb6T7jDNxLcJW8vqisRWQM5WfkjFqGf2v",
+   "coins_over_200k": 2,
+   "best_peak_usd": 13136725,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "9GeBFKpRoz9KYfYHMQvKr5HwuKZCWQFPNE2MpG93v5GH",
+   "coins_over_200k": 2,
+   "best_peak_usd": 12051920,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "HtvBxTCuBpMpUMjKuYHrbCHQoLXAvHMukkuE5rtE81TQ",
+   "coins_over_200k": 2,
+   "best_peak_usd": 10607521,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "EiyovsYEmhLGBdhq45kVLPn7Voua35Gj978ASebCHSSV",
+   "coins_over_200k": 2,
+   "best_peak_usd": 10539007,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "CNHwH89QVwY6LdSTRRdYVdCEoo2YSGqNh51R136HejQn",
+   "coins_over_200k": 2,
+   "best_peak_usd": 10251012,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "4Ewm2eM8cUyztuJbiLyUPjxXZKuwn43JEkqN1LMASFCY",
+   "coins_over_200k": 2,
+   "best_peak_usd": 9543429,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "HMRxEbqZ1BLE35KpXLTbPCX4XEwwLzb9Pu7tKuoT6uuN",
+   "coins_over_200k": 2,
+   "best_peak_usd": 6839310,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "FoLswxsbXHjpNDUoNYytBjixLE7dyBMe1DUkfzGLjoMu",
+   "coins_over_200k": 2,
+   "best_peak_usd": 6672773,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "FcxP5RZC2iayAiKT4T5vsweb24TnyHPEPVfExoJfWqqL",
+   "coins_over_200k": 2,
+   "best_peak_usd": 5878168,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "DhK5MdaWyNpcHa9kBmxJskaQyvXafR79E3kMnCJXaqR4",
+   "coins_over_200k": 2,
+   "best_peak_usd": 3776480,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "CCDo2xdLPtboxPkVE4zascCDQSmECNRkVFqidCcYMuVa",
+   "coins_over_200k": 2,
+   "best_peak_usd": 2438044,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "AV7PjXHL5JXZ1YoYRoN9Dsstg1x2UciBupMCXcJP8gUz",
+   "coins_over_200k": 2,
+   "best_peak_usd": 1302342,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "DxQ1iNidsGap2kr14VdEzA8NheqXabfh6fRkvZQbnZVY",
+   "coins_over_200k": 2,
+   "best_peak_usd": 732044,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "AbUViyPuuyKDbLYXsqAteZwqk9nvvWFpF9RNJ1qP3obx",
+   "coins_over_200k": 2,
+   "best_peak_usd": 609661,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "5RQ1UWATaMjjXC34BW6UusEUdEoCuNRECBW8nnHPiCGH",
+   "coins_over_200k": 2,
+   "best_peak_usd": 533228,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "2E94st2NZnzA943HBceijgkw75gXTTxch39yquMBfeQk",
+   "coins_over_200k": 2,
+   "best_peak_usd": 316943,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "8tr2RQBBt3hGNbKNrCwvb7MwcHsW1JDwPEkjH35U7t8w",
+   "coins_over_200k": 2,
+   "best_peak_usd": 293338,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "69aiAKU3uJMxMLRkUEGFNt6nQ43PiVimE4ZbErJ7VSM1",
+   "coins_over_200k": 2,
+   "best_peak_usd": 292795,
+   "median_peak": 31054
+  },
+  {
+   "wallet": "8i5U2uNBEuTc4zskYP14zbebDg2RSwrrG8REhEnJb97K",
+   "coins_over_200k": 2,
+   "best_peak_usd": 231692,
+   "median_peak": 31054
+  }
+ ]
+}

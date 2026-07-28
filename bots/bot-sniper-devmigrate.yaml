@@ -1,0 +1,89 @@
+name: "DEV-MIGRATE - dev migra 20pct o mas"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.15
+  buy_slippage: 0.15
+  sell_slippage: 0.30
+
+  exit_strategy: "tp_sl"
+  # Escalera: +50% vende 50% / +100% vende 25% / +200% vende 12.5% / moonbag 12.5% / SL -30%
+  take_profit_percentage: 0.5
+  take_profit_sell_percentage: 0.40
+  tp2_gain: 1.5
+  tp2_sell: 0.25
+  tp3_gain: 3.0
+  tp3_sell: 0.15
+  stop_loss_percentage: 0.40
+  max_hold_time: 120
+  price_check_interval: 2
+
+  extreme_fast_mode: false
+  extreme_fast_token_amount: 20
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 50_000_000        # 0.005 SOL/tx
+  extra_percentage: 0.0
+  hard_cap: 50_000_000
+
+# Entrada rapida (2s) como el swing
+retries:
+  wait_after_creation: 6
+  wait_after_buy: 0
+
+filters:
+  listener_type: "pumpportal"        # escucha TODAS las creaciones de pump.fun
+  max_token_age: 60            # 60s: la consulta de reputacion del dev tarda unos seg
+  match_string: null
+  bro_address: null            # SIN lista fija: vigila TODAS las monedas nuevas
+
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false           # <<< EN VIVO (REAL). true para simular.
+  min_curve_sol: 2             # 0 = no lee curva antes de filtrar (menos RPC en el diluvio)
+  max_holder_pct: 0.05         # no comprar si un holder (no-curva) tiene >5% del supply
+  max_entry_mc: 3500  # no comprar si el MC ya supera $4K (evita entrar en spikes)
+  min_holders: 6            # no comprar si hay <5 poseedores (bundle/no organico)
+  holder_bypass_ratio: 3       # permite holder >5% si la MEDIANA del dev >= 3x el MC actual (solo aplica con lista de devs; aqui no hay -> bloquea a secas)
+
+  # EL FILTRO: solo compra si el CREADOR de la moneda tiene buena reputacion en pump.fun
+  pumpfun_dev:
+    enabled: true
+    min_migrations: 1          # basta 1 migracion (incluye devs con 1/1 = 100%)
+    min_rate: 0.25             # y tasa de migracion >=20%
+
+  buy_on_dex_paid:
+    enabled: false
+
+  dexscreener:
+    enabled: false             # el filtro es la reputacion del dev, no el MC
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 8                   # comparte Helius con el swing; deja margen
