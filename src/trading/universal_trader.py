@@ -1739,19 +1739,32 @@ class UniversalTrader:
                     await asyncio.sleep(self.price_check_interval)
                     continue
 
-                # Stop loss: dump everything still held, priced at the LIVE
-                # price so the on-chain slippage floor is realistic (using the
-                # entry price here makes the sell revert exactly at a loss).
+                # Stop loss: vende hasta el MOONBAG (deja el 20% para venta manual),
+                # priced at the LIVE price. El moonbag NUNCA se auto-vende, ni en
+                # stop-loss: se registra para avisar por Telegram y lo vende el usuario.
                 if sl_price is not None and price <= sl_price:
+                    keep = original_qty * moonbag
+                    to_sell = remaining - keep
                     logger.info(
                         f"STOP LOSS for {token_info.symbol} at {price:.8f} SOL "
-                        f"(<= {sl_price:.8f})"
+                        f"(<= {sl_price:.8f}) — dejo moonbag {moonbag * 100:.0f}%"
                     )
+                    if to_sell <= 1e-9:
+                        # ya estamos en el moonbag: no se vende, se deja y se avisa
+                        self._record_moonbag(
+                            token_info, remaining, entry_price, pool_address
+                        )
+                        break
                     if await self._sell_amount(
-                        token_info, remaining, price, "stop_loss"
+                        token_info, to_sell, price, "stop_loss"
                     ):
-                        remaining = 0.0
-                        fully_exited = True
+                        remaining -= to_sell
+                        if remaining > 1e-9:
+                            self._record_moonbag(
+                                token_info, remaining, entry_price, pool_address
+                            )
+                        else:
+                            fully_exited = True  # sin moonbag configurado
                         break
                     logger.warning(
                         "Stop-loss sell failed for %s; retrying", token_info.symbol
@@ -1781,6 +1794,10 @@ class UniversalTrader:
                         f"holding moonbag {moonbag * 100:.0f}% "
                         f"({remaining:.6f} tokens)"
                     )
+                    if remaining > 1e-9:
+                        self._record_moonbag(
+                            token_info, remaining, entry_price, pool_address
+                        )
                     break
 
                 # Time backstop: al llegar al tiempo SOLO se cierra si la posición
@@ -2107,8 +2124,14 @@ class UniversalTrader:
                     )
                     bal = await self.solana_client.get_token_account_balance(ata)
                     held = bal > 0
-            except Exception:  # noqa: BLE001 - ante duda, seguimos avisando
-                held = True
+            except Exception as exc:  # noqa: BLE001
+                # Al vender por Maestro se cierra el ATA -> la consulta falla con
+                # "account not found": eso es VENDIDO (dejamos de avisar). Solo en
+                # errores de red genuinos seguimos avisando (held=True).
+                _m = str(exc).lower()
+                held = not any(
+                    s in _m for s in ("not found", "could not find", "invalid param")
+                )
             if not held:
                 notify(
                     f"✅ Moonbag <b>{m.get('symbol', '?')}</b> ya no está en la "
