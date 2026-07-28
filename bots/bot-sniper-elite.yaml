@@ -45,7 +45,7 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: false           # <<< EN VIVO (REAL)
-  min_curve_sol: 0.5
+  min_curve_sol: 0              # DESACTIVADO (2026-07-28): sin lectura de curva, compra directo al matchear (evita "curva ilegible" en tokens muy frescos)
   max_entry_mc: 0               # DESACTIVADO (2026-07-28): sin tope de MC, entra aunque haya pumpeado rapido (lista vetada)
   min_holders: 0               # DESACTIVADO (2026-07-28): sin mínimo de holders (lista vetada)
   max_holder_pct: 0             # DESACTIVADO (2026-07-28): sin límite de concentración (lista vetada; devs suelen tener 1 holder gordo al inicio)
