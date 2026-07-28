@@ -1761,6 +1761,10 @@ class UniversalTrader:
         # El trailing mide desde el PICO: si cae stop_loss_percentage desde ahí,
         # se vende TODO (moonbag incluido).
         peak_price = entry_price
+        # Auto-baneo por P&L NETO: SOL cobrado en ventas vs coste de entrada.
+        realized_sol = 0.0
+        cost_sol = original_qty * entry_price
+        last_price = entry_price
 
         while remaining > 1e-9:
             if (monotonic() - start) >= abandon_after:
@@ -1788,6 +1792,7 @@ class UniversalTrader:
                 # stop_loss_percentage desde el máximo, se vende TODO lo que queda
                 # (incluido el moonbag) en vez de dejarlo caer a cero.
                 peak_price = max(peak_price, price)
+                last_price = price
                 if (
                     self.stop_loss_percentage
                     and peak_price >= entry_price * 1.2
@@ -1801,6 +1806,7 @@ class UniversalTrader:
                     if await self._sell_amount(
                         token_info, remaining, price, "trailing_stop"
                     ):
+                        realized_sol += remaining * price
                         remaining = 0.0
                         fully_exited = True
                         break
@@ -1811,7 +1817,9 @@ class UniversalTrader:
                 self._write_live_status(
                     token_info, entry_price, remaining, price, original_qty
                 )
+                _before_manual = remaining
                 remaining = await self._check_manual_sell(token_info, remaining, price)
+                realized_sol += max(0.0, _before_manual - remaining) * price
                 if remaining <= 1e-9:
                     fully_exited = True
                     break
@@ -1822,6 +1830,7 @@ class UniversalTrader:
                 if pt is not None and pt >= position_start_wall:
                     logger.info("PANIC SELL for %s — dumping remaining", token_info.symbol)
                     if await self._sell_amount(token_info, remaining, price, "panic_sell"):
+                        realized_sol += remaining * price
                         remaining = 0.0
                         fully_exited = True
                         break
@@ -1848,6 +1857,7 @@ class UniversalTrader:
                     if await self._sell_amount(
                         token_info, to_sell, price, "stop_loss"
                     ):
+                        realized_sol += to_sell * price
                         remaining -= to_sell
                         if remaining > 1e-9:
                             self._record_moonbag(
@@ -1870,6 +1880,7 @@ class UniversalTrader:
                         continue
                     reason = f"tp_tier{i + 1}_+{tiers[i].gain * 100:.0f}%"
                     if await self._sell_amount(token_info, amount, price, reason):
+                        realized_sol += amount * price
                         executed[i] = True
                         remaining -= amount
                         had_tp = True  # el dev entregó un pump -> no es rug
@@ -1914,6 +1925,7 @@ class UniversalTrader:
                         if await self._sell_amount(
                             token_info, to_sell, price, "max_hold_time"
                         ):
+                            realized_sol += to_sell * price
                             remaining -= to_sell
                         else:
                             logger.warning(
@@ -1940,9 +1952,23 @@ class UniversalTrader:
                 logger.exception("Error in tiered exit monitor")
                 await asyncio.sleep(self.price_check_interval)
 
-        # Auto-baneo de devs: registra el resultado. rug (SL sin TP) suma; una
-        # ganadora (algún TP) resetea y desbloquea; neutral (max-hold) no cambia.
-        _outcome = "win" if had_tp else ("rug" if hit_sl else "neutral")
+        # Auto-baneo de devs por P&L NETO real (no por "tocó un TP"): SOL cobrado
+        # + valor del moonbag aún en la wallet, menos el coste de entrada. Así el
+        # pump&dumper que clipa un TP1 y luego tira SÍ cuenta como pérdida (rug),
+        # y 2 pérdidas seguidas del mismo dev -> se le bloquea.
+        held_val = remaining * last_price  # moonbag que sigue en la wallet
+        net_sol = realized_sol + held_val - cost_sol
+        if net_sol > cost_sol * 0.05:  # ganó neto (>+5%) -> limpia y desbloquea
+            _outcome = "win"
+        elif net_sol < -cost_sol * 0.15:  # perdió neto (>-15%) -> strike
+            _outcome = "rug"
+        else:
+            _outcome = "neutral"
+        logger.info(
+            f"{token_info.symbol}: P&L neto {net_sol:+.4f} SOL (cobrado "
+            f"{realized_sol:.4f} + moonbag {held_val:.4f} - coste {cost_sol:.4f}) "
+            f"-> {_outcome} [rug-streak dev]"
+        )
         self._bump_dev_rug(str(token_info.user), _outcome)
 
         # C2: monitor ended (sold / moonbag / abandoned) — no longer an actively
