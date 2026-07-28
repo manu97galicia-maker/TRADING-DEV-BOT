@@ -9,7 +9,7 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.2             # bajado 0.5->0.2 (2026-07-28): el tamaño grande era el 75% de las perdidas
+  buy_amount: 0.25            # 0.25 SOL/operacion (2026-07-28)
   buy_slippage: 0.35         # 35% (2026-07-28, devs pumpean rapido)
   sell_slippage: 0.35        # 35%
   exit_strategy: "tp_sl"
