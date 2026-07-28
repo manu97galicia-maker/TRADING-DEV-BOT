@@ -1,0 +1,126 @@
+{
+ "_README": "MAYHEM devs que SE DISPARAN (Dune 14d): pct_pump_100k>0 o pct_pump_30k>=60, mediana>=25K, >=3 mayhem. Excluidos spammers y baja-tasa.",
+ "_count": 15,
+ "wallets": [
+  {
+   "wallet": "B7jDgX4GHRZbmykWqvNaNmqbGU4F9ebWKzFaaDyRiKuC",
+   "mayhem_launches": 4,
+   "median_peak": 191675,
+   "best_peak_usd": 285249,
+   "pct_pump_30k": 50.0,
+   "pct_pump_100k": 50.0
+  },
+  {
+   "wallet": "AwkDaC2n9YfdmUru8J8sFCjsDmqqj7LrpLFo3SjB9DZ4",
+   "mayhem_launches": 3,
+   "median_peak": 51193,
+   "best_peak_usd": 278030,
+   "pct_pump_30k": 66.7,
+   "pct_pump_100k": 33.3
+  },
+  {
+   "wallet": "GZJW9JYdN1fmS8ukW7r2bvGtvt2nioVRURwdFZk3WmoJ",
+   "mayhem_launches": 3,
+   "median_peak": 27320,
+   "best_peak_usd": 223821,
+   "pct_pump_30k": 33.3,
+   "pct_pump_100k": 33.3
+  },
+  {
+   "wallet": "DzFtDS8N5shdCt7mVtByEJgP1LfSkBFkS9TZzuxYJyqc",
+   "mayhem_launches": 4,
+   "median_peak": 94252,
+   "best_peak_usd": 171329,
+   "pct_pump_30k": 50.0,
+   "pct_pump_100k": 25.0
+  },
+  {
+   "wallet": "C8FA3ZF3HxgtyJEXmMY6QmkTswxhb48Ej7K7bC2bUxMr",
+   "mayhem_launches": 4,
+   "median_peak": 67509,
+   "best_peak_usd": 287100,
+   "pct_pump_30k": 50.0,
+   "pct_pump_100k": 25.0
+  },
+  {
+   "wallet": "9NT2EX7gQGRBWCh4NVsj5UEhB8LiRYQ3ZfzdTEvRUp9n",
+   "mayhem_launches": 4,
+   "median_peak": 55697,
+   "best_peak_usd": 319758,
+   "pct_pump_30k": 50.0,
+   "pct_pump_100k": 25.0
+  },
+  {
+   "wallet": "HwKvWbr7KZYQF5DK1n3HXcyKNgytbP5obrH9cDV5eChH",
+   "mayhem_launches": 4,
+   "median_peak": 45885,
+   "best_peak_usd": 176495,
+   "pct_pump_30k": 50.0,
+   "pct_pump_100k": 25.0
+  },
+  {
+   "wallet": "HRqGhVwiv2kxVedrHieRCQP4m7AeJVzyAABQy2FP74Lu",
+   "mayhem_launches": 4,
+   "median_peak": 44150,
+   "best_peak_usd": 133884,
+   "pct_pump_30k": 50.0,
+   "pct_pump_100k": 25.0
+  },
+  {
+   "wallet": "1325y5zBuVAwToFo8WqZdYLvUyzxom5bu6wDiMGTy2X7",
+   "mayhem_launches": 6,
+   "median_peak": 47524,
+   "best_peak_usd": 153562,
+   "pct_pump_30k": 50.0,
+   "pct_pump_100k": 16.7
+  },
+  {
+   "wallet": "Ai7v7G2JfAGaBceCqmRg33kvEjQb66HJAMTaHmJ2vYkV",
+   "mayhem_launches": 6,
+   "median_peak": 32330,
+   "best_peak_usd": 305877,
+   "pct_pump_30k": 50.0,
+   "pct_pump_100k": 16.7
+  },
+  {
+   "wallet": "GToA8mjkg2z3PxY9g2YPXnBdxK6uxiynH1h8Ah1jW1Fv",
+   "mayhem_launches": 6,
+   "median_peak": 27543,
+   "best_peak_usd": 174854,
+   "pct_pump_30k": 33.3,
+   "pct_pump_100k": 16.7
+  },
+  {
+   "wallet": "66onmcvu5jpN4dJoe9sYQYCnMbB5oWXHNAtoQfG2peki",
+   "mayhem_launches": 3,
+   "median_peak": 54981,
+   "best_peak_usd": 59548,
+   "pct_pump_30k": 100.0,
+   "pct_pump_100k": 0.0
+  },
+  {
+   "wallet": "9ZDfN3PtQVfEoNM5uA5hor2VrEjBfLWZH5QQKNNz6jB4",
+   "mayhem_launches": 3,
+   "median_peak": 40274,
+   "best_peak_usd": 50873,
+   "pct_pump_30k": 66.7,
+   "pct_pump_100k": 0.0
+  },
+  {
+   "wallet": "Bu6SV1o3Xn2S1PYye8cvrqjyF9ypiwEhkz3nb5nKmYbV",
+   "mayhem_launches": 3,
+   "median_peak": 33697,
+   "best_peak_usd": 48777,
+   "pct_pump_30k": 66.7,
+   "pct_pump_100k": 0.0
+  },
+  {
+   "wallet": "2rnm81cudERhgG9V4fQixGYtZEAb35M9X7s8SmM714FR",
+   "mayhem_launches": 3,
+   "median_peak": 31447,
+   "best_peak_usd": 82277,
+   "pct_pump_30k": 66.7,
+   "pct_pump_100k": 0.0
+  }
+ ]
+}
