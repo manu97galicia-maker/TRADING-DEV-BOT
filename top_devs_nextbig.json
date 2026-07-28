@@ -1,0 +1,1058 @@
+{
+ "_README": "NEXT-BIG mediana>=25K + anti-dump: quitados los de mediana <25K (2026-07-28). Solo alto pico. Nota: los giga200k llevan median_peak placeholder 31054 (senal real=coins_over_200k).",
+ "_count": 102,
+ "_tiers": {
+  "moonshot_repite": 16,
+  "sostiene": 117,
+  "hitrate": 17
+ },
+ "wallets": [
+  {
+   "wallet": "J6FAJ2Pz2htqoKUD1WLZJC9RTsRuF9oQYo8RxS3s6dnH",
+   "coins_over_200k": 10,
+   "best_peak_usd": 28872212,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "HhH3m3GjvQKrSF4auLHCTCJsKgXqBWnoqB2nMeBXFJsM",
+   "coins_over_200k": 6,
+   "best_peak_usd": 53338911,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "5dwwJkyF2KUcsgH8ndE3sYaZzS4KLQdCrxgARgzc9b3s",
+   "coins_over_200k": 5,
+   "best_peak_usd": 18178284,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "9C5qBGDMDrqU5SiJeWVvb3zy7uFaUQEgYqLinEhtZBSJ",
+   "coins_over_200k": 5,
+   "best_peak_usd": 9856346,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "FxUrNcTKrTzYRk4W4MxygXRtNmE8r3S5Vm7kMtoP9cdr",
+   "coins_over_200k": 4,
+   "best_peak_usd": 273262819,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "EaZC5U93bbSn44kvuAno75qc3TeLbcPNDP58JVsYZDb7",
+   "coins_over_200k": 4,
+   "best_peak_usd": 73181820,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "4LUcoS2imfQ14t4dmH273d6FV7Lx16ihV1wdagEdYjmR",
+   "coins_over_200k": 4,
+   "best_peak_usd": 18290229,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "ArSrjXsRUsLMjBTVKPrZsSKZtLAswMqC5C4G9t4NuNgo",
+   "coins_over_200k": 4,
+   "best_peak_usd": 14776254,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "HWqpVCy2UDiY7N79qVumTMUeaXVXSQyDpoMmQ46ug1pX",
+   "coins_over_200k": 3,
+   "best_peak_usd": 49334097,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "CKPaVEHqGNB8BUdWPr6J4PsbuHXs8EN455EkEtEYQCpk",
+   "coins_over_200k": 3,
+   "best_peak_usd": 36587473,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "GF3aWh5zc5EX2LGhLDmVpPPrKdDN1qo5kXHbStEkXwyS",
+   "coins_over_200k": 3,
+   "best_peak_usd": 23463509,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "4a7XiutQp7spcV14sLw1uMw3GijUchp7oW5TVKJbkc52",
+   "coins_over_200k": 3,
+   "best_peak_usd": 21889675,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "5hoVSrmowAW7cSEC5Zhe3GbkMPXwgZc784UJNRQLjgxv",
+   "coins_over_200k": 3,
+   "best_peak_usd": 21221153,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "HwgrAEFZgHqbeZJc4LfJpg3T4YQmChDuH2bNHsYQU9g3",
+   "coins_over_200k": 3,
+   "best_peak_usd": 12696727,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "55Perpb3rnWxV6LsjZux3cmtXUossXQ4PDHVm4T2tca1",
+   "coins_over_200k": 3,
+   "best_peak_usd": 678999,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "bwamJzztZsepfkteWRChggmXuiiCQvpLqPietdNfSXa",
+   "coins_over_200k": 3,
+   "best_peak_usd": 388905,
+   "median_peak": 31054,
+   "_tier": "moonshot_repite"
+  },
+  {
+   "wallet": "BTdjaPaor31yqs1mggv6eaRJbEox8sE3MbyBCMEjHPbq",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 31054,
+   "pct_sostiene": 100,
+   "median_vol_sol": 85.5,
+   "median_trades": 20,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "CVvJnDPcWdmUJN6YC4cHwBS2cJ9T8KoVh3xEwGquHYz1",
+   "per_day": 0.43,
+   "launches_7d": 3,
+   "median_peak": 31054,
+   "mc_sostenido": 29542,
+   "pct_sostiene": 95,
+   "median_vol_sol": 87.2,
+   "median_trades": 17,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "ARmXsApnsp78ziLGbwrBaS6Mi7uCvr5R5FRmaimdSfZp",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 28224,
+   "pct_sostiene": 91,
+   "median_vol_sol": 111.3,
+   "median_trades": 125,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "2yZnzgaC2NghYbdmN1YwhJDaMSSomjKaEnLsikkEAFiU",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 27756,
+   "pct_sostiene": 89,
+   "median_vol_sol": 188.3,
+   "median_trades": 192,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 25916,
+   "pct_sostiene": 83,
+   "median_vol_sol": 138.7,
+   "median_trades": 46,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "9k5LD7QZJzC7hR8GH23jAKAGG5JXyKvgcR1PFBvxQdv1",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 25361,
+   "pct_sostiene": 82,
+   "median_vol_sol": 89.2,
+   "median_trades": 110,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "CT7TXtt1ZRobUk4TK5qPkWRqtT3c1qScZ2CfYZXKSZtN",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 25086,
+   "pct_sostiene": 81,
+   "median_vol_sol": 144.7,
+   "median_trades": 105,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "GXqk4nhgC4x1AMuRWikd9E2ZyGqfhxH1anYXj8x4vXUx",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 43842,
+   "mc_sostenido": 35099,
+   "pct_sostiene": 80,
+   "median_vol_sol": 146.5,
+   "median_trades": 933,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "2D699BTvL6G6ydAQrRmXcx3VuWDNkJs1WmthiXfYdtit",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 23126,
+   "pct_sostiene": 74,
+   "median_vol_sol": 833.5,
+   "median_trades": 560,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "DfFjNc6rBbfaihDCFzYyepeNXmmFzLsN272kVuxKzQ4Z",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 22630,
+   "pct_sostiene": 73,
+   "median_vol_sol": 778.1,
+   "median_trades": 653,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "9bchB9W9Pn9PKhjmSUNiuqdapoDkgUjYhDoMLhJPVRqp",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 22264,
+   "pct_sostiene": 72,
+   "median_vol_sol": 754.7,
+   "median_trades": 634,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "GCMnackZv9fqC93jrk2du1QwBcSDztjYdvo7WhsMan7C",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 22048,
+   "pct_sostiene": 71,
+   "median_vol_sol": 740.3,
+   "median_trades": 640,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "GmHGJdMymipZefqSFU5v2gh2fQdGZjAaX63ziVLbjZbu",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 20978,
+   "pct_sostiene": 68,
+   "median_vol_sol": 620.4,
+   "median_trades": 1441,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "G4krkerMkeYw7ffTUgdf7qXEXnuMGHpWUESBQpYqvtwU",
+   "per_day": 0.71,
+   "launches_7d": 5,
+   "median_peak": 31054,
+   "mc_sostenido": 20806,
+   "pct_sostiene": 67,
+   "median_vol_sol": 268.2,
+   "median_trades": 1757,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "7M1nj84mZ6pFM89zSK7UG9eHQr4EsNEXtbDTCgpTScZC",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 20892,
+   "pct_sostiene": 67,
+   "median_vol_sol": 612.8,
+   "median_trades": 453,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "HS8pdCmXhxSvSSSaxNEqqABjSy6kgkV3oEZHEmG2hX33",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 20863,
+   "pct_sostiene": 67,
+   "median_vol_sol": 510.8,
+   "median_trades": 617,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "CQLLBQW9deii6Sow4i1VJFjyLKBxLRS6E89NaDC6BEGz",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 20795,
+   "pct_sostiene": 67,
+   "median_vol_sol": 107.3,
+   "median_trades": 121,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "3fKF8cbyWKU56fpFkrQ1E6zJoAh4mqArdsPoUE6ycTKL",
+   "per_day": 0.71,
+   "launches_7d": 5,
+   "median_peak": 31054,
+   "mc_sostenido": 20512,
+   "pct_sostiene": 66,
+   "median_vol_sol": 475.6,
+   "median_trades": 635,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "E7WUBW175FdSHBtoT9XVfPT35P4oPpcMg3t15NHhwTwm",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 20436,
+   "pct_sostiene": 66,
+   "median_vol_sol": 294.3,
+   "median_trades": 602,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "5n9KsxgRrJc4x8E7Zi8WHZDQrJxmg9ucDJigMT149Sx8",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 20319,
+   "pct_sostiene": 65,
+   "median_vol_sol": 1018.8,
+   "median_trades": 2277,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "BMnA6BJd2xEpfPfVoy1sT2RJieQWdVbqNnVqdo55jZ6y",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 20259,
+   "pct_sostiene": 65,
+   "median_vol_sol": 656.0,
+   "median_trades": 623,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "AyVQudTuHWFr6xpqXiSyxP1MQdm9AcvVY23Xqf2QUHpi",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 19856,
+   "pct_sostiene": 64,
+   "median_vol_sol": 468.1,
+   "median_trades": 893,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "C6GsAJupLB33xEvqErAYxnPWnNcFeyDwDpd5UqPfnYfZ",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 19637,
+   "pct_sostiene": 63,
+   "median_vol_sol": 885.3,
+   "median_trades": 1665,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "ErKVZPYady3LB2spmLCVCX5uF8R5ytpxiceTMJxujLhZ",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 19637,
+   "pct_sostiene": 63,
+   "median_vol_sol": 708.1,
+   "median_trades": 896,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "Cqpjit97Pf8h8qTjcHwQFczL8JJwUGGYaqC69h7EWKLN",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 19639,
+   "pct_sostiene": 63,
+   "median_vol_sol": 554.4,
+   "median_trades": 570,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "42V2wz5tiLQvKY5AVS8V2uXnCfqEpNxtYi6XDrZjCJ3B",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 19396,
+   "pct_sostiene": 62,
+   "median_vol_sol": 1100.1,
+   "median_trades": 1941,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "CFvFULPLd6Hk5QjvWhyN3JepMybjTCKCBMFbvhtsvbuE",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 19101,
+   "pct_sostiene": 62,
+   "median_vol_sol": 616.4,
+   "median_trades": 1263,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "JAHNgRnre3DwUwNQQerKx2W2TLWvHAwyTKAa2fG8LT7o",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 25924,
+   "mc_sostenido": 16029,
+   "pct_sostiene": 62,
+   "median_vol_sol": 467.2,
+   "median_trades": 1875,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "FaHQ6E5BRJYubMW8L6cD9biHSAhi2twhXa49hdDX6PpF",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 19206,
+   "pct_sostiene": 62,
+   "median_vol_sol": 406.4,
+   "median_trades": 755,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "D1AgMwipkyYoGQmphTHs3VxCsG2gZo1Nm2wFTgndZ51E",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 18952,
+   "pct_sostiene": 61,
+   "median_vol_sol": 773.2,
+   "median_trades": 1677,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "3geKhG2S5vdg7rUN5aHPyQdY4dvCrbuhEcwGPwnw8Uy2",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 18795,
+   "pct_sostiene": 61,
+   "median_vol_sol": 427.5,
+   "median_trades": 332,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "CUTPQHXW6Xxg6DFL5fjFTqHykMZUTvrQ7Qi1WGPcEzdT",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 18883,
+   "pct_sostiene": 61,
+   "median_vol_sol": 263.3,
+   "median_trades": 635,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "6ueJnZLy4kdyZoat8gSWgADEbNAPbXsrFFWdLyNBHfM2",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 18789,
+   "pct_sostiene": 61,
+   "median_vol_sol": 250.0,
+   "median_trades": 1012,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "3GyjKcsQkpDuyoQrd4Ciz3QypoEpiMRDfFs4Cgz5fyXk",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 18817,
+   "pct_sostiene": 61,
+   "median_vol_sol": 129.4,
+   "median_trades": 206,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "DFrfDB7vsQRNQYFWyQwtihMWGEfD8vAPPHFEW6krXytc",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 27114,
+   "mc_sostenido": 16161,
+   "pct_sostiene": 60,
+   "median_vol_sol": 2171.1,
+   "median_trades": 4593,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "3gWKh9nAunorwYXicoexdnbZ746vN3jKVsz7qDVJMrYP",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 30101,
+   "mc_sostenido": 17920,
+   "pct_sostiene": 60,
+   "median_vol_sol": 997.7,
+   "median_trades": 2310,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "FqoeFX1nLxH9aisuJprWsVUDsZ7mUkRYF5PEJ8qraPCy",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 18713,
+   "pct_sostiene": 60,
+   "median_vol_sol": 615.3,
+   "median_trades": 1200,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "FNVsSxQjEtucEzWyuNwdJH2wVVhsaT5oWqYUc6haPQtz",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 18443,
+   "pct_sostiene": 59,
+   "median_vol_sol": 960.4,
+   "median_trades": 2366,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "3z7xQC2PSfixVJdMt23oGdew7fFzuboAYdcBAYSAX4Xg",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 18178,
+   "pct_sostiene": 59,
+   "median_vol_sol": 240.5,
+   "median_trades": 328,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "3YpQRAGDCpraoXG9c9ntVaax9jRKPRSQQRXm7mg8YMiF",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 18135,
+   "pct_sostiene": 58,
+   "median_vol_sol": 2268.8,
+   "median_trades": 4870,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "88g7tXbBFUvLKUNCQpVqR6UrugL7jFeGf5kpzJ5DTkks",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 18046,
+   "pct_sostiene": 58,
+   "median_vol_sol": 662.0,
+   "median_trades": 548,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "9xdK3DkLZ8CCr3bvvFAXbNcWvAr8BJSyyWDVKwSLwRPF",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 18126,
+   "pct_sostiene": 58,
+   "median_vol_sol": 385.6,
+   "median_trades": 537,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "9PQ9kNKj4hztTN26N3JaZ1To3rZRDu6rGiyzfC4JPETw",
+   "per_day": 0.71,
+   "launches_7d": 5,
+   "median_peak": 31054,
+   "mc_sostenido": 17569,
+   "pct_sostiene": 57,
+   "median_vol_sol": 101.6,
+   "median_trades": 113,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "951wq3qDowjKHaycrNaiRB5WpovYVKXnqhnrcKPh46zt",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 17841,
+   "pct_sostiene": 57,
+   "median_vol_sol": 857.7,
+   "median_trades": 1483,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "BeigSSuYKGK3XKNW58fuVFEYinNw5WUJ6MXGnxBb7Z7U",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 17739,
+   "pct_sostiene": 57,
+   "median_vol_sol": 601.3,
+   "median_trades": 540,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "8wRr7k93rEHS9GiVAVGniAM3CHiAtW85AGv2qKXwF9Fk",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 17773,
+   "pct_sostiene": 57,
+   "median_vol_sol": 525.7,
+   "median_trades": 1082,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "48S8ne8cnCYeEhzkR7JAeocZ98bwuNRQ4pKkJ3u4VQpT",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 17856,
+   "pct_sostiene": 57,
+   "median_vol_sol": 382.1,
+   "median_trades": 358,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "D2hrzDdF5JDeunEyfKC74PuERdfT3NomExBYmgfNFhaZ",
+   "per_day": 0.71,
+   "launches_7d": 5,
+   "median_peak": 27658,
+   "mc_sostenido": 15626,
+   "pct_sostiene": 56,
+   "median_vol_sol": 107.0,
+   "median_trades": 247,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "GCFyk8ZopGpo1HR25WhsVaP1h1p6ta44q9uHfq9Em8WB",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 17295,
+   "pct_sostiene": 56,
+   "median_vol_sol": 1106.8,
+   "median_trades": 792,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "Hu4YpHXYVD8Dw9vGzpqFPYzFGprLpWrXgbRQ8WtDQJ3a",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 17514,
+   "pct_sostiene": 56,
+   "median_vol_sol": 790.2,
+   "median_trades": 594,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "9qKYscHeVzqVmgNL64fwS9VLp2X1uHoo4RBCCVZfvf3q",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 25973,
+   "mc_sostenido": 14591,
+   "pct_sostiene": 56,
+   "median_vol_sol": 711.9,
+   "median_trades": 4788,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "9X1VTHyNdLcZNG66QkCRJVQinohBpPvktbxAxJAVQpu8",
+   "per_day": 0.57,
+   "launches_7d": 4,
+   "median_peak": 31054,
+   "mc_sostenido": 17222,
+   "pct_sostiene": 55,
+   "median_vol_sol": 596.7,
+   "median_trades": 888,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "4DrtsW86GarGJJeYrBwYCjoyMgDPG95QWSGhFHvCkU2s",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 17217,
+   "pct_sostiene": 55,
+   "median_vol_sol": 1709.3,
+   "median_trades": 4157,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "9DPZGyDw3gg1vrd9nvPA6xsj86wdYEVugfSUbscw9ahx",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 17011,
+   "pct_sostiene": 55,
+   "median_vol_sol": 936.1,
+   "median_trades": 2108,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "6mxfP4nXD1MSXvCSbJP5NZi1RNojYKxNs5eHBoZBYDak",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 17125,
+   "pct_sostiene": 55,
+   "median_vol_sol": 917.5,
+   "median_trades": 1127,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "ANg3JLb5uRnjPggwCU4QcwTxhVn5mM2DfVwCifymGZGz",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 17153,
+   "pct_sostiene": 55,
+   "median_vol_sol": 516.1,
+   "median_trades": 988,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "FExQWxmw6NqmcbpfnSVzmfEe46mzZ7UjaQNH6zbz5eee",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 17114,
+   "pct_sostiene": 55,
+   "median_vol_sol": 496.5,
+   "median_trades": 697,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "8WuCFQnCqmaTNmTjw25UBjaTHXqDQQgYMXcgsDAKLFUz",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 16615,
+   "pct_sostiene": 54,
+   "median_vol_sol": 796.3,
+   "median_trades": 1646,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "5Gx8nvnthE236pJmMiFfFNeTc5fEBNtgeuBn3GeGeDnR",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 16890,
+   "pct_sostiene": 54,
+   "median_vol_sol": 474.6,
+   "median_trades": 854,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "5wPuZfZyPQxuBUrmjN6RV31TdLsoxG6LuBMtwQAd9jUJ",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 16618,
+   "pct_sostiene": 54,
+   "median_vol_sol": 305.3,
+   "median_trades": 695,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "3h7vhXCmuUvXEfYEbpQbcFQdSB7v1iBA1bqJRXoZn2VV",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 16741,
+   "pct_sostiene": 54,
+   "median_vol_sol": 89.8,
+   "median_trades": 22,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "CmCeodBTk8wCn1P3mhgEwBVyrWfLR7khrJbvfag2h6pv",
+   "per_day": 0.71,
+   "launches_7d": 5,
+   "median_peak": 31054,
+   "mc_sostenido": 16507,
+   "pct_sostiene": 53,
+   "median_vol_sol": 90.4,
+   "median_trades": 114,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "9Cik4BvJRcag1FLgCk1UBkAXdgLWd9fSoHMoWHjS4GXo",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 16378,
+   "pct_sostiene": 53,
+   "median_vol_sol": 655.1,
+   "median_trades": 1481,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "7WgTby15XjccLvoRjMTbjdGxotFj4bBcMuDksQU7XzWn",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 16504,
+   "pct_sostiene": 53,
+   "median_vol_sol": 624.0,
+   "median_trades": 606,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "A95YPcDUkVUrmoKuBNRC8C3N69wethksqQxvqNpTzbcS",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 16305,
+   "pct_sostiene": 53,
+   "median_vol_sol": 549.6,
+   "median_trades": 423,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "2KQKDA9RtgB8wfGMcnGsKMfFY2BkktG2ETMtRPSAzB8C",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 40958,
+   "mc_sostenido": 21770,
+   "pct_sostiene": 53,
+   "median_vol_sol": 16.4,
+   "median_trades": 345,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "EtKNJYzTWu5ewnGEyu37bKoY569Kf43TrvzDbGEAbVSb",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 16167,
+   "pct_sostiene": 52,
+   "median_vol_sol": 519.6,
+   "median_trades": 611,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "79ZGmaQQ9GveHWuHvdBexZUy1nKudGvc65J8b7GvV9fY",
+   "per_day": 0.43,
+   "launches_7d": 3,
+   "median_peak": 31054,
+   "mc_sostenido": 15826,
+   "pct_sostiene": 51,
+   "median_vol_sol": 91.0,
+   "median_trades": 111,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "A697SEniU79su72YzGDM7tUNnWc6aPQ9FUxKJZuEauiq",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 15802,
+   "pct_sostiene": 51,
+   "median_vol_sol": 1261.6,
+   "median_trades": 2234,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "8ihLV77aBWdAk4CpMMx8LH4915pZm6pc5t1DoMycz94n",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 15918,
+   "pct_sostiene": 51,
+   "median_vol_sol": 969.2,
+   "median_trades": 1134,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "HcNx7YFokv99hV4jfxe7TRyu5ArPMEpwtQqKrpqgAGYK",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 15902,
+   "pct_sostiene": 51,
+   "median_vol_sol": 566.8,
+   "median_trades": 429,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "DfdJfVfhEdY3ZuCS5QF1DDMryeyEjH365Cr9ZoLGbXLP",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 15709,
+   "pct_sostiene": 51,
+   "median_vol_sol": 420.4,
+   "median_trades": 832,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "8jaZKGBSUq83a2BdzTxtMkPUcGcgF7viVpPk9WMetrau",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 15938,
+   "pct_sostiene": 51,
+   "median_vol_sol": 409.6,
+   "median_trades": 909,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "4Gtb3xN9yqSmTSpmVV8ocZWakBPxorA283jJv4bNsjBT",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 15613,
+   "pct_sostiene": 50,
+   "median_vol_sol": 543.9,
+   "median_trades": 449,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "HnSkGGhxAwTYjzdxJTFg53MnZDziUxhjBbQinYeb2Fdd",
+   "per_day": 0.29,
+   "launches_7d": 2,
+   "median_peak": 31054,
+   "mc_sostenido": 15575,
+   "pct_sostiene": 50,
+   "median_vol_sol": 318.4,
+   "median_trades": 463,
+   "_tier": "sostiene"
+  },
+  {
+   "wallet": "Gjp136Q24ikiMFX3HdioqzVFmVK3sqb9wePZwGmCJfxi",
+   "launches_7d": 3,
+   "strong_7d": 3,
+   "hitrate_pct": 100.0,
+   "median_peak": 31054,
+   "median_holders_60s": 60,
+   "median_vol_usd_60s": 6425,
+   "_tier": "hitrate"
+  },
+  {
+   "wallet": "FFcNgJj4SV2eDMyDJRk8EWBX7w14hH3KUqVu77C7HtjQ",
+   "launches_7d": 4,
+   "strong_7d": 4,
+   "hitrate_pct": 100.0,
+   "median_peak": 31054,
+   "median_holders_60s": 268,
+   "median_vol_usd_60s": 22172,
+   "_tier": "hitrate"
+  },
+  {
+   "wallet": "ozDnyApycm95Zz9Y12PPoJ1Mp4Zx8pJiTLaFg2aB8QX",
+   "launches_7d": 3,
+   "strong_7d": 3,
+   "hitrate_pct": 100.0,
+   "median_peak": 31054,
+   "median_holders_60s": 17,
+   "median_vol_usd_60s": 6425,
+   "_tier": "hitrate"
+  },
+  {
+   "wallet": "8tz9muGq9cu7dCdHhh1aQmRLZUzXWEcPj8ydUVKE5Ncy",
+   "launches_7d": 7,
+   "strong_7d": 6,
+   "hitrate_pct": 85.7,
+   "median_peak": 31054,
+   "median_holders_60s": 12,
+   "median_vol_usd_60s": 581,
+   "_tier": "hitrate"
+  },
+  {
+   "wallet": "B6btiuEgrwa5MHNkxH7csA7paDfCXns8ZTUJr3nds3CZ",
+   "launches_7d": 11,
+   "strong_7d": 9,
+   "hitrate_pct": 81.8,
+   "median_peak": 31054,
+   "median_holders_60s": 57,
+   "median_vol_usd_60s": 5616,
+   "_tier": "hitrate"
+  },
+  {
+   "wallet": "4R1ezMFT32QbBbSp2h98T5tmo7gidKnpN2sjHFy76gWQ",
+   "launches_7d": 4,
+   "strong_7d": 3,
+   "hitrate_pct": 75.0,
+   "median_peak": 27426,
+   "median_holders_60s": 247,
+   "median_vol_usd_60s": 39163,
+   "_tier": "hitrate"
+  },
+  {
+   "wallet": "7VzKD7nTQg9ypcJtT1cA34aa9wLGRHzjGvZNQx53r8WA",
+   "launches_7d": 3,
+   "strong_7d": 2,
+   "hitrate_pct": 66.7,
+   "median_peak": 31054,
+   "median_holders_60s": 180,
+   "median_vol_usd_60s": 17414,
+   "_tier": "hitrate"
+  },
+  {
+   "wallet": "Aj6cr5Q3iKpkuujnabSQyKfEb1ZQ1Z1LeeK6LEpTV8Xs",
+   "launches_7d": 3,
+   "strong_7d": 2,
+   "hitrate_pct": 66.7,
+   "median_peak": 31054,
+   "median_holders_60s": 12,
+   "median_vol_usd_60s": 6015,
+   "_tier": "hitrate"
+  },
+  {
+   "wallet": "Hi6WK6V9rVcGQ4iGSihps62g1EtJ9QAA32dUMuLts2C1",
+   "launches_7d": 3,
+   "strong_7d": 2,
+   "hitrate_pct": 66.7,
+   "median_peak": 31054,
+   "median_holders_60s": 58,
+   "median_vol_usd_60s": 4629,
+   "_tier": "hitrate"
+  },
+  {
+   "wallet": "APWfqBLvDZUkRPERdWPG9aA3ijn1Nh74XLMxBszJKjmq",
+   "launches_7d": 3,
+   "strong_7d": 2,
+   "hitrate_pct": 66.7,
+   "median_peak": 31054,
+   "median_holders_60s": 25,
+   "median_vol_usd_60s": 2300,
+   "_tier": "hitrate"
+  },
+  {
+   "wallet": "9RfUHPsdKx1eU8Y4EiDFHkzv8psfmLLcNhFa2Yk9mWcx",
+   "launches_7d": 3,
+   "strong_7d": 2,
+   "hitrate_pct": 66.7,
+   "median_peak": 31054,
+   "median_holders_60s": 114,
+   "median_vol_usd_60s": 11423,
+   "_tier": "hitrate"
+  }
+ ]
+}

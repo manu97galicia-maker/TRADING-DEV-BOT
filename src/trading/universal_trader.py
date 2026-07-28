@@ -1755,6 +1755,13 @@ class UniversalTrader:
         # bag, release the semaphore, and keep operating.
         abandon_after = (self.max_hold_time or 120) * 3 + 120
 
+        # ANTI PUMP&DUMP: pico observado para el trailing stop del moonbag.
+        # El SL normal mide desde la ENTRADA, así que un pump+dump que vuelve
+        # por encima de la entrada nunca lo dispara y el moonbag cae a cero.
+        # El trailing mide desde el PICO: si cae stop_loss_percentage desde ahí,
+        # se vende TODO (moonbag incluido).
+        peak_price = entry_price
+
         while remaining > 1e-9:
             if (monotonic() - start) >= abandon_after:
                 logger.error(
@@ -1775,6 +1782,30 @@ class UniversalTrader:
                 break
             try:
                 price = await curve_manager.calculate_price(pool_address)
+
+                # ANTI PUMP&DUMP — trailing stop desde el pico. Solo se arma tras
+                # subir >=20% (para no chocar con el SL de entrada). Si cae
+                # stop_loss_percentage desde el máximo, se vende TODO lo que queda
+                # (incluido el moonbag) en vez de dejarlo caer a cero.
+                peak_price = max(peak_price, price)
+                if (
+                    self.stop_loss_percentage
+                    and peak_price >= entry_price * 1.2
+                    and price <= peak_price * (1 - self.stop_loss_percentage)
+                ):
+                    logger.info(
+                        f"TRAILING STOP {token_info.symbol}: {price:.8f} SOL <= pico "
+                        f"{peak_price:.8f} -{self.stop_loss_percentage * 100:.0f}% "
+                        f"-> vendo TODO (anti pump&dump, moonbag incluido)"
+                    )
+                    if await self._sell_amount(
+                        token_info, remaining, price, "trailing_stop"
+                    ):
+                        remaining = 0.0
+                        fully_exited = True
+                        break
+                    await asyncio.sleep(self.price_check_interval)
+                    continue
 
                 # Panel de Telegram: publica PnL en vivo y atiende ventas manuales.
                 self._write_live_status(

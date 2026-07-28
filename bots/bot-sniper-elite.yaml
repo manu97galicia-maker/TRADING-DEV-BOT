@@ -9,7 +9,7 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.25            # 0.25 SOL/operacion (2026-07-28)
+  buy_amount: 0.15            # 0.15 SOL/operacion (2026-07-28 tarde)
   buy_slippage: 0.35         # 35% (2026-07-28, devs pumpean rapido)
   sell_slippage: 0.35        # 35%
   exit_strategy: "tp_sl"
@@ -38,7 +38,7 @@ retries:
   wait_after_buy: 0
 
 filters:
-  listener_type: "logs"
+  listener_type: "pumpportal"   # 2026-07-28: era "logs" (Helius WSS) -> daba HTTP 429 sin parar; pumpportal es feed gratis aparte y respeta la lista de 38 devs (bro_address -> creator filter)
   max_token_age: 30
   match_string: null
   bro_address: "top_devs_final.json"   # 38 devs: sobreviven 5min + pagan DEX/CTO, no granja (~39 lanz/dia) Dune+DexScreener 2026-07-28

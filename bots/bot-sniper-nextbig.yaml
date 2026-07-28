@@ -1,0 +1,79 @@
+name: "NEXT-BIG - 61 devs moonshot 200K semana 0.35 SOL"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true       # ON 2026-07-28 tarde (RPC de pago OK)
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.15            # 0.15 SOL/operacion (2026-07-28 tarde)
+  buy_slippage: 0.35
+  sell_slippage: 0.35
+  exit_strategy: "tp_sl"
+  take_profit_percentage: 0.5      # +50% -> vende 30% (menos que ELITE: son moonshotters, se deja correr mas)
+  take_profit_sell_percentage: 0.30
+  tp2_gain: 2.0                    # +200% -> vende 20%
+  tp2_sell: 0.20
+  tp3_gain: 4.0                    # +400% -> vende 15%
+  tp3_sell: 0.15                   # moonbag 35% corre a por los cientos de miles
+  stop_loss_percentage: 0.40
+  max_hold_time: 180               # 3 min (mas margen: los moonshots tardan mas en despegar)
+  price_check_interval: 1
+  extreme_fast_mode: false
+  extreme_fast_token_amount: 20
+  min_reserve_sol: 0.03
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 80_000_000
+  extra_percentage: 0.0
+  hard_cap: 80_000_000
+
+retries:
+  wait_after_creation: 2
+  wait_after_buy: 0
+
+filters:
+  listener_type: "pumpportal"   # feed gratis aparte (no gasta creditos del RPC); matchea creator con la lista
+  max_token_age: 30
+  match_string: null
+  bro_address: "top_devs_nextbig.json"   # 61 devs giga200k (>=2 monedas >$200K/sem) que NO estan en ELITE
+  allow_mayhem: true            # net mas ancho: los moonshots a veces salen en mayhem, aqui SI se cogen
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false           # <<< EN VIVO (REAL)
+  min_curve_sol: 0
+  max_entry_mc: 0
+  min_holders: 0
+  max_holder_pct: 0
+  holder_bypass_ratio: 3
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 6
