@@ -139,6 +139,35 @@ def _load_creator_medians(value: object) -> dict[str, float]:
     return out
 
 
+def _load_creator_bestpeak(value: object) -> dict[str, float]:
+    """Devuelve ``{wallet: best_peak_usd}`` de la watchlist. Solo lo llevan los
+    devs moonshot (>=2 monedas >$120K); se usa para darles un TP más agresivo."""
+    if not isinstance(value, str) or not value.strip().lower().endswith(".json"):
+        return {}
+    p = Path(value.strip())
+    if not p.is_file():
+        return {}
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    items = data.get("wallets") if isinstance(data, dict) else data
+    if not isinstance(items, list):
+        return {}
+    out: dict[str, float] = {}
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        addr = it.get("wallet") or it.get("address") or it.get("creator")
+        bp = it.get("best_peak_usd")
+        if addr and bp:
+            try:
+                out[str(addr).strip()] = float(bp)
+            except (TypeError, ValueError):
+                continue
+    return out
+
+
 def _load_creator_launches(value: object) -> dict[str, int]:
     """Devuelve ``{wallet: launches_7d}`` desde un JSON de watchlist (para mostrar
     el nº de lanzamientos del dev en las señales de Telegram)."""
@@ -406,6 +435,11 @@ class UniversalTrader:
                 (tp3_gain, tp3_sell),
             ]
         )
+        # TP AGRESIVO para devs moonshot (los que suelen llegar MUY alto): objetivos
+        # más altos y moonbag más grande para pillar el pump. +100/300/900%, vende
+        # 20% en cada uno, moonbag 40% (vs el normal +50/150/300% moonbag 20%).
+        self.tp_tiers_aggressive = build_tiers([(1.0, 0.20), (3.0, 0.20), (9.0, 0.20)])
+        self._creator_bestpeak = _load_creator_bestpeak(bro_address)
 
         # Timing parameters
         self.wait_time_after_creation = wait_time_after_creation
@@ -1668,7 +1702,18 @@ class UniversalTrader:
         """
         entry_price = buy_result.price
         original_qty = buy_result.amount
-        tiers = self.tp_tiers
+        # TP adaptativo: si el dev suele llegar MUY alto (moonshot >$120K), tiers
+        # agresivos (objetivos altos + moonbag grande) para pillar el pump.
+        _dev = str(token_info.user)
+        _bestpeak = self._creator_bestpeak.get(_dev, 0)
+        if _bestpeak >= 120000:
+            tiers = self.tp_tiers_aggressive
+            logger.info(
+                f"{token_info.symbol}: dev MOONSHOT (pico histórico "
+                f"${int(_bestpeak):,}) -> TP AGRESIVO (+100/300/900%, moonbag 40%)"
+            )
+        else:
+            tiers = self.tp_tiers
         executed = [False] * len(tiers)
         remaining = original_qty
         sl_price = (
