@@ -439,7 +439,7 @@ class UniversalTrader:
         #  - _position_semaphore caps simultaneous OPEN positions so background
         #    buys/exit-monitors can't drain the wallet.
         self._filter_semaphore = asyncio.Semaphore(8)
-        self._position_semaphore = asyncio.Semaphore(1)
+        self._position_semaphore = asyncio.Semaphore(3)  # 3 posiciones a la vez (2026-07-28, wallet ampliada)
         # Bounded concurrency for paper price-watchers (protects the RPC).
         self._watch_semaphore = asyncio.Semaphore(8)
 
