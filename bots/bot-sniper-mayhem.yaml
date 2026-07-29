@@ -9,7 +9,7 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.1              # 0.1 SOL: test mayhem pequeno (mas varianza). Subir solo si el P&L neto sale verde.
+  buy_amount: 0.15             # 0.15 SOL (2026-07-29, subido de 0.1)
   buy_slippage: 0.35
   # Venta 90%: en curvas mayhem finas un slippage bajo revierte la venta (error
   # 6003 TooLittleSolReceived) -> cae a Jupiter dejando polvo. 90% deja que la
