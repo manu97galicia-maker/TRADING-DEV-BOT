@@ -1,6 +1,6 @@
 {
  "_README": "MAYHEM devs que se disparan (Dune 30d v2 + 15 previos). Tiers: moonshot_repite(3+ lanz con $100K), moonshot_2(1 hit $100K, alta varianza), ambos_30k(todas pasaron $30K), fiable_3. Sin blacklist, sin spam-farm. Mediana>=25K.",
- "_count": 94,
+ "_count": 93,
  "_tiers": {
   "moonshot_repite": 14,
   "moonshot_2": 53,
@@ -123,15 +123,6 @@
    "median_peak": 32330,
    "best_peak_usd": 305877,
    "pct_pump_30k": 50.0,
-   "pct_pump_100k": 16.7,
-   "_tier": "moonshot_repite"
-  },
-  {
-   "wallet": "WKtNYna1peBZWv5MKhi45W3nS3Tw5N1Yz3kNvyDKQrT",
-   "mayhem_launches": 6,
-   "median_peak": 29935,
-   "best_peak_usd": 129078,
-   "pct_pump_30k": 33.3,
    "pct_pump_100k": 16.7,
    "_tier": "moonshot_repite"
   },
