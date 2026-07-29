@@ -9,7 +9,7 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.2             # 0.2 SOL (2026-07-29)
+  buy_amount: 0.15            # 0.15 SOL (2026-07-29)
   buy_slippage: 0.35
   # Venta 90%: en curvas mayhem finas un slippage bajo revierte la venta (error
   # 6003 TooLittleSolReceived) -> cae a Jupiter dejando polvo. 90% deja que la
@@ -17,12 +17,12 @@ trade:
   # solo evita el revert, siempre recibes el precio real de la curva.)
   sell_slippage: 0.90
   exit_strategy: "tp_sl"
-  take_profit_percentage: 0.5      # +50% -> vende 60% (2026-07-29)
+  take_profit_percentage: 0.4      # +40% -> vende 60%
   take_profit_sell_percentage: 0.60
-  tp2_gain: 1.2                    # +120% -> vende el resto
-  tp2_sell: 0.40                   # 60+40 = 100% (SIN moonbag)
-  tp3_gain: 99.0                   # desactivado
-  tp3_sell: 0.0                    # sin 3er tramo ni moonbag
+  tp2_gain: 1.0                    # +100% -> vende 20%
+  tp2_sell: 0.20
+  tp3_gain: 1.5                    # +150% -> vende 20% (resto)
+  tp3_sell: 0.20                   # 60+20+20 = 100%, sin moonbag
   stop_loss_percentage: 0.40
   max_hold_time: 180
   price_check_interval: 1
@@ -33,9 +33,9 @@ trade:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  fixed_amount: 80_000_000
+  fixed_amount: 60_000_000         # gas a 3/4 (2026-07-29)
   extra_percentage: 0.0
-  hard_cap: 80_000_000
+  hard_cap: 60_000_000
 
 retries:
   wait_after_creation: 2
