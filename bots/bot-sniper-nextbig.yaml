@@ -9,7 +9,7 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.15            # 0.15 SOL/operacion (2026-07-28 tarde)
+  buy_amount: 0.25            # 0.25 SOL/operacion (2026-07-29)
   buy_slippage: 0.35
   sell_slippage: 0.35
   exit_strategy: "tp_sl"
