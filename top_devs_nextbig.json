@@ -1,6 +1,6 @@
 {
  "_README": "NEXT-BIG mediana>=25K + anti-dump: quitados los de mediana <25K (2026-07-28). Solo alto pico. Nota: los giga200k llevan median_peak placeholder 31054 (senal real=coins_over_200k).",
- "_count": 105,
+ "_count": 106,
  "_tiers": {
   "moonshot_repite": 16,
   "sostiene": 117,
@@ -1067,6 +1067,11 @@
    "median_duracion_min": 34,
    "median_holders": 624,
    "_tier": "calidad_7d"
+  },
+  {
+   "wallet": "Aqje5DsN4u2PHmQxGF9PKfpsDGwQRCBhWeLKHCFhSMXk",
+   "_tier": "vol5m_organico",
+   "nota": "3x top-50 vol 5min, ~651 traders, dev enfocado"
   }
  ]
 }
