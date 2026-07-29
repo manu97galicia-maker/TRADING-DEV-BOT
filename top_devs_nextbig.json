@@ -1,6 +1,6 @@
 {
  "_README": "NEXT-BIG mediana>=25K + anti-dump: quitados los de mediana <25K (2026-07-28). Solo alto pico. Nota: los giga200k llevan median_peak placeholder 31054 (senal real=coins_over_200k).",
- "_count": 102,
+ "_count": 101,
  "_tiers": {
   "moonshot_repite": 16,
   "sostiene": 117,
@@ -109,13 +109,6 @@
    "wallet": "55Perpb3rnWxV6LsjZux3cmtXUossXQ4PDHVm4T2tca1",
    "coins_over_200k": 3,
    "best_peak_usd": 678999,
-   "median_peak": 31054,
-   "_tier": "moonshot_repite"
-  },
-  {
-   "wallet": "bwamJzztZsepfkteWRChggmXuiiCQvpLqPietdNfSXa",
-   "coins_over_200k": 3,
-   "best_peak_usd": 388905,
    "median_peak": 31054,
    "_tier": "moonshot_repite"
   },
