@@ -1981,7 +1981,11 @@ class UniversalTrader:
         # y 2 pérdidas seguidas del mismo dev -> se le bloquea.
         held_val = remaining * last_price  # moonbag que sigue en la wallet
         net_sol = realized_sol + held_val - cost_sol
-        if net_sol > cost_sol * 0.05:  # ganó neto (>+5%) -> limpia y desbloquea
+        # Regla Manu 2026-07-29: perdida >=50% del coste -> bloqueo INMEDIATO del dev
+        _big_loss = cost_sol > 0 and net_sol <= -0.50 * cost_sol
+        if _big_loss:
+            _outcome = "hardrug"
+        elif net_sol > cost_sol * 0.05:  # ganó neto (>+5%) -> limpia y desbloquea
             _outcome = "win"
         elif net_sol < -cost_sol * 0.15:  # perdió neto (>-15%) -> strike
             _outcome = "rug"
@@ -2226,6 +2230,12 @@ class UniversalTrader:
         if outcome == "win":
             if prev:
                 data.pop(dev, None)  # una buena limpia el historial y desbloquea
+        elif outcome == "hardrug":
+            # Perdida >=50% en un solo trade -> BLOQUEO INMEDIATO (regla Manu 2026-07-29)
+            data[dev] = max(prev, 0) + 2
+            logger.warning(
+                "DEV BLOQUEADO %s: perdida >=50%% en 1 trade -> no se le compra mas", dev
+            )
         else:  # rug
             data[dev] = prev + 1
             if data[dev] >= 2:

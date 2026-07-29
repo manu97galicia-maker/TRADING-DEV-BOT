@@ -9,7 +9,7 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.25            # 0.25 SOL/operacion (2026-07-29)
+  buy_amount: 0.2             # 0.2 SOL (2026-07-29)
   buy_slippage: 0.35         # 35% (2026-07-28, devs pumpean rapido)
   sell_slippage: 0.35        # 35%
   exit_strategy: "tp_sl"
@@ -46,7 +46,7 @@ filters:
   yolo_mode: true
   paper_trade: false           # <<< EN VIVO (REAL)
   min_curve_sol: 0              # DESACTIVADO (2026-07-28): sin lectura de curva, compra directo al matchear (evita "curva ilegible" en tokens muy frescos)
-  max_entry_mc: 0               # DESACTIVADO (2026-07-28): sin tope de MC, entra aunque haya pumpeado rapido (lista vetada)
+  max_entry_mc: 8000            # no comprar si MC entrada > $8K (2026-07-29)
   min_holders: 0               # DESACTIVADO (2026-07-28): sin mínimo de holders (lista vetada)
   max_holder_pct: 0             # DESACTIVADO (2026-07-28): sin límite de concentración (lista vetada; devs suelen tener 1 holder gordo al inicio)
   holder_bypass_ratio: 3       # permite holder >5% si la MEDIANA del dev >= 3x el MC actual

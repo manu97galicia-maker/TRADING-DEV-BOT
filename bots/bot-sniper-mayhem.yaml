@@ -9,7 +9,7 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.15             # 0.15 SOL (2026-07-29, subido de 0.1)
+  buy_amount: 0.2             # 0.2 SOL (2026-07-29)
   buy_slippage: 0.35
   # Venta 90%: en curvas mayhem finas un slippage bajo revierte la venta (error
   # 6003 TooLittleSolReceived) -> cae a Jupiter dejando polvo. 90% deja que la
@@ -51,7 +51,7 @@ filters:
   yolo_mode: true
   paper_trade: false           # <<< EN VIVO (REAL)
   min_curve_sol: 0
-  max_entry_mc: 0
+  max_entry_mc: 8000            # no comprar si MC entrada > $8K (2026-07-29)
   min_holders: 0
   max_holder_pct: 0
   holder_bypass_ratio: 3
