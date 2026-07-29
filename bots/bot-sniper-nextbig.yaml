@@ -13,12 +13,12 @@ trade:
   buy_slippage: 0.35
   sell_slippage: 0.35
   exit_strategy: "tp_sl"
-  take_profit_percentage: 0.5      # +50% -> vende 30% (menos que ELITE: son moonshotters, se deja correr mas)
-  take_profit_sell_percentage: 0.30
-  tp2_gain: 2.0                    # +200% -> vende 20%
-  tp2_sell: 0.20
-  tp3_gain: 4.0                    # +400% -> vende 15%
-  tp3_sell: 0.15                   # moonbag 35% corre a por los cientos de miles
+  take_profit_percentage: 0.5      # +50% -> vende 60% (2026-07-29)
+  take_profit_sell_percentage: 0.60
+  tp2_gain: 1.2                    # +120% -> vende el resto
+  tp2_sell: 0.40                   # 60+40 = 100% (SIN moonbag)
+  tp3_gain: 99.0                   # desactivado
+  tp3_sell: 0.0                    # sin 3er tramo ni moonbag
   stop_loss_percentage: 0.40
   max_hold_time: 180               # 3 min (mas margen: los moonshots tardan mas en despegar)
   price_check_interval: 1

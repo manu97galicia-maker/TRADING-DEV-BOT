@@ -17,12 +17,12 @@ trade:
   # solo evita el revert, siempre recibes el precio real de la curva.)
   sell_slippage: 0.90
   exit_strategy: "tp_sl"
-  take_profit_percentage: 0.5      # +50% -> vende 40%
-  take_profit_sell_percentage: 0.40
-  tp2_gain: 1.5                    # +150% -> vende 30%
-  tp2_sell: 0.30
-  tp3_gain: 3.0                    # +300% -> vende 15%
-  tp3_sell: 0.15                   # moonbag 15% (protegido por trailing stop -40% desde pico)
+  take_profit_percentage: 0.5      # +50% -> vende 60% (2026-07-29)
+  take_profit_sell_percentage: 0.60
+  tp2_gain: 1.2                    # +120% -> vende el resto
+  tp2_sell: 0.40                   # 60+40 = 100% (SIN moonbag)
+  tp3_gain: 99.0                   # desactivado
+  tp3_sell: 0.0                    # sin 3er tramo ni moonbag
   stop_loss_percentage: 0.40
   max_hold_time: 180
   price_check_interval: 1
