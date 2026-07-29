@@ -1,6 +1,6 @@
 {
  "_README": "ELITE 20 (mediana>=25K) + moonshot: >=2 monedas >120K y <=50 lanz/sem (sin spammers). Dune 2026-07-28.",
- "_count": 27,
+ "_count": 26,
  "wallets": [
   {
    "wallet": "8gxNUi3uDnqPdpVciCAf8EDD6Bc1e5spQijXBzwGjRsW",
@@ -57,13 +57,6 @@
    "launches_7d": 6,
    "median_peak": 28241,
    "median_vol_sol": 1084.6
-  },
-  {
-   "wallet": "GihG1WciMf5JMmKBpkCiBqwYLvkX5D8Sayof2TQAB5GQ",
-   "per_day": 0.86,
-   "launches_7d": 6,
-   "median_peak": 31054,
-   "median_vol_sol": 1005.1
   },
   {
    "wallet": "ALJ4P5QNyHeLEjpKGmA1eUfJHSEGQMjY8HLnDkSgjczb",
