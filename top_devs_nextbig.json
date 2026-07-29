@@ -1,6 +1,6 @@
 {
  "_README": "NEXT-BIG mediana>=25K + anti-dump: quitados los de mediana <25K (2026-07-28). Solo alto pico. Nota: los giga200k llevan median_peak placeholder 31054 (senal real=coins_over_200k).",
- "_count": 99,
+ "_count": 105,
  "_tiers": {
   "moonshot_repite": 16,
   "sostiene": 117,
@@ -1025,6 +1025,48 @@
    "median_holders_60s": 114,
    "median_vol_usd_60s": 11423,
    "_tier": "hitrate"
+  },
+  {
+   "wallet": "GATbxwUSPRhN7GERjLNJv1hwkg1iuJdj7KCc8gVd9eXc",
+   "median_peak": 21116,
+   "median_duracion_min": 5856,
+   "median_holders": 682,
+   "_tier": "calidad_7d"
+  },
+  {
+   "wallet": "Accyhhx8z4kbhobAcwpASqh8miUxaay4L8mB6UNwzZt4",
+   "median_peak": 22650,
+   "median_duracion_min": 5691,
+   "median_holders": 243,
+   "_tier": "calidad_7d"
+  },
+  {
+   "wallet": "8cFDqZRYdiCuDgt8cG2iNYjEvpD83yv8XZggjzkGWCM2",
+   "median_peak": 25522,
+   "median_duracion_min": 2228,
+   "median_holders": 587,
+   "_tier": "calidad_7d"
+  },
+  {
+   "wallet": "5KTX7LZyoewhQ2keNCNQ6qQCXW9uermzr8r5K6uss4PY",
+   "median_peak": 21391,
+   "median_duracion_min": 676,
+   "median_holders": 512,
+   "_tier": "calidad_7d"
+  },
+  {
+   "wallet": "Hcrr3q7o4PkBF2dvt1xc4VZCDHVbDvkmZ2gHeeb3JDVz",
+   "median_peak": 30446,
+   "median_duracion_min": 705,
+   "median_holders": 479,
+   "_tier": "calidad_7d"
+  },
+  {
+   "wallet": "5AubfxeUqy6MZWEcTQaqGd7pMCQzcLA55EH66tq4z7cZ",
+   "median_peak": 30779,
+   "median_duracion_min": 34,
+   "median_holders": 624,
+   "_tier": "calidad_7d"
   }
  ]
 }
