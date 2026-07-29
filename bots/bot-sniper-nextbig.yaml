@@ -42,7 +42,7 @@ filters:
   max_token_age: 30
   match_string: null
   bro_address: "top_devs_nextbig.json"   # 61 devs giga200k (>=2 monedas >$200K/sem) que NO estan en ELITE
-  allow_mayhem: true            # net mas ancho: los moonshots a veces salen en mayhem, aqui SI se cogen
+  allow_mayhem: false           # OFF: las mayhem las maneja SOLO el bot MAYHEM (evita doble-compra + NEXT-BIG vende 35% = revierte en curva mayhem fina). Separacion limpia.
   marry_mode: false
   yolo_mode: true
   paper_trade: false           # <<< EN VIVO (REAL)
