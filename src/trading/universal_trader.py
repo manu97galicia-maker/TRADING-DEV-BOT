@@ -957,18 +957,44 @@ class UniversalTrader:
                     if hit["sl"]:  # el moonbag restante cayo al stop
                         roi += pos * (-slp)
                 value = self.buy_amount * (1 + roi)
+                pnl = value - self.buy_amount
                 win = str(first_hit).startswith("tp")
                 head = "✅ GANADOR" if win else ("🛑 STOP" if first_hit == "sl" else "⏹️ CIERRE")
+                tot = self._bump_paper_total(pnl, win)  # acumulado total simulacion
                 notify(
                     f"{head} · <b>{rec['symbol']}</b> (paper)\n"
                     f"📊 ROI <b>{roi * 100:+.0f}%</b> · pico {rec['peak_pct']:+.0f}% · mín {rec['trough_pct']:+.0f}%\n"
-                    f"💰 {self.buy_amount} SOL → <b>{value:.4f} SOL</b> (~${value * 75:,.1f})\n"
-                    f"⏱ {rec.get('secs', 0)}s · salida: {first_hit}\n"
+                    f"💰 {self.buy_amount} SOL → <b>{value:.4f} SOL</b> ({pnl:+.4f})\n"
+                    f"━━━━━━━━━━━━\n"
+                    f"📈 <b>TOTAL: {tot['pnl']:+.4f} SOL</b> · {tot['n']} trades · "
+                    f"{tot['wins']}✅/{tot['losses']}❌ ({tot['winrate']:.0f}% acierto)\n"
                     f'📊 <a href="https://gmgn.ai/sol/token/{mint}">GMGN</a> · '
                     f'🤖 <a href="https://t.me/MaestroSniperBot?start={mint}">Maestro</a>'
                 )
             except Exception:  # noqa: BLE001 - notificar nunca rompe el trading
                 pass
+
+    def _bump_paper_total(self, pnl: float, win: bool) -> dict:
+        """Acumula el P&L total de la simulacion paper y lo persiste (para el
+        resumen que sale en cada aviso de Telegram)."""
+        import json
+        from pathlib import Path
+
+        p = Path(f"paper_stats{self._state_suffix}.json")
+        try:
+            data = json.loads(p.read_text(encoding="utf-8")) if p.is_file() else {}
+        except Exception:  # noqa: BLE001
+            data = {}
+        data["pnl"] = float(data.get("pnl", 0.0)) + pnl
+        data["n"] = int(data.get("n", 0)) + 1
+        data["wins"] = int(data.get("wins", 0)) + (1 if win else 0)
+        data["losses"] = int(data.get("losses", 0)) + (0 if win else 1)
+        data["winrate"] = 100.0 * data["wins"] / data["n"] if data["n"] else 0.0
+        try:
+            p.write_text(json.dumps(data), encoding="utf-8")
+        except Exception:  # noqa: BLE001
+            logger.debug("no pude escribir paper_stats", exc_info=True)
+        return data
 
     def _record_paper(
         self, token_info: TokenInfo, curve_sol: float = 0.0, entry: float = 0.0
