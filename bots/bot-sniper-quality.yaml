@@ -34,7 +34,7 @@ priority_fees:
   hard_cap: 60_000_000
 
 retries:
-  wait_after_creation: 20          # mide a los 20s (ventana del analisis)
+  wait_after_creation: 30          # mira a los 30s: la C ya subio past la banda, la B sigue clavada
   wait_after_buy: 0
 
 filters:
@@ -45,8 +45,8 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: true                # <<< SIMULADO (0 SOL real), notifica ROI por Telegram
-  min_curve_sol: 15                # momentum: >=15 SOL en curva (~$5K) - filtra losers de 1.9 SOL
-  max_entry_mc: 12000              # techo $12K (winners ya estan a ~$8.4K a los 20s)
+  min_curve_sol: 20                # ~$6K: exige que SIGUIO subiendo tras la banda (filtra las B estancadas)
+  max_entry_mc: 15000              # techo $15K
   min_holders: 10                  # minimo 10 holders reales (2026-07-30)
   max_holder_pct: 0.20             # ningun holder individual >20%
   max_bundle_pct: 0.25             # BUNDLE < 25% (2026-07-30)
