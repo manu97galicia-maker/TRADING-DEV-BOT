@@ -170,6 +170,7 @@ async def start_bot(config_path: str):
             min_curve_sol=cfg.get("filters", {}).get("min_curve_sol", 0.0),
             max_entry_mc=cfg.get("filters", {}).get("max_entry_mc", 0.0),
             max_holder_pct=cfg.get("filters", {}).get("max_holder_pct", 0.0),
+            max_bundle_pct=cfg.get("filters", {}).get("max_bundle_pct", 0.0),
             min_holders=cfg.get("filters", {}).get("min_holders", 0),
             holder_bypass_ratio=cfg.get("filters", {}).get("holder_bypass_ratio", 0.0),
             min_reserve_sol=cfg.get("trade", {}).get("min_reserve_sol", 0.03),

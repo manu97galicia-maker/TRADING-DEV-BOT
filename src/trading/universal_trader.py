@@ -305,6 +305,7 @@ class UniversalTrader:
         # Anti-concentración: no comprar si un holder (excluida la curva) tiene
         # más de esta fracción del supply (0 = desactivado).
         max_holder_pct: float = 0.0,
+        max_bundle_pct: float = 0.0,
         # Filtro orgánico: mínimo de poseedores distintos para comprar (menos =
         # bundle/dev-spam sin compras reales). 0 = desactivado.
         min_holders: int = 0,
@@ -503,6 +504,7 @@ class UniversalTrader:
         self.max_entry_mc = float(max_entry_mc or 0)
         self.min_holders = int(min_holders or 0)
         self.max_holder_pct = float(max_holder_pct or 0)
+        self.max_bundle_pct = float(max_bundle_pct or 0)
         self.holder_bypass_ratio = float(holder_bypass_ratio or 0)
         # Reserva mínima de SOL que nunca se gasta (para fees / no quedarse a 0).
         self.min_reserve_lamports = int(float(min_reserve_sol or 0.03) * LAMPORTS_PER_SOL)
@@ -1186,7 +1188,7 @@ class UniversalTrader:
         Usa getTokenLargestAccounts. Fail-open: ante error/RPC devuelve False
         para no frenar el trading.
         """
-        if self.max_holder_pct <= 0 and self.min_holders <= 0:
+        if self.max_holder_pct <= 0 and self.min_holders <= 0 and self.max_bundle_pct <= 0:
             return False
         try:
             import aiohttp
@@ -1231,6 +1233,24 @@ class UniversalTrader:
                     logger.info(
                         f"{token_info.symbol}: solo {holders} holders "
                         f"(< {self.min_holders}) -> NO orgánico, se omite"
+                    )
+                    return True
+
+            # BUNDLE %: suma de los top holders EXCLUIDA la curva. Si concentran
+            # mas de max_bundle_pct del supply -> bundle -> se omite (regla Manu).
+            if self.max_bundle_pct > 0:
+                bundle_sum = 0.0
+                for a in accts:
+                    addr = a.get("address")
+                    if curve_ata and addr == curve_ata:
+                        continue
+                    if not curve_ata and addr == largest_addr:
+                        continue
+                    bundle_sum += float(a.get("amount") or 0) / supply
+                if bundle_sum > self.max_bundle_pct:
+                    logger.info(
+                        f"{token_info.symbol}: bundle {bundle_sum * 100:.0f}% "
+                        f"(top holders) > {self.max_bundle_pct * 100:.0f}% -> se omite"
                     )
                     return True
 
