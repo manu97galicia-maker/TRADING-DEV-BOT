@@ -9,7 +9,11 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.25            # 0.25 SOL por operacion (2026-07-30)
+  # 2026-07-31: 0.25 -> 0.05. Con 0.294 SOL en la wallet, 0.25 era el 85% de la
+  # cuenta en una sola operacion: daba para UN intento. A 0.05 dan para cinco, y
+  # con 51% de aciertos y ratio ganancia/perdida ~1 hacen falta muchos intentos
+  # para que el resultado signifique algo en vez de ser azar.
+  buy_amount: 0.05
   buy_slippage: 0.35
   sell_slippage: 0.35
   exit_strategy: "tp_sl"
