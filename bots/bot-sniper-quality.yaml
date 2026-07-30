@@ -49,7 +49,7 @@ filters:
   max_entry_mc: 3800               # techo $3.8K MC (no comprar mas caro)
   min_holders: 10                  # minimo 10 holders reales (2026-07-30)
   max_holder_pct: 0.20             # ningun holder individual >20%
-  max_bundle_pct: 0.15             # BUNDLE < 15%: suma de top holders (excl curva) < 15% del supply
+  max_bundle_pct: 0.25             # BUNDLE < 25% (2026-07-30)
   holder_bypass_ratio: 0
 
   buy_on_dex_paid:
