@@ -45,7 +45,7 @@ filters:
   allow_mayhem: false           # OFF: las mayhem las maneja SOLO el bot MAYHEM (evita doble-compra + NEXT-BIG vende 35% = revierte en curva mayhem fina). Separacion limpia.
   marry_mode: false
   yolo_mode: true
-  paper_trade: true            # SOLO AVISA por Telegram, NO compra (2026-07-30)
+  paper_trade: false           # COMPRA DE VERDAD con SOL real (2026-07-30, decision de Manu)
   min_curve_sol: 0
   max_entry_mc: 8000            # no comprar si MC entrada > $8K (2026-07-29)
   min_holders: 0
