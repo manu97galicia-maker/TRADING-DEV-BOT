@@ -1,10 +1,11 @@
 {
- "_README": "NEXT-BIG mediana>=25K + anti-dump: quitados los de mediana <25K (2026-07-28). Solo alto pico. Nota: los giga200k llevan median_peak placeholder 31054 (senal real=coins_over_200k).",
- "_count": 106,
+ "_README": "NEXT-BIG mediana>=25K + anti-dump: quitados los de mediana <25K (2026-07-28). Solo alto pico. Nota: los giga200k llevan median_peak placeholder 31054 (senal real=coins_over_200k). | 2026-07-31: +15 devs de consulta Dune 7d (tier dune7d_scalp), con hit_rate y volumen REALES (no placeholder). Ninguno migra a Raydium: pico mediano $20-31K, es juego de scalp en curva, no moonshot. Excluidos 3 del CSV que ya estaban en blacklist_devs.json.",
+ "_count": 121,
  "_tiers": {
   "moonshot_repite": 16,
   "sostiene": 117,
-  "hitrate": 17
+  "hitrate": 17,
+  "dune7d_scalp": 15
  },
  "wallets": [
   {
@@ -1072,6 +1073,171 @@
    "wallet": "Aqje5DsN4u2PHmQxGF9PKfpsDGwQRCBhWeLKHCFhSMXk",
    "_tier": "vol5m_organico",
    "nota": "3x top-50 vol 5min, ~651 traders, dev enfocado"
+  },
+  {
+   "wallet": "862TYSvRYoiHAK3F3WwTRYAfuGiQaGdxedN9AGvRGWo2",
+   "launches_7d": 10,
+   "hit_rate_20k": 90.0,
+   "median_peak": 28061,
+   "median_holders": 922,
+   "median_vol_sol": 1732.4,
+   "median_duracion_min": 686,
+   "pct_migrated": 0,
+   "_tier": "dune7d_scalp"
+  },
+  {
+   "wallet": "9LUgfzet43ZdwdAzbvV5msQjGzx9g6sqvtgLaQyQAEog",
+   "launches_7d": 4,
+   "hit_rate_20k": 75.0,
+   "median_peak": 24091,
+   "median_holders": 834,
+   "median_vol_sol": 1313.2,
+   "median_duracion_min": 2490,
+   "pct_migrated": 0,
+   "_tier": "dune7d_scalp"
+  },
+  {
+   "wallet": "7ufmve7ZSFCzuNcKRunYrGtyb2Ka1MXzkWwf7jZhVsmL",
+   "launches_7d": 19,
+   "hit_rate_20k": 73.7,
+   "median_peak": 30471,
+   "median_holders": 513,
+   "median_vol_sol": 879.6,
+   "median_duracion_min": 57,
+   "pct_migrated": 0,
+   "_tier": "dune7d_scalp"
+  },
+  {
+   "wallet": "DxQ1iNidsGap2kr14VdEzA8NheqXabfh6fRkvZQbnZVY",
+   "launches_7d": 17,
+   "hit_rate_20k": 70.6,
+   "median_peak": 23604,
+   "median_holders": 683,
+   "median_vol_sol": 1095.8,
+   "median_duracion_min": 484,
+   "pct_migrated": 0,
+   "_tier": "dune7d_scalp"
+  },
+  {
+   "wallet": "F5ExBJxM7zJhowwSBYGMTQVesxWvNzsPJhJTuXxLHiyZ",
+   "launches_7d": 3,
+   "hit_rate_20k": 66.7,
+   "median_peak": 20043,
+   "median_holders": 676,
+   "median_vol_sol": 1047.3,
+   "median_duracion_min": 1823,
+   "pct_migrated": 0,
+   "_tier": "dune7d_scalp"
+  },
+  {
+   "wallet": "3YxvtPQ1G84us76A3PK8LaJeizjrFjfJb8jjWQtSKQFv",
+   "launches_7d": 3,
+   "hit_rate_20k": 66.7,
+   "median_peak": 25437,
+   "median_holders": 22,
+   "median_vol_sol": 147.0,
+   "median_duracion_min": 223,
+   "pct_migrated": 0,
+   "_tier": "dune7d_scalp"
+  },
+  {
+   "wallet": "3Xs1yPTkPu753BQRKrauqZroFdS46yB4kx6AJAMoZ3vG",
+   "launches_7d": 3,
+   "hit_rate_20k": 66.7,
+   "median_peak": 21048,
+   "median_holders": 31,
+   "median_vol_sol": 140.7,
+   "median_duracion_min": 55,
+   "pct_migrated": 0,
+   "_tier": "dune7d_scalp"
+  },
+  {
+   "wallet": "3FiWnNDTZrKPbjPeMiTe2r5m5zygxSu57ePck5LUQp7d",
+   "launches_7d": 10,
+   "hit_rate_20k": 60.0,
+   "median_peak": 30598,
+   "median_holders": 541,
+   "median_vol_sol": 825.0,
+   "median_duracion_min": 30,
+   "pct_migrated": 0,
+   "_tier": "dune7d_scalp"
+  },
+  {
+   "wallet": "2hcbvVnPutVmXW6TbNEx6U1KuMiyFPWKwSjknzwCYiwX",
+   "launches_7d": 5,
+   "hit_rate_20k": 60.0,
+   "median_peak": 23141,
+   "median_holders": 536,
+   "median_vol_sol": 748.4,
+   "median_duracion_min": 1805,
+   "pct_migrated": 0,
+   "_tier": "dune7d_scalp"
+  },
+  {
+   "wallet": "WnBVqVTaiJk5hNbcwbHiffRVnMdf1aaxNU5JkSpvGub",
+   "launches_7d": 5,
+   "hit_rate_20k": 60.0,
+   "median_peak": 30056,
+   "median_holders": 481,
+   "median_vol_sol": 779.9,
+   "median_duracion_min": 61,
+   "pct_migrated": 0,
+   "_tier": "dune7d_scalp"
+  },
+  {
+   "wallet": "DAEdBmTPEKM6xkwfzC3d411QUe6coKpkND6UURa4CvHC",
+   "launches_7d": 9,
+   "hit_rate_20k": 55.6,
+   "median_peak": 30393,
+   "median_holders": 241,
+   "median_vol_sol": 383.6,
+   "median_duracion_min": 36,
+   "pct_migrated": 0,
+   "_tier": "dune7d_scalp"
+  },
+  {
+   "wallet": "HoKiWhcU3YBN9f5Uxj1bBLkcWkw5iDEQbPiiU6EnYCwQ",
+   "launches_7d": 6,
+   "hit_rate_20k": 50.0,
+   "median_peak": 22295,
+   "median_holders": 424,
+   "median_vol_sol": 709.0,
+   "median_duracion_min": 2274,
+   "pct_migrated": 0,
+   "_tier": "dune7d_scalp"
+  },
+  {
+   "wallet": "GCc5qzbbN8xjARVJPovDxfKTCyeqXeeRzhwPH5csKwY6",
+   "launches_7d": 4,
+   "hit_rate_20k": 50.0,
+   "median_peak": 30853,
+   "median_holders": 799,
+   "median_vol_sol": 1169.6,
+   "median_duracion_min": 3548,
+   "pct_migrated": 0,
+   "_tier": "dune7d_scalp"
+  },
+  {
+   "wallet": "G36Ki3U33R88QmHfsVQT4QQVhkBQWG1bEE8zTWeSuGQy",
+   "launches_7d": 4,
+   "hit_rate_20k": 50.0,
+   "median_peak": 30039,
+   "median_holders": 43,
+   "median_vol_sol": 94.5,
+   "median_duracion_min": 334,
+   "pct_migrated": 0,
+   "_tier": "dune7d_scalp"
+  },
+  {
+   "wallet": "7FdmUabHfLS7Td2VFJF8VuSSfMmRqYFqKSnGLzZpsFrz",
+   "launches_7d": 5,
+   "hit_rate_20k": 40.0,
+   "median_peak": 19328,
+   "median_holders": 58,
+   "median_vol_sol": 271.8,
+   "median_duracion_min": 33,
+   "pct_migrated": 0,
+   "_tier": "dune7d_scalp"
   }
  ]
 }

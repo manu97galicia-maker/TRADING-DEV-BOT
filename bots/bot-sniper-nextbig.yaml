@@ -47,7 +47,10 @@ filters:
   yolo_mode: true
   paper_trade: false           # COMPRA DE VERDAD con SOL real (2026-07-30, decision de Manu)
   min_curve_sol: 0
-  max_entry_mc: 8000            # no comprar si MC entrada > $8K (2026-07-29)
+  # 2026-07-31: subido de 8000 -> 15000. Sobre 185.428 monedas de Dune, la
+  # ganadora MEDIANA esta en $8.395 a los 20s: el tope de $8K rechazaba a mas de
+  # la mitad de las que acaban funcionando, por 400 dolares de margen.
+  max_entry_mc: 15000
   min_holders: 0
   max_holder_pct: 0
   holder_bypass_ratio: 3
