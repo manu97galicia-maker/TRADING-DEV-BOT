@@ -1,27 +1,27 @@
-name: "QUALITY - mediana 15-25K 0.1 SOL"
+name: "QUALITY-PAPER - filtro puro rug0 MC3-3.8K 5holders"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
-enabled: false
+enabled: true
 separate_process: true
 platform: "pump_fun"
 
 trade:
   buy_amount: 0.15
-  buy_slippage: 0.15
-  sell_slippage: 0.30
+  buy_slippage: 0.35
+  sell_slippage: 0.35
   exit_strategy: "tp_sl"
-  take_profit_percentage: 0.5
-  take_profit_sell_percentage: 0.40
-  tp2_gain: 1.5
-  tp2_sell: 0.25
-  tp3_gain: 3.0
-  tp3_sell: 0.15
+  take_profit_percentage: 0.4       # +40% -> vende 60%
+  take_profit_sell_percentage: 0.60
+  tp2_gain: 1.0                     # +100% -> vende 20%
+  tp2_sell: 0.20
+  tp3_gain: 1.5                     # +150% -> vende 20%
+  tp3_sell: 0.20
   stop_loss_percentage: 0.40
-  max_hold_time: 120
-  price_check_interval: 2
+  max_hold_time: 180
+  price_check_interval: 1
   extreme_fast_mode: false
   extreme_fast_token_amount: 20
   min_reserve_sol: 0.03
@@ -29,34 +29,35 @@ trade:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  fixed_amount: 50_000_000         # 0.005 SOL/tx
+  fixed_amount: 60_000_000
   extra_percentage: 0.0
-  hard_cap: 50_000_000
+  hard_cap: 60_000_000
 
 retries:
-  wait_after_creation: 6
+  wait_after_creation: 15          # espera ~15s -> mide la moneda en la ventana 10-20s
   wait_after_buy: 0
 
 filters:
   listener_type: "pumpportal"
-  max_token_age: 30
+  max_token_age: 60                # MAXIMO 1 MINUTO de edad de la moneda
   match_string: null
-  bro_address: "top_devs_quality.json"   # 37 devs mediana $15-25K (Dune 2026-07-26)
+  bro_address: null                # SIN lista de devs -> evalua TODA moneda por filtro puro
   marry_mode: false
   yolo_mode: true
-  paper_trade: false
-  min_curve_sol: 2
-  max_entry_mc: 10000          # dev de calidad: deja entrar mas arriba
-  min_holders: 6
-  max_holder_pct: 0.05
-  holder_bypass_ratio: 3
+  paper_trade: true                # <<< SIMULADO (0 SOL real), notifica ROI por Telegram
+  min_curve_sol: 5.75              # piso ~$3K MC (SOL en curva a los 15s = momentum)
+  max_entry_mc: 3800               # techo $3.8K MC (no comprar mas caro)
+  min_holders: 5                   # minimo 5 holders reales
+  max_holder_pct: 0.16             # proxy "bundle < 16%": ningun holder con >16% del supply
+  holder_bypass_ratio: 0
 
   buy_on_dex_paid:
     enabled: false
   dexscreener:
-    enabled: false
+    enabled: true                  # activa RugCheck
     enforce: false
-    block_on_error: false
+    block_if_rugged: true          # RUG ~0%: descarta lo marcado rugged por RugCheck
+    block_on_error: false          # token muy fresco sin datos RugCheck -> no bloquea
     chain: "solana"
     require_dex_paid: false
     require_liquidity_locked: false
@@ -75,4 +76,4 @@ cleanup:
   with_priority_fee: false
 
 node:
-  max_rps: 6
+  max_rps: 8
