@@ -26,11 +26,35 @@ cd "$BOT" || { bad "no existe $BOT"; exit 1; }
 
 git pull --ff-only 2>&1 | sed 's/^/        /'
 [ -d .venv ] || python3 -m venv .venv
-./.venv/bin/pip install --quiet --upgrade pip 2>/dev/null
-if ./.venv/bin/pip install --quiet aiohttp PyYAML websockets solders solana base58 2>&1 | tail -3; then
+# Encontrar el interprete en vez de suponerlo. Este repo puede estar montado con
+# un .venv, con uv (hay uv.lock), o directamente sobre el python del sistema, y
+# dar por hecho ./.venv/bin/python hacia fallar el arranque entero.
+PY=""
+for cand in "$PWD/.venv/bin/python" "$PWD/.venv/bin/python3" "$HOME/.venv/bin/python"; do
+  [ -x "$cand" ] && { PY="$cand"; break; }
+done
+if [ -z "$PY" ] && command -v uv >/dev/null 2>&1 && [ -f uv.lock ]; then
+  uv sync --quiet 2>/dev/null && [ -x "$PWD/.venv/bin/python" ] && PY="$PWD/.venv/bin/python"
+fi
+[ -z "$PY" ] && PY="$(command -v python3 || command -v python)"
+if [ -z "$PY" ]; then
+  bad "no encuentro ningun Python en este servidor"
+  exit 1
+fi
+ok "python: $PY"
+
+# Instalar dependencias con el pip de ESE interprete (no el de una ruta fija).
+if "$PY" -m pip install --quiet --upgrade pip >/dev/null 2>&1; then :; fi
+if "$PY" -m pip install --quiet aiohttp PyYAML websockets solders solana base58 >/dev/null 2>&1; then
   ok "dependencias al dia"
 else
-  bad "fallo instalando dependencias"
+  # Puede fallar por --user, por PEP 668 (entorno gestionado) o por red. No es
+  # fatal: si los modulos ya estaban, el bot arranca igual.
+  if "$PY" -c "import aiohttp, yaml, websockets" >/dev/null 2>&1; then
+    ok "dependencias ya presentes (el instalador fallo pero no hacia falta)"
+  else
+    bad "faltan dependencias y no pude instalarlas: $PY -m pip install aiohttp PyYAML websockets"
+  fi
 fi
 
 # Los ficheros que este arranque necesita. Si faltan, es que el push desde el PC
@@ -52,7 +76,7 @@ ok "ficheros nuevos presentes"
 # --------------------------------------------------------------------------- #
 paso "2/5  Que va a arrancar"
 # --------------------------------------------------------------------------- #
-./.venv/bin/python - <<'PY'
+"$PY" - <<'PY'
 import yaml, pathlib
 reales = []
 for f in sorted(pathlib.Path("bots").glob("*.yaml")):
@@ -78,20 +102,21 @@ pkill -f "bot_runner"  2>/dev/null && sleep 2
 pkill -9 -f "bot_runner" 2>/dev/null
 rm -f .bot.pid 2>/dev/null
 
-nohup ./.venv/bin/python watchdog.py > logs/watchdog.out 2>&1 &
+nohup "$PY" watchdog.py > logs/watchdog.out 2>&1 &
 sleep 8
 
 VIVOS=$(pgrep -fc "bot_runner" 2>/dev/null || echo 0)
 if [ "$VIVOS" -gt 0 ]; then
   ok "$VIVOS proceso(s) de bot corriendo"
 else
-  bad "el bot no arranco. Mira: tail -40 $BOT/logs/watchdog.out"
+  bad "el bot no arranco. Mira el motivo con:  cat $BOT/logs/watchdog.out"
 fi
 
 # --------------------------------------------------------------------------- #
 paso "4/5  Scout (vigilante 24/7)"
 # --------------------------------------------------------------------------- #
 install -m 644 scout.service /etc/systemd/system/scout.service
+sed -i "s#^ExecStart=.*#ExecStart=$PY scout.py#" /etc/systemd/system/scout.service
 sed -i "s#/root/Definitivo_bot#${BOT}#g" /etc/systemd/system/scout.service
 systemctl daemon-reload
 systemctl enable scout >/dev/null 2>&1
@@ -117,7 +142,7 @@ if [ -d "$PANEL" ]; then
   fi
   # Sin usuarios no hay login posible: es lo que daba "contrasena incorrecta".
   if grep -q '^PANEL_SEED_PASSWORD=.\+' .env 2>/dev/null; then
-    ./.venv/bin/python -m server.users sync >/dev/null 2>&1 && ok "usuarios del panel listos"
+    "$PY" -m server.users sync >/dev/null 2>&1 && ok "usuarios del panel listos"
   else
     warn "PANEL_SEED_PASSWORD vacio en $PANEL/.env -> el login seguira fallando"
   fi
@@ -152,8 +177,8 @@ if [ "$FALLOS" = 0 ]; then
               (y avisos al momento si el saldo baja del suelo)
 
   Para mirar en vivo:
-    tail -f $BOT/logs/*.log        <- lo que hacen los bots
     journalctl -u scout -f          <- el vigilante
+    cat $BOT/logs/watchdog.out      <- el arranque de los bots
 
 EOF
 else
@@ -164,7 +189,7 @@ else
     - falta hacer git push desde el PC
     - PANEL_SEED_PASSWORD vacio en $PANEL/.env
     - el droplet es de 1GB: si algo murio, mira si fue por memoria con
-        dmesg | tail -20 | grep -i "killed process"
+        dmesg | grep -i "killed process"
 
 EOF
 fi
