@@ -43,18 +43,23 @@ if [ -z "$PY" ]; then
 fi
 ok "python: $PY"
 
-# Instalar dependencias con el pip de ESE interprete (no el de una ruta fija).
-if "$PY" -m pip install --quiet --upgrade pip >/dev/null 2>&1; then :; fi
-if "$PY" -m pip install --quiet aiohttp PyYAML websockets solders solana base58 >/dev/null 2>&1; then
-  ok "dependencias al dia"
+# Instalar dependencias. OJO: los entornos creados por uv NO traen pip, asi que
+# "$PY -m pip" falla ahi aunque el entorno este perfecto. Se prueba uv primero.
+DEPS="aiohttp PyYAML websockets solders solana base58"
+INSTALADO=0
+if command -v uv >/dev/null 2>&1 && [ -f uv.lock ]; then
+  uv sync --quiet >/dev/null 2>&1 && INSTALADO=1
+  VIRTUAL_ENV="$PWD/.venv" uv pip install --quiet $DEPS >/dev/null 2>&1 && INSTALADO=1
+fi
+if [ "$INSTALADO" = 0 ]; then
+  "$PY" -m pip install --quiet $DEPS >/dev/null 2>&1 && INSTALADO=1
+fi
+# Lo que manda es si los modulos se pueden importar, no si el instalador dijo
+# que si: en un entorno gestionado el install falla aunque no hiciera falta.
+if "$PY" -c "import aiohttp, yaml, websockets" >/dev/null 2>&1; then
+  ok "dependencias listas"
 else
-  # Puede fallar por --user, por PEP 668 (entorno gestionado) o por red. No es
-  # fatal: si los modulos ya estaban, el bot arranca igual.
-  if "$PY" -c "import aiohttp, yaml, websockets" >/dev/null 2>&1; then
-    ok "dependencias ya presentes (el instalador fallo pero no hacia falta)"
-  else
-    bad "faltan dependencias y no pude instalarlas: $PY -m pip install aiohttp PyYAML websockets"
-  fi
+  bad "faltan dependencias. Prueba a mano:  uv pip install $DEPS"
 fi
 
 # Los ficheros que este arranque necesita. Si faltan, es que el push desde el PC
