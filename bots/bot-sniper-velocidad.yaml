@@ -52,15 +52,18 @@ trade:
   buy_amount: 0.05             # igual que los otros dos, para poder comparar
   buy_slippage: 0.35
   sell_slippage: 0.35
+  # SCALP: salir en +15% y no ser codicioso (2026-07-31, peticion de Manu).
+  #
+  # El stop BAJA con el objetivo, y no es opcional. Vender en +15% manteniendo
+  # un stop de -40% exige acertar el 78% de las veces solo para no perder; con
+  # las perdidas reales del historico (-65%) sube al 85%. El acierto medido son
+  # 63 operaciones al 50,8%. Con TP y SL simetricos el listo baja al 58%, que
+  # sigue siendo exigente pero ya esta en el mismo mundo.
   exit_strategy: "tp_sl"
-  take_profit_percentage: 0.4
-  take_profit_sell_percentage: 0.60
-  tp2_gain: 1.0
-  tp2_sell: 0.20
-  tp3_gain: 1.5
-  tp3_sell: 0.20
-  stop_loss_percentage: 0.40
-  max_hold_time: 180
+  take_profit_percentage: 0.15
+  take_profit_sell_percentage: 1.0   # vende TODO en +15%, sin escalera
+  stop_loss_percentage: 0.15
+  max_hold_time: 60                  # un scalp que tarda mas de 1 min ya fallo
   price_check_interval: 1
   extreme_fast_mode: false
   extreme_fast_token_amount: 20
@@ -86,7 +89,11 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: true            # NO compra. Solo apunta y sigue el precio.
-  min_curve_sol: 5.0           # <-- EL UNICO FILTRO REAL
+  # $4.000 de volumen en los primeros 20s (peticion de Manu). A ~$150/SOL son
+  # 27 SOL de volumen, que en la curva quedan en ~10 SOL netos con el 69% de
+  # compras que mide Dune. Mas exigente que los 5 de antes: menos senales, pero
+  # solo lo que se esta moviendo de verdad.
+  min_curve_sol: 10.0          # <-- EL UNICO FILTRO REAL
   max_entry_mc: 30000
   min_holders: 0
   max_holder_pct: 0
