@@ -17,12 +17,18 @@ trade:
   buy_slippage: 0.35
   sell_slippage: 0.35
   exit_strategy: "tp_sl"
-  take_profit_percentage: 0.4      # +40% -> vende 60%
-  take_profit_sell_percentage: 0.60
-  tp2_gain: 1.0                    # +100% -> vende 20%
-  tp2_sell: 0.20
-  tp3_gain: 1.5                    # +150% -> vende 20% (resto)
-  tp3_sell: 0.20                   # 60+20+20 = 100%, sin moonbag
+  # 2026-07-31: fuera la escalera. Se vende TODO en +40% (Manu pidio 35-40; se
+  # coge el 40 porque con el stop en -40 exige acertar el 52,6% en vez del 56,3%
+  # que exigiria el 35).
+  #
+  # Lo que se gana: cada acierto cierra la operacion entera y el beneficio queda
+  # en la wallet, sin depender de que la moneda siga subiendo.
+  # Lo que se pierde: los runners. Con la escalera, un x22 como IM POOR dejaba
+  # correr el 40% de la posicion; ahora se sale entero en +40%. Dado que la
+  # mayoria de las operaciones se resuelven en menos de 60s y los runners son
+  # raros, es un cambio defendible -- pero es explicitamente renunciar a la cola.
+  take_profit_percentage: 0.40
+  take_profit_sell_percentage: 1.0
   stop_loss_percentage: 0.40
   max_hold_time: 180               # 3 min (mas margen: los moonshots tardan mas en despegar)
   price_check_interval: 1

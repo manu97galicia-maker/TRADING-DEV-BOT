@@ -40,12 +40,10 @@ trade:
   buy_slippage: 0.35
   sell_slippage: 0.35
   exit_strategy: "tp_sl"
-  take_profit_percentage: 0.4
-  take_profit_sell_percentage: 0.60
-  tp2_gain: 1.0
-  tp2_sell: 0.20
-  tp3_gain: 1.5
-  tp3_sell: 0.20
+  # Misma salida que el bot real, para que la comparacion siga midiendo solo el
+  # filtro de entrada: vende TODO en +40%, sin escalera.
+  take_profit_percentage: 0.40
+  take_profit_sell_percentage: 1.0
   stop_loss_percentage: 0.40
   max_hold_time: 180
   price_check_interval: 1
