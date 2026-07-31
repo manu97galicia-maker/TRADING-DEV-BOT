@@ -302,6 +302,7 @@ class UniversalTrader:
         # Tope de market cap (USD) al entrar: no comprar si la moneda ya está
         # pumpeada por encima (evita comprar el techo de un spike). 0 = sin tope.
         max_entry_mc: float = 0.0,
+        min_entry_mc: float = 0.0,
         # Anti-concentración: no comprar si un holder (excluida la curva) tiene
         # más de esta fracción del supply (0 = desactivado).
         max_holder_pct: float = 0.0,
@@ -502,6 +503,7 @@ class UniversalTrader:
         # 0 disables the check.
         self.min_curve_sol = float(min_curve_sol or 0)
         self.max_entry_mc = float(max_entry_mc or 0)
+        self.min_entry_mc = float(min_entry_mc or 0)
         self.min_holders = int(min_holders or 0)
         self.max_holder_pct = float(max_holder_pct or 0)
         self.max_bundle_pct = float(max_bundle_pct or 0)
@@ -1426,6 +1428,21 @@ class UniversalTrader:
                         f"MC filtro BLOCK {token_info.symbol}: MC entrada "
                         f"${entry_mc:,.0f} > máx ${self.max_entry_mc:,.0f} "
                         f"(ya pumpeada, no entro en el techo)"
+                    )
+                    return
+
+            # SUELO DE ENTRADA: simétrico al tope. Exige que la moneda YA haya
+            # despegado un mínimo antes de entrar. Una moneda recién creada sale
+            # sobre los $2K; si a los 20 segundos no ha pasado de ahí es que no
+            # ha entrado nadie, y en la muestra de Dune la perdedora típica se
+            # queda en $2.462 a los 20s frente a los $8.395 de la ganadora.
+            if self.min_entry_mc > 0 and entry_price > 0:
+                entry_mc = entry_price * _PUMP_TOTAL_SUPPLY * _SOL_USD
+                if entry_mc < self.min_entry_mc:
+                    logger.info(
+                        f"MC filtro BLOCK {token_info.symbol}: MC entrada "
+                        f"${entry_mc:,.0f} < mín ${self.min_entry_mc:,.0f} "
+                        f"(no ha despegado, no entro)"
                     )
                     return
 

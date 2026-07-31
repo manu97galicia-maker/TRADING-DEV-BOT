@@ -169,6 +169,7 @@ async def start_bot(config_path: str):
             # Bundle detector: min SOL in the bonding curve to consider a buy
             min_curve_sol=cfg.get("filters", {}).get("min_curve_sol", 0.0),
             max_entry_mc=cfg.get("filters", {}).get("max_entry_mc", 0.0),
+            min_entry_mc=cfg.get("filters", {}).get("min_entry_mc", 0.0),
             max_holder_pct=cfg.get("filters", {}).get("max_holder_pct", 0.0),
             max_bundle_pct=cfg.get("filters", {}).get("max_bundle_pct", 0.0),
             min_holders=cfg.get("filters", {}).get("min_holders", 0),

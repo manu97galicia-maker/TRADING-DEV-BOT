@@ -20,25 +20,27 @@
 # llevaba 48,9% bundleado. Se acepta a proposito, porque el encargo era cazar
 # monedas como esa; el precio es comer mas rugs. POR ESO VA EN PAPEL.
 #
-# Decisiones de calibrado
-# -----------------------
-# min_curve_sol 5.0 (no 3.0 como el gemelo NEXT-BIG VOL): sin filtro de creador
-# el embudo es ~100x mas ancho -- pasan de mirar 121 wallets a mirar todo
-# pump.fun, miles de lanzamientos al dia. Con el umbral bajo, esto seria una
-# ametralladora de notificaciones y de llamadas al RPC. 5 SOL netos en curva
-# deja pasar solo lo que se esta moviendo de verdad.
+# Condiciones actuales (Manu, 2026-07-31)
+# ---------------------------------------
+# Entrar en toda moneda que en los primeros 20s llegue a $3.500 de market cap y
+# tenga mas de 10 poseedores distintos. Vender el 60% cuando suba un 50%, "que
+# es cuando suele salir en tendencias", y dejar correr el 40%.
 #
-# max_entry_mc 30000 (no 15000): a los 20 segundos un cohete ya vale bastante.
-# Cortar en 15K excluiria justo las que se quieren cazar. El filtro de volumen
-# es quien selecciona aqui; el tope de MC solo evita comprar un techo evidente.
+# Los dos filtros se complementan y por eso van juntos:
+#   - el MC dice que ALGUIEN ha comprado (la perdedora tipica de Dune se queda
+#     en $2.462 a los 20s; la ganadora esta en $8.395)
+#   - los holders dicen que han comprado VARIOS. Es la defensa contra el bundle:
+#     tres carteras pueden inflar el market cap, pero no pueden ser once.
 #
-# La escalera de salida es IDENTICA a la de los otros dos bots, a proposito.
-# Se sabe que es mala para runners (IM POOR hizo x22 y dejo 0,179 SOL porque
-# TP1 suelta el 60% en +40%), pero si se cambian entrada Y salida a la vez no
-# se puede saber cual de las dos explica la diferencia. Primero se mide la
-# entrada; las salidas se prueban despues, por separado.
+# Aviso sobre el conteo de holders: el bot usa getTokenLargestAccounts, que solo
+# devuelve las 20 cuentas mayores. Para un minimo de 10 sirve de sobra, pero no
+# se puede subir mucho mas de ahi. Y falla en abierto: si el RPC no responde, no
+# bloquea la compra.
+#
+# max_entry_mc 30000: a los 20 segundos un cohete ya vale bastante, y cortar mas
+# abajo excluiria justo lo que se quiere cazar. Solo evita comprar un techo.
 
-name: "VELOCIDAD (paper) - sin lista de devs, 5 SOL en curva a los 20s"
+name: "VELOCIDAD (paper) - sin devs, MC>3.5K y >10 holders a los 20s"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -52,18 +54,17 @@ trade:
   buy_amount: 0.05             # igual que los otros dos, para poder comparar
   buy_slippage: 0.35
   sell_slippage: 0.35
-  # SCALP: salir en +15% y no ser codicioso (2026-07-31, peticion de Manu).
+  # 2026-07-31, condiciones de Manu: vender el 60% cuando suba un 50%,
+  # "que es cuando suele salir en tendencias". Deja correr el 40% restante.
   #
-  # El stop BAJA con el objetivo, y no es opcional. Vender en +15% manteniendo
-  # un stop de -40% exige acertar el 78% de las veces solo para no perder; con
-  # las perdidas reales del historico (-65%) sube al 85%. El acierto medido son
-  # 63 operaciones al 50,8%. Con TP y SL simetricos el listo baja al 58%, que
-  # sigue siendo exigente pero ya esta en el mismo mundo.
+  # Sustituye al scalp de +15/-15 anterior. El stop sube a -30: con TP en +50 y
+  # vendiendo solo el 60%, el beneficio medio por acierto es ~+30% de la
+  # posicion, asi que un stop de -40 volveria a poner la balanza en contra.
   exit_strategy: "tp_sl"
-  take_profit_percentage: 0.15
-  take_profit_sell_percentage: 1.0   # vende TODO en +15%, sin escalera
-  stop_loss_percentage: 0.15
-  max_hold_time: 60                  # un scalp que tarda mas de 1 min ya fallo
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 0.60
+  stop_loss_percentage: 0.30
+  max_hold_time: 120
   price_check_interval: 1
   extreme_fast_mode: false
   extreme_fast_token_amount: 20
@@ -92,19 +93,17 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: true            # NO compra. Solo apunta y sigue el precio.
-  # $4.000 de volumen en los primeros 20s (peticion de Manu, 2026-07-31).
+  # Condiciones de Manu (2026-07-31): la moneda tiene que haber llegado a
+  # $3.500 de market cap y tener mas de 10 holders dentro de los primeros 20s.
   #
-  # SOL cotiza a ~$74, no a $150 como calcule primero: $4.000 son 53,8 SOL de
-  # volumen, que con el 69% de compras que mide Dune dejan ~20 SOL netos en la
-  # curva. El umbral anterior de 10 era la mitad de lo pedido.
-  #
-  # Validacion agradable: la ganadora MEDIANA de Dune hace 50,6 SOL de volumen
-  # en 20s = $3.764. El corte de $4.000 cae casi exactamente en esa mediana, asi
-  # que deja pasar aproximadamente la mitad superior de las que acaban ganando.
-  # Es un filtro duro: pocas senales al dia, pero de las buenas.
-  min_curve_sol: 20.0          # <-- EL UNICO FILTRO REAL
+  # Se quita el filtro de volumen (min_curve_sol) a proposito: exigir 20 SOL en
+  # curva implicaba un MC de ~$8.400, muy por encima del suelo de $3.500 que se
+  # pide ahora. Manteniendo los dos, el de volumen mandaba y el de MC no se
+  # habria disparado nunca.
+  min_curve_sol: 0
+  min_entry_mc: 3500
   max_entry_mc: 30000
-  min_holders: 0
+  min_holders: 10           # >10 poseedores distintos = no es un bundle de 3 carteras
   max_holder_pct: 0
   holder_bypass_ratio: 3
 
