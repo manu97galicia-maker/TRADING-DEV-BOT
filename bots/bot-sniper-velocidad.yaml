@@ -20,27 +20,25 @@
 # llevaba 48,9% bundleado. Se acepta a proposito, porque el encargo era cazar
 # monedas como esa; el precio es comer mas rugs. POR ESO VA EN PAPEL.
 #
-# Condiciones actuales (Manu, 2026-07-31)
-# ---------------------------------------
-# Entrar en toda moneda que en los primeros 20s llegue a $3.500 de market cap y
-# tenga mas de 10 poseedores distintos. Vender el 60% cuando suba un 50%, "que
-# es cuando suele salir en tendencias", y dejar correr el 40%.
+# Condiciones actuales (Manu, 2026-07-31 08:20)
+# ---------------------------------------------
+# Entrar en toda moneda que en los primeros 20s mueva $5.000 de volumen, con el
+# market cap entre $3.500 y $30.000. Vender el 60% cuando suba un 50%, "que es
+# cuando suele salir en tendencias", y dejar correr el 40%.
 #
-# Los dos filtros se complementan y por eso van juntos:
-#   - el MC dice que ALGUIEN ha comprado (la perdedora tipica de Dune se queda
-#     en $2.462 a los 20s; la ganadora esta en $8.395)
-#   - los holders dicen que han comprado VARIOS. Es la defensa contra el bundle:
-#     tres carteras pueden inflar el market cap, pero no pueden ser once.
+# Por que el volumen y no los holders: el filtro de ">10 poseedores" rechazo 152
+# de 152 monedas en su primera hora. A los 20 segundos una moneda tipica tiene
+# 2-3 holders, asi que pedir once no filtraba, vetaba todo. El volumen es ademas
+# la senal con separacion medida: x26,6 entre ganadoras y perdedoras.
 #
-# Aviso sobre el conteo de holders: el bot usa getTokenLargestAccounts, que solo
-# devuelve las 20 cuentas mayores. Para un minimo de 10 sirve de sobra, pero no
-# se puede subir mucho mas de ahi. Y falla en abierto: si el RPC no responde, no
-# bloquea la compra.
+# Se mide a los 20s y no antes porque ahi es donde estan los datos de Dune. A
+# los 10s habria que extrapolar a ojo, y cuanto antes se mire, mas se parecen un
+# bundle y un lanzamiento real.
 #
 # max_entry_mc 30000: a los 20 segundos un cohete ya vale bastante, y cortar mas
 # abajo excluiria justo lo que se quiere cazar. Solo evita comprar un techo.
 
-name: "VELOCIDAD (paper) - sin devs, MC>3.5K y >10 holders a los 20s"
+name: "VELOCIDAD (paper) - sin devs, $5K de volumen a los 20s"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -93,17 +91,25 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: true            # NO compra. Solo apunta y sigue el precio.
-  # Condiciones de Manu (2026-07-31): la moneda tiene que haber llegado a
-  # $3.500 de market cap y tener mas de 10 holders dentro de los primeros 20s.
+  # $5.000 de volumen en los primeros 20s (Manu, 2026-07-31 08:20).
+  # A $74,39/SOL son 67 SOL de volumen, que con el 69% de compras que mide Dune
+  # dejan ~26 SOL netos en la curva.
   #
-  # Se quita el filtro de volumen (min_curve_sol) a proposito: exigir 20 SOL en
-  # curva implicaba un MC de ~$8.400, muy por encima del suelo de $3.500 que se
-  # pide ahora. Manteniendo los dos, el de volumen mandaba y el de MC no se
-  # habria disparado nunca.
-  min_curve_sol: 0
+  # Calibre: la ganadora MEDIANA de Dune hace $3.764 en 20s, asi que este corte
+  # esta por encima de la mediana y deja pasar la mitad superior de las que
+  # acaban funcionando. Exigente, pero es la senal con mas separacion que
+  # tenemos (x26,6 entre ganadoras y perdedoras).
+  min_curve_sol: 26
   min_entry_mc: 3500
   max_entry_mc: 30000
-  min_holders: 10           # >10 poseedores distintos = no es un bundle de 3 carteras
+  # 2026-07-31 08:20: 10 -> 0. Rechazo 152 de 152 monedas en la primera hora
+  # ("solo 2 holders (< 10) -> NO organico"). A los 20 segundos una moneda
+  # tipica tiene 2-3 poseedores, asi que pedir mas de 10 ahi no filtraba: vetaba
+  # todo. Se apaga y manda el volumen, que es la senal validada.
+  #
+  # Si mas adelante se cuelan bundles, se vuelve a activar con un umbral sacado
+  # de la distribucion real de los logs, no a ojo.
+  min_holders: 0
   max_holder_pct: 0
   holder_bypass_ratio: 3
 
