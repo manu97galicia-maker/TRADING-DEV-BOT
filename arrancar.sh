@@ -110,7 +110,7 @@ rm -f .bot.pid 2>/dev/null
 nohup "$PY" watchdog.py > logs/watchdog.out 2>&1 &
 sleep 8
 
-VIVOS=$(pgrep -fc "bot_runner" 2>/dev/null || echo 0)
+VIVOS="$(pgrep -fc "bot_runner" 2>/dev/null || true)"; [ -z "$VIVOS" ] && VIVOS=0
 if [ "$VIVOS" -gt 0 ]; then
   ok "$VIVOS proceso(s) de bot corriendo"
 else
@@ -167,7 +167,11 @@ fi
 # --------------------------------------------------------------------------- #
 printf '\n\033[1m========================= RESUMEN =========================\033[0m\n\n'
 # --------------------------------------------------------------------------- #
-printf '  bots corriendo : %s\n' "$(pgrep -fc 'bot_runner' 2>/dev/null || echo 0)"
+# pgrep -fc imprime "0" Y ADEMAS devuelve codigo 1 cuando no encuentra nada, asi
+# que el "|| echo 0" de antes imprimia un cero de mas y tapaba el valor real.
+BOTS_VIVOS="$(pgrep -fc 'bot_runner' 2>/dev/null || true)"
+[ -z "$BOTS_VIVOS" ] && BOTS_VIVOS=0
+printf '  bots corriendo : %s\n' "$BOTS_VIVOS"
 printf '  scout          : %s\n' "$(systemctl is-active scout 2>/dev/null)"
 printf '  panel          : %s\n' "$(systemctl is-active sniper-deck 2>/dev/null)"
 IP=$(curl -fsS --max-time 8 https://api.ipify.org 2>/dev/null || echo '?')
