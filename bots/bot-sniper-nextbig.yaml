@@ -13,7 +13,12 @@ trade:
   # cuenta en una sola operacion: daba para UN intento. A 0.05 dan para cinco, y
   # con 51% de aciertos y ratio ganancia/perdida ~1 hacen falta muchos intentos
   # para que el resultado signifique algo en vez de ser azar.
-  buy_amount: 0.05
+  # 2026-07-31 07:40: 0.05 -> 0.02. Con 0.077 SOL en la wallet, a 0.05 el bot
+  # NO PODIA COMPRAR: le faltaba saldo para una sola entrada contando la reserva.
+  # A 0.02 quedan 3 entradas. El precio es que las comisiones (~0.002 por ida y
+  # vuelta) pasan a ser el 10% de cada operacion, asi que cada acierto tiene que
+  # cubrir eso antes de dar nada.
+  buy_amount: 0.02
   buy_slippage: 0.35
   sell_slippage: 0.35
   exit_strategy: "tp_sl"
@@ -34,7 +39,7 @@ trade:
   price_check_interval: 1
   extreme_fast_mode: false
   extreme_fast_token_amount: 20
-  min_reserve_sol: 0.03
+  min_reserve_sol: 0.01
 
 priority_fees:
   enable_dynamic: false
