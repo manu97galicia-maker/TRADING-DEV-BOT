@@ -295,6 +295,14 @@ async def juzgar(session: aiohttp.ClientSession, rec: dict[str, Any]) -> dict[st
 
     acierto = mc_pico >= OBJETIVO_MC
 
+    # MIGRACION: la moneda graduo la curva y paso a Raydium/PumpSwap. Es la
+    # senal mas fuerte que hay -- para migrar hay que llenar la curva entera
+    # (~$69K de market cap), asi que no se falsea con dos carteras haciendose
+    # volumen. En la consulta de Dune de los 29 devs "buenos", el pct_migrated
+    # era CERO en los 29: ninguna de sus monedas llego nunca. Un dev que migra
+    # esta en otra liga que uno que hace pico de $30K y se muere.
+    migro = bool((pf or {}).get("complete"))
+
     # RUG: hizo pico y se lo dejo casi entero. No es volatilidad, es vaciado.
     caida = ((mc_pico - mc_ahora) / mc_pico * 100) if mc_pico > 0 else 0.0
     rug = bool(mc_pico >= OBJETIVO_MC * 0.5 and caida >= RUG_CAIDA_PCT)
@@ -311,6 +319,7 @@ async def juzgar(session: aiohttp.ClientSession, rec: dict[str, Any]) -> dict[st
         "compras_1h": compras,
         "ventas_1h": ventas,
         "acierto": acierto,
+        "migro": migro,
         "rug": rug,
         "organico": organico,
     }
@@ -350,15 +359,18 @@ def marcador() -> dict[str, dict[str, Any]]:
     for dev, vs in por_dev.items():
         n = len(vs)
         aciertos = sum(1 for v in vs if v["acierto"])
+        migradas = sum(1 for v in vs if v.get("migro"))
         rugs = sum(1 for v in vs if v["rug"])
         organicas = sum(1 for v in vs if v["organico"])
         picos = [v["mc_pico"] for v in vs]
         out[dev] = {
             "lanzamientos": n,
             "aciertos": aciertos,
+            "migradas": migradas,
             "rugs": rugs,
             "organicas": organicas,
             "acierto_pct": round(aciertos / n * 100, 1),
+            "migra_pct": round(migradas / n * 100, 1),
             "rug_pct": round(rugs / n * 100, 1),
             "organico_pct": round(organicas / n * 100, 1),
             "pico_mediano": round(statistics.median(picos)) if picos else 0,
@@ -569,6 +581,7 @@ async def informe(session: aiohttp.ClientSession, estado: dict, pendientes: dict
 
     total_juzgadas = sum(s["lanzamientos"] for s in m.values())
     total_aciertos = sum(s["aciertos"] for s in m.values())
+    total_migradas = sum(s.get("migradas", 0) for s in m.values())
     total_rugs = sum(s["rugs"] for s in m.values())
 
     p = [f"📡 <b>INFORME SCOUT</b> · {datetime.now():%d/%m %H:%M}", ""]
@@ -578,8 +591,27 @@ async def informe(session: aiohttp.ClientSession, estado: dict, pendientes: dict
             f"De esas: {total_aciertos} pasaron ${OBJETIVO_MC:,.0f} "
             f"({total_aciertos/total_juzgadas*100:.1f}%) · {total_rugs} rugs"
         )
+        p.append(f"<b>MIGRARON la curva: {total_migradas}</b> (la senal mas fuerte que hay)")
     p.append(f"En cola sin juzgar: {len(pendientes)}")
     p.append("")
+
+    # Los que migran van primero: para graduar hay que llenar la curva entera
+    # (~$69K), y eso no se falsea con dos carteras haciendose volumen.
+    migradores = sorted(
+        [(d, s) for d, s in m.items() if s.get("migradas", 0) > 0],
+        key=lambda x: (-x[1]["migradas"], -x[1]["acierto_pct"]),
+    )
+    if migradores:
+        p.append(f"🚀 <b>DEVS QUE MIGRAN ({len(migradores)})</b> — lo mejor que hay")
+        for dev, s in migradores[:8]:
+            vetado = " ⛔vetado" if dev in vet else ""
+            p.append(
+                f"<code>{dev}</code>\n"
+                f"   {s['migradas']}/{s['lanzamientos']} migradas · "
+                f"{s['acierto_pct']:.0f}% acierto · {s['rugs']} rugs · "
+                f"pico ~${s['pico_mediano']:,}{vetado}"
+            )
+        p.append("")
 
     if nuevos:
         p.append(f"🆕 <b>NUEVOS APROBADOS ({len(nuevos)})</b>")
