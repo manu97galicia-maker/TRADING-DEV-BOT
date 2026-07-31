@@ -20,30 +20,33 @@
 # llevaba 48,9% bundleado. Se acepta a proposito, porque el encargo era cazar
 # monedas como esa; el precio es comer mas rugs. POR ESO VA EN PAPEL.
 #
-# Condiciones actuales (Manu, 2026-07-31 08:30)
+# Condiciones actuales (Manu, 2026-07-31 08:50)
 # ---------------------------------------------
-# Comprar toda moneda que DENTRO DE LOS PRIMEROS 20 SEGUNDOS este entre $3.200 y
-# $4.200 de market cap. Vender el 60% cuando suba un 50% y dejar correr el 40%.
+# Comprar toda moneda que DENTRO DE LOS PRIMEROS 20 SEGUNDOS este entre $3.000 y
+# $4.500 de market cap. Vender el 60% cuando suba un 50%, dejar correr el 40%.
 #
-# La idea: no es "que suba mucho", es "que se haya movido RAPIDO y todavia este
-# barata". Una moneda recien creada sale sobre los $2.080; llegar a $3.200 en 20
-# segundos significa que ha entrado dinero de verdad, y el techo de $4.200 evita
-# comprar algo que ya voló.
+# EQUIVALENCIA QUE HAY QUE TENER DELANTE PARA AJUSTAR ESTO
+# --------------------------------------------------------
+# En la curva de pump.fun el market cap, el SOL acumulado y el volumen son el
+# MISMO dato visto de tres formas. Fijar uno fija los otros dos:
 #
-# POR QUE NO HAY FILTRO DE VOLUMEN
-# --------------------------------
-# En la curva de pump.fun el market cap y el SOL acumulado son LA MISMA VARIABLE:
-#     $3.200 =  7,2 SOL en curva        $8.400 = 30,3 SOL
-#     $4.200 = 12,6 SOL en curva       $15.000 = 50,6 SOL
-# Poner ademas "min_curve_sol: 26" ($5.000 de volumen) era pedir un MC de ~$7.250
-# a la vez que un maximo de $4.200: no pasaria ni una. Se filtra por market cap,
-# que es lo mismo pero legible.
+#     market cap   SOL en curva   volumen que hizo falta
+#        $2,080        0.0            $0        <- precio de nacimiento
+#        $3,000        6.0        $1,180
+#        $4,000       11.6        $2,271
+#        $4,500       14.1        $2,766        <- techo actual
+#        $5,000       16.5        $3,232
 #
-# Historia de los filtros que se probaron aqui, para no repetirlos:
-#   - >10 holders a los 20s  -> rechazo 152 de 152 (a esa edad hay 2-3)
-#   - $5.000 de volumen      -> incompatible con el techo de $4.200
+# Por eso "que haga $3.000 de volumen Y este por debajo de $4.500" no se puede:
+# con $3.000 de volumen la moneda ya vale ~$4.750. Manda el techo, que es lo que
+# de verdad controlas al comprar. Si algun dia quieres exigir $3.000 de volumen
+# de verdad, el techo tiene que subir a ~$4.800.
+#
+# Historial de filtros probados aqui, para no repetirlos:
+#   - >10 holders a los 20s -> rechazo 152 de 152 (a esa edad hay 2-3)
+#   - min_curve_sol junto al techo de MC -> incompatibles, son la misma variable
 
-name: "VELOCIDAD (paper) - sin devs, MC $3.2K-$4.2K a los 20s"
+name: "VELOCIDAD (paper) - sin devs, MC $3K-$4.5K a los 20s"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -99,8 +102,8 @@ filters:
   # Sin filtro de volumen: en la curva es la misma variable que el market cap,
   # y el rango de abajo ya lo define. Ver la cabecera.
   min_curve_sol: 0
-  min_entry_mc: 3200        # 7,2 SOL en curva
-  max_entry_mc: 4200        # 12,6 SOL en curva
+  min_entry_mc: 3000        #  6,0 SOL en curva = ~$1.180 de volumen
+  max_entry_mc: 4500        # 14,1 SOL en curva = ~$2.766 de volumen
   # 2026-07-31 08:20: 10 -> 0. Rechazo 152 de 152 monedas en la primera hora
   # ("solo 2 holders (< 10) -> NO organico"). A los 20 segundos una moneda
   # tipica tiene 2-3 poseedores, asi que pedir mas de 10 ahi no filtraba: vetaba
