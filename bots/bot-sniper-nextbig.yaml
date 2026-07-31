@@ -9,16 +9,16 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  # 2026-07-31: 0.25 -> 0.05. Con 0.294 SOL en la wallet, 0.25 era el 85% de la
-  # cuenta en una sola operacion: daba para UN intento. A 0.05 dan para cinco, y
-  # con 51% de aciertos y ratio ganancia/perdida ~1 hacen falta muchos intentos
-  # para que el resultado signifique algo en vez de ser azar.
-  # 2026-07-31 07:40: 0.05 -> 0.02. Con 0.077 SOL en la wallet, a 0.05 el bot
-  # NO PODIA COMPRAR: le faltaba saldo para una sola entrada contando la reserva.
-  # A 0.02 quedan 3 entradas. El precio es que las comisiones (~0.002 por ida y
-  # vuelta) pasan a ser el 10% de cada operacion, asi que cada acierto tiene que
-  # cubrir eso antes de dar nada.
-  buy_amount: 0.02
+  # Historial de tamano, para no repetir errores:
+  #   0.25 -> con 0.294 SOL era el 85% de la cuenta en una sola operacion
+  #   0.05 -> con 0.077 SOL ya no llegaba ni para una entrada
+  #   0.12 -> 2026-07-31 08:40, tras recargar a 0.388 SOL (Manu)
+  #
+  # A 0.12 dan 3 entradas. El intercambio: las comisiones bajan al 2% de cada
+  # operacion (a 0.05 eran el 4%, a 0.02 el 10%), pero solo hay tres intentos.
+  # Con 50,8% de aciertos historicos, tres tiradas siguen siendo azar; lo que se
+  # gana aqui es economia por operacion, no informacion.
+  buy_amount: 0.12
   buy_slippage: 0.35
   sell_slippage: 0.35
   exit_strategy: "tp_sl"
