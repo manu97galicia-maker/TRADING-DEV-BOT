@@ -82,18 +82,27 @@ retries:
 
 filters:
   listener_type: "pumpportal"
-  max_token_age: 10            # 10 + 20 de espera = medicion dentro de la ventana
+  # Edad maxima 1 minuto (peticion de Manu). El bot comprueba la edad ANTES de
+  # esperar, asi que el tope real de compra es max_token_age + wait_after_creation:
+  # 40 + 20 = 60s como mucho desde el lanzamiento.
+  max_token_age: 40
   match_string: null
   bro_address: null            # <-- LA DIFERENCIA: sin lista, mira TODO pump.fun
   allow_mayhem: true           # se abre la red: ningun otro bot esta activo para duplicar
   marry_mode: false
   yolo_mode: true
   paper_trade: true            # NO compra. Solo apunta y sigue el precio.
-  # $4.000 de volumen en los primeros 20s (peticion de Manu). A ~$150/SOL son
-  # 27 SOL de volumen, que en la curva quedan en ~10 SOL netos con el 69% de
-  # compras que mide Dune. Mas exigente que los 5 de antes: menos senales, pero
-  # solo lo que se esta moviendo de verdad.
-  min_curve_sol: 10.0          # <-- EL UNICO FILTRO REAL
+  # $4.000 de volumen en los primeros 20s (peticion de Manu, 2026-07-31).
+  #
+  # SOL cotiza a ~$74, no a $150 como calcule primero: $4.000 son 53,8 SOL de
+  # volumen, que con el 69% de compras que mide Dune dejan ~20 SOL netos en la
+  # curva. El umbral anterior de 10 era la mitad de lo pedido.
+  #
+  # Validacion agradable: la ganadora MEDIANA de Dune hace 50,6 SOL de volumen
+  # en 20s = $3.764. El corte de $4.000 cae casi exactamente en esa mediana, asi
+  # que deja pasar aproximadamente la mitad superior de las que acaban ganando.
+  # Es un filtro duro: pocas senales al dia, pero de las buenas.
+  min_curve_sol: 20.0          # <-- EL UNICO FILTRO REAL
   max_entry_mc: 30000
   min_holders: 0
   max_holder_pct: 0
