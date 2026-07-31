@@ -1,0 +1,16 @@
+[Unit]
+Description=Scout - explorador 24/7 de devs + guardian del dinero
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/Definitivo_bot
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/root/Definitivo_bot/.venv/bin/python scout.py
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target
