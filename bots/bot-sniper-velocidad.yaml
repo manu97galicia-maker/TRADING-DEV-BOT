@@ -20,25 +20,30 @@
 # llevaba 48,9% bundleado. Se acepta a proposito, porque el encargo era cazar
 # monedas como esa; el precio es comer mas rugs. POR ESO VA EN PAPEL.
 #
-# Condiciones actuales (Manu, 2026-07-31 08:20)
+# Condiciones actuales (Manu, 2026-07-31 08:30)
 # ---------------------------------------------
-# Entrar en toda moneda que en los primeros 20s mueva $5.000 de volumen, con el
-# market cap entre $3.500 y $30.000. Vender el 60% cuando suba un 50%, "que es
-# cuando suele salir en tendencias", y dejar correr el 40%.
+# Comprar toda moneda que DENTRO DE LOS PRIMEROS 20 SEGUNDOS este entre $3.200 y
+# $4.200 de market cap. Vender el 60% cuando suba un 50% y dejar correr el 40%.
 #
-# Por que el volumen y no los holders: el filtro de ">10 poseedores" rechazo 152
-# de 152 monedas en su primera hora. A los 20 segundos una moneda tipica tiene
-# 2-3 holders, asi que pedir once no filtraba, vetaba todo. El volumen es ademas
-# la senal con separacion medida: x26,6 entre ganadoras y perdedoras.
+# La idea: no es "que suba mucho", es "que se haya movido RAPIDO y todavia este
+# barata". Una moneda recien creada sale sobre los $2.080; llegar a $3.200 en 20
+# segundos significa que ha entrado dinero de verdad, y el techo de $4.200 evita
+# comprar algo que ya voló.
 #
-# Se mide a los 20s y no antes porque ahi es donde estan los datos de Dune. A
-# los 10s habria que extrapolar a ojo, y cuanto antes se mire, mas se parecen un
-# bundle y un lanzamiento real.
+# POR QUE NO HAY FILTRO DE VOLUMEN
+# --------------------------------
+# En la curva de pump.fun el market cap y el SOL acumulado son LA MISMA VARIABLE:
+#     $3.200 =  7,2 SOL en curva        $8.400 = 30,3 SOL
+#     $4.200 = 12,6 SOL en curva       $15.000 = 50,6 SOL
+# Poner ademas "min_curve_sol: 26" ($5.000 de volumen) era pedir un MC de ~$7.250
+# a la vez que un maximo de $4.200: no pasaria ni una. Se filtra por market cap,
+# que es lo mismo pero legible.
 #
-# max_entry_mc 30000: a los 20 segundos un cohete ya vale bastante, y cortar mas
-# abajo excluiria justo lo que se quiere cazar. Solo evita comprar un techo.
+# Historia de los filtros que se probaron aqui, para no repetirlos:
+#   - >10 holders a los 20s  -> rechazo 152 de 152 (a esa edad hay 2-3)
+#   - $5.000 de volumen      -> incompatible con el techo de $4.200
 
-name: "VELOCIDAD (paper) - sin devs, $5K de volumen a los 20s"
+name: "VELOCIDAD (paper) - sin devs, MC $3.2K-$4.2K a los 20s"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -91,17 +96,11 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: true            # NO compra. Solo apunta y sigue el precio.
-  # $5.000 de volumen en los primeros 20s (Manu, 2026-07-31 08:20).
-  # A $74,39/SOL son 67 SOL de volumen, que con el 69% de compras que mide Dune
-  # dejan ~26 SOL netos en la curva.
-  #
-  # Calibre: la ganadora MEDIANA de Dune hace $3.764 en 20s, asi que este corte
-  # esta por encima de la mediana y deja pasar la mitad superior de las que
-  # acaban funcionando. Exigente, pero es la senal con mas separacion que
-  # tenemos (x26,6 entre ganadoras y perdedoras).
-  min_curve_sol: 26
-  min_entry_mc: 3500
-  max_entry_mc: 30000
+  # Sin filtro de volumen: en la curva es la misma variable que el market cap,
+  # y el rango de abajo ya lo define. Ver la cabecera.
+  min_curve_sol: 0
+  min_entry_mc: 3200        # 7,2 SOL en curva
+  max_entry_mc: 4200        # 12,6 SOL en curva
   # 2026-07-31 08:20: 10 -> 0. Rechazo 152 de 152 monedas en la primera hora
   # ("solo 2 holders (< 10) -> NO organico"). A los 20 segundos una moneda
   # tipica tiene 2-3 poseedores, asi que pedir mas de 10 ahi no filtraba: vetaba
