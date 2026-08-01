@@ -57,7 +57,11 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.05             # igual que los otros dos, para poder comparar
+  # 0.15 y no 0.05 (1-ago): la cuota FIJA de pump.fun es ~0.0018 SOL por
+  # transaccion. Sobre 0.05 SOL eso son casi 11 puntos porcentuales solo en
+  # cuotas; sobre 0.15 baja a 3,6. Por debajo de 0.15 no se opera, se pagan
+  # comisiones.
+  buy_amount: 0.15
   buy_slippage: 0.35
   sell_slippage: 0.35
   # 2026-07-31, condiciones de Manu: vender el 60% cuando suba un 50%,
@@ -67,10 +71,25 @@ trade:
   # vendiendo solo el 60%, el beneficio medio por acierto es ~+30% de la
   # posicion, asi que un stop de -40 volveria a poner la balanza en contra.
   exit_strategy: "tp_sl"
-  take_profit_percentage: 0.50
-  take_profit_sell_percentage: 0.60
+  # Salida rehecha con las 31 senales reales del 1-ago 6:30-6:35.
+  #
+  # Antes: +50% vendiendo el 60%. El 40% que quedaba salia igualmente por
+  # stop-loss, asi que una GANADORA dejaba +2,3% y una perdedora -41%: hacia
+  # falta acertar el 95% de las veces para no perder. Se acerto el 39%.
+  #
+  # Ahora: se vende TODO en el objetivo. Una ganadora deja +91% y una
+  # perdedora -36%, asi que basta con acertar el 29%. En esas 31 senales se
+  # acerto el 26%: sigue quedandose corto, pero ya es una diferencia que la
+  # medicion en papel puede resolver, no un abismo aritmetico.
+  #
+  # El nivel exacto del TP NO esta ajustado a proposito: se comprobo que el
+  # orden de 27 configuraciones se invierte entre media hora y la siguiente
+  # (correlacion -0,37). +100% es donde la exigencia se cruza con lo logrado,
+  # no el ganador de un barrido.
+  take_profit_percentage: 1.00
+  take_profit_sell_percentage: 1.00     # vender el 100%: sin resto que sangre
   stop_loss_percentage: 0.30
-  max_hold_time: 120
+  max_hold_time: 180                    # 120s cortaba picos que llegaban tarde
   price_check_interval: 1
   extreme_fast_mode: false
   extreme_fast_token_amount: 20
