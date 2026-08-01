@@ -511,10 +511,24 @@ class PlatformAwareSeller(Trader):
             )
 
             # Send transaction
+            #
+            # skip_preflight=False EN LA VENTA (1-ago). Una transaccion que
+            # falla solo cuesta dinero si LLEGA a la cadena: la comision de
+            # prioridad se paga aunque revierta. Con preflight, el RPC la
+            # simula antes y la rechaza sin enviarla, asi que un fallo sale
+            # gratis.
+            #
+            # Ese dia esto costo 0,64 SOL: 178 ventas que reventaban con 6023
+            # NotEnoughTokensToSell, todas aterrizando y todas pagando.
+            #
+            # En la COMPRA se mantiene skip_preflight=True a proposito: ahi se
+            # compite por entrar y los ~100ms de la simulacion se notan. En la
+            # venta no hay carrera, y jupiter_seller.py ya llego a esta misma
+            # conclusion el 31-jul.
             tx_signature = await self.client.build_and_send_transaction(
                 instructions,
                 self.wallet.keypair,
-                skip_preflight=True,
+                skip_preflight=False,
                 max_retries=self.max_retries,
                 priority_fee=await self.priority_fee_manager.calculate_priority_fee(
                     priority_accounts
