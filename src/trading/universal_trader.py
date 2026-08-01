@@ -19,7 +19,7 @@ from cleanup.modes import (
 )
 from core.client import SolanaClient
 from core.priority_fee.manager import PriorityFeeManager
-from core.pubkeys import LAMPORTS_PER_SOL
+from core.pubkeys import LAMPORTS_PER_SOL, TOKEN_DECIMALS
 from core.wallet import Wallet
 from dexscreener import DexScreenerFilter
 from interfaces.core import Platform, TokenInfo
@@ -232,6 +232,11 @@ def _normalize_creators(value: object) -> frozenset[str] | None:
 class UniversalTrader:
     """Universal trading coordinator that works with any supported platform."""
 
+    #: Ventas fallidas seguidas sobre el mismo token antes de rendirse. Bajo a
+    #: proposito: una venta que falla paga la comision de prioridad igual, y el
+    #: bucle de vigilancia reintenta cada segundo. Si no sale en 3, no sale.
+    MAX_FALLOS_VENTA = 3
+
     def __init__(
         self,
         rpc_endpoint: str,
@@ -442,6 +447,11 @@ class UniversalTrader:
         # 20% en cada uno, moonbag 40% (vs el normal +50/150/300% moonbag 20%).
         self.tp_tiers_aggressive = build_tiers([(1.0, 0.20), (3.0, 0.20), (9.0, 0.20)])
         self._creator_bestpeak = _load_creator_bestpeak(bro_address)
+
+        #: Ventas fallidas seguidas por mint. Cada intento fallido paga comision
+        #: igual, asi que a partir de MAX_FALLOS_VENTA se deja de intentar en vez
+        #: de reintentar cada segundo hasta agotar la wallet (ver _sell_amount).
+        self._fallos_venta: dict[str, int] = {}
 
         # Timing parameters
         self.wait_time_after_creation = wait_time_after_creation
@@ -1735,6 +1745,23 @@ class UniversalTrader:
         """Handle the tiered take-profit / stop-loss exit strategy."""
         await self._monitor_tiered_exit(token_info, buy_result)
 
+    async def _saldo_real_tokens(self, token_info: TokenInfo) -> float | None:
+        """Tokens que hay DE VERDAD en la wallet, o None si no se puede leer.
+
+        Devolver None (y no 0) cuando falla la lectura es deliberado: si el RPC
+        no responde, se prefiere intentar la venta con la cantidad estimada
+        antes que dar por cerrada una posicion que sigue abierta.
+        """
+        try:
+            ata = self.platform_implementations.address_provider.derive_user_token_account(
+                self.wallet.pubkey, token_info.mint, token_info.token_program_id
+            )
+            crudo = await self.solana_client.get_token_account_balance(ata)
+            return crudo / 10**TOKEN_DECIMALS
+        except Exception as exc:  # noqa: BLE001
+            logger.debug(f"no pude leer el saldo de {token_info.symbol}: {exc}")
+            return None
+
     async def _sell_amount(
         self,
         token_info: TokenInfo,
@@ -1742,11 +1769,47 @@ class UniversalTrader:
         ref_price: float,
         reason: str,
     ) -> bool:
-        """Sell a specific token amount and log it. Returns success."""
+        """Sell a specific token amount and log it. Returns success.
+
+        El importe se limita SIEMPRE al saldo real de la cuenta de tokens. El
+        1-ago esto vacio una wallet: el bot llevaba su propia contabilidad de
+        cuantos tokens tenia, pedia vender mas de los que habia, pump.fun
+        respondia 6023 NotEnoughTokensToSell, y quien llamaba reintentaba cada
+        segundo. 178 ventas fallidas, 0,64 SOL quemados solo en comisiones de
+        prioridad. La contabilidad interna se desvia de la realidad en cuanto
+        una compra recibe menos tokens de los estimados (slippage), asi que la
+        unica fuente de verdad es la cadena.
+        """
+        # Freno de mano: cada intento de venta que falla CUESTA dinero (la
+        # comision de prioridad se paga aunque la transaccion revierta). Quien
+        # llama reintenta cada `price_check_interval` durante `abandon_after`
+        # segundos, o sea hasta 660 intentos por posicion. El 1-ago eso quemo
+        # 0,64 SOL en 178 ventas fallidas. Tras unos pocos fallos seguidos se
+        # deja de pagar: si no ha salido en 3, no va a salir en 300.
+        mint = str(token_info.mint)
+        if self._fallos_venta.get(mint, 0) >= self.MAX_FALLOS_VENTA:
+            return False
+
+        real = await self._saldo_real_tokens(token_info)
+        if real is not None:
+            if real <= 0:
+                logger.info(
+                    f"{token_info.symbol}: no quedan tokens que vender ({reason}); "
+                    f"la posicion ya estaba cerrada"
+                )
+                return True  # nada que vender = objetivo cumplido, no un fallo
+            if amount > real:
+                logger.info(
+                    f"{token_info.symbol}: pedia vender {amount:.6f} pero solo hay "
+                    f"{real:.6f}; ajusto al saldo real"
+                )
+                amount = real
+
         sell_result = await self.seller.execute(
             token_info, token_amount=amount, token_price=ref_price
         )
         if sell_result.success:
+            self._fallos_venta.pop(mint, None)
             logger.info(
                 f"Sold {amount:.6f} {token_info.symbol} ({reason}) "
                 f"@ {sell_result.price:.8f} SOL"
@@ -1778,14 +1841,35 @@ class UniversalTrader:
         except Exception as exc:  # noqa: BLE001
             ok, sig, err = False, None, str(exc)
         if ok:
+            self._fallos_venta.pop(mint, None)
             logger.info("Sold %s via Jupiter (%s) tx=%s", token_info.symbol, reason, sig)
             self._log_trade("sell", token_info, ref_price, amount, sig, reason)
             return True
 
+        fallos = self._fallos_venta.get(mint, 0) + 1
+        self._fallos_venta[mint] = fallos
         logger.error(
-            "Sell failed for %s (%s): curve=%s | jupiter=%s",
-            token_info.symbol, reason, sell_result.error_message, err,
+            "Sell failed for %s (%s) [%d/%d]: curve=%s | jupiter=%s",
+            token_info.symbol, reason, fallos, self.MAX_FALLOS_VENTA,
+            sell_result.error_message, err,
         )
+        if fallos >= self.MAX_FALLOS_VENTA:
+            logger.error(
+                "%s: %d ventas fallidas seguidas; dejo de intentarlo para no "
+                "seguir quemando comisiones. La bolsa queda en la wallet.",
+                token_info.symbol, fallos,
+            )
+            try:
+                from monitoring.notifier import notify
+
+                notify(
+                    f"🛑 <b>VENTA BLOQUEADA</b> · <b>{token_info.symbol}</b>\n"
+                    f"{fallos} intentos fallidos ({sell_result.error_message}).\n"
+                    f"Dejo de reintentar: cada intento cuesta comision.\n"
+                    f"CA: <code>{mint}</code>"
+                )
+            except Exception:  # noqa: BLE001
+                pass
         return False
 
     async def _monitor_tiered_exit(
