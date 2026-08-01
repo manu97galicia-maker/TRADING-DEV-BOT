@@ -93,7 +93,10 @@ trade:
   price_check_interval: 1
   extreme_fast_mode: false
   extreme_fast_token_amount: 20
-  min_reserve_sol: 0.15        # el suelo que pediste; en papel no aplica, queda por coherencia
+  # Ya NO es decorativo: desde que esto opera en real, este suelo es la
+  # gasolina. Si la wallet llega a cero no se puede firmar ni una venta, y las
+  # posiciones abiertas se quedan atrapadas. No bajarlo por "aprovechar" saldo.
+  min_reserve_sol: 0.15
 
 priority_fees:
   enable_dynamic: false
@@ -117,7 +120,12 @@ filters:
   allow_mayhem: true           # se abre la red: ningun otro bot esta activo para duplicar
   marry_mode: false
   yolo_mode: true
-  paper_trade: true            # NO compra. Solo apunta y sigue el precio.
+  # <<< DINERO REAL desde el 1-ago (decision de Manu, avisado del riesgo) >>>
+  # La unica medicion real que hay -- las 31 senales del 1-ago 6:30-6:35 con
+  # ESTA configuracion ya optimizada -- seguia en negativo: hacen falta 29% de
+  # aciertos y hubo 26%. Se enciende igualmente porque es su dinero y su
+  # decision; queda escrito para saber que se sabia.
+  paper_trade: false
   # Sin filtro de volumen: en la curva es la misma variable que el market cap,
   # y el rango de abajo ya lo define. Ver la cabecera.
   min_curve_sol: 0
