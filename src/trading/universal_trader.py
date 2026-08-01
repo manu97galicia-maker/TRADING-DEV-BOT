@@ -1436,7 +1436,18 @@ class UniversalTrader:
             # sobre los $2K; si a los 20 segundos no ha pasado de ahí es que no
             # ha entrado nadie, y en la muestra de Dune la perdedora típica se
             # queda en $2.462 a los 20s frente a los $8.395 de la ganadora.
-            if self.min_entry_mc > 0 and entry_price > 0:
+            if self.min_entry_mc > 0:
+                # Curva ilegible (entry_price 0) = NO se puede afirmar que la
+                # moneda haya despegado, que es justo lo que este filtro exige.
+                # Antes la condición pedía `entry_price > 0`, así que un fallo
+                # de lectura SALTABA el filtro y la moneda entraba con MC $0:
+                # el 45% de las señales de VELOCIDAD del 1-ago eran de esas.
+                if entry_price <= 0:
+                    logger.info(
+                        f"MC filtro BLOCK {token_info.symbol}: curva ilegible "
+                        f"(MC $0), no puedo confirmar que haya despegado"
+                    )
+                    return
                 entry_mc = entry_price * _PUMP_TOTAL_SUPPLY * _SOL_USD
                 if entry_mc < self.min_entry_mc:
                     logger.info(
