@@ -1,4 +1,4 @@
-name: "DEV-MIGRATE - dev migra 20pct o mas"
+name: "DEV-MIGRATE - dev migra 25pct o mas"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -59,7 +59,7 @@ filters:
   pumpfun_dev:
     enabled: true
     min_migrations: 1          # basta 1 migracion (incluye devs con 1/1 = 100%)
-    min_rate: 0.25             # y tasa de migracion >=20%
+    min_rate: 0.25             # y tasa de migracion >=25%
 
   buy_on_dex_paid:
     enabled: false
