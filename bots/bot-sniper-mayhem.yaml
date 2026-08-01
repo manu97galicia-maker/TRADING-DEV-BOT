@@ -4,7 +4,9 @@ rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
-enabled: false      # OFF 2026-07-30: solo queda NEXT-BIG
+enabled: true       # ON 2026-08-01: Manu quiere avisos mayhem + que compre.
+                    # OJO: con buy_amount 0.15 y min_reserve_sol 0.03 hace falta
+                    # >=0.2 SOL en la wallet o no entra en ninguna.
 separate_process: true
 platform: "pump_fun"
 
