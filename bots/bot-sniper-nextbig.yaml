@@ -4,7 +4,9 @@ rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
-enabled: true       # ON 2026-07-28 tarde (RPC de pago OK)
+enabled: false      # OFF 2026-08-01: Manu deja SOLO VELOCIDAD. Ademas, sus 121
+                    # devs no lanzaron NI UNA moneda en 2h de medicion: el bot
+                    # estaba encendido sin disparar nunca.
 separate_process: true
 platform: "pump_fun"
 
