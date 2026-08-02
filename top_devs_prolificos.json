@@ -1,0 +1,56 @@
+{
+ "_README": "Devs con >=9 lanzamientos en una ventana de 2h (1-ago-2026) y >=20% de monedas por encima de $8K de ATH. Base del mercado: 9,4%. Medido con la API de pump.fun, NO con Dune: se puede recalcular cada hora, que es el punto -- las listas de Dune envejecen en dias.",
+ "_ventana": "2 horas, 921 monedas, 363 creadores",
+ "_base_mercado_pct_8k": 9.4,
+ "_count": 6,
+ "wallets": [
+  {
+   "wallet": "EH1oGNizBQxMDddGuLWj6SxpKts338H891Gh4kqbrJ1K",
+   "lanzamientos_2h": 9,
+   "pct_8k": 44.4,
+   "pct_mayhem": 100.0,
+   "median_peak": 7314,
+   "best_peak_usd": 44986
+  },
+  {
+   "wallet": "7Ry5Z7Ufk7aPVHbe7u3x1g76BaxGsYCQfJQ7PuX5MiMQ",
+   "lanzamientos_2h": 18,
+   "pct_8k": 38.9,
+   "pct_mayhem": 100.0,
+   "median_peak": 4918,
+   "best_peak_usd": 22921
+  },
+  {
+   "wallet": "HiE9s2JMehANzZMrMeuXornHQ7uKhgUMKeJCZEy45nwm",
+   "lanzamientos_2h": 31,
+   "pct_8k": 32.3,
+   "pct_mayhem": 100.0,
+   "median_peak": 6356,
+   "best_peak_usd": 36433
+  },
+  {
+   "wallet": "59UFmai2RBK4CjkLZ3E7CUPUevsoHT5q5QLWNN7smG43",
+   "lanzamientos_2h": 29,
+   "pct_8k": 27.6,
+   "pct_mayhem": 100.0,
+   "median_peak": 4941,
+   "best_peak_usd": 90022
+  },
+  {
+   "wallet": "CZnWbmuc3FcJtTSpNMvFvMWDkncoqg3MZdajms9pPbX9",
+   "lanzamientos_2h": 27,
+   "pct_8k": 25.9,
+   "pct_mayhem": 100.0,
+   "median_peak": 3189,
+   "best_peak_usd": 139683
+  },
+  {
+   "wallet": "CJzdSpdfHQoQ3jMneVHGfjb63h8zDPQd4s8SDGn81Kh3",
+   "lanzamientos_2h": 9,
+   "pct_8k": 22.2,
+   "pct_mayhem": 0.0,
+   "median_peak": 6352,
+   "best_peak_usd": 9885
+  }
+ ]
+}

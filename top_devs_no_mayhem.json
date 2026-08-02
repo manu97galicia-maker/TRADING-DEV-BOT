@@ -1,0 +1,27 @@
+{
+ "_README": "Devs SIN mayhem con >=5 lanzamientos en 2h y >=20% por encima de $8K. Base del universo no-mayhem: 8.8%. Medido 1-ago-2026.",
+ "_count": 3,
+ "wallets": [
+  {
+   "wallet": "CJzdSpdfHQoQ3jMneVHGfjb63h8zDPQd4s8SDGn81Kh3",
+   "lanzamientos_2h": 9,
+   "pct_8k": 22.2,
+   "median_peak": 6352,
+   "best_peak_usd": 9885
+  },
+  {
+   "wallet": "timeworn2X1EwMLSzeVhdVTbVSzSCKuibKd2kQ2Lsyn",
+   "lanzamientos_2h": 5,
+   "pct_8k": 20.0,
+   "median_peak": 3925,
+   "best_peak_usd": 8228
+  },
+  {
+   "wallet": "Gfsk5ZojnHSLoxRhUBD5vviJELFuTGkyBh9QTqEo7Ehg",
+   "lanzamientos_2h": 5,
+   "pct_8k": 20.0,
+   "median_peak": 3190,
+   "best_peak_usd": 10296
+  }
+ ]
+}
