@@ -187,3 +187,4 @@ trades/trades.log
 .DS_Store
 open_position*.json
 pumpfun-bonkfun-bot/
+paper_1s_resultado.json

@@ -50,7 +50,13 @@ from monitoring.universal_logs_listener import UniversalLogsListener
 from platforms import platform_factory
 
 LAMPORTS = 1_000_000_000
-BUY, VAR, POR_TX = 0.15, 0.0225, 0.0018
+
+#: Tamano de la posicion supuesta. Se puede cambiar con --posicion; importa mas
+#: de lo que parece porque POR_TX es una cuota FIJA: a 0.10 SOL las cuatro
+#: transacciones de una escalera completa (1 compra + 3 ventas) son el 7,2% de
+#: la posicion; a 0.15 bajan al 4,8%; a 0.05 suben al 14,4%.
+BUY = 0.10
+VAR, POR_TX = 0.0225, 0.0018
 
 
 def _load_dotenv() -> None:
@@ -135,7 +141,15 @@ class Prueba:
         st = None
         for _ in range(3):
             try:
-                st = await self.impl.curve_manager.get_pool_state(t.bonding_curve)
+                # commitment="processed" es OBLIGATORIO: el listener dispara con
+                # el log en "processed", y con el "confirmed" por defecto la
+                # cuenta de la curva TODAVIA NO EXISTE al segundo 1. Sin esto
+                # fallan el 100% de las lecturas (193 de 193 en la prueba) y el
+                # resultado parece "ninguna moneda supera el umbral" cuando en
+                # realidad no se ha medido nada.
+                st = await self.impl.curve_manager.get_pool_state(
+                    t.bonding_curve, commitment="processed"
+                )
                 break
             except Exception:  # noqa: BLE001
                 await asyncio.sleep(0.3)
@@ -179,7 +193,11 @@ class Prueba:
             ahora = time.time()
             for mint, p in list(self.abiertas.items()):
                 try:
-                    st = await self.impl.curve_manager.get_pool_state(p["curva"])
+                    # tambien "processed": al seguir el precio segundo a segundo
+                    # interesa el estado mas fresco, no el de hace 1-2 slots
+                    st = await self.impl.curve_manager.get_pool_state(
+                        p["curva"], commitment="processed"
+                    )
                     precio = float(st.get("price_per_token") or 0)
                 except Exception:  # noqa: BLE001
                     # una lectura fallida no cierra la posicion: se reintenta al
@@ -316,7 +334,7 @@ async def informe_telegram(ops: list[dict], pr: Prueba, args: argparse.Namespace
                  f"({tot_e/len(ops)/BUY*100:+.1f}% por operacion)")
         p.append("  " + " · ".join(f"{k}: {v}" for k, v in sorted(motivos.items())))
         p.append("")
-        p.append("📊 <b>Otras salidas, mismas entradas</b>")
+        p.append(f"📊 <b>Otras salidas</b> (posicion {BUY} SOL)")
         for nom, ac, tot in reglas_pnl(ops):
             p.append(f"  {nom}: {ac}/{len(ops)} · <b>{tot:+.4f} SOL</b> "
                      f"({tot/len(ops)/BUY*100:+.0f}%/op)")
@@ -361,6 +379,7 @@ def evaluar(ops: list[dict]) -> None:
 
 
 async def main() -> None:
+    global BUY  # noqa: PLW0603 -- lo fija el usuario una vez al arrancar
     _load_dotenv()
     p = argparse.ArgumentParser()
     p.add_argument("--umbral", type=float, default=800, help="volumen minimo en USD al segundo 1")
@@ -369,7 +388,10 @@ async def main() -> None:
     p.add_argument("--vigilar", type=float, default=300, help="segundos siguiendo cada moneda")
     p.add_argument("--sondeo", type=float, default=5)
     p.add_argument("--incluir-mayhem", action="store_true")
+    p.add_argument("--posicion", type=float, default=BUY,
+                   help="SOL supuestos por operacion (por defecto 0.10)")
     args = p.parse_args()
+    BUY = args.posicion
 
     async with aiohttp.ClientSession() as session:
         sol = await precio_sol(session)
@@ -379,6 +401,7 @@ async def main() -> None:
         f"<b>${args.umbral:,.0f}</b>\n"
         f"{'Con' if args.incluir_mayhem else 'Sin'} mayhem · "
         f"buscando {args.minutos:.0f} min\n"
+        f"Posicion supuesta: {BUY} SOL\n"
         "No toca la wallet."
     )
     print(f"SOL = ${sol:,.2f} · umbral ${args.umbral:,.0f} al segundo {args.segundo:.0f} · "
