@@ -52,7 +52,27 @@ filters:
   min_curve_sol: 2             # 0 = no lee curva antes de filtrar (menos RPC en el diluvio)
   max_holder_pct: 0.05         # no comprar si un holder (no-curva) tiene >5% del supply
   max_entry_mc: 3500  # no comprar si el MC ya supera $4K (evita entrar en spikes)
-  min_holders: 6            # no comprar si hay <5 poseedores (bundle/no organico)
+  # OJO: medido el 2026-08-01, en la ventana de compra (6-60s) solo 1 de cada
+  # 16 tokens llega a 6 holders. Esto bloquea el ~94% de todo y es el candidato
+  # numero uno a que la estrategia no dispare nunca. Se deja en 6 para que la
+  # comparacion con la hermana de 0.25 mida el umbral del dev y no otra cosa;
+  # si lo que quieres es que opere, bajalo a 2-3 o sube max_token_age a 120-300
+  # (a los 120-300s ya llegan a 6 la mitad de los tokens).
+  min_holders: 6            # no comprar si hay <6 poseedores (bundle/no organico)
+  # --- Anti dump-inicial ---------------------------------------------------
+  # MEDIDO el 2026-08-01 sobre monedas de pump.fun recien creadas, no estimado.
+  #
+  # Cuanto tiene el CREADOR al comprar. En 10 tokens de <40s el dev tenia entre
+  # 0,00% y 0,70%: en pump.fun casi nunca acumula desde su propia wallet, la
+  # reparte en el bundle. Por eso 0.05 no bloqueaba NADA y el umbral baja a
+  # 0.02: sigue dejando pasar lo normal y caza al dev que si se queda bolsa.
+  max_dev_hold_pct: 0.02
+  # Cuanto del supply esta YA fuera de la curva. Es el filtro que si separa:
+  # medido, la mediana es 2,6% pero aparecio un token con el 100,6% en 2
+  # wallets -> el supply entero en dos manos, dump garantizado. Ojo, el numero
+  # solo no basta: otro tenia 28% repartido en 19 holders y eso es gente
+  # comprando de verdad, no un bundle. Se cruza con min_holders.
+  max_bundle_pct: 0.30
   holder_bypass_ratio: 3       # permite holder >5% si la MEDIANA del dev >= 3x el MC actual (solo aplica con lista de devs; aqui no hay -> bloquea a secas)
 
   # EL FILTRO: solo compra si el CREADOR de la moneda tiene buena reputacion en pump.fun

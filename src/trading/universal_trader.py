@@ -312,6 +312,10 @@ class UniversalTrader:
         # más de esta fracción del supply (0 = desactivado).
         max_holder_pct: float = 0.0,
         max_bundle_pct: float = 0.0,
+        # Anti dump-inicial: fracción máxima del supply que puede tener EL
+        # CREADOR en el momento de comprar. Los otros filtros miran holders
+        # anónimos; éste mira al único que sabe cuándo va a vender. 0 = off.
+        max_dev_hold_pct: float = 0.0,
         # Filtro orgánico: mínimo de poseedores distintos para comprar (menos =
         # bundle/dev-spam sin compras reales). 0 = desactivado.
         min_holders: int = 0,
@@ -517,6 +521,7 @@ class UniversalTrader:
         self.min_holders = int(min_holders or 0)
         self.max_holder_pct = float(max_holder_pct or 0)
         self.max_bundle_pct = float(max_bundle_pct or 0)
+        self.max_dev_hold_pct = float(max_dev_hold_pct or 0)
         self.holder_bypass_ratio = float(holder_bypass_ratio or 0)
         # Reserva mínima de SOL que nunca se gasta (para fees / no quedarse a 0).
         self.min_reserve_lamports = int(float(min_reserve_sol or 0.03) * LAMPORTS_PER_SOL)
@@ -1217,6 +1222,70 @@ class UniversalTrader:
                 pass
         self._clear_open_position()
 
+    async def _dev_holds_too_much(self, token_info: TokenInfo) -> bool:
+        """True si NO se debe comprar porque el CREADOR aún tiene demasiado.
+
+        Es el filtro anti dump-inicial. Los demás miran la concentración de
+        holders anónimos; éste mira la única cartera que sabe de antemano
+        cuándo va a vender. Un dev que se queda un 20% del supply tiene, por
+        construcción, un botón para hundirte el precio.
+
+        Se consulta el saldo real del creador para ESTE mint
+        (``getTokenAccountsByOwner``), no su histórico: da igual lo bien que se
+        haya portado antes si ahora mismo está cargado.
+
+        Fail-OPEN: si el RPC falla, deja pasar. Un filtro de reputación puede
+        permitirse ser estricto ante la duda, pero éste corre en el camino
+        crítico de la compra y bloquearlo todo por un timeout convertiría una
+        red intermitente en "el bot no compra nada".
+        """
+        if self.max_dev_hold_pct <= 0:
+            return False
+        creator = getattr(token_info, "creator", None)
+        if not creator:
+            return False
+        try:
+            import aiohttp  # noqa: PLC0415 - perezoso, igual que en _top_holder_exceeds
+
+            payload = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "getTokenAccountsByOwner",
+                "params": [
+                    str(creator),
+                    {"mint": str(token_info.mint)},
+                    {"encoding": "jsonParsed", "commitment": "processed"},
+                ],
+            }
+            timeout = aiohttp.ClientTimeout(total=6)
+            async with aiohttp.ClientSession(timeout=timeout) as s, s.post(
+                self.solana_client.rpc_endpoint, json=payload
+            ) as r:
+                data = await r.json()
+
+            accounts = ((data or {}).get("result") or {}).get("value") or []
+            held = 0.0
+            for acc in accounts:
+                info = (
+                    ((acc.get("account") or {}).get("data") or {}).get("parsed") or {}
+                ).get("info") or {}
+                held += float((info.get("tokenAmount") or {}).get("uiAmount") or 0)
+
+            supply = float(getattr(token_info, "token_total_supply", 0) or 0)
+            if supply <= 0:
+                return False
+            share = held / supply
+            if share > self.max_dev_hold_pct:
+                logger.info(
+                    f"{token_info.symbol}: el DEV tiene {share * 100:.1f}% del supply "
+                    f"(> {self.max_dev_hold_pct * 100:.0f}%) -> riesgo de dump, se omite"
+                )
+                return True
+            logger.info(f"DEV HOLD OK {token_info.symbol}: el creador tiene {share * 100:.1f}%")
+        except Exception as exc:  # noqa: BLE001 - fail-open, ver docstring
+            logger.debug(f"No pude mirar lo que tiene el dev de {token_info.symbol}: {exc}")
+        return False
+
     async def _top_holder_exceeds(self, token_info: TokenInfo) -> bool:
         """True si NO se debe comprar por motivos de holders:
         - un holder (excluida la curva) tiene > ``max_holder_pct`` del supply
@@ -1500,6 +1569,14 @@ class UniversalTrader:
                         f"{launches} lanzamientos ({rate * 100:.0f}%)"
                     )
                     dev_stats = (migs, launches, rate)
+
+                # Anti dump-inicial: qué parte del supply sigue en manos del dev.
+                # Va DESPUÉS del filtro de reputación y ANTES del de holders:
+                # sólo se gasta esta llamada RPC en tokens que ya han pasado el
+                # corte del creador, y evita el trabajo de holders si el dev ya
+                # está cargado y va a vender encima.
+                if await self._dev_holds_too_much(token_info):
+                    return
 
                 # Anti-concentración: no comprar si un holder tiene >max_holder_pct.
                 if (
