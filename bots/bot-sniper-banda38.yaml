@@ -55,8 +55,22 @@ trade:
   take_profit_sell_percentage: 0.50
   tp2_gain: 1.25
   tp2_sell: 0.25
-  tp3_gain: 3.00              # ≈ $14.000 de market cap entrando en la banda
-  tp3_sell: 0.25              # 50+25+25 = 100%, sin moonbag
+  # El tercer tramo se deja SIN objetivo fijo. Medido el 3-ago sobre las seis
+  # ganadoras de la tanda en papel: tres devolvieron el resto de la posición al
+  # stop -- subían por encima de x1.5, cobraban el primer tramo, y el 25-50%
+  # que quedaba acababa saliendo a x0.65, porque el stop se mide contra la
+  # ENTRADA y nunca se mueve. El objetivo de $14.000 solo lo alcanzó 1 de 6.
+  #
+  #   stop -35% desde la entrada        +0,4752 SOL en las ganadoras
+  #   stop a break-even tras el 1er TP  +0,5394
+  #   trailing al 80% del máximo        +0,6083   <-- el mejor
+  #
+  # El trailing del bot (universal_trader) usa stop_loss_percentage desde el
+  # PICO y se arma al superar +20%, así que con -35% deja correr hasta el 65%
+  # del máximo. Es algo más flojo que el 80% medido, pero es lo que hay sin
+  # tocar el código.
+  tp3_gain: 0
+  tp3_sell: 0
 
   stop_loss_percentage: 0.35
   max_hold_time: 600          # 10 min: con 3 no da tiempo a que se desarrolle
@@ -99,6 +113,31 @@ filters:
   yolo_mode: true
   paper_trade: true           # <<< EN PAPEL. La medición dio -22,7%/op.
 
+  # LA EDAD ES EL ÚNICO FILTRO QUE SEPARA GANADORAS DE PERDEDORAS.
+  #
+  # Medido el 3-ago sobre 22 operaciones en papel, sin una sola excepción:
+  #   entrada a los  5s -> 0 de 8 tocaron el TP (  0%)
+  #   entrada a los 10s -> 3 de 8              ( 38%)
+  #   entrada a 15s o + -> 3 de 6              ( 50%)
+  #
+  # Y las otras dos cosas que se conocen al comprar NO separan nada: el market
+  # cap de entrada fue $3.486 en las ganadoras contra $3.521 en las perdedoras,
+  # y el SOL en curva 9,23 contra 9,44.
+  #
+  # El motivo: una moneda que llega a $3.500 en cinco segundos es una donde el
+  # creador metió 9-10 SOL él solo, sin que nadie más la haya visto. Eso es un
+  # bundle y detrás viene el volcado. Si tarda 12-36 segundos es porque está
+  # entrando gente de verdad.
+  #
+  # Aplicando solo este mínimo a esas 22 operaciones: de -0,4142 SOL a +0,0794,
+  # conservando LOS SEIS aciertos y quitando 8 pérdidas.
+  #
+  # OJO: el bot NO tiene un filtro `min_token_age`. La espera se consigue con
+  # `retries.wait_after_creation`, que es lo que hay más abajo puesto en 20
+  # segundos: el bot no mira la moneda hasta entonces, así que nunca comprará
+  # una de 5 segundos. Si algún día se implementa el filtro de verdad, esto
+  # sería `min_token_age: 8`.
+
   min_entry_mc: 3000          # la banda que pidió Manu
   max_entry_mc: 3800
 
@@ -111,7 +150,11 @@ filters:
   # 8 SOL ≈ $590, el tercio alto de lo que hay en la banda $3.000-$3.800 (ahí
   # la curva típica tiene entre $400 y $780). Medido en vivo: a los 8-23
   # segundos ya hay monedas con 5-9 SOL en curva, así que el filtro dispara.
-  min_curve_sol: 8
+  # 10 SOL. Medido el 3-ago: exigir volumen sube el porcentaje de ganadoras
+  # COBRABLES del 15% al 22%, pero solo hasta ~$1.000 de volumen. A partir de
+  # $3.000 vuelve a bajar al 17% y encima quita un tercio de las oportunidades.
+  # Más no es mejor.
+  min_curve_sol: 10
 
   # Este mismo umbral es la defensa contra la lección más cara del 2-ago: el
   # 85% de las monedas que "suben" tienen la curva seca y su precio no se puede
