@@ -1,0 +1,153 @@
+# BANDA 3-3.8K — estrategia pedida por Manu el 3-ago-2026
+#
+# Comprar monedas nuevas (<1 min) que estén entre $3.000 y $3.800 de market cap
+# y hayan movido volumen en los primeros 30 segundos. Vender por tramos.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# LO QUE DIO LA MEDICIÓN, PARA QUE CONSTE
+# ─────────────────────────────────────────────────────────────────────────────
+# Medida sobre 400 monedas reales del 1-ago con el recorrido de precio de GMGN
+# (velas de 30s) y exigiendo que el pool tuviera SOL de verdad:
+#
+#     39 candidatas cumplían los filtros
+#      6 tenían pool vivo (el 85% restante son precios incobrables)
+#      1 acabó en verde
+#      ROI -22.7% por operación · total -0.204 SOL
+#
+# Se crea igualmente porque Manu lo pidió sabiendo esto. Queda por escrito para
+# que dentro de un mes no haya que reconstruir por qué existe este fichero.
+#
+# Un detalle del resultado que sí es útil: las entradas se agolpaban en los
+# bordes ($3.000 o $3.800), no en el medio. La moneda ATRAVIESA la banda, no se
+# queda en ella. Y las que entraban por $3.000 casi siempre estaban BAJANDO —
+# de ahí que acabaran en stop. Si algún día se retoca esto, el arreglo natural
+# es exigir que venga subiendo, no solo que esté en la banda.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: "BANDA 3-3.8K - nuevas con volumen, salida en 3 tramos"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: false      # se enciende a mano; la medición no la respalda
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.15            # por debajo de 0.15 las cuotas fijas se comen el
+                              # resultado: 4 transacciones son 0.0072 SOL, que
+                              # sobre 0.10 son el 7,2% y sobre 0.15 el 4,8%
+
+  buy_slippage: 0.15          # 0.35 era regalarle un 35% de margen a cualquier
+                              # sandwich bot que te viera venir
+  sell_slippage: 0.90         # alto a propósito: en curvas finas un slippage
+                              # bajo revierte la venta (error 6003) y la
+                              # transacción falla cobrando la comisión igual
+
+  exit_strategy: "tp_sl"
+  # La escalera que pidió Manu: 50% a +50%, 25% a +125%, 25% "a $14K de MC".
+  #
+  # El tercer tramo es un nivel ABSOLUTO y el bot solo entiende porcentajes
+  # sobre la entrada. Entrando en la banda, $14.000 son entre +268% (desde
+  # $3.800) y +367% (desde $3.000): +300% es el punto medio.
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 0.50
+  tp2_gain: 1.25
+  tp2_sell: 0.25
+  tp3_gain: 3.00              # ≈ $14.000 de market cap entrando en la banda
+  tp3_sell: 0.25              # 50+25+25 = 100%, sin moonbag
+
+  stop_loss_percentage: 0.35
+  max_hold_time: 600          # 10 min: con 3 no da tiempo a que se desarrolle
+  price_check_interval: 1
+  extreme_fast_mode: false    # false = lee la curva, que es lo que necesitan
+                              # los filtros de MC y de volumen
+  min_reserve_sol: 0.15       # gasolina: sin esto no se puede firmar ni vender
+
+# CONTRA LOS GASTOS EN INTENTOS FALLIDOS
+#
+# Una transacción que revierte paga la comisión de prioridad IGUAL. El 1-ago
+# eso costó 0,64 SOL en 178 ventas fallidas. Hay tres defensas en el código
+# (recortar la venta al saldo real, preflight en la venta, y parar a los 3
+# fallos seguidos), pero desde aquí se puede bajar el coste de cada fallo:
+#
+# 60.000.000 µlamports/CU × 85.000 CU ≈ 0,0036 SOL por transacción fallida.
+# 20.000.000 lo deja en ≈0,0012, tres veces menos, a cambio de entrar algo más
+# lento. Para esta estrategia no importa: se espera 20 segundos antes de mirar,
+# así que no se compite por el primer bloque.
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 20_000_000
+  extra_percentage: 0.0
+  hard_cap: 20_000_000
+
+retries:
+  wait_after_creation: 20     # se mira a los ~20s, dentro del primer minuto
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"       # el de logs da la curva fresca en el mismo slot
+  max_token_age: 60           # "moneda nueva": menos de 1 minuto
+  match_string: null
+  bro_address: null           # sin lista de devs: el filtro es la moneda
+  allow_mayhem: false         # las mayhem nacen con 18 veces menos volumen en
+                              # el primer segundo y son el 88% de los pumps que
+                              # se desploman
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: true           # <<< EN PAPEL. La medición dio -22,7%/op.
+
+  min_entry_mc: 3000          # la banda que pidió Manu
+  max_entry_mc: 3800
+
+  # "Volumen mínimo $2.000 en menos de 30s": se comprobó si GMGN podía darlo
+  # (3-ago). Para una moneda de 20 segundos devuelve holder_count y liquidity,
+  # pero NO volumen negociado — todavía no la ha indexado a ese nivel. Así que
+  # el único dato de dinero disponible al comprar sigue siendo el SOL de la
+  # curva, y es además el que no se puede falsear.
+  #
+  # 8 SOL ≈ $590, el tercio alto de lo que hay en la banda $3.000-$3.800 (ahí
+  # la curva típica tiene entre $400 y $780). Medido en vivo: a los 8-23
+  # segundos ya hay monedas con 5-9 SOL en curva, así que el filtro dispara.
+  min_curve_sol: 8
+
+  # Este mismo umbral es la defensa contra la lección más cara del 2-ago: el
+  # 85% de las monedas que "suben" tienen la curva seca y su precio no se puede
+  # cobrar (TNOS marcaba $27 millones con 0,198 SOL dentro). Con 8 SOL exigidos
+  # a la entrada, hay con qué pagarte al salir.
+
+  max_holder_pct: 0.15        # que un solo holder no tenga más del 15%
+  max_dev_hold_pct: 0.10      # ni el creador más del 10%: es el único que sabe
+                              # de antemano cuándo va a vender
+  min_holders: 8              # sí es comprobable y filtra los lanzamientos
+                              # vacíos; 50 (lo que pidió Manu) casi no existe a
+                              # los 30s: en la banda se ven entre 1 y 20
+  holder_bypass_ratio: 3
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 15

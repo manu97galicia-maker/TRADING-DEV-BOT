@@ -118,6 +118,8 @@ class Prueba:
         self.n_lanz = 0
         self.ilegibles = 0
         self.volumenes: list[float] = []
+        self.invertido = 0.0   # SOL puestos (coste de entrada)
+        self.realizado = 0.0   # SOL recuperados en ventas
         self.tareas: set[asyncio.Task] = set()
 
     async def al_nacer(self, t: TokenInfo) -> None:
@@ -174,7 +176,14 @@ class Prueba:
             "entrada": precio, "mc_entrada": mc, "t0": time.time(),
             "max": precio, "min": precio, "camino": [(0.0, precio)],
             "curva": t.bonding_curve,
+            # estado de la escalera: cada posicion lleva su propia copia de los
+            # tramos, porque se van consumiendo segun se alcanzan
+            "tramos": list(ESCALERA),
+            "restante": 1.0,
+            "cobrado": 0.0,
+            "coste": BUY * (1 + VAR) + POR_TX,
         }
+        self.invertido += BUY * (1 + VAR) + POR_TX
         log(f"  + {t.symbol[:12]:12} vol1s ${vol_usd:>7,.0f} · MC ${mc:>8,.0f}"
             + ("  [mayhem]" if t.is_mayhem_mode else ""))
         await avisar(
@@ -186,8 +195,41 @@ class Prueba:
             f"CA: <code>{mint}</code>"
         )
 
+    async def _vender(self, p: dict, frac: float, r: float, etiqueta: str,
+                      emoji: str) -> None:
+        """Apunta una venta parcial y avisa como si fuera real.
+
+        `frac` es la fraccion de la posicion ORIGINAL, no de lo que queda: asi
+        "+40% vende el 60%" significa siempre el 60% de lo comprado.
+        """
+        frac = min(frac, p["restante"])
+        if frac <= 1e-9:
+            return
+        bruto = BUY * frac * r
+        neto = bruto * (1 - VAR) - POR_TX
+        p["cobrado"] += neto
+        p["restante"] -= frac
+        self.realizado += neto
+        pnl_op = p["cobrado"] - p["coste"] * (1 - p["restante"])
+        await avisar(
+            f"{emoji} <b>{etiqueta}</b> · <b>{p['sym'][:16]}</b>\n"
+            f"Vendido {frac*100:.0f}% a x{r:.2f} → <b>{neto:+.4f} SOL</b>\n"
+            f"Queda {p['restante']*100:.0f}% de la posicion\n"
+            f"📊 PnL acumulado: <b>{self.realizado - self.invertido:+.4f} SOL</b>"
+        )
+
+    async def _cerrar(self, mint: str, p: dict, motivo: str) -> None:
+        p["motivo"] = motivo
+        p["pnl"] = p["cobrado"] - p["coste"]
+        self.cerradas.append(p)
+        self.abiertas.pop(mint, None)
+
     async def seguir(self) -> None:
-        """Sigue el precio de las abiertas hasta agotar el tiempo de vigilancia."""
+        """Ejecuta la escalera EN VIVO sobre cada posicion abierta.
+
+        No espera al final para evaluar: aplica el stop y los tramos segun van
+        ocurriendo, igual que haria el bot de verdad, y avisa de cada uno.
+        """
         while True:
             await asyncio.sleep(self.args.sondeo)
             ahora = time.time()
@@ -205,17 +247,35 @@ class Prueba:
                     precio = 0.0
                 if precio <= 0:
                     if ahora - p["t0"] >= self.args.vigilar:
-                        p["salida"] = p["camino"][-1][1]
-                        self.cerradas.append(p)
-                        del self.abiertas[mint]
+                        await self._cerrar(mint, p, "SIN PRECIO")
                     continue
                 p["max"] = max(p["max"], precio)
                 p["min"] = min(p["min"], precio)
                 p["camino"].append((round(ahora - p["t0"], 1), precio))
+
+                r = precio / p["entrada"]
+                # 1) stop primero: si ha caido, se va todo lo que quede
+                if r <= 1 - SL_ESCALERA:
+                    await self._vender(p, p["restante"], 1 - SL_ESCALERA,
+                                       f"STOP -{SL_ESCALERA*100:.0f}%", "🛑")
+                    await self._cerrar(mint, p, "SL")
+                    continue
+                # 2) tramos de take-profit alcanzados
+                while p["tramos"] and r >= 1 + p["tramos"][0][0]:
+                    g, frac = p["tramos"].pop(0)
+                    await self._vender(p, frac, r, f"TP +{g*100:.0f}%", "✅")
+                # 3) el resto sale al tocar el market cap objetivo
+                mc = p["mc_entrada"] * r
+                if not p["tramos"] and p["restante"] > 1e-9 and mc >= MC_FINAL:
+                    await self._vender(p, p["restante"], r,
+                                       f"OBJETIVO MC ${MC_FINAL:,.0f}", "🚀")
+                if p["restante"] <= 1e-9:
+                    await self._cerrar(mint, p, "COMPLETA")
+                    continue
                 if ahora - p["t0"] >= self.args.vigilar:
-                    p["salida"] = precio
-                    self.cerradas.append(p)
-                    del self.abiertas[mint]
+                    # se acabo el tiempo de vigilancia: se liquida lo que quede
+                    await self._vender(p, p["restante"], r, "CIERRE POR TIEMPO", "⏱️")
+                    await self._cerrar(mint, p, "TIEMPO")
 
 
 #: Escalera que pidio Manu (2-ago): stop -35%; a +40% vende el 60%; a +120%
@@ -344,38 +404,28 @@ async def informe_telegram(ops: list[dict], pr: Prueba, args: argparse.Namespace
 
 
 def evaluar(ops: list[dict]) -> None:
+    """Resumen de la escalera YA EJECUTADA en vivo (no una re-simulacion)."""
     if not ops:
         print("\nsin operaciones: nada supero el umbral")
         return
-    print(f"\n{'='*72}\nRESULTADO · {len(ops)} entradas\n{'='*72}")
-    print(f"{'simbolo':12} {'vol 1s':>9} {'MC entrada':>11} {'maximo':>8} {'minimo':>8} {'final':>8}")
-    print("-" * 62)
-    for p in sorted(ops, key=lambda x: -x["max"] / x["entrada"]):
+    print(f"\n{'=' * 72}\nRESULTADO · {len(ops)} operaciones\n{'=' * 72}")
+    print(f"{'simbolo':12} {'vol 1s':>9} {'MC entrada':>11} {'maximo':>8} "
+          f"{'minimo':>8} {'motivo':>10} {'PnL SOL':>9}")
+    print("-" * 74)
+    for p in sorted(ops, key=lambda x: -x.get("pnl", 0)):
         e = p["entrada"]
         print(f"{str(p['sym'])[:12]:12} ${p['vol_usd']:>8,.0f} ${p['mc_entrada']:>10,.0f} "
-              f"x{p['max']/e:>7.2f} x{p['min']/e:>7.2f} x{p.get('salida', e)/e:>7.2f}")
-
-    print(f"\n{'REGLA DE SALIDA':28} {'acierta':>8} {'PnL supuesto':>14} {'por op':>9}")
-    print("-" * 62)
-    coste = BUY * (1 + VAR) + POR_TX
-    for tp, sl in ((0.35, 0.30), (0.50, 0.30), (1.00, 0.30), (1.00, 0.50),
-                   (2.00, 0.50), (0.35, 0.18)):
-        total = 0.0
-        aciertos = 0
-        for p in ops:
-            e = p["entrada"]
-            alto, bajo = p["max"] / e, p["min"] / e
-            # peor caso: si toco los dos niveles, se asume primero el stop
-            if bajo <= 1 - sl:
-                r = 1 - sl
-            elif alto >= 1 + tp:
-                r = 1 + tp
-                aciertos += 1
-            else:
-                r = p.get("salida", e) / e
-            total += BUY * r * (1 - VAR) - POR_TX - coste
-        print(f"TP +{tp*100:>3.0f}% / SL -{sl*100:>2.0f}%{'':10} {aciertos/len(ops)*100:>7.0f}% "
-              f"{total:>+13.4f} SOL {total/len(ops)/BUY*100:>+8.1f}%")
+              f"x{p['max']/e:>7.2f} x{p['min']/e:>7.2f} {p.get('motivo','?'):>10} "
+              f"{p.get('pnl', 0):>+9.4f}")
+    total = sum(p.get("pnl", 0) for p in ops)
+    ganan = sum(1 for p in ops if p.get("pnl", 0) > 0)
+    motivos: dict[str, int] = {}
+    for p in ops:
+        motivos[p.get("motivo", "?")] = motivos.get(p.get("motivo", "?"), 0) + 1
+    print("-" * 74)
+    print(f"TOTAL: {total:+.4f} SOL · {ganan}/{len(ops)} en positivo · "
+          f"{total/len(ops)/BUY*100:+.1f}% por operacion")
+    print("motivos de salida: " + " · ".join(f"{k}: {v}" for k, v in sorted(motivos.items())))
 
 
 async def main() -> None:
