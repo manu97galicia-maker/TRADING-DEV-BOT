@@ -190,6 +190,8 @@ async def start_bot(config_path: str):
             min_holders_gmgn=cfg.get("filters", {}).get("min_holders_gmgn", 0),
             min_volumen_sol=cfg.get("filters", {}).get("min_volumen_sol", 0.0),
             max_volumen_sol=cfg.get("filters", {}).get("max_volumen_sol", 0.0),
+            min_vol_ventana_sol=cfg.get("filters", {}).get("min_vol_ventana_sol", 0.0),
+            vol_ventana_seg=cfg.get("filters", {}).get("vol_ventana_seg", 3.0),
             no_repeat_name_min=cfg.get("filters", {}).get("no_repeat_name_min", 0.0),
             max_buy_age=cfg.get("filters", {}).get("max_buy_age", 0.0),
             min_reserve_sol=cfg.get("trade", {}).get("min_reserve_sol", 0.03),

@@ -67,7 +67,7 @@ filters:
   paper_trade: false          # DINERO REAL
 
   min_entry_mc: 2000
-  max_entry_mc: 3400
+  max_entry_mc: 3500
 
   # 0: a $2.000 de market cap la curva esta vacia, cualquier minimo anularia el
   # suelo de la banda. Manda el market cap, que mide lo mismo.
@@ -80,6 +80,10 @@ filters:
   # para acumular volumen y aqui solo 10, asi que el mismo umbral seria mucho
   # mas exigente sin quererlo.
   min_volumen_sol: 14
+  # ACELERACION: 8 SOL en los ultimos 2 segundos (4 SOL/s). Ventana mas corta
+  # que en banda38 porque aqui solo hay 10 segundos de vida para decidir.
+  min_vol_ventana_sol: 8
+  vol_ventana_seg: 2
   max_volumen_sol: 0
 
   # 8 titulares. A los 10 segundos este dato YA es fiable: medido sobre 71

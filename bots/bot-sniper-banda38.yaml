@@ -257,7 +257,7 @@ filters:
   # sería `min_token_age: 8`.
 
   min_entry_mc: 3000          # suelo 3K (Manu, 4-ago)
-  max_entry_mc: 4500
+  max_entry_mc: 3500          # comprar por DEBAJO de 3,5K (Manu, 4-ago)
 
   # "Volumen mínimo $2.000 en menos de 30s": se comprobó si GMGN podía darlo
   # (3-ago). Para una moneda de 20 segundos devuelve holder_count y liquidity,
@@ -398,6 +398,15 @@ filters:
   # mucho menos: de ocho vigiladas, las mejores llegaban a 15-18 SOL y ninguna
   # pasaba de 24, asi que el filtro no disparaba nunca.
   min_volumen_sol: 18
+  # ACELERACION. Es el filtro nuevo y el que de verdad intenta cazar las que
+  # van a explotar: no basta con haber movido 18 SOL en total, tiene que estar
+  # moviendose AHORA. Las que volaron la noche del 3/4-ago cumplian el volumen
+  # en 1-2 segundos (Jerry 34 SOL al 1s, Zayin 29,6 al 2s); las que tardaban
+  # 19-24 s no fueron a ningun lado.
+  #
+  # 8 SOL en 3 segundos = 2,7 SOL/s sostenidos.
+  min_vol_ventana_sol: 8
+  vol_ventana_seg: 3
   max_volumen_sol: 0          # sin techo
 
   no_repeat_name_min: 5       # ninguna moneda con el mismo símbolo en 5 min

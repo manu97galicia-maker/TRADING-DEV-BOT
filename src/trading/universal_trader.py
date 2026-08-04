@@ -346,6 +346,14 @@ class UniversalTrader:
         # (FEETCATE: 16 SOL de volumen -> x15,9). Mucho movimiento tan pronto
         # significa que ya entro y salio gente y llegas al final. 0 = sin tope.
         max_volumen_sol: float = 0.0,
+        # ACELERACION: SOL negociados en los ULTIMOS `vol_ventana_seg` segundos.
+        # Distinto del volumen total: una moneda con 30 SOL en 40 segundos se
+        # esta apagando y otra con 30 en 3 esta explotando, y hasta ahora el bot
+        # las trataba igual. Las que volaron la noche del 3/4-ago cumplian el
+        # volumen en 1-2 segundos; las que se arrastraban 19-24 s no fueron a
+        # ningun lado. 0 = sin filtro.
+        min_vol_ventana_sol: float = 0.0,
+        vol_ventana_seg: float = 3.0,
         # No comprar una moneda si otra con el MISMO símbolo apareció en los
         # últimos N minutos: los copias en cadena son el patrón del que lanza
         # veinte clones a ver cuál prende. 0 = desactivado.
@@ -558,6 +566,8 @@ class UniversalTrader:
         self.min_holders_gmgn = int(min_holders_gmgn or 0)
         self.min_volumen_sol = float(min_volumen_sol or 0)
         self.max_volumen_sol = float(max_volumen_sol or 0)
+        self.min_vol_ventana_sol = float(min_vol_ventana_sol or 0)
+        self.vol_ventana_seg = float(vol_ventana_seg or 3.0)
         self.no_repeat_name_min = float(no_repeat_name_min or 0)
         self.max_buy_age = float(max_buy_age or 0)
         #: símbolo -> monotonic() de la última vez que se vio. Solo memoria del
@@ -1499,7 +1509,7 @@ class UniversalTrader:
                 r = subprocess.run(  # noqa: S603
                     [exe, "token", "info", "--chain", "sol",
                      "--address", mint, "--raw"],
-                    capture_output=True, text=True, timeout=6,
+                    capture_output=True, text=True, timeout=20,
                     encoding="utf-8", errors="replace",
                 )
                 if r.returncode != 0:
@@ -1509,7 +1519,7 @@ class UniversalTrader:
                 return -1
 
         try:
-            return await asyncio.wait_for(asyncio.to_thread(_consulta), timeout=8)
+            return await asyncio.wait_for(asyncio.to_thread(_consulta), timeout=25)
         except Exception:  # noqa: BLE001
             return -1
 
@@ -1617,6 +1627,13 @@ class UniversalTrader:
                     if self.min_volumen_sol > 0 and _v < self.min_volumen_sol:
                         await asyncio.sleep(0.5)
                         continue
+                    # Aceleracion: no basta con haber movido mucho en total,
+                    # tiene que estar moviendose AHORA.
+                    if self.min_vol_ventana_sol > 0:
+                        _vr = _vol_sol(str(token_info.mint), self.vol_ventana_seg)
+                        if _vr < self.min_vol_ventana_sol:
+                            await asyncio.sleep(0.5)
+                            continue
                     # El volumen ya cumple: ahora si vale la pena mirar la curva.
                     try:
                         _st = await self.platform_implementations.curve_manager.get_pool_state(
@@ -1637,9 +1654,14 @@ class UniversalTrader:
                     if self.min_entry_mc > 0 and _mc < self.min_entry_mc:
                         await asyncio.sleep(1)
                         continue
+                    _acel = (
+                        f" · {_vol_sol(str(token_info.mint), self.vol_ventana_seg):.1f} "
+                        f"SOL en los ultimos {self.vol_ventana_seg:.0f}s"
+                        if self.min_vol_ventana_sol > 0 else ""
+                    )
                     logger.info(
                         f"CUMPLE {token_info.symbol}: {_v:.1f} SOL de volumen y "
-                        f"MC ${_mc:,.0f} a los {monotonic() - _t0:.0f}s"
+                        f"MC ${_mc:,.0f} a los {monotonic() - _t0:.0f}s{_acel}"
                     )
                     break
                 else:
