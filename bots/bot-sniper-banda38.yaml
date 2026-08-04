@@ -35,7 +35,7 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.25            # 0,25 SOL por operacion (Manu, 4-ago)
+  buy_amount: 0.30            # 0,30 SOL por operacion
                               # resultado: 4 transacciones son 0.0072 SOL, que
                               # sobre 0.10 son el 7,2% y sobre 0.15 el 4,8%
 
@@ -51,10 +51,13 @@ trade:
   # El tercer tramo es un nivel ABSOLUTO y el bot solo entiende porcentajes
   # sobre la entrada. Entrando en la banda, $14.000 son entre +268% (desde
   # $3.800) y +367% (desde $3.000): +300% es el punto medio.
-  take_profit_percentage: 0.50
-  take_profit_sell_percentage: 0.50
-  tp2_gain: 0.90
-  tp2_sell: 0.125
+  take_profit_percentage: 0.40   # +40% y vende todo
+  # 1.0 = vende TODO al +50% (Manu, 4-ago). Se acabo la escalera: un solo
+  # objetivo y fuera. Los tramos de +90/+150/+300 quedan a cero para que
+  # build_tiers los descarte.
+  take_profit_sell_percentage: 1.0
+  tp2_gain: 0
+  tp2_sell: 0
   # El tercer tramo se deja SIN objetivo fijo. Medido el 3-ago sobre las seis
   # ganadoras de la tanda en papel: tres devolvieron el resto de la posición al
   # stop -- subían por encima de x1.5, cobraban el primer tramo, y el 25-50%
@@ -69,10 +72,10 @@ trade:
   # PICO y se arma al superar +20%, así que con -35% deja correr hasta el 65%
   # del máximo. Es algo más flojo que el 80% medido, pero es lo que hay sin
   # tocar el código.
-  tp3_gain: 1.50
-  tp3_sell: 0.125
-  tp4_gain: 3.00
-  tp4_sell: 0.125
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
 
   # 45% (era 35), decidido por Manu el 3-ago. Va en la direccion que apoyan los
   # datos: sobre 24 operaciones simuladas, el minimo MEDIANO fue -41%, o sea que
@@ -82,7 +85,7 @@ trade:
   #   stop 45% -> -0,2081
   #   stop 50% -> +0,1969   <- el primero en positivo
   # 45 no llega a positivo en esa muestra, pero pierde tres veces menos que 35.
-  stop_loss_percentage: 0.45
+  stop_loss_percentage: 0.18     # stop -18%
   max_hold_time: 600          # 10 min: con 3 no da tiempo a que se desarrolle
   price_check_interval: 1
   extreme_fast_mode: false    # false = lee la curva, que es lo que necesitan
@@ -205,7 +208,11 @@ filters:
   listener_type: "logs"       # el de logs da la curva fresca en el mismo slot
   max_token_age: 90           # margen sobre los 45s de compra
                               # vida): NO acota la edad de compra
-  max_buy_age: 45             # 0,75 min = 45 s desde la creacion (Manu, 4-ago)
+  # 6 segundos: la ventana entera de vigilancia. El bot mira desde que nace la
+  # moneda y compra en cuanto cumpla, pero si a los 6 s no ha cumplido, la
+  # suelta. Medido sobre 261 monedas, a los 3 s solo el 8% habia movido 28 SOL
+  # y a los 10 s el 12%: con esta ventana se compra POCO, pero muy pronto.
+  max_buy_age: 40             # menos de 40 s de vida
   match_string: null
   bro_address: null           # sin lista de devs: el filtro es la moneda
   allow_mayhem: false         # las mayhem nacen con 18 veces menos volumen en
@@ -244,8 +251,8 @@ filters:
   # una de 5 segundos. Si algún día se implementa el filtro de verdad, esto
   # sería `min_token_age: 8`.
 
-  min_entry_mc: 2000          # suelo 2K (Manu, 4-ago)
-  max_entry_mc: 4400          # techo 4,4K (Manu, 4-ago)
+  min_entry_mc: 3300          # banda 3,3K - 4,5K (Manu, 4-ago)
+  max_entry_mc: 4500
 
   # "Volumen mínimo $2.000 en menos de 30s": se comprobó si GMGN podía darlo
   # (3-ago). Para una moneda de 20 segundos devuelve holder_count y liquidity,
@@ -302,7 +309,7 @@ filters:
   # 6 SOL: lo que hay en la curva a $3.000 de market cap. Va con el suelo.
   # 0: a $2.000 de market cap la curva esta practicamente vacia, asi que
   # cualquier minimo aqui anularia el suelo. Manda el market cap.
-  min_curve_sol: 0
+  min_curve_sol: 8            # = el suelo de $3.300, van juntos
 
   # Este mismo umbral es la defensa contra la lección más cara del 2-ago: el
   # 85% de las monedas que "suben" tienen la curva seca y su precio no se puede
@@ -342,7 +349,7 @@ filters:
   # compradores gordos, pero no le da tiempo a juntar veinte personas.
   # 8, bajado de 15: FEETCATE tenia 17 operaciones a los 5 segundos, asi que
   # rondaria los 10-14 titulares. Con 15 se habria escapado igual.
-  min_holders_gmgn: 10        # minimo 10 titulares (Manu, 4-ago)
+  min_holders_gmgn: 11        # "mas de 10" titulares
                               # Verificado el 3-ago en monedas de 16-22s:
                               # TripleT 25 titulares, Colon 25, HRACCOON 18.
                               # Existe, pero es el borde alto: la mediana de la
@@ -382,7 +389,7 @@ filters:
   # 15 SOL (~$1.100). Bajado de 24 el 4-ago de madrugada: a esta hora las
   # monedas se mueven mucho menos y el filtro no disparaba. De las que se
   # perdieron vigilando 45s, las mejores llegaban a 17-18 SOL.
-  min_volumen_sol: 27         # ~$2.000 de volumen minimo (Manu, 4-ago)
+  min_volumen_sol: 26         # ~$1.900 de volumen minimo
   max_volumen_sol: 0          # sin techo
 
   no_repeat_name_min: 5       # ninguna moneda con el mismo símbolo en 5 min

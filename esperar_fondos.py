@@ -26,7 +26,7 @@ import urllib.request
 from pathlib import Path
 
 D = Path(__file__).parent
-MINIMO = 0.34   # 0,25 x 1,15 de slippage (=0,2875) + 0,05 de reserva.
+MINIMO = 0.17   # 0,10 x 1,15 de slippage (=0,115) + 0,05 de reserva.
                 # OJO: NO es buy_amount + reserva. El bot bloquea la compra
                 # con el slippage incluido, asi que 0,35 se quedaba corto y
                 # arrancaba un bot que no podia comprar nada.
@@ -96,7 +96,7 @@ def main() -> None:
             continue
 
         if s >= MINIMO:
-            pos = int((s - 0.05) / 0.2875)
+            pos = int((s - 0.05) / 0.115)
             avisar(
                 "💰 <b>FONDOS RECIBIDOS</b>\n"
                 f"Saldo: <b>{s:.4f} SOL</b> · hasta {pos} posición(es) a la vez\n\n"
@@ -110,7 +110,7 @@ def main() -> None:
                 "+50% vende 50% · +90% vende 12,5%\n"
                 "+150% vende 12,5% · +300% vende 12,5%\n"
                 "moonbag 12,5% · stop −45%\n\n"
-                "<b>0,25 SOL por entrada.</b>\n"
+                "<b>0,10 SOL por entrada.</b>\n"
                 "Te aviso de cada compra y cada venta."
             )
             break
