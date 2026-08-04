@@ -127,7 +127,10 @@ filters:
   # instante en que lanza. Pedir titulares encima es pagar segundos por
   # confirmar algo que ya sabemos.
   min_holders_gmgn: 0
-  no_repeat_name_min: 0
+  # 5 min sin repetir nombre. Estos dos devs relanzan la MISMA moneda una y
+  # otra vez (2E94st2 lanzo 45 en 7 dias), y comprar tres clones seguidos es
+  # pagar tres veces por la misma apuesta.
+  no_repeat_name_min: 5
   max_holder_pct: 0.0
   max_dev_hold_pct: 0.0
   min_holders: 0
