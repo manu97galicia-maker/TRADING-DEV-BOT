@@ -1,0 +1,117 @@
+# RAPIDA 2-3,4K — segunda estrategia de Manu (4-ago-2026)
+#
+# La idea es la contraria a banda38: en vez de esperar a que la moneda se
+# asiente, entrar en los TRES primeros segundos si ya ha movido $2.000, cuando
+# el precio todavia no ha subido (market cap 2.000-3.400).
+#
+# Corre EN PARALELO con banda38. Comparten cartera, asi que compiten por el
+# saldo: el que llegue primero compra y el otro se queda sin sitio hasta que
+# se libere. Con 0,5 SOL por entrada aqui y 0,3 alli hacen falta ~1 SOL libre
+# para que quepan las dos a la vez.
+
+name: "RAPIDA 2-3,4K - 3 segundos, volumen 2K"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+separate_process: false     # false: si es true el proceso padre muere y
+                            # systemd entra en bucle de reinicios
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.50
+  buy_slippage: 0.15
+  sell_slippage: 0.90
+
+  exit_strategy: "tp_sl"
+  # Escalera pedida: +100% la mitad, +200% la mitad de lo que quede, resto hold.
+  # En fraccion del total: 50% / 25% / 25% de moonbag.
+  take_profit_percentage: 1.00
+  take_profit_sell_percentage: 0.50
+  tp2_gain: 2.00
+  tp2_sell: 0.25
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+
+  stop_loss_percentage: 0.35
+  max_hold_time: 600
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.05
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 50_000_000
+  extra_percentage: 0.0
+  hard_cap: 50_000_000
+
+retries:
+  # 0: la vigilancia arranca en el primer instante y compra en cuanto cumpla.
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 60
+  max_buy_age: 3              # "los 3 primeros segundos"
+  match_string: null
+  bro_address: null
+  allow_mayhem: false
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false          # DINERO REAL
+
+  min_entry_mc: 2000
+  max_entry_mc: 3400
+
+  # 0: a $2.000 de market cap la curva esta vacia, cualquier minimo anularia el
+  # suelo de la banda. Manda el market cap, que mide lo mismo.
+  min_curve_sol: 0
+
+  # 27 SOL = ~$2.000 movidos en esos 3 segundos. Es exigente: medido sobre 261
+  # monedas, a los 3 s solo el 8% habia movido 28 SOL. Espera pocas entradas.
+  min_volumen_sol: 27
+  max_volumen_sol: 0
+
+  # Sin filtro de titulares A PROPOSITO. A los 3 segundos GMGN no conoce a 1 de
+  # cada 3 monedas y devuelve un cero falso, asi que un minimo aqui rechazaria
+  # por falta de dato, no por falta de gente. El volumen ya mide lo mismo y lo
+  # cuenta el bot de la cadena.
+  min_holders_gmgn: 0
+
+  no_repeat_name_min: 5
+  max_holder_pct: 0.15
+  max_dev_hold_pct: 0.10
+  min_holders: 0
+  holder_bypass_ratio: 3
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 15
