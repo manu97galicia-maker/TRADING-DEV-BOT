@@ -251,7 +251,7 @@ filters:
   # una de 5 segundos. Si algún día se implementa el filtro de verdad, esto
   # sería `min_token_age: 8`.
 
-  min_entry_mc: 3300          # banda 3,3K - 4,5K (Manu, 4-ago)
+  min_entry_mc: 3000          # suelo 3K (Manu, 4-ago)
   max_entry_mc: 4500
 
   # "Volumen mínimo $2.000 en menos de 30s": se comprobó si GMGN podía darlo
@@ -309,7 +309,7 @@ filters:
   # 6 SOL: lo que hay en la curva a $3.000 de market cap. Va con el suelo.
   # 0: a $2.000 de market cap la curva esta practicamente vacia, asi que
   # cualquier minimo aqui anularia el suelo. Manda el market cap.
-  min_curve_sol: 8            # = el suelo de $3.300, van juntos
+  min_curve_sol: 6            # = el suelo de $3.000, van juntos
 
   # Este mismo umbral es la defensa contra la lección más cara del 2-ago: el
   # 85% de las monedas que "suben" tienen la curva seca y su precio no se puede
@@ -389,7 +389,7 @@ filters:
   # 15 SOL (~$1.100). Bajado de 24 el 4-ago de madrugada: a esta hora las
   # monedas se mueven mucho menos y el filtro no disparaba. De las que se
   # perdieron vigilando 45s, las mejores llegaban a 17-18 SOL.
-  min_volumen_sol: 26         # ~$1.900 de volumen minimo
+  min_volumen_sol: 24         # ~$1.750 de volumen minimo
   max_volumen_sol: 0          # sin techo
 
   no_repeat_name_min: 5       # ninguna moneda con el mismo símbolo en 5 min
