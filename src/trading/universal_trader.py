@@ -1868,25 +1868,28 @@ class UniversalTrader:
                 ):
                     return
 
-            # SEÑAL (feed de Telegram): el token pasó TODOS los filtros. Se avisa
-            # SIEMPRE (se compre o no) con el motivo enriquecido (mediana + nº de
-            # lanzamientos del dev) y el MC de entrada, para ver la estrategia viva.
-            try:
-                from monitoring.notifier import notify
+            # SEÑAL: aviso DESACTIVADO el 4-ago a peticion de Manu. Se mandaba por
+            # CADA moneda que pasaba los filtros, asi que llegaban dos mensajes
+            # por operacion (senal + compra) y el chat se llenaba de monedas que
+            # al final ni se compraban. Ahora solo avisan compras y cierres.
+            # Para reactivarlo, poner `if True:`.
+            if False:
+                try:
+                    from monitoring.notifier import notify
 
-                _bot = self._state_suffix.lstrip("_").replace("bot-sniper-", "").upper()
-                _mc = entry_price * _PUMP_TOTAL_SUPPLY * _SOL_USD if entry_price > 0 else 0
-                _reason = self._build_buy_reason(token_info, dev_stats)
-                notify(
-                    f"🎯 SEÑAL · <b>{token_info.symbol}</b> ({_bot})\n"
-                    f"{_reason}\n"
-                    f"MC entrada ~${_mc:,.0f} · buy {self.buy_amount} SOL\n"
-                    f'📊 <a href="https://dexscreener.com/solana/{token_info.mint}">DexScreener</a> · '
-                    f'<a href="https://gmgn.ai/sol/token/{token_info.mint}">GMGN</a>\n'
-                    f"CA: <code>{token_info.mint}</code>"
-                )
-            except Exception:  # noqa: BLE001
-                pass
+                    _bot = self._state_suffix.lstrip("_").replace("bot-sniper-", "").upper()
+                    _mc = entry_price * _PUMP_TOTAL_SUPPLY * _SOL_USD if entry_price > 0 else 0
+                    _reason = self._build_buy_reason(token_info, dev_stats)
+                    notify(
+                        f"🎯 SEÑAL · <b>{token_info.symbol}</b> ({_bot})\n"
+                        f"{_reason}\n"
+                        f"MC entrada ~${_mc:,.0f} · buy {self.buy_amount} SOL\n"
+                        f'📊 <a href="https://dexscreener.com/solana/{token_info.mint}">DexScreener</a> · '
+                        f'<a href="https://gmgn.ai/sol/token/{token_info.mint}">GMGN</a>\n'
+                        f"CA: <code>{token_info.mint}</code>"
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
 
             # Paper-trade: record the candidate, follow its price, never buy.
             if self.paper_trade:
