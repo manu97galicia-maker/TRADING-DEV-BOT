@@ -1,0 +1,145 @@
+# DEVS QUE MIGRAN — tercera estrategia (4-ago-2026)
+#
+# No filtra por lo que hace la moneda, sino por QUIEN la lanza: solo compra a
+# los creadores que ya han migrado curvas antes. Segun el informe del scout,
+# migrar es "la senal mas fuerte que hay": de 96.059 monedas juzgadas en 7 dias
+# solo 2.484 migraron (2,6%), y esos 1.641 devs concentran las que lo logran.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# COMO SE ELIGIO LA ESCALERA
+# ─────────────────────────────────────────────────────────────────────────────
+# Los picos tipicos de estos devs, del propio informe:
+#
+#   4feA6Av...  ~$3.344      CfBoFQ3...  ~$4.077
+#   2E94st2...  ~$3.819      B1g4Nyy...  ~$5.350
+#   E7Xoxkn...  ~$3.850      7HrbKX8...  ~$7.012
+#   8jfDh7h...  ~$4.003
+#
+#   mediana $4.077 · media $4.494
+#
+# Entrando sobre los $2.500 (que es donde va a comprar de verdad, porque las
+# monedas nacen en ~$2.000):
+#
+#   +60%   -> $4.000   la MEDIANA de sus picos: aqui se cobra en la mitad
+#   +120%  -> $5.500   los buenos (B1g4Nyy)
+#   +250%  -> $8.750   los que migran de verdad
+#   resto     moonbag, para el 2,6% que graduan
+#
+# OJO con el techo de $5.000: es lo que pidio Manu, pero si el bot entra a
+# $4.500 en un dev cuyo pico tipico es $3.850, esta comprando POR ENCIMA de su
+# techo habitual y no hay recorrido. La banda util de verdad es la parte baja.
+#
+# Y el aviso que hay que tener presente: estos devs rugean MUCHO. E7Xoxkn tiene
+# 70 rugs por 41 migradas; 4feA6Av, 198 rugs por 18 migradas. El filtro no es
+# "este dev es bueno" sino "este dev al menos sabe llevar una a la meta".
+
+name: "DEVS QUE MIGRAN - 0,2 SOL bajo 5K"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.20
+  buy_slippage: 0.15
+  sell_slippage: 0.90
+
+  exit_strategy: "tp_sl"
+  take_profit_percentage: 0.60
+  take_profit_sell_percentage: 0.40
+  tp2_gain: 1.20
+  tp2_sell: 0.30
+  tp3_gain: 2.50
+  tp3_sell: 0.15
+  tp4_gain: 0
+  tp4_sell: 0
+  # moonbag 15%
+
+  stop_loss_percentage: 0.35
+  max_hold_time: 900          # 15 min: migrar lleva mas tiempo que un pump
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.05
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 50_000_000
+  extra_percentage: 0.0
+  hard_cap: 50_000_000
+
+retries:
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 120
+  max_buy_age: 60             # con dev conocido se puede esperar mas
+  match_string: null
+
+  # Los 7 devs con mas migraciones del informe. bwamJzzt queda FUERA: el propio
+  # informe lo marca como vetado y ya estaba en la lista negra local por dos
+  # rugs seguidos.
+  bro_address:
+    - "E7XoxKnPeBb9kKowKhJKtSge9sidCM5fXFJWxu3aSzcK"
+    - "CfBoFQ3tRrKhhjoXiocdVFJ9WkCzQNwbEK8uBZ6vRnrR"
+    - "7HrbKX8Dygk8wmBYnSAKhf6sd4R5TRGQtMmuGmTdc2g"
+    - "2E94st2NZnzA943HBceijgkw75gXTTxch39yquMBfeQk"
+    - "8jfDh7hABXq8xXHuYmjQdmz994qbqmKHhzwpVLqyzPqK"
+    - "B1g4Nyyu7zJzVv2fQwUdHLfvdjX5p6Uw2V9KxVLxKSmG"
+    - "4feA6AvnRstje81ZJTKniYW2LdXhh9GHqZtNVRJ2Kxst"
+
+  allow_mayhem: false
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false          # DINERO REAL
+
+  min_entry_mc: 2000
+  max_entry_mc: 5000
+  min_curve_sol: 0
+
+  # Sin minimo de volumen NI de titulares: aqui la senal es el dev, no lo que
+  # haga la moneda en los primeros segundos. Meter esos filtros encima dejaria
+  # la interseccion practicamente vacia -- estos devs lanzan poco (entre 45 y
+  # 855 monedas en 7 dias los siete juntos) y no queremos perder ninguna.
+  min_volumen_sol: 0
+  max_volumen_sol: 0
+  min_vol_ventana_sol: 0
+  min_holders_gmgn: 0
+
+  no_repeat_name_min: 0       # 0: un dev relanzando su moneda es normal aqui
+  max_holder_pct: 0.0
+  max_dev_hold_pct: 0.0
+  min_holders: 0
+  holder_bypass_ratio: 0
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 15
