@@ -90,6 +90,15 @@ trade:
   #   stop 45% -> -0,2081
   #   stop 50% -> +0,1969   <- el primero en positivo
   # 45 no llega a positivo en esa muestra, pero pierde tres veces menos que 35.
+  # ANTI-RUG: sale de la posicion entera si en los ultimos 4 segundos se
+  # vende el doble de lo que se compra (y al menos 3 SOL, para no salir por una
+  # venta suelta). El stop-loss mira el PRECIO, que es la consecuencia; para
+  # cuando ha caido un 35% el volcado ya paso. Esto mira quien esta vendiendo
+  # AHORA, leyendo los TradeEvent de la cadena, y llega antes.
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+
   stop_loss_percentage: 0.18     # stop -18%
   max_hold_time: 600          # 10 min: con 3 no da tiempo a que se desarrolle
   price_check_interval: 1
@@ -354,7 +363,7 @@ filters:
   # compradores gordos, pero no le da tiempo a juntar veinte personas.
   # 8, bajado de 15: FEETCATE tenia 17 operaciones a los 5 segundos, asi que
   # rondaria los 10-14 titulares. Con 15 se habria escapado igual.
-  min_holders_gmgn: 11        # "mas de 10" titulares
+  min_holders_gmgn: 12        # minimo 12 titulares (Manu, 4-ago)
                               # Verificado el 3-ago en monedas de 16-22s:
                               # TripleT 25 titulares, Colon 25, HRACCOON 18.
                               # Existe, pero es el borde alto: la mediana de la

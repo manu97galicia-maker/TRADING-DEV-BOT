@@ -36,10 +36,12 @@ logger = get_logger(__name__)
 #: Anchor lo antepone a los datos del evento dentro del "Program data:" del log.
 DISC_TRADE = hashlib.sha256(b"event:TradeEvent").digest()[:8]
 
-#: mint -> [(momento, sol_negociado), ...]. Se guarda con marca de tiempo para
-#: poder preguntar "cuanto se movio en los primeros N segundos" y no solo el
-#: acumulado total.
-_ops: dict[str, list[tuple[float, float]]] = defaultdict(list)
+#: mint -> [(momento, sol_negociado, es_compra), ...]. Se guarda con marca de
+#: tiempo para poder preguntar "cuanto se movio en los ultimos N segundos", y
+#: con el lado de la operacion para detectar un volcado en marcha: si en los
+#: ultimos segundos las VENTAS aplastan a las compras, la moneda se esta
+#: cayendo AHORA y no hay que esperar a que el precio toque el stop.
+_ops: dict[str, list[tuple[float, float, bool]]] = defaultdict(list)
 
 #: Sin esto la memoria crece sin limite: pump.fun lanza miles de monedas al dia
 #: y el bot esta pensado para correr semanas seguidas.
@@ -81,7 +83,9 @@ def registrar_logs(logs: list[str]) -> None:
             cuerpo = crudo[8:]
             mint = _b58(cuerpo[:32])
             sol_lamports = struct.unpack_from("<Q", cuerpo, 32)[0]
-            _ops[mint].append((ahora, sol_lamports / 1e9))
+            # Layout de TradeEvent: mint(32) sol_amount(8) token_amount(8) is_buy(1)
+            es_compra = cuerpo[48] == 1
+            _ops[mint].append((ahora, sol_lamports / 1e9, es_compra))
         except Exception:  # noqa: BLE001
             continue
     _limpiar()
@@ -93,13 +97,34 @@ def volumen_sol(mint: str, segundos: float = 0.0) -> float:
     if not ops:
         return 0.0
     if segundos <= 0:
-        return sum(s for _t, s in ops)
+        return sum(s for _t, s, _b in ops)
     corte = time.time() - segundos
-    return sum(s for t, s in ops if t >= corte)
+    return sum(s for t, s, _b in ops if t >= corte)
 
 
 def operaciones(mint: str) -> int:
     return len(_ops.get(mint) or ())
+
+
+def presion(mint: str, segundos: float = 3.0) -> tuple[float, float]:
+    """(SOL comprados, SOL vendidos) en los ultimos `segundos`.
+
+    Sirve para ver si la moneda se esta volcando AHORA. El stop-loss reacciona
+    al precio, que es una consecuencia; esto mira la causa y llega antes.
+    """
+    ops = _ops.get(mint)
+    if not ops:
+        return (0.0, 0.0)
+    corte = time.time() - segundos
+    compra = vende = 0.0
+    for t, s, es_compra in ops:
+        if t < corte:
+            continue
+        if es_compra:
+            compra += s
+        else:
+            vende += s
+    return (compra, vende)
 
 
 _ALFA = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"

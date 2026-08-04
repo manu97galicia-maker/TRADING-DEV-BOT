@@ -59,6 +59,15 @@ trade:
   tp4_sell: 0
   # moonbag 15%
 
+  # ANTI-RUG: sale de la posicion entera si en los ultimos 4 segundos se
+  # vende el doble de lo que se compra (y al menos 3 SOL, para no salir por una
+  # venta suelta). El stop-loss mira el PRECIO, que es la consecuencia; para
+  # cuando ha caido un 35% el volcado ya paso. Esto mira quien esta vendiendo
+  # AHORA, leyendo los TradeEvent de la cadena, y llega antes.
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+
   stop_loss_percentage: 0.35
   max_hold_time: 900          # 15 min: migrar lleva mas tiempo que un pump
   price_check_interval: 1
@@ -110,7 +119,7 @@ filters:
   min_volumen_sol: 0
   max_volumen_sol: 0
   min_vol_ventana_sol: 0
-  min_holders_gmgn: 0
+  min_holders_gmgn: 12        # minimo 12 titulares (Manu, 4-ago)
 
   no_repeat_name_min: 0       # 0: un dev relanzando su moneda es normal aqui
   max_holder_pct: 0.0

@@ -354,6 +354,11 @@ class UniversalTrader:
         # ningun lado. 0 = sin filtro.
         min_vol_ventana_sol: float = 0.0,
         vol_ventana_seg: float = 3.0,
+        # ANTI-RUG: sale de la posicion si las ventas aplastan a las compras.
+        # ratio 2.0 = se vende el doble de lo que se compra. 0 = desactivado.
+        anti_rug_ratio: float = 0.0,
+        anti_rug_seg: float = 4.0,
+        anti_rug_min_sol: float = 3.0,
         # No comprar una moneda si otra con el MISMO símbolo apareció en los
         # últimos N minutos: los copias en cadena son el patrón del que lanza
         # veinte clones a ver cuál prende. 0 = desactivado.
@@ -568,6 +573,9 @@ class UniversalTrader:
         self.max_volumen_sol = float(max_volumen_sol or 0)
         self.min_vol_ventana_sol = float(min_vol_ventana_sol or 0)
         self.vol_ventana_seg = float(vol_ventana_seg or 3.0)
+        self.anti_rug_ratio = float(anti_rug_ratio or 0)
+        self.anti_rug_seg = float(anti_rug_seg or 4.0)
+        self.anti_rug_min_sol = float(anti_rug_min_sol or 3.0)
         self.no_repeat_name_min = float(no_repeat_name_min or 0)
         self.max_buy_age = float(max_buy_age or 0)
         #: símbolo -> monotonic() de la última vez que se vio. Solo memoria del
@@ -2341,6 +2349,50 @@ class UniversalTrader:
                 break
             try:
                 price = await curve_manager.calculate_price(pool_address)
+
+                # ANTI-RUG: salida de emergencia por presion vendedora.
+                #
+                # El stop-loss reacciona al PRECIO, que es la consecuencia; para
+                # cuando el precio ha caido un 35% el volcado ya ha pasado y solo
+                # queda lo que nadie quiso. Esto mira la CAUSA -- quien esta
+                # vendiendo ahora mismo -- leyendo los TradeEvent de la cadena, y
+                # sale antes de que el precio termine de desplomarse.
+                #
+                # Dispara cuando en los ultimos segundos las ventas superan a las
+                # compras por el ratio configurado Y hay un volumen minimo, para
+                # no salir corriendo por una venta suelta de dos SOL.
+                if self.anti_rug_ratio > 0:
+                    try:
+                        from monitoring.volumen import presion
+
+                        _c, _v = presion(str(token_info.mint), self.anti_rug_seg)
+                        if (
+                            _v >= self.anti_rug_min_sol
+                            and _v >= _c * self.anti_rug_ratio
+                        ):
+                            logger.warning(
+                                "ANTI-RUG %s: %.1f SOL vendidos contra %.1f "
+                                "comprados en %.0fs -> salgo YA",
+                                token_info.symbol, _v, _c, self.anti_rug_seg,
+                            )
+                            try:
+                                from monitoring.notifier import notify
+
+                                notify(
+                                    f"🚨 <b>ANTI-RUG</b> · {token_info.symbol}\n"
+                                    f"{_v:.1f} SOL vendidos contra {_c:.1f} "
+                                    f"comprados en {self.anti_rug_seg:.0f}s\n"
+                                    "Saliendo de la posición entera."
+                                )
+                            except Exception:  # noqa: BLE001
+                                pass
+                            if await self._sell_amount(token_info, remaining, price):
+                                realized_sol += remaining * price
+                                remaining = 0.0
+                                hit_sl = True
+                                break
+                    except Exception:  # noqa: BLE001
+                        pass
 
                 # ANTI PUMP&DUMP — trailing stop desde el pico. Solo se arma tras
                 # subir >=20% (para no chocar con el SL de entrada). Si cae
