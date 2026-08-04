@@ -312,6 +312,7 @@ def run_all_bots():
     logging.info(f"Found {len(bot_files)} bot configuration files")
 
     processes = []
+    en_proceso: list[str] = []
     skipped_bots = 0
 
     for file in bot_files:
@@ -372,10 +373,16 @@ def run_all_bots():
                 p.start()
                 processes.append(p)
             else:
+                # NO se arranca aqui: `asyncio.run` bloquea hasta que el bot
+                # termine, y un bot no termina nunca. Arrancarlo en este punto
+                # hacia que el bucle no llegara nunca al segundo ni al tercer
+                # fichero: de tres estrategias configuradas corria UNA sola, en
+                # silencio y sin ningun error. Se apuntan y al final se lanzan
+                # todas juntas con asyncio.gather.
                 logging.info(
                     f"Starting bot '{bot_name}' ({platform.value}) in main process"
                 )
-                asyncio.run(start_bot(str(file)))
+                en_proceso.append(str(file))
 
         except Exception as e:
             logging.exception(f"Failed to start bot from {file}: {e}")
@@ -386,6 +393,20 @@ def run_all_bots():
     )
 
     # Wait for all processes to complete
+    # Todos los bots que van en este proceso, a la vez. Si uno se cae, se
+    # registra pero los demas siguen: return_exceptions evita que una
+    # excepcion en uno mate a los otros dos.
+    if en_proceso:
+        async def _todos() -> None:
+            res = await asyncio.gather(
+                *(start_bot(f) for f in en_proceso), return_exceptions=True
+            )
+            for f, r in zip(en_proceso, res, strict=False):
+                if isinstance(r, Exception):
+                    logging.error(f"Bot {f} murio: {r!r}")
+    
+        asyncio.run(_todos())
+
     for p in processes:
         p.join()
         logging.info(f"Process {p.name} completed")
