@@ -1,0 +1,149 @@
+# CUNA — snipear en el nacimiento, sin stop
+#
+# Compra CUALQUIER lanzamiento entre $2.040 y $2.600 de market cap, o sea en los
+# primeros segundos, antes de que entre nadie. Sin stop-loss.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# EL SUELO DE $1.000 QUE PIDIO MANU NO EXISTE
+# ─────────────────────────────────────────────────────────────────────────────
+# El market cap minimo posible en pump.fun es $2.040: la curva arranca con
+# reservas virtuales fijas (30 SOL / 1.073e9 tokens) y ninguna moneda puede
+# valer menos que eso. La banda util es 2.040-2.600, que en SOL de curva son
+# 0 a 3,86.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# POR QUE NO LLEVA STOP (y donde esta el riesgo de verdad)
+# ─────────────────────────────────────────────────────────────────────────────
+# El razonamiento de Manu es correcto en su parte: comprando pegado al suelo de
+# la curva, el precio casi no puede caer -- no hay sitio. Un stop ahi solo
+# sacaria de operaciones por ruido.
+#
+# Pero el riesgo no es el precio, son las COMISIONES. Cada operacion que no
+# sube cuesta:
+#
+#   2,25% x2 de pump.fun sobre 0,30 SOL ...... 0,0135 SOL
+#   prioridad (20M) + red .................... 0,0041
+#   ────────────────────────────────────────────────────
+#   por operacion muerta ..................... 0,0176 SOL  = 5,9%
+#
+# Con 50 operaciones muertas se van 0,88 SOL. Como esta estrategia compra TODO
+# lo que nace, van a ser muchas: hace falta que aproximadamente 1 de cada 12
+# haga +100% solo para no perder dinero.
+#
+# La prioridad se baja de 100M a 20M justo por esto: aqui no se compite por una
+# moneda concreta -- se compra todo -- asi que pagar por aterrizar antes no
+# aporta y esos 0,0068 SOL de diferencia por operacion si se notan al cabo de
+# cien compras.
+
+name: "CUNA - nacimiento 2-2,6K sin stop"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.30
+  buy_slippage: 0.15
+  sell_slippage: 0.90
+
+  exit_strategy: "tp_sl"
+  # +100% la mitad · +200% un cuarto · +400% el ultimo cuarto. Sin moonbag:
+  # 50 + 25 + 25 = 100%. Si no llega al +200%, lo que quede sale por tiempo.
+  take_profit_percentage: 1.00
+  take_profit_sell_percentage: 0.50
+  tp2_gain: 2.00
+  tp2_sell: 0.25
+  tp3_gain: 4.00
+  tp3_sell: 0.25
+  tp4_gain: 0
+  tp4_sell: 0
+
+  # ANTI-RUG. Se deja aunque no haya stop, porque no es un stop de precio: mira
+  # si el dev esta VOLCANDO (ventas > 2x compras en 4 s) y sale antes de que la
+  # curva se vacie. Es la unica proteccion que queda, y sin ella una moneda que
+  # se hunde solo se suelta al cumplirse el tiempo.
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+
+  # 0.95 = practicamente sin stop. No se pone 0 porque el bot lo interpretaria
+  # como "vender de inmediato"; con 0,95 haria falta un -95% para disparar, que
+  # comprando en el suelo de la curva no puede pasar.
+  stop_loss_percentage: 0.95
+  max_hold_time: 600          # sin stop, el tiempo es la unica salida
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.05
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 20_000_000
+  extra_percentage: 0.0
+  hard_cap: 20_000_000
+
+retries:
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 60
+  max_buy_age: 15             # el nacimiento dura poco
+
+  match_string: null
+  bro_address: null
+
+  allow_mayhem: false
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false          # DINERO REAL
+
+  min_entry_mc: 2000
+  max_entry_mc: 2600
+  min_curve_sol: 0
+
+  # Sin volumen, sin titulares, sin señal: se compra TODO lo que nazca en la
+  # banda. Es lo pedido, y cualquier filtro de esos exigiria esperar segundos
+  # que la moneda ya no estaria en la banda.
+  min_volumen_sol: 0
+  max_volumen_sol: 0
+  min_vol_ventana_sol: 0
+  min_holders_gmgn: 0
+  senal_gmgn: []
+
+  no_repeat_name_min: 5
+  max_holder_pct: 0.0
+  max_dev_hold_pct: 0.0
+  min_holders: 0
+  holder_bypass_ratio: 0
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 15
