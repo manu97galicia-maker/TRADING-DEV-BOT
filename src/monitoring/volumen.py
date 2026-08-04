@@ -36,12 +36,13 @@ logger = get_logger(__name__)
 #: Anchor lo antepone a los datos del evento dentro del "Program data:" del log.
 DISC_TRADE = hashlib.sha256(b"event:TradeEvent").digest()[:8]
 
-#: mint -> [(momento, sol_negociado, es_compra), ...]. Se guarda con marca de
-#: tiempo para poder preguntar "cuanto se movio en los ultimos N segundos", y
-#: con el lado de la operacion para detectar un volcado en marcha: si en los
-#: ultimos segundos las VENTAS aplastan a las compras, la moneda se esta
-#: cayendo AHORA y no hay que esperar a que el precio toque el stop.
-_ops: dict[str, list[tuple[float, float, bool]]] = defaultdict(list)
+#: mint -> [(momento, sol_negociado, es_compra, wallet), ...]. Se guarda con
+#: marca de tiempo para poder preguntar "cuanto se movio en los ultimos N
+#: segundos", con el lado de la operacion para detectar un volcado en marcha
+#: (si las VENTAS aplastan a las compras la moneda se esta cayendo AHORA y no
+#: hay que esperar a que el precio toque el stop), y con la WALLET para poder
+#: contar titulares distintos sin preguntarle a nadie.
+_ops: dict[str, list[tuple[float, float, bool, str]]] = defaultdict(list)
 
 #: Sin esto la memoria crece sin limite: pump.fun lanza miles de monedas al dia
 #: y el bot esta pensado para correr semanas seguidas.
@@ -83,9 +84,11 @@ def registrar_logs(logs: list[str]) -> None:
             cuerpo = crudo[8:]
             mint = _b58(cuerpo[:32])
             sol_lamports = struct.unpack_from("<Q", cuerpo, 32)[0]
-            # Layout de TradeEvent: mint(32) sol_amount(8) token_amount(8) is_buy(1)
+            # Layout de TradeEvent:
+            #   mint(32) sol_amount(8) token_amount(8) is_buy(1) user(32) ...
             es_compra = cuerpo[48] == 1
-            _ops[mint].append((ahora, sol_lamports / 1e9, es_compra))
+            wallet = _b58(cuerpo[49:81]) if len(cuerpo) >= 81 else ""
+            _ops[mint].append((ahora, sol_lamports / 1e9, es_compra, wallet))
         except Exception:  # noqa: BLE001
             continue
     _limpiar()
@@ -97,13 +100,40 @@ def volumen_sol(mint: str, segundos: float = 0.0) -> float:
     if not ops:
         return 0.0
     if segundos <= 0:
-        return sum(s for _t, s, _b in ops)
+        return sum(s for _t, s, _b, _w in ops)
     corte = time.time() - segundos
-    return sum(s for t, s, _b in ops if t >= corte)
+    return sum(s for t, s, _b, _w in ops if t >= corte)
 
 
 def operaciones(mint: str) -> int:
+    """Numero de transacciones vistas en esa moneda.
+
+    Cuenta CADA TradeEvent, tambien los que van en un mismo bloque o en un
+    mismo bundle: se leen del log de la cadena uno a uno, no agrupados.
+    """
     return len(_ops.get(mint) or ())
+
+
+def titulares(mint: str) -> int:
+    """Wallets distintas que han comprado y todavia no han soltado.
+
+    Se cuenta del propio stream, no de un indexador: por cada wallet se suma
+    lo comprado y se resta lo vendido, y cuenta como titular la que sale en
+    positivo. Cuesta cero y esta disponible en el mismo instante, que es lo que
+    hace falta para decidir a los 3 segundos -- GMGN a esa edad no conoce a 1
+    de cada 3 monedas y ademas tarda 1,3 s en contestar.
+
+    Lo que NO ve: quien recibiera los tokens por transferencia en vez de
+    comprarlos. A los pocos segundos de vida eso no pasa en la practica.
+    """
+    ops = _ops.get(mint)
+    if not ops:
+        return 0
+    neto: dict[str, float] = defaultdict(float)
+    for _t, s, es_compra, w in ops:
+        if w:
+            neto[w] += s if es_compra else -s
+    return sum(1 for v in neto.values() if v > 0)
 
 
 def presion(mint: str, segundos: float = 3.0) -> tuple[float, float]:
@@ -117,7 +147,7 @@ def presion(mint: str, segundos: float = 3.0) -> tuple[float, float]:
         return (0.0, 0.0)
     corte = time.time() - segundos
     compra = vende = 0.0
-    for t, s, es_compra in ops:
+    for t, s, es_compra, _w in ops:
         if t < corte:
             continue
         if es_compra:

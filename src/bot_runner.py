@@ -196,6 +196,8 @@ async def start_bot(config_path: str):
             holder_bypass_ratio=cfg.get("filters", {}).get("holder_bypass_ratio", 0.0),
             min_holders_gmgn=cfg.get("filters", {}).get("min_holders_gmgn", 0),
             min_volumen_sol=cfg.get("filters", {}).get("min_volumen_sol", 0.0),
+            min_ops=cfg.get("filters", {}).get("min_ops", 0),
+            min_titulares=cfg.get("filters", {}).get("min_titulares", 0),
             max_volumen_sol=cfg.get("filters", {}).get("max_volumen_sol", 0.0),
             min_vol_ventana_sol=cfg.get("filters", {}).get("min_vol_ventana_sol", 0.0),
             vol_ventana_seg=cfg.get("filters", {}).get("vol_ventana_seg", 3.0),

@@ -339,6 +339,19 @@ class UniversalTrader:
         # dentro: el volumen suma compras Y ventas, asi que puede ser varias
         # veces mayor y no lo limita el techo de market cap.
         min_volumen_sol: float = 0.0,
+        # TRANSACCIONES minimas antes de comprar, contadas del stream de logs.
+        # Cuenta cada TradeEvent por separado, tambien los que entran juntos en
+        # el primer bloque (un bundle son N transacciones y aqui salen como N,
+        # no como una). Mide participacion, no dinero: 14 SOL en UNA compra es
+        # el dev inflandose la propia moneda; 14 SOL repartidos en 6 compras es
+        # gente entrando. 0 = desactivado.
+        min_ops: int = 0,
+        # TITULARES minimos contados del stream: wallets distintas cuyas compras
+        # superan a sus ventas. Es el mismo dato que `min_holders_gmgn` pero sin
+        # coste ni retraso -- GMGN tarda 1,3 s y a los 3 segundos de vida no
+        # conoce a 1 de cada 3 monedas, asi que a esta edad es el unico que
+        # sirve. 0 = desactivado.
+        min_titulares: int = 0,
         # TECHO de volumen negociado (SOL). Medido la noche del 3/4-ago sobre
         # operaciones reales: las monedas con MUCHO volumen en los primeros
         # segundos salieron todas mal (10 de 10 en perdida con 69-100 SOL),
@@ -575,6 +588,8 @@ class UniversalTrader:
         self.holder_bypass_ratio = float(holder_bypass_ratio or 0)
         self.min_holders_gmgn = int(min_holders_gmgn or 0)
         self.min_volumen_sol = float(min_volumen_sol or 0)
+        self.min_ops = int(min_ops or 0)
+        self.min_titulares = int(min_titulares or 0)
         self.max_volumen_sol = float(max_volumen_sol or 0)
         self.min_vol_ventana_sol = float(min_vol_ventana_sol or 0)
         self.vol_ventana_seg = float(vol_ventana_seg or 3.0)
@@ -1629,13 +1644,23 @@ class UniversalTrader:
             # cuando el volumen ya da el minimo, asi que no se gastan llamadas
             # en monedas que ni siquiera se han movido.
             if self.max_buy_age > 0 and (
-                self.min_volumen_sol > 0 or self.min_entry_mc > 0
+                self.min_volumen_sol > 0
+                or self.min_entry_mc > 0
+                or self.min_ops > 0
+                or self.min_titulares > 0
             ):
+                from monitoring.volumen import operaciones as _n_ops
+                from monitoring.volumen import titulares as _n_tit
                 from monitoring.volumen import volumen_sol as _vol_sol
 
                 _nacida = self.token_timestamps.get(str(token_info.mint))
                 _t0 = _nacida if _nacida is not None else monotonic()
                 _visto_vol = 0.0
+                _visto_ops = _visto_tit = 0
+                # Ventana corta: mirar cada medio segundo se come casi la mitad
+                # de una ventana de 3 s. Con 0,15 s se comprueba ~20 veces y se
+                # compra en el instante en que cumple.
+                _paso = 0.15 if self.max_buy_age <= 6 else 0.5
                 # Primera comprobacion inmediata: si la moneda ya cumple al
                 # segundo 1, se compra al segundo 1. Solo se duerme cuando NO
                 # cumple, nunca antes de mirar.
@@ -1643,14 +1668,30 @@ class UniversalTrader:
                     _v = _vol_sol(str(token_info.mint))
                     _visto_vol = max(_visto_vol, _v)
                     if self.min_volumen_sol > 0 and _v < self.min_volumen_sol:
-                        await asyncio.sleep(0.5)
+                        await asyncio.sleep(_paso)
                         continue
+                    # PARTICIPACION. El volumen solo dice cuanto dinero se ha
+                    # movido; esto dice entre cuantas manos. Una moneda con el
+                    # volumen hecho de una sola compra del creador cumple el
+                    # filtro de dinero y no significa nada.
+                    if self.min_ops > 0:
+                        _o = _n_ops(str(token_info.mint))
+                        _visto_ops = max(_visto_ops, _o)
+                        if _o < self.min_ops:
+                            await asyncio.sleep(_paso)
+                            continue
+                    if self.min_titulares > 0:
+                        _h = _n_tit(str(token_info.mint))
+                        _visto_tit = max(_visto_tit, _h)
+                        if _h < self.min_titulares:
+                            await asyncio.sleep(_paso)
+                            continue
                     # Aceleracion: no basta con haber movido mucho en total,
                     # tiene que estar moviendose AHORA.
                     if self.min_vol_ventana_sol > 0:
                         _vr = _vol_sol(str(token_info.mint), self.vol_ventana_seg)
                         if _vr < self.min_vol_ventana_sol:
-                            await asyncio.sleep(0.5)
+                            await asyncio.sleep(_paso)
                             continue
                     # El volumen ya cumple: ahora si vale la pena mirar la curva.
                     try:
@@ -1659,7 +1700,7 @@ class UniversalTrader:
                         )
                         _p = float(_st.get("price_per_token") or 0)
                     except Exception:  # noqa: BLE001
-                        await asyncio.sleep(1)
+                        await asyncio.sleep(_paso)
                         continue
                     _mc = _p * _PUMP_TOTAL_SUPPLY * _SOL_USD
                     if self.max_entry_mc > 0 and _mc > self.max_entry_mc:
@@ -1670,7 +1711,7 @@ class UniversalTrader:
                         )
                         return
                     if self.min_entry_mc > 0 and _mc < self.min_entry_mc:
-                        await asyncio.sleep(1)
+                        await asyncio.sleep(_paso)
                         continue
                     _acel = (
                         f" · {_vol_sol(str(token_info.mint), self.vol_ventana_seg):.1f} "
@@ -1678,15 +1719,20 @@ class UniversalTrader:
                         if self.min_vol_ventana_sol > 0 else ""
                     )
                     logger.info(
-                        f"CUMPLE {token_info.symbol}: {_v:.1f} SOL de volumen y "
-                        f"MC ${_mc:,.0f} a los {monotonic() - _t0:.0f}s{_acel}"
+                        f"CUMPLE {token_info.symbol}: {_v:.1f} SOL en "
+                        f"{_n_ops(str(token_info.mint))} tx de "
+                        f"{_n_tit(str(token_info.mint))} wallets, MC ${_mc:,.0f} "
+                        f"a los {monotonic() - _t0:.1f}s{_acel}"
                     )
                     break
                 else:
+                    # Se dice QUE falto, no solo que fallo: sin esto no hay forma
+                    # de saber si el filtro que sobra es el dinero o la gente.
                     logger.info(
                         f"Evitado {token_info.symbol}: no cumplio en "
-                        f"{self.max_buy_age:.0f}s (mejor volumen visto "
-                        f"{_visto_vol:.1f} SOL)"
+                        f"{self.max_buy_age:.0f}s (lo mejor visto: "
+                        f"{_visto_vol:.1f} SOL, {_visto_ops} tx, "
+                        f"{_visto_tit} titulares)"
                     )
                     return
 

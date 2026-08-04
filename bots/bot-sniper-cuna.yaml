@@ -93,7 +93,7 @@ retries:
 filters:
   listener_type: "logs"
   max_token_age: 60
-  max_buy_age: 15             # el nacimiento dura poco
+  max_buy_age: 3              # menos de 3 segundos de vida
 
   match_string: null
   bro_address: null
@@ -104,13 +104,31 @@ filters:
   paper_trade: false          # DINERO REAL
 
   min_entry_mc: 2000
-  max_entry_mc: 2600
+  max_entry_mc: 2800         # "comprar por debajo de 2,8K" (Manu, 5-ago)
   min_curve_sol: 0
 
-  # Sin volumen, sin titulares, sin señal: se compra TODO lo que nazca en la
-  # banda. Es lo pedido, y cualquier filtro de esos exigiria esperar segundos
-  # que la moneda ya no estaria en la banda.
-  min_volumen_sol: 0
+  # Sin titulares ni señal: a los 3 segundos GMGN no conoce a 1 de cada 3
+  # monedas y la señal aun no ha saltado. El volumen si vale porque lo cuenta
+  # el propio bot de la cadena, en el instante.
+  # 14 SOL = ~$1.000 movidos en esos 3 segundos. Es exigente: medido sobre 261
+  # monedas, a los 3 s el volumen MEDIANO es 1,81 SOL y solo el 8% pasaba de 28.
+  # Con 14 estaras cogiendo alrededor del 15-20% de los lanzamientos, que ademas
+  # es justo lo que evita pagar comisiones por las que nacen muertas.
+  min_volumen_sol: 14
+
+  # 6 TRANSACCIONES MINIMAS, tambien si van en bundle en el primer bloque: el
+  # bot lee cada TradeEvent del log por separado, asi que un bundle de 6 cuenta
+  # como 6. Esto es lo que separa "14 SOL movidos" de "14 SOL que se metio el
+  # creador el solo en una compra" -- el segundo caso pasa el filtro de dinero
+  # sin que haya entrado nadie.
+  min_ops: 6
+
+  # 5 TITULARES: wallets distintas cuyas compras superan a sus ventas, contadas
+  # del mismo stream. No se usa GMGN aqui a proposito: tarda 1,3 s y a los 3
+  # segundos de vida no conoce a 1 de cada 3 monedas, o sea que llegaria tarde
+  # y ademas fallaria. Esto cuesta cero y esta disponible en el instante.
+  min_titulares: 5
+
   max_volumen_sol: 0
   min_vol_ventana_sol: 0
   min_holders_gmgn: 0
