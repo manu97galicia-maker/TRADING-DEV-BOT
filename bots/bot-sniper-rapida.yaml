@@ -9,7 +9,7 @@
 # se libere. Con 0,35 SOL por entrada aqui y 0,3 alli hacen falta ~0,80 SOL
 # libres para que quepan las dos a la vez.
 
-name: "RAPIDA 2-3,4K - 5 segundos, volumen 2K"
+name: "RAPIDA 2-3,4K - 10 segundos, volumen 2K"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -58,7 +58,7 @@ retries:
 filters:
   listener_type: "logs"
   max_token_age: 60
-  max_buy_age: 5              # "los 5 primeros segundos"
+  max_buy_age: 10             # "dentro de los 10 primeros segundos"
   match_string: null
   bro_address: null
   allow_mayhem: false
@@ -79,11 +79,12 @@ filters:
   min_volumen_sol: 27
   max_volumen_sol: 0
 
-  # Sin filtro de titulares A PROPOSITO. A los 5 segundos GMGN no conoce a 1 de
-  # cada 5 monedas y devuelve un cero falso, asi que un minimo aqui rechazaria
-  # por falta de dato, no por falta de gente. El volumen ya mide lo mismo y lo
-  # cuenta el bot de la cadena.
-  min_holders_gmgn: 0
+  # 8 titulares. A los 10 segundos este dato YA es fiable: medido sobre 71
+  # monedas, a los 3 s GMGN no sabia nada de 1 de cada 3 y a los 5 s de 1 de
+  # cada 5, pero a los 10 s solo falla en 2 de 71. Por eso con esta ventana si
+  # tiene sentido exigirlo -- con la de 3 o 5 segundos habria rechazado monedas
+  # buenas por falta de dato, no por falta de gente.
+  min_holders_gmgn: 8         # minimo 8 titulares
 
   no_repeat_name_min: 5
   max_holder_pct: 0.15
