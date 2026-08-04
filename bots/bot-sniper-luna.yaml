@@ -39,7 +39,7 @@ rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
-enabled: true
+enabled: false      # apagada 4-ago: Manu deja SOLO la de FUERTE
 separate_process: false
 platform: "pump_fun"
 
