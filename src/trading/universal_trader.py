@@ -356,6 +356,11 @@ class UniversalTrader:
         vol_ventana_seg: float = 3.0,
         # ANTI-RUG: sale de la posicion si las ventas aplastan a las compras.
         # ratio 2.0 = se vende el doble de lo que se compra. 0 = desactivado.
+        # Señales de GMGN exigidas para comprar (lista de tipos). El 18 es el
+        # unico que salta en la banda de compra: medido el 4/5-ago, 2,00x
+        # mediano con 86% de acierto y el 44% de las veces por debajo de
+        # $4.000. Vacio = sin filtro de señales.
+        senal_gmgn: list | None = None,
         anti_rug_ratio: float = 0.0,
         anti_rug_seg: float = 4.0,
         anti_rug_min_sol: float = 3.0,
@@ -573,6 +578,7 @@ class UniversalTrader:
         self.max_volumen_sol = float(max_volumen_sol or 0)
         self.min_vol_ventana_sol = float(min_vol_ventana_sol or 0)
         self.vol_ventana_seg = float(vol_ventana_seg or 3.0)
+        self.senal_gmgn = [int(x) for x in (senal_gmgn or [])]
         self.anti_rug_ratio = float(anti_rug_ratio or 0)
         self.anti_rug_seg = float(anti_rug_seg or 4.0)
         self.anti_rug_min_sol = float(anti_rug_min_sol or 3.0)
@@ -640,6 +646,10 @@ class UniversalTrader:
         # Avisador de moonbags: cada 5 min notifica por Telegram los moonbags
         # retenidos para venderlos a mano (nunca los vende el bot).
         asyncio.create_task(self._moonbag_notifier_loop())  # noqa: RUF006
+        if self.senal_gmgn:
+            from monitoring.senales import refrescar
+
+            asyncio.create_task(refrescar(self.senal_gmgn))  # noqa: RUF006
         logger.info(
             f"Match filter: {self.match_string if self.match_string else 'None'}"
         )
@@ -1798,6 +1808,21 @@ class UniversalTrader:
                     f"VOLUMEN OK {token_info.symbol}: {vol:.2f} SOL negociados "
                     f"en {operaciones(str(token_info.mint))} operaciones"
                 )
+
+            # SEÑAL DE GMGN. Se mira en memoria (la lista se refresca en
+            # segundo plano cada 20 s), asi que no cuesta ni una llamada ni un
+            # segundo de retraso aqui.
+            if self.senal_gmgn:
+                from monitoring.senales import tiene_senal
+
+                _t = tiene_senal(str(token_info.mint), self.senal_gmgn)
+                if _t is None:
+                    logger.info(
+                        f"SEÑAL filtro BLOCK {token_info.symbol}: sin señal "
+                        f"GMGN {self.senal_gmgn}"
+                    )
+                    return
+                logger.info(f"SEÑAL OK {token_info.symbol}: tipo {_t} de GMGN")
 
             # TITULARES (GMGN). Va después del market cap a propósito: es la
             # única comprobación que sale del proceso, así que solo se gasta en

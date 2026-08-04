@@ -98,7 +98,22 @@ filters:
   max_volumen_sol: 0
   min_vol_ventana_sol: 0
 
-  min_holders_gmgn: 0         # sin filtro: manda el volumen, y consultarlo
+  # SEÑAL DE GMGN tipo 18. Medido el 4/5-ago sobre ~50 señales de cada uno de
+  # los 18 tipos, comparando el market cap al saltar contra su maximo:
+  #
+  #   tipo 12  2,34x  92% subio +30%  pero salta a ~$27.700
+  #   tipo 18  2,00x  86%             salta a ~$4.600  <-- en la banda
+  #   tipo  7  1,00x  26%             el peor de todos
+  #
+  # El 18 es el unico bueno que salta donde se compra: el 44% de las veces por
+  # debajo de $4.000. Los demas rinden igual o algo mas pero avisan cuando la
+  # moneda ya vale $10.000-$40.000 y ahi ya no hay entrada barata.
+  #
+  # No cuesta latencia: la lista se refresca en segundo plano cada 20 s y el
+  # filtro solo mira un diccionario en memoria.
+  senal_gmgn: [18]
+
+  min_holders_gmgn: 0
                               # cuesta 1,3 s de retraso en la entrada
   no_repeat_name_min: 5
   max_holder_pct: 0.0
