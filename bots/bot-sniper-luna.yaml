@@ -1,0 +1,147 @@
+# LUNA — devs que migran mas del 30%, estructura moonbag
+#
+# Unica estrategia activa. Compra solo a los dos creadores del informe cuyo
+# ratio de migracion real supera el 30%:
+#
+#   2E94st2...  25 migradas / 45 lanzamientos  =  55,6%
+#   8jfDh7h...  22 / 59                        =  37,3%
+#
+# OJO: el "% acierto" que trae el informe NO es el ratio de migracion. A
+# 7HrbKX8 le pone "41% acierto" pero migra 27 de 207 (13,0%), y a 2E94st2 le
+# pone "11%" cuando migra 25 de 45 (55,6%). Lo que decide aqui es migradas
+# entre lanzamientos, que es lo que de verdad significa "llevo la curva hasta
+# el final".
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# POR QUE LA ESCALERA ES ASI (moonbag de verdad)
+# ─────────────────────────────────────────────────────────────────────────────
+# La gracia de un moonbag es que la bolsa que aguantas viaje GRATIS: para
+# cuando llega, el coste ya esta recuperado y lo que quede es beneficio puro.
+#
+#   +60%   vende 50%  ->  devuelve 0,80 del coste
+#   +150%  vende 20%  ->  devuelve 0,50   (acumulado 1,30)
+#   30% se aguanta hasta el final
+#
+# Al tocar el segundo tramo ya has recuperado el 130% de lo invertido. A partir
+# de ahi el 30% restante no puede hacerte perder dinero, solo ganar: es la
+# apuesta a que uno de cada dos lanzamientos de este dev complete la curva.
+#
+# Los picos tipicos de estos dos son $3.819 y $4.003, asi que el +60% (que
+# desde una entrada de ~$2.500 lleva a $4.000) cae justo en su mediana. El
+# +150% y el moonbag son la cola: los que migran de verdad.
+#
+# Contrapartida honesta: entre los dos lanzaron 104 monedas en 7 dias, unas 15
+# al dia. Espera POCAS operaciones -- puede pasar mas de una hora sin nada.
+
+name: "LUNA - devs con +30% de migracion, moonbag 30%"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.20
+  buy_slippage: 0.15
+  sell_slippage: 0.90
+
+  exit_strategy: "tp_sl"
+  take_profit_percentage: 0.60
+  take_profit_sell_percentage: 0.50
+  tp2_gain: 1.50
+  tp2_sell: 0.20
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+  # moonbag 30% — viaja gratis: al tocar el +150% ya se ha recuperado el 130%
+
+  # ANTI-RUG: sale entera si en 4 s se vende el doble de lo que se compra. Es
+  # la unica proteccion que llega antes que el stop de precio, y con estos devs
+  # hace falta: 2E94st2 tiene 17 rugs y 8jfDh7h 25.
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+
+  # 45%: ancho a proposito. Medido sobre 24 operaciones simuladas, estas
+  # monedas caen una mediana del 41% ANTES de decidirse; un stop mas estrecho
+  # corta dentro del ruido y saca de las que luego suben. Aqui ademas el
+  # moonbag necesita margen para llegar a la migracion.
+  stop_loss_percentage: 0.45
+  max_hold_time: 1800         # 30 min: migrar no pasa en diez minutos
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.05
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 50_000_000
+  extra_percentage: 0.0
+  hard_cap: 50_000_000
+
+retries:
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 180
+  max_buy_age: 90             # con dev conocido no hay prisa por entrar
+
+  match_string: null
+  bro_address:
+    - "2E94st2NZnzA943HBceijgkw75gXTTxch39yquMBfeQk"
+    - "8jfDh7hABXq8xXHuYmjQdmz994qbqmKHhzwpVLqyzPqK"
+
+  allow_mayhem: false
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false          # DINERO REAL
+
+  min_entry_mc: 2000
+  max_entry_mc: 5000          # "por debajo de 5K"
+  min_curve_sol: 0
+
+  # Sin volumen ni aceleracion: la senal es el dev. Estos dos lanzan 15 monedas
+  # al dia entre los dos, y meter filtros de mercado encima dejaria la
+  # interseccion en cero.
+  min_volumen_sol: 0
+  max_volumen_sol: 0
+  min_vol_ventana_sol: 0
+
+  min_holders_gmgn: 12
+  no_repeat_name_min: 0
+  max_holder_pct: 0.0
+  max_dev_hold_pct: 0.0
+  min_holders: 0
+  holder_bypass_ratio: 0
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 15

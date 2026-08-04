@@ -30,7 +30,7 @@ rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
-enabled: true       # REAL, encendida por Manu el 3-ago-2026
+enabled: false      # apagada 4-ago: Manu deja SOLO la de luna
 separate_process: false     # false OBLIGATORIO bajo systemd: con true el
                             # proceso padre lanza al hijo y se muere, systemd
                             # ve morir el proceso principal y reinicia el
