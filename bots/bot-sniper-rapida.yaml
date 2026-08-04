@@ -21,7 +21,7 @@ separate_process: false     # false: si es true el proceso padre muere y
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.35            # 0,35 SOL por operacion (Manu, 4-ago)
+  buy_amount: 0.20            # 0,20 SOL por operacion (Manu, 4-ago)
   buy_slippage: 0.15
   sell_slippage: 0.90
 

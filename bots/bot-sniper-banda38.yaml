@@ -40,7 +40,7 @@ separate_process: false     # false OBLIGATORIO bajo systemd: con true el
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.30            # 0,30 SOL por operacion
+  buy_amount: 0.20            # 0,20 SOL por operacion (Manu, 4-ago)
                               # resultado: 4 transacciones son 0.0072 SOL, que
                               # sobre 0.10 son el 7,2% y sobre 0.15 el 4,8%
 

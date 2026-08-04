@@ -44,7 +44,7 @@ separate_process: false
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.20
+  buy_amount: 0.20            # 0,20 SOL por operacion (Manu, 4-ago)
   buy_slippage: 0.15
   sell_slippage: 0.90
 
