@@ -6,8 +6,8 @@
 #
 # Corre EN PARALELO con banda38. Comparten cartera, asi que compiten por el
 # saldo: el que llegue primero compra y el otro se queda sin sitio hasta que
-# se libere. Con 0,5 SOL por entrada aqui y 0,3 alli hacen falta ~1 SOL libre
-# para que quepan las dos a la vez.
+# se libere. Con 0,35 SOL por entrada aqui y 0,3 alli hacen falta ~0,80 SOL
+# libres para que quepan las dos a la vez.
 
 name: "RAPIDA 2-3,4K - 3 segundos, volumen 2K"
 env_file: ".env"
@@ -21,7 +21,7 @@ separate_process: false     # false: si es true el proceso padre muere y
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.50
+  buy_amount: 0.35            # 0,35 SOL por operacion (Manu, 4-ago)
   buy_slippage: 0.15
   sell_slippage: 0.90
 
