@@ -1,0 +1,133 @@
+# FUERTE 2,8-4K — posicion grande, salida rapida
+#
+# La contraria a LUNA: alli se apuesta poco a que el dev complete la curva y se
+# aguanta un moonbag; aqui se mete 0,75 SOL y se sale entera en cuanto sube un
+# poco. Sin moonbag, sin esperar a nada.
+#
+#   +30%  vende 70%
+#   +80%  vende el 30% restante
+#
+# Los objetivos son bajos a proposito. Medido sobre las operaciones reales del
+# 3/4-ago: el +30% lo tocan muchas mas monedas que el +50%, y con 0,75 SOL por
+# entrada un +30% ya son ~0,22 SOL de beneficio bruto. No hace falta un x2.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# EL RIESGO QUE HAY QUE VER
+# ─────────────────────────────────────────────────────────────────────────────
+# 0,75 SOL es casi cuatro veces la posicion de las otras estrategias. Con el
+# stop al 30%, una operacion mala cuesta ~0,22 SOL: mas que TODA la perdida
+# media de una noche entera con posiciones de 0,20.
+#
+# Y el stop del 30% es estrecho para estas monedas. Medido sobre 24 operaciones
+# simuladas, el minimo MEDIANO antes de decidirse es -41%: un stop del 30% corta
+# dentro del ruido normal y va a saltar en la mayoria, incluidas las que luego
+# suben. Es lo que pidio Manu, pero conviene saber que ese numero y ese tamano
+# juntos hacen que la estrategia dependa de acertar pronto.
+
+name: "FUERTE 2,8-4K - 0,75 SOL, TP +30/+80"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.75
+  buy_slippage: 0.15
+  sell_slippage: 0.90
+
+  exit_strategy: "tp_sl"
+  take_profit_percentage: 0.30
+  take_profit_sell_percentage: 0.70
+  tp2_gain: 0.80
+  tp2_sell: 0.30
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+  # sin moonbag: 70% + 30% = 100%
+
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+
+  stop_loss_percentage: 0.30
+  max_hold_time: 600
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.05
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  # 50M = 0,00425 SOL, solo el 0,6% de una posicion de 0,75. Con posiciones
+  # grandes la comision fija deja de pesar, asi que compensa pagarla.
+  fixed_amount: 50_000_000
+  extra_percentage: 0.0
+  hard_cap: 50_000_000
+
+retries:
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 120
+  max_buy_age: 45
+
+  match_string: null
+  bro_address: null
+
+  allow_mayhem: false
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false          # DINERO REAL
+
+  min_entry_mc: 2800
+  max_entry_mc: 4000
+
+  # 5 SOL = lo que hay en la curva a $2.800. Va con el suelo del market cap
+  # porque son la misma magnitud en una bonding curve.
+  min_curve_sol: 5
+
+  # 38 SOL = ~$2.750 negociados. Es el filtro que de verdad selecciona aqui.
+  min_volumen_sol: 38
+  max_volumen_sol: 0
+  min_vol_ventana_sol: 0
+
+  min_holders_gmgn: 0         # sin filtro: manda el volumen, y consultarlo
+                              # cuesta 1,3 s de retraso en la entrada
+  no_repeat_name_min: 5
+  max_holder_pct: 0.0
+  max_dev_hold_pct: 0.0
+  min_holders: 0
+  holder_bypass_ratio: 0
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 15
