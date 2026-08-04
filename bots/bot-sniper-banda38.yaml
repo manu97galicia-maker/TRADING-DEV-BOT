@@ -31,7 +31,12 @@ wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
 enabled: true       # REAL, encendida por Manu el 3-ago-2026
-separate_process: true
+separate_process: false     # false OBLIGATORIO bajo systemd: con true el
+                            # proceso padre lanza al hijo y se muere, systemd
+                            # ve morir el proceso principal y reinicia el
+                            # servicio en bucle cada 15 s. Solo "funcionaba"
+                            # mientras otro bot con false mantuviera vivo al
+                            # padre.
 platform: "pump_fun"
 
 trade:
