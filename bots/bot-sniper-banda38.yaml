@@ -394,7 +394,10 @@ filters:
   # 15 SOL (~$1.100). Bajado de 24 el 4-ago de madrugada: a esta hora las
   # monedas se mueven mucho menos y el filtro no disparaba. De las que se
   # perdieron vigilando 45s, las mejores llegaban a 17-18 SOL.
-  min_volumen_sol: 24         # ~$1.750 de volumen minimo
+  # 18 SOL (~$1.300), bajado de 24 el 4-ago. A estas horas las monedas se mueven
+  # mucho menos: de ocho vigiladas, las mejores llegaban a 15-18 SOL y ninguna
+  # pasaba de 24, asi que el filtro no disparaba nunca.
+  min_volumen_sol: 18
   max_volumen_sol: 0          # sin techo
 
   no_repeat_name_min: 5       # ninguna moneda con el mismo símbolo en 5 min

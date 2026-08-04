@@ -76,7 +76,10 @@ filters:
   # 27 SOL = ~$2.000 movidos en esos 5 segundos. Sigue siendo exigente: medido
   # sobre 261 monedas, a los 3 s solo el 8% habia movido 28 SOL y a los 10 s el
   # 12%. Con 5 s estas cerca del 10%.
-  min_volumen_sol: 27
+  # 14 SOL (~$1.000). Menos que en banda38 a proposito: alli hay 40 segundos
+  # para acumular volumen y aqui solo 10, asi que el mismo umbral seria mucho
+  # mas exigente sin quererlo.
+  min_volumen_sol: 14
   max_volumen_sol: 0
 
   # 8 titulares. A los 10 segundos este dato YA es fiable: medido sobre 71
