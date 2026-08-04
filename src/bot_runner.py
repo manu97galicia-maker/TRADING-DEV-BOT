@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import multiprocessing
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -49,7 +50,13 @@ def setup_logging(bot_name: str):
     log_dir.mkdir(exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_filename = log_dir / f"{bot_name}_{timestamp}.log"
+    # El nombre del bot va en el fichero de log, asi que hay que limpiarlo: una
+    # sola "/" en el `name` del YAML lo convierte en una ruta a un directorio
+    # que no existe, FileHandler revienta con FileNotFoundError y el bot muere
+    # ANTES de arrancar. Con systemd eso es un bucle de reinicios cada 15 s.
+    # Paso el 4-ago con un bot llamado "... TP +30/+80".
+    seguro = re.sub(r'[^\w.,+ -]', "_", bot_name).strip() or "bot"
+    log_filename = log_dir / f"{seguro}_{timestamp}.log"
 
     setup_file_logging(str(log_filename))
 

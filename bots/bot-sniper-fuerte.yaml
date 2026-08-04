@@ -24,7 +24,7 @@
 # suben. Es lo que pidio Manu, pero conviene saber que ese numero y ese tamano
 # juntos hacen que la estrategia dependa de acertar pronto.
 
-name: "FUERTE 2,8-4K - 0,75 SOL, TP +30/+80"
+name: "FUERTE 2,8-4K - 0,75 SOL, TP 30 y 80"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
