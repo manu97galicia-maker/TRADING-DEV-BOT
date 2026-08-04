@@ -222,11 +222,17 @@ class PlatformAwareBuyer(Trader):
                 f"Total cost: {self.amount:.6f} SOL (max: {max_amount_lamports / LAMPORTS_PER_SOL:.6f} SOL)"
             )
 
-            # Send transaction
+            # skip_preflight=False TAMBIEN EN LA COMPRA (3-ago). Antes iba en
+            # True para ganar los ~100ms de la simulacion, y esa prisa solo
+            # tiene sentido cuando se compite por el primer bloque. Esta
+            # estrategia espera 12 segundos a proposito antes de mirar la
+            # moneda, asi que no compite con nadie: los 100ms no valen nada y a
+            # cambio una compra que iba a revertir se rechaza ANTES de aterrizar
+            # y cuesta 0 en vez de pagar la comision de prioridad igualmente.
             tx_signature = await self.client.build_and_send_transaction(
                 instructions,
                 self.wallet.keypair,
-                skip_preflight=True,
+                skip_preflight=False,
                 max_retries=self.max_retries,
                 priority_fee=await self.priority_fee_manager.calculate_priority_fee(
                     priority_accounts

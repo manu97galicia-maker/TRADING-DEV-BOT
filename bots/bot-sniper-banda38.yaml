@@ -30,12 +30,12 @@ rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
-enabled: false      # se enciende a mano; la medición no la respalda
+enabled: true       # REAL, encendida por Manu el 3-ago-2026
 separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.15            # por debajo de 0.15 las cuotas fijas se comen el
+  buy_amount: 0.30            # 0,30 SOL por operacion (Manu, 4-ago)
                               # resultado: 4 transacciones son 0.0072 SOL, que
                               # sobre 0.10 son el 7,2% y sobre 0.15 el 4,8%
 
@@ -53,8 +53,8 @@ trade:
   # $3.800) y +367% (desde $3.000): +300% es el punto medio.
   take_profit_percentage: 0.50
   take_profit_sell_percentage: 0.50
-  tp2_gain: 1.25
-  tp2_sell: 0.25
+  tp2_gain: 0.90
+  tp2_sell: 0.125
   # El tercer tramo se deja SIN objetivo fijo. Medido el 3-ago sobre las seis
   # ganadoras de la tanda en papel: tres devolvieron el resto de la posición al
   # stop -- subían por encima de x1.5, cobraban el primer tramo, y el 25-50%
@@ -69,15 +69,31 @@ trade:
   # PICO y se arma al superar +20%, así que con -35% deja correr hasta el 65%
   # del máximo. Es algo más flojo que el 80% medido, pero es lo que hay sin
   # tocar el código.
-  tp3_gain: 0
-  tp3_sell: 0
+  tp3_gain: 1.50
+  tp3_sell: 0.125
+  tp4_gain: 3.00
+  tp4_sell: 0.125
 
-  stop_loss_percentage: 0.35
+  # 45% (era 35), decidido por Manu el 3-ago. Va en la direccion que apoyan los
+  # datos: sobre 24 operaciones simuladas, el minimo MEDIANO fue -41%, o sea que
+  # un stop del 35% cortaba dentro del ruido normal y sacaba de operaciones que
+  # aun no se habian decidido (April bajo -40% y luego hizo +71%).
+  #   stop 35% -> -0,5906 SOL
+  #   stop 45% -> -0,2081
+  #   stop 50% -> +0,1969   <- el primero en positivo
+  # 45 no llega a positivo en esa muestra, pero pierde tres veces menos que 35.
+  stop_loss_percentage: 0.45
   max_hold_time: 600          # 10 min: con 3 no da tiempo a que se desarrolle
   price_check_interval: 1
   extreme_fast_mode: false    # false = lee la curva, que es lo que necesitan
                               # los filtros de MC y de volumen
-  min_reserve_sol: 0.15       # gasolina: sin esto no se puede firmar ni vender
+  # 0,05 (era 0,15). La reserva existe para poder FIRMAR las ventas, y una
+  # venta cuesta 0,0012 SOL: con 0,05 hay para unas 20 operaciones de sobra.
+  # Con 0,15 el bot se quedaba bloqueado en cuanto el saldo bajaba de 0,30 --
+  # no por falta de gasolina, sino por un margen que me invente demasiado alto.
+  # NO bajar de aqui: sin gasolina, una posicion abierta no se puede cerrar y
+  # se pierde entera, que es mucho peor que no haber comprado.
+  min_reserve_sol: 0.05
 
 # CONTRA LOS GASTOS EN INTENTOS FALLIDOS
 #
@@ -93,17 +109,103 @@ trade:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  fixed_amount: 20_000_000
+  # 50M (era 20M) el 4-ago. Subirla es seguro AHORA porque el preflight esta
+  # activo: una transaccion que iba a fallar se rechaza antes de aterrizar y
+  # cuesta 0, asi que esta comision solo se paga en las que entran de verdad.
+  #
+  # Motivo: dos compras reventaron con error 6002 (slippage) porque el precio
+  # se movio entre firmar y aterrizar. Mas prioridad = aterriza antes = menos
+  # margen para que se mueva.
+  #
+  # Coste: 50M x 85.000 CU = 0,00425 SOL por compra, un 1,7% sobre 0,25 SOL.
+  fixed_amount: 50_000_000
   extra_percentage: 0.0
-  hard_cap: 20_000_000
+  hard_cap: 50_000_000
 
 retries:
-  wait_after_creation: 20     # se mira a los ~20s, dentro del primer minuto
+  # Se mira a los 12s, NO a los 20. Con 20 la comprobación caía justo en el
+  # límite de `max_buy_age: 20` y, sumando el tiempo de leer curva y GMGN, la
+  # moneda llegaba a la compra con 22-24s y se rechazaba a sí misma: cero
+  # operaciones. A los 12s quedan ~8s de margen para los filtros.
+  # 10 segundos (era 12), pedido por Manu el 3-ago. Como el bot no mira la
+  # moneda hasta que pasa esta espera, el volumen acumulado que ve ES el de los
+  # primeros 10 segundos exactos. No hace falta ventana aparte.
+  #
+  # OJO al tradeoff: medido el 3-ago sobre 22 operaciones, entrar antes salio
+  # PEOR -- a los 5s tocaron el TP 0 de 8, a los 10s 3 de 8, a los 15s o mas 3
+  # de 6. La moneda que llega a $3.500 en cinco segundos suele ser el creador
+  # comprandose a si mismo. A los 10s se recoge menos volumen acumulado, asi
+  # que si el filtro de 28 SOL deja de disparar, el motivo es este.
+  # 3 segundos, pedido por Manu el 3-ago por la noche. OJO A DOS COSAS:
+  #
+  # 1) El volumen que se exige pasa a ser el movido en 3 SEGUNDOS, no en 10.
+  #    Los 28 SOL siguen ahi, asi que el filtro se vuelve mucho mas duro sin
+  #    haber tocado su numero. Si deja de disparar, el motivo es este.
+  #
+  # 2) Medido el 3-ago sobre 22 operaciones: entrar a los 5s dio 0 aciertos de
+  #    8, a los 10s 3 de 8, a los 15s o mas 3 de 6. Entrar antes salio PEOR en
+  #    todo lo que hemos medido. A los 3 segundos la moneda casi siempre esta
+  #    en manos del creador y de nadie mas.
+  #
+  # Se prueba en PAPEL, que es donde toca. Los datos diran.
+  # 5 segundos, pedido por Manu. A esta edad el volumen ya es fiable (lo cuenta
+  # el bot de la cadena), pero el de titulares NO: medido sobre 71 monedas, a
+  # los 5s GMGN todavia no sabe nada de 1 de cada 5, y los valores que da
+  # oscilan sin sentido (una misma moneda: 41 -> 0 -> 57 en siete segundos).
+  # Con 10 exigidos se pierden monedas buenas por falta de dato, no por falta
+  # de titulares.
+  # 5 segundos: se mira a los 5 y el tope de compra son 7, asi que quedan 2
+  # segundos de margen para los filtros. Manu pidio "hasta 7 segundos de vida".
+  # 3 segundos: los criterios de Manu (MC 4-40K, volumen $3.800) se miden en
+  # los TRES primeros segundos de vida de la moneda. Como el bot no la mira
+  # hasta que pasa esta espera, el volumen acumulado que ve es exactamente el
+  # de esos 3 segundos.
+  #
+  # OJO al dato de titulares: medido sobre 71 monedas, a los 3s GMGN no sabe
+  # nada de 1 de cada 3, y los valores que da oscilan sin sentido (una misma
+  # moneda: 41 -> 0 -> 57 en siete segundos). El filtro de titulares a esta
+  # edad rechaza por falta de dato, no por falta de gente.
+  # 6 segundos: los criterios de Manu (MC 4-40K, volumen $3.800) se miden en
+  # los SEIS primeros segundos. Como el bot no mira la moneda hasta que pasa
+  # esta espera, el volumen acumulado que ve es justo el de esos 6 segundos.
+  # A los 6s el dato de titulares de GMGN ya es bastante mas fiable que a los
+  # 3 (a los 3s falta en 1 de cada 3 monedas; a los 5 en 1 de cada 5).
+  # 8 segundos: el tope de edad son 12 (0,2 min), asi que mirando a los 8
+  # quedan 4 de margen para leer curva, volumen y titulares antes de comprar.
+  # Y a los 8s el volumen acumulado es casi el doble que a los 3, con el dato
+  # de titulares de GMGN ya fiable (a los 3s falta en 1 de cada 3 monedas).
+  # 6 segundos, lo mas rapido que permite medir los criterios. Por que no
+  # menos: el volumen hay que ESPERAR a que se acumule. Medido sobre 117
+  # monedas, el volumen mediano a los 1s es 1,29 SOL y a los 6s son 2,10 --
+  # pedir 18 SOL antes de tiempo es pedirle al bot que compre a ciegas.
+  # Con tope de edad de 12s, mirar a los 6 deja 6 de margen para los filtros.
+  # 20 segundos. Con tope de compra de 45s hay margen de sobra, y esperar mas
+  # tiene una ventaja medible: el volumen se acumula. Medido sobre 117 monedas
+  # el volumen mediano pasa de 1,29 SOL al segundo 1 a 2,75 al segundo 8, y
+  # sigue subiendo. A los 20s el dato de titulares de GMGN ya es fiable del
+  # todo (a los 3s falta en 1 de cada 3 monedas; a los 20s en 1 de 71).
+  # 5 segundos (Manu prefiere entrar antes). Lo que se pierde, medido:
+  #   - el volumen acumulado es mucho menor que a los 20s, asi que el minimo
+  #     de 28 SOL disparara bastante menos.
+  #   - el dato de titulares de GMGN falla en 1 de cada 5 monedas a los 5s
+  #     (a los 20s falla en 1 de 71). Ese "min 10" rechazara algunas por falta
+  #     de dato, no por falta de gente.
+  # 2 segundos. Ya NO es "el momento en que se mira": ahora el bot vigila la
+  # moneda de forma continua y compra en cuanto cumple. Esta espera solo evita
+  # consultar la curva cuando literalmente acaba de nacer y no hay nada que
+  # leer todavia.
+  # 0: la vigilancia empieza desde el primer instante. Si la moneda cumple al
+  # segundo 1, se compra al segundo 1. El bucle de vigilancia ya protege de
+  # leer una curva que aun no existe (reintenta cada segundo), asi que no hace
+  # falta ninguna espera previa.
+  wait_after_creation: 0
   wait_after_buy: 0
 
 filters:
   listener_type: "logs"       # el de logs da la curva fresca en el mismo slot
-  max_token_age: 60           # "moneda nueva": menos de 1 minuto
+  max_token_age: 90           # margen sobre los 45s de compra
+                              # vida): NO acota la edad de compra
+  max_buy_age: 45             # 0,75 min = 45 s desde la creacion (Manu, 4-ago)
   match_string: null
   bro_address: null           # sin lista de devs: el filtro es la moneda
   allow_mayhem: false         # las mayhem nacen con 18 veces menos volumen en
@@ -111,7 +213,11 @@ filters:
                               # se desploman
   marry_mode: false
   yolo_mode: true
-  paper_trade: true           # <<< EN PAPEL. La medición dio -22,7%/op.
+  # PAPEL desde el 3-ago por la noche: la cartera se quedo a 0,0015 SOL y hay
+  # que averiguar si la estrategia vale algo ANTES de volver a meter dinero.
+  # La pregunta que esto tiene que contestar no es "cuanto habria ganado" sino
+  # "de las que compra, cuantas se pueden vender de verdad".
+  paper_trade: false          # <<< DINERO REAL (3-ago, decidido por Manu)
 
   # LA EDAD ES EL ÚNICO FILTRO QUE SEPARA GANADORAS DE PERDEDORAS.
   #
@@ -138,8 +244,8 @@ filters:
   # una de 5 segundos. Si algún día se implementa el filtro de verdad, esto
   # sería `min_token_age: 8`.
 
-  min_entry_mc: 3000          # la banda que pidió Manu
-  max_entry_mc: 3800
+  min_entry_mc: 3000          # suelo 3K (Manu, 4-ago)
+  max_entry_mc: 4400          # techo 4,4K (Manu, 4-ago)
 
   # "Volumen mínimo $2.000 en menos de 30s": se comprobó si GMGN podía darlo
   # (3-ago). Para una moneda de 20 segundos devuelve holder_count y liquidity,
@@ -154,7 +260,47 @@ filters:
   # COBRABLES del 15% al 22%, pero solo hasta ~$1.000 de volumen. A partir de
   # $3.000 vuelve a bajar al 17% y encima quita un tercio de las oportunidades.
   # Más no es mejor.
-  min_curve_sol: 10
+  # 7 SOL, no 12. Medido en vivo el 3-ago sobre 22 monedas: con 12 pasaron 2, y
+  # las dos traian 21-25 SOL (= $5.500-$6.500 de market cap), asi que el filtro
+  # de MC las tumbo acto seguido. Los dos filtros miden LO MISMO -- en una curva
+  # de pump.fun el market cap ES el SOL que hay dentro -- y exigir 12 SOL con
+  # techo de $4.500 deja una ventana de 3 SOL que las monedas atraviesan sin
+  # pararse. A 7 SOL el filtro equivale al suelo de $3.000 que pidio Manu, o
+  # sea que manda la banda y esto solo descarta las curvas vacias.
+  # 8 SOL. Manu pidio "$2.000 de volumen", y eso no cabe en su banda: medido
+  # hoy, MC $3.000 = 6,6 SOL (~$478) y MC $3.500 = 9,3 SOL (~$668). Los $2.000
+  # serian 27,8 SOL, o sea una moneda de ~$7.000 de market cap, el doble del
+  # techo que el mismo puso. Como el market cap y el SOL de la curva son LA
+  # MISMA MAGNITUD en una bonding curve, no hay forma de tener las dos cosas.
+  # 8 SOL es el punto mas exigente que la banda 3.000-3.500 admite sin quedarse
+  # sin candidatas: deja la mitad alta de la banda.
+  # 3 SOL, bajado de 7 a la vez que el suelo de market cap. OBLIGATORIO
+  # hacerlo juntos: el market cap y el SOL de la curva son la MISMA magnitud,
+  # y $2.500 son 3,34 SOL. Dejar la curva en 7 (= $3.000) habria anulado el
+  # nuevo suelo y el bot no habria comprado NADA por debajo de $3.000, sin dar
+  # un solo error. Ya paso dos veces hoy con otros pares de filtros.
+  # 7 SOL, de vuelta con el suelo de 3.000. Van juntos SIEMPRE: son la misma
+  # magnitud y $3.000 = 6,52 SOL. Dejarlo en 3 haria que la curva no filtrara
+  # nada por debajo del market cap, que es inofensivo, pero deja el fichero
+  # mintiendo sobre lo que hace.
+  # 4 SOL: es lo que hay en la curva a $2.700 de market cap (4,65 SOL). Se pone
+  # justo por debajo del suelo para que NO estorbe -- la banda es quien manda.
+  # 17 SOL = lo que hay en la curva a $5.000 de market cap. Sube CON el suelo:
+  # son la misma magnitud. Si se quedara en 4, no estorbaria (inofensivo), pero
+  # el fichero estaria mintiendo sobre lo que filtra de verdad.
+  # 12 SOL = lo que hay en la curva a $4.000 de market cap. Sube con el suelo:
+  # son la misma magnitud, y dejarlo mas bajo haria que el fichero mintiera
+  # sobre lo que filtra.
+  # 0: a $2.000 de market cap la curva esta practicamente vacia (0 SOL), asi
+  # que cualquier minimo aqui anularia el suelo de la banda. Manda el market
+  # cap, que es la misma magnitud medida de otra forma.
+  # 11 SOL: lo que hay en la curva a $3.870 de market cap. Sube con el suelo
+  # porque son la misma magnitud.
+  # 9 SOL: lo que hay en la curva a $3.500 de market cap. Va con el suelo.
+  # 6 SOL: lo que hay en la curva a $3.000 de market cap. Va con el suelo.
+  # 5 SOL: lo que hay en la curva a $2.800 de market cap. Va con el suelo.
+  # 6 SOL: lo que hay en la curva a $3.000 de market cap. Va con el suelo.
+  min_curve_sol: 6
 
   # Este mismo umbral es la defensa contra la lección más cara del 2-ago: el
   # 85% de las monedas que "suben" tienen la curva seca y su precio no se puede
@@ -164,9 +310,77 @@ filters:
   max_holder_pct: 0.15        # que un solo holder no tenga más del 15%
   max_dev_hold_pct: 0.10      # ni el creador más del 10%: es el único que sabe
                               # de antemano cuándo va a vender
-  min_holders: 8              # sí es comprobable y filtra los lanzamientos
-                              # vacíos; 50 (lo que pidió Manu) casi no existe a
-                              # los 30s: en la banda se ven entre 1 y 20
+  # OJO: `min_holders` sale de getTokenLargestAccounts, que devuelve COMO
+  # MÁXIMO 20 cuentas y una es la curva. Su techo real es 19: poner 25 aquí
+  # rechazaría el 100% de las monedas y el bot no compraría jamás. Se deja bajo
+  # como red de seguridad y el umbral de verdad va en min_holders_gmgn.
+  min_holders: 5
+  # 12, bajado de 25 el 3-ago con datos del propio bot en real. De 44 monedas,
+  # solo 4 llegaron a este filtro y tenían 5, 6, 12 y 15 titulares: con 25 no
+  # compraba NADA. Con 12 pasan 2 de esas 4 y se siguen descartando los
+  # lanzamientos fantasma de 5-6, que es para lo que sirve el filtro.
+  #
+  # Sin adornos: NO hay dato que demuestre que más titulares = más ganancia en
+  # esta banda. Esto descarta monedas vacías, no predice cuáles suben.
+  # 8, bajado de 12 el 3-ago para entrar más. Los resultados reales del día
+  # dicen que este filtro NO predice nada: la única ganadora (Community) tenía
+  # 15 titulares y las tres perdedoras 21, 19 y 12. La de 35 -- la mejor
+  # entrada sobre el papel -- tampoco destacó. Sirve para descartar
+  # lanzamientos fantasma, y para eso 8 basta.
+  # 20, subido de 8 el 3-ago por la noche a peticion de Manu. Se prueba EN
+  # PAPEL, que es donde toca probar una corazonada sin que cueste dinero.
+  #
+  # Lo que se sabe en contra: en las 12 operaciones reales de hoy este numero
+  # no separo ganadoras de perdedoras (la ganadora tenia 15, las perdedoras 21,
+  # 19 y 12) y la de 54 titulares acabo invendible. Y en la banda mas baja hay
+  # menos titulares, asi que 20 va a recortar bastante.
+  # 10, bajado de 20 el 3-ago tras verlo chocar con la ventana de 3 segundos:
+  # de 444 monedas, 4 superaron el volumen y LAS CUATRO cayeron aqui. Tiene
+  # sentido -- una moneda puede mover 28 SOL en tres segundos con cinco
+  # compradores gordos, pero no le da tiempo a juntar veinte personas.
+  # 8, bajado de 15: FEETCATE tenia 17 operaciones a los 5 segundos, asi que
+  # rondaria los 10-14 titulares. Con 15 se habria escapado igual.
+  min_holders_gmgn: 10        # minimo 10 titulares (Manu, 4-ago)
+                              # Verificado el 3-ago en monedas de 16-22s:
+                              # TripleT 25 titulares, Colon 25, HRACCOON 18.
+                              # Existe, pero es el borde alto: la mediana de la
+                              # banda está en 3-7. Esperar POCAS compras al día.
+
+  # VOLUMEN NEGOCIADO de verdad, en SOL, contado del stream de logs desde que
+  # nace la moneda (cada operacion emite un TradeEvent con su sol_amount).
+  #
+  # Esto NO es lo mismo que min_curve_sol. La curva es el dinero NETO dentro y
+  # esta atado al market cap: con techo de $4.200 no puede pasar de ~13 SOL. El
+  # volumen suma compras Y ventas, asi que una moneda que rota puede mover
+  # mucho mas de lo que retiene.
+  #
+  # 28 SOL ~ $2.000 al cambio del 3-ago (SOL ~$72), que es lo que pidio Manu.
+  # Si resulta que casi ninguna moneda de la banda llega, se vera en el log
+  # como "VOLUMEN filtro BLOCK" con la cifra real de cada una, y se ajusta con
+  # datos en vez de a ojo.
+  # 69 SOL = ~$5.000 al cambio del 3-ago. Subido de 28 por Manu tras cinco
+  # perdidas seguidas. Sobre las 60 señales de hoy, con 69 pasarian 11 (18%):
+  # muchas menos operaciones, pero solo las de trafico muy alto.
+  # 38 SOL (~$2.750). Bajado de 69 el 4-ago: con 69 no paso NI UNA de 118
+  # monedas -- el volumen mas alto visto en esa tanda fue 52. Un filtro que no
+  # deja pasar nada no filtra, solo apaga el bot en silencio.
+  # RANGO de volumen, no minimo. Los datos de la noche del 3/4-ago:
+  #
+  #   volumen 69-100 SOL  ->  10 compras, 10 perdidas
+  #   volumen 38-55 SOL   ->  SOL20 a $22k · ELON a $13,7k · CORGI a $10,4k
+  #   volumen 16 SOL      ->  FEETCATE a $42k  (x15,9 desde $2.657)
+  #
+  # Cuanto MENOS se habia movido la moneda en los primeros segundos, mejor
+  # salio. Mucho volumen tan pronto = ya entro y salio gente, y llegas tarde.
+  # El minimo de 5 solo descarta las que estan muertas del todo.
+  # 52 SOL = ~$3.800, el minimo de volumen que pidio Manu. SIN techo: el de 60
+  # rechazo a LUIS, que hizo x20 y graduo, asi que se quita.
+  # 18 SOL = ~$1.300, el minimo de volumen de los criterios de Manu.
+  # 39 SOL = ~$2.800, el minimo de volumen que pidio Manu.
+  min_volumen_sol: 24         # ~$1.750 de volumen minimo (Manu, 4-ago)
+  max_volumen_sol: 0          # sin techo
+
+  no_repeat_name_min: 5       # ninguna moneda con el mismo símbolo en 5 min
   holder_bypass_ratio: 3
 
   buy_on_dex_paid:

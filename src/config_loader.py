@@ -89,7 +89,10 @@ PLATFORM_LISTENER_COMPATIBILITY = {
 def load_bot_config(path: str) -> dict:
     """Load and validate a bot configuration from a YAML file."""
     config_path = Path(path)
-    with config_path.open() as f:
+    # encoding explicito: sin esto, en Windows se abre en cp1252 y cualquier
+    # acento en un comentario del YAML tumba el arranque entero con un
+    # UnicodeDecodeError. Los ficheros estan en UTF-8.
+    with config_path.open(encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
     env_file = config.get("env_file")

@@ -5,6 +5,16 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+# La consola de Windows va en cp1252 y el bot loguea emojis. Sin esto, CADA
+# linea con un emoji lanza una excepcion dentro del propio logging: el 3-ago se
+# contaron 737 en una sola sesion. No rompen el trading, pero llenan el log de
+# "Traceback" falsos y esconden los errores de verdad, que es peor.
+for _flujo in (sys.stdout, sys.stderr):
+    try:
+        _flujo.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):  # flujo redirigido o ya cerrado
+        pass
+
 # Try to use uvloop on Unix or winloop on Windows for better performance
 # Fall back to standard asyncio if not available
 try:
@@ -109,6 +119,8 @@ async def start_bot(config_path: str):
             tp2_sell=cfg["trade"].get("tp2_sell"),
             tp3_gain=cfg["trade"].get("tp3_gain"),
             tp3_sell=cfg["trade"].get("tp3_sell"),
+            tp4_gain=cfg["trade"].get("tp4_gain"),
+            tp4_sell=cfg["trade"].get("tp4_sell"),
             price_check_interval=cfg["trade"].get("price_check_interval", 10),
             # Listener configuration
             listener_type=cfg["filters"]["listener_type"],
@@ -175,6 +187,11 @@ async def start_bot(config_path: str):
             max_dev_hold_pct=cfg.get("filters", {}).get("max_dev_hold_pct", 0.0),
             min_holders=cfg.get("filters", {}).get("min_holders", 0),
             holder_bypass_ratio=cfg.get("filters", {}).get("holder_bypass_ratio", 0.0),
+            min_holders_gmgn=cfg.get("filters", {}).get("min_holders_gmgn", 0),
+            min_volumen_sol=cfg.get("filters", {}).get("min_volumen_sol", 0.0),
+            max_volumen_sol=cfg.get("filters", {}).get("max_volumen_sol", 0.0),
+            no_repeat_name_min=cfg.get("filters", {}).get("no_repeat_name_min", 0.0),
+            max_buy_age=cfg.get("filters", {}).get("max_buy_age", 0.0),
             min_reserve_sol=cfg.get("trade", {}).get("min_reserve_sol", 0.03),
             pumpfun_dev=cfg.get("filters", {}).get("pumpfun_dev"),
             copy_wallets=cfg.get("filters", {}).get("copy_wallets"),

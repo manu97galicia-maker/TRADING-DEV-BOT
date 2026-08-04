@@ -77,7 +77,12 @@ class PumpFunCurveManager(CurveManager):
         Returns:
             Current token price in SOL
         """
-        pool_state = await self.get_pool_state(pool_address)
+        # "processed" tambien aqui: esto es lo que alimenta el take-profit y el
+        # stop-loss. Con el "finalized" por defecto de solana-py, el precio que
+        # se compara llega 13-30 segundos tarde, y en una moneda que se mueve un
+        # 35% en medio minuto eso es vender en un sitio distinto del que marca
+        # la regla.
+        pool_state = await self.get_pool_state(pool_address, commitment="processed")
 
         # Use virtual reserves for price calculation
         virtual_token_reserves = pool_state["virtual_token_reserves"]

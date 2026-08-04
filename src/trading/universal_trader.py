@@ -269,6 +269,10 @@ class UniversalTrader:
         tp2_sell: float | None = None,
         tp3_gain: float | None = None,
         tp3_sell: float | None = None,
+        # Cuarto tramo (3-ago): la escalera de Manu tiene 4 objetivos
+        # (+50/+90/+150/+300) mas moonbag, y solo cabian 3.
+        tp4_gain: float | None = None,
+        tp4_sell: float | None = None,
         price_check_interval: int = 10,
         # Priority fee configuration
         enable_dynamic_priority_fee: bool = False,
@@ -323,6 +327,33 @@ class UniversalTrader:
         # (ej. 3 = x3) el holder grande es momentum real (compró a mercado), no
         # un bundle -> se permite comprar. 0 = sin excepción.
         holder_bypass_ratio: float = 0.0,
+        # Titulares mínimos SEGÚN GMGN. Distinto de `min_holders`, que se saca de
+        # getTokenLargestAccounts y por eso NO PUEDE PASAR DE 19: ese RPC
+        # devuelve como mucho 20 cuentas y una es la curva. Cualquier umbral de
+        # 20 o más por esa vía rechaza el 100% de las monedas y el bot no compra
+        # nunca. GMGN da el número real y sin tope (medido: 25 titulares a los
+        # 16 segundos), así que los umbrales altos van por aquí.
+        min_holders_gmgn: int = 0,
+        # Volumen NEGOCIADO minimo (SOL) contado del stream de logs desde que
+        # nacio la moneda. Distinto de `min_curve_sol`, que es el dinero NETO
+        # dentro: el volumen suma compras Y ventas, asi que puede ser varias
+        # veces mayor y no lo limita el techo de market cap.
+        min_volumen_sol: float = 0.0,
+        # TECHO de volumen negociado (SOL). Medido la noche del 3/4-ago sobre
+        # operaciones reales: las monedas con MUCHO volumen en los primeros
+        # segundos salieron todas mal (10 de 10 en perdida con 69-100 SOL),
+        # mientras que las que apenas se habian movido fueron las que volaron
+        # (FEETCATE: 16 SOL de volumen -> x15,9). Mucho movimiento tan pronto
+        # significa que ya entro y salio gente y llegas al final. 0 = sin tope.
+        max_volumen_sol: float = 0.0,
+        # No comprar una moneda si otra con el MISMO símbolo apareció en los
+        # últimos N minutos: los copias en cadena son el patrón del que lanza
+        # veinte clones a ver cuál prende. 0 = desactivado.
+        no_repeat_name_min: float = 0.0,
+        # Edad máxima EN EL MOMENTO DE COMPRAR. `max_token_age` se mira al sacar
+        # la moneda de la cola, antes de la espera de estabilización, así que no
+        # limita la edad real de entrada. 0 = desactivado.
+        max_buy_age: float = 0.0,
         # Reserva mínima de SOL que el bot nunca gasta (siempre deja esto).
         min_reserve_sol: float = 0.03,
         # Pump.fun creator-migration filter (via pump.fun API); off unless set
@@ -444,6 +475,7 @@ class UniversalTrader:
                 ),
                 (tp2_gain, tp2_sell),
                 (tp3_gain, tp3_sell),
+                (tp4_gain, tp4_sell),
             ]
         )
         # TP AGRESIVO para devs moonshot (los que suelen llegar MUY alto): objetivos
@@ -523,6 +555,14 @@ class UniversalTrader:
         self.max_bundle_pct = float(max_bundle_pct or 0)
         self.max_dev_hold_pct = float(max_dev_hold_pct or 0)
         self.holder_bypass_ratio = float(holder_bypass_ratio or 0)
+        self.min_holders_gmgn = int(min_holders_gmgn or 0)
+        self.min_volumen_sol = float(min_volumen_sol or 0)
+        self.max_volumen_sol = float(max_volumen_sol or 0)
+        self.no_repeat_name_min = float(no_repeat_name_min or 0)
+        self.max_buy_age = float(max_buy_age or 0)
+        #: símbolo -> monotonic() de la última vez que se vio. Solo memoria del
+        #: proceso: tras un reinicio la ventana empieza vacía.
+        self._nombres_vistos: dict[str, float] = {}
         # Reserva mínima de SOL que nunca se gasta (para fees / no quedarse a 0).
         self.min_reserve_lamports = int(float(min_reserve_sol or 0.03) * LAMPORTS_PER_SOL)
         self.paper_watch_secs = int(paper_watch_secs or 300)
@@ -893,8 +933,17 @@ class UniversalTrader:
 
         # Use THIS bot's configured exit ladder (not a fixed one) so paper measures
         # the real strategy: TP1/TP2 gains and stop-loss come straight from config.
-        tp1 = entry_price * (1 + float(self.take_profit_percentage or 0.5))
-        tp2 = entry_price * (1 + float(self.tp2_gain or 1.4)) if self.tp2_gain else entry_price * 999
+        # Los objetivos salen de `self.tp_tiers`, que es donde el trader guarda
+        # de verdad la escalera. Antes esta linea leia `self.tp2_gain`, que NO
+        # existe como atributo (solo llega como argumento del constructor): la
+        # tarea de seguimiento moria con AttributeError en la primera linea, con
+        # cada moneda, y el error se quedaba enterrado en un task sin dueno. El
+        # 3-ago eso dejo la simulacion 14 minutos sin emitir un solo resultado
+        # pareciendo que simplemente "aun no habia terminado".
+        _g1 = float(self.tp_tiers[0].gain) if self.tp_tiers else 0.5
+        _g2 = float(self.tp_tiers[1].gain) if len(self.tp_tiers) > 1 else None
+        tp1 = entry_price * (1 + _g1)
+        tp2 = entry_price * (1 + _g2) if _g2 else entry_price * 999
         sl = entry_price * (1 - float(self.stop_loss_percentage or 0.3))
         peak = trough = entry_price
         hit = {"tp1": False, "tp2": False, "sl": False}
@@ -906,7 +955,7 @@ class UniversalTrader:
                     await asyncio.sleep(5)
                     try:
                         st = await self.platform_implementations.curve_manager.get_pool_state(
-                            token_info.bonding_curve
+                            token_info.bonding_curve, commitment="processed"
                         )
                         p = float(st.get("price_per_token") or 0)
                     except Exception:
@@ -939,8 +988,8 @@ class UniversalTrader:
                 "tp1": hit["tp1"],
                 "tp2": hit["tp2"],
                 "sl": hit["sl"],
-                "tp1_gain": round(float(self.take_profit_percentage or 0), 2),
-                "tp2_gain": round(float(self.tp2_gain or 0), 2),
+                "tp1_gain": round(_g1, 2),
+                "tp2_gain": round(_g2 or 0.0, 2),
                 "sl_pct": round(float(self.stop_loss_percentage or 0), 2),
                 "first": first_hit,
                 "secs": round(time.time() - start),
@@ -978,9 +1027,25 @@ class UniversalTrader:
                 win = str(first_hit).startswith("tp")
                 head = "✅ GANADOR" if win else ("🛑 STOP" if first_hit == "sl" else "⏹️ CIERRE")
                 tot = self._bump_paper_total(pnl, win)  # acumulado total simulacion
+                # Escalera EXPLICITA: que objetivo salto y cual no. Antes el
+                # aviso daba un ROI sin decir de donde salia.
+                marcas = []
+                for i, t in enumerate(self.tp_tiers, 1):
+                    ok = peak_frac >= t.gain
+                    marcas.append(
+                        f"{'✅' if ok else '⬜'} TP{i} +{t.gain * 100:.0f}%"
+                    )
+                marcas.append(f"{'🛑' if hit['sl'] else '⬜'} SL −{slp * 100:.0f}%")
+                # La curva avisa de la liquidez: el 3-ago tres monedas con
+                # "ganancia" en pantalla resultaron invendibles tras media hora
+                # de intentos. Por debajo de ~7 SOL ese ROI puede no cobrarse.
+                liq = float(rec.get("curve_sol") or 0.0)
+                aviso_liq = "" if liq >= 7 else "  ⚠️ puede no ser vendible"
                 notify(
                     f"{head} · <b>{rec['symbol']}</b> (paper)\n"
+                    f"{' · '.join(marcas)}\n"
                     f"📊 ROI <b>{roi * 100:+.0f}%</b> · pico {rec['peak_pct']:+.0f}% · mín {rec['trough_pct']:+.0f}%\n"
+                    f"💧 curva {liq:.1f} SOL{aviso_liq}\n"
                     f"💰 {self.buy_amount} SOL → <b>{value:.4f} SOL</b> ({pnl:+.4f})\n"
                     f"━━━━━━━━━━━━\n"
                     f"📈 <b>TOTAL: {tot['pnl']:+.4f} SOL</b> · {tot['n']} trades · "
@@ -1412,6 +1477,42 @@ class UniversalTrader:
         except Exception:  # noqa: BLE001 - fail-open, no bloquear por error
             return False
 
+    async def _holders_gmgn(self, mint: str) -> int:
+        """Titulares según GMGN, o -1 si no se puede saber.
+
+        Se devuelve -1 (y NO 0) cuando la consulta falla, para que quien llame
+        distinga "no hay gente" de "no me he podido enterar". Un fallo de red no
+        debe leerse como moneda vacía ni, al revés, abrir la puerta a comprar
+        sin comprobar.
+        """
+        import shutil
+
+        exe = shutil.which("gmgn-cli") or shutil.which("gmgn-cli.cmd")
+        if not exe:
+            return -1
+
+        def _consulta() -> int:
+            try:
+                import json as _json
+                import subprocess  # noqa: PLC0415, S404
+
+                r = subprocess.run(  # noqa: S603
+                    [exe, "token", "info", "--chain", "sol",
+                     "--address", mint, "--raw"],
+                    capture_output=True, text=True, timeout=6,
+                    encoding="utf-8", errors="replace",
+                )
+                if r.returncode != 0:
+                    return -1
+                return int(_json.loads(r.stdout).get("holder_count") or 0)
+            except Exception:  # noqa: BLE001
+                return -1
+
+        try:
+            return await asyncio.wait_for(asyncio.to_thread(_consulta), timeout=8)
+        except Exception:  # noqa: BLE001
+            return -1
+
     async def _handle_token(self, token_info: TokenInfo) -> None:
         """Handle a new token creation event."""
         try:
@@ -1443,10 +1544,10 @@ class UniversalTrader:
                 return
 
             # Auto-baneo: dev que ha rugeado 2 veces seguidas -> no se le compra.
-            if self._is_dev_blocked(str(token_info.user)):
+            if self._is_dev_blocked(_dev_user, _dev_creator):
                 logger.info(
                     f"Evitado {token_info.symbol}: dev "
-                    f"{str(token_info.user)[:8]} BLOQUEADO (2 rugs seguidos)"
+                    f"{_dev_user[:8]} BLOQUEADO (2 rugs seguidos)"
                 )
                 return
 
@@ -1454,6 +1555,28 @@ class UniversalTrader:
             if not self.allow_mayhem and getattr(token_info, "is_mayhem_mode", False):
                 logger.info(f"Evitado {token_info.symbol}: mayhem mode")
                 return
+
+            # NOMBRE REPETIDO: se comprueba AQUÍ, al detectarla, no después de
+            # la espera. Si se hiciera después, dos clones lanzados con pocos
+            # segundos de diferencia terminarían la espera casi a la vez y los
+            # dos se darían por buenos.
+            if self.no_repeat_name_min > 0:
+                nombre = str(token_info.symbol or "").strip().upper()
+                if nombre:
+                    ahora_n = monotonic()
+                    corte = ahora_n - self.no_repeat_name_min * 60
+                    self._nombres_vistos = {
+                        k: v for k, v in self._nombres_vistos.items() if v >= corte
+                    }
+                    repetida = nombre in self._nombres_vistos
+                    self._nombres_vistos[nombre] = ahora_n
+                    if repetida:
+                        logger.info(
+                            f"Evitado {token_info.symbol}: ya salió una moneda "
+                            f"con ese nombre en los últimos "
+                            f"{self.no_repeat_name_min:.0f} min"
+                        )
+                        return
 
             # Wait for pool/curve to stabilize (unless in extreme fast mode)
             if not self.extreme_fast_mode:
@@ -1463,6 +1586,84 @@ class UniversalTrader:
                 )
                 await asyncio.sleep(self.wait_time_after_creation)
 
+            # VIGILANCIA CONTINUA hasta que la moneda cumpla, en vez de mirarla
+            # una sola vez y descartarla.
+            #
+            # Antes el bot echaba un vistazo al terminar la espera: si en ese
+            # instante concreto no cumplia (aun no habia movido el volumen, o
+            # el market cap todavia no habia llegado al suelo), la tiraba para
+            # siempre. Una moneda que cumplia al segundo 8 se perdia por haber
+            # mirado en el 5.
+            #
+            # Ahora se queda vigilando hasta `max_buy_age` y compra en el
+            # momento exacto en que cumple. El coste de red esta controlado: el
+            # volumen se lee de memoria (gratis) y la curva SOLO se consulta
+            # cuando el volumen ya da el minimo, asi que no se gastan llamadas
+            # en monedas que ni siquiera se han movido.
+            if self.max_buy_age > 0 and (
+                self.min_volumen_sol > 0 or self.min_entry_mc > 0
+            ):
+                from monitoring.volumen import volumen_sol as _vol_sol
+
+                _nacida = self.token_timestamps.get(str(token_info.mint))
+                _t0 = _nacida if _nacida is not None else monotonic()
+                _visto_vol = 0.0
+                # Primera comprobacion inmediata: si la moneda ya cumple al
+                # segundo 1, se compra al segundo 1. Solo se duerme cuando NO
+                # cumple, nunca antes de mirar.
+                while monotonic() - _t0 < self.max_buy_age:
+                    _v = _vol_sol(str(token_info.mint))
+                    _visto_vol = max(_visto_vol, _v)
+                    if self.min_volumen_sol > 0 and _v < self.min_volumen_sol:
+                        await asyncio.sleep(0.5)
+                        continue
+                    # El volumen ya cumple: ahora si vale la pena mirar la curva.
+                    try:
+                        _st = await self.platform_implementations.curve_manager.get_pool_state(
+                            token_info.bonding_curve, commitment="processed"
+                        )
+                        _p = float(_st.get("price_per_token") or 0)
+                    except Exception:  # noqa: BLE001
+                        await asyncio.sleep(1)
+                        continue
+                    _mc = _p * _PUMP_TOTAL_SUPPLY * _SOL_USD
+                    if self.max_entry_mc > 0 and _mc > self.max_entry_mc:
+                        logger.info(
+                            f"Evitado {token_info.symbol}: se paso de la banda "
+                            f"(MC ${_mc:,.0f} > ${self.max_entry_mc:,.0f}) "
+                            f"mientras se vigilaba"
+                        )
+                        return
+                    if self.min_entry_mc > 0 and _mc < self.min_entry_mc:
+                        await asyncio.sleep(1)
+                        continue
+                    logger.info(
+                        f"CUMPLE {token_info.symbol}: {_v:.1f} SOL de volumen y "
+                        f"MC ${_mc:,.0f} a los {monotonic() - _t0:.0f}s"
+                    )
+                    break
+                else:
+                    logger.info(
+                        f"Evitado {token_info.symbol}: no cumplio en "
+                        f"{self.max_buy_age:.0f}s (mejor volumen visto "
+                        f"{_visto_vol:.1f} SOL)"
+                    )
+                    return
+
+            # EDAD AL COMPRAR. `max_token_age` se comprueba al sacarla de la
+            # cola, cuando la moneda tiene ~1 segundo, así que no acota nada.
+            # Éste es el que hace cumplir "menos de N segundos de vida".
+            if self.max_buy_age > 0:
+                nacida = self.token_timestamps.get(str(token_info.mint))
+                if nacida is not None:
+                    edad = monotonic() - nacida
+                    if edad > self.max_buy_age:
+                        logger.info(
+                            f"Evitado {token_info.symbol}: {edad:.0f}s de vida "
+                            f"(> {self.max_buy_age:.0f}s) al ir a comprar"
+                        )
+                        return
+
             # BUNDLE DETECTOR: read the bonding curve once. A fresh pump.fun
             # token starts near 0 SOL; a *bundled* launch already holds several
             # SOL seconds later because the operator self-bought big (observed:
@@ -1471,8 +1672,14 @@ class UniversalTrader:
             curve_sol = entry_price = 0.0
             if self.min_curve_sol > 0 or self.paper_trade or self.max_entry_mc > 0:
                 try:
+                    # commitment="processed" OBLIGATORIO. El cliente se crea sin
+                    # commitment y solana-py usa "finalized" por defecto, que va
+                    # 13-30 segundos por detras: leer la curva de una moneda de
+                    # 12 segundos devolvia "Account not found" en el 100% de los
+                    # casos (medido 3-ago: 40 de 44 ilegibles, 0 leidas). El bot
+                    # parecia vivo y no podia comprar nada.
                     state = await self.platform_implementations.curve_manager.get_pool_state(
-                        token_info.bonding_curve
+                        token_info.bonding_curve, commitment="processed"
                     )
                     curve_sol = float(state.get("real_sol_reserves", 0)) / LAMPORTS_PER_SOL
                     entry_price = float(state.get("price_per_token") or 0)
@@ -1535,6 +1742,54 @@ class UniversalTrader:
                         f"(no ha despegado, no entro)"
                     )
                     return
+
+            # VOLUMEN NEGOCIADO. Va antes que GMGN porque es gratis: el dato ya
+            # esta en memoria, contado del mismo stream de logs que detecta las
+            # monedas. Cero llamadas de red.
+            if self.min_volumen_sol > 0 or self.max_volumen_sol > 0:
+                from monitoring.volumen import operaciones, volumen_sol
+
+                vol = volumen_sol(str(token_info.mint))
+                if self.max_volumen_sol > 0 and vol > self.max_volumen_sol:
+                    logger.info(
+                        f"VOLUMEN filtro BLOCK {token_info.symbol}: "
+                        f"{vol:.2f} SOL negociados > máx {self.max_volumen_sol} "
+                        f"(ya pumpeada, llego tarde)"
+                    )
+                    return
+                if self.min_volumen_sol > 0 and vol < self.min_volumen_sol:
+                    logger.info(
+                        f"VOLUMEN filtro BLOCK {token_info.symbol}: "
+                        f"{vol:.2f} SOL negociados < {self.min_volumen_sol} "
+                        f"({operaciones(str(token_info.mint))} operaciones)"
+                    )
+                    return
+                logger.info(
+                    f"VOLUMEN OK {token_info.symbol}: {vol:.2f} SOL negociados "
+                    f"en {operaciones(str(token_info.mint))} operaciones"
+                )
+
+            # TITULARES (GMGN). Va después del market cap a propósito: es la
+            # única comprobación que sale del proceso, así que solo se gasta en
+            # monedas que ya cumplen lo barato. Si GMGN no contesta se DESCARTA
+            # la moneda: con dinero real, "no lo sé" no es "adelante".
+            if self.min_holders_gmgn > 0:
+                n_hold = await self._holders_gmgn(str(token_info.mint))
+                if n_hold < 0:
+                    logger.info(
+                        f"Evitado {token_info.symbol}: GMGN no dio titulares "
+                        f"(no compro a ciegas)"
+                    )
+                    return
+                if n_hold < self.min_holders_gmgn:
+                    logger.info(
+                        f"HOLDERS filtro BLOCK {token_info.symbol}: "
+                        f"{n_hold} titulares < {self.min_holders_gmgn}"
+                    )
+                    return
+                logger.info(
+                    f"HOLDERS OK {token_info.symbol}: {n_hold} titulares"
+                )
 
             # DexScreener buy filter (skips the buy if criteria not met).
             # Bounded by _filter_semaphore so many tokens can run the slow
@@ -1615,9 +1870,26 @@ class UniversalTrader:
             if self.paper_trade:
                 self._record_paper(token_info, curve_sol, entry_price)
                 if entry_price > 0:
-                    asyncio.create_task(  # noqa: RUF006
-                        self._paper_watch(token_info, entry_price, curve_sol)
-                    )
+                    # Con guardia: una excepcion dentro de _paper_watch se
+                    # quedaba en un task sin dueno ("Task exception was never
+                    # retrieved") y la simulacion parecia simplemente lenta. Si
+                    # vuelve a romperse, ahora sale en el log y en Telegram.
+                    async def _seguir(ti=token_info, ep=entry_price, cs=curve_sol):
+                        try:
+                            await self._paper_watch(ti, ep, cs)
+                        except Exception as e:  # noqa: BLE001
+                            logger.exception("paper watch roto")
+                            try:
+                                from monitoring.notifier import notify
+
+                                notify(
+                                    f"⚠️ <b>Seguimiento en papel roto</b> "
+                                    f"({ti.symbol}): {type(e).__name__}: {e}"
+                                )
+                            except Exception:  # noqa: BLE001, S110
+                                pass
+
+                    asyncio.create_task(_seguir())  # noqa: RUF006
                 return
 
             # Passed the filter -> buy + exit-monitor, bounded by the open-position
@@ -2231,7 +2503,13 @@ class UniversalTrader:
             f"{realized_sol:.4f} + moonbag {held_val:.4f} - coste {cost_sol:.4f}) "
             f"-> {_outcome} [rug-streak dev]"
         )
-        self._bump_dev_rug(str(token_info.user), _outcome)
+        # Se anota a las DOS identidades. Si solo se apuntara a `user`, un dev
+        # que firma con carteras nuevas pero deja el mismo `creator` acumularia
+        # un strike suelto en cada una y nunca llegaria a dos.
+        _ident = {str(token_info.user), str(getattr(token_info, "creator", "") or "")}
+        for _d in _ident:
+            if _d:
+                self._bump_dev_rug(_d, _outcome)
 
         # C2: monitor ended (sold / moonbag / abandoned) — no longer an actively
         # managed position, so clear the crash-recovery marker.
@@ -2449,9 +2727,15 @@ class UniversalTrader:
             pass
         return {}
 
-    def _is_dev_blocked(self, dev: str) -> bool:
-        """True si el dev ha rugeado 2+ veces seguidas."""
-        return int(self._load_blocked_devs().get(dev, 0)) >= 2
+    def _is_dev_blocked(self, *devs: str) -> bool:
+        """True si ALGUNA de las identidades dadas lleva 2+ rugs seguidos.
+
+        Se aceptan varias porque un lanzamiento tiene dos: `user` (quien firma)
+        y `creator` (a quien apunta la curva). Normalmente coinciden, pero
+        cuando no, mirar solo una dejaba entrar al mismo dev por la otra puerta.
+        """
+        data = self._load_blocked_devs()
+        return any(d and int(data.get(d, 0)) >= 2 for d in devs)
 
     def _bump_dev_rug(self, dev: str, outcome: str) -> None:
         """Actualiza el contador de rugs del dev.

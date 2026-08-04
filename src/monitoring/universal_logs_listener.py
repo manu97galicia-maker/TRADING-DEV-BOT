@@ -205,6 +205,18 @@ class UniversalLogsListener(BaseTokenListener):
             logs = log_data.get("logs", [])
             signature = log_data.get("signature", "unknown")
 
+            # Contar el volumen ANTES de filtrar por creacion: estas mismas
+            # notificaciones traen las compras y ventas de todas las monedas
+            # vivas, y hasta ahora se tiraban. Es la unica fuente de volumen
+            # real disponible en los primeros segundos (ni GMGN ni la API de
+            # pump.fun lo dan tan pronto).
+            try:
+                from monitoring.volumen import registrar_logs
+
+                registrar_logs(logs)
+            except Exception:  # noqa: BLE001, S110
+                pass
+
             # Try each platform's event parser
             for platform, parser in self.platform_parsers.items():
                 token_info = parser.parse_token_creation_from_logs(logs, signature)
