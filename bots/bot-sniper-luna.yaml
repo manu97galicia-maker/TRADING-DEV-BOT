@@ -96,9 +96,24 @@ filters:
   max_buy_age: 30             # si en 30 s no ha entrado, es que algo falla
 
   match_string: null
-  bro_address:
-    - "2E94st2NZnzA943HBceijgkw75gXTTxch39yquMBfeQk"
-    - "8jfDh7hABXq8xXHuYmjQdmz994qbqmKHhzwpVLqyzPqK"
+  bro_address: null           # sin lista fija: manda el filtro de reputacion
+
+  # REPUTACION DEL DEV, calculada en vivo. En vez de una lista cerrada de
+  # wallets, el bot le pregunta a la API de pump.fun cuantas monedas ha lanzado
+  # ESE creador y cuantas completaron la curva, y compra solo si migra >= 30%.
+  #
+  # Asi entra cualquier dev que cumpla, no solo los dos del informe de hoy: la
+  # lista se queda vieja en dias, la tasa se recalcula sola.
+  #
+  # min_migrations 3 evita el falso positivo obvio: un dev con 1 lanzamiento y
+  # 1 migracion marca 100% y no significa nada.
+  #
+  # El resultado se cachea por creador, asi que si el mismo dev relanza no se
+  # vuelve a consultar y la entrada sigue siendo inmediata.
+  pumpfun_dev:
+    enabled: true
+    min_rate: 0.30
+    min_migrations: 3
 
   allow_mayhem: false
   marry_mode: false
