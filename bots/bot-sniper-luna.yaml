@@ -79,9 +79,12 @@ trade:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  fixed_amount: 50_000_000
+  # 100M (el doble): aqui interesa aterrizar cuanto antes porque se compra en
+  # el primer instante y el precio se mueve rapido. Son 0,0085 SOL por compra
+  # (4,3% sobre 0,20), a cambio de menos reversiones por slippage.
+  fixed_amount: 100_000_000
   extra_percentage: 0.0
-  hard_cap: 50_000_000
+  hard_cap: 100_000_000
 
 retries:
   wait_after_creation: 0
@@ -90,7 +93,7 @@ retries:
 filters:
   listener_type: "logs"
   max_token_age: 180
-  max_buy_age: 90             # con dev conocido no hay prisa por entrar
+  max_buy_age: 30             # si en 30 s no ha entrado, es que algo falla
 
   match_string: null
   bro_address:
@@ -113,7 +116,17 @@ filters:
   max_volumen_sol: 0
   min_vol_ventana_sol: 0
 
-  min_holders_gmgn: 12
+  # 0 = SIN filtro de titulares, para comprar en el acto.
+  #
+  # Es lo que mas frenaba la entrada: consultar GMGN cuesta 1,3 s por moneda
+  # (6,5 s si coinciden varias a la vez en el droplet, medido), y ademas obliga
+  # a ESPERAR a que existan 12 titulares, que puede tardar 20-30 segundos. Para
+  # entonces la moneda ya se ha movido.
+  #
+  # Aqui no hace falta: la senal es el dev, y el dev se conoce en el mismo
+  # instante en que lanza. Pedir titulares encima es pagar segundos por
+  # confirmar algo que ya sabemos.
+  min_holders_gmgn: 0
   no_repeat_name_min: 0
   max_holder_pct: 0.0
   max_dev_hold_pct: 0.0
