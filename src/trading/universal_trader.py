@@ -2118,6 +2118,61 @@ class UniversalTrader:
         if token_info.token_program_id:
             self.traded_token_programs[mint_str] = token_info.token_program_id
 
+        # AVISO DE COMPRA con el porque. Hasta ahora la compra solo se apuntaba
+        # en el log: desde Telegram se veia que habia entrado pero no que la
+        # habia hecho entrar, asi que era imposible juzgar la señal despues.
+        try:
+            from monitoring.notifier import notify
+            from monitoring.pumpfun_dev import creator_migration_stats
+            from monitoring.senales import tiene_senal
+            from monitoring.volumen import operaciones, volumen_sol
+
+            _lineas = []
+
+            _t = tiene_senal(mint_str, self.senal_gmgn) if self.senal_gmgn else None
+            if _t:
+                _lineas.append(f"📡 Señal GMGN <b>tipo {_t}</b>")
+
+            _dev = str(
+                getattr(token_info, "creator", "")
+                or getattr(token_info, "user", "")
+                or ""
+            ).strip()
+            if _dev:
+                try:
+                    _l, _m, _r = await creator_migration_stats(_dev)
+                    if _l:
+                        _lineas.append(
+                            f"👤 Dev migró <b>{_r * 100:.0f}%</b> ({_m}/{_l})"
+                        )
+                except Exception:  # noqa: BLE001
+                    pass
+                _med = (self._creator_medians or {}).get(_dev)
+                if _med:
+                    _lineas.append(f"📈 Mediana del dev: <b>${int(_med):,}</b>")
+
+            _v = volumen_sol(mint_str)
+            if _v:
+                _lineas.append(
+                    f"💧 {_v:.1f} SOL negociados en {operaciones(mint_str)} ops"
+                )
+
+            _mc = (buy_result.price or 0) * _PUMP_TOTAL_SUPPLY * _SOL_USD
+            _bot = self._state_suffix.lstrip("_").replace("bot-sniper-", "").upper()
+            _tr = " · ".join(
+                f"+{t.gain * 100:.0f}%/{t.sell * 100:.0f}%" for t in self.tp_tiers
+            )
+            notify(
+                f"🟢 <b>COMPRA</b> · {token_info.symbol} ({_bot})\n"
+                + ("\n".join(_lineas) + "\n" if _lineas else "")
+                + f"💵 {self.buy_amount} SOL · MC entrada ~${_mc:,.0f}\n"
+                + f"🎯 {_tr} · SL -{self.stop_loss_percentage * 100:.0f}%\n"
+                + f'📊 <a href="https://gmgn.ai/sol/token/{mint_str}">GMGN</a>\n'
+                + f"CA: <code>{mint_str}</code>"
+            )
+        except Exception:  # noqa: BLE001
+            pass
+
         # Choose exit strategy
         if not self.marry_mode:
             if self.exit_strategy == "tp_sl":
