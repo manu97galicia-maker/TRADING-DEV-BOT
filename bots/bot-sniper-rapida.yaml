@@ -9,7 +9,7 @@
 # se libere. Con 0,35 SOL por entrada aqui y 0,3 alli hacen falta ~0,80 SOL
 # libres para que quepan las dos a la vez.
 
-name: "RAPIDA 2-3,4K - 3 segundos, volumen 2K"
+name: "RAPIDA 2-3,4K - 5 segundos, volumen 2K"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -58,7 +58,7 @@ retries:
 filters:
   listener_type: "logs"
   max_token_age: 60
-  max_buy_age: 3              # "los 3 primeros segundos"
+  max_buy_age: 5              # "los 5 primeros segundos"
   match_string: null
   bro_address: null
   allow_mayhem: false
@@ -73,13 +73,14 @@ filters:
   # suelo de la banda. Manda el market cap, que mide lo mismo.
   min_curve_sol: 0
 
-  # 27 SOL = ~$2.000 movidos en esos 3 segundos. Es exigente: medido sobre 261
-  # monedas, a los 3 s solo el 8% habia movido 28 SOL. Espera pocas entradas.
+  # 27 SOL = ~$2.000 movidos en esos 5 segundos. Sigue siendo exigente: medido
+  # sobre 261 monedas, a los 3 s solo el 8% habia movido 28 SOL y a los 10 s el
+  # 12%. Con 5 s estas cerca del 10%.
   min_volumen_sol: 27
   max_volumen_sol: 0
 
-  # Sin filtro de titulares A PROPOSITO. A los 3 segundos GMGN no conoce a 1 de
-  # cada 3 monedas y devuelve un cero falso, asi que un minimo aqui rechazaria
+  # Sin filtro de titulares A PROPOSITO. A los 5 segundos GMGN no conoce a 1 de
+  # cada 5 monedas y devuelve un cero falso, asi que un minimo aqui rechazaria
   # por falta de dato, no por falta de gente. El volumen ya mide lo mismo y lo
   # cuenta el bot de la cadena.
   min_holders_gmgn: 0
