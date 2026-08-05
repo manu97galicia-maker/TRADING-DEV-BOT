@@ -352,6 +352,11 @@ class UniversalTrader:
         # conoce a 1 de cada 3 monedas, asi que a esta edad es el unico que
         # sirve. 0 = desactivado.
         min_titulares: int = 0,
+        # Exigir que la moneda traiga redes sociales SUYAS: un enlace a una
+        # cuenta (no al tuit de otro, que es lo que trae la mayoria) y que esa
+        # cuenta no la haya usado ya otra moneda en las ultimas 6 horas.
+        redes_originales: bool = False,
+        redes_timeout: float = 1.5,
         # TECHO de volumen negociado (SOL). Medido la noche del 3/4-ago sobre
         # operaciones reales: las monedas con MUCHO volumen en los primeros
         # segundos salieron todas mal (10 de 10 en perdida con 69-100 SOL),
@@ -590,6 +595,8 @@ class UniversalTrader:
         self.min_volumen_sol = float(min_volumen_sol or 0)
         self.min_ops = int(min_ops or 0)
         self.min_titulares = int(min_titulares or 0)
+        self.redes_originales = bool(redes_originales)
+        self.redes_timeout = float(redes_timeout or 1.5)
         self.max_volumen_sol = float(max_volumen_sol or 0)
         self.min_vol_ventana_sol = float(min_vol_ventana_sol or 0)
         self.vol_ventana_seg = float(vol_ventana_seg or 3.0)
@@ -1643,6 +1650,19 @@ class UniversalTrader:
             # volumen se lee de memoria (gratis) y la curva SOLO se consulta
             # cuando el volumen ya da el minimo, asi que no se gastan llamadas
             # en monedas que ni siquiera se han movido.
+            # REDES SOCIALES. La descarga del metadata se lanza AQUI, antes de
+            # ponerse a vigilar volumen y titulares, y no se recoge hasta que
+            # todo lo demas ha pasado. Asi los 200-400 ms que tarda transcurren
+            # mientras el bot esta esperando de todas formas: cuando llega el
+            # momento de comprar el dato ya esta en la mano y no retrasa nada.
+            _tarea_redes = None
+            if self.redes_originales:
+                from monitoring import redes as _redes
+
+                _tarea_redes = asyncio.create_task(
+                    _redes.leer(token_info.uri, self.redes_timeout)
+                )
+
             if self.max_buy_age > 0 and (
                 self.min_volumen_sol > 0
                 or self.min_entry_mc > 0
@@ -1737,6 +1757,8 @@ class UniversalTrader:
                         f"{_visto_vol:.1f} SOL, {_visto_ops} tx, "
                         f"{_visto_tit} titulares)"
                     )
+                    if _tarea_redes is not None:
+                        _tarea_redes.cancel()
                     return
 
             # EDAD AL COMPRAR. `max_token_age` se comprueba al sacarla de la
@@ -1751,7 +1773,30 @@ class UniversalTrader:
                             f"Evitado {token_info.symbol}: {edad:.0f}s de vida "
                             f"(> {self.max_buy_age:.0f}s) al ir a comprar"
                         )
+                        if _tarea_redes is not None:
+                            _tarea_redes.cancel()
                         return
+
+            # Se recoge lo que se mando a buscar al principio. Ya deberia estar
+            # listo; si la pasarela se ha atascado se espera lo justo y, si ni
+            # aun asi contesta, NO se compra: sin metadata no hay forma de saber
+            # si las redes son suyas, y comprar a ciegas es saltarse el filtro.
+            if _tarea_redes is not None:
+                from monitoring import redes as _redes
+
+                try:
+                    _meta = await asyncio.wait_for(_tarea_redes, timeout=1.0)
+                except (TimeoutError, asyncio.TimeoutError, asyncio.CancelledError):
+                    _tarea_redes.cancel()
+                    _meta = {}
+                _ok_redes, _motivo = _redes.evaluar(_meta)
+                if not _ok_redes:
+                    logger.info(
+                        f"Evitado {token_info.symbol}: redes no originales "
+                        f"-- {_motivo}"
+                    )
+                    return
+                logger.info(f"Redes OK {token_info.symbol}: {_motivo}")
 
             # BUNDLE DETECTOR: read the bonding curve once. A fresh pump.fun
             # token starts near 0 SOL; a *bundled* launch already holds several

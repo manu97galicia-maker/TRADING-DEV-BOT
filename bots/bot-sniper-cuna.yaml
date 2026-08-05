@@ -158,6 +158,20 @@ filters:
   # sola moneda, o sea que las que traen 6 compradores suelen traer 8.
   min_titulares: 8
 
+  # REDES SOCIALES PROPIAS (Manu, 5-ago). Se lee el JSON del `uri` que trae el
+  # propio lanzamiento y se exige que haya un enlace a una CUENTA -- no al tuit
+  # de otro -- y que esa cuenta no la haya usado ya otra moneda en 6 horas.
+  #
+  # Lo que se ve en las monedas reales es que casi todas las "redes" son un
+  # enlace al post de un tercero (x.com/Cointelegraph/status/..., un tuit de
+  # jackbutcher, etc.): el que lanza se cuelga de algo que ya tiene alcance.
+  # Eso no es la red social de la moneda.
+  #
+  # No cuesta latencia: la descarga se lanza en cuanto aparece la moneda y se
+  # recoge cuando ya han pasado los demas filtros, o sea 2-3 segundos despues.
+  redes_originales: true
+  redes_timeout: 1.5
+
   max_volumen_sol: 0
   min_vol_ventana_sol: 0
   min_holders_gmgn: 0

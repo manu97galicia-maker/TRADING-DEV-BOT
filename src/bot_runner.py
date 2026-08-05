@@ -198,6 +198,8 @@ async def start_bot(config_path: str):
             min_volumen_sol=cfg.get("filters", {}).get("min_volumen_sol", 0.0),
             min_ops=cfg.get("filters", {}).get("min_ops", 0),
             min_titulares=cfg.get("filters", {}).get("min_titulares", 0),
+            redes_originales=cfg.get("filters", {}).get("redes_originales", False),
+            redes_timeout=cfg.get("filters", {}).get("redes_timeout", 1.5),
             max_volumen_sol=cfg.get("filters", {}).get("max_volumen_sol", 0.0),
             min_vol_ventana_sol=cfg.get("filters", {}).get("min_vol_ventana_sol", 0.0),
             vol_ventana_seg=cfg.get("filters", {}).get("vol_ventana_seg", 3.0),
