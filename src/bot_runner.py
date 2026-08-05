@@ -183,6 +183,7 @@ async def start_bot(config_path: str):
             buy_on_dex_paid=cfg.get("filters", {}).get("buy_on_dex_paid"),
             # Telegram-calls acquisition mode (disabled unless present + enabled)
             telegram_calls=cfg.get("filters", {}).get("telegram_calls"),
+            discord_calls=cfg.get("filters", {}).get("discord_calls"),
             # GMGN smart-money/KOL signals (disabled unless present + enabled)
             gmgn_signals=cfg.get("filters", {}).get("gmgn_signals"),
             # Paper-trade mode: filter + record, never buy (for ROI tracking)

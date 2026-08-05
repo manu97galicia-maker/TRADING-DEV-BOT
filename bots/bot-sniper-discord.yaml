@@ -1,0 +1,106 @@
+# Compra lo que se postee en un canal de Discord.
+#
+# La senal es externa: alguien escribe un contrato y el bot compra. Por eso
+# TODOS los filtros de abajo siguen puestos -- un canal de calls es la via mas
+# directa que existe para acabar con un rug en la cartera.
+#
+# Necesita DISCORD_TOKEN en el .env. Leer un servidor donde solo eres miembro
+# exige el token de tu cuenta de usuario, y eso va contra las condiciones de
+# Discord: el riesgo es que te cierren la cuenta. Si el canal es de "Anuncios",
+# la via limpia es seguirlo desde un servidor tuyo con un bot propio y poner
+# is_bot_token: true.
+name: "DISCORD CALLS - 0.33 SOL por contrato"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: false     # se enciende a mano: en cuanto arranca gasta SOL de verdad
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.33             # lo que pidio Manu
+  buy_slippage: 0.30           # una call ya viene subiendo: hay que pagar peaje
+  sell_slippage: 0.30
+  exit_strategy: "tp_sl"
+  take_profit_percentage: 0.60       # +60%
+  take_profit_sell_percentage: 0.50  # vende la mitad ahi
+  tp2_gain: 1.5                      # +150%
+  tp2_sell: 0.30
+  tp3_gain: 3.0                      # +300%
+  tp3_sell: 0.20
+  stop_loss_percentage: 0.35         # -35%
+  max_hold_time: 900                 # 15 minutos (SEGUNDOS, no minutos)
+  price_check_interval: 2
+  extreme_fast_mode: false
+  extreme_fast_token_amount: 20
+  min_reserve_sol: 0.15              # gasolina para poder firmar las ventas
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 50_000_000     # 0.00425 SOL/tx
+  extra_percentage: 0.0
+  hard_cap: 50_000_000
+
+retries:
+  wait_after_creation: 0       # el token ya existe: no hay que esperar a nada
+  wait_after_buy: 0
+
+filters:
+  listener_type: "pumpportal"  # obligatorio en el esquema; Discord lo puentea
+  max_token_age: 0             # 0 = sin limite: las calls suelen ser de tokens ya vivos
+  match_string: null
+  bro_address: null
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false           # <<< EN VIVO (REAL). true para simular.
+
+  discord_calls:
+    enabled: true
+    # Canal del enlace que paso Manu (guild 818351761005346826).
+    channels:
+      - "1466342730061058099"
+    poll_seconds: 2
+    is_bot_token: false        # true si usas un bot propio (la via limpia)
+    suffixes: ["pump"]         # solo pump.fun; este bot no opera otras
+
+  # Los filtros NO se quitan por venir de una call. Al reves.
+  min_curve_sol: 2
+  max_holder_pct: 0.10         # mas laxo que en sniping: el token ya lleva vida
+  max_bundle_pct: 0.60         # idem: a los minutos ya hay supply repartido
+  max_dev_hold_pct: 0.05       # el dev cargado sigue siendo un dump esperando
+  min_holders: 10              # una call de verdad ya trae gente detras
+  max_entry_mc: 0              # 0 = sin tope
+  holder_bypass_ratio: 0
+
+  pumpfun_dev:
+    enabled: false             # aqui la senal es el canal, no la reputacion
+
+  buy_on_dex_paid:
+    enabled: false
+
+  dexscreener:
+    enabled: true              # esta SI: es la red de seguridad de la call
+    enforce: true
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 3000    # sin liquidez no se puede vender, da igual el resto
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 8

@@ -306,6 +306,7 @@ class UniversalTrader:
         buy_on_dex_paid: dict | None = None,
         # Telegram-calls acquisition mode (disabled unless configured)
         telegram_calls: dict | None = None,
+        discord_calls: dict | None = None,
         # GMGN smart-money/KOL signals (disabled unless configured)
         gmgn_signals: dict | None = None,
         # Paper-trade mode: filter + record, never buy
@@ -625,6 +626,7 @@ class UniversalTrader:
         self.buy_on_dex_paid = buy_on_dex_paid or {}
         # Telegram-calls acquisition mode config (off unless enabled)
         self.telegram_calls = telegram_calls or {}
+        self.discord_calls = discord_calls or {}
         # GMGN signals acquisition mode config (off unless enabled)
         self.gmgn_signals = gmgn_signals or {}
 
@@ -724,6 +726,11 @@ class UniversalTrader:
         if self.telegram_calls.get("enabled"):
             logger.info("Telegram-calls mode ENABLED (bypasses new-token listener)")
             await self._run_telegram_mode()
+            return
+
+        if self.discord_calls.get("enabled"):
+            logger.info("Discord-calls mode ENABLED (bypasses new-token listener)")
+            await self._run_discord_mode()
             return
 
         if self.gmgn_signals.get("enabled"):
@@ -958,6 +965,21 @@ class UniversalTrader:
             await source.run(self._on_dexpaid_token)
         except asyncio.CancelledError:
             logger.info("Telegram-calls mode stopped")
+
+    async def _run_discord_mode(self) -> None:
+        """Escucha las calls de Discord hasta que se interrumpa."""
+        from monitoring.discord_source import DiscordSource
+
+        source = DiscordSource(
+            self.discord_calls,
+            self.platform_implementations,
+            self.solana_client,
+            self.platform,
+        )
+        try:
+            await source.run(self._on_dexpaid_token)
+        except asyncio.CancelledError:
+            logger.info("Discord-calls mode stopped")
 
     async def _run_gmgn_mode(self) -> None:
         """Run the GMGN smart-money/KOL copy loop until interrupted."""
