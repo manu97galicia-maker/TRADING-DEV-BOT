@@ -120,6 +120,8 @@ async def start_bot(config_path: str):
             take_profit_percentage=cfg["trade"].get("take_profit_percentage"),
             stop_loss_percentage=cfg["trade"].get("stop_loss_percentage"),
             max_hold_time=cfg["trade"].get("max_hold_time"),
+            venta_muerta_seg=cfg["trade"].get("venta_muerta_seg", 0),
+            venta_muerta_gain=cfg["trade"].get("venta_muerta_gain", 0),
             # Tiered take-profit ladder (partial sells + moonbag)
             take_profit_sell_percentage=cfg["trade"].get("take_profit_sell_percentage"),
             tp2_gain=cfg["trade"].get("tp2_gain"),

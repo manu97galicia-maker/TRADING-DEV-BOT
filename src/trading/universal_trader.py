@@ -261,6 +261,10 @@ class UniversalTrader:
         take_profit_percentage: float | None = None,
         stop_loss_percentage: float | None = None,
         max_hold_time: int | None = None,
+        # MONEDA MUERTA: a los N segundos, si no sube al menos `venta_muerta_gain`,
+        # se vende entera. 0 = desactivado.
+        venta_muerta_seg: float = 0.0,
+        venta_muerta_gain: float = 0.0,
         # Tiered take-profit ladder (tier 1 = take_profit_percentage +
         # take_profit_sell_percentage; tiers 2/3 below). gain is fraction
         # above entry (x2 = 1.0), sell is fraction of the original position.
@@ -498,6 +502,8 @@ class UniversalTrader:
         self.take_profit_percentage = take_profit_percentage
         self.stop_loss_percentage = stop_loss_percentage
         self.max_hold_time = max_hold_time
+        self.venta_muerta_seg = float(venta_muerta_seg or 0)
+        self.venta_muerta_gain = float(venta_muerta_gain or 0)
         self.price_check_interval = price_check_interval
         # Build the take-profit ladder. Tier 1 sells take_profit_sell_percentage
         # (default 100% for backward compatibility) at take_profit_percentage.
@@ -1663,6 +1669,22 @@ class UniversalTrader:
                     _redes.leer(token_info.uri, self.redes_timeout)
                 )
 
+            # El historial del creador, igual: se pide AQUI aunque no se mire
+            # hasta el final. La comprobacion vive mas abajo, despues de la
+            # edad maxima, asi que si se pidiera alli sumaria su tiempo a los 3
+            # segundos y la moneda se caeria por vieja. Pidiendola ahora, para
+            # cuando toca decidir ya esta en la cache y no cuesta nada. La
+            # respuesta se cachea 10 min por creador, asi que un dev que
+            # relanza no se vuelve a consultar.
+            if self.pumpfun_dev.get("enabled"):
+                _dev0 = getattr(token_info, "creator", None) or getattr(
+                    token_info, "user", None
+                )
+                if _dev0:
+                    from monitoring.pumpfun_dev import creator_migration_stats
+
+                    asyncio.ensure_future(creator_migration_stats(str(_dev0)))
+
             if self.max_buy_age > 0 and (
                 self.min_volumen_sol > 0
                 or self.min_entry_mc > 0
@@ -2502,6 +2524,7 @@ class UniversalTrader:
         realized_sol = 0.0
         cost_sol = original_qty * entry_price
         last_price = entry_price
+        _muerta_revisada = False
 
         while remaining > 1e-9:
             if (monotonic() - start) >= abandon_after:
@@ -2692,6 +2715,45 @@ class UniversalTrader:
                 # llegar al TP1 no se vendía y acababa ABANDONADA sin vender al tocar
                 # el tope de abandono (bolsa huérfana en ganancias). El moonbag sigue
                 # libre igualmente.
+                # MONEDA MUERTA. Distinto del tope de tiempo: aquel espera al
+                # final por si arranca, y esto corta antes si a los N segundos
+                # no ha hecho NADA. Sin esto, con `max_hold_time` largo (que
+                # hace falta para que un ganador llegue al +400%) una moneda que
+                # nace plana se queda ocupando la posicion media hora.
+                #
+                # Se mira UNA sola vez, al cumplirse el plazo: si en ese momento
+                # va por encima del umbral se la deja correr y ya no se vuelve a
+                # preguntar, porque a partir de ahi mandan los take-profit.
+                if (
+                    self.venta_muerta_seg > 0
+                    and not _muerta_revisada
+                    and (monotonic() - start) >= self.venta_muerta_seg
+                ):
+                    _muerta_revisada = True
+                    _sube = (price / entry_price - 1) if entry_price else 0.0
+                    if _sube < self.venta_muerta_gain:
+                        logger.info(
+                            f"MUERTA {token_info.symbol}: {_sube * 100:+.0f}% a los "
+                            f"{self.venta_muerta_seg:.0f}s (hace falta "
+                            f"{self.venta_muerta_gain * 100:+.0f}%) -> se vende todo"
+                        )
+                        if await self._sell_amount(
+                            token_info, remaining, price, "muerta"
+                        ):
+                            realized_sol += remaining * price
+                            remaining = 0.0
+                            fully_exited = True
+                            break
+                        logger.warning(
+                            "Venta por muerta fallo en %s; lo reintenta el bucle",
+                            token_info.symbol,
+                        )
+                    else:
+                        logger.info(
+                            f"VIVA {token_info.symbol}: {_sube * 100:+.0f}% a los "
+                            f"{self.venta_muerta_seg:.0f}s -> se deja correr"
+                        )
+
                 if (
                     self.max_hold_time
                     and (monotonic() - start) >= self.max_hold_time

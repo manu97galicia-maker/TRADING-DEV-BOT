@@ -1,0 +1,177 @@
+# DEV10 — creadores que migran el 10% o mas, entrada en los 3 primeros segundos
+#
+# La mas simple de todas: no mira volumen, ni transacciones, ni titulares, ni
+# redes. La unica pregunta es QUIEN LANZA. Si ese creador ha llevado el 10% o
+# mas de sus monedas hasta el final de la curva, se compra; si no, no.
+#
+# EMPEZO EN 30% Y NO COMPRABA NADA: medido en vivo sobre 164 lanzamientos
+# seguidos (5-ago), CERO traian un dev con esa tasa. El reparto real era:
+#
+#   72,0%  menos de 3 migraciones en toda su historia
+#   23,2%  la API no tiene historial de ese dev (wallet nueva)
+#    4,9%  3+ migraciones pero por debajo del 30%
+#    0,0%  <- lo que habria comprado
+#
+# Bajado al 10% por eso.
+#
+# El historial sale de la API de pump.fun (`?creator=<wallet>`), que devuelve
+# todas sus monedas con la marca `complete` de las que migraron. Se calcula en
+# vivo, no es una lista cerrada de wallets: la lista se queda vieja en dias y
+# la tasa se recalcula sola.
+#
+# min_migrations 3 esta para tapar el falso positivo obvio: un dev con 1
+# lanzamiento y 1 migracion marca 100% y no significa nada.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# COMO CABE LA CONSULTA EN 3 SEGUNDOS
+# ─────────────────────────────────────────────────────────────────────────────
+# La comprobacion del dev vive despues del corte de edad, asi que si se pidiera
+# alli sumaria su tiempo a los 3 segundos y la moneda se caeria por vieja. Se
+# pide en cuanto aparece la moneda y se recoge al decidir, cuando ya esta en la
+# cache. Ademas se cachea 10 minutos por creador: estos devs relanzan sin parar,
+# asi que a partir de la segunda moneda del mismo dev la respuesta es inmediata.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# LO QUE HAY QUE ESPERAR
+# ─────────────────────────────────────────────────────────────────────────────
+# POCAS operaciones. Los creadores con esa tasa son una minoria pequena, asi
+# que puede pasar mucho rato sin una sola compra. Eso es lo que se ha pedido:
+# el filtro no es el mercado, es la persona.
+
+name: "DEV10 - dev migra 10%+ , entrada en 3s"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.20
+  buy_slippage: 0.15
+  sell_slippage: 0.90
+
+  exit_strategy: "tp_sl"
+  # La misma escalera que CUNA: +100% la mitad, +200% un cuarto, +400% el otro
+  # cuarto. 50 + 25 + 25 = 100%, sin bolsa que se quede colgada.
+  take_profit_percentage: 1.00
+  take_profit_sell_percentage: 0.50
+  tp2_gain: 2.00
+  tp2_sell: 0.25
+  tp3_gain: 4.00
+  tp3_sell: 0.25
+  tp4_gain: 0
+  tp4_sell: 0
+
+  # ANTI-RUG: sale entera si en 4 s se vende el doble de lo que se compra. Es
+  # la unica proteccion que queda al no haber stop, y con estos devs hace falta
+  # -- migrar el 10% tambien significa no migrar el 90%.
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+
+  # 0.95 = practicamente sin stop, igual que CUNA. No se pone 0 porque el bot
+  # lo leeria como "vender ya".
+  stop_loss_percentage: 0.95
+
+  # MONEDA MUERTA A LOS 2 MINUTOS. Se mira UNA vez, a los 120 s: si en ese
+  # momento no esta por encima de la entrada, se vende entera y se libera la
+  # posicion. Si va en verde se la deja correr y ya no se vuelve a preguntar:
+  # a partir de ahi mandan los take-profit.
+  #
+  # No es lo mismo que `max_hold_time`, que espera al final por si arranca.
+  # Hacen falta los dos: el tope largo es para que un ganador tenga tiempo de
+  # llegar al +400%, y este corta a las que nacen planas para que no ocupen la
+  # posicion media hora.
+  venta_muerta_seg: 120
+  venta_muerta_gain: 0.0
+
+  # 30 minutos: el tercer escalon (+400%) es donde vive la migracion, y
+  # completar una curva no pasa en diez minutos.
+  max_hold_time: 1800
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.05
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  # 50M = 0,00425 SOL, el 2,1% de una posicion de 0,20. Aqui si compensa pagar por
+  # llegar antes: como dispara poco, perder una entrada cuesta mas que la
+  # comision, y quien filtre por el mismo dev va a estar compitiendo.
+  fixed_amount: 50_000_000
+  extra_percentage: 0.0
+  hard_cap: 50_000_000
+
+retries:
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 60
+  max_buy_age: 3              # "primeros tres segundos"
+
+  match_string: null
+  bro_address: null
+
+  # EL UNICO FILTRO QUE DECIDE.
+  pumpfun_dev:
+    enabled: true
+    min_rate: 0.10
+    min_migrations: 3
+
+  allow_mayhem: false
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false          # DINERO REAL
+
+  min_entry_mc: 2000          # el suelo real de pump.fun es $2.040
+  max_entry_mc: 3300          # tope de compra 3,3K
+  min_curve_sol: 0
+
+  # Todo lo demas apagado a proposito: la senal es el dev.
+  min_volumen_sol: 0
+  max_volumen_sol: 0
+  min_vol_ventana_sol: 0
+  min_ops: 0
+  min_titulares: 0
+  redes_originales: false
+  min_holders_gmgn: 0
+  senal_gmgn: []
+
+  # Estos devs relanzan la misma moneda una y otra vez; comprar tres clones
+  # seguidos es pagar tres veces por la misma apuesta.
+  no_repeat_name_min: 5
+  max_holder_pct: 0.0
+  max_dev_hold_pct: 0.0
+  min_holders: 0
+  holder_bypass_ratio: 0
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 15
