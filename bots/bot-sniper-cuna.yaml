@@ -110,19 +110,24 @@ filters:
   # Sin titulares ni señal: a los 3 segundos GMGN no conoce a 1 de cada 3
   # monedas y la señal aun no ha saltado. El volumen si vale porque lo cuenta
   # el propio bot de la cadena, en el instante.
-  # 19 SOL = ~$1.400 movidos en esos 3 segundos (Manu, 5-ago).
+  # 10 SOL = ~$730 movidos en esos 3 segundos.
   #
-  # Medido en vivo sobre 123 lanzamientos seguidos (5-ago, 7 min), a los 3 s:
-  # el volumen MEDIANO es 1,00 SOL y solo el 18,7% pasa de 14 SOL. Con 19 se
-  # queda en torno al 12%.
+  # Manu pidio 19 SOL (~1,4K) con el techo en $2.800, y esos dos numeros son
+  # incompatibles: en una bonding curve el volumen y el market cap son la misma
+  # magnitud, asi que 19 SOL de compras dejan la curva en $4.390, por encima
+  # del techo. Lo unico que puede tener 19 SOL de volumen y seguir por debajo
+  # de $2.800 es una moneda donde un tercio largo del movimiento ya son VENTAS.
   #
-  # OJO AL CHOQUE CON EL TECHO DE $2.800: en una bonding curve el volumen y el
-  # market cap son la misma magnitud. Si esos 19 SOL fueran todo compras, la
-  # curva queda en $4.390 -- por encima del techo. Para estar en 19 SOL de
-  # volumen Y por debajo de $2.800 hace falta que un tercio largo de ese
-  # movimiento sean VENTAS. De las 123 medidas, ninguna de las 12 mas movidas
-  # cumplia las dos cosas: las de 22-42 SOL estaban todas en $3.000-$6.300.
-  min_volumen_sol: 19
+  # Medido en vivo sobre 242 lanzamientos seguidos (5-ago, 10 min), a los 3 s
+  # y con el resto de filtros puestos (8 tx, 5 titulares, MC <= 2.800):
+  #
+  #   volumen >= 19 SOL ....  0 de 242   (0,0%)  <- no compraria nunca
+  #   volumen >= 14 SOL ....  2 de 242   (0,8%)
+  #   volumen >= 10 SOL ....  4 de 242   (1,7%)  <- puesto
+  #   volumen >=  6 SOL ....  7 de 242   (2,9%)
+  #
+  # Manu elige mantener el techo barato y bajar el volumen (5-ago).
+  min_volumen_sol: 10
 
   # 6 TRANSACCIONES MINIMAS, tambien si van en bundle en el primer bloque: el
   # bot lee cada TradeEvent del log por separado, asi que un bundle de 6 cuenta
