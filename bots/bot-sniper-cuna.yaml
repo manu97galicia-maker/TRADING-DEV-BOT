@@ -103,8 +103,11 @@ filters:
   yolo_mode: true
   paper_trade: false          # DINERO REAL
 
+  # Banda 2-3K (Manu, 5-ago). El suelo de 2.000 no recorta nada: el market cap
+  # minimo posible en pump.fun es $2.040 (curva vacia), asi que quien manda es
+  # el techo.
   min_entry_mc: 2000
-  max_entry_mc: 2800         # "comprar por debajo de 2,8K" (Manu, 5-ago)
+  max_entry_mc: 3000
   min_curve_sol: 0
 
   # Sin titulares ni señal: a los 3 segundos GMGN no conoce a 1 de cada 3
@@ -138,11 +141,22 @@ filters:
   # que cierra el grifo.
   min_ops: 8
 
-  # 5 TITULARES: wallets distintas cuyas compras superan a sus ventas, contadas
+  # 8 TITULARES: wallets distintas cuyas compras superan a sus ventas, contadas
   # del mismo stream. No se usa GMGN aqui a proposito: tarda 1,3 s y a los 3
   # segundos de vida no conoce a 1 de cada 3 monedas, o sea que llegaria tarde
   # y ademas fallaria. Esto cuesta cero y esta disponible en el instante.
-  min_titulares: 5
+  #
+  # Medido sobre 242 lanzamientos con el resto de filtros puestos, subir de 5 a
+  # 8 titulares cuesta poco y a partir de ahi se cae en picado:
+  #
+  #   >=  5 titulares ....  5 de 242  (2,1%)
+  #   >=  8 titulares ....  3 de 242  (1,2%)   <- puesto
+  #   >= 10 titulares ....  1 de 242  (0,4%)
+  #   >= 12 titulares ....  0 de 242  (0,0%)
+  #
+  # 8 es el ultimo escalon que no vacia el filtro: de 6 a 8 no se pierde ni una
+  # sola moneda, o sea que las que traen 6 compradores suelen traer 8.
+  min_titulares: 8
 
   max_volumen_sol: 0
   min_vol_ventana_sol: 0
