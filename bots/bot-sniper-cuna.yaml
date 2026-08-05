@@ -110,18 +110,28 @@ filters:
   # Sin titulares ni señal: a los 3 segundos GMGN no conoce a 1 de cada 3
   # monedas y la señal aun no ha saltado. El volumen si vale porque lo cuenta
   # el propio bot de la cadena, en el instante.
-  # 14 SOL = ~$1.000 movidos en esos 3 segundos. Es exigente: medido sobre 261
-  # monedas, a los 3 s el volumen MEDIANO es 1,81 SOL y solo el 8% pasaba de 28.
-  # Con 14 estaras cogiendo alrededor del 15-20% de los lanzamientos, que ademas
-  # es justo lo que evita pagar comisiones por las que nacen muertas.
-  min_volumen_sol: 14
+  # 19 SOL = ~$1.400 movidos en esos 3 segundos (Manu, 5-ago).
+  #
+  # Medido en vivo sobre 123 lanzamientos seguidos (5-ago, 7 min), a los 3 s:
+  # el volumen MEDIANO es 1,00 SOL y solo el 18,7% pasa de 14 SOL. Con 19 se
+  # queda en torno al 12%.
+  #
+  # OJO AL CHOQUE CON EL TECHO DE $2.800: en una bonding curve el volumen y el
+  # market cap son la misma magnitud. Si esos 19 SOL fueran todo compras, la
+  # curva queda en $4.390 -- por encima del techo. Para estar en 19 SOL de
+  # volumen Y por debajo de $2.800 hace falta que un tercio largo de ese
+  # movimiento sean VENTAS. De las 123 medidas, ninguna de las 12 mas movidas
+  # cumplia las dos cosas: las de 22-42 SOL estaban todas en $3.000-$6.300.
+  min_volumen_sol: 19
 
   # 6 TRANSACCIONES MINIMAS, tambien si van en bundle en el primer bloque: el
   # bot lee cada TradeEvent del log por separado, asi que un bundle de 6 cuenta
   # como 6. Esto es lo que separa "14 SOL movidos" de "14 SOL que se metio el
   # creador el solo en una compra" -- el segundo caso pasa el filtro de dinero
-  # sin que haya entrado nadie.
-  min_ops: 6
+  # sin que haya entrado nadie. Medido: el 30% de los lanzamientos llega a 6 tx
+  # en 3 s y el 24% a 6 tx + 5 titulares, asi que este par por si solo no es lo
+  # que cierra el grifo.
+  min_ops: 8
 
   # 5 TITULARES: wallets distintas cuyas compras superan a sus ventas, contadas
   # del mismo stream. No se usa GMGN aqui a proposito: tarda 1,3 s y a los 3

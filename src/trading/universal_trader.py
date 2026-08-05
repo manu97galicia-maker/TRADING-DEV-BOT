@@ -1665,8 +1665,17 @@ class UniversalTrader:
                 # segundo 1, se compra al segundo 1. Solo se duerme cuando NO
                 # cumple, nunca antes de mirar.
                 while monotonic() - _t0 < self.max_buy_age:
+                    # Los tres se leen SIEMPRE, aunque el primero ya descarte:
+                    # los tres salen del mismo diccionario en memoria y no
+                    # cuestan nada, y si solo se midiera hasta el que falla, el
+                    # aviso de descarte diria "0 tx" en todas y no habria forma
+                    # de saber cual es el filtro que sobra.
                     _v = _vol_sol(str(token_info.mint))
+                    _o = _n_ops(str(token_info.mint))
+                    _h = _n_tit(str(token_info.mint))
                     _visto_vol = max(_visto_vol, _v)
+                    _visto_ops = max(_visto_ops, _o)
+                    _visto_tit = max(_visto_tit, _h)
                     if self.min_volumen_sol > 0 and _v < self.min_volumen_sol:
                         await asyncio.sleep(_paso)
                         continue
@@ -1674,18 +1683,12 @@ class UniversalTrader:
                     # movido; esto dice entre cuantas manos. Una moneda con el
                     # volumen hecho de una sola compra del creador cumple el
                     # filtro de dinero y no significa nada.
-                    if self.min_ops > 0:
-                        _o = _n_ops(str(token_info.mint))
-                        _visto_ops = max(_visto_ops, _o)
-                        if _o < self.min_ops:
-                            await asyncio.sleep(_paso)
-                            continue
-                    if self.min_titulares > 0:
-                        _h = _n_tit(str(token_info.mint))
-                        _visto_tit = max(_visto_tit, _h)
-                        if _h < self.min_titulares:
-                            await asyncio.sleep(_paso)
-                            continue
+                    if self.min_ops > 0 and _o < self.min_ops:
+                        await asyncio.sleep(_paso)
+                        continue
+                    if self.min_titulares > 0 and _h < self.min_titulares:
+                        await asyncio.sleep(_paso)
+                        continue
                     # Aceleracion: no basta con haber movido mucho en total,
                     # tiene que estar moviendose AHORA.
                     if self.min_vol_ventana_sol > 0:
