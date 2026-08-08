@@ -55,8 +55,8 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: false
-  # Panel GMGN: MKT Cap $2.5K-$4.5K.
-  min_entry_mc: 2500
+  # Panel GMGN: MKT Cap $1.9K-$4.5K.
+  min_entry_mc: 1900
   max_entry_mc: 4500
   require_zero_initial_holders: false
   min_holders: 10
