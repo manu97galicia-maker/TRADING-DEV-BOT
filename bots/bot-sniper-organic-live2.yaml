@@ -30,12 +30,14 @@ trade:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  fixed_amount: 5000000
+  # 1M micro-lamports/CU: prioridad moderada sin pagar el sobrecoste anterior
+  # de 5M. El hard cap impide que esta estrategia lo supere.
+  fixed_amount: 1000000
   extra_percentage: 0.0
-  hard_cap: 5000000
+  hard_cap: 1000000
 
 retries:
-  max_attempts: 3
+  max_attempts: 2
   wait_after_creation: 0
   wait_after_buy: 0
   wait_before_new_token: 0
