@@ -54,9 +54,9 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: false
-  # Entrada solicitada: MKT Cap $1.9K-$2.8K.
+  # Entrada solicitada: MKT Cap $1.9K-$2.7K.
   min_entry_mc: 1900
-  max_entry_mc: 2800
+  max_entry_mc: 2700
   require_zero_initial_holders: false
   min_holders: 4
   min_titulares: 4
