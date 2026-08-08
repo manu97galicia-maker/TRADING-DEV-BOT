@@ -114,6 +114,11 @@ def operaciones(mint: str) -> int:
     return len(_ops.get(mint) or ())
 
 
+def compras(mint: str) -> int:
+    """Numero de compras vistas en esa moneda, sin contar ventas."""
+    return sum(1 for _t, _s, es_compra, _w in (_ops.get(mint) or ()) if es_compra)
+
+
 def titulares(mint: str) -> int:
     """Wallets distintas que han comprado y todavia no han soltado.
 

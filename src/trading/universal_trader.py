@@ -363,6 +363,9 @@ class UniversalTrader:
         # dentro: el volumen suma compras Y ventas, asi que puede ser varias
         # veces mayor y no lo limita el techo de market cap.
         min_volumen_sol: float = 0.0,
+        # COMPRAS minimas antes de entrar. A diferencia de `min_ops`, no cuenta
+        # las ventas, por lo que reproduce el campo "Buys" de GMGN.
+        min_buys: int = 0,
         # TRANSACCIONES minimas antes de comprar, contadas del stream de logs.
         # Cuenta cada TradeEvent por separado, tambien los que entran juntos en
         # el primer bloque (un bundle son N transacciones y aqui salen como N,
@@ -640,6 +643,7 @@ class UniversalTrader:
         self.holder_bypass_ratio = float(holder_bypass_ratio or 0)
         self.min_holders_gmgn = int(min_holders_gmgn or 0)
         self.min_volumen_sol = float(min_volumen_sol or 0)
+        self.min_buys = int(min_buys or 0)
         self.min_ops = int(min_ops or 0)
         self.min_titulares = int(min_titulares or 0)
         self.redes_originales = bool(redes_originales)
@@ -1781,17 +1785,19 @@ class UniversalTrader:
             if self.max_buy_age > 0 and (
                 self.min_volumen_sol > 0
                 or self.min_entry_mc > 0
+                or self.min_buys > 0
                 or self.min_ops > 0
                 or self.min_titulares > 0
             ):
                 from monitoring.volumen import operaciones as _n_ops
+                from monitoring.volumen import compras as _n_buys
                 from monitoring.volumen import titulares as _n_tit
                 from monitoring.volumen import volumen_sol as _vol_sol
 
                 _nacida = self.token_timestamps.get(str(token_info.mint))
                 _t0 = _nacida if _nacida is not None else monotonic()
                 _visto_vol = 0.0
-                _visto_ops = _visto_tit = 0
+                _visto_buys = _visto_ops = _visto_tit = 0
                 # Ventana corta: mirar cada medio segundo se come casi la mitad
                 # de una ventana de 3 s. Con 0,15 s se comprueba ~20 veces y se
                 # compra en el instante en que cumple.
@@ -1807,11 +1813,16 @@ class UniversalTrader:
                     # de saber cual es el filtro que sobra.
                     _v = _vol_sol(str(token_info.mint))
                     _o = _n_ops(str(token_info.mint))
+                    _b = _n_buys(str(token_info.mint))
                     _h = _n_tit(str(token_info.mint))
                     _visto_vol = max(_visto_vol, _v)
+                    _visto_buys = max(_visto_buys, _b)
                     _visto_ops = max(_visto_ops, _o)
                     _visto_tit = max(_visto_tit, _h)
                     if self.min_volumen_sol > 0 and _v < self.min_volumen_sol:
+                        await asyncio.sleep(_paso)
+                        continue
+                    if self.min_buys > 0 and _b < self.min_buys:
                         await asyncio.sleep(_paso)
                         continue
                     # PARTICIPACION. El volumen solo dice cuanto dinero se ha
@@ -1858,6 +1869,7 @@ class UniversalTrader:
                     )
                     logger.info(
                         f"CUMPLE {token_info.symbol}: {_v:.1f} SOL en "
+                        f"{_n_buys(str(token_info.mint))} compras, "
                         f"{_n_ops(str(token_info.mint))} tx de "
                         f"{_n_tit(str(token_info.mint))} wallets, MC ${_mc:,.0f} "
                         f"a los {monotonic() - _t0:.1f}s{_acel}"
@@ -1869,7 +1881,8 @@ class UniversalTrader:
                     logger.info(
                         f"Evitado {token_info.symbol}: no cumplio en "
                         f"{self.max_buy_age:.0f}s (lo mejor visto: "
-                        f"{_visto_vol:.1f} SOL, {_visto_ops} tx, "
+                        f"{_visto_vol:.1f} SOL, {_visto_buys} compras, "
+                        f"{_visto_ops} tx, "
                         f"{_visto_tit} titulares)"
                     )
                     if _tarea_redes is not None:
