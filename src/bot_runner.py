@@ -187,6 +187,9 @@ async def start_bot(config_path: str):
             gmgn_signals=cfg.get("filters", {}).get("gmgn_signals"),
             # Paper-trade mode: filter + record, never buy (for ROI tracking)
             paper_trade=cfg.get("filters", {}).get("paper_trade", False),
+            # Safe point-in-time simulator. When enabled it owns the candidate
+            # path and always returns before any buy transaction is constructed.
+            paper_trading_config=cfg.get("paper_trading"),
             # Bundle detector: min SOL in the bonding curve to consider a buy
             min_curve_sol=cfg.get("filters", {}).get("min_curve_sol", 0.0),
             max_entry_mc=cfg.get("filters", {}).get("max_entry_mc", 0.0),
@@ -421,7 +424,7 @@ def run_all_bots():
             for f, r in zip(en_proceso, res, strict=False):
                 if isinstance(r, Exception):
                     logging.error(f"Bot {f} murio: {r!r}")
-    
+
         asyncio.run(_todos())
 
     for p in processes:

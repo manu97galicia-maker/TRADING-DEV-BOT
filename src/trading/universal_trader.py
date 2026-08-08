@@ -310,6 +310,8 @@ class UniversalTrader:
         gmgn_signals: dict | None = None,
         # Paper-trade mode: filter + record, never buy
         paper_trade: bool = False,
+        # New safe simulator configuration; disabled unless explicitly enabled.
+        paper_trading_config: dict | None = None,
         # Bundle detector: min SOL already in the bonding curve to consider a buy
         min_curve_sol: float = 0.0,
         # Tope de market cap (USD) al entrar: no comprar si la moneda ya está
@@ -618,6 +620,9 @@ class UniversalTrader:
         # Reserva mínima de SOL que nunca se gasta (para fees / no quedarse a 0).
         self.min_reserve_lamports = int(float(min_reserve_sol or 0.03) * LAMPORTS_PER_SOL)
         self.paper_watch_secs = int(paper_watch_secs or 300)
+        from paper_trading import PaperTradingEngine
+
+        self.paper_engine = PaperTradingEngine(paper_trading_config)
 
         # DexScreener buy filter (no-op unless enabled in config)
         self.dex_filter = DexScreenerFilter(dexscreener_config)
@@ -1826,7 +1831,12 @@ class UniversalTrader:
             # ~4.3 + ~11.2 SOL). Those are the launches that actually pump, and
             # they rotate the dev wallet so dev-history filters never catch them.
             curve_sol = entry_price = 0.0
-            if self.min_curve_sol > 0 or self.paper_trade or self.max_entry_mc > 0:
+            if (
+                self.min_curve_sol > 0
+                or self.paper_trade
+                or self.paper_engine.enabled
+                or self.max_entry_mc > 0
+            ):
                 try:
                     # commitment="processed" OBLIGATORIO. El cliente se crea sin
                     # commitment y solana-py usa "finalized" por defecto, que va
@@ -1837,12 +1847,56 @@ class UniversalTrader:
                     state = await self.platform_implementations.curve_manager.get_pool_state(
                         token_info.bonding_curve, commitment="processed"
                     )
-                    curve_sol = float(state.get("real_sol_reserves", 0)) / LAMPORTS_PER_SOL
+                    curve_sol = (
+                        float(state.get("real_sol_reserves", 0)) / LAMPORTS_PER_SOL
+                    )
                     entry_price = float(state.get("price_per_token") or 0)
                 except Exception:
                     if self.min_curve_sol > 0:
                         logger.info(f"{token_info.symbol}: curva ilegible; se omite")
                         return
+
+            # Dedicated simulation mode. It is intentionally an early-return
+            # branch: enabled means every candidate is either observed or
+            # rejected here, and no real buyer/transaction path is reachable.
+            if self.paper_engine.enabled:
+                from paper_trading.models import Candidate
+
+                creator = str(
+                    getattr(token_info, "creator", None) or token_info.user or ""
+                )
+                entry_mc = entry_price * _PUMP_TOTAL_SUPPLY * _SOL_USD
+                features = {}
+                try:
+                    from monitoring.volumen import operaciones, volumen_sol
+
+                    features["volume"] = volumen_sol(str(token_info.mint))
+                    # This feed counts transactions, not unique wallets. Keep
+                    # the honest name so the optimizer never mistakes it for
+                    # the optional `buyers` feature.
+                    features["operations"] = operaciones(str(token_info.mint))
+                except Exception:  # noqa: BLE001 - optional point-in-time features
+                    pass
+
+                async def _paper_market_cap() -> float:
+                    state = await self.platform_implementations.curve_manager.get_pool_state(
+                        token_info.bonding_curve, commitment="processed"
+                    )
+                    price = float(state.get("price_per_token") or 0)
+                    return price * _PUMP_TOTAL_SUPPLY * _SOL_USD
+
+                await self.paper_engine.consider(
+                    Candidate(
+                        signal_ts=datetime.utcnow().timestamp(),
+                        mint=str(token_info.mint),
+                        symbol=(token_info.symbol or "").strip(),
+                        dev=creator,
+                        market_cap=entry_mc,
+                        features=features,
+                    ),
+                    _paper_market_cap,
+                )
+                return
 
             # OPORTUNIDAD: aviso TEMPRANO al feed de Telegram (antes de los filtros
             # de compra) para lanzamientos frescos de devs de la lista.

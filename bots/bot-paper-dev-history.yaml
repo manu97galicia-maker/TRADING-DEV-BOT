@@ -1,0 +1,58 @@
+name: "PAPER dev history <$4K"
+enabled: true
+platform: "pump_fun"
+env_file: "../.env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+trade:
+  buy_amount: 0.25
+  buy_slippage: 0.0
+  sell_slippage: 0.0
+  exit_strategy: "manual"
+
+filters:
+  listener_type: "pumpportal"
+  max_token_age: 0.001
+  paper_trade: true
+  # Lista híbrida/combinada de devs sólidos solicitada por Manu.
+  bro_address: "top_devs_gemas_mas.json"
+  yolo_mode: true
+
+# This subsystem cannot submit transactions. `real_trading: true` is rejected.
+paper_trading:
+  enabled: true
+  real_trading: false
+  starting_capital_sol: 2.0
+  trade_size_sol: 0.25
+  database: "paper_trades/dev_history.sqlite3"
+  # Fotografía congelada antes de iniciar: no incorpora resultados futuros.
+  dev_history: "top_devs_gemas_mas.json"
+  aggregate_peak_field: "median_peak"
+  history_metric_label: "mediana"
+  max_entry_mc: 4000
+  min_dev_mean_mc: 12000
+  min_dev_launches: 5
+  checkpoints: [60, 180, 300, 600, 1800]
+  poll_seconds: 5
+  tp_sl_pairs:
+    - {tp: 0.25, sl: 0.15}
+    - {tp: 0.50, sl: 0.20}
+    - {tp: 1.00, sl: 0.30}
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: false
+  fixed_amount: 0
+  extra_percentage: 0.0
+  hard_cap: 0
+
+retries:
+  max_attempts: 3
+  wait_after_creation: 0
+  wait_after_buy: 0
+  wait_before_new_token: 0
+
+cleanup:
+  mode: "disabled"
