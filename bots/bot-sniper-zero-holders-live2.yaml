@@ -63,7 +63,7 @@ filters:
   min_ops: 0
   min_buys: 4
   # Volumen negociado minimo solicitado, medido directamente en el stream.
-  min_volumen_sol: 9.9
+  min_volumen_sol: 7
   min_vol_ventana_sol: 0
   vol_ventana_seg: 3
   min_curve_sol: 2
