@@ -12,8 +12,9 @@ trade:
   buy_amount: 0.35
   buy_slippage: 0.30
   sell_slippage: 0.30
-  min_reserve_sol: 0.04
-  max_real_buys: 2
+  # Sin límite de operaciones; deja siempre 2 SOL intocables.
+  min_reserve_sol: 2.0
+  max_real_buys: 0
   exit_strategy: "tp_sl"
   take_profit_percentage: 0.40
   # Al +40% vende 75%. Del 25% restante vende 12.5% del original a MC $50K,
