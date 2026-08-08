@@ -590,6 +590,9 @@ class UniversalTrader:
         # concurrent buys can never both pass on the same balance (TOCTOU-safe).
         self._spend_lock = asyncio.Lock()
         self._reserved_lamports = 0
+        # Real-buy slots reserved by concurrent candidates. Without this, four
+        # tokens can all observe 0 completed buys before the first confirms.
+        self._reserved_real_buy_slots = 0
         self._fee_headroom_lamports = 3_000_000  # ~0.003 SOL: fees + ATA rent
 
         # Paper-trade: on filter PASS, record the candidate and skip the real buy.
@@ -2184,6 +2187,20 @@ class UniversalTrader:
                     self.buy_amount * (1 + self.buy_slippage) * LAMPORTS_PER_SOL
                 ) + self._fee_headroom_lamports
                 async with self._spend_lock:
+                    if (
+                        self.max_real_buys
+                        and len(self.bought_mints) + self._reserved_real_buy_slots
+                        >= self.max_real_buys
+                    ):
+                        logger.warning(
+                            "Limite de prueba reservado/alcanzado: %s completadas + "
+                            "%s en curso / %s; %s no se compra",
+                            len(self.bought_mints),
+                            self._reserved_real_buy_slots,
+                            self.max_real_buys,
+                            token_info.symbol,
+                        )
+                        return
                     bal = await self.solana_client.get_sol_balance(self.wallet.pubkey)
                     # Nunca gastar por debajo de la reserva mínima (min_reserve).
                     free = bal - self._reserved_lamports - self.min_reserve_lamports
@@ -2195,6 +2212,7 @@ class UniversalTrader:
                         )
                         return
                     self._reserved_lamports += need
+                    self._reserved_real_buy_slots += 1
                 try:
                     # Buy token
                     logger.info(
@@ -2212,6 +2230,9 @@ class UniversalTrader:
                 finally:
                     async with self._spend_lock:
                         self._reserved_lamports -= need
+                        self._reserved_real_buy_slots = max(
+                            0, self._reserved_real_buy_slots - 1
+                        )
 
             # Only wait for next token in yolo mode
             if self.yolo_mode:

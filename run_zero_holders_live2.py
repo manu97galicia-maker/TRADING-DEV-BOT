@@ -9,7 +9,15 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 from bot_runner import start_bot  # noqa: E402
+from monitoring.notifier import notify  # noqa: E402
 
 
 if __name__ == "__main__":
+    notify(
+        "🔴 <b>ZERO-HOLDERS ACTIVO</b>\n"
+        "Dinero real · máximo 2 compras totales\n"
+        "0.05 SOL/operación · reserva 0.04 SOL\n"
+        "Entrada &lt;$3K y ≤5s · exactamente 0 holders externos\n"
+        "Venta 100% al +40% · SL -38% · slippage 30%"
+    )
     asyncio.run(start_bot("bots/bot-sniper-zero-holders-live2.yaml"))
