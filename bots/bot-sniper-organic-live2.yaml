@@ -59,11 +59,11 @@ filters:
   paper_trade: false
   max_entry_mc: 5100
   min_curve_sol: 2
-  min_holders: 5
-  min_titulares: 5
+  min_holders: 10
+  min_titulares: 10
   min_ops: 8
-  min_volumen_sol: 10
-  min_vol_ventana_sol: 2
+  min_volumen_sol: 14
+  min_vol_ventana_sol: 3
   vol_ventana_seg: 3
   max_holder_pct: 0.05
   max_bundle_pct: 0.30
