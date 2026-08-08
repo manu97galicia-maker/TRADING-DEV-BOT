@@ -16,7 +16,8 @@ trade:
   max_real_buys: 2
   exit_strategy: "tp_sl"
   take_profit_percentage: 0.40
-  take_profit_sell_percentage: 1.0
+  # Al +40% vende el 90% y conserva un moonbag del 10%.
+  take_profit_sell_percentage: 0.90
   stop_loss_percentage: 0.38
   max_hold_time: 90
   price_check_interval: 1

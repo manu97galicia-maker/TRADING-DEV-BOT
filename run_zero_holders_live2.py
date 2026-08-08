@@ -18,6 +18,6 @@ if __name__ == "__main__":
         "Dinero real · máximo 2 compras totales\n"
         "0.05 SOL/operación · reserva 0.04 SOL\n"
         "Entrada &lt;$3K y ≤5s · exactamente 0 holders externos\n"
-        "Venta 100% al +40% · SL -38% · slippage 30%"
+        "Venta 90% al +40% · conserva 10% · SL -38% · slippage 30%"
     )
     asyncio.run(start_bot("bots/bot-sniper-zero-holders-live2.yaml"))
