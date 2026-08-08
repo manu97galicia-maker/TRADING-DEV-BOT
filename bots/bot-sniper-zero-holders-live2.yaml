@@ -55,7 +55,7 @@ filters:
   yolo_mode: true
   paper_trade: false
   min_entry_mc: 0
-  max_entry_mc: 3500
+  max_entry_mc: 2800
   require_zero_initial_holders: false
   min_holders: 10
   min_titulares: 10
