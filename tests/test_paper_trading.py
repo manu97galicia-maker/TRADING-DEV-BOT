@@ -1,8 +1,10 @@
 """Deterministic safety and analytics tests for paper trading."""
 
+import asyncio
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from paper_trading.analytics import simulate_pair, summarize
@@ -24,6 +26,25 @@ class PaperTradingTests(unittest.TestCase):
             )
             self.assertEqual(engine.starting_capital, 2.0)
             self.assertEqual(engine.trade_size, 0.25)
+
+    def test_start_announces_and_starts_reporter(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            engine = PaperTradingEngine(
+                {
+                    "enabled": True,
+                    "database": str(Path(directory) / "paper.db"),
+                }
+            )
+            with patch("paper_trading.engine.notify") as mocked_notify:
+                async def exercise() -> None:
+                    engine.start()
+                    self.assertIsNotNone(engine._report_task)
+                    engine._report_task.cancel()
+                    with self.assertRaises(asyncio.CancelledError):
+                        await engine._report_task
+
+                asyncio.run(exercise())
+                mocked_notify.assert_called_once()
 
     def test_base_signal_is_strict(self) -> None:
         strategy = Strategy()

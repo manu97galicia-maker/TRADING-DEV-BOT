@@ -69,6 +69,18 @@ class PaperTradingEngine:
             if row.get("result")
         )
 
+    def start(self) -> None:
+        """Start reporting and announce that the simulator is online."""
+        if not self.enabled:
+            return
+        self._ensure_reporter()
+        notify(
+            "🟢 <b>SIMULACIÓN PAPER ACTIVA</b>\n"
+            f"Banca: {self.starting_capital + self._realized_pnl:.4f} SOL · "
+            f"entrada {self.trade_size:.2f} SOL\n"
+            "Trading real bloqueado · resumen cada hora"
+        )
+
     async def consider(self, candidate: Candidate, price_reader: PriceReader) -> bool:
         """Record and start observing a passing candidate, without trading."""
         if not self.enabled:

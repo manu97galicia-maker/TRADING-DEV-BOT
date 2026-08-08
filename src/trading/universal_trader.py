@@ -675,6 +675,7 @@ class UniversalTrader:
     async def start(self) -> None:
         """Start the trading bot and listen for new tokens."""
         logger.info(f"Starting Universal Trader for {self.platform.value}")
+        self.paper_engine.start()
         self._check_orphan_position()  # C2: warn if a previous run crashed open
         # Avisador de moonbags: cada 5 min notifica por Telegram los moonbags
         # retenidos para venderlos a mano (nunca los vende el bot).
