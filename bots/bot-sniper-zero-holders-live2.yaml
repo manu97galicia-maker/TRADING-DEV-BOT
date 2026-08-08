@@ -44,21 +44,21 @@ retries:
 
 filters:
   listener_type: "pumpportal"
-  max_token_age: 5
-  max_buy_age: 5
+  max_token_age: 42
+  max_buy_age: 42
   match_string: null
   bro_address: null
   marry_mode: false
   yolo_mode: true
   paper_trade: false
-  min_entry_mc: 2400
-  max_entry_mc: 3000
+  min_entry_mc: 3000
+  max_entry_mc: 6000
   require_zero_initial_holders: false
   min_holders: 0
   min_titulares: 0
-  min_ops: 19
-  # Volumen inicial minimo aproximado de $1,200 (16.5 SOL a ~$73/SOL).
-  min_volumen_sol: 16.5
+  min_ops: 0
+  # Volumen inicial minimo aproximado de $2,000 (27.4 SOL a ~$73/SOL).
+  min_volumen_sol: 27.4
   min_curve_sol: 0
   max_holder_pct: 0
   max_bundle_pct: 0
