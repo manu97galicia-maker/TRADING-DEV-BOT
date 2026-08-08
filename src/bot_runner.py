@@ -130,6 +130,7 @@ async def start_bot(config_path: str):
             tp3_sell=cfg["trade"].get("tp3_sell"),
             tp4_gain=cfg["trade"].get("tp4_gain"),
             tp4_sell=cfg["trade"].get("tp4_sell"),
+            final_target_mc=cfg["trade"].get("final_target_mc", 0),
             price_check_interval=cfg["trade"].get("price_check_interval", 10),
             # Listener configuration
             listener_type=cfg["filters"]["listener_type"],
@@ -215,6 +216,7 @@ async def start_bot(config_path: str):
             no_repeat_name_min=cfg.get("filters", {}).get("no_repeat_name_min", 0.0),
             max_buy_age=cfg.get("filters", {}).get("max_buy_age", 0.0),
             min_reserve_sol=cfg.get("trade", {}).get("min_reserve_sol", 0.03),
+            max_real_buys=cfg.get("trade", {}).get("max_real_buys", 0),
             pumpfun_dev=cfg.get("filters", {}).get("pumpfun_dev"),
             copy_wallets=cfg.get("filters", {}).get("copy_wallets"),
             allow_mayhem=cfg.get("filters", {}).get("allow_mayhem", False),

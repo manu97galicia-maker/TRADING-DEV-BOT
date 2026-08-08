@@ -224,8 +224,18 @@ def _normalize_creators(value: object) -> frozenset[str] | None:
             return watched
         return frozenset({s})
     if isinstance(value, (list, tuple, set, frozenset)):
-        # Explicitly configured list: empty means "match nothing", not "no filter".
-        return frozenset({str(a).strip() for a in value if str(a).strip()})
+        # Lists may mix literal wallets and watch-list files.  This lets a
+        # strategy safely extend a curated list without copying/staling it.
+        watched: set[str] = set()
+        for item in value:
+            s = str(item).strip()
+            if not s:
+                continue
+            if s.lower().endswith((".json", ".txt")):
+                watched.update(_load_creator_file(s))
+            else:
+                watched.add(s)
+        return frozenset(watched)
     return None
 
 
@@ -277,6 +287,7 @@ class UniversalTrader:
         # (+50/+90/+150/+300) mas moonbag, y solo cabian 3.
         tp4_gain: float | None = None,
         tp4_sell: float | None = None,
+        final_target_mc: float = 0.0,
         price_check_interval: int = 10,
         # Priority fee configuration
         enable_dynamic_priority_fee: bool = False,
@@ -398,6 +409,10 @@ class UniversalTrader:
         max_buy_age: float = 0.0,
         # Reserva mínima de SOL que el bot nunca gasta (siempre deja esto).
         min_reserve_sol: float = 0.03,
+        # Hard lifetime cap on successful real buys for a cautious live trial.
+        # It is derived from the persistent bought-mints file, so restarts do
+        # not reset the limit. 0 = unlimited.
+        max_real_buys: int = 0,
         # Pump.fun creator-migration filter (via pump.fun API); off unless set
         pumpfun_dev: dict | None = None,
         # Copy-trading: follow wallets and copy their pump.fun buys; off unless set
@@ -522,6 +537,7 @@ class UniversalTrader:
                 (tp4_gain, tp4_sell),
             ]
         )
+        self.final_target_mc = float(final_target_mc or 0)
         # TP AGRESIVO para devs moonshot (los que suelen llegar MUY alto): objetivos
         # más altos y moonbag más grande para pillar el pump. +100/300/900%, vende
         # 20% en cada uno, moonbag 40% (vs el normal +50/150/300% moonbag 20%).
@@ -645,6 +661,7 @@ class UniversalTrader:
         # escribe {mint, frac}, se vende esa fracción del RESTANTE de forma manual.
         self._sell_cmd_path = Path(f"sell_cmd{_sfx}.json")
         self._state_suffix = _sfx  # p.ej. "_bot-sniper-gemas" (lo usa el panel)
+        self.max_real_buys = max(0, int(max_real_buys or 0))
         # Moonbags retenidos (no se auto-venden): el avisador manda un aviso a
         # Telegram cada 5 min mientras sigan en la wallet, para venderlos a mano.
         self._moonbags_path = Path(f"moonbags{_sfx}.json")
@@ -2139,6 +2156,12 @@ class UniversalTrader:
                         f"Evitado {token_info.symbol}: ya comprada (re-check en semáforo)"
                     )
                     return
+                if self.max_real_buys and len(self.bought_mints) >= self.max_real_buys:
+                    logger.warning(
+                        "Limite de prueba alcanzado: %s/%s compras reales; %s no se compra",
+                        len(self.bought_mints), self.max_real_buys, token_info.symbol,
+                    )
+                    return
                 # Wallet-balance guard: never commit more lamports than we hold
                 # (reserve under a lock so concurrent buys can't both pass).
                 need = int(
@@ -2536,6 +2559,10 @@ class UniversalTrader:
             else None
         )
         moonbag = moonbag_fraction(tiers)
+        target_price = (
+            self.final_target_mc / (_PUMP_TOTAL_SUPPLY * _SOL_USD)
+            if self.final_target_mc > 0 else None
+        )
         had_tp = False  # ¿disparó algún TP? (para el auto-baneo de devs)
         hit_sl = False  # ¿saltó el stop-loss sin TP previo? = rug
         logger.info(
@@ -2601,6 +2628,20 @@ class UniversalTrader:
                 break
             try:
                 price = await curve_manager.calculate_price(pool_address)
+
+                # The final remainder has an absolute market-cap target.  It is
+                # only armed after every percentage TP has executed.
+                if (
+                    target_price is not None
+                    and tiers
+                    and all(executed)
+                    and price >= target_price
+                ):
+                    if await self._sell_amount(token_info, remaining, price, "final_target_mc"):
+                        realized_sol += remaining * price
+                        remaining = 0.0
+                        fully_exited = True
+                        break
 
                 # ANTI-RUG: salida de emergencia por presion vendedora.
                 #
@@ -2749,7 +2790,7 @@ class UniversalTrader:
                     break
 
                 # All tiers done -> hold the moonbag and stop monitoring.
-                if tiers and all(executed):
+                if tiers and all(executed) and target_price is None:
                     logger.info(
                         f"All TP tiers hit for {token_info.symbol} — "
                         f"holding moonbag {moonbag * 100:.0f}% "
@@ -2760,6 +2801,13 @@ class UniversalTrader:
                             token_info, remaining, entry_price, pool_address
                         )
                     break
+
+                # When an absolute final target is configured, the remaining
+                # moonbag is protected from trailing/max-hold exits and stays
+                # monitored until that target (or an explicit manual/panic sell).
+                if tiers and all(executed) and target_price is not None:
+                    await asyncio.sleep(self.price_check_interval)
+                    continue
 
                 # Time backstop: al llegar al tiempo SOLO se cierra si la posición
                 # está EN NEGATIVO (precio < entrada). Si va en positivo (aunque
