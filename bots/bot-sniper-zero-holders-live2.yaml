@@ -43,9 +43,9 @@ retries:
 
 filters:
   listener_type: "logs"
-  # Panel GMGN: Edad 0-0.2 min.
-  max_token_age: 12
-  max_buy_age: 12
+  # Entrada solo durante los primeros dos segundos del lanzamiento.
+  max_token_age: 2
+  max_buy_age: 2
   match_string: null
   # Esta estrategia mira todas las nuevas creaciones. La lista de devs se
   # reserva para la estrategia organica independiente.
@@ -53,9 +53,9 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: false
-  # Panel GMGN: MKT Cap $1.9K-$4.5K.
+  # Entrada solicitada: MKT Cap $1.9K-$2.8K.
   min_entry_mc: 1900
-  max_entry_mc: 4500
+  max_entry_mc: 2800
   require_zero_initial_holders: false
   min_holders: 10
   min_titulares: 10
