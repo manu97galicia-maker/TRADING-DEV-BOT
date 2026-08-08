@@ -55,18 +55,18 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: false
-  # Entrada rapida solicitada: MKT Cap $2.3K-$3.2K.
+  # Panel GMGN: MKT Cap $2.3K-$4.5K.
   min_entry_mc: 2300
-  max_entry_mc: 3200
+  max_entry_mc: 4500
   require_zero_initial_holders: false
   min_holders: 10
   min_titulares: 10
   # Panel GMGN: TXs vacio y Buys minimo 7.
   min_ops: 0
   min_buys: 7
-  # Volumen minimo $1.2K; el stream interno mide SOL y usa
+  # Panel GMGN: volumen minimo $1.4K; el stream interno mide SOL y usa
   # la misma conversion del bot (~$73/SOL).
-  min_volumen_sol: 16.44
+  min_volumen_sol: 19.18
   min_vol_ventana_sol: 0
   vol_ventana_seg: 3
   min_curve_sol: 2
