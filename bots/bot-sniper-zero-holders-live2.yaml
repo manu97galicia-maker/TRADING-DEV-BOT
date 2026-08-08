@@ -9,15 +9,21 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.05
+  buy_amount: 0.10
   buy_slippage: 0.30
   sell_slippage: 0.30
   min_reserve_sol: 0.04
   max_real_buys: 2
   exit_strategy: "tp_sl"
   take_profit_percentage: 0.40
-  # Al +40% vende el 90% y conserva un moonbag del 10%.
-  take_profit_sell_percentage: 0.90
+  # Al +40% vende 75%. Del 25% restante vende 12.5% del original a MC $5K,
+  # 6.25% a MC $90K y conserva el 6.25% final indefinidamente.
+  take_profit_sell_percentage: 0.75
+  mc_take_profit_tiers:
+    - target_mc: 5000
+      sell: 0.125
+    - target_mc: 90000
+      sell: 0.0625
   stop_loss_percentage: 0.38
   max_hold_time: 90
   price_check_interval: 1

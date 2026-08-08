@@ -288,6 +288,7 @@ class UniversalTrader:
         tp4_gain: float | None = None,
         tp4_sell: float | None = None,
         final_target_mc: float = 0.0,
+        mc_take_profit_tiers: list | None = None,
         price_check_interval: int = 10,
         # Priority fee configuration
         enable_dynamic_priority_fee: bool = False,
@@ -539,6 +540,18 @@ class UniversalTrader:
             ]
         )
         self.final_target_mc = float(final_target_mc or 0)
+        self.mc_take_profit_tiers: list[tuple[float, float]] = []
+        for item in mc_take_profit_tiers or []:
+            if not isinstance(item, dict):
+                continue
+            try:
+                target_mc = float(item.get("target_mc") or 0)
+                sell = float(item.get("sell") or 0)
+            except (TypeError, ValueError):
+                continue
+            if target_mc > 0 and 0 < sell <= 1:
+                self.mc_take_profit_tiers.append((target_mc, sell))
+        self.mc_take_profit_tiers.sort(key=lambda item: item[0])
         # TP AGRESIVO para devs moonshot (los que suelen llegar MUY alto): objetivos
         # más altos y moonbag más grande para pillar el pump. +100/300/900%, vende
         # 20% en cada uno, moonbag 40% (vs el normal +50/150/300% moonbag 20%).
@@ -2600,6 +2613,8 @@ class UniversalTrader:
             self.final_target_mc / (_PUMP_TOTAL_SUPPLY * _SOL_USD)
             if self.final_target_mc > 0 else None
         )
+        mc_tiers = self.mc_take_profit_tiers
+        mc_executed = [False] * len(mc_tiers)
         had_tp = False  # ¿disparó algún TP? (para el auto-baneo de devs)
         hit_sl = False  # ¿saltó el stop-loss sin TP previo? = rug
         logger.info(
@@ -2679,6 +2694,32 @@ class UniversalTrader:
                         remaining = 0.0
                         fully_exited = True
                         break
+
+                # Absolute market-cap ladder, armed only after the percentage
+                # TP ladder. Sell fractions are relative to the original buy.
+                if tiers and all(executed) and mc_tiers:
+                    current_mc = price * _PUMP_TOTAL_SUPPLY * _SOL_USD
+                    for i, (target_mc, sell_fraction) in enumerate(mc_tiers):
+                        if mc_executed[i] or current_mc < target_mc:
+                            continue
+                        amount = min(original_qty * sell_fraction, remaining)
+                        if amount <= 1e-9:
+                            mc_executed[i] = True
+                            continue
+                        if await self._sell_amount(
+                            token_info, amount, price, f"mc_tier_${target_mc:.0f}"
+                        ):
+                            realized_sol += amount * price
+                            remaining -= amount
+                            mc_executed[i] = True
+                    if all(mc_executed):
+                        if remaining > 1e-9:
+                            self._record_moonbag(
+                                token_info, remaining, entry_price, pool_address
+                            )
+                        break
+                    await asyncio.sleep(self.price_check_interval)
+                    continue
 
                 # ANTI-RUG: salida de emergencia por presion vendedora.
                 #
@@ -2827,7 +2868,7 @@ class UniversalTrader:
                     break
 
                 # All tiers done -> hold the moonbag and stop monitoring.
-                if tiers and all(executed) and target_price is None:
+                if tiers and all(executed) and target_price is None and not mc_tiers:
                     logger.info(
                         f"All TP tiers hit for {token_info.symbol} — "
                         f"holding moonbag {moonbag * 100:.0f}% "

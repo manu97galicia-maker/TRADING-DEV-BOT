@@ -16,8 +16,9 @@ if __name__ == "__main__":
     notify(
         "🔴 <b>ZERO-HOLDERS ACTIVO</b>\n"
         "Dinero real · máximo 2 compras totales\n"
-        "0.05 SOL/operación · reserva 0.04 SOL\n"
+        "0.10 SOL/operación · reserva 0.04 SOL\n"
         "Entrada &lt;$3K y ≤5s · exactamente 0 holders externos\n"
-        "Venta 90% al +40% · conserva 10% · SL -38% · slippage 30%"
+        "75% al +40% · 12.5% a MC $5K · 6.25% a $90K · hold 6.25%\n"
+        "SL -38% · slippage 30%"
     )
     asyncio.run(start_bot("bots/bot-sniper-zero-holders-live2.yaml"))
