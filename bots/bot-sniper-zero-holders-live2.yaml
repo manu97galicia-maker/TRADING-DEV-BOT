@@ -9,24 +9,23 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.35
+  buy_amount: 0.25
   buy_slippage: 0.30
   sell_slippage: 0.30
   # Sin limite de operaciones; deja siempre 0.05 SOL intocables.
   min_reserve_sol: 0.05
   max_real_buys: 0
   exit_strategy: "tp_sl"
-  take_profit_percentage: 0.40
-  # Al +40% vende 75%. Del 25% restante vende 12.5% del original a MC $50K,
-  # 6.25% a MC $90K y conserva el 6.25% final indefinidamente.
-  take_profit_sell_percentage: 0.75
-  mc_take_profit_tiers:
-    - target_mc: 50000
-      sell: 0.125
-    - target_mc: 90000
-      sell: 0.0625
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 0.40
+  tp2_gain: 1.00
+  tp2_sell: 0.25
+  tp3_gain: 2.00
+  tp3_sell: 0.25
+  final_target_mc: 29000
   stop_loss_percentage: 0.38
-  max_hold_time: 90
+  max_hold_time: 0
+  extreme_fast_mode: false
   price_check_interval: 1
 
 priority_fees:
@@ -44,28 +43,36 @@ retries:
 
 filters:
   listener_type: "logs"
-  max_token_age: 42
-  max_buy_age: 42
+  max_token_age: 30
+  max_buy_age: 12
   match_string: null
-  bro_address: null
+  bro_address:
+    - "top_devs_win60.json"
+    - "Qs23xF9r5xwP1m9rU8diEqJsUnjH57RE3PPxzZj9hjC"
+    - "H6hPTUg73GDscH4Q9NAviJrUtMwUXE6PzZat2xWDszrJ"
+    - "95T9JiB7FJsFiqk4aMLPMfmk1ZgaHzqoTDwn5ZXkTWYC"
   marry_mode: false
   yolo_mode: true
   paper_trade: false
-  min_entry_mc: 2340
+  min_entry_mc: 0
   max_entry_mc: 2750
   require_zero_initial_holders: false
-  min_holders: 0
-  min_titulares: 15
-  min_ops: 10
-  # Volumen inicial minimo aproximado de $1,000 (14 SOL a ~$73/SOL).
+  min_holders: 10
+  min_titulares: 10
+  min_ops: 8
+  # Mismo volumen de la configuracion ganadora: 14 SOL (~$1,000).
   min_volumen_sol: 14
-  min_curve_sol: 0
-  max_holder_pct: 0
-  max_bundle_pct: 0
-  max_dev_hold_pct: 0
+  min_vol_ventana_sol: 3
+  vol_ventana_seg: 3
+  min_curve_sol: 2
+  max_holder_pct: 0.05
+  max_bundle_pct: 0.30
+  max_dev_hold_pct: 0.02
   allow_mayhem: false
   pumpfun_dev:
-    enabled: false
+    enabled: true
+    min_migrations: 2
+    min_rate: 0.20
   dexscreener:
     enabled: false
 

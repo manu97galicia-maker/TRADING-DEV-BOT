@@ -1251,7 +1251,7 @@ class UniversalTrader:
     def _record_open_position(
         self, token_info: TokenInfo, buy_result: TradeResult
     ) -> None:
-        """C2: persist the actively-monitored position for crash recovery."""
+        """Persist one marker per actively monitored position."""
         try:
             import os
             import time
@@ -1261,19 +1261,47 @@ class UniversalTrader:
                 "symbol": (token_info.symbol or "").strip(),
                 "entry_price": buy_result.price,
                 "amount": buy_result.amount,
+                "suffix": self._state_suffix,
                 "platform": token_info.platform.value,
                 "ts": time.time(),
             }
-            tmp = self._open_pos_path.with_suffix(".json.tmp")
+            path = self._open_position_path(str(token_info.mint))
+            tmp = path.with_suffix(".json.tmp")
             tmp.write_text(json.dumps(rec), encoding="utf-8")
-            os.replace(tmp, self._open_pos_path)
+            os.replace(tmp, path)
         except Exception:
             logger.exception("No pude registrar la posición abierta")
 
-    def _clear_open_position(self) -> None:
-        """C2: clear the open-position marker once the monitor ends."""
+    def _open_position_path(self, mint: str) -> Path:
+        """Return a mint-specific marker path safe for concurrent positions."""
+        safe_mint = "".join(c for c in str(mint) if c.isalnum())
+        return self._open_pos_path.with_name(
+            f"{self._open_pos_path.stem}__{safe_mint}.json"
+        )
+
+    def _open_position_paths(self) -> list[Path]:
+        """Return legacy and mint-specific markers for this bot only."""
+        pattern = f"{self._open_pos_path.stem}*.json"
+        return sorted(self._open_pos_path.parent.glob(pattern))
+
+    def _clear_open_position(self, mint: str | None = None) -> None:
+        """Clear one marker, or every marker during startup recovery."""
         try:
-            self._open_pos_path.unlink(missing_ok=True)
+            if mint is None:
+                for path in self._open_position_paths():
+                    path.unlink(missing_ok=True)
+                return
+
+            self._open_position_path(mint).unlink(missing_ok=True)
+            # Backward compatibility with the old shared marker. Only remove it
+            # when it belongs to this mint, never when another position owns it.
+            if self._open_pos_path.exists():
+                try:
+                    rec = json.loads(self._open_pos_path.read_text(encoding="utf-8"))
+                except Exception:
+                    rec = {}
+                if str(rec.get("mint") or "") == str(mint):
+                    self._open_pos_path.unlink(missing_ok=True)
         except Exception:
             logger.exception("No pude limpiar open_position.json")
 
@@ -1287,8 +1315,7 @@ class UniversalTrader:
     ) -> None:
         """Escribe el estado en vivo de la posición para el panel de Telegram.
 
-        Sobrescribe open_position*.json con PnL/precio/restante actuales (además
-        de mint/symbol/entry que usa el chequeo de huérfanas). Best-effort.
+        Actualiza el archivo independiente de esta posición. Best-effort.
         """
         try:
             import os
@@ -1309,9 +1336,10 @@ class UniversalTrader:
                 "platform": token_info.platform.value,
                 "ts": time.time(),
             }
-            tmp = self._open_pos_path.with_suffix(".json.tmp")
+            path = self._open_position_path(str(token_info.mint))
+            tmp = path.with_suffix(".json.tmp")
             tmp.write_text(json.dumps(rec), encoding="utf-8")
-            os.replace(tmp, self._open_pos_path)
+            os.replace(tmp, path)
         except Exception:  # noqa: BLE001 - nunca romper el trading por el panel
             pass
 
@@ -1359,34 +1387,39 @@ class UniversalTrader:
         alert fires only once.
         """
         try:
-            if not self._open_pos_path.exists():
+            paths = self._open_position_paths()
+            if not paths:
                 return
-            rec = json.loads(self._open_pos_path.read_text(encoding="utf-8"))
         except Exception:
             self._clear_open_position()
             return
-        mint = str(rec.get("mint", "")).strip()
-        sym = rec.get("symbol", "?") or "?"
-        logger.error(
-            "POSIBLE BOLSA HUÉRFANA de una sesión anterior: %s (%s). El bot NO la "
-            "vende sola; revísala/véndela a mano.",
-            sym,
-            mint,
-        )
-        if mint:
-            self.bought_mints.add(mint)  # nunca la recompres
+        for path in paths:
             try:
-                from monitoring.notifier import notify
+                rec = json.loads(path.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            mint = str(rec.get("mint", "")).strip()
+            sym = rec.get("symbol", "?") or "?"
+            logger.error(
+                "POSIBLE BOLSA HUÉRFANA de una sesión anterior: %s (%s). "
+                "El bot NO la vende sola; revísala/véndela a mano.",
+                sym,
+                mint,
+            )
+            if mint:
+                self.bought_mints.add(mint)  # nunca la recompres
+                try:
+                    from monitoring.notifier import notify
 
-                notify(
-                    f"⚠️ <b>BOLSA HUÉRFANA</b> (crash previo)\n"
-                    f"<b>{sym}</b> — véndela a mano:\n"
-                    f'📊 <a href="https://gmgn.ai/sol/token/{mint}">GMGN</a> · '
-                    f'🤖 <a href="https://t.me/MaestroSniperBot?start={mint}">Maestro</a>\n'
-                    f"<code>{mint}</code>"
-                )
-            except Exception:  # noqa: BLE001
-                pass
+                    notify(
+                        f"⚠️ <b>BOLSA HUÉRFANA</b> (crash previo)\n"
+                        f"<b>{sym}</b> — véndela a mano:\n"
+                        f'📊 <a href="https://gmgn.ai/sol/token/{mint}">GMGN</a> · '
+                        f'🤖 <a href="https://t.me/MaestroSniperBot?start={mint}">Maestro</a>\n'
+                        f"<code>{mint}</code>"
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
         self._clear_open_position()
 
     async def _dev_holds_too_much(self, token_info: TokenInfo) -> bool:
@@ -3045,7 +3078,7 @@ class UniversalTrader:
 
         # C2: monitor ended (sold / moonbag / abandoned) — no longer an actively
         # managed position, so clear the crash-recovery marker.
-        self._clear_open_position()
+        self._clear_open_position(str(token_info.mint))
 
         # Close the token account only after a FULL exit (not a held moonbag).
         if fully_exited:
