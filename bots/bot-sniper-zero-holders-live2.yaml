@@ -17,13 +17,19 @@ trade:
   min_reserve_sol: 0.04
   max_real_buys: 0
   exit_strategy: "tp_sl"
-  take_profit_percentage: 0.50
+  # Salida: 40% al +40%; después 10% original a $29K MC y 50% a $80K MC.
+  take_profit_percentage: 0.40
   take_profit_sell_percentage: 0.40
-  tp2_gain: 1.00
-  tp2_sell: 0.25
-  tp3_gain: 2.00
-  tp3_sell: 0.25
-  final_target_mc: 29000
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  final_target_mc: 0
+  mc_take_profit_tiers:
+    - target_mc: 29000
+      sell: 0.10
+    - target_mc: 80000
+      sell: 0.50
   stop_loss_percentage: 0.38
   max_hold_time: 0
   extreme_fast_mode: false
