@@ -57,8 +57,8 @@ filters:
   min_holders: 0
   min_titulares: 0
   min_ops: 10
-  # Volumen inicial minimo aproximado de $80 (1.1 SOL a ~$73/SOL).
-  min_volumen_sol: 1.1
+  # Volumen inicial minimo aproximado de $800 (11 SOL a ~$73/SOL).
+  min_volumen_sol: 11
   min_curve_sol: 0
   max_holder_pct: 0
   max_bundle_pct: 0
