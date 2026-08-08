@@ -44,8 +44,9 @@ retries:
 
 filters:
   listener_type: "pumpportal"
-  max_token_age: 30
-  max_buy_age: 12
+  # Captura de sniper: edad máxima 0.7 min = 42 segundos.
+  max_token_age: 42
+  max_buy_age: 42
   match_string: null
   # Lista de calidad >=60% (supera el minimo solicitado de 40%) + los tres
   # aprobados del informe Scout del 06/08.
@@ -57,12 +58,16 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: false
-  max_entry_mc: 5100
+  # Banda de entrada mostrada: $3K-$6K.
+  min_entry_mc: 3000
+  max_entry_mc: 6000
   min_curve_sol: 2
   min_holders: 10
   min_titulares: 10
   min_ops: 8
-  min_volumen_sol: 14
+  # La pantalla expresa $2K; el stream interno mide SOL. Equivale a ~27 SOL
+  # con SOL alrededor de $74-$75. Se mantiene configurable.
+  min_volumen_sol: 27
   min_vol_ventana_sol: 3
   vol_ventana_seg: 3
   max_holder_pct: 0.05
