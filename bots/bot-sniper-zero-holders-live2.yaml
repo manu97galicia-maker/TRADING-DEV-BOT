@@ -72,8 +72,8 @@ filters:
   # Panel GMGN: TXs vacio y Buys minimo 4.
   min_ops: 0
   min_buys: 4
-  # Volumen negociado minimo: ~$1.2K al cambio SOL/USD usado por el bot.
-  min_volumen_sol: 16.44
+  # Volumen negociado minimo solicitado, medido directamente en el stream.
+  min_volumen_sol: 12
   min_vol_ventana_sol: 0
   vol_ventana_seg: 3
   min_curve_sol: 2
