@@ -43,7 +43,7 @@ retries:
   wait_before_new_token: 0
 
 filters:
-  listener_type: "pumpportal"
+  listener_type: "logs"
   max_token_age: 42
   max_buy_age: 42
   match_string: null
