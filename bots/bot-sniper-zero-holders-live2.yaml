@@ -31,6 +31,9 @@ trade:
     - target_mc: 80000
       sell: 0.50
   stop_loss_percentage: 0.38
+  # A los 120s, si sigue por debajo de la entrada, vende el 100% restante.
+  venta_muerta_seg: 120
+  venta_muerta_gain: 0
   max_hold_time: 0
   extreme_fast_mode: false
   price_check_interval: 1
