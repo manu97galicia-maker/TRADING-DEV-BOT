@@ -51,13 +51,14 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: false
-  min_entry_mc: 0
+  min_entry_mc: 2400
   max_entry_mc: 3000
   require_zero_initial_holders: true
   min_holders: 0
   min_titulares: 0
   min_ops: 0
-  min_volumen_sol: 0
+  # Volumen inicial minimo aproximado de $600 (8.25 SOL a ~$73/SOL).
+  min_volumen_sol: 8.25
   min_curve_sol: 0
   max_holder_pct: 0
   max_bundle_pct: 0
