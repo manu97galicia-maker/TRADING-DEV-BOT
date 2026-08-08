@@ -47,16 +47,20 @@ filters:
   max_token_age: 12
   max_buy_age: 12
   match_string: null
-  bro_address: null
+  bro_address:
+    - "top_devs_win60.json"
+    - "Qs23xF9r5xwP1m9rU8diEqJsUnjH57RE3PPxzZj9hjC"
+    - "H6hPTUg73GDscH4Q9NAviJrUtMwUXE6PzZat2xWDszrJ"
+    - "95T9JiB7FJsFiqk4aMLPMfmk1ZgaHzqoTDwn5ZXkTWYC"
   marry_mode: false
   yolo_mode: true
   paper_trade: false
-  # Panel GMGN: MKT Cap $2.3K-$13K.
+  # Entrada rapida solicitada: MKT Cap $2.3K-$3.2K.
   min_entry_mc: 2300
-  max_entry_mc: 13000
+  max_entry_mc: 3200
   require_zero_initial_holders: false
-  min_holders: 0
-  min_titulares: 0
+  min_holders: 10
+  min_titulares: 10
   # Panel GMGN: TXs vacio y Buys minimo 7.
   min_ops: 0
   min_buys: 7
@@ -65,13 +69,15 @@ filters:
   min_volumen_sol: 27
   min_vol_ventana_sol: 0
   vol_ventana_seg: 3
-  min_curve_sol: 0
-  max_holder_pct: 0
-  max_bundle_pct: 0
-  max_dev_hold_pct: 0
+  min_curve_sol: 2
+  max_holder_pct: 0.05
+  max_bundle_pct: 0.30
+  max_dev_hold_pct: 0.02
   allow_mayhem: false
   pumpfun_dev:
-    enabled: false
+    enabled: true
+    min_migrations: 2
+    min_rate: 0.20
   dexscreener:
     enabled: false
 
