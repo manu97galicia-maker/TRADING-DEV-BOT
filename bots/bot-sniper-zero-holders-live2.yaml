@@ -9,7 +9,7 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.10
+  buy_amount: 0.35
   buy_slippage: 0.30
   sell_slippage: 0.30
   min_reserve_sol: 0.04
