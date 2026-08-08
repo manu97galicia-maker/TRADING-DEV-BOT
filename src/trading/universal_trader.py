@@ -19,7 +19,12 @@ from cleanup.modes import (
 )
 from core.client import SolanaClient
 from core.priority_fee.manager import PriorityFeeManager
-from core.pubkeys import LAMPORTS_PER_SOL, TOKEN_DECIMALS
+from core.pubkeys import (
+    LAMPORTS_PER_SOL,
+    TOKEN_2022_PROGRAM,
+    TOKEN_DECIMALS,
+    TOKEN_PROGRAM,
+)
 from core.wallet import Wallet
 from dexscreener import DexScreenerFilter
 from interfaces.core import Platform, TokenInfo
@@ -2194,6 +2199,38 @@ class UniversalTrader:
                         len(self.bought_mints), self.max_real_buys, token_info.symbol,
                     )
                     return
+                # The logs listener cannot reliably tell legacy SPL Token from
+                # Token-2022 creation events. Never guess here: the mint account
+                # owner is authoritative. A wrong program derives the wrong ATA
+                # and produces a guaranteed failed transaction.
+                try:
+                    mint_account = await self.solana_client.get_account_info(
+                        token_info.mint, commitment="processed"
+                    )
+                    actual_program = getattr(mint_account, "owner", None)
+                except Exception:  # noqa: BLE001
+                    logger.warning(
+                        "Compra de %s omitida: no pude verificar el programa del mint",
+                        token_info.symbol,
+                    )
+                    return
+                if actual_program not in {TOKEN_PROGRAM, TOKEN_2022_PROGRAM}:
+                    logger.warning(
+                        "Compra de %s omitida: programa de token no reconocido (%s)",
+                        token_info.symbol,
+                        actual_program,
+                    )
+                    return
+                if token_info.token_program_id != actual_program:
+                    token_info.token_program_id = actual_program
+                    address_provider = self.platform_implementations.address_provider
+                    token_info.associated_bonding_curve = (
+                        address_provider.derive_associated_bonding_curve(
+                            token_info.mint,
+                            token_info.bonding_curve,
+                            actual_program,
+                        )
+                    )
                 # Wallet-balance guard: never commit more lamports than we hold
                 # (reserve under a lock so concurrent buys can't both pass).
                 need = int(

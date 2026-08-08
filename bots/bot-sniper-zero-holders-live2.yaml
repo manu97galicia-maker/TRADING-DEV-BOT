@@ -75,4 +75,11 @@ cleanup:
   with_priority_fee: false
 
 node:
-  max_rps: 8
+  # Reduce RPC bursts so price checks and emergency exits are not rate-limited.
+  max_rps: 4
+
+compute_units:
+  # Headroom for Token-2022 fees and ATA creation. Preflight remains enabled,
+  # so a simulation failure is never sent on-chain and costs no priority fee.
+  buy: 140000
+  sell: 120000
