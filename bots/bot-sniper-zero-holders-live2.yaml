@@ -47,11 +47,9 @@ filters:
   max_token_age: 12
   max_buy_age: 12
   match_string: null
-  bro_address:
-    - "top_devs_win60.json"
-    - "Qs23xF9r5xwP1m9rU8diEqJsUnjH57RE3PPxzZj9hjC"
-    - "H6hPTUg73GDscH4Q9NAviJrUtMwUXE6PzZat2xWDszrJ"
-    - "95T9JiB7FJsFiqk4aMLPMfmk1ZgaHzqoTDwn5ZXkTWYC"
+  # Esta estrategia mira todas las nuevas creaciones. La lista de devs se
+  # reserva para la estrategia organica independiente.
+  bro_address: null
   marry_mode: false
   yolo_mode: true
   paper_trade: false
