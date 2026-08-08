@@ -13,8 +13,8 @@ trade:
   buy_slippage: 0.30
   sell_slippage: 0.30
   # Sin limite de operaciones: abre tantas posiciones como permita el saldo,
-  # pero deja siempre 0.4404 SOL intocables.
-  min_reserve_sol: 0.4404
+  # pero deja siempre 0.04 SOL intocables.
+  min_reserve_sol: 0.04
   max_real_buys: 0
   exit_strategy: "tp_sl"
   take_profit_percentage: 0.50
