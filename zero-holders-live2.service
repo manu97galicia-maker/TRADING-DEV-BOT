@@ -1,0 +1,17 @@
+[Unit]
+Description=Zero-holder pump.fun sniper - budget-limited real trial
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/ai-bot
+Environment=PYTHONPATH=/root/ai-bot/src
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/root/ai-bot/.venv/bin/python -u run_zero_holders_live2.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

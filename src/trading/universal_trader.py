@@ -340,6 +340,7 @@ class UniversalTrader:
         # Filtro orgánico: mínimo de poseedores distintos para comprar (menos =
         # bundle/dev-spam sin compras reales). 0 = desactivado.
         min_holders: int = 0,
+        require_zero_initial_holders: bool = False,
         # Excepción al límite de holders: si el token ya subió >= este ratio
         # (ej. 3 = x3) el holder grande es momentum real (compró a mercado), no
         # un bundle -> se permite comprar. 0 = sin excepción.
@@ -611,6 +612,7 @@ class UniversalTrader:
         self.max_entry_mc = float(max_entry_mc or 0)
         self.min_entry_mc = float(min_entry_mc or 0)
         self.min_holders = int(min_holders or 0)
+        self.require_zero_initial_holders = bool(require_zero_initial_holders)
         self.max_holder_pct = float(max_holder_pct or 0)
         self.max_bundle_pct = float(max_bundle_pct or 0)
         self.max_dev_hold_pct = float(max_dev_hold_pct or 0)
@@ -1439,7 +1441,12 @@ class UniversalTrader:
         Usa getTokenLargestAccounts. Fail-open: ante error/RPC devuelve False
         para no frenar el trading.
         """
-        if self.max_holder_pct <= 0 and self.min_holders <= 0 and self.max_bundle_pct <= 0:
+        if (
+            self.max_holder_pct <= 0
+            and self.min_holders <= 0
+            and self.max_bundle_pct <= 0
+            and not self.require_zero_initial_holders
+        ):
             return False
         try:
             import aiohttp
@@ -1464,7 +1471,7 @@ class UniversalTrader:
                     data = await r.json()
             accts = ((data or {}).get("result") or {}).get("value") or []
             if not accts:
-                return False
+                return self.require_zero_initial_holders
             supply = float(getattr(token_info, "token_total_supply", 0) or 0)
             if supply <= 0:
                 supply = sum(float(a.get("amount") or 0) for a in accts)
@@ -1472,14 +1479,21 @@ class UniversalTrader:
                 return False
             largest_addr = accts[0].get("address")
 
+            real = [a for a in accts if float(a.get("amount") or 0) > 0]
+            if curve_ata:
+                holders = sum(1 for a in real if a.get("address") != curve_ata)
+            else:
+                holders = max(0, len(real) - 1)
+            if self.require_zero_initial_holders and holders != 0:
+                logger.info(
+                    f"{token_info.symbol}: ya tiene {holders} holders externos "
+                    "(se exigen 0) -> se omite"
+                )
+                return True
+
             # Filtro ORGÁNICO: cuenta poseedores reales (con saldo>0, excluida la
             # curva). Pocos holders = bundle/dev-spam, no compra real de gente.
             if self.min_holders > 0:
-                real = [a for a in accts if float(a.get("amount") or 0) > 0]
-                if curve_ata:
-                    holders = sum(1 for a in real if a.get("address") != curve_ata)
-                else:
-                    holders = max(0, len(real) - 1)  # excluye la curva (mayor)
                 if holders < self.min_holders:
                     logger.info(
                         f"{token_info.symbol}: solo {holders} holders "
@@ -1553,8 +1567,10 @@ class UniversalTrader:
                     )
                     return True
             return False
-        except Exception:  # noqa: BLE001 - fail-open, no bloquear por error
-            return False
+        except Exception:  # noqa: BLE001
+            # Para una entrada que exige exactamente cero, no saberlo debe
+            # bloquear la compra; el resto de estrategias conserva fail-open.
+            return self.require_zero_initial_holders
 
     async def _holders_gmgn(self, mint: str) -> int:
         """Titulares según GMGN, o -1 si no se puede saber.

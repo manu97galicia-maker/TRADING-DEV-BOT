@@ -199,6 +199,9 @@ async def start_bot(config_path: str):
             max_bundle_pct=cfg.get("filters", {}).get("max_bundle_pct", 0.0),
             max_dev_hold_pct=cfg.get("filters", {}).get("max_dev_hold_pct", 0.0),
             min_holders=cfg.get("filters", {}).get("min_holders", 0),
+            require_zero_initial_holders=cfg.get("filters", {}).get(
+                "require_zero_initial_holders", False
+            ),
             holder_bypass_ratio=cfg.get("filters", {}).get("holder_bypass_ratio", 0.0),
             min_holders_gmgn=cfg.get("filters", {}).get("min_holders_gmgn", 0),
             min_volumen_sol=cfg.get("filters", {}).get("min_volumen_sol", 0.0),

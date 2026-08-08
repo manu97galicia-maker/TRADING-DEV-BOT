@@ -1,0 +1,69 @@
+name: "ZERO-HOLDERS-LIVE2 - presupuesto controlado"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: false
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.05
+  buy_slippage: 0.30
+  sell_slippage: 0.30
+  min_reserve_sol: 0.04
+  max_real_buys: 2
+  exit_strategy: "tp_sl"
+  take_profit_percentage: 0.40
+  take_profit_sell_percentage: 1.0
+  stop_loss_percentage: 0.38
+  max_hold_time: 90
+  price_check_interval: 1
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 1000000
+  extra_percentage: 0.0
+  hard_cap: 1000000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+  wait_before_new_token: 0
+
+filters:
+  listener_type: "pumpportal"
+  max_token_age: 5
+  max_buy_age: 5
+  match_string: null
+  bro_address: null
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false
+  min_entry_mc: 0
+  max_entry_mc: 3000
+  require_zero_initial_holders: true
+  min_holders: 0
+  min_titulares: 0
+  min_ops: 0
+  min_volumen_sol: 0
+  min_curve_sol: 0
+  max_holder_pct: 0
+  max_bundle_pct: 0
+  max_dev_hold_pct: 0
+  allow_mayhem: false
+  pumpfun_dev:
+    enabled: false
+  dexscreener:
+    enabled: false
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 8
