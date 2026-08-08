@@ -68,9 +68,9 @@ filters:
   min_vol_ventana_sol: 0
   vol_ventana_seg: 3
   min_curve_sol: 2
-  max_holder_pct: 0.05
+  max_holder_pct: 0
   max_bundle_pct: 0.30
-  max_dev_hold_pct: 0.02
+  max_dev_hold_pct: 0
   allow_mayhem: false
   pumpfun_dev:
     enabled: true
