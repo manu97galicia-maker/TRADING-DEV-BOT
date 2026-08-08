@@ -62,9 +62,8 @@ filters:
   # Panel GMGN: TXs vacio y Buys minimo 4.
   min_ops: 0
   min_buys: 4
-  # Volumen minimo $1.2K; el stream interno mide SOL y usa
-  # la misma conversion del bot (~$73/SOL).
-  min_volumen_sol: 16.44
+  # Volumen negociado minimo solicitado, medido directamente en el stream.
+  min_volumen_sol: 9.9
   min_vol_ventana_sol: 0
   vol_ventana_seg: 3
   min_curve_sol: 2
