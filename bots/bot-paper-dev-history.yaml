@@ -31,8 +31,8 @@ paper_trading:
   dev_history: "top_devs_gemas_mas.json"
   aggregate_peak_field: "median_peak"
   history_metric_label: "mediana"
-  max_entry_mc: 4000
-  min_dev_mean_mc: 12000
+  max_entry_mc: 2750
+  min_dev_mean_mc: 10000
   min_dev_launches: 5
   checkpoints: [60, 180, 300, 600, 1800]
   poll_seconds: 5

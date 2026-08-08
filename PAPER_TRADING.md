@@ -14,8 +14,9 @@ mint tiene clave primaria en SQLite, por lo que reinicios y eventos repetidos no
 duplican una señal.
 
 El perfil activo arranca prospectivamente con la fotografía agregada
-`top_devs_gemas_mas.json`: usa `median_peak`, la etiqueta expresamente como
-**mediana histórica** y exige 5 lanzamientos. No se presenta como una media.
+`top_devs_gemas_mas.json`: exige entrada con MC `< $2.750`, `median_peak`
+`> $10.000` y 5 lanzamientos. La métrica se etiqueta expresamente como
+**mediana histórica** y no se presenta como una media.
 
 Cuando haya exportación granular, el historial puede cambiarse a
 `paper_trades/dev_history.jsonl`, una fila por lanzamiento:
