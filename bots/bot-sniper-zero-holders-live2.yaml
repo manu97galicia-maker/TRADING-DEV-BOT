@@ -16,11 +16,11 @@ trade:
   max_real_buys: 2
   exit_strategy: "tp_sl"
   take_profit_percentage: 0.40
-  # Al +40% vende 75%. Del 25% restante vende 12.5% del original a MC $5K,
+  # Al +40% vende 75%. Del 25% restante vende 12.5% del original a MC $50K,
   # 6.25% a MC $90K y conserva el 6.25% final indefinidamente.
   take_profit_sell_percentage: 0.75
   mc_take_profit_tiers:
-    - target_mc: 5000
+    - target_mc: 50000
       sell: 0.125
     - target_mc: 90000
       sell: 0.0625
