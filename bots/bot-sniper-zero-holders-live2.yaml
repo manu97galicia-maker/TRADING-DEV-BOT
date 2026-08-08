@@ -53,7 +53,7 @@ filters:
   paper_trade: false
   min_entry_mc: 2400
   max_entry_mc: 3000
-  require_zero_initial_holders: true
+  require_zero_initial_holders: false
   min_holders: 0
   min_titulares: 0
   min_ops: 0
