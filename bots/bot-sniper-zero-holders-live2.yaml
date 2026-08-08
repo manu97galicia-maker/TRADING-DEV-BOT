@@ -69,13 +69,11 @@ filters:
   vol_ventana_seg: 3
   min_curve_sol: 2
   max_holder_pct: 0
-  max_bundle_pct: 0.30
+  max_bundle_pct: 0.25
   max_dev_hold_pct: 0
   allow_mayhem: false
   pumpfun_dev:
-    enabled: true
-    min_migrations: 2
-    min_rate: 0.20
+    enabled: false
   dexscreener:
     enabled: false
 
