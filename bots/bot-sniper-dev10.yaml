@@ -156,7 +156,13 @@ filters:
   yolo_mode: true
   paper_trade: false          # DINERO REAL
 
-  min_entry_mc: 2000          # el suelo real de pump.fun es $2.040
+  # SIN SUELO. Manu pidio "compra por debajo de 2,8K" y punto. Antes habia un
+  # suelo de 2000 con el comentario de que el minimo de pump.fun era $2.040;
+  # medido el 9-ago sobre 150 creaciones, es falso: monedas de devs con 10%+
+  # salian a $134, $614, $760, $1.511 y $1.766. El suelo las tiraba todas.
+  # De las 11 monedas de dev bueno de esa muestra, 7 estaban por debajo de
+  # 2,8K pero solo 2 caian dentro de la banda 2.000-2.800.
+  min_entry_mc: 0
   max_entry_mc: 2800          # tope de compra 2,8K
   min_curve_sol: 0
 
