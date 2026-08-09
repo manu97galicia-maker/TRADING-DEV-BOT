@@ -50,7 +50,11 @@ platform: "pump_fun"
 
 trade:
   buy_amount: 0.30
-  buy_slippage: 0.15
+  # 0,30 y no 0,15: comprando en los 3 primeros segundos el precio se mueve
+  # entre que se firma y se ejecuta, y un slippage corto no ahorra nada -- la
+  # transaccion revienta y se paga la comision igual, sin moneda. Es el mismo
+  # margen que llevan las otras estrategias en vivo.
+  buy_slippage: 0.30
   sell_slippage: 0.90
 
   exit_strategy: "tp_sl"
@@ -108,6 +112,10 @@ priority_fees:
   hard_cap: 50_000_000
 
 retries:
+  # El bot reintenta 10 veces si no se dice nada, y cada intento fallido paga
+  # comision igual aunque no compre nada. Con 2 basta: si a la segunda no ha
+  # entrado, la moneda ya no esta en el precio por el que se iba a comprar.
+  max_attempts: 2
   wait_after_creation: 0
   wait_after_buy: 0
 
