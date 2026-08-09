@@ -3009,7 +3009,6 @@ class UniversalTrader:
                     and not _muerta_revisada
                     and (monotonic() - start) >= self.venta_muerta_seg
                 ):
-                    _muerta_revisada = True
                     _sube = (price / entry_price - 1) if entry_price else 0.0
                     if _sube < self.venta_muerta_gain:
                         logger.info(
@@ -3020,6 +3019,7 @@ class UniversalTrader:
                         if await self._sell_amount(
                             token_info, remaining, price, "muerta"
                         ):
+                            _muerta_revisada = True
                             realized_sol += remaining * price
                             remaining = 0.0
                             fully_exited = True
@@ -3029,6 +3029,7 @@ class UniversalTrader:
                             token_info.symbol,
                         )
                     else:
+                        _muerta_revisada = True
                         logger.info(
                             f"VIVA {token_info.symbol}: {_sube * 100:+.0f}% a los "
                             f"{self.venta_muerta_seg:.0f}s -> se deja correr"
