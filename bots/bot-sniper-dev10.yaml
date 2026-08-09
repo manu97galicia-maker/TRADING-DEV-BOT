@@ -140,16 +140,19 @@ filters:
   pumpfun_dev:
     enabled: true
     min_rate: 0.10
-    # Bajado de 3 a 1: basta con que haya migrado UN proyecto y que la tasa
-    # llegue al 10%. El codigo bloquea con `migs < min_migrations O rate <
-    # min_rate`, asi que en la practica manda la tasa: un dev sin migraciones
-    # da 0% y se cae por ahi de todas formas.
+    # DE VUELTA A 3, y esta vez medido. Con el minimo en 1 el bot compro 变狗
+    # de un dev con 1 migracion de 1 lanzamiento (100%): le rugearon encima a
+    # los 4 segundos y costo 0,29 SOL. Un porcentaje alto sobre una sola moneda
+    # no es historial, es casualidad, y es la firma del farmero que estrena
+    # wallet.
     #
-    # Lo que esto abre: el dev con 1 migracion de 5 (20%) que antes se caia por
-    # tener poco historial. El precio es el falso positivo que avisaba el
-    # comentario de arriba: 1 lanzamiento y 1 migracion marca 100% sin
-    # significar nada. Contrapartida aceptada.
-    min_migrations: 1
+    # Sobre 85 creadores reales medidos el 9-ago, de los 7 que pasaban el 10%
+    # este minimo conserva 5 (73%, 14%, y tres al 10%, todos con 7+ migraciones)
+    # y descarta 2: uno de 1 de 2 y otro de 2 de 11. Cuesta ~29% de las
+    # oportunidades y corta justo el perfil que rugea.
+    #
+    # ryok.net, la unica ganadora hasta ahora, es 7 de 70: sigue pasando.
+    min_migrations: 3
 
   # FUERA LAS MAYHEM: solo pump.fun normal. Decision de Manu del 9-ago, tomada
   # sabiendo lo que cuesta -- se probo en true y la unica compra que salio,
