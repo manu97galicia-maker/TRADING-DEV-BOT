@@ -224,6 +224,9 @@ async def start_bot(config_path: str):
             anti_rug_seg=cfg.get("trade", {}).get("anti_rug_seg", 4.0),
             anti_rug_min_sol=cfg.get("trade", {}).get("anti_rug_min_sol", 3.0),
             no_repeat_name_min=cfg.get("filters", {}).get("no_repeat_name_min", 0.0),
+            ignorar_listas_de_devs=cfg.get("filters", {}).get(
+                "ignorar_listas_de_devs", False
+            ),
             max_buy_age=cfg.get("filters", {}).get("max_buy_age", 0.0),
             min_reserve_sol=cfg.get("trade", {}).get("min_reserve_sol", 0.03),
             max_real_buys=cfg.get("trade", {}).get("max_real_buys", 0),

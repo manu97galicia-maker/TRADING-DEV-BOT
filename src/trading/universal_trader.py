@@ -420,6 +420,7 @@ class UniversalTrader:
         # últimos N minutos: los copias en cadena son el patrón del que lanza
         # veinte clones a ver cuál prende. 0 = desactivado.
         no_repeat_name_min: float = 0.0,
+        ignorar_listas_de_devs: bool = False,
         # Edad máxima EN EL MOMENTO DE COMPRAR. `max_token_age` se mira al sacar
         # la moneda de la cola, antes de la espera de estabilización, así que no
         # limita la edad real de entrada. 0 = desactivado.
@@ -665,6 +666,13 @@ class UniversalTrader:
         self.anti_rug_seg = float(anti_rug_seg or 4.0)
         self.anti_rug_min_sol = float(anti_rug_min_sol or 3.0)
         self.no_repeat_name_min = float(no_repeat_name_min or 0)
+        # Cuando es True no se mira ninguna lista de creadores: ni la blacklist
+        # manual ni el auto-baneo por rugs. Lo pidio Manu para DEV10: si el dev
+        # ha migrado mas del 10%, se le compra aunque este fuera de cualquier
+        # lista o dentro de una de bloqueo. La reputacion se calcula en vivo
+        # contra la API de pump.fun, que es un dato mas fresco que una lista
+        # escrita a mano hace semanas.
+        self.ignorar_listas_de_devs = bool(ignorar_listas_de_devs)
         self.max_buy_age = float(max_buy_age or 0)
         #: símbolo -> monotonic() de la última vez que se vio. Solo memoria del
         #: proceso: tras un reinicio la ventana empieza vacía.
@@ -1713,26 +1721,31 @@ class UniversalTrader:
                 )
                 return
 
-            # Blacklist DURA manual: dev vetado a mano -> nunca se compra.
             _dev_user = str(token_info.user)
             _dev_creator = str(getattr(token_info, "creator", "") or "")
-            if (
-                _dev_user in self._manual_blacklist
-                or _dev_creator in self._manual_blacklist
-            ):
-                logger.info(
-                    f"Evitado {token_info.symbol}: dev {_dev_user[:8]} en "
-                    f"BLACKLIST manual (bloqueo permanente)"
-                )
-                return
 
-            # Auto-baneo: dev que ha rugeado 2 veces seguidas -> no se le compra.
-            if self._is_dev_blocked(_dev_user, _dev_creator):
-                logger.info(
-                    f"Evitado {token_info.symbol}: dev "
-                    f"{_dev_user[:8]} BLOQUEADO (2 rugs acumulados)"
-                )
-                return
+            # Las dos listas de abajo bloquean a un creador sin mirar su tasa de
+            # migracion. Con `ignorar_listas_de_devs` se saltan las dos y decide
+            # solo el filtro de reputacion en vivo.
+            if not self.ignorar_listas_de_devs:
+                # Blacklist DURA manual: dev vetado a mano -> nunca se compra.
+                if (
+                    _dev_user in self._manual_blacklist
+                    or _dev_creator in self._manual_blacklist
+                ):
+                    logger.info(
+                        f"Evitado {token_info.symbol}: dev {_dev_user[:8]} en "
+                        f"BLACKLIST manual (bloqueo permanente)"
+                    )
+                    return
+
+                # Auto-baneo: dev que ha rugeado 2 veces seguidas -> no se compra.
+                if self._is_dev_blocked(_dev_user, _dev_creator):
+                    logger.info(
+                        f"Evitado {token_info.symbol}: dev "
+                        f"{_dev_user[:8]} BLOQUEADO (2 rugs acumulados)"
+                    )
+                    return
 
             # Avoid pump.fun "mayhem mode" tokens unless this strategy allows them.
             if not self.allow_mayhem and getattr(token_info, "is_mayhem_mode", False):

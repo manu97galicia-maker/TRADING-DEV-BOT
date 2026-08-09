@@ -129,6 +129,13 @@ filters:
   match_string: null
   bro_address: null
 
+  # NINGUNA LISTA MANDA AQUI. Ni la blacklist manual (blacklist_devs.json, que
+  # comparten todos los bots) ni el auto-baneo por 2 rugs. Las dos bloqueaban a
+  # un creador sin mirar su tasa: en 3 minutos de log tumbaron 11 monedas. Manu
+  # lo quiere al reves -- da igual que el dev este fuera de toda lista o dentro
+  # de una de bloqueo: si ha migrado mas del 10%, se compra.
+  ignorar_listas_de_devs: true
+
   # EL UNICO FILTRO QUE DECIDE.
   pumpfun_dev:
     enabled: true
