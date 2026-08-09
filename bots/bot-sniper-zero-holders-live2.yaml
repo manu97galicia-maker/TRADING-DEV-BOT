@@ -63,9 +63,9 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: false
-  # Entrada solicitada: en cuanto alcance MKT Cap $3K, sin límite superior.
+  # Entrada solicitada: MKT Cap entre $3K y $4K.
   min_entry_mc: 3000
-  max_entry_mc: 0
+  max_entry_mc: 4000
   require_zero_initial_holders: false
   min_holders: 4
   min_titulares: 4
