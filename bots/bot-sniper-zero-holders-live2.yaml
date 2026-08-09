@@ -28,7 +28,7 @@ trade:
   mc_take_profit_tiers:
     - target_mc: 24000
       sell: 0.15
-  stop_loss_percentage: 0.38
+  stop_loss_percentage: 0.12
   # A los 120s, si sigue por debajo de la entrada, vende el 100% restante.
   venta_muerta_seg: 120
   venta_muerta_gain: 0
