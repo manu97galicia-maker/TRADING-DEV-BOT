@@ -63,17 +63,17 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: false
-  # Entrada solicitada: MKT Cap $1.9K-$2.7K.
+  # Entrada solicitada: MKT Cap $1.9K-$3K.
   min_entry_mc: 1900
-  max_entry_mc: 2700
+  max_entry_mc: 3000
   require_zero_initial_holders: false
   min_holders: 4
   min_titulares: 4
   # Panel GMGN: TXs vacio y Buys minimo 4.
   min_ops: 0
   min_buys: 4
-  # Volumen negociado minimo solicitado, medido directamente en el stream.
-  min_volumen_sol: 12
+  # Volumen minimo ~$1.9K: 26.03 SOL al cambio SOL/USD usado por el bot.
+  min_volumen_sol: 26.03
   min_vol_ventana_sol: 0
   vol_ventana_seg: 3
   min_curve_sol: 2
