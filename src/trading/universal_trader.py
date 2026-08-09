@@ -366,6 +366,8 @@ class UniversalTrader:
         # COMPRAS minimas antes de entrar. A diferencia de `min_ops`, no cuenta
         # las ventas, por lo que reproduce el campo "Buys" de GMGN.
         min_buys: int = 0,
+        min_unique_buyers: int = 0,
+        min_unique_sellers: int = 0,
         # TRANSACCIONES minimas antes de comprar, contadas del stream de logs.
         # Cuenta cada TradeEvent por separado, tambien los que entran juntos en
         # el primer bloque (un bundle son N transacciones y aqui salen como N,
@@ -644,6 +646,8 @@ class UniversalTrader:
         self.min_holders_gmgn = int(min_holders_gmgn or 0)
         self.min_volumen_sol = float(min_volumen_sol or 0)
         self.min_buys = int(min_buys or 0)
+        self.min_unique_buyers = int(min_unique_buyers or 0)
+        self.min_unique_sellers = int(min_unique_sellers or 0)
         self.min_ops = int(min_ops or 0)
         self.min_titulares = int(min_titulares or 0)
         self.redes_originales = bool(redes_originales)
@@ -1786,12 +1790,16 @@ class UniversalTrader:
                 self.min_volumen_sol > 0
                 or self.min_entry_mc > 0
                 or self.min_buys > 0
+                or self.min_unique_buyers > 0
+                or self.min_unique_sellers > 0
                 or self.min_ops > 0
                 or self.min_titulares > 0
             ):
                 from monitoring.volumen import operaciones as _n_ops
                 from monitoring.volumen import compras as _n_buys
+                from monitoring.volumen import compradores_unicos as _n_unique_buyers
                 from monitoring.volumen import titulares as _n_tit
+                from monitoring.volumen import vendedores_unicos as _n_unique_sellers
                 from monitoring.volumen import volumen_sol as _vol_sol
 
                 _nacida = self.token_timestamps.get(str(token_info.mint))
@@ -1815,6 +1823,8 @@ class UniversalTrader:
                     _o = _n_ops(str(token_info.mint))
                     _b = _n_buys(str(token_info.mint))
                     _h = _n_tit(str(token_info.mint))
+                    _ub = _n_unique_buyers(str(token_info.mint))
+                    _us = _n_unique_sellers(str(token_info.mint))
                     _visto_vol = max(_visto_vol, _v)
                     _visto_buys = max(_visto_buys, _b)
                     _visto_ops = max(_visto_ops, _o)
@@ -1823,6 +1833,12 @@ class UniversalTrader:
                         await asyncio.sleep(_paso)
                         continue
                     if self.min_buys > 0 and _b < self.min_buys:
+                        await asyncio.sleep(_paso)
+                        continue
+                    if self.min_unique_buyers > 0 and _ub < self.min_unique_buyers:
+                        await asyncio.sleep(_paso)
+                        continue
+                    if self.min_unique_sellers > 0 and _us < self.min_unique_sellers:
                         await asyncio.sleep(_paso)
                         continue
                     # PARTICIPACION. El volumen solo dice cuanto dinero se ha
@@ -1969,7 +1985,12 @@ class UniversalTrader:
                 entry_mc = entry_price * _PUMP_TOTAL_SUPPLY * _SOL_USD
                 features = {}
                 try:
-                    from monitoring.volumen import operaciones, volumen_sol
+                    from monitoring.volumen import (
+                        compradores_unicos,
+                        operaciones,
+                        vendedores_unicos,
+                        volumen_sol,
+                    )
 
                     volume_sol = volumen_sol(str(token_info.mint))
                     features["volume"] = volume_sol
@@ -1978,6 +1999,12 @@ class UniversalTrader:
                     # the honest name so the optimizer never mistakes it for
                     # the optional `buyers` feature.
                     features["operations"] = operaciones(str(token_info.mint))
+                    features["unique_buyers"] = compradores_unicos(
+                        str(token_info.mint)
+                    )
+                    features["unique_sellers"] = vendedores_unicos(
+                        str(token_info.mint)
+                    )
                 except Exception:  # noqa: BLE001 - optional point-in-time features
                     pass
 

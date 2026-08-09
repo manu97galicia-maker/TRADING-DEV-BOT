@@ -119,6 +119,28 @@ def compras(mint: str) -> int:
     return sum(1 for _t, _s, es_compra, _w in (_ops.get(mint) or ()) if es_compra)
 
 
+def compradores_unicos(mint: str) -> int:
+    """Wallets distintas que han realizado al menos una compra."""
+    return len(
+        {
+            wallet
+            for _t, _s, es_compra, wallet in (_ops.get(mint) or ())
+            if es_compra and wallet
+        }
+    )
+
+
+def vendedores_unicos(mint: str) -> int:
+    """Wallets distintas que han realizado al menos una venta."""
+    return len(
+        {
+            wallet
+            for _t, _s, es_compra, wallet in (_ops.get(mint) or ())
+            if not es_compra and wallet
+        }
+    )
+
+
 def titulares(mint: str) -> int:
     """Wallets distintas que han comprado y todavia no han soltado.
 

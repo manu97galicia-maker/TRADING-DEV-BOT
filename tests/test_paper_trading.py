@@ -56,34 +56,74 @@ class PaperTradingTests(unittest.TestCase):
             )
         )
 
-    def test_entry_market_cap_and_volume_bounds_are_strict(self) -> None:
+    def test_entry_requires_mc_and_two_unique_wallets_per_side(self) -> None:
         strategy = Strategy(
-            min_entry_mc=1_500,
-            max_entry_mc=3_000,
-            max_volume_usd=1_800,
+            min_entry_mc=2_800,
+            min_unique_buyers=2,
+            min_unique_sellers=2,
         )
         dev = DevStats(5, 12_001, 30_000)
-        passing = Candidate(100, "mint", "ABC", "dev", 2_000, {"volume_usd": 1_800})
+        passing = Candidate(
+            100,
+            "mint",
+            "ABC",
+            "dev",
+            2_800,
+            {"unique_buyers": 2, "unique_sellers": 2},
+        )
         self.assertTrue(strategy.accepts(passing, dev))
         self.assertTrue(
             strategy.accepts(
-                Candidate(100, "m", "A", "d", 1_500, {"volume_usd": 1_000}),
-                dev,
-            )
-        )
-        self.assertTrue(
-            strategy.accepts(
-                Candidate(100, "m", "A", "d", 3_000, {"volume_usd": 1_000}),
+                Candidate(
+                    100,
+                    "m",
+                    "A",
+                    "d",
+                    3_000,
+                    {"unique_buyers": 2, "unique_sellers": 2},
+                ),
                 dev,
             )
         )
         self.assertFalse(
             strategy.accepts(
-                Candidate(100, "m", "A", "d", 2_000, {"volume_usd": 1_801}),
+                Candidate(
+                    100,
+                    "m",
+                    "A",
+                    "d",
+                    2_799,
+                    {"unique_buyers": 2, "unique_sellers": 2},
+                ),
                 dev,
             )
         )
-        self.assertFalse(strategy.accepts(Candidate(100, "m", "A", "d", 2_000), dev))
+        self.assertFalse(
+            strategy.accepts(
+                Candidate(
+                    100,
+                    "m",
+                    "A",
+                    "d",
+                    2_800,
+                    {"unique_buyers": 1, "unique_sellers": 2},
+                ),
+                dev,
+            )
+        )
+        self.assertFalse(
+            strategy.accepts(
+                Candidate(
+                    100,
+                    "m",
+                    "A",
+                    "d",
+                    2_800,
+                    {"unique_buyers": 2, "unique_sellers": 1},
+                ),
+                dev,
+            )
+        )
 
     def test_history_excludes_future_and_current_mint(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

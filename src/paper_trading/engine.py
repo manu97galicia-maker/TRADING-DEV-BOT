@@ -40,9 +40,11 @@ class PaperTradingEngine:
             )
         )
         self.strategy = Strategy(
-            min_entry_mc=float(cfg.get("min_entry_mc", 1_500)),
-            max_entry_mc=float(cfg.get("max_entry_mc", 4_000)),
+            min_entry_mc=float(cfg.get("min_entry_mc", 2_800)),
+            max_entry_mc=float(cfg.get("max_entry_mc", 0)),
             max_volume_usd=float(cfg.get("max_volume_usd", 0)),
+            min_unique_buyers=int(cfg.get("min_unique_buyers", 0)),
+            min_unique_sellers=int(cfg.get("min_unique_sellers", 0)),
             min_dev_mean_mc=float(cfg.get("min_dev_mean_mc", 12_000)),
             min_dev_launches=int(cfg.get("min_dev_launches", 5)),
             checkpoints=tuple(

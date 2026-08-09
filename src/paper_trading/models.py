@@ -31,9 +31,11 @@ class Candidate:
 class Strategy:
     """Signal and exit parameters."""
 
-    min_entry_mc: float = 1_500.0
-    max_entry_mc: float = 4_000.0
+    min_entry_mc: float = 2_800.0
+    max_entry_mc: float = 0.0
     max_volume_usd: float = 0.0
+    min_unique_buyers: int = 0
+    min_unique_sellers: int = 0
     min_dev_mean_mc: float = 12_000.0
     min_dev_launches: int = 5
     checkpoints: tuple[int, ...] = (60, 180, 300, 600, 1_800)
@@ -48,7 +50,8 @@ class Strategy:
         """Return whether only information available at signal time passes."""
         volume_usd = candidate.features.get("volume_usd")
         return (
-            self.min_entry_mc <= candidate.market_cap <= self.max_entry_mc
+            self.min_entry_mc <= candidate.market_cap
+            and (self.max_entry_mc <= 0 or candidate.market_cap <= self.max_entry_mc)
             and (
                 self.max_volume_usd <= 0
                 or (
@@ -58,4 +61,8 @@ class Strategy:
             )
             and dev.mean_peak_mc > self.min_dev_mean_mc
             and dev.launches >= self.min_dev_launches
+            and int(candidate.features.get("unique_buyers") or 0)
+            >= self.min_unique_buyers
+            and int(candidate.features.get("unique_sellers") or 0)
+            >= self.min_unique_sellers
         )
