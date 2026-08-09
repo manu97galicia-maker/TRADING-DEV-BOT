@@ -1,4 +1,4 @@
-name: "PAPER dev history <$4K"
+name: "LIVE MC $2.8K - 2 buyers / 2 sellers"
 enabled: true
 platform: "pump_fun"
 env_file: "../.env"
@@ -7,7 +7,7 @@ wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
 trade:
-  buy_amount: 0.25
+  buy_amount: 0.2
   buy_slippage: 0.0
   sell_slippage: 0.0
   exit_strategy: "manual"
@@ -15,9 +15,8 @@ trade:
 filters:
   listener_type: "pumpportal"
   max_token_age: 0.001
-  paper_trade: true
+  paper_trade: false
   # Lista híbrida/combinada de devs sólidos solicitada por Manu.
-  bro_address: "top_devs_gemas_mas.json"
   yolo_mode: true
   min_entry_mc: 2800
   min_unique_buyers: 2
@@ -26,7 +25,7 @@ filters:
 
 # This subsystem cannot submit transactions. `real_trading: true` is rejected.
 paper_trading:
-  enabled: true
+  enabled: false
   real_trading: false
   starting_capital_sol: 2.0
   trade_size_sol: 0.25
