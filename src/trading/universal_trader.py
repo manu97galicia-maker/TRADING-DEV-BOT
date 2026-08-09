@@ -103,7 +103,7 @@ def _load_creator_file(path: str) -> set[str]:
 # que se calcularon los `median_peak` de las listas Dune). Da igual el precio
 # real de SOL: la comparación mediana_vs_MC_actual es un RATIO, así que la
 # constante se cancela mientras sea la misma a ambos lados.
-_SOL_USD = 72.98  # actualizado 4-ago (pump.fun/sol-price)
+_SOL_USD = 75.0  # actualizado 9-ago; referencia indicada para MC y volumen
 # Supply total estándar de un token pump.fun (1e9 tokens enteros).
 _PUMP_TOTAL_SUPPLY = 1_000_000_000
 
