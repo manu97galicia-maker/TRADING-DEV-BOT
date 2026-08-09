@@ -38,7 +38,7 @@
 # que puede pasar mucho rato sin una sola compra. Eso es lo que se ha pedido:
 # el filtro no es el mercado, es la persona.
 
-name: "DEV10 - dev migra 10%+ , entrada en 3s"
+name: "DEV10 - dev migra 10%+, 0,30 SOL, entrada hasta 2,8K"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -49,21 +49,23 @@ separate_process: false
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.20
+  buy_amount: 0.30
   buy_slippage: 0.15
   sell_slippage: 0.90
 
   exit_strategy: "tp_sl"
-  # La misma escalera que CUNA: +100% la mitad, +200% un cuarto, +400% el otro
-  # cuarto. 50 + 25 + 25 = 100%, sin bolsa que se quede colgada.
-  take_profit_percentage: 1.00
-  take_profit_sell_percentage: 0.50
-  tp2_gain: 2.00
-  tp2_sell: 0.25
-  tp3_gain: 4.00
-  tp3_sell: 0.25
-  tp4_gain: 0
-  tp4_sell: 0
+  # Escalera pedida por Manu: al +50% se recupera el 40% de la posicion, y el
+  # 60% que queda sale en tres tercios iguales (20% cada uno) en +115%, +170%
+  # y +300%. Los porcentajes de venta son sobre la posicion ORIGINAL, asi que
+  # 40 + 20 + 20 + 20 = 100%: no queda moonbag colgada.
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 0.40
+  tp2_gain: 1.15
+  tp2_sell: 0.20
+  tp3_gain: 1.70
+  tp3_sell: 0.20
+  tp4_gain: 3.00
+  tp4_sell: 0.20
 
   # ANTI-RUG: sale entera si en 4 s se vende el doble de lo que se compra. Es
   # la unica proteccion que queda al no haber stop, y con estos devs hace falta
@@ -88,7 +90,7 @@ trade:
   venta_muerta_seg: 120
   venta_muerta_gain: 0.0
 
-  # 30 minutos: el tercer escalon (+400%) es donde vive la migracion, y
+  # 30 minutos: el ultimo escalon (+300%) es donde vive la migracion, y
   # completar una curva no pasa en diez minutos.
   max_hold_time: 1800
   price_check_interval: 1
@@ -98,7 +100,7 @@ trade:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  # 50M = 0,00425 SOL, el 2,1% de una posicion de 0,20. Aqui si compensa pagar por
+  # 50M = 0,00425 SOL, el 1,4% de una posicion de 0,30. Aqui si compensa pagar por
   # llegar antes: como dispara poco, perder una entrada cuesta mas que la
   # comision, y quien filtre por el mismo dev va a estar compitiendo.
   fixed_amount: 50_000_000
@@ -129,7 +131,7 @@ filters:
   paper_trade: false          # DINERO REAL
 
   min_entry_mc: 2000          # el suelo real de pump.fun es $2.040
-  max_entry_mc: 3300          # tope de compra 3,3K
+  max_entry_mc: 2800          # tope de compra 2,8K
   min_curve_sol: 0
 
   # Todo lo demas apagado a proposito: la senal es el dev.

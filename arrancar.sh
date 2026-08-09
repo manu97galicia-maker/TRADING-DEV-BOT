@@ -65,7 +65,7 @@ fi
 # Los ficheros que este arranque necesita. Si faltan, es que el push desde el PC
 # no se hizo y todo lo demas seria trabajar sobre la version vieja.
 FALTA=0
-for f in scout.py scout.service bots/bot-sniper-velocidad.yaml bots/bot-sniper-nextbig-vol.yaml; do
+for f in scout.py scout.service bots/bot-sniper-dev10.yaml; do
   [ -f "$f" ] || { bad "falta $f"; FALTA=1; }
 done
 if [ "$FALTA" = 1 ]; then
