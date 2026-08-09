@@ -40,7 +40,9 @@ class PaperTradingEngine:
             )
         )
         self.strategy = Strategy(
+            min_entry_mc=float(cfg.get("min_entry_mc", 1_500)),
             max_entry_mc=float(cfg.get("max_entry_mc", 4_000)),
+            max_volume_usd=float(cfg.get("max_volume_usd", 0)),
             min_dev_mean_mc=float(cfg.get("min_dev_mean_mc", 12_000)),
             min_dev_launches=int(cfg.get("min_dev_launches", 5)),
             checkpoints=tuple(
@@ -58,7 +60,10 @@ class PaperTradingEngine:
         self._report_task: asyncio.Task | None = None
         self.starting_capital = float(cfg.get("starting_capital_sol", 2.0))
         self.trade_size = float(cfg.get("trade_size_sol", 0.25))
-        if self.starting_capital <= 0 or not 0 < self.trade_size <= self.starting_capital:
+        if (
+            self.starting_capital <= 0
+            or not 0 < self.trade_size <= self.starting_capital
+        ):
             message = "paper capital and trade size must be positive and coherent"
             raise ValueError(message)
         self._capital_lock = asyncio.Lock()
@@ -188,15 +193,27 @@ class PaperTradingEngine:
 
     def _entry_message(self, candidate: Candidate, dev: DevStats) -> str:
         mint = html.escape(candidate.mint)
+        best_token = html.escape(dev.best_symbol) or "No disponible"
+        volume_usd = candidate.features.get("volume_usd")
+        volume_line = (
+            f"Volumen: <b>${float(volume_usd):,.0f}</b>\n"
+            if volume_usd is not None
+            else ""
+        )
         return (
-            f"🧪 <b>ENTRADA SIMULADA</b> · <b>{html.escape(candidate.symbol)}</b>\n"
-            f"MC ${candidate.market_cap:,.0f} · dev <code>{html.escape(candidate.dev)}</code>\n"
-            f"{html.escape(self.history_metric_label).capitalize()} histórica "
-            f"${dev.mean_peak_mc:,.0f} · {dev.launches} lanzamientos\n"
-            f"Mejor: {html.escape(dev.best_symbol) or '—'} ${dev.best_peak_mc:,.0f}\n"
+            f"🚨 <b>ALERTA DE ENTRADA</b> · <b>{html.escape(candidate.symbol)}</b>\n"
+            f"CA: <code>{mint}</code>\n"
+            f"MC actual: <b>${candidate.market_cap:,.0f}</b>\n"
+            f"{volume_line}"
+            f"Dev: <code>{html.escape(candidate.dev)}</code>\n"
+            f"{html.escape(self.history_metric_label).capitalize()} MC del dev: "
+            f"<b>${dev.mean_peak_mc:,.0f}</b>\n"
+            f"Número de lanzamientos: <b>{dev.launches}</b>\n"
+            f"Mejor token del dev: <b>{best_token}</b> "
+            f"(${dev.best_peak_mc:,.0f})\n"
             f"Entrada: {self.trade_size:.2f} SOL · banca inicial {self.starting_capital:.2f} SOL\n"
             f'<a href="https://gmgn.ai/sol/token/{mint}">GMGN</a> · '
-            f'<a href="https://pump.fun/{mint}">Pump.fun</a>\nCA: <code>{mint}</code>'
+            f'<a href="https://pump.fun/coin/{mint}">Pump.fun</a>'
         )
 
     @staticmethod

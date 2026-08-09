@@ -1971,7 +1971,9 @@ class UniversalTrader:
                 try:
                     from monitoring.volumen import operaciones, volumen_sol
 
-                    features["volume"] = volumen_sol(str(token_info.mint))
+                    volume_sol = volumen_sol(str(token_info.mint))
+                    features["volume"] = volume_sol
+                    features["volume_usd"] = volume_sol * _SOL_USD
                     # This feed counts transactions, not unique wallets. Keep
                     # the honest name so the optimizer never mistakes it for
                     # the optional `buyers` feature.

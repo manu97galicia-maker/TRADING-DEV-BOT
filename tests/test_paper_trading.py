@@ -21,9 +21,7 @@ class PaperTradingTests(unittest.TestCase):
 
     def test_capital_defaults_match_requested_simulation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            engine = PaperTradingEngine(
-                {"database": str(Path(directory) / "paper.db")}
-            )
+            engine = PaperTradingEngine({"database": str(Path(directory) / "paper.db")})
             self.assertEqual(engine.starting_capital, 2.0)
             self.assertEqual(engine.trade_size, 0.25)
 
@@ -36,6 +34,7 @@ class PaperTradingTests(unittest.TestCase):
                 }
             )
             with patch("paper_trading.engine.notify") as mocked_notify:
+
                 async def exercise() -> None:
                     engine.start()
                     self.assertIsNotNone(engine._report_task)
@@ -51,11 +50,40 @@ class PaperTradingTests(unittest.TestCase):
         candidate = Candidate(100, "mint", "ABC", "dev", 3_999)
         self.assertTrue(strategy.accepts(candidate, DevStats(5, 12_001, 30_000)))
         self.assertFalse(strategy.accepts(candidate, DevStats(5, 12_000, 30_000)))
-        self.assertFalse(
+        self.assertTrue(
             strategy.accepts(
                 Candidate(100, "m", "A", "d", 4_000), DevStats(5, 12_001, 30_000)
             )
         )
+
+    def test_entry_market_cap_and_volume_bounds_are_strict(self) -> None:
+        strategy = Strategy(
+            min_entry_mc=1_500,
+            max_entry_mc=3_000,
+            max_volume_usd=1_800,
+        )
+        dev = DevStats(5, 12_001, 30_000)
+        passing = Candidate(100, "mint", "ABC", "dev", 2_000, {"volume_usd": 1_800})
+        self.assertTrue(strategy.accepts(passing, dev))
+        self.assertTrue(
+            strategy.accepts(
+                Candidate(100, "m", "A", "d", 1_500, {"volume_usd": 1_000}),
+                dev,
+            )
+        )
+        self.assertTrue(
+            strategy.accepts(
+                Candidate(100, "m", "A", "d", 3_000, {"volume_usd": 1_000}),
+                dev,
+            )
+        )
+        self.assertFalse(
+            strategy.accepts(
+                Candidate(100, "m", "A", "d", 2_000, {"volume_usd": 1_801}),
+                dev,
+            )
+        )
+        self.assertFalse(strategy.accepts(Candidate(100, "m", "A", "d", 2_000), dev))
 
     def test_history_excludes_future_and_current_mint(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -106,6 +134,62 @@ class PaperTradingTests(unittest.TestCase):
             stats = DevHistory(path, "median_peak").before("d", 100)
             self.assertEqual(stats.launches, 8)
             self.assertEqual(stats.mean_peak_mc, 15_000)
+
+    def test_frozen_profile_preserves_best_token(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "profiles.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "wallets": [
+                            {
+                                "wallet": "d",
+                                "launches_7d": 5,
+                                "mean_peak": 13_000,
+                                "best_symbol": "WINNER",
+                                "best_peak_mc": 42_000,
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            stats = DevHistory(path, "mean_peak").before("d", 100)
+            self.assertEqual(stats.best_symbol, "WINNER")
+            self.assertEqual(stats.best_peak_mc, 42_000)
+
+    def test_entry_alert_contains_requested_fields_and_links(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            engine = PaperTradingEngine(
+                {
+                    "database": str(Path(directory) / "paper.db"),
+                    "history_metric_label": "media",
+                }
+            )
+            message = engine._entry_message(
+                Candidate(
+                    100,
+                    "mint123",
+                    "ABC",
+                    "dev123",
+                    2_999,
+                    {"volume_usd": 1_800},
+                ),
+                DevStats(5, 12_001, 42_000, "WINNER"),
+            )
+            for expected in (
+                "ABC",
+                "CA:",
+                "MC actual:",
+                "Volumen:",
+                "dev123",
+                "Media MC del dev:",
+                "Número de lanzamientos:",
+                "Mejor token del dev:",
+                "https://gmgn.ai/sol/token/mint123",
+                "https://pump.fun/coin/mint123",
+            ):
+                self.assertIn(expected, message)
 
     def test_first_tp_sl_touch_wins(self) -> None:
         result = simulate_pair([(0, 0), (5, -0.2), (10, 0.8)], 0.5, 0.15)

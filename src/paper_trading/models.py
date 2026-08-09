@@ -31,7 +31,9 @@ class Candidate:
 class Strategy:
     """Signal and exit parameters."""
 
+    min_entry_mc: float = 1_500.0
     max_entry_mc: float = 4_000.0
+    max_volume_usd: float = 0.0
     min_dev_mean_mc: float = 12_000.0
     min_dev_launches: int = 5
     checkpoints: tuple[int, ...] = (60, 180, 300, 600, 1_800)
@@ -44,8 +46,16 @@ class Strategy:
 
     def accepts(self, candidate: Candidate, dev: DevStats) -> bool:
         """Return whether only information available at signal time passes."""
+        volume_usd = candidate.features.get("volume_usd")
         return (
-            0 < candidate.market_cap < self.max_entry_mc
+            self.min_entry_mc <= candidate.market_cap <= self.max_entry_mc
+            and (
+                self.max_volume_usd <= 0
+                or (
+                    volume_usd is not None
+                    and 0 <= float(volume_usd) <= self.max_volume_usd
+                )
+            )
             and dev.mean_peak_mc > self.min_dev_mean_mc
             and dev.launches >= self.min_dev_launches
         )

@@ -60,5 +60,7 @@ class DevHistory:
                 continue
             launches = int(row.get("launches_7d", row.get("launches", 0)) or 0)
             peak = float(row.get(self.aggregate_peak_field, 0) or 0)
-            return DevStats(launches, peak, 0.0)
+            best_peak = float(row.get("best_peak_mc", row.get("max_peak_mc", 0)) or 0)
+            best_symbol = str(row.get("best_symbol", row.get("best_token", "")) or "")
+            return DevStats(launches, peak, best_peak, best_symbol)
         return DevStats(0, 0.0, 0.0)

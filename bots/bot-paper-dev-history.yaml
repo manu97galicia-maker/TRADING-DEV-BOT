@@ -30,9 +30,12 @@ paper_trading:
   # Fotografía congelada antes de iniciar: no incorpora resultados futuros.
   dev_history: "top_devs_gemas_mas.json"
   aggregate_peak_field: "median_peak"
-  history_metric_label: "mediana"
-  max_entry_mc: 2750
-  min_dev_mean_mc: 10000
+  history_metric_label: "media"
+  # La entrada exige simultaneamente MC y volumen dentro de estos limites.
+  min_entry_mc: 1500
+  max_entry_mc: 3000
+  max_volume_usd: 1800
+  min_dev_mean_mc: 12000
   min_dev_launches: 5
   checkpoints: [60, 180, 300, 600, 1800]
   poll_seconds: 5
