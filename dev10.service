@@ -1,5 +1,5 @@
 [Unit]
-Description=Zero-holder pump.fun sniper - budget-limited real trial
+Description=DEV10 - creador que migra el 10%+, 0,30 SOL, entrada hasta 2,8K
 After=network-online.target
 Wants=network-online.target
 
@@ -9,7 +9,7 @@ User=root
 WorkingDirectory=/root/ai-bot
 Environment=PYTHONPATH=/root/ai-bot/src
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/root/ai-bot/.venv/bin/python -u run_zero_holders_live2.py
+ExecStart=/root/ai-bot/.venv/bin/python -u run_dev10.py
 Restart=always
 RestartSec=10
 
