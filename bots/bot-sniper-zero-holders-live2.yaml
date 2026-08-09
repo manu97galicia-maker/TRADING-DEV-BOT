@@ -75,8 +75,8 @@ filters:
   min_ops: 0
   min_buys: 4
   min_first_block_buys: 4
-  # Volumen mínimo ~$550: 7.34 SOL con SOL/USD a $75.
-  min_volumen_sol: 7.34
+  # Volumen mínimo fijo en SOL; con SOL/USD a $75 equivale a ~$565.50.
+  min_volumen_sol: 7.54
   min_vol_ventana_sol: 0
   vol_ventana_seg: 3
   min_curve_sol: 2
