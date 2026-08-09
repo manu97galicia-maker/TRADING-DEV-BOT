@@ -1,0 +1,105 @@
+name: "NUEVAS-CREACIONES-LIVE2 - presupuesto controlado"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.25
+  buy_slippage: 0.30
+  sell_slippage: 0.30
+  # Sin limite de operaciones: abre tantas posiciones como permita el saldo,
+  # pero deja siempre 0.04 SOL intocables.
+  min_reserve_sol: 0.04
+  max_real_buys: 0
+  exit_strategy: "tp_sl"
+  # Salida: 30% al +50%, 30% al +100%, 20% a $9K, 10% a $19K y 10% a $30K MC.
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 0.30
+  tp2_gain: 1.00
+  tp2_sell: 0.30
+  tp3_gain: 0
+  tp3_sell: 0
+  final_target_mc: 0
+  mc_take_profit_tiers:
+    - target_mc: 9000
+      sell: 0.20
+    - target_mc: 19000
+      sell: 0.10
+    - target_mc: 30000
+      sell: 0.10
+  stop_loss_percentage: 0.12
+  # A los 120s, si sigue por debajo de la entrada, vende el 100% restante.
+  venta_muerta_seg: 120
+  venta_muerta_gain: 0
+  max_hold_time: 0
+  extreme_fast_mode: false
+  price_check_interval: 1
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 1000000
+  extra_percentage: 0.0
+  hard_cap: 1000000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+  wait_before_new_token: 0
+
+filters:
+  listener_type: "logs"
+  # Compra en cuanto cumple durante los dos primeros segundos.
+  max_token_age: 2
+  max_buy_age: 2
+  match_string: null
+  # Esta estrategia mira todas las nuevas creaciones. La lista de devs se
+  # reserva para la estrategia organica independiente.
+  bro_address: null
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false
+  # Entrada rápida únicamente por debajo de $2.7K MC.
+  min_entry_mc: 0
+  max_entry_mc: 2700
+  require_zero_initial_holders: false
+  min_holders: 4
+  min_titulares: 4
+  # Exige cuatro compras totales y que las cuatro ya estén en el primer bloque.
+  min_ops: 0
+  min_buys: 4
+  min_first_block_buys: 4
+  # Volumen mínimo fijo en SOL; con SOL/USD a $75 equivale a ~$565.50.
+  min_volumen_sol: 7.54
+  min_vol_ventana_sol: 0
+  vol_ventana_seg: 3
+  min_curve_sol: 2
+  max_holder_pct: 0
+  max_bundle_pct: 0.25
+  max_dev_hold_pct: 0
+  allow_mayhem: false
+  pumpfun_dev:
+    enabled: false
+  dexscreener:
+    enabled: false
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  # Reduce RPC bursts so price checks and emergency exits are not rate-limited.
+  max_rps: 4
+
+compute_units:
+  # Headroom for Token-2022 fees and ATA creation. Preflight remains enabled,
+  # so a simulation failure is never sent on-chain and costs no priority fee.
+  buy: 140000
+  sell: 120000

@@ -19,7 +19,12 @@ from cleanup.modes import (
 )
 from core.client import SolanaClient
 from core.priority_fee.manager import PriorityFeeManager
-from core.pubkeys import LAMPORTS_PER_SOL, TOKEN_DECIMALS
+from core.pubkeys import (
+    LAMPORTS_PER_SOL,
+    TOKEN_2022_PROGRAM,
+    TOKEN_DECIMALS,
+    TOKEN_PROGRAM,
+)
 from core.wallet import Wallet
 from dexscreener import DexScreenerFilter
 from interfaces.core import Platform, TokenInfo
@@ -98,7 +103,7 @@ def _load_creator_file(path: str) -> set[str]:
 # que se calcularon los `median_peak` de las listas Dune). Da igual el precio
 # real de SOL: la comparación mediana_vs_MC_actual es un RATIO, así que la
 # constante se cancela mientras sea la misma a ambos lados.
-_SOL_USD = 72.98  # actualizado 4-ago (pump.fun/sol-price)
+_SOL_USD = 75.0  # actualizado 9-ago; referencia indicada para MC y volumen
 # Supply total estándar de un token pump.fun (1e9 tokens enteros).
 _PUMP_TOTAL_SUPPLY = 1_000_000_000
 
@@ -224,8 +229,18 @@ def _normalize_creators(value: object) -> frozenset[str] | None:
             return watched
         return frozenset({s})
     if isinstance(value, (list, tuple, set, frozenset)):
-        # Explicitly configured list: empty means "match nothing", not "no filter".
-        return frozenset({str(a).strip() for a in value if str(a).strip()})
+        # Lists may mix literal wallets and watch-list files.  This lets a
+        # strategy safely extend a curated list without copying/staling it.
+        watched: set[str] = set()
+        for item in value:
+            s = str(item).strip()
+            if not s:
+                continue
+            if s.lower().endswith((".json", ".txt")):
+                watched.update(_load_creator_file(s))
+            else:
+                watched.add(s)
+        return frozenset(watched)
     return None
 
 
@@ -277,6 +292,8 @@ class UniversalTrader:
         # (+50/+90/+150/+300) mas moonbag, y solo cabian 3.
         tp4_gain: float | None = None,
         tp4_sell: float | None = None,
+        final_target_mc: float = 0.0,
+        mc_take_profit_tiers: list | None = None,
         price_check_interval: int = 10,
         # Priority fee configuration
         enable_dynamic_priority_fee: bool = False,
@@ -311,6 +328,8 @@ class UniversalTrader:
         gmgn_signals: dict | None = None,
         # Paper-trade mode: filter + record, never buy
         paper_trade: bool = False,
+        # New safe simulator configuration; disabled unless explicitly enabled.
+        paper_trading_config: dict | None = None,
         # Bundle detector: min SOL already in the bonding curve to consider a buy
         min_curve_sol: float = 0.0,
         # Tope de market cap (USD) al entrar: no comprar si la moneda ya está
@@ -328,6 +347,7 @@ class UniversalTrader:
         # Filtro orgánico: mínimo de poseedores distintos para comprar (menos =
         # bundle/dev-spam sin compras reales). 0 = desactivado.
         min_holders: int = 0,
+        require_zero_initial_holders: bool = False,
         # Excepción al límite de holders: si el token ya subió >= este ratio
         # (ej. 3 = x3) el holder grande es momentum real (compró a mercado), no
         # un bundle -> se permite comprar. 0 = sin excepción.
@@ -344,6 +364,12 @@ class UniversalTrader:
         # dentro: el volumen suma compras Y ventas, asi que puede ser varias
         # veces mayor y no lo limita el techo de market cap.
         min_volumen_sol: float = 0.0,
+        # COMPRAS minimas antes de entrar. A diferencia de `min_ops`, no cuenta
+        # las ventas, por lo que reproduce el campo "Buys" de GMGN.
+        min_buys: int = 0,
+        # Compras que deben estar incluidas en el primer slot/bloque observado
+        # para la moneda. 0 = desactivado.
+        min_first_block_buys: int = 0,
         # TRANSACCIONES minimas antes de comprar, contadas del stream de logs.
         # Cuenta cada TradeEvent por separado, tambien los que entran juntos en
         # el primer bloque (un bundle son N transacciones y aqui salen como N,
@@ -377,6 +403,9 @@ class UniversalTrader:
         # ningun lado. 0 = sin filtro.
         min_vol_ventana_sol: float = 0.0,
         vol_ventana_seg: float = 3.0,
+        # Firma de demanda externa en dos tiempos. Se configura como bloque y
+        # queda desactivada por defecto para no cambiar bots existentes.
+        second_wave: dict | None = None,
         # ANTI-RUG: sale de la posicion si las ventas aplastan a las compras.
         # ratio 2.0 = se vende el doble de lo que se compra. 0 = desactivado.
         # Señales de GMGN exigidas para comprar (lista de tipos). El 18 es el
@@ -397,6 +426,10 @@ class UniversalTrader:
         max_buy_age: float = 0.0,
         # Reserva mínima de SOL que el bot nunca gasta (siempre deja esto).
         min_reserve_sol: float = 0.03,
+        # Hard lifetime cap on successful real buys for a cautious live trial.
+        # It is derived from the persistent bought-mints file, so restarts do
+        # not reset the limit. 0 = unlimited.
+        max_real_buys: int = 0,
         # Pump.fun creator-migration filter (via pump.fun API); off unless set
         pumpfun_dev: dict | None = None,
         # Copy-trading: follow wallets and copy their pump.fun buys; off unless set
@@ -521,6 +554,19 @@ class UniversalTrader:
                 (tp4_gain, tp4_sell),
             ]
         )
+        self.final_target_mc = float(final_target_mc or 0)
+        self.mc_take_profit_tiers: list[tuple[float, float]] = []
+        for item in mc_take_profit_tiers or []:
+            if not isinstance(item, dict):
+                continue
+            try:
+                target_mc = float(item.get("target_mc") or 0)
+                sell = float(item.get("sell") or 0)
+            except (TypeError, ValueError):
+                continue
+            if target_mc > 0 and 0 < sell <= 1:
+                self.mc_take_profit_tiers.append((target_mc, sell))
+        self.mc_take_profit_tiers.sort(key=lambda item: item[0])
         # TP AGRESIVO para devs moonshot (los que suelen llegar MUY alto): objetivos
         # más altos y moonbag más grande para pillar el pump. +100/300/900%, vende
         # 20% en cada uno, moonbag 40% (vs el normal +50/150/300% moonbag 20%).
@@ -572,6 +618,9 @@ class UniversalTrader:
         # concurrent buys can never both pass on the same balance (TOCTOU-safe).
         self._spend_lock = asyncio.Lock()
         self._reserved_lamports = 0
+        # Real-buy slots reserved by concurrent candidates. Without this, four
+        # tokens can all observe 0 completed buys before the first confirms.
+        self._reserved_real_buy_slots = 0
         self._fee_headroom_lamports = 3_000_000  # ~0.003 SOL: fees + ATA rent
 
         # Paper-trade: on filter PASS, record the candidate and skip the real buy.
@@ -594,12 +643,15 @@ class UniversalTrader:
         self.max_entry_mc = float(max_entry_mc or 0)
         self.min_entry_mc = float(min_entry_mc or 0)
         self.min_holders = int(min_holders or 0)
+        self.require_zero_initial_holders = bool(require_zero_initial_holders)
         self.max_holder_pct = float(max_holder_pct or 0)
         self.max_bundle_pct = float(max_bundle_pct or 0)
         self.max_dev_hold_pct = float(max_dev_hold_pct or 0)
         self.holder_bypass_ratio = float(holder_bypass_ratio or 0)
         self.min_holders_gmgn = int(min_holders_gmgn or 0)
         self.min_volumen_sol = float(min_volumen_sol or 0)
+        self.min_buys = int(min_buys or 0)
+        self.min_first_block_buys = int(min_first_block_buys or 0)
         self.min_ops = int(min_ops or 0)
         self.min_titulares = int(min_titulares or 0)
         self.redes_originales = bool(redes_originales)
@@ -607,6 +659,7 @@ class UniversalTrader:
         self.max_volumen_sol = float(max_volumen_sol or 0)
         self.min_vol_ventana_sol = float(min_vol_ventana_sol or 0)
         self.vol_ventana_seg = float(vol_ventana_seg or 3.0)
+        self.second_wave = dict(second_wave or {})
         self.senal_gmgn = [int(x) for x in (senal_gmgn or [])]
         self.anti_rug_ratio = float(anti_rug_ratio or 0)
         self.anti_rug_seg = float(anti_rug_seg or 4.0)
@@ -619,6 +672,9 @@ class UniversalTrader:
         # Reserva mínima de SOL que nunca se gasta (para fees / no quedarse a 0).
         self.min_reserve_lamports = int(float(min_reserve_sol or 0.03) * LAMPORTS_PER_SOL)
         self.paper_watch_secs = int(paper_watch_secs or 300)
+        from paper_trading import PaperTradingEngine
+
+        self.paper_engine = PaperTradingEngine(paper_trading_config)
 
         # DexScreener buy filter (no-op unless enabled in config)
         self.dex_filter = DexScreenerFilter(dexscreener_config)
@@ -642,11 +698,12 @@ class UniversalTrader:
         # escribe {mint, frac}, se vende esa fracción del RESTANTE de forma manual.
         self._sell_cmd_path = Path(f"sell_cmd{_sfx}.json")
         self._state_suffix = _sfx  # p.ej. "_bot-sniper-gemas" (lo usa el panel)
+        self.max_real_buys = max(0, int(max_real_buys or 0))
         # Moonbags retenidos (no se auto-venden): el avisador manda un aviso a
         # Telegram cada 5 min mientras sigan en la wallet, para venderlos a mano.
         self._moonbags_path = Path(f"moonbags{_sfx}.json")
-        # Auto-baneo: {dev: rugs_consecutivos}. Con 2 rugs seguidos (sin un TP en
-        # medio) el dev queda bloqueado y no se le compra más.
+        # Auto-baneo: {dev: rugs_acumulados}. Con 2 rugs totales el dev queda
+        # bloqueado; una ganadora intermedia no borra sus antecedentes.
         self._blocked_devs_path = Path(f"blocked_devs{_sfx}.json")
         # Blacklist DURA manual (blacklist_devs.json): devs que NUNCA se compran,
         # bloqueo permanente compartido por todos los bots (no depende del auto-baneo).
@@ -672,6 +729,7 @@ class UniversalTrader:
     async def start(self) -> None:
         """Start the trading bot and listen for new tokens."""
         logger.info(f"Starting Universal Trader for {self.platform.value}")
+        self.paper_engine.start()
         self._check_orphan_position()  # C2: warn if a previous run crashed open
         # Avisador de moonbags: cada 5 min notifica por Telegram los moonbags
         # retenidos para venderlos a mano (nunca los vende el bot).
@@ -1227,7 +1285,7 @@ class UniversalTrader:
     def _record_open_position(
         self, token_info: TokenInfo, buy_result: TradeResult
     ) -> None:
-        """C2: persist the actively-monitored position for crash recovery."""
+        """Persist one marker per actively monitored position."""
         try:
             import os
             import time
@@ -1237,19 +1295,47 @@ class UniversalTrader:
                 "symbol": (token_info.symbol or "").strip(),
                 "entry_price": buy_result.price,
                 "amount": buy_result.amount,
+                "suffix": self._state_suffix,
                 "platform": token_info.platform.value,
                 "ts": time.time(),
             }
-            tmp = self._open_pos_path.with_suffix(".json.tmp")
+            path = self._open_position_path(str(token_info.mint))
+            tmp = path.with_suffix(".json.tmp")
             tmp.write_text(json.dumps(rec), encoding="utf-8")
-            os.replace(tmp, self._open_pos_path)
+            os.replace(tmp, path)
         except Exception:
             logger.exception("No pude registrar la posición abierta")
 
-    def _clear_open_position(self) -> None:
-        """C2: clear the open-position marker once the monitor ends."""
+    def _open_position_path(self, mint: str) -> Path:
+        """Return a mint-specific marker path safe for concurrent positions."""
+        safe_mint = "".join(c for c in str(mint) if c.isalnum())
+        return self._open_pos_path.with_name(
+            f"{self._open_pos_path.stem}__{safe_mint}.json"
+        )
+
+    def _open_position_paths(self) -> list[Path]:
+        """Return legacy and mint-specific markers for this bot only."""
+        pattern = f"{self._open_pos_path.stem}*.json"
+        return sorted(self._open_pos_path.parent.glob(pattern))
+
+    def _clear_open_position(self, mint: str | None = None) -> None:
+        """Clear one marker, or every marker during startup recovery."""
         try:
-            self._open_pos_path.unlink(missing_ok=True)
+            if mint is None:
+                for path in self._open_position_paths():
+                    path.unlink(missing_ok=True)
+                return
+
+            self._open_position_path(mint).unlink(missing_ok=True)
+            # Backward compatibility with the old shared marker. Only remove it
+            # when it belongs to this mint, never when another position owns it.
+            if self._open_pos_path.exists():
+                try:
+                    rec = json.loads(self._open_pos_path.read_text(encoding="utf-8"))
+                except Exception:
+                    rec = {}
+                if str(rec.get("mint") or "") == str(mint):
+                    self._open_pos_path.unlink(missing_ok=True)
         except Exception:
             logger.exception("No pude limpiar open_position.json")
 
@@ -1263,8 +1349,7 @@ class UniversalTrader:
     ) -> None:
         """Escribe el estado en vivo de la posición para el panel de Telegram.
 
-        Sobrescribe open_position*.json con PnL/precio/restante actuales (además
-        de mint/symbol/entry que usa el chequeo de huérfanas). Best-effort.
+        Actualiza el archivo independiente de esta posición. Best-effort.
         """
         try:
             import os
@@ -1285,9 +1370,10 @@ class UniversalTrader:
                 "platform": token_info.platform.value,
                 "ts": time.time(),
             }
-            tmp = self._open_pos_path.with_suffix(".json.tmp")
+            path = self._open_position_path(str(token_info.mint))
+            tmp = path.with_suffix(".json.tmp")
             tmp.write_text(json.dumps(rec), encoding="utf-8")
-            os.replace(tmp, self._open_pos_path)
+            os.replace(tmp, path)
         except Exception:  # noqa: BLE001 - nunca romper el trading por el panel
             pass
 
@@ -1335,34 +1421,39 @@ class UniversalTrader:
         alert fires only once.
         """
         try:
-            if not self._open_pos_path.exists():
+            paths = self._open_position_paths()
+            if not paths:
                 return
-            rec = json.loads(self._open_pos_path.read_text(encoding="utf-8"))
         except Exception:
             self._clear_open_position()
             return
-        mint = str(rec.get("mint", "")).strip()
-        sym = rec.get("symbol", "?") or "?"
-        logger.error(
-            "POSIBLE BOLSA HUÉRFANA de una sesión anterior: %s (%s). El bot NO la "
-            "vende sola; revísala/véndela a mano.",
-            sym,
-            mint,
-        )
-        if mint:
-            self.bought_mints.add(mint)  # nunca la recompres
+        for path in paths:
             try:
-                from monitoring.notifier import notify
+                rec = json.loads(path.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            mint = str(rec.get("mint", "")).strip()
+            sym = rec.get("symbol", "?") or "?"
+            logger.error(
+                "POSIBLE BOLSA HUÉRFANA de una sesión anterior: %s (%s). "
+                "El bot NO la vende sola; revísala/véndela a mano.",
+                sym,
+                mint,
+            )
+            if mint:
+                self.bought_mints.add(mint)  # nunca la recompres
+                try:
+                    from monitoring.notifier import notify
 
-                notify(
-                    f"⚠️ <b>BOLSA HUÉRFANA</b> (crash previo)\n"
-                    f"<b>{sym}</b> — véndela a mano:\n"
-                    f'📊 <a href="https://gmgn.ai/sol/token/{mint}">GMGN</a> · '
-                    f'🤖 <a href="https://t.me/MaestroSniperBot?start={mint}">Maestro</a>\n'
-                    f"<code>{mint}</code>"
-                )
-            except Exception:  # noqa: BLE001
-                pass
+                    notify(
+                        f"⚠️ <b>BOLSA HUÉRFANA</b> (crash previo)\n"
+                        f"<b>{sym}</b> — véndela a mano:\n"
+                        f'📊 <a href="https://gmgn.ai/sol/token/{mint}">GMGN</a> · '
+                        f'🤖 <a href="https://t.me/MaestroSniperBot?start={mint}">Maestro</a>\n'
+                        f"<code>{mint}</code>"
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
         self._clear_open_position()
 
     async def _dev_holds_too_much(self, token_info: TokenInfo) -> bool:
@@ -1438,7 +1529,12 @@ class UniversalTrader:
         Usa getTokenLargestAccounts. Fail-open: ante error/RPC devuelve False
         para no frenar el trading.
         """
-        if self.max_holder_pct <= 0 and self.min_holders <= 0 and self.max_bundle_pct <= 0:
+        if (
+            self.max_holder_pct <= 0
+            and self.min_holders <= 0
+            and self.max_bundle_pct <= 0
+            and not self.require_zero_initial_holders
+        ):
             return False
         try:
             import aiohttp
@@ -1463,7 +1559,7 @@ class UniversalTrader:
                     data = await r.json()
             accts = ((data or {}).get("result") or {}).get("value") or []
             if not accts:
-                return False
+                return self.require_zero_initial_holders
             supply = float(getattr(token_info, "token_total_supply", 0) or 0)
             if supply <= 0:
                 supply = sum(float(a.get("amount") or 0) for a in accts)
@@ -1471,14 +1567,21 @@ class UniversalTrader:
                 return False
             largest_addr = accts[0].get("address")
 
+            real = [a for a in accts if float(a.get("amount") or 0) > 0]
+            if curve_ata:
+                holders = sum(1 for a in real if a.get("address") != curve_ata)
+            else:
+                holders = max(0, len(real) - 1)
+            if self.require_zero_initial_holders and holders != 0:
+                logger.info(
+                    f"{token_info.symbol}: ya tiene {holders} holders externos "
+                    "(se exigen 0) -> se omite"
+                )
+                return True
+
             # Filtro ORGÁNICO: cuenta poseedores reales (con saldo>0, excluida la
             # curva). Pocos holders = bundle/dev-spam, no compra real de gente.
             if self.min_holders > 0:
-                real = [a for a in accts if float(a.get("amount") or 0) > 0]
-                if curve_ata:
-                    holders = sum(1 for a in real if a.get("address") != curve_ata)
-                else:
-                    holders = max(0, len(real) - 1)  # excluye la curva (mayor)
                 if holders < self.min_holders:
                     logger.info(
                         f"{token_info.symbol}: solo {holders} holders "
@@ -1552,8 +1655,10 @@ class UniversalTrader:
                     )
                     return True
             return False
-        except Exception:  # noqa: BLE001 - fail-open, no bloquear por error
-            return False
+        except Exception:  # noqa: BLE001
+            # Para una entrada que exige exactamente cero, no saberlo debe
+            # bloquear la compra; el resto de estrategias conserva fail-open.
+            return self.require_zero_initial_holders
 
     async def _holders_gmgn(self, mint: str) -> int:
         """Titulares según GMGN, o -1 si no se puede saber.
@@ -1625,7 +1730,7 @@ class UniversalTrader:
             if self._is_dev_blocked(_dev_user, _dev_creator):
                 logger.info(
                     f"Evitado {token_info.symbol}: dev "
-                    f"{_dev_user[:8]} BLOQUEADO (2 rugs seguidos)"
+                    f"{_dev_user[:8]} BLOQUEADO (2 rugs acumulados)"
                 )
                 return
 
@@ -1710,17 +1815,23 @@ class UniversalTrader:
             if self.max_buy_age > 0 and (
                 self.min_volumen_sol > 0
                 or self.min_entry_mc > 0
+                or self.min_buys > 0
+                or self.min_first_block_buys > 0
                 or self.min_ops > 0
                 or self.min_titulares > 0
+                or self.second_wave.get("enabled")
             ):
                 from monitoring.volumen import operaciones as _n_ops
+                from monitoring.volumen import compras as _n_buys
+                from monitoring.volumen import compras_primer_bloque as _n_first_buys
                 from monitoring.volumen import titulares as _n_tit
                 from monitoring.volumen import volumen_sol as _vol_sol
+                from monitoring.volumen import metricas_segunda_ola as _segunda_ola
 
                 _nacida = self.token_timestamps.get(str(token_info.mint))
                 _t0 = _nacida if _nacida is not None else monotonic()
                 _visto_vol = 0.0
-                _visto_ops = _visto_tit = 0
+                _visto_buys = _visto_first_buys = _visto_ops = _visto_tit = 0
                 # Ventana corta: mirar cada medio segundo se come casi la mitad
                 # de una ventana de 3 s. Con 0,15 s se comprueba ~20 veces y se
                 # compra en el instante en que cumple.
@@ -1736,11 +1847,24 @@ class UniversalTrader:
                     # de saber cual es el filtro que sobra.
                     _v = _vol_sol(str(token_info.mint))
                     _o = _n_ops(str(token_info.mint))
+                    _b = _n_buys(str(token_info.mint))
+                    _fb = _n_first_buys(str(token_info.mint))
                     _h = _n_tit(str(token_info.mint))
                     _visto_vol = max(_visto_vol, _v)
+                    _visto_buys = max(_visto_buys, _b)
+                    _visto_first_buys = max(_visto_first_buys, _fb)
                     _visto_ops = max(_visto_ops, _o)
                     _visto_tit = max(_visto_tit, _h)
                     if self.min_volumen_sol > 0 and _v < self.min_volumen_sol:
+                        await asyncio.sleep(_paso)
+                        continue
+                    if self.min_buys > 0 and _b < self.min_buys:
+                        await asyncio.sleep(_paso)
+                        continue
+                    if (
+                        self.min_first_block_buys > 0
+                        and _fb < self.min_first_block_buys
+                    ):
                         await asyncio.sleep(_paso)
                         continue
                     # PARTICIPACION. El volumen solo dice cuanto dinero se ha
@@ -1753,6 +1877,49 @@ class UniversalTrader:
                     if self.min_titulares > 0 and _h < self.min_titulares:
                         await asyncio.sleep(_paso)
                         continue
+                    if self.second_wave.get("enabled"):
+                        _sw = self.second_wave
+                        _m = _segunda_ola(
+                            str(token_info.mint),
+                            ventana=float(_sw.get("window_seconds", 1.5)),
+                            creador=str(
+                                getattr(token_info, "creator", "")
+                                or getattr(token_info, "user", "")
+                                or ""
+                            ),
+                        )
+                        if _m["edad"] < float(_sw.get("min_age_seconds", 5.0)):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _m["neto_sol"] < float(_sw.get("min_net_buy_sol", 8.0)):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _m["compras"] < int(_sw.get("min_buys", 20)):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _m["compradores"] < int(_sw.get("min_buyers", 15)):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _m["ola_compra_sol"] < float(
+                            _sw.get("min_wave_buy_sol", 8.0)
+                        ):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _m["ola_neto_sol"] < float(
+                            _sw.get("min_wave_net_sol", 5.0)
+                        ):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _m["ola_compradores"] < int(
+                            _sw.get("min_wave_buyers", 5)
+                        ):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _m["mayor_compra_sol"] < float(
+                            _sw.get("min_largest_buy_sol", 3.0)
+                        ):
+                            await asyncio.sleep(_paso)
+                            continue
                     # Aceleracion: no basta con haber movido mucho en total,
                     # tiene que estar moviendose AHORA.
                     if self.min_vol_ventana_sol > 0:
@@ -1787,6 +1954,8 @@ class UniversalTrader:
                     )
                     logger.info(
                         f"CUMPLE {token_info.symbol}: {_v:.1f} SOL en "
+                        f"{_n_buys(str(token_info.mint))} compras, "
+                        f"{_n_first_buys(str(token_info.mint))} en primer bloque, "
                         f"{_n_ops(str(token_info.mint))} tx de "
                         f"{_n_tit(str(token_info.mint))} wallets, MC ${_mc:,.0f} "
                         f"a los {monotonic() - _t0:.1f}s{_acel}"
@@ -1798,7 +1967,9 @@ class UniversalTrader:
                     logger.info(
                         f"Evitado {token_info.symbol}: no cumplio en "
                         f"{self.max_buy_age:.0f}s (lo mejor visto: "
-                        f"{_visto_vol:.1f} SOL, {_visto_ops} tx, "
+                        f"{_visto_vol:.1f} SOL, {_visto_buys} compras, "
+                        f"{_visto_first_buys} en primer bloque, "
+                        f"{_visto_ops} tx, "
                         f"{_visto_tit} titulares)"
                     )
                     if _tarea_redes is not None:
@@ -1848,7 +2019,12 @@ class UniversalTrader:
             # ~4.3 + ~11.2 SOL). Those are the launches that actually pump, and
             # they rotate the dev wallet so dev-history filters never catch them.
             curve_sol = entry_price = 0.0
-            if self.min_curve_sol > 0 or self.paper_trade or self.max_entry_mc > 0:
+            if (
+                self.min_curve_sol > 0
+                or self.paper_trade
+                or self.paper_engine.enabled
+                or self.max_entry_mc > 0
+            ):
                 try:
                     # commitment="processed" OBLIGATORIO. El cliente se crea sin
                     # commitment y solana-py usa "finalized" por defecto, que va
@@ -1859,12 +2035,56 @@ class UniversalTrader:
                     state = await self.platform_implementations.curve_manager.get_pool_state(
                         token_info.bonding_curve, commitment="processed"
                     )
-                    curve_sol = float(state.get("real_sol_reserves", 0)) / LAMPORTS_PER_SOL
+                    curve_sol = (
+                        float(state.get("real_sol_reserves", 0)) / LAMPORTS_PER_SOL
+                    )
                     entry_price = float(state.get("price_per_token") or 0)
                 except Exception:
                     if self.min_curve_sol > 0:
                         logger.info(f"{token_info.symbol}: curva ilegible; se omite")
                         return
+
+            # Dedicated simulation mode. It is intentionally an early-return
+            # branch: enabled means every candidate is either observed or
+            # rejected here, and no real buyer/transaction path is reachable.
+            if self.paper_engine.enabled:
+                from paper_trading.models import Candidate
+
+                creator = str(
+                    getattr(token_info, "creator", None) or token_info.user or ""
+                )
+                entry_mc = entry_price * _PUMP_TOTAL_SUPPLY * _SOL_USD
+                features = {}
+                try:
+                    from monitoring.volumen import operaciones, volumen_sol
+
+                    features["volume"] = volumen_sol(str(token_info.mint))
+                    # This feed counts transactions, not unique wallets. Keep
+                    # the honest name so the optimizer never mistakes it for
+                    # the optional `buyers` feature.
+                    features["operations"] = operaciones(str(token_info.mint))
+                except Exception:  # noqa: BLE001 - optional point-in-time features
+                    pass
+
+                async def _paper_market_cap() -> float:
+                    state = await self.platform_implementations.curve_manager.get_pool_state(
+                        token_info.bonding_curve, commitment="processed"
+                    )
+                    price = float(state.get("price_per_token") or 0)
+                    return price * _PUMP_TOTAL_SUPPLY * _SOL_USD
+
+                await self.paper_engine.consider(
+                    Candidate(
+                        signal_ts=datetime.utcnow().timestamp(),
+                        mint=str(token_info.mint),
+                        symbol=(token_info.symbol or "").strip(),
+                        dev=creator,
+                        market_cap=entry_mc,
+                        features=features,
+                    ),
+                    _paper_market_cap,
+                )
+                return
 
             # OPORTUNIDAD: aviso TEMPRANO al feed de Telegram (antes de los filtros
             # de compra) para lanzamientos frescos de devs de la lista.
@@ -2106,12 +2326,64 @@ class UniversalTrader:
                         f"Evitado {token_info.symbol}: ya comprada (re-check en semáforo)"
                     )
                     return
+                if self.max_real_buys and len(self.bought_mints) >= self.max_real_buys:
+                    logger.warning(
+                        "Limite de prueba alcanzado: %s/%s compras reales; %s no se compra",
+                        len(self.bought_mints), self.max_real_buys, token_info.symbol,
+                    )
+                    return
+                # The logs listener cannot reliably tell legacy SPL Token from
+                # Token-2022 creation events. Never guess here: the mint account
+                # owner is authoritative. A wrong program derives the wrong ATA
+                # and produces a guaranteed failed transaction.
+                try:
+                    mint_account = await self.solana_client.get_account_info(
+                        token_info.mint, commitment="processed"
+                    )
+                    actual_program = getattr(mint_account, "owner", None)
+                except Exception:  # noqa: BLE001
+                    logger.warning(
+                        "Compra de %s omitida: no pude verificar el programa del mint",
+                        token_info.symbol,
+                    )
+                    return
+                if actual_program not in {TOKEN_PROGRAM, TOKEN_2022_PROGRAM}:
+                    logger.warning(
+                        "Compra de %s omitida: programa de token no reconocido (%s)",
+                        token_info.symbol,
+                        actual_program,
+                    )
+                    return
+                if token_info.token_program_id != actual_program:
+                    token_info.token_program_id = actual_program
+                    address_provider = self.platform_implementations.address_provider
+                    token_info.associated_bonding_curve = (
+                        address_provider.derive_associated_bonding_curve(
+                            token_info.mint,
+                            token_info.bonding_curve,
+                            actual_program,
+                        )
+                    )
                 # Wallet-balance guard: never commit more lamports than we hold
                 # (reserve under a lock so concurrent buys can't both pass).
                 need = int(
                     self.buy_amount * (1 + self.buy_slippage) * LAMPORTS_PER_SOL
                 ) + self._fee_headroom_lamports
                 async with self._spend_lock:
+                    if (
+                        self.max_real_buys
+                        and len(self.bought_mints) + self._reserved_real_buy_slots
+                        >= self.max_real_buys
+                    ):
+                        logger.warning(
+                            "Limite de prueba reservado/alcanzado: %s completadas + "
+                            "%s en curso / %s; %s no se compra",
+                            len(self.bought_mints),
+                            self._reserved_real_buy_slots,
+                            self.max_real_buys,
+                            token_info.symbol,
+                        )
+                        return
                     bal = await self.solana_client.get_sol_balance(self.wallet.pubkey)
                     # Nunca gastar por debajo de la reserva mínima (min_reserve).
                     free = bal - self._reserved_lamports - self.min_reserve_lamports
@@ -2123,6 +2395,7 @@ class UniversalTrader:
                         )
                         return
                     self._reserved_lamports += need
+                    self._reserved_real_buy_slots += 1
                 try:
                     # Buy token
                     logger.info(
@@ -2140,6 +2413,9 @@ class UniversalTrader:
                 finally:
                     async with self._spend_lock:
                         self._reserved_lamports -= need
+                        self._reserved_real_buy_slots = max(
+                            0, self._reserved_real_buy_slots - 1
+                        )
 
             # Only wait for next token in yolo mode
             if self.yolo_mode:
@@ -2503,6 +2779,12 @@ class UniversalTrader:
             else None
         )
         moonbag = moonbag_fraction(tiers)
+        target_price = (
+            self.final_target_mc / (_PUMP_TOTAL_SUPPLY * _SOL_USD)
+            if self.final_target_mc > 0 else None
+        )
+        mc_tiers = self.mc_take_profit_tiers
+        mc_executed = [False] * len(mc_tiers)
         had_tp = False  # ¿disparó algún TP? (para el auto-baneo de devs)
         hit_sl = False  # ¿saltó el stop-loss sin TP previo? = rug
         logger.info(
@@ -2568,6 +2850,46 @@ class UniversalTrader:
                 break
             try:
                 price = await curve_manager.calculate_price(pool_address)
+
+                # The final remainder has an absolute market-cap target.  It is
+                # only armed after every percentage TP has executed.
+                if (
+                    target_price is not None
+                    and tiers
+                    and all(executed)
+                    and price >= target_price
+                ):
+                    if await self._sell_amount(token_info, remaining, price, "final_target_mc"):
+                        realized_sol += remaining * price
+                        remaining = 0.0
+                        fully_exited = True
+                        break
+
+                # Absolute market-cap ladder, armed only after the percentage
+                # TP ladder. Sell fractions are relative to the original buy.
+                if tiers and all(executed) and mc_tiers:
+                    current_mc = price * _PUMP_TOTAL_SUPPLY * _SOL_USD
+                    for i, (target_mc, sell_fraction) in enumerate(mc_tiers):
+                        if mc_executed[i] or current_mc < target_mc:
+                            continue
+                        amount = min(original_qty * sell_fraction, remaining)
+                        if amount <= 1e-9:
+                            mc_executed[i] = True
+                            continue
+                        if await self._sell_amount(
+                            token_info, amount, price, f"mc_tier_${target_mc:.0f}"
+                        ):
+                            realized_sol += amount * price
+                            remaining -= amount
+                            mc_executed[i] = True
+                    if all(mc_executed):
+                        if remaining > 1e-9:
+                            self._record_moonbag(
+                                token_info, remaining, entry_price, pool_address
+                            )
+                        break
+                    await asyncio.sleep(self.price_check_interval)
+                    continue
 
                 # ANTI-RUG: salida de emergencia por presion vendedora.
                 #
@@ -2716,7 +3038,7 @@ class UniversalTrader:
                     break
 
                 # All tiers done -> hold the moonbag and stop monitoring.
-                if tiers and all(executed):
+                if tiers and all(executed) and target_price is None and not mc_tiers:
                     logger.info(
                         f"All TP tiers hit for {token_info.symbol} — "
                         f"holding moonbag {moonbag * 100:.0f}% "
@@ -2727,6 +3049,13 @@ class UniversalTrader:
                             token_info, remaining, entry_price, pool_address
                         )
                     break
+
+                # When an absolute final target is configured, the remaining
+                # moonbag is protected from trailing/max-hold exits and stays
+                # monitored until that target (or an explicit manual/panic sell).
+                if tiers and all(executed) and target_price is not None:
+                    await asyncio.sleep(self.price_check_interval)
+                    continue
 
                 # Time backstop: al llegar al tiempo SOLO se cierra si la posición
                 # está EN NEGATIVO (precio < entrada). Si va en positivo (aunque
@@ -2751,7 +3080,6 @@ class UniversalTrader:
                     and not _muerta_revisada
                     and (monotonic() - start) >= self.venta_muerta_seg
                 ):
-                    _muerta_revisada = True
                     _sube = (price / entry_price - 1) if entry_price else 0.0
                     if _sube < self.venta_muerta_gain:
                         logger.info(
@@ -2762,6 +3090,7 @@ class UniversalTrader:
                         if await self._sell_amount(
                             token_info, remaining, price, "muerta"
                         ):
+                            _muerta_revisada = True
                             realized_sol += remaining * price
                             remaining = 0.0
                             fully_exited = True
@@ -2771,6 +3100,7 @@ class UniversalTrader:
                             token_info.symbol,
                         )
                     else:
+                        _muerta_revisada = True
                         logger.info(
                             f"VIVA {token_info.symbol}: {_sube * 100:+.0f}% a los "
                             f"{self.venta_muerta_seg:.0f}s -> se deja correr"
@@ -2820,10 +3150,11 @@ class UniversalTrader:
         # Auto-baneo de devs por P&L NETO real (no por "tocó un TP"): SOL cobrado
         # + valor del moonbag aún en la wallet, menos el coste de entrada. Así el
         # pump&dumper que clipa un TP1 y luego tira SÍ cuenta como pérdida (rug),
-        # y 2 pérdidas seguidas del mismo dev -> se le bloquea.
+        # y 2 pérdidas acumuladas del mismo dev -> se le bloquea.
         held_val = remaining * last_price  # moonbag que sigue en la wallet
         net_sol = realized_sol + held_val - cost_sol
-        # Regla Manu 2026-07-29: perdida >=50% del coste -> bloqueo INMEDIATO del dev
+        # Una perdida >=50% cuenta como rug grave, pero también requiere dos
+        # rugs acumulados para bloquear al dev.
         _big_loss = cost_sol > 0 and net_sol <= -0.50 * cost_sol
         if _big_loss:
             _outcome = "hardrug"
@@ -2848,7 +3179,7 @@ class UniversalTrader:
 
         # C2: monitor ended (sold / moonbag / abandoned) — no longer an actively
         # managed position, so clear the crash-recovery marker.
-        self._clear_open_position()
+        self._clear_open_position(str(token_info.mint))
 
         # Close the token account only after a FULL exit (not a held moonbag).
         if fully_exited:
@@ -3054,7 +3385,7 @@ class UniversalTrader:
             logger.exception("Failed to save token information")
 
     def _load_blocked_devs(self) -> dict:
-        """{dev: rugs_consecutivos}. >=2 => bloqueado."""
+        """{dev: rugs_acumulados}. >=2 => bloqueado."""
         try:
             if self._blocked_devs_path.is_file():
                 return json.loads(self._blocked_devs_path.read_text(encoding="utf-8"))
@@ -3063,7 +3394,7 @@ class UniversalTrader:
         return {}
 
     def _is_dev_blocked(self, *devs: str) -> bool:
-        """True si ALGUNA de las identidades dadas lleva 2+ rugs seguidos.
+        """True si ALGUNA de las identidades dadas lleva 2+ rugs acumulados.
 
         Se aceptan varias porque un lanzamiento tiene dos: `user` (quien firma)
         y `creator` (a quien apunta la curva). Normalmente coinciden, pero
@@ -3075,29 +3406,30 @@ class UniversalTrader:
     def _bump_dev_rug(self, dev: str, outcome: str) -> None:
         """Actualiza el contador de rugs del dev.
 
-        outcome: 'rug' (+1), 'win' (resetea a 0 y desbloquea), 'neutral' (sin cambio).
+        outcome: 'rug'/'hardrug' (+1), 'win'/'neutral' (sin cambio).
         """
         if not dev or outcome == "neutral":
             return
         data = self._load_blocked_devs()
         prev = int(data.get(dev, 0))
-        if outcome == "win":
-            if prev:
-                data.pop(dev, None)  # una buena limpia el historial y desbloquea
-        elif outcome == "hardrug":
-            # Perdida >=50% en un solo trade -> BLOQUEO INMEDIATO (regla Manu 2026-07-29)
-            data[dev] = max(prev, 0) + 2
-            logger.warning(
-                "DEV BLOQUEADO %s: perdida >=50%% en 1 trade -> no se le compra mas", dev
-            )
-        else:  # rug
+        if outcome in {"rug", "hardrug"}:
             data[dev] = prev + 1
             if data[dev] >= 2:
                 logger.warning(
-                    "DEV BLOQUEADO %s: %s rugs seguidos -> no se le compra mas",
+                    "DEV BLOQUEADO %s: %s rugs acumulados -> no se le compra mas",
                     dev,
                     data[dev],
                 )
+                try:
+                    from monitoring.notifier import notify
+
+                    notify(
+                        f"⛔ <b>DEV BLOQUEADO</b>\n"
+                        f"Dos rugs detectados. No se volverá a comprar.\n"
+                        f"<code>{dev}</code>"
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
         try:
             self._blocked_devs_path.write_text(json.dumps(data), encoding="utf-8")
         except OSError:

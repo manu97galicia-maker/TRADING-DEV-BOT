@@ -1,0 +1,12 @@
+{
+  "max_entry_mc": [3000, 4000, 5000],
+  "min_dev_mean_mc": [10000, 12000, 15000],
+  "min_dev_launches": [3, 5, 10],
+  "min_buyers": [null, 5, 10],
+  "min_volume": [null, 10, 25],
+  "min_velocity": [null, 2, 5],
+  "max_bundle_pct": [null, 0.2, 0.4],
+  "max_snipers_pct": [null, 0.1, 0.25],
+  "max_concentration": [null, 0.1, 0.2],
+  "max_dev_holding": [null, 0.05, 0.1]
+}

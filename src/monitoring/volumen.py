@@ -44,6 +44,12 @@ DISC_TRADE = hashlib.sha256(b"event:TradeEvent").digest()[:8]
 #: contar titulares distintos sin preguntarle a nadie.
 _ops: dict[str, list[tuple[float, float, bool, str]]] = defaultdict(list)
 
+# Primer slot observado por moneda y numero de compras incluidas en ese mismo
+# bloque. Se mantiene separado de ``_ops`` para no cambiar el formato de los
+# contadores existentes.
+_first_slot: dict[str, int] = {}
+_first_slot_buys: dict[str, int] = defaultdict(int)
+
 #: Sin esto la memoria crece sin limite: pump.fun lanza miles de monedas al dia
 #: y el bot esta pensado para correr semanas seguidas.
 _MAX_MINTS = 4000
@@ -57,13 +63,33 @@ def _limpiar() -> None:
     muertos = [m for m, v in _ops.items() if not v or v[-1][0] < corte]
     for m in muertos:
         _ops.pop(m, None)
+        _first_slot.pop(m, None)
+        _first_slot_buys.pop(m, None)
     # Si aun asi no baja (mucha moneda viva a la vez), se tira lo mas antiguo.
     if len(_ops) > _MAX_MINTS:
         for m in sorted(_ops, key=lambda k: _ops[k][-1][0])[: len(_ops) - _MAX_MINTS]:
             _ops.pop(m, None)
+            _first_slot.pop(m, None)
+            _first_slot_buys.pop(m, None)
 
 
-def registrar_logs(logs: list[str]) -> None:
+def registrar_bloque_inicial(mint: str, slot: int | None) -> None:
+    """Fija el slot de creacion para contar solo sus compras.
+
+    ``registrar_logs`` se ejecuta antes de que el parser conozca el mint. Si la
+    creacion no incluyera una compra, sin esta marca el primer trade posterior
+    se confundiria con el primer bloque.
+    """
+    if slot is None:
+        return
+    bloque = int(slot)
+    primero = _first_slot.get(mint)
+    if primero is None or bloque < primero:
+        _first_slot[mint] = bloque
+        _first_slot_buys[mint] = 0
+
+
+def registrar_logs(logs: list[str], slot: int | None = None) -> None:
     """Apunta las operaciones que aparezcan en estos logs. No lanza nunca.
 
     Se llama para CADA notificacion del websocket, incluidas las que no son
@@ -89,6 +115,14 @@ def registrar_logs(logs: list[str]) -> None:
             es_compra = cuerpo[48] == 1
             wallet = _b58(cuerpo[49:81]) if len(cuerpo) >= 81 else ""
             _ops[mint].append((ahora, sol_lamports / 1e9, es_compra, wallet))
+            if slot is not None:
+                bloque = int(slot)
+                primero = _first_slot.get(mint)
+                if primero is None or bloque < primero:
+                    _first_slot[mint] = bloque
+                    _first_slot_buys[mint] = 1 if es_compra else 0
+                elif bloque == primero and es_compra:
+                    _first_slot_buys[mint] += 1
         except Exception:  # noqa: BLE001
             continue
     _limpiar()
@@ -112,6 +146,16 @@ def operaciones(mint: str) -> int:
     mismo bundle: se leen del log de la cadena uno a uno, no agrupados.
     """
     return len(_ops.get(mint) or ())
+
+
+def compras(mint: str) -> int:
+    """Numero de compras vistas en esa moneda, sin contar ventas."""
+    return sum(1 for _t, _s, es_compra, _w in (_ops.get(mint) or ()) if es_compra)
+
+
+def compras_primer_bloque(mint: str) -> int:
+    """Numero de compras vistas en el slot donde se creo la moneda."""
+    return int(_first_slot_buys.get(mint, 0))
 
 
 def titulares(mint: str) -> int:
@@ -155,6 +199,76 @@ def presion(mint: str, segundos: float = 3.0) -> tuple[float, float]:
         else:
             vende += s
     return (compra, vende)
+
+
+def metricas_segunda_ola(
+    mint: str,
+    ventana: float = 1.5,
+    creador: str = "",
+    ahora: float | None = None,
+) -> dict[str, float | int]:
+    """Resume el flujo acumulado y la oleada mas reciente de compradores.
+
+    La edad se mide desde el primer ``TradeEvent`` observado, que en pump.fun
+    coincide con la compra de creacion. Las metricas recientes excluyen al
+    creador: una recompra del dev no debe fingir demanda externa.
+    """
+    ops = _ops.get(mint)
+    if not ops:
+        return {
+            "edad": 0.0,
+            "compras": 0,
+            "compradores": 0,
+            "neto_sol": 0.0,
+            "ola_compra_sol": 0.0,
+            "ola_venta_sol": 0.0,
+            "ola_neto_sol": 0.0,
+            "ola_compradores": 0,
+            "mayor_compra_sol": 0.0,
+            "venta_creador_sol": 0.0,
+        }
+
+    instante = time.time() if ahora is None else ahora
+    corte = instante - max(float(ventana), 0.0)
+    compra_total = venta_total = venta_creador = 0.0
+    compras_total = 0
+    compradores: set[str] = set()
+    ola_compra = ola_venta = mayor_compra = 0.0
+    ola_compradores: set[str] = set()
+
+    for t, sol, es_compra, wallet in ops:
+        if es_compra:
+            compra_total += sol
+            compras_total += 1
+            if wallet and wallet != creador:
+                compradores.add(wallet)
+        else:
+            venta_total += sol
+            if creador and wallet == creador:
+                venta_creador += sol
+
+        if t < corte or (creador and wallet == creador):
+            continue
+        if es_compra:
+            ola_compra += sol
+            mayor_compra = max(mayor_compra, sol)
+            if wallet:
+                ola_compradores.add(wallet)
+        else:
+            ola_venta += sol
+
+    return {
+        "edad": max(0.0, instante - ops[0][0]),
+        "compras": compras_total,
+        "compradores": len(compradores),
+        "neto_sol": compra_total - venta_total,
+        "ola_compra_sol": ola_compra,
+        "ola_venta_sol": ola_venta,
+        "ola_neto_sol": ola_compra - ola_venta,
+        "ola_compradores": len(ola_compradores),
+        "mayor_compra_sol": mayor_compra,
+        "venta_creador_sol": venta_creador,
+    }
 
 
 _ALFA = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"

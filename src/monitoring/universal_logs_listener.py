@@ -204,6 +204,7 @@ class UniversalLogsListener(BaseTokenListener):
             log_data = data["params"]["result"]["value"]
             logs = log_data.get("logs", [])
             signature = log_data.get("signature", "unknown")
+            slot = data["params"]["result"].get("context", {}).get("slot")
 
             # Contar el volumen ANTES de filtrar por creacion: estas mismas
             # notificaciones traen las compras y ventas de todas las monedas
@@ -213,7 +214,7 @@ class UniversalLogsListener(BaseTokenListener):
             try:
                 from monitoring.volumen import registrar_logs
 
-                registrar_logs(logs)
+                registrar_logs(logs, slot=slot)
             except Exception:  # noqa: BLE001, S110
                 pass
 
@@ -221,6 +222,12 @@ class UniversalLogsListener(BaseTokenListener):
             for platform, parser in self.platform_parsers.items():
                 token_info = parser.parse_token_creation_from_logs(logs, signature)
                 if token_info:
+                    try:
+                        from monitoring.volumen import registrar_bloque_inicial
+
+                        registrar_bloque_inicial(str(token_info.mint), slot)
+                    except Exception:  # noqa: BLE001, S110
+                        pass
                     return token_info
 
             return None

@@ -1,0 +1,90 @@
+name: "ORGANIC-LIVE2 - prueba real limitada"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.25
+  buy_slippage: 0.30
+  sell_slippage: 0.30
+  min_reserve_sol: 0.04
+  max_real_buys: 2
+  exit_strategy: "tp_sl"
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 0.40
+  tp2_gain: 1.00
+  tp2_sell: 0.25
+  tp3_gain: 2.00
+  tp3_sell: 0.25
+  final_target_mc: 29000
+  stop_loss_percentage: 0.38
+  price_check_interval: 1
+  max_hold_time: 0
+  extreme_fast_mode: false
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  # 1M micro-lamports/CU: prioridad moderada sin pagar el sobrecoste anterior
+  # de 5M. El hard cap impide que esta estrategia lo supere.
+  fixed_amount: 1000000
+  extra_percentage: 0.0
+  hard_cap: 1000000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+  wait_before_new_token: 0
+
+filters:
+  listener_type: "pumpportal"
+  # Captura de sniper: edad máxima 0.7 min = 42 segundos.
+  max_token_age: 42
+  max_buy_age: 42
+  match_string: null
+  # Lista de calidad >=60% (supera el minimo solicitado de 40%) + los tres
+  # aprobados del informe Scout del 06/08.
+  bro_address:
+    - "top_devs_win60.json"
+    - "Qs23xF9r5xwP1m9rU8diEqJsUnjH57RE3PPxzZj9hjC"
+    - "H6hPTUg73GDscH4Q9NAviJrUtMwUXE6PzZat2xWDszrJ"
+    - "95T9JiB7FJsFiqk4aMLPMfmk1ZgaHzqoTDwn5ZXkTWYC"
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false
+  # Banda de entrada mostrada: $3K-$6K.
+  min_entry_mc: 3000
+  max_entry_mc: 6000
+  min_curve_sol: 2
+  min_holders: 10
+  min_titulares: 10
+  min_ops: 8
+  # La pantalla expresa $2K; el stream interno mide SOL. Equivale a ~27 SOL
+  # con SOL alrededor de $74-$75. Se mantiene configurable.
+  min_volumen_sol: 27
+  min_vol_ventana_sol: 3
+  vol_ventana_seg: 3
+  max_holder_pct: 0.05
+  max_bundle_pct: 0.30
+  max_dev_hold_pct: 0.02
+  allow_mayhem: false
+  pumpfun_dev:
+    enabled: true
+    min_migrations: 2
+    min_rate: 0.20
+  dexscreener:
+    enabled: false
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 8

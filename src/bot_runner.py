@@ -130,6 +130,8 @@ async def start_bot(config_path: str):
             tp3_sell=cfg["trade"].get("tp3_sell"),
             tp4_gain=cfg["trade"].get("tp4_gain"),
             tp4_sell=cfg["trade"].get("tp4_sell"),
+            final_target_mc=cfg["trade"].get("final_target_mc", 0),
+            mc_take_profit_tiers=cfg["trade"].get("mc_take_profit_tiers"),
             price_check_interval=cfg["trade"].get("price_check_interval", 10),
             # Listener configuration
             listener_type=cfg["filters"]["listener_type"],
@@ -188,6 +190,9 @@ async def start_bot(config_path: str):
             gmgn_signals=cfg.get("filters", {}).get("gmgn_signals"),
             # Paper-trade mode: filter + record, never buy (for ROI tracking)
             paper_trade=cfg.get("filters", {}).get("paper_trade", False),
+            # Safe point-in-time simulator. When enabled it owns the candidate
+            # path and always returns before any buy transaction is constructed.
+            paper_trading_config=cfg.get("paper_trading"),
             # Bundle detector: min SOL in the bonding curve to consider a buy
             min_curve_sol=cfg.get("filters", {}).get("min_curve_sol", 0.0),
             max_entry_mc=cfg.get("filters", {}).get("max_entry_mc", 0.0),
@@ -196,9 +201,16 @@ async def start_bot(config_path: str):
             max_bundle_pct=cfg.get("filters", {}).get("max_bundle_pct", 0.0),
             max_dev_hold_pct=cfg.get("filters", {}).get("max_dev_hold_pct", 0.0),
             min_holders=cfg.get("filters", {}).get("min_holders", 0),
+            require_zero_initial_holders=cfg.get("filters", {}).get(
+                "require_zero_initial_holders", False
+            ),
             holder_bypass_ratio=cfg.get("filters", {}).get("holder_bypass_ratio", 0.0),
             min_holders_gmgn=cfg.get("filters", {}).get("min_holders_gmgn", 0),
             min_volumen_sol=cfg.get("filters", {}).get("min_volumen_sol", 0.0),
+            min_buys=cfg.get("filters", {}).get("min_buys", 0),
+            min_first_block_buys=cfg.get("filters", {}).get(
+                "min_first_block_buys", 0
+            ),
             min_ops=cfg.get("filters", {}).get("min_ops", 0),
             min_titulares=cfg.get("filters", {}).get("min_titulares", 0),
             redes_originales=cfg.get("filters", {}).get("redes_originales", False),
@@ -206,6 +218,7 @@ async def start_bot(config_path: str):
             max_volumen_sol=cfg.get("filters", {}).get("max_volumen_sol", 0.0),
             min_vol_ventana_sol=cfg.get("filters", {}).get("min_vol_ventana_sol", 0.0),
             vol_ventana_seg=cfg.get("filters", {}).get("vol_ventana_seg", 3.0),
+            second_wave=cfg.get("filters", {}).get("second_wave"),
             senal_gmgn=cfg.get("filters", {}).get("senal_gmgn"),
             anti_rug_ratio=cfg.get("trade", {}).get("anti_rug_ratio", 0.0),
             anti_rug_seg=cfg.get("trade", {}).get("anti_rug_seg", 4.0),
@@ -213,6 +226,7 @@ async def start_bot(config_path: str):
             no_repeat_name_min=cfg.get("filters", {}).get("no_repeat_name_min", 0.0),
             max_buy_age=cfg.get("filters", {}).get("max_buy_age", 0.0),
             min_reserve_sol=cfg.get("trade", {}).get("min_reserve_sol", 0.03),
+            max_real_buys=cfg.get("trade", {}).get("max_real_buys", 0),
             pumpfun_dev=cfg.get("filters", {}).get("pumpfun_dev"),
             copy_wallets=cfg.get("filters", {}).get("copy_wallets"),
             allow_mayhem=cfg.get("filters", {}).get("allow_mayhem", False),
@@ -422,7 +436,7 @@ def run_all_bots():
             for f, r in zip(en_proceso, res, strict=False):
                 if isinstance(r, Exception):
                     logging.error(f"Bot {f} murio: {r!r}")
-    
+
         asyncio.run(_todos())
 
     for p in processes:
