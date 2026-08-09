@@ -402,6 +402,9 @@ class UniversalTrader:
         # ningun lado. 0 = sin filtro.
         min_vol_ventana_sol: float = 0.0,
         vol_ventana_seg: float = 3.0,
+        # Firma de demanda externa en dos tiempos. Se configura como bloque y
+        # queda desactivada por defecto para no cambiar bots existentes.
+        second_wave: dict | None = None,
         # ANTI-RUG: sale de la posicion si las ventas aplastan a las compras.
         # ratio 2.0 = se vende el doble de lo que se compra. 0 = desactivado.
         # Señales de GMGN exigidas para comprar (lista de tipos). El 18 es el
@@ -655,6 +658,7 @@ class UniversalTrader:
         self.max_volumen_sol = float(max_volumen_sol or 0)
         self.min_vol_ventana_sol = float(min_vol_ventana_sol or 0)
         self.vol_ventana_seg = float(vol_ventana_seg or 3.0)
+        self.second_wave = dict(second_wave or {})
         self.senal_gmgn = [int(x) for x in (senal_gmgn or [])]
         self.anti_rug_ratio = float(anti_rug_ratio or 0)
         self.anti_rug_seg = float(anti_rug_seg or 4.0)
@@ -1793,12 +1797,14 @@ class UniversalTrader:
                 or self.min_first_block_buys > 0
                 or self.min_ops > 0
                 or self.min_titulares > 0
+                or self.second_wave.get("enabled")
             ):
                 from monitoring.volumen import operaciones as _n_ops
                 from monitoring.volumen import compras as _n_buys
                 from monitoring.volumen import compras_primer_bloque as _n_first_buys
                 from monitoring.volumen import titulares as _n_tit
                 from monitoring.volumen import volumen_sol as _vol_sol
+                from monitoring.volumen import metricas_segunda_ola as _segunda_ola
 
                 _nacida = self.token_timestamps.get(str(token_info.mint))
                 _t0 = _nacida if _nacida is not None else monotonic()
@@ -1849,6 +1855,49 @@ class UniversalTrader:
                     if self.min_titulares > 0 and _h < self.min_titulares:
                         await asyncio.sleep(_paso)
                         continue
+                    if self.second_wave.get("enabled"):
+                        _sw = self.second_wave
+                        _m = _segunda_ola(
+                            str(token_info.mint),
+                            ventana=float(_sw.get("window_seconds", 1.5)),
+                            creador=str(
+                                getattr(token_info, "creator", "")
+                                or getattr(token_info, "user", "")
+                                or ""
+                            ),
+                        )
+                        if _m["edad"] < float(_sw.get("min_age_seconds", 5.0)):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _m["neto_sol"] < float(_sw.get("min_net_buy_sol", 8.0)):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _m["compras"] < int(_sw.get("min_buys", 20)):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _m["compradores"] < int(_sw.get("min_buyers", 15)):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _m["ola_compra_sol"] < float(
+                            _sw.get("min_wave_buy_sol", 8.0)
+                        ):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _m["ola_neto_sol"] < float(
+                            _sw.get("min_wave_net_sol", 5.0)
+                        ):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _m["ola_compradores"] < int(
+                            _sw.get("min_wave_buyers", 5)
+                        ):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _m["mayor_compra_sol"] < float(
+                            _sw.get("min_largest_buy_sol", 3.0)
+                        ):
+                            await asyncio.sleep(_paso)
+                            continue
                     # Aceleracion: no basta con haber movido mucho en total,
                     # tiene que estar moviendose AHORA.
                     if self.min_vol_ventana_sol > 0:

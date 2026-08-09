@@ -217,6 +217,7 @@ async def start_bot(config_path: str):
             max_volumen_sol=cfg.get("filters", {}).get("max_volumen_sol", 0.0),
             min_vol_ventana_sol=cfg.get("filters", {}).get("min_vol_ventana_sol", 0.0),
             vol_ventana_seg=cfg.get("filters", {}).get("vol_ventana_seg", 3.0),
+            second_wave=cfg.get("filters", {}).get("second_wave"),
             senal_gmgn=cfg.get("filters", {}).get("senal_gmgn"),
             anti_rug_ratio=cfg.get("trade", {}).get("anti_rug_ratio", 0.0),
             anti_rug_seg=cfg.get("trade", {}).get("anti_rug_seg", 4.0),

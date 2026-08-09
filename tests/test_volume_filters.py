@@ -60,6 +60,32 @@ class VolumeFilterTests(unittest.TestCase):
 
         self.assertEqual(volumen.compras_primer_bloque(self.mint), 0)
 
+    def test_second_wave_metrics_exclude_creator_from_recent_demand(self):
+        volumen._ops[self.mint] = [
+            (100.0, 3.0, True, "creator"),
+            (101.0, 1.0, True, "buyer-a"),
+            (104.0, 2.0, False, "creator"),
+            (105.2, 3.5, True, "buyer-b"),
+            (105.4, 2.0, True, "buyer-c"),
+            (105.5, 1.0, False, "seller"),
+            (105.6, 9.0, True, "creator"),
+        ]
+
+        metrics = volumen.metricas_segunda_ola(
+            self.mint, ventana=1.0, creador="creator", ahora=106.0
+        )
+
+        self.assertAlmostEqual(metrics["edad"], 6.0)
+        self.assertEqual(metrics["compras"], 5)
+        self.assertEqual(metrics["compradores"], 3)
+        self.assertAlmostEqual(metrics["neto_sol"], 15.5)
+        self.assertAlmostEqual(metrics["ola_compra_sol"], 5.5)
+        self.assertAlmostEqual(metrics["ola_venta_sol"], 1.0)
+        self.assertAlmostEqual(metrics["ola_neto_sol"], 4.5)
+        self.assertEqual(metrics["ola_compradores"], 2)
+        self.assertAlmostEqual(metrics["mayor_compra_sol"], 3.5)
+        self.assertAlmostEqual(metrics["venta_creador_sol"], 2.0)
+
 
 if __name__ == "__main__":
     unittest.main()

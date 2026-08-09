@@ -201,6 +201,76 @@ def presion(mint: str, segundos: float = 3.0) -> tuple[float, float]:
     return (compra, vende)
 
 
+def metricas_segunda_ola(
+    mint: str,
+    ventana: float = 1.5,
+    creador: str = "",
+    ahora: float | None = None,
+) -> dict[str, float | int]:
+    """Resume el flujo acumulado y la oleada mas reciente de compradores.
+
+    La edad se mide desde el primer ``TradeEvent`` observado, que en pump.fun
+    coincide con la compra de creacion. Las metricas recientes excluyen al
+    creador: una recompra del dev no debe fingir demanda externa.
+    """
+    ops = _ops.get(mint)
+    if not ops:
+        return {
+            "edad": 0.0,
+            "compras": 0,
+            "compradores": 0,
+            "neto_sol": 0.0,
+            "ola_compra_sol": 0.0,
+            "ola_venta_sol": 0.0,
+            "ola_neto_sol": 0.0,
+            "ola_compradores": 0,
+            "mayor_compra_sol": 0.0,
+            "venta_creador_sol": 0.0,
+        }
+
+    instante = time.time() if ahora is None else ahora
+    corte = instante - max(float(ventana), 0.0)
+    compra_total = venta_total = venta_creador = 0.0
+    compras_total = 0
+    compradores: set[str] = set()
+    ola_compra = ola_venta = mayor_compra = 0.0
+    ola_compradores: set[str] = set()
+
+    for t, sol, es_compra, wallet in ops:
+        if es_compra:
+            compra_total += sol
+            compras_total += 1
+            if wallet and wallet != creador:
+                compradores.add(wallet)
+        else:
+            venta_total += sol
+            if creador and wallet == creador:
+                venta_creador += sol
+
+        if t < corte or (creador and wallet == creador):
+            continue
+        if es_compra:
+            ola_compra += sol
+            mayor_compra = max(mayor_compra, sol)
+            if wallet:
+                ola_compradores.add(wallet)
+        else:
+            ola_venta += sol
+
+    return {
+        "edad": max(0.0, instante - ops[0][0]),
+        "compras": compras_total,
+        "compradores": len(compradores),
+        "neto_sol": compra_total - venta_total,
+        "ola_compra_sol": ola_compra,
+        "ola_venta_sol": ola_venta,
+        "ola_neto_sol": ola_compra - ola_venta,
+        "ola_compradores": len(ola_compradores),
+        "mayor_compra_sol": mayor_compra,
+        "venta_creador_sol": venta_creador,
+    }
+
+
 _ALFA = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 
