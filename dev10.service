@@ -2,6 +2,10 @@
 Description=DEV10 - creador que migra el 10%+, 0,30 SOL, entrada hasta 2,8K
 After=network-online.target
 Wants=network-online.target
+# Va en [Unit], no en [Service]: puesto en el sitio equivocado systemd lo ignora
+# en silencio. Sin esto, por defecto 5 arranques en 10 s dejan el servicio en
+# `failed` PARA SIEMPRE. Con 0 no hay limite y el bot se levanta siempre.
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
