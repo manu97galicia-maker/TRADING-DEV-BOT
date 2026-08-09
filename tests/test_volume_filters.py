@@ -1,5 +1,7 @@
 """Tests for on-chain volume-side counters used by live filters."""
 
+import base64
+import struct
 import time
 import unittest
 
@@ -11,6 +13,8 @@ class VolumeFilterTests(unittest.TestCase):
 
     def tearDown(self):
         volumen._ops.pop(self.mint, None)
+        volumen._first_slot.pop(self.mint, None)
+        volumen._first_slot_buys.pop(self.mint, None)
 
     def test_compras_excludes_sells(self):
         now = time.time()
@@ -22,6 +26,39 @@ class VolumeFilterTests(unittest.TestCase):
 
         self.assertEqual(volumen.compras(self.mint), 2)
         self.assertEqual(volumen.operaciones(self.mint), 3)
+
+    def test_compras_primer_bloque_only_counts_first_slot(self):
+        raw_mint = bytes(range(1, 33))
+        mint = volumen._b58(raw_mint)
+        wallet = bytes(range(33, 65))
+
+        def trade_log(is_buy: bool = True) -> str:
+            body = (
+                raw_mint
+                + struct.pack("<Q", 1_000_000_000)
+                + struct.pack("<Q", 100)
+                + bytes([is_buy])
+                + wallet
+            )
+            encoded = base64.b64encode(volumen.DISC_TRADE + body).decode()
+            return f"Program data: {encoded}"
+
+        volumen.registrar_bloque_inicial(mint, 123)
+        volumen.registrar_logs([trade_log()] * 4, slot=123)
+        volumen.registrar_logs([trade_log()], slot=124)
+
+        self.assertEqual(volumen.compras_primer_bloque(mint), 4)
+        self.assertEqual(volumen.compras(mint), 5)
+
+        volumen._ops.pop(mint, None)
+        volumen._first_slot.pop(mint, None)
+        volumen._first_slot_buys.pop(mint, None)
+
+    def test_creation_slot_without_buy_does_not_use_next_block(self):
+        volumen.registrar_bloque_inicial(self.mint, 123)
+        volumen._first_slot_buys[self.mint] = 0
+
+        self.assertEqual(volumen.compras_primer_bloque(self.mint), 0)
 
 
 if __name__ == "__main__":

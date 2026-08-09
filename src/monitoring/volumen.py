@@ -44,6 +44,12 @@ DISC_TRADE = hashlib.sha256(b"event:TradeEvent").digest()[:8]
 #: contar titulares distintos sin preguntarle a nadie.
 _ops: dict[str, list[tuple[float, float, bool, str]]] = defaultdict(list)
 
+# Primer slot observado por moneda y numero de compras incluidas en ese mismo
+# bloque. Se mantiene separado de ``_ops`` para no cambiar el formato de los
+# contadores existentes.
+_first_slot: dict[str, int] = {}
+_first_slot_buys: dict[str, int] = defaultdict(int)
+
 #: Sin esto la memoria crece sin limite: pump.fun lanza miles de monedas al dia
 #: y el bot esta pensado para correr semanas seguidas.
 _MAX_MINTS = 4000
@@ -57,13 +63,33 @@ def _limpiar() -> None:
     muertos = [m for m, v in _ops.items() if not v or v[-1][0] < corte]
     for m in muertos:
         _ops.pop(m, None)
+        _first_slot.pop(m, None)
+        _first_slot_buys.pop(m, None)
     # Si aun asi no baja (mucha moneda viva a la vez), se tira lo mas antiguo.
     if len(_ops) > _MAX_MINTS:
         for m in sorted(_ops, key=lambda k: _ops[k][-1][0])[: len(_ops) - _MAX_MINTS]:
             _ops.pop(m, None)
+            _first_slot.pop(m, None)
+            _first_slot_buys.pop(m, None)
 
 
-def registrar_logs(logs: list[str]) -> None:
+def registrar_bloque_inicial(mint: str, slot: int | None) -> None:
+    """Fija el slot de creacion para contar solo sus compras.
+
+    ``registrar_logs`` se ejecuta antes de que el parser conozca el mint. Si la
+    creacion no incluyera una compra, sin esta marca el primer trade posterior
+    se confundiria con el primer bloque.
+    """
+    if slot is None:
+        return
+    bloque = int(slot)
+    primero = _first_slot.get(mint)
+    if primero is None or bloque < primero:
+        _first_slot[mint] = bloque
+        _first_slot_buys[mint] = 0
+
+
+def registrar_logs(logs: list[str], slot: int | None = None) -> None:
     """Apunta las operaciones que aparezcan en estos logs. No lanza nunca.
 
     Se llama para CADA notificacion del websocket, incluidas las que no son
@@ -89,6 +115,14 @@ def registrar_logs(logs: list[str]) -> None:
             es_compra = cuerpo[48] == 1
             wallet = _b58(cuerpo[49:81]) if len(cuerpo) >= 81 else ""
             _ops[mint].append((ahora, sol_lamports / 1e9, es_compra, wallet))
+            if slot is not None:
+                bloque = int(slot)
+                primero = _first_slot.get(mint)
+                if primero is None or bloque < primero:
+                    _first_slot[mint] = bloque
+                    _first_slot_buys[mint] = 1 if es_compra else 0
+                elif bloque == primero and es_compra:
+                    _first_slot_buys[mint] += 1
         except Exception:  # noqa: BLE001
             continue
     _limpiar()
@@ -117,6 +151,11 @@ def operaciones(mint: str) -> int:
 def compras(mint: str) -> int:
     """Numero de compras vistas en esa moneda, sin contar ventas."""
     return sum(1 for _t, _s, es_compra, _w in (_ops.get(mint) or ()) if es_compra)
+
+
+def compras_primer_bloque(mint: str) -> int:
+    """Numero de compras vistas en el slot donde se creo la moneda."""
+    return int(_first_slot_buys.get(mint, 0))
 
 
 def titulares(mint: str) -> int:

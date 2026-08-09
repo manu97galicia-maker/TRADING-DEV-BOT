@@ -71,11 +71,12 @@ filters:
   require_zero_initial_holders: false
   min_holders: 4
   min_titulares: 4
-  # Panel GMGN: TXs vacio y Buys minimo 4.
+  # Exige cuatro compras totales y que las cuatro ya estén en el primer bloque.
   min_ops: 0
   min_buys: 4
-  # Volumen mínimo ~$700: 9.59 SOL al cambio SOL/USD usado por el bot.
-  min_volumen_sol: 9.59
+  min_first_block_buys: 4
+  # Volumen mínimo ~$550: 7.54 SOL al cambio SOL/USD usado por el bot.
+  min_volumen_sol: 7.54
   min_vol_ventana_sol: 0
   vol_ventana_seg: 3
   min_curve_sol: 2
