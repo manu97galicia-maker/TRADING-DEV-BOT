@@ -59,6 +59,20 @@ trade:
   buy_slippage: 0.30
   sell_slippage: 0.90
 
+  # LAS MAYHEM, A PRUEBA. Vuelven a entrar (rinden el doble segun lo medido en
+  # julio, y la unica ganadora hasta ahora, ryok.net, era una) pero con una
+  # apuesta de 0,06 en vez de 0,30: una quinta parte. Y con fecha de caducidad:
+  # tres perdidas seguidas y se dejan de comprar hasta el siguiente arranque.
+  #
+  # Perder = salir con menos SOL de los que entraron, contando lo cobrado mas
+  # el moonbag menos el coste. Da igual que tocara un TP por el camino. Una
+  # ganadora pone el contador a cero: lo que se corta es una mala racha.
+  #
+  # Lo que NO hace: parar el bot. Las normales siguen a 0,30 SOL.
+  # Coste maximo del experimento: 3 x 0,06 = 0,18 SOL.
+  mayhem_buy_amount: 0.06
+  mayhem_max_perdidas: 3
+
   exit_strategy: "tp_sl"
   # Escalera pedida por Manu: al +50% se recupera el 40% de la posicion, y el
   # 60% que queda sale en tres tercios iguales (20% cada uno) en +115%, +170%
@@ -154,11 +168,9 @@ filters:
     # ryok.net, la unica ganadora hasta ahora, es 7 de 70: sigue pasando.
     min_migrations: 3
 
-  # FUERA LAS MAYHEM: solo pump.fun normal. Decision de Manu del 9-ago, tomada
-  # sabiendo lo que cuesta -- se probo en true y la unica compra que salio,
-  # ryok.net (+0,37 SOL), era precisamente una mayhem. Con esto se descartan
-  # unas 18 monedas cada 3 minutos, asi que el bot volvera a disparar menos.
-  allow_mayhem: false
+  # Vuelven a entrar, pero con la correa corta: 0,06 SOL por operacion y cierre
+  # automatico a las 3 perdidas seguidas (ver mayhem_buy_amount arriba).
+  allow_mayhem: true
   marry_mode: false
   yolo_mode: true
   paper_trade: false          # DINERO REAL

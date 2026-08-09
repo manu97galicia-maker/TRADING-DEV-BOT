@@ -439,6 +439,12 @@ class UniversalTrader:
         allow_mayhem: bool = False,
         # Buy ONLY mayhem-mode tokens (default False). Implies allow_mayhem.
         require_mayhem: bool = False,
+        # Cuanto gastar en una mayhem. 0 = el mismo importe que el resto. Sirve
+        # para tener las mayhem a prueba con una apuesta pequena.
+        mayhem_buy_amount: float = 0.0,
+        # Perdidas seguidas en mayhem antes de dejar de comprarlas. 0 = nunca.
+        # No para el bot: las normales siguen operando.
+        mayhem_max_perdidas: int = 0,
         # How long (seconds) a paper candidate's price is followed
         paper_watch_secs: int = 300,
         # Suffix for per-bot state files so two bots on the same wallet don't
@@ -635,6 +641,16 @@ class UniversalTrader:
         # require_mayhem forces "only mayhem", which also requires allowing them.
         self.require_mayhem = bool(require_mayhem)
         self.allow_mayhem = bool(allow_mayhem) or self.require_mayhem
+        # Las mayhem, a prueba: importe propio y corta-circuitos por racha.
+        self.mayhem_buy_amount = float(mayhem_buy_amount or 0)
+        self.mayhem_max_perdidas = int(mayhem_max_perdidas or 0)
+        #: Perdidas seguidas en mayhem. Una ganadora lo devuelve a cero: lo que
+        #: se corta es una mala racha, no el total historico.
+        self._mayhem_perdidas = 0
+        #: Se pone a True al llegar al limite. A partir de ahi no se compra
+        #: ninguna mayhem mas en lo que queda de sesion, pero el bot sigue
+        #: operando las normales con normalidad.
+        self._mayhem_cerrado = False
 
         # Bundle detector: minimum SOL already sitting in the bonding curve.
         # A brand-new pump.fun token starts near 0; a *bundled* launch shows
@@ -1748,8 +1764,18 @@ class UniversalTrader:
                     return
 
             # Avoid pump.fun "mayhem mode" tokens unless this strategy allows them.
-            if not self.allow_mayhem and getattr(token_info, "is_mayhem_mode", False):
+            _es_mayhem = bool(getattr(token_info, "is_mayhem_mode", False))
+            if not self.allow_mayhem and _es_mayhem:
                 logger.info(f"Evitado {token_info.symbol}: mayhem mode")
+                return
+
+            # Corta-circuitos de las mayhem: tras N perdidas seguidas se deja de
+            # comprarlas hasta el proximo arranque. Las normales no se tocan.
+            if _es_mayhem and self._mayhem_cerrado:
+                logger.info(
+                    f"Evitado {token_info.symbol}: mayhem CERRADAS "
+                    f"({self.mayhem_max_perdidas} perdidas seguidas)"
+                )
                 return
 
             # NOMBRE REPETIDO: se comprueba AQUÍ, al detectarla, no después de
@@ -2379,8 +2405,18 @@ class UniversalTrader:
                     )
                 # Wallet-balance guard: never commit more lamports than we hold
                 # (reserve under a lock so concurrent buys can't both pass).
+                # Importe de ESTA compra. Las mayhem van con su propio tamano
+                # (mas pequeno) si se ha configurado; el resto, el de siempre.
+                _importe = (
+                    self.mayhem_buy_amount
+                    if (
+                        getattr(token_info, "is_mayhem_mode", False)
+                        and self.mayhem_buy_amount > 0
+                    )
+                    else self.buy_amount
+                )
                 need = int(
-                    self.buy_amount * (1 + self.buy_slippage) * LAMPORTS_PER_SOL
+                    _importe * (1 + self.buy_slippage) * LAMPORTS_PER_SOL
                 ) + self._fee_headroom_lamports
                 async with self._spend_lock:
                     if (
@@ -2412,9 +2448,13 @@ class UniversalTrader:
                 try:
                     # Buy token
                     logger.info(
-                        f"Buying {self.buy_amount:.6f} SOL worth of {token_info.symbol} on {token_info.platform.value}..."
+                        f"Buying {_importe:.6f} SOL worth of {token_info.symbol} "
+                        f"on {token_info.platform.value}..."
+                        + (" [MAYHEM a prueba]" if _importe != self.buy_amount else "")
                     )
-                    buy_result: TradeResult = await self.buyer.execute(token_info)
+                    buy_result: TradeResult = await self.buyer.execute(
+                        token_info, amount_sol=_importe
+                    )
 
                     if buy_result.success:
                         buy_reason = self._build_buy_reason(token_info, dev_stats)
@@ -3182,6 +3222,50 @@ class UniversalTrader:
             f"{realized_sol:.4f} + moonbag {held_val:.4f} - coste {cost_sol:.4f}) "
             f"-> {_outcome} [rug-streak dev]"
         )
+
+        # RACHA DE LAS MAYHEM. Se mide con el mismo P&L neto de arriba: salir con
+        # menos SOL de los que entraron es perder, y da igual que tocara un TP
+        # por el camino. Una ganadora pone el contador a cero -- lo que se corta
+        # es una mala racha, no el historico.
+        if (
+            self.mayhem_max_perdidas > 0
+            and getattr(token_info, "is_mayhem_mode", False)
+            and not self._mayhem_cerrado
+        ):
+            if net_sol < 0:
+                self._mayhem_perdidas += 1
+                logger.warning(
+                    "MAYHEM perdida %d de %d seguidas (%s: %+.4f SOL)",
+                    self._mayhem_perdidas,
+                    self.mayhem_max_perdidas,
+                    token_info.symbol,
+                    net_sol,
+                )
+                if self._mayhem_perdidas >= self.mayhem_max_perdidas:
+                    self._mayhem_cerrado = True
+                    logger.error(
+                        "MAYHEM CERRADAS: %d perdidas seguidas. No se compran mas "
+                        "hasta reiniciar; las normales siguen operando.",
+                        self._mayhem_perdidas,
+                    )
+                    try:
+                        from monitoring.notifier import notify
+
+                        notify(
+                            f"⛔ <b>MAYHEM CERRADAS</b>\n"
+                            f"{self._mayhem_perdidas} pérdidas seguidas.\n"
+                            f"El bot sigue comprando las normales a "
+                            f"{self.buy_amount} SOL."
+                        )
+                    except Exception:  # noqa: BLE001
+                        pass
+            elif self._mayhem_perdidas:
+                logger.info(
+                    "MAYHEM: ganadora (%s: %+.4f SOL) -> racha a cero",
+                    token_info.symbol,
+                    net_sol,
+                )
+                self._mayhem_perdidas = 0
         # Se anota a las DOS identidades. Si solo se apuntara a `user`, un dev
         # que firma con carteras nuevas pero deja el mismo `creator` acumularia
         # un strike suelto en cada una y nunca llegaria a dos.

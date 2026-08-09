@@ -50,9 +50,22 @@ class PlatformAwareBuyer(Trader):
         self.extreme_fast_token_amount = extreme_fast_token_amount
         self.compute_units = compute_units or {}
 
-    async def execute(self, token_info: TokenInfo) -> TradeResult:
-        """Execute buy operation using platform-specific implementations."""
+    async def execute(
+        self, token_info: TokenInfo, amount_sol: float | None = None
+    ) -> TradeResult:
+        """Execute buy operation using platform-specific implementations.
+
+        Args:
+            token_info: la moneda a comprar.
+            amount_sol: cuanto gastar en ESTA compra. Si no se pasa, se usa el
+                tamano de la estrategia. Sirve para apostar menos en una
+                categoria concreta (las mayhem van a 0,06 y no a 0,30) sin
+                tocar el resto. Se pasa por parametro y no cambiando
+                `self.amount` porque puede haber varias compras a la vez y una
+                le pisaria el importe a la otra.
+        """
         try:
+            amount = float(amount_sol) if amount_sol else self.amount
             # Get platform-specific implementations
             implementations = get_platform_implementations(
                 token_info.platform, self.client
@@ -62,12 +75,12 @@ class PlatformAwareBuyer(Trader):
             curve_manager = implementations.curve_manager
 
             # Convert amount to lamports
-            amount_lamports = int(self.amount * LAMPORTS_PER_SOL)
+            amount_lamports = int(amount * LAMPORTS_PER_SOL)
 
             if self.extreme_fast_mode:
                 # Skip the wait and directly calculate the amount
                 token_amount = self.extreme_fast_token_amount
-                token_price_sol = self.amount / token_amount if token_amount > 0 else 0
+                token_price_sol = amount / token_amount if token_amount > 0 else 0
                 # Even in extreme_fast_mode, refresh mayhem/cashback/creator from
                 # chain — listeners (especially pumpportal) often don't carry
                 # these, and the program rejects with NotAuthorized (0x1770) /
@@ -164,7 +177,7 @@ class PlatformAwareBuyer(Trader):
                 token_info.is_cashback_coin = pool_state.get(
                     "is_cashback_coin", token_info.is_cashback_coin
                 )
-                token_amount = self.amount / token_price_sol
+                token_amount = amount / token_price_sol
 
             # Avoid pump.fun "mayhem mode" tokens unless this strategy allows them.
             if not self.allow_mayhem and getattr(token_info, "is_mayhem_mode", False):
@@ -219,7 +232,7 @@ class PlatformAwareBuyer(Trader):
                 f"Buying {token_amount:.6f} tokens at {token_price_sol:.8f} SOL per token on {token_info.platform.value}"
             )
             logger.info(
-                f"Total cost: {self.amount:.6f} SOL (max: {max_amount_lamports / LAMPORTS_PER_SOL:.6f} SOL)"
+                f"Total cost: {amount:.6f} SOL (max: {max_amount_lamports / LAMPORTS_PER_SOL:.6f} SOL)"
             )
 
             # skip_preflight=False TAMBIEN EN LA COMPRA (3-ago). Antes iba en
