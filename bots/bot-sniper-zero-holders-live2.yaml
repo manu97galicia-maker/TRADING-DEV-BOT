@@ -17,8 +17,8 @@ trade:
   min_reserve_sol: 0.04
   max_real_buys: 0
   exit_strategy: "tp_sl"
-  # Salida: 70% al +30%; 15% original al +200%; 15% final a $24K MC.
-  take_profit_percentage: 0.30
+  # Salida: 70% al +35%; 15% original al +200%; 15% final a $24K MC.
+  take_profit_percentage: 0.35
   take_profit_sell_percentage: 0.70
   tp2_gain: 2.00
   tp2_sell: 0.15
@@ -51,9 +51,9 @@ retries:
 
 filters:
   listener_type: "logs"
-  # Compra en cuanto cumple, con límite absoluto de cuarenta segundos.
-  max_token_age: 40
-  max_buy_age: 40
+  # Compra en cuanto cumple durante los dos primeros segundos.
+  max_token_age: 2
+  max_buy_age: 2
   match_string: null
   # Esta estrategia mira todas las nuevas creaciones. La lista de devs se
   # reserva para la estrategia organica independiente.
@@ -61,17 +61,17 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: false
-  # Entrada solicitada: MKT Cap entre $3K y $4K.
-  min_entry_mc: 3000
-  max_entry_mc: 4000
+  # Nueva estrategia: la entrada depende de velocidad y volumen, sin banda MC.
+  min_entry_mc: 0
+  max_entry_mc: 0
   require_zero_initial_holders: false
   min_holders: 4
   min_titulares: 4
   # Panel GMGN: TXs vacio y Buys minimo 4.
   min_ops: 0
   min_buys: 4
-  # Volumen mínimo ~$1.9K: 26.03 SOL al cambio SOL/USD usado por el bot.
-  min_volumen_sol: 26.03
+  # Volumen mínimo ~$1K: 13.70 SOL al cambio SOL/USD usado por el bot.
+  min_volumen_sol: 13.70
   min_vol_ventana_sol: 0
   vol_ventana_seg: 3
   min_curve_sol: 2
