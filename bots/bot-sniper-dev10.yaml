@@ -151,7 +151,12 @@ filters:
     # significar nada. Contrapartida aceptada.
     min_migrations: 1
 
-  allow_mayhem: false
+  # Estaba en false y tiraba 18 monedas en 3 minutos, mas que el filtro del dev.
+  # Es una condicion que Manu no pidio: su regla es la migracion del creador. Y
+  # ademas juega en contra -- lo medido en julio es que las mayhem son el 37-43%
+  # de los lanzamientos y rinden el DOBLE. Bloquearlas era tirar cuatro de cada
+  # diez monedas, y las mejores.
+  allow_mayhem: true
   marry_mode: false
   yolo_mode: true
   paper_trade: false          # DINERO REAL
