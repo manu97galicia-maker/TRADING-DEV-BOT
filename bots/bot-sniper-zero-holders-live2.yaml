@@ -53,9 +53,9 @@ retries:
 
 filters:
   listener_type: "logs"
-  # Compra en cuanto cumple, con limite absoluto de seis segundos.
-  max_token_age: 6
-  max_buy_age: 6
+  # Compra en cuanto cumple, con límite absoluto de cuarenta segundos.
+  max_token_age: 40
+  max_buy_age: 40
   match_string: null
   # Esta estrategia mira todas las nuevas creaciones. La lista de devs se
   # reserva para la estrategia organica independiente.
