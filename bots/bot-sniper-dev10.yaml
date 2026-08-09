@@ -19,7 +19,8 @@
 # vivo, no es una lista cerrada de wallets: la lista se queda vieja en dias y
 # la tasa se recalcula sola.
 #
-# min_migrations 3 esta para tapar el falso positivo obvio: un dev con 1
+# min_migrations se quito (0) el 9-ago a peticion de Manu: manda solo la tasa.
+# Lo que tapaba era el falso positivo obvio: un dev con 1
 # lanzamiento y 1 migracion marca 100% y no significa nada.
 #
 # ─────────────────────────────────────────────────────────────────────────────
@@ -131,7 +132,15 @@ filters:
   pumpfun_dev:
     enabled: true
     min_rate: 0.10
-    min_migrations: 3
+    # 0 = manda SOLO la tasa, que es lo que pidio Manu. El codigo bloquea con
+    # `migs < min_migrations O rate < min_rate`; con 0 el primer trozo nunca
+    # bloquea y un dev sin migraciones se cae igual porque su tasa es 0%.
+    #
+    # Lo que esto abre: antes se exigian ademas 3 migraciones, asi que un dev
+    # con 1 de 5 (20%) se caia por poco historial. Ahora entra. El precio es el
+    # falso positivo que avisaba el comentario de arriba: 1 lanzamiento y 1
+    # migracion marca 100% sin significar nada. Es la contrapartida aceptada.
+    min_migrations: 0
 
   allow_mayhem: false
   marry_mode: false
