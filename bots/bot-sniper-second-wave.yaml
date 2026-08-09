@@ -20,8 +20,14 @@ trade:
   buy_slippage: 0.35
   sell_slippage: 0.35
   exit_strategy: "tp_sl"
-  take_profit_percentage: 1.00
-  take_profit_sell_percentage: 1.00
+  # Porcentajes sobre la posicion ORIGINAL: 30% + 35% + 35% = salida total.
+  take_profit_percentage: 0.40
+  take_profit_sell_percentage: 0.30
+  tp2_gain: 0.80
+  tp2_sell: 0.35
+  # x3 sobre la entrada equivale a una ganancia de +200%.
+  tp3_gain: 2.00
+  tp3_sell: 0.35
   stop_loss_percentage: 0.35
   max_hold_time: 300
   price_check_interval: 1
