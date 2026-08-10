@@ -1,8 +1,13 @@
-# PREMIUM — los 15 devs que corren de verdad, y no son granjas.
+# PREMIUM — la unica estrategia viva. Dos condiciones que se apoyan.
 #
-# La senal aqui NO es el mercado: es QUIEN lanza. Por eso se compra en cuanto
-# aparece la moneda, sin esperar a ver volumen. Es la contraria de CORREDORES,
-# que ignora al creador y mira lo que hace el dinero.
+# 1. QUIEN LANZA: un creador que haya migrado MAS DE UNA moneda alguna vez. Se
+#    comprueba en vivo contra la API de pump.fun, no contra una lista: las
+#    listas de devs caducan en dias.
+#
+# 2. QUE ALGUIEN LA HAYA COMPRADO DE VERDAD: al menos el 10% del supply fuera
+#    de la curva, liquidez real dentro y un market cap que guarde proporcion
+#    con ella. Esto es lo que separo a la moneda que subio de las tres que se
+#    hundieron el 10-ago, y es lo que ninguno de los filtros anteriores veia.
 #
 # ─────────────────────────────────────────────────────────────────────────────
 # DE DONDE SALE LA LISTA
@@ -33,7 +38,7 @@
 # el 100%: se asume ese riesgo a cambio de dejar el 60% de la posicion corriendo
 # hacia la mediana real de estos devs. El resto lo gestiona el trailing.
 
-name: "PREMIUM - devs buenos (no dumpean + han hecho 200K)"
+name: "PREMIUM - dev con 2+ migraciones y compra real detras"
 env_file: ".env"
 
 # SOLO AVISOS DE COMPRA. El bot mandaba tambien senales, moonbags cada 5
@@ -51,9 +56,27 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  # 0,30 desde el 10-ago: Manu envia fondos y quiere ese tamano por
-  # lanzamiento de los buenos.
+  # 0,20 de base. Los DEVS MARCADOS -- los 31 de top_devs_buenos.json, medidos
+  # por no dumpear y por haber hecho monedas de +200K -- llevan 0,30: mas ficha
+  # donde hay mas informacion. La lista ya NO decide si se compra (eso lo hace
+  # el 1% migrado en vivo), solo cuanto.
   buy_amount: 0.20
+  devs_marcados: "top_devs_buenos.json"
+  buy_amount_marcados: 0.30
+
+  # ── DOS VELOCIDADES DE SALIDA ────────────────────────────────────────────
+  # ARRIESGADOS (dev cualquiera que pase el 1%): recuperar y correr. El primer
+  # escalon de abajo, 70% al +45%, devuelve 1,015 veces la inversion. De un
+  # creador del que solo sabemos que ha migrado una vez no se puede pedir mas
+  # paciencia: hoy, cinco de seis de estos acabaron en perdida.
+  #
+  # MARCADOS (los 31 medidos por no dumpear y por hacer +200K): con calma. 50%
+  # al +100% devuelve el capital entero igual, pero se deja la MITAD dentro en
+  # vez de un 30%, y esa mitad la lleva el trailing. Es donde estan los x13-x24
+  # que se midieron en Dadjak, FROGGY y Kermit: cobrar pronto ahi era regalar
+  # el billete.
+  tp_marcados: 1.00
+  tp_sell_marcados: 0.50
   buy_slippage: 0.30
   # 0,35, no 0,90. Con el 90% el bot aceptaba cobrar hasta un 90% MENOS de lo
   # esperado y lo apuntaba como si hubiera cobrado entero: es la principal
@@ -75,8 +98,8 @@ trade:
   # Sigue siendo mas suave que CORREDORES (70% al +45%): se deja el 40% dentro,
   # no el 30%, porque estos devs tienen una mediana de pico de $19.392 sobre
   # entradas de ~$3.700 -- la moneda mediana hace un x5 y hay que estar dentro.
-  take_profit_percentage: 0.70
-  take_profit_sell_percentage: 0.60
+  take_profit_percentage: 0.45
+  take_profit_sell_percentage: 0.70
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
   tp2_gain: 0
@@ -99,7 +122,10 @@ trade:
   #
   # Lo que cuesta: la que se hunda de verdad se lleva la mitad de la posicion
   # en vez de un tercio. Es el precio de no soltar a un 13x.
-  stop_loss_percentage: 0.50
+  # 45%, ajustado por Manu. Recordatorio de lo medido: Kermit cayo un 44% antes
+  # de hacer x13, asi que 45 la salva por un pelo y cualquier cosa por debajo la
+  # habria soltado.
+  stop_loss_percentage: 0.45
 
   # TRAILING: 33%, separado del stop de entrada (campo nuevo). Antes eran el
   # mismo numero y no pueden serlo: el de entrada tiene que ser ancho para
@@ -184,7 +210,7 @@ filters:
   max_buy_age: 10
 
   match_string: null
-  bro_address: "top_devs_buenos.json"
+  bro_address: null
 
   # ── LA SEÑAL ────────────────────────────────────────────────────────────
   # 33,3 SOL = ~2.500 $ con SOL a 75 $ (la misma referencia que usa el bot
@@ -235,9 +261,28 @@ filters:
   # cuatro: la mayoria de los creadores de pump.fun estan en CERO migraciones,
   # y esos se caen igual con el 2% que con el 10%.
   pumpfun_dev:
-    enabled: false
+    enabled: true
+    # MAS DE UNA MIGRACION, y nada mas. Sin porcentaje: min_rate en 0 hace que
+    # el codigo (`migs < min_migrations O rate < min_rate`) decida solo por el
+    # numero.
+    #
+    # Sustituye a la lista fija de 31 wallets, y es mejor por dos razones: la
+    # lista solo daba 13,7 oportunidades al dia y ademas caduca en dias --
+    # estos creadores aparecen y desaparecen. Esto se calcula en vivo contra la
+    # API de pump.fun y nunca se queda viejo.
+    #
+    # Con 2 migraciones se descarta al farmero que estrena wallet (el caso de
+    # 变狗: 1 de 1, un 100% que no significaba nada y acabo en rug) sin exigir
+    # un historial largo que casi nadie tiene.
+    # MAS DEL 1% MIGRADO. Es lo que pidio Manu y es un listón bajo a proposito:
+    # el trabajo de descartar ya no lo hace el dev, lo hacen los filtros de
+    # abajo (supply en manos, liquidez real). Aqui solo se echa al creador que
+    # no ha llevado NUNCA una moneda al final, que sigue siendo la mayoria.
+    #
+    # min_migrations en 1 porque un porcentaje sobre cero migraciones no dice
+    # nada. El codigo bloquea con `migs < min_migrations O rate < min_rate`.
     min_migrations: 1
-    min_rate: 0.02
+    min_rate: 0.01
   # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
   # Son dos listas que el bot mantiene solo mientras opera:
   #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.

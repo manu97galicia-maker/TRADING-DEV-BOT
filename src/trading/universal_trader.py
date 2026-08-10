@@ -418,6 +418,12 @@ class UniversalTrader:
         # Porcentaje MINIMO del supply que tiene que estar ya en manos de
         # compradores, es decir, fuera de la curva. 0 = no se mira.
         min_supply_en_manos: float = 0.0,
+        # DEVS MARCADOS: fichero de wallets que se han ganado mas confianza.
+        # No deciden si se compra, solo cuanto y con que paciencia.
+        devs_marcados: str | None = None,
+        buy_amount_marcados: float = 0.0,
+        tp_marcados: float = 0.0,
+        tp_sell_marcados: float = 0.0,
         # Caida desde el MAXIMO que dispara el trailing. Si no se pone, se
         # usa stop_loss_percentage, que es como funcionaba antes.
         trailing_stop_percentage: float = 0.0,
@@ -732,6 +738,29 @@ class UniversalTrader:
         #: curva no lo ha pagado nadie: se empujo con cuatro duros. Esto es
         #: lo unico que lo caza ANTES de comprar.
         self.min_supply_en_manos = float(min_supply_en_manos or 0)
+        #: DOS VELOCIDADES, segun de quien venga la moneda. Con un creador
+        #: cualquiera que cumpla el minimo se va a lo seguro: se recupera el
+        #: capital cuanto antes, porque no se sabe casi nada de el. Con uno
+        #: de los marcados -- medidos por no dumpear y por haber hecho
+        #: monedas de +200K -- se puede ir con calma: se descarga menos en el
+        #: primer escalon y se deja mas corriendo, que es donde estan los x10
+        #: que se vieron en Dadjak, FROGGY y Kermit.
+        try:
+            self._devs_marcados = (
+                _load_creator_file(devs_marcados) if devs_marcados else set()
+            )
+        except Exception:  # noqa: BLE001
+            self._devs_marcados = set()
+        if self._devs_marcados:
+            logger.info(
+                'Devs marcados: %d wallets (compran %s SOL y salen mas tarde)',
+                len(self._devs_marcados),
+                buy_amount_marcados or buy_amount,
+            )
+        self.buy_amount_marcados = float(buy_amount_marcados or 0)
+        self.tp_tiers_marcados = build_tiers(
+            [(tp_marcados, tp_sell_marcados)]
+        ) if tp_marcados and tp_sell_marcados else []
         self.max_perdidas_seguidas = int(max_perdidas_seguidas or 0)
         self._perdidas_seguidas = 0
         self._parado_por_perdidas = False
@@ -2561,14 +2590,15 @@ class UniversalTrader:
                 # (reserve under a lock so concurrent buys can't both pass).
                 # Importe de ESTA compra. Las mayhem van con su propio tamano
                 # (mas pequeno) si se ha configurado; el resto, el de siempre.
-                _importe = (
-                    self.mayhem_buy_amount
-                    if (
-                        getattr(token_info, "is_mayhem_mode", False)
-                        and self.mayhem_buy_amount > 0
-                    )
-                    else self.buy_amount
-                )
+                if (
+                    getattr(token_info, "is_mayhem_mode", False)
+                    and self.mayhem_buy_amount > 0
+                ):
+                    _importe = self.mayhem_buy_amount
+                elif self.buy_amount_marcados > 0 and self._es_marcado(token_info):
+                    _importe = self.buy_amount_marcados
+                else:
+                    _importe = self.buy_amount
                 need = int(
                     _importe * (1 + self.buy_slippage) * LAMPORTS_PER_SOL
                 ) + self._fee_headroom_lamports
@@ -2847,6 +2877,15 @@ class UniversalTrader:
             logger.debug(f"no pude leer el saldo de {token_info.symbol}: {exc}")
             return None
 
+    def _es_marcado(self, token_info: TokenInfo) -> bool:
+        """True si la moneda viene de un dev de la lista de confianza."""
+        if not self._devs_marcados:
+            return False
+        return bool(
+            {str(token_info.user), str(getattr(token_info, 'creator', '') or '')}
+            & self._devs_marcados
+        )
+
     def _anota_firma(self, mint: str, sig: str | None) -> None:
         """Guarda la firma de una compra o venta para la contabilidad real."""
         if sig:
@@ -3016,6 +3055,12 @@ class UniversalTrader:
             logger.info(
                 f"{token_info.symbol}: dev MOONSHOT (pico histórico "
                 f"${int(_bestpeak):,}) -> TP AGRESIVO (+100/300/900%, moonbag 40%)"
+            )
+        elif self.tp_tiers_marcados and self._es_marcado(token_info):
+            tiers = self.tp_tiers_marcados
+            logger.info(
+                f"{token_info.symbol}: DEV MARCADO -> salida con calma "
+                f"{[(f'+{t.gain * 100:.0f}%', f'{t.sell * 100:.0f}%') for t in tiers]}"
             )
         else:
             tiers = self.tp_tiers

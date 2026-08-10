@@ -242,6 +242,10 @@ async def start_bot(config_path: str):
             min_supply_en_manos=cfg.get("filters", {}).get(
                 "min_supply_en_manos", 0
             ),
+            devs_marcados=cfg["trade"].get("devs_marcados"),
+            buy_amount_marcados=cfg["trade"].get("buy_amount_marcados", 0),
+            tp_marcados=cfg["trade"].get("tp_marcados", 0),
+            tp_sell_marcados=cfg["trade"].get("tp_sell_marcados", 0),
             trailing_stop_percentage=cfg["trade"].get("trailing_stop_percentage", 0),
             vender_todo_en_stop=cfg["trade"].get("vender_todo_en_stop", False),
             mayhem_buy_amount=cfg["trade"].get("mayhem_buy_amount", 0),
