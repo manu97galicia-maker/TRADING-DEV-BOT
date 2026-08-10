@@ -215,7 +215,15 @@ filters:
   # ── LA SEÑAL ────────────────────────────────────────────────────────────
   # 33,3 SOL = ~2.500 $ con SOL a 75 $ (la misma referencia que usa el bot
   # para el market cap). Es el "Volumen min 2.5K" de la captura.
-  min_volumen_sol: 0
+  # 40 SOL = ~3.000 $ con SOL a 75 $, la misma referencia con la que el bot
+  # calcula el market cap. Estaba en 0 porque la señal era la lista de devs;
+  # ahora que la entrada la decide el mercado hace falta exigir movimiento.
+  #
+  # Encaja con el suelo de 4.000 $ de market cap: 3.000 $ negociados para
+  # llegar a 4.000 de valoracion significa que casi todo lo que vale la moneda
+  # se ha pagado de verdad. Es lo contrario del caso malo que analizamos, que
+  # subia a 8.542 con el 97% del supply sin vender.
+  min_volumen_sol: 40
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
   # que en ventas. Sin esto, "2.500 $ de volumen" incluye a las que estan
