@@ -127,11 +127,19 @@ filters:
   # para el market cap). Es el "Volumen min 2.5K" de la captura.
   min_volumen_sol: 33.3
 
-  # DIRECCION DEL DINERO. Filtro nuevo: en los ultimos 3 s tienen que haber
-  # entrado 3 veces mas SOL en compras que en ventas. Sin esto, "2.000 $ de
-  # volumen" incluye a las que estan siendo vaciadas.
+  # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
+  # que en ventas. Sin esto, "2.500 $ de volumen" incluye a las que estan
+  # siendo vaciadas.
+  #
+  # VENTANA DE 10 s, no de 3. Con 3 s el filtro vetaba a las seis unicas
+  # candidatas que llegaron a cruzar el volumen, y a las seis por la misma
+  # razon: la ventana estaba VACIA (0,00 / 0,00) en el instante exacto en que
+  # el contador cruzaba el umbral. El volumen se acumula de golpe al nacer y
+  # luego la moneda se queda quieta unos segundos. Con 10 s se mide la
+  # direccion del dinero en el mismo tramo en que se acumulo el volumen, que
+  # es lo que se queria medir desde el principio.
   min_presion_ratio: 3.0
-  presion_seg: 3.0
+  presion_seg: 10.0
 
   # Que el volumen no sea de dos carteras. 8 compras de 6 manos distintas.
   min_buys: 8

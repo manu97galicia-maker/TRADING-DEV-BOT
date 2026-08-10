@@ -1921,16 +1921,27 @@ class UniversalTrader:
                     # no comprar la primera vela roja de un dump.
                     if self.min_presion_ratio > 0:
                         _pc, _pv = _presion(str(token_info.mint), self.presion_seg)
-                        # Sin ventas la division no vale; con compras y cero
-                        # ventas la presion es inmejorable y se deja pasar.
-                        _ok_presion = (
-                            _pc > 0
-                            if _pv <= 0
-                            else (_pc / _pv) >= self.min_presion_ratio
-                        )
+                        if _pc <= 0 and _pv <= 0:
+                            # SIN DATOS != CAYENDO. Medido el 10-ago: las 6
+                            # monedas que llegaron a cruzar el volumen pedido lo
+                            # hicieron con la ventana vacia (0,00 / 0,00) y se
+                            # descartaron las seis. El volumen se acumula en el
+                            # estallido inicial y luego la moneda se queda unos
+                            # segundos quieta; justo cuando el contador cruza el
+                            # umbral no hay nada reciente que medir. Tratar ese
+                            # silencio como presion vendedora vetaba TODAS las
+                            # candidatas por falta de dato, no por ir mal.
+                            _ok_presion = True
+                        elif _pv <= 0:
+                            # Compras y ninguna venta: no hay division posible y
+                            # la presion es inmejorable.
+                            _ok_presion = True
+                        else:
+                            _ok_presion = (_pc / _pv) >= self.min_presion_ratio
                         if not _ok_presion:
                             _visto_presion = (
-                                f"{_pc:.2f} comprados / {_pv:.2f} vendidos"
+                                f"{_pc:.2f} comprados / {_pv:.2f} vendidos "
+                                f"en {self.presion_seg:.0f}s"
                             )
                             await asyncio.sleep(_paso)
                             continue
