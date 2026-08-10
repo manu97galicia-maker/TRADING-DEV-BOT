@@ -60,9 +60,9 @@ trade:
   # por no dumpear y por haber hecho monedas de +200K -- llevan 0,30: mas ficha
   # donde hay mas informacion. La lista ya NO decide si se compra (eso lo hace
   # el 1% migrado en vivo), solo cuanto.
-  buy_amount: 0.20
+  buy_amount: 0.25
   devs_marcados: "top_devs_buenos.json"
-  buy_amount_marcados: 0.30
+  buy_amount_marcados: 0.35
 
   # ── DOS VELOCIDADES DE SALIDA ────────────────────────────────────────────
   # ARRIESGADOS (dev cualquiera que pase el 1%): recuperar y correr. El primer

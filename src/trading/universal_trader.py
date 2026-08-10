@@ -3486,13 +3486,17 @@ class UniversalTrader:
         if _real is not None:
             _dif = _real - net_sol
             logger.info(
-                "%s: P&L REAL %+.4f SOL (cadena) | el teorico decia %+.4f -> "
-                "se equivocaba en %+.4f%s",
+                "%s: P&L REAL %+.4f SOL cobrado%s | teorico %+.4f (se equivocaba "
+                "en %+.4f)",
                 token_info.symbol,
                 _real,
+                (
+                    f" + {held_val:.4f} en moonbag = {_real + held_val:+.4f}"
+                    if held_val > 1e-9
+                    else ""
+                ),
                 net_sol,
                 _dif,
-                " (+ moonbag sin vender)" if held_val > 1e-9 else "",
             )
         else:
             logger.warning(
@@ -3505,7 +3509,15 @@ class UniversalTrader:
         # bot por una perdida que en realidad fue ganancia (o al reves) seria
         # exactamente el error que ya costo dinero el 9-ago.
         if self.max_perdidas_seguidas > 0 and not self._parado_por_perdidas:
-            _para_racha = _real if _real is not None else net_sol
+            # AL P&L REAL HAY QUE SUMARLE EL MOONBAG. `_real` mide el SOL que
+            # entra y sale de la cartera, y los tokens que siguen dentro no son
+            # SOL: una operacion que cobra su objetivo y deja el 20% corriendo
+            # aparecia como PERDIDA. Paso el 10-ago con Crocodile y Terry, que
+            # cobraron el +25% y aun asi sumaron dos strikes de la racha; con el
+            # tercero la estrategia se paro sola sin motivo real.
+            _para_racha = (
+                (_real + held_val) if _real is not None else net_sol
+            )
             if _para_racha < 0:
                 self._perdidas_seguidas += 1
                 logger.warning(
