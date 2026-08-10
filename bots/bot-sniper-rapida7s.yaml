@@ -148,7 +148,23 @@ trade:
   extreme_fast_mode: false
   # Reserva mas alta que DEV10: es la gasolina para poder firmar las VENTAS de
   # las dos estrategias. Quedarse sin SOL con posiciones abiertas es perderlas.
-  min_reserve_sol: 0.08
+  min_reserve_sol: 0.15
+
+  # CORTA-CIRCUITOS: dos perdidas seguidas y esta estrategia deja de COMPRAR.
+  # Lo pidio Manu al encender las tres a la vez, y es lo correcto: comparten
+  # cartera, asi que la que se tuerce se lleva por delante el saldo de las
+  # otras dos. Sin esto, una racha mala de una vacia el bote de las tres.
+  #
+  # No para el proceso: lo que tenga abierto se sigue vigilando y vendiendo,
+  # que abandonarlo seria peor que la propia racha. Solo deja de abrir nuevas.
+  #
+  # Se mide con el P&L REAL leido de la cadena, no con el teorico. Parar un bot
+  # por una perdida que en realidad fue ganancia (o al reves) seria exactamente
+  # el error que costo dinero el 9-ago.
+  #
+  # Una ganadora pone el contador a cero: se corta una mala racha, no el
+  # historico. Para reactivarla, reiniciar el servicio.
+  max_perdidas_seguidas: 2
 
 priority_fees:
   enable_dynamic: false

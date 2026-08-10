@@ -412,6 +412,9 @@ class UniversalTrader:
         # Maximo de market cap en dolares por cada SOL que hay DE VERDAD en
         # la curva. 0 = no se mira. Es el filtro anti-humo.
         max_mc_por_sol_curva: float = 0.0,
+        # Perdidas seguidas antes de que la estrategia deje de comprar.
+        # 0 = nunca para.
+        max_perdidas_seguidas: int = 0,
         # Caida desde el MAXIMO que dispara el trailing. Si no se pone, se
         # usa stop_loss_percentage, que es como funcionaba antes.
         trailing_stop_percentage: float = 0.0,
@@ -708,6 +711,14 @@ class UniversalTrader:
         #: vacio, y TNOS marcaba 27 millones de MC con 0,198 SOL dentro.
         #: Esto exige que el MC guarde una proporcion con el SOL real.
         self.max_mc_por_sol_curva = float(max_mc_por_sol_curva or 0)
+        #: CORTA-CIRCUITOS. Con las tres estrategias compartiendo cartera, la
+        #: que se tuerce se lleva por delante el saldo de las otras. A las N
+        #: perdidas seguidas esta deja de COMPRAR -- sigue vendiendo lo que
+        #: tenga abierto, que abandonarlo seria peor. Una ganadora pone el
+        #: contador a cero: se corta una mala racha, no el historico.
+        self.max_perdidas_seguidas = int(max_perdidas_seguidas or 0)
+        self._perdidas_seguidas = 0
+        self._parado_por_perdidas = False
         # El stop de ENTRADA y el TRAILING eran el mismo numero, y no pueden
         # serlo: el de entrada tiene que aguantar el zarandeo del nacimiento
         # (medido el 10-ago: Kermit se hundio un 44% antes de hacer 13x) y el
@@ -1808,6 +1819,15 @@ class UniversalTrader:
             _es_mayhem = bool(getattr(token_info, "is_mayhem_mode", False))
             if not self.allow_mayhem and _es_mayhem:
                 logger.info(f"Evitado {token_info.symbol}: mayhem mode")
+                return
+
+            # CORTA-CIRCUITOS DE LA ESTRATEGIA ENTERA. Va el primero de todos:
+            # si esta parada, no tiene sentido gastar ni una comprobacion mas.
+            if self._parado_por_perdidas:
+                logger.info(
+                    f"Evitado {token_info.symbol}: estrategia PARADA "
+                    f"({self.max_perdidas_seguidas} perdidas seguidas)"
+                )
                 return
 
             # Corta-circuitos de las mayhem: tras N perdidas seguidas se deja de
@@ -3398,6 +3418,50 @@ class UniversalTrader:
                 "%s: no pude leer el P&L real de la cadena; solo hay el teorico",
                 token_info.symbol,
             )
+
+        # RACHA DE PERDIDAS DE LA ESTRATEGIA. Se mide con el P&L REAL cuando se
+        # ha podido leer de la cadena, y solo si no, con el teorico: parar un
+        # bot por una perdida que en realidad fue ganancia (o al reves) seria
+        # exactamente el error que ya costo dinero el 9-ago.
+        if self.max_perdidas_seguidas > 0 and not self._parado_por_perdidas:
+            _para_racha = _real if _real is not None else net_sol
+            if _para_racha < 0:
+                self._perdidas_seguidas += 1
+                logger.warning(
+                    "%s: perdida %d de %d seguidas (%+.4f SOL)",
+                    token_info.symbol,
+                    self._perdidas_seguidas,
+                    self.max_perdidas_seguidas,
+                    _para_racha,
+                )
+                if self._perdidas_seguidas >= self.max_perdidas_seguidas:
+                    self._parado_por_perdidas = True
+                    logger.error(
+                        "ESTRATEGIA PARADA: %d perdidas seguidas. No se compra "
+                        "mas; lo que quede abierto se sigue vendiendo.",
+                        self._perdidas_seguidas,
+                    )
+                    try:
+                        from monitoring.notifier import notify
+
+                        _n = self._state_suffix.lstrip("_").replace(
+                            "bot-sniper-", ""
+                        ).upper()
+                        notify(
+                            f"PARADA - <b>{_n}</b>\n"
+                            f"{self._perdidas_seguidas} perdidas seguidas.\n"
+                            f"Deja de comprar. Lo abierto se sigue vendiendo.",
+                            tipo="compra",
+                        )
+                    except Exception:  # noqa: BLE001
+                        pass
+            elif self._perdidas_seguidas:
+                logger.info(
+                    "%s: ganadora (%+.4f SOL) -> racha de perdidas a cero",
+                    token_info.symbol,
+                    _para_racha,
+                )
+                self._perdidas_seguidas = 0
 
         # RACHA DE LAS MAYHEM. Se mide con el mismo P&L neto de arriba: salir con
         # menos SOL de los que entraron es perder, y da igual que tocara un TP
