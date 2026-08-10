@@ -1,0 +1,20 @@
+[Unit]
+Description=PREMIUM - 15 devs que no dumpean, salida suave
+After=network-online.target
+Wants=network-online.target
+# Igual que los demas: sin esto systemd se rinde tras 5 arranques en 10 s y deja el
+# servicio en `failed` para siempre.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/ai-bot
+Environment=PYTHONPATH=/root/ai-bot/src
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/root/ai-bot/.venv/bin/python -u run_premium.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

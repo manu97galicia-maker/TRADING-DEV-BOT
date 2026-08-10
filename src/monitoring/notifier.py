@@ -21,6 +21,21 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+#: Tipos de aviso que SI se mandan. Vacio = se manda todo (comportamiento de
+#: siempre). Manu pidio el 10-ago recibir solo las compras: el bot avisaba
+#: tambien de senales, moonbags cada 5 minutos, cierres, bolsas huerfanas y
+#: arranques, y eso convierte el canal en ruido que se acaba ignorando --
+#: justo el que no hay que ignorar es el de "acabo de gastar tu dinero".
+_TIPOS_PERMITIDOS: set[str] = set()
+
+
+def configurar_avisos(solo: list[str] | None) -> None:
+    """Limita los avisos a los tipos indicados. None o lista vacia = todos."""
+    global _TIPOS_PERMITIDOS
+    _TIPOS_PERMITIDOS = set(solo or [])
+    if _TIPOS_PERMITIDOS:
+        logger.info("Telegram: solo se avisara de %s", sorted(_TIPOS_PERMITIDOS))
+
 
 def _send_blocking(text: str) -> None:
     token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
@@ -44,8 +59,17 @@ def _send_blocking(text: str) -> None:
         logger.debug(f"Telegram notify failed: {exc}")
 
 
-def notify(text: str) -> None:
-    """Send a Telegram message without blocking the caller (best-effort)."""
+def notify(text: str, tipo: str = "otro") -> None:
+    """Send a Telegram message without blocking the caller (best-effort).
+
+    Args:
+        text: el mensaje, en HTML de Telegram.
+        tipo: para que el filtro de `configurar_avisos` pueda dejarlo pasar o
+            no. Los que importan van marcados ("compra"); todo lo demas se
+            queda con el valor por defecto y cae cuando hay filtro puesto.
+    """
+    if _TIPOS_PERMITIDOS and tipo not in _TIPOS_PERMITIDOS:
+        return
     if not os.getenv("TELEGRAM_BOT_TOKEN") or not os.getenv("TELEGRAM_CHAT_ID"):
         return
     threading.Thread(target=_send_blocking, args=(text,), daemon=True).start()

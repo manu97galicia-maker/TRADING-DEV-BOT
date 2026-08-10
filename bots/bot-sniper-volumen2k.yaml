@@ -39,6 +39,13 @@
 
 name: "VOLUMEN-2,5K - 15s, MC<5,5K, volumen 2,5K con presion compradora"
 env_file: ".env"
+
+# SOLO AVISOS DE COMPRA. El bot mandaba tambien senales, moonbags cada 5
+# minutos, cierres, bolsas huerfanas y el arranque: 22 sitios distintos.
+# Eso convierte el canal en ruido y se acaba ignorando -- justo el aviso
+# que no hay que ignorar es el de "acabo de gastar tu dinero".
+# Quitar esta clave devuelve todos los avisos.
+avisos_telegram: ["compra"]
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"

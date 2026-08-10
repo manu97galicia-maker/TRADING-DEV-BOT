@@ -65,6 +65,12 @@ async def start_bot(config_path: str):
     """Start a trading bot with the configuration from the specified path."""
     cfg = load_bot_config(config_path)
     setup_logging(cfg["name"])
+
+    # Que avisos de Telegram se mandan. Sin esta clave se manda todo, que
+    # es como funcionaba antes.
+    from monitoring.notifier import configurar_avisos
+
+    configurar_avisos(cfg.get("avisos_telegram"))
     print_config_summary(cfg)
 
     # Get and validate platform from configuration

@@ -2705,7 +2705,8 @@ class UniversalTrader:
                 + f"💵 {self.buy_amount} SOL · MC entrada ~${_mc:,.0f}\n"
                 + f"🎯 {_tr} · SL -{self.stop_loss_percentage * 100:.0f}%\n"
                 + f'📊 <a href="https://gmgn.ai/sol/token/{mint_str}">GMGN</a>\n'
-                + f"CA: <code>{mint_str}</code>"
+                + f"CA: <code>{mint_str}</code>",
+                tipo="compra",
             )
         except Exception:  # noqa: BLE001
             pass

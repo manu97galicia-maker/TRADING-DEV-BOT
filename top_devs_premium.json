@@ -1,0 +1,145 @@
+{
+ "generado_de": "top_devs_organico.json",
+ "criterio": "lanzamientos FUERTES organicos, <= 14 lanzamientos/7d y mediana de pico >= $8,000",
+ "lanzamientos_dia": 13.7,
+ "pico_mediano": 19392,
+ "wallets": [
+  "F5ExBJxM7zJhowwSBYGMTQVesxWvNzsPJhJTuXxLHiyZ",
+  "3fKF8cbyWKU56fpFkrQ1E6zJoAh4mqArdsPoUE6ycTKL",
+  "2Vgmp9bTNzvj1D5XaFNdUtNDxaRFH2UGPJXrcUPVGj1B",
+  "DFrfDB7vsQRNQYFWyQwtihMWGEfD8vAPPHFEW6krXytc",
+  "862TYSvRYoiHAK3F3WwTRYAfuGiQaGdxedN9AGvRGWo2",
+  "4DrtsW86GarGJJeYrBwYCjoyMgDPG95QWSGhFHvCkU2s",
+  "7VzKD7nTQg9ypcJtT1cA34aa9wLGRHzjGvZNQx53r8WA",
+  "D2hrzDdF5JDeunEyfKC74PuERdfT3NomExBYmgfNFhaZ",
+  "FFcNgJj4SV2eDMyDJRk8EWBX7w14hH3KUqVu77C7HtjQ",
+  "HoKiWhcU3YBN9f5Uxj1bBLkcWkw5iDEQbPiiU6EnYCwQ",
+  "3FiWnNDTZrKPbjPeMiTe2r5m5zygxSu57ePck5LUQp7d",
+  "DxQ1iNidsGap2kr14VdEzA8NheqXabfh6fRkvZQbnZVY",
+  "AMRsSeU5JpqwQWJGNLMpZzRCZSFEwYQYbMnms3dD4311",
+  "9BjcGY9ZfMvS13ozDRMwCaR2toE71hiLBXXvqBcGmeiU",
+  "5t9xBNuDdGTGpjaPTx6hKd7sdRJbvtKS8Mhq6qVbo8Qz"
+ ],
+ "detalle": [
+  {
+   "wallet": "F5ExBJxM7zJhowwSBYGMTQVesxWvNzsPJhJTuXxLHiyZ",
+   "launches_7d": 3,
+   "strong_7d": 2,
+   "strong_per_day": 0.29,
+   "median_peak": 30475,
+   "median_vol_sol": 784.6
+  },
+  {
+   "wallet": "3fKF8cbyWKU56fpFkrQ1E6zJoAh4mqArdsPoUE6ycTKL",
+   "launches_7d": 5,
+   "strong_7d": 2,
+   "strong_per_day": 0.29,
+   "median_peak": 27237,
+   "median_vol_sol": 418.7
+  },
+  {
+   "wallet": "2Vgmp9bTNzvj1D5XaFNdUtNDxaRFH2UGPJXrcUPVGj1B",
+   "launches_7d": 4,
+   "strong_7d": 2,
+   "strong_per_day": 0.29,
+   "median_peak": 24455,
+   "median_vol_sol": 541.2
+  },
+  {
+   "wallet": "DFrfDB7vsQRNQYFWyQwtihMWGEfD8vAPPHFEW6krXytc",
+   "launches_7d": 3,
+   "strong_7d": 2,
+   "strong_per_day": 0.29,
+   "median_peak": 23381,
+   "median_vol_sol": 835.6
+  },
+  {
+   "wallet": "862TYSvRYoiHAK3F3WwTRYAfuGiQaGdxedN9AGvRGWo2",
+   "launches_7d": 9,
+   "strong_7d": 5,
+   "strong_per_day": 0.71,
+   "median_peak": 19930,
+   "median_vol_sol": 556.9
+  },
+  {
+   "wallet": "4DrtsW86GarGJJeYrBwYCjoyMgDPG95QWSGhFHvCkU2s",
+   "launches_7d": 4,
+   "strong_7d": 2,
+   "strong_per_day": 0.29,
+   "median_peak": 19789,
+   "median_vol_sol": 454.8
+  },
+  {
+   "wallet": "7VzKD7nTQg9ypcJtT1cA34aa9wLGRHzjGvZNQx53r8WA",
+   "launches_7d": 3,
+   "strong_7d": 2,
+   "strong_per_day": 0.29,
+   "median_peak": 19583,
+   "median_vol_sol": 345.7
+  },
+  {
+   "wallet": "D2hrzDdF5JDeunEyfKC74PuERdfT3NomExBYmgfNFhaZ",
+   "launches_7d": 5,
+   "strong_7d": 3,
+   "strong_per_day": 0.43,
+   "median_peak": 19392,
+   "median_vol_sol": 65.9
+  },
+  {
+   "wallet": "FFcNgJj4SV2eDMyDJRk8EWBX7w14hH3KUqVu77C7HtjQ",
+   "launches_7d": 4,
+   "strong_7d": 2,
+   "strong_per_day": 0.29,
+   "median_peak": 18975,
+   "median_vol_sol": 340.3
+  },
+  {
+   "wallet": "HoKiWhcU3YBN9f5Uxj1bBLkcWkw5iDEQbPiiU6EnYCwQ",
+   "launches_7d": 6,
+   "strong_7d": 2,
+   "strong_per_day": 0.29,
+   "median_peak": 17036,
+   "median_vol_sol": 482.0
+  },
+  {
+   "wallet": "3FiWnNDTZrKPbjPeMiTe2r5m5zygxSu57ePck5LUQp7d",
+   "launches_7d": 9,
+   "strong_7d": 2,
+   "strong_per_day": 0.29,
+   "median_peak": 13975,
+   "median_vol_sol": 440.0
+  },
+  {
+   "wallet": "DxQ1iNidsGap2kr14VdEzA8NheqXabfh6fRkvZQbnZVY",
+   "launches_7d": 14,
+   "strong_7d": 2,
+   "strong_per_day": 0.29,
+   "median_peak": 13916,
+   "median_vol_sol": 420.7
+  },
+  {
+   "wallet": "AMRsSeU5JpqwQWJGNLMpZzRCZSFEwYQYbMnms3dD4311",
+   "launches_7d": 9,
+   "strong_7d": 2,
+   "strong_per_day": 0.29,
+   "median_peak": 13573,
+   "median_vol_sol": 531.3
+  },
+  {
+   "wallet": "9BjcGY9ZfMvS13ozDRMwCaR2toE71hiLBXXvqBcGmeiU",
+   "launches_7d": 13,
+   "strong_7d": 3,
+   "strong_per_day": 0.43,
+   "median_peak": 12221,
+   "median_vol_sol": 434.5
+  },
+  {
+   "wallet": "5t9xBNuDdGTGpjaPTx6hKd7sdRJbvtKS8Mhq6qVbo8Qz",
+   "launches_7d": 5,
+   "strong_7d": 2,
+   "strong_per_day": 0.29,
+   "median_peak": 8949,
+   "median_vol_sol": 186.5
+  }
+ ]
+}
