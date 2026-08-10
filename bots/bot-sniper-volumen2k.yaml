@@ -1,7 +1,7 @@
 # VOLUMEN-2,5K — la UNICA estrategia activa desde el 10-ago.
 #
 # Sale de los filtros que Manu pasó en captura: edad maxima 0,26 min, market
-# cap maximo 5K y volumen minimo 2,5K. Sustituye a DEV10, que queda apagada.
+# cap maximo 5K (subido a 5,5K) y volumen minimo 2,5K. Sustituye a DEV10.
 #
 # ─────────────────────────────────────────────────────────────────────────────
 # LA IDEA
@@ -17,7 +17,7 @@
 #   1. VOLUMEN : 33,3 SOL negociados (~2.500 $ con SOL a 75 $).
 #   2. DIRECCION: en los ultimos 3 s han entrado al menos el TRIPLE de SOL en
 #      compras que en ventas. Es el filtro `min_presion_ratio`.
-#   3. Y ademas: por debajo de 5K de market cap y en los primeros 15,6 s.
+#   3. Y ademas: por debajo de 5,5K de market cap y en los primeros 15,6 s.
 #   4. Y el creador tiene que haber migrado al menos el 2% de lo que lanza.
 #
 # ─────────────────────────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@
 # un 20%: es el valor que pidio Manu y en el codigo los dos usan el mismo
 # campo (`stop_loss_percentage`).
 
-name: "VOLUMEN-2,5K - 15s, MC<5K, volumen 2,5K con presion compradora"
+name: "VOLUMEN-2,5K - 15s, MC<5,5K, volumen 2,5K con presion compradora"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -183,10 +183,12 @@ filters:
   # desactivado porque bloqueaba sin mirar la tasa; aqui interesa que sume.
   ignorar_listas_de_devs: false
 
-  # Techo de 5.000 $, el "MKT Cap max 5K" de la captura. Sin suelo: lo que
-  # importa es no entrar arriba, no entrar tarde.
+  # Techo de 5.500 $. La captura traia 5K; Manu lo sube un poco el 10-ago para
+  # dar margen: una moneda que hace 2.500 $ de volumen en 15 s se mueve rapido
+  # y quedarse en 5.000 clavados la deja fuera por unos cientos de dolares.
+  # Sin suelo: lo que importa es no entrar arriba, no entrar tarde.
   min_entry_mc: 0
-  max_entry_mc: 5000
+  max_entry_mc: 5500
   min_curve_sol: 0
 
   allow_mayhem: false        # decision de Manu: solo pump.fun normal
