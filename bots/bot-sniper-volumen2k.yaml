@@ -77,6 +77,13 @@ trade:
   # la medicion): 50% para aguantar el nacimiento, 33% para seguir al maximo.
   trailing_stop_percentage: 0.33
 
+  # EL STOP SE LO LLEVA TODO. Sin esto el bot respeta el "moonbag" (lo que
+  # no cubren los escalones de take-profit) incluso al saltar el stop, y
+  # aqui el moonbag es el 50%: un stop vendia media posicion y abandonaba
+  # la otra media en una moneda hundiendose. Paso el 10-ago con twg.
+  # El 50% que no lleva objetivo lo gestiona el TRAILING, no el stop.
+  vender_todo_en_stop: true
+
   # ANTI-RUG: si en 4 s se vende el doble de lo que se compra, sale entera sin
   # esperar al precio. Aqui importa mas que en DEV10: se entra en monedas que
   # ya se estan moviendo, y ahi el vuelco puede ser instantaneo.
@@ -237,3 +244,11 @@ node:
   # El proceso que vigila posiciones abiertas no puede quedarse sin cuota
   # para vender, asi que se deja margen.
   max_rps: 8
+
+compute_units:
+  # Sin esto la VENTA revienta con "Computational budget exceeded" y hay
+  # que salir por Jupiter, mas lento y peor precio. Paso el 10-ago con
+  # twg: los tokens Token-2022 gastan mas cómputo (el programa de la
+  # curva se comio los 59.700 disponibles solo en la instruccion Sell).
+  buy: 140000
+  sell: 120000

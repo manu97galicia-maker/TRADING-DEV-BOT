@@ -412,6 +412,9 @@ class UniversalTrader:
         # Caida desde el MAXIMO que dispara el trailing. Si no se pone, se
         # usa stop_loss_percentage, que es como funcionaba antes.
         trailing_stop_percentage: float = 0.0,
+        # Si el stop-loss se lleva TAMBIEN el moonbag. Por defecto no, que
+        # es como se ha comportado siempre.
+        vender_todo_en_stop: bool = False,
         # Firma de demanda externa en dos tiempos. Se configura como bloque y
         # queda desactivada por defecto para no cambiar bots existentes.
         second_wave: dict | None = None,
@@ -695,6 +698,7 @@ class UniversalTrader:
         self.trailing_stop_percentage = float(
             trailing_stop_percentage or stop_loss_percentage or 0
         )
+        self.vender_todo_en_stop = bool(vender_todo_en_stop)
         self.second_wave = dict(second_wave or {})
         self.senal_gmgn = [int(x) for x in (senal_gmgn or [])]
         self.anti_rug_ratio = float(anti_rug_ratio or 0)
@@ -3100,11 +3104,23 @@ class UniversalTrader:
                 # stop-loss: se registra para avisar por Telegram y lo vende el usuario.
                 if sl_price is not None and price <= sl_price:
                     hit_sl = True  # rug si no hubo TP antes
-                    keep = original_qty * moonbag
+                    # Con `vender_todo_en_stop` el stop se lleva la posicion
+                    # entera. Hace falta en las estrategias de un solo escalon:
+                    # ahi el "moonbag" es todo lo que no cubre ese escalon (en
+                    # CORREDORES, el 50%), y dejarlo puesto significa que un
+                    # stop vende media posicion y abandona la otra media en una
+                    # moneda que se esta hundiendo. El moonbag tiene sentido
+                    # cuando lo gestiona el trailing, no cuando salta el stop.
+                    keep = 0.0 if self.vender_todo_en_stop else original_qty * moonbag
                     to_sell = remaining - keep
                     logger.info(
                         f"STOP LOSS for {token_info.symbol} at {price:.8f} SOL "
-                        f"(<= {sl_price:.8f}) — dejo moonbag {moonbag * 100:.0f}%"
+                        f"(<= {sl_price:.8f}) — "
+                        + (
+                            "vendo TODO"
+                            if self.vender_todo_en_stop
+                            else f"dejo moonbag {moonbag * 100:.0f}%"
+                        )
                     )
                     if to_sell <= 1e-9:
                         # ya estamos en el moonbag: no se vende, se deja y se avisa
