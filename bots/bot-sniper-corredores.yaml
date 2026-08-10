@@ -45,10 +45,9 @@ separate_process: true
 platform: "pump_fun"
 
 trade:
-  # 0,15. Ya no comparte wallet con nadie (DEV10 esta apagada), asi que se
-  # puede subir a 0,30 cuando Manu recargue -- se deja bajo a proposito hasta
-  # comprobar que la estrategia gana dinero de verdad.
-  buy_amount: 0.15
+  # 0,30 desde el 10-ago: Manu envia fondos y quiere ese tamano por
+  # lanzamiento de los buenos.
+  buy_amount: 0.30
   buy_slippage: 0.30
   # 0,35, no 0,90. Con el 90% el bot aceptaba cobrar hasta un 90% MENOS de lo
   # esperado y lo apuntaba como si hubiera cobrado entero: es la principal
@@ -62,11 +61,17 @@ trade:
   sell_slippage: 0.35
 
   exit_strategy: "tp_sl"
-  # ASEGURAR CAPITAL AL +100%: media posicion a x2 devuelve la inversion
-  # entera (0,50 x 2,0 = 1,0). Mas tarde que en VOLUMEN-2,5K a proposito: los
-  # tres ejemplos hicieron 10x-25x y salir al +50% era abandonarlos.
-  take_profit_percentage: 1.00
-  take_profit_sell_percentage: 0.50
+  # CAPITAL PRONTO, RESTO A CORRER. Manu lo pidio asi, y los datos le dan la
+  # razon: la mediana de ATH de los mejores devs medidos es de $5.148, y con
+  # entradas de ~$3.700 el +100% cae JUSTO por encima de donde muere la moneda
+  # mediana. Esperar a doblar para asegurar el capital era no asegurarlo casi
+  # nunca.
+  #
+  # Al +45% se vende el 70%: 0,70 x 1,45 = 1,015, el capital vuelve entero.
+  # Queda el 30% dentro, sin objetivo, para el trailing. Es la mezcla que
+  # pidio: recuperar pronto y dejar correr lo que sobra.
+  take_profit_percentage: 0.45
+  take_profit_sell_percentage: 0.70
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
   tp2_gain: 0
