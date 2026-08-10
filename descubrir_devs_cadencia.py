@@ -12,6 +12,7 @@ que es lo que pidio Manu.
 """
 
 import json
+import statistics
 import time
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
@@ -61,6 +62,20 @@ def ficha(cre):
     ult7 = [t for t in ts if t > ahora - 7 * 86400_000]
     ult1 = [t for t in ts if t > ahora - 86400_000]
     dias_activo = max(1.0, (ts[-1] - ts[0]) / 86400_000) if len(ts) > 1 else 1.0
+
+    # FRECUENCIA MEDIANA: la mitad de sus lanzamientos van mas seguidos que
+    # esto. Se usa la mediana y no la media porque estos devs trabajan a
+    # rafagas -- veinte monedas en una hora y luego dos dias parados -- y la
+    # media sale de un sitio donde no hay nadie.
+    huecos_h = [
+        (ts[i + 1] - ts[i]) / 3_600_000 for i in range(len(ts) - 1)
+    ] if len(ts) > 1 else []
+    hueco_mediano = statistics.median(huecos_h) if huecos_h else None
+
+    # ATH: hasta donde suelen llegar sus monedas. La media la levanta un solo
+    # pelotazo, asi que se guardan las dos y manda la mediana.
+    aths = [float(x.get("ath_market_cap") or 0) for x in d]
+    aths = [a for a in aths if a > 0]
     return {
         "dev": cre,
         "lanzamientos": lanz,
@@ -69,6 +84,11 @@ def ficha(cre):
         "dia_7d": len(ult7) / 7.0,
         "ayer": len(ult1),
         "media_historica": lanz / dias_activo,
+        "hueco_mediano_h": round(hueco_mediano, 2) if hueco_mediano is not None else None,
+        "ath_medio": round(statistics.mean(aths)) if aths else 0,
+        "ath_mediano": round(statistics.median(aths)) if aths else 0,
+        "ath_max": round(max(aths)) if aths else 0,
+        "monedas_con_ath": len(aths),
     }
 
 
@@ -94,22 +114,34 @@ buenos.sort(key=lambda f: (-f["tasa"], -f["dia_7d"]))
 print(f"\n{len(fichas)} medidos, {len(buenos)} con {MIN_MIGRACIONES}+ migradas "
       f"y actividad esta semana\n")
 
-print("%-46s %7s %7s %7s %8s" % ("dev", "migr", "lanz", "tasa", "lanz/dia"))
-print("-" * 80)
+print("%-46s %6s %6s %7s %8s %9s %11s %11s" % (
+    "dev", "migr", "lanz", "tasa", "lanz/dia", "cada", "ATH medio", "ATH mediano"))
+print("-" * 116)
 sel, acum = [], 0.0
 for f in buenos:
     if acum >= OBJETIVO_DIA:
         break
     sel.append(f)
     acum += f["dia_7d"]
-    print("%-46s %7d %7d %6.1f%% %8.1f" % (
-        f["dev"], f["migradas"], f["lanzamientos"], f["tasa"] * 100, f["dia_7d"]))
+    h = f["hueco_mediano_h"]
+    cada = ("%.1f h" % h) if h is not None and h < 48 else (
+        ("%.1f d" % (h / 24)) if h is not None else "-")
+    print("%-46s %6d %6d %6.1f%% %8.1f %9s %11s %11s" % (
+        f["dev"], f["migradas"], f["lanzamientos"], f["tasa"] * 100,
+        f["dia_7d"], cada,
+        "$%s" % format(f["ath_medio"], ","),
+        "$%s" % format(f["ath_mediano"], ",")))
 
-print("-" * 80)
+print("-" * 116)
 print("%d devs -> %.1f lanzamientos/dia esperados" % (len(sel), acum))
 if sel:
     tm = sum(f["migradas"] for f in sel) / sum(f["lanzamientos"] for f in sel)
     print("tasa de migracion media ponderada: %.1f%%" % (tm * 100))
+    med = statistics.median([f["ath_mediano"] for f in sel if f["ath_mediano"]])
+    print("ATH mediano del grupo            : $%s" % format(round(med), ","))
+    hs = [f["hueco_mediano_h"] for f in sel if f["hueco_mediano_h"]]
+    if hs:
+        print("hueco mediano entre lanzamientos : %.1f h" % statistics.median(hs))
 
 with open("/root/ai-bot/top_devs_cadencia.json", "w", encoding="utf-8") as fh:
     json.dump({
