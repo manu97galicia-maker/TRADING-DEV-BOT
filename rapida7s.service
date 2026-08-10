@@ -1,0 +1,20 @@
+[Unit]
+Description=RAPIDA-7S - explota en 7 segundos, MC y volumen 4-20K
+After=network-online.target
+Wants=network-online.target
+# Igual que los demas: sin esto systemd se rinde tras 5 arranques en 10 s y deja el
+# servicio en `failed` para siempre.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/ai-bot
+Environment=PYTHONPATH=/root/ai-bot/src
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/root/ai-bot/.venv/bin/python -u run_rapida7s.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

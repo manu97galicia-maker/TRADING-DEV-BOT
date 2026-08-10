@@ -1,0 +1,300 @@
+# RAPIDA-7S — la moneda que explota en los primeros 7 segundos.
+#
+# Filtros que paso Manu en captura: market cap entre 4K y 20K, volumen entre 4K
+# y 20K, y todo eso dentro de los 7 primeros segundos de vida.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# POR QUE ESTO SI ES UN SELECTOR
+# ─────────────────────────────────────────────────────────────────────────────
+# "Todas las monedas de menos de 7 segundos" no se puede: pump.fun lanza unas
+# 50 por minuto, 3.000 a la hora, y no hay cartera que compre eso. Los 7
+# segundos son la regla de VELOCIDAD; quien elige es el par volumen+MC.
+#
+# Y elige mucho: mover 4.000 $ en siete segundos no lo hace una moneda normal.
+# La mediana de las creaciones se queda en 2 SOL de volumen en su primer medio
+# minuto; aqui se piden 53. Es la firma del lanzamiento con dinero detras.
+#
+# LOS TECHOS IMPORTAN TANTO COMO LOS SUELOS. El maximo de 20K de MC evita
+# comprar en la cresta de un pump que ya paso, y el maximo de 20K de volumen
+# descarta a la que ya ha movido tanto que el siguiente comprador eres tu
+# haciendo de salida a otro.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# VELOCIDAD: DE DONDE SE SACAN LOS MILISEGUNDOS
+# ─────────────────────────────────────────────────────────────────────────────
+# En 7 segundos no cabe cualquier comprobacion, asi que se han quitado todas las
+# que salen a la red:
+#
+#   - SIN filtro de creador. Es una llamada a la API de pump.fun y tarda mas de
+#     lo que dura la ventana entera.
+#   - SIN dexscreener, SIN gmgn, SIN redes sociales.
+#   - El volumen, las compras y los titulares se cuentan EN MEMORIA, de los logs
+#     que ya llegan por el websocket: coste cero.
+#   - Solo se consulta la curva (una llamada) cuando el volumen ya cumple, para
+#     saber el market cap. Ni antes.
+#   - Se mira cada 0,15 s, no cada medio segundo: en una ventana de 7 s, medio
+#     segundo de retraso es el 7% de la oportunidad.
+#
+# La comision de prioridad sube a 100M (0,0085 SOL). Aqui se compite por entrar
+# en el bloque: perder la entrada cuesta mas que la comision.
+#
+# LO QUE NO SE PUEDE COMPRAR ASI: a diferencia de PREMIUM, aqui no se sabe quien
+# lanza. Se compra una explosion, y una explosion puede ser real o ser un bundle
+# comprandose a si mismo para atraer a alguien como este bot. Por eso el
+# anti-rug se queda, el stop tambien, y la posicion es la mitad que en las otras.
+
+name: "RAPIDA-7S - explota en 7 segundos, MC y volumen 4-20K"
+env_file: ".env"
+
+# SOLO AVISOS DE COMPRA. El bot mandaba tambien senales, moonbags cada 5
+# minutos, cierres, bolsas huerfanas y el arranque: 22 sitios distintos.
+# Eso convierte el canal en ruido y se acaba ignorando -- justo el aviso
+# que no hay que ignorar es el de "acabo de gastar tu dinero".
+# Quitar esta clave devuelve todos los avisos.
+avisos_telegram: ["compra"]
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: false     # se enciende a mano: comparte wallet con las demas
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  # 0,15, la mitad que PREMIUM y CORREDORES. Alli se sabe quien lanza o se ha
+  # esperado a ver el mercado; aqui se compra una explosion a ciegas en siete
+  # segundos. Menos informacion, menos ficha.
+  buy_amount: 0.15
+  buy_slippage: 0.30
+  # 0,35, no 0,90. Con el 90% el bot aceptaba cobrar hasta un 90% MENOS de lo
+  # esperado y lo apuntaba como si hubiera cobrado entero: es la principal
+  # sospecha de por que el P&L teorico decia +0,16 mientras la cartera perdia
+  # 0,75. Con 0,35 la venta que solo se pueda ejecutar tirando el precio se
+  # rechaza y se reintenta, en vez de regalarla.
+  #
+  # El riesgo del otro lado, y hay que saberlo: en una moneda que se hunde muy
+  # deprisa un margen corto puede dejar la venta sin ejecutar. Por eso se deja
+  # en 0,35 y no mas abajo, y sigue estando el respaldo de Jupiter.
+  sell_slippage: 0.35
+
+  exit_strategy: "tp_sl"
+  # CAPITAL PRONTO, RESTO A CORRER. Manu lo pidio asi, y los datos le dan la
+  # razon: la mediana de ATH de los mejores devs medidos es de $5.148, y con
+  # entradas de ~$3.700 el +100% cae JUSTO por encima de donde muere la moneda
+  # mediana. Esperar a doblar para asegurar el capital era no asegurarlo casi
+  # nunca.
+  #
+  # Al +45% se vende el 70%: 0,70 x 1,45 = 1,015, el capital vuelve entero.
+  # Queda el 30% dentro, sin objetivo, para el trailing. Es la mezcla que
+  # pidio: recuperar pronto y dejar correr lo que sobra.
+  take_profit_percentage: 0.45
+  take_profit_sell_percentage: 0.70
+  # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
+  # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+
+  # STOP DE ENTRADA: 50%. Medido sobre los tres corredores de Manu, simulando
+  # la entrada real del bot y mirando la caida maxima ANTES de que despegaran:
+  #
+  #   FROGGY  entrada $2.501  techo $60.485  24,2x   cayo  -0%
+  #   Dadjak  entrada $3.095  techo $62.829  20,3x   cayo -17%
+  #   Kermit  entrada $4.248  techo $56.249  13,2x   cayo -44%  <-- el caro
+  #
+  # Con el 33% anterior, Kermit se vendia justo antes de hacer 13x. Las tres
+  # sufrieron su peor caida en los PRIMEROS 30 SEGUNDOS: es el zarandeo del
+  # nacimiento, no un dump. El 50% deja pasar ese ruido.
+  #
+  # Lo que cuesta: la que se hunda de verdad se lleva la mitad de la posicion
+  # en vez de un tercio. Es el precio de no soltar a un 13x.
+  stop_loss_percentage: 0.50
+
+  # TRAILING: 33%, separado del stop de entrada (campo nuevo). Antes eran el
+  # mismo numero y no pueden serlo: el de entrada tiene que ser ancho para
+  # aguantar el nacimiento, y este corto para no devolver media ganancia desde
+  # el techo. Se arma cuando la moneda sube un 20% y sigue al maximo.
+  trailing_stop_percentage: 0.33
+
+  # EL STOP SE LO LLEVA TODO. Sin esto el bot respeta el "moonbag" (lo que
+  # no cubren los escalones de take-profit) incluso al saltar el stop, y
+  # aqui el moonbag es el 50%: un stop vendia media posicion y abandonaba
+  # la otra media en una moneda hundiendose. Paso el 10-ago con twg.
+  # El 50% que no lleva objetivo lo gestiona el TRAILING, no el stop.
+  vender_todo_en_stop: true
+
+  # ANTI-RUG: si en 4 s se vende el doble de lo que se compra, sale entera sin
+  # esperar al precio. Aqui importa mas que en DEV10: se entra en monedas que
+  # ya se estan moviendo, y ahi el vuelco puede ser instantaneo.
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+
+  # DESACTIVADA. En VOLUMEN-2,5K corta a los 3 min lo que nace plano, pero
+  # aqui seria un tiro en el pie: Dadjak tardo 26 MINUTOS en hacer su techo y
+  # una venta a los 3 la habria sacado en plena subida. Quien decide la salida
+  # es el trailing.
+  venta_muerta_seg: 0
+  venta_muerta_gain: 0.0
+
+  # 90 min. El techo mas tardio de los tres llego a los 26 min; se deja el
+  # triple de margen porque el tope solo esta para el caso en que el precio se
+  # congele y el trailing no llegue a dispararse nunca.
+  max_hold_time: 5400
+  price_check_interval: 1
+  extreme_fast_mode: false
+  # Reserva mas alta que DEV10: es la gasolina para poder firmar las VENTAS de
+  # las dos estrategias. Quedarse sin SOL con posiciones abiertas es perderlas.
+  min_reserve_sol: 0.08
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  # 100M = 0,0085 SOL, el 5,7% de una posicion de 0,15. Es cara, y aun asi
+  # compensa: en una ventana de 7 segundos se compite por entrar en el bloque,
+  # y perder la entrada cuesta mas que la comision.
+  fixed_amount: 100_000_000
+  extra_percentage: 0.0
+  hard_cap: 100_000_000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+
+  # SIETE SEGUNDOS. Es el corazon de la estrategia: si a los 7 s no ha
+  # explotado, ya no interesa. max_token_age da un poco mas de margen para que
+  # la moneda no se descarte antes de llegar siquiera a la vigilancia.
+  max_token_age: 20
+  max_buy_age: 7
+
+  match_string: null
+  bro_address: null
+
+  # ── LA SEÑAL ────────────────────────────────────────────────────────────
+  # 53,3 SOL = 4.000 $ y 266,7 SOL = 20.000 $, con SOL a 75 $ (la referencia
+  # que usa el bot para el market cap). Son los dos extremos de la captura.
+  # El techo no es un adorno: por encima de 20.000 $ de volumen ya no eres el
+  # que entra pronto, eres la salida de otro.
+  min_volumen_sol: 53.3
+  max_volumen_sol: 266.7
+
+  # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
+  # que en ventas. Sin esto, "2.500 $ de volumen" incluye a las que estan
+  # siendo vaciadas.
+  #
+  # VENTANA DE 10 s, no de 3. Con 3 s el filtro vetaba a las seis unicas
+  # candidatas que llegaron a cruzar el volumen, y a las seis por la misma
+  # razon: la ventana estaba VACIA (0,00 / 0,00) en el instante exacto en que
+  # el contador cruzaba el umbral. El volumen se acumula de golpe al nacer y
+  # luego la moneda se queda quieta unos segundos. Con 10 s se mide la
+  # direccion del dinero en el mismo tramo en que se acumulo el volumen, que
+  # es lo que se queria medir desde el principio.
+  min_presion_ratio: 2.0
+  presion_seg: 10.0
+
+  # Que el volumen no sea de dos carteras. 8 compras de 6 manos distintas.
+  min_buys: 6
+  min_titulares: 5
+  min_ops: 0
+  min_first_block_buys: 0
+  min_vol_ventana_sol: 0
+
+  # ── NO REPETIDA ─────────────────────────────────────────────────────────
+  # Lo pidio Manu: si el mismo nombre ya salio en los ultimos 10 minutos, no
+  # se compra. Estos devs relanzan el mismo clon una y otra vez y comprar tres
+  # es pagar tres veces por la misma apuesta. Mas alto que en DEV10 (5 min)
+  # porque aqui se entra mas tarde y da tiempo a que salgan mas clones.
+  no_repeat_name_min: 10
+
+  # ── EL CREADOR: MINIMO 2 MIGRACIONES ────────────────────────────────────
+  # Lo pidio Manu. No es la senal principal -- eso sigue siendo el mercado --
+  # pero descarta al que no ha llevado NUNCA una moneda hasta el final.
+  #
+  # Es un PORCENTAJE, no un numero: el 2% de todo lo que haya lanzado. Un dev
+  # con 50 monedas necesita una migrada; uno con 200, cuatro.
+  #
+  # min_migrations en 1 porque el porcentaje solo dice algo si hay al menos una
+  # migracion detras. El codigo bloquea con `migs < min_migrations O rate <
+  # min_rate`, asi que en la practica manda el 2%.
+  #
+  # Es cinco veces mas permisivo que el 10% de DEV10, que dejaba pasar al 7-8%
+  # de las monedas nuevas. Aun asi sera el filtro que menos deje pasar de los
+  # cuatro: la mayoria de los creadores de pump.fun estan en CERO migraciones,
+  # y esos se caen igual con el 2% que con el 10%.
+  pumpfun_dev:
+    enabled: false
+    min_migrations: 1
+    min_rate: 0.02
+  # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
+  # Son dos listas que el bot mantiene solo mientras opera:
+  #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.
+  #   - blacklist manual (blacklist_devs.json), vetos permanentes.
+  # Asi la estrategia se va limpiando sola: el que te la juega una vez entra en
+  # cuenta, y a la segunda queda fuera para siempre. En DEV10 esto estaba
+  # desactivado porque bloqueaba sin mirar la tasa; aqui interesa que sume.
+  ignorar_listas_de_devs: false
+
+  # Banda de 4.000 a 20.000 $, de la captura. Aqui SI hay suelo: por debajo de
+  # 4.000 la explosion no se ha confirmado, y el techo evita comprar la cresta.
+  min_entry_mc: 4000
+  max_entry_mc: 20000
+  min_curve_sol: 0
+
+  allow_mayhem: false        # decision de Manu: solo pump.fun normal
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false         # DINERO REAL
+
+  # Anti-concentracion: si un solo titular tiene mas del 15%, ese es el que va
+  # a vender encima. Aqui si se mira, porque se entra despues del reparto
+  # inicial y el dato ya es fiable.
+  max_holder_pct: 0.15
+  max_dev_hold_pct: 0.05
+  min_holders: 0
+  holder_bypass_ratio: 0
+  redes_originales: false
+  min_holders_gmgn: 0
+  senal_gmgn: []
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  # El proceso que vigila posiciones abiertas no puede quedarse sin cuota
+  # para vender, asi que se deja margen.
+  max_rps: 8
+
+compute_units:
+  # Sin esto la VENTA revienta con "Computational budget exceeded" y hay
+  # que salir por Jupiter, mas lento y peor precio. Paso el 10-ago con
+  # twg: los tokens Token-2022 gastan mas cómputo (el programa de la
+  # curva se comio los 59.700 disponibles solo en la instruccion Sell).
+  buy: 140000
+  sell: 120000
