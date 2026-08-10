@@ -245,7 +245,22 @@ filters:
   # 4.000 la explosion no se ha confirmado, y el techo evita comprar la cresta.
   min_entry_mc: 4000
   max_entry_mc: 20000
-  min_curve_sol: 0
+  # ANTI-HUMO. Maximo de dolares de market cap por cada SOL que hay DE VERDAD
+  # dentro de la curva. Una moneda sana de pump.fun lleva ~1,5 SOL a los $4K y
+  # ~10 SOL a los $20K: eso son 2.000-2.700 $ por SOL. Con el limite en 6000
+  # se deja margen de sobra a las buenas y se corta el humo.
+  #
+  # Es el patron de la captura que paso Manu: vertical a $1,12M en un segundo y
+  # luego plano, con $43,9K de volumen. Ese precio se empuja con cuatro duros
+  # cuando el supply lo tiene el que lanza, y despues no hay con que salir. Ya
+  # se habia medido: el 85% de las que "suben" tienen el pool seco, y TNOS
+  # marcaba 27 millones de MC con 0,198 SOL dentro.
+  #
+  # No cuesta tiempo: la curva ya se lee para calcular el market cap.
+  max_mc_por_sol_curva: 6000
+
+  # Suelo absoluto de SOL en la curva, por si el ratio se colase.
+  min_curve_sol: 1.5
 
   allow_mayhem: false        # decision de Manu: solo pump.fun normal
   marry_mode: false

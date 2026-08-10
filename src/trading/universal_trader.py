@@ -409,6 +409,9 @@ class UniversalTrader:
         # evita entrar justo cuando el dinero esta saliendo.
         min_presion_ratio: float = 0.0,
         presion_seg: float = 3.0,
+        # Maximo de market cap en dolares por cada SOL que hay DE VERDAD en
+        # la curva. 0 = no se mira. Es el filtro anti-humo.
+        max_mc_por_sol_curva: float = 0.0,
         # Caida desde el MAXIMO que dispara el trailing. Si no se pone, se
         # usa stop_loss_percentage, que es como funcionaba antes.
         trailing_stop_percentage: float = 0.0,
@@ -698,6 +701,13 @@ class UniversalTrader:
         self.vol_ventana_seg = float(vol_ventana_seg or 3.0)
         self.min_presion_ratio = float(min_presion_ratio or 0)
         self.presion_seg = float(presion_seg or 3.0)
+        #: EL FILTRO ANTI-HUMO. Un market cap enorme no significa nada si la
+        #: curva esta seca: el precio se empuja con cuatro duros cuando el
+        #: supply lo tiene el que lanza, y luego no hay con que salir. Ya se
+        #: midio antes: el 85% de las monedas que 'suben' tienen el pool
+        #: vacio, y TNOS marcaba 27 millones de MC con 0,198 SOL dentro.
+        #: Esto exige que el MC guarde una proporcion con el SOL real.
+        self.max_mc_por_sol_curva = float(max_mc_por_sol_curva or 0)
         # El stop de ENTRADA y el TRAILING eran el mismo numero, y no pueden
         # serlo: el de entrada tiene que aguantar el zarandeo del nacimiento
         # (medido el 10-ago: Kermit se hundio un 44% antes de hacer 13x) y el
@@ -2044,6 +2054,25 @@ class UniversalTrader:
                         await asyncio.sleep(_paso)
                         continue
                     _mc = _p * _PUMP_TOTAL_SUPPLY * _SOL_USD
+
+                    # ANTI-HUMO. Se aprovecha que la curva ya esta leida: no
+                    # cuesta ni una llamada mas. Si el market cap no guarda
+                    # proporcion con el SOL que hay DENTRO, ese precio no lo
+                    # sostiene nadie y no se puede vender a el.
+                    if self.max_mc_por_sol_curva > 0:
+                        _sol_dentro = (
+                            float(_st.get("real_sol_reserves") or 0) / LAMPORTS_PER_SOL
+                        )
+                        _ratio = _mc / _sol_dentro if _sol_dentro > 0 else float("inf")
+                        if _ratio > self.max_mc_por_sol_curva:
+                            logger.info(
+                                f"Evitado {token_info.symbol}: HUMO — "
+                                f"MC ${_mc:,.0f} con solo {_sol_dentro:.2f} SOL en "
+                                f"la curva (${_ratio:,.0f} por SOL, maximo "
+                                f"${self.max_mc_por_sol_curva:,.0f})"
+                            )
+                            return
+
                     if self.max_entry_mc > 0 and _mc > self.max_entry_mc:
                         logger.info(
                             f"Evitado {token_info.symbol}: se paso de la banda "
