@@ -21,7 +21,9 @@ import argparse
 import asyncio
 import json
 import os
+import shutil
 import statistics
+import subprocess
 import sys
 import time
 from datetime import datetime
@@ -100,6 +102,35 @@ def _load_dotenv() -> None:
             os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
 
+async def holders(mint: str) -> int:
+    """Titulares segun GMGN. -1 si no se puede saber.
+
+    Es el unico dato de "cuanta gente ha entrado" disponible para una moneda de
+    20 segundos: se comprobo el 3-ago que GMGN devuelve holder_count y liquidity
+    para monedas recien nacidas, pero NO volumen negociado.
+
+    Se llama en un hilo aparte para no bloquear el bucle de eventos.
+    """
+    binario = shutil.which("gmgn-cli") or shutil.which("gmgn-cli.cmd")
+    if not binario:
+        return -1
+
+    def _run() -> int:
+        try:
+            r = subprocess.run(  # noqa: S603
+                [binario, "token", "info", "--chain", "sol", "--address", mint,
+                 "--raw"],
+                capture_output=True, text=True, timeout=20,
+                encoding="utf-8", errors="replace")
+            if r.returncode != 0:
+                return -1
+            return int(json.loads(r.stdout).get("holder_count") or 0)
+        except Exception:  # noqa: BLE001
+            return -1
+
+    return await asyncio.to_thread(_run)
+
+
 def limpio(t: object, n: int = 14) -> str:
     """Los nombres de las memecoins llevan emojis y caracteres invisibles que
     tumban la consola de Windows (cp1252). Ya paso dos veces."""
@@ -155,6 +186,19 @@ class Prueba:
         self.invertido = dict.fromkeys(VENTANAS, 0.0)
         self.realizado = dict.fromkeys(VENTANAS, 0.0)
         self.tareas: set[asyncio.Task] = set()
+        #: simbolo normalizado -> ultima vez que se vio. Sirve para no comprar
+        #: nueve clones del mismo meme: en la tanda del 3-ago, 19 de 30 compras
+        #: eran variantes del mismo nombre (Shipy x9, Shippy x5, Boaty x5), o
+        #: sea una granja copiandose a si misma. Cuando su lote sale mal, caen
+        #: todas juntas y no hay diversificacion ninguna.
+        self.nombres: dict[str, float] = {}
+        self.n_repetidos = 0
+        #: rechazos por titulares insuficientes, y cuantos tenian de verdad.
+        #: Se cuenta aunque no se compre nada: si el umbral es inalcanzable,
+        #: esto lo demuestra con numeros en vez de dejar el bot mudo sin
+        #: explicacion.
+        self.n_pocos_holders = 0
+        self.holders_vistos: list[int] = []
 
     async def _curva(self, bc: object) -> dict | None:
         try:
@@ -172,6 +216,19 @@ class Prueba:
         self.n_lanz += 1
         if t.is_mayhem_mode:
             return                      # allow_mayhem: false
+
+        # --- nombre repetido en los ultimos N minutos ---
+        nombre = str(t.symbol or "").strip().upper()
+        ahora = time.time()
+        if nombre and self.args.sin_repetir > 0:
+            # se limpia lo viejo para que el diccionario no crezca sin fin
+            corte = ahora - self.args.sin_repetir * 60
+            self.nombres = {k: v for k, v in self.nombres.items() if v >= corte}
+            if nombre in self.nombres:
+                self.n_repetidos += 1
+                self.nombres[nombre] = ahora    # cuenta como visto otra vez
+                return
+            self.nombres[nombre] = ahora
         tarea = asyncio.create_task(self.vigilar_entrada(t))
         self.tareas.add(tarea)
         tarea.add_done_callback(self.tareas.discard)
@@ -211,6 +268,13 @@ class Prueba:
                 self.n_banda += 1
             if curva < CURVA_MIN_SOL:
                 continue                # en la banda pero sin dinero detras
+            if self.args.holders_min > 0:
+                n_hold = await holders(str(t.mint))
+                if n_hold >= 0:
+                    self.holders_vistos.append(n_hold)
+                if 0 <= n_hold < self.args.holders_min:
+                    self.n_pocos_holders += 1
+                    continue            # poca gente dentro: lanzamiento vacio
             for v in list(pendientes):
                 lo, hi = VENTANAS[v]
                 if lo <= edad <= hi:
@@ -246,9 +310,30 @@ class Prueba:
             f"CA: <code>{t.mint}</code>"
         )
 
-    async def _vender(self, p: dict, frac: float, r: float, etq: str, emoji: str) -> None:
+    async def _vender(self, p: dict, frac: float, r: float, etq: str, emoji: str,
+                      liq_sol: float | None = None) -> None:
+        """Apunta una venta. Si la curva no tiene SOL para pagarla, no cuenta.
+
+        Es la leccion mas cara de la semana: solo el 15% de las monedas que
+        hacen x2 tienen pool con el que pagarte. Un precio alto en una curva
+        vacia no es una ganancia, es un numero. Dar esas ventas por buenas es
+        lo que hacia que los backtests salieran inflados.
+        """
         frac = min(frac, p["restante"])
         if frac <= 1e-9:
+            return
+        cobro = self.args.posicion * frac * r
+        if liq_sol is not None and liq_sol < cobro:
+            p["incobrable"] = p.get("incobrable", 0.0) + frac
+            p["restante"] -= frac
+            log(f"  [{p['var']}] INCOBRABLE {p['sym']} · pediria {cobro:.4f} SOL "
+                f"y la curva tiene {liq_sol:.4f}")
+            await avisar(
+                f"⚠️ <b>INCOBRABLE</b> · <b>{p['sym']}</b>\n"
+                f"El precio marca x{r:.2f} pero la curva solo tiene "
+                f"{liq_sol:.3f} SOL.\n"
+                f"Se pierde el {frac*100:.0f}% de la posicion."
+            )
             return
         neto = self.args.posicion * frac * r * (1 - VAR) - POR_TX
         p["cobrado"] += neto
@@ -265,6 +350,28 @@ class Prueba:
         )
 
     async def seguir(self) -> None:
+        """Envoltorio que impide que un fallo mate el bucle en silencio.
+
+        El 3-ago un TypeError tumbo esta tarea en el primer sondeo y la prueba
+        estuvo TRES HORAS comprando sin vender nada: 77 compras, cero ventas.
+        No salto ningun aviso porque main() guarda la referencia de la tarea, y
+        una excepcion no recogida solo se imprime al recolectarla.
+        """
+        while True:
+            try:
+                await self._seguir()
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:  # noqa: BLE001
+                log(f"!! el bucle de salidas fallo: {type(exc).__name__}: {exc}")
+                await avisar(
+                    f"⚠️ <b>FALLO EN EL BUCLE DE SALIDAS</b>\n"
+                    f"{type(exc).__name__}: {str(exc)[:200]}\n"
+                    f"Se reintenta, pero revisa: sin esto se compra y no se vende."
+                )
+                await asyncio.sleep(5)
+
+    async def _seguir(self) -> None:
         while True:
             await asyncio.sleep(self.args.sondeo)
             ahora = time.time()
@@ -309,12 +416,18 @@ class Prueba:
                     del self.abiertas[clave]
 
     def resumen(self) -> str:
-        p = ["📊 <b>BANDA 3-3.8K · resultado</b>", "",
+        p = ["📊 <b>resultado</b>", "",
              f"Lanzamientos vistos: {self.n_lanz}",
+             f"Descartados por nombre repetido: {self.n_repetidos}",
+             (f"Descartados por &lt;{self.args.holders_min} titulares: "
+              f"{self.n_pocos_holders}" if self.args.holders_min else ""),
+             (f"Titulares vistos: mediana "
+              f"{statistics.median(self.holders_vistos):.0f} · máximo "
+              f"{max(self.holders_vistos)}" if self.holders_vistos else ""),
              f"Llegaron a la banda: {self.n_banda}", ""]
-        for v, seg in VENTANAS.items():
+        for v, (lo, hi) in VENTANAS.items():
             ops = [x for x in self.cerradas if x["var"] == v]
-            p.append(f"<b>{v}</b> (entrada en los primeros {seg:.0f}s)")
+            p.append(f"<b>{v}</b> (entrada entre {lo:.0f}s y {hi:.0f}s)")
             if not ops:
                 p.append("  sin operaciones cerradas\n")
                 continue
@@ -332,12 +445,26 @@ class Prueba:
 
 
 async def main() -> None:
+    global MC_MIN, MC_MAX, CURVA_MIN_SOL, EDAD_MAX, VENTANAS  # noqa: PLW0603
     _load_dotenv()
     ap = argparse.ArgumentParser()
     ap.add_argument("--minutos", type=float, default=120)
     ap.add_argument("--posicion", type=float, default=0.15)
     ap.add_argument("--sondeo", type=float, default=10)
+    ap.add_argument("--mc-min", type=float, default=MC_MIN)
+    ap.add_argument("--mc-max", type=float, default=MC_MAX)
+    ap.add_argument("--curva-min", type=float, default=CURVA_MIN_SOL)
+    ap.add_argument("--edad-max", type=float, default=EDAD_MAX)
+    ap.add_argument("--holders-min", type=int, default=0,
+                    help="titulares minimos, consultados a GMGN")
+    ap.add_argument("--sin-repetir", type=float, default=5.0,
+                    help="minutos que un mismo nombre queda vetado tras verlo")
     args = ap.parse_args()
+    MC_MIN, MC_MAX = args.mc_min, args.mc_max
+    CURVA_MIN_SOL = args.curva_min
+    EDAD_MAX = args.edad_max
+    # una sola ventana cuando el usuario fija la edad maxima a mano
+    VENTANAS = {"UNICA": (0.0, EDAD_MAX)}
 
     sol = await precio_sol()
     print(f"SOL ${sol:,.2f} · posicion {args.posicion} SOL · {args.minutos:.0f} min")

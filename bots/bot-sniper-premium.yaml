@@ -206,8 +206,12 @@ filters:
   # 15,6 s = los 0,26 min del filtro de Manu. Es una ventana MUY corta para
   # acumular 2.500 $ de volumen: solo lo consigue la moneda que arranca de
   # verdad, que es justo lo que se busca. La que tarda mas, ya no interesa.
-  max_token_age: 30
-  max_buy_age: 10
+  # TIEMPO. 30 segundos de ventana, no 10: ahora se exigen 3.000 $ de volumen y
+  # 4.000 de market cap, y eso no se acumula en diez segundos ni en las buenas.
+  # Con la ventana corta el bot miraba monedas que aun no habian tenido ocasion
+  # de cumplir y las descartaba por viejas antes de que pasara nada.
+  max_token_age: 60
+  max_buy_age: 30
 
   match_string: null
   bro_address: null
@@ -268,8 +272,22 @@ filters:
   # de las monedas nuevas. Aun asi sera el filtro que menos deje pasar de los
   # cuatro: la mayoria de los creadores de pump.fun estan en CERO migraciones,
   # y esos se caen igual con el 2% que con el 10%.
+  # DESACTIVADO el 10-ago por Manu: la entrada la deciden market cap, volumen y
+  # tiempo, y nada mas. La reputacion del creador deja de ser una condicion.
+  #
+  # Lo que se gana quitandolo, ademas de simplicidad: la consulta del historial
+  # del dev es la unica llamada a la API de pump.fun que habia en el camino de
+  # decision, y es la mas lenta de todas. Sin ella el bot decide con lo que ya
+  # tiene en memoria mas una sola lectura de la curva.
+  #
+  # Lo que se pierde: era el filtro que separaba a los tres corredores reales
+  # (dev al 4-27%) del ruido. Si esto empieza a comprar basura, es el primer
+  # sitio donde volver a mirar.
+  #
+  # La lista de devs marcados NO desaparece: sigue decidiendo el tamano de la
+  # compra (0,30 en vez de 0,20) y la paciencia de la salida.
   pumpfun_dev:
-    enabled: true
+    enabled: false
     # MAS DE UNA MIGRACION, y nada mas. Sin porcentaje: min_rate en 0 hace que
     # el codigo (`migs < min_migrations O rate < min_rate`) decida solo por el
     # numero.
