@@ -1,0 +1,238 @@
+# CORREDORES — misma entrada que VOLUMEN-2,5K, salida distinta.
+#
+# Sale del analisis de los tres lanzamientos que paso Manu el 10-ago, los tres
+# migrados:
+#
+#   Dadjak  dev 1/1 (100%)    ATH  $54.131   techo a los 26,0 min
+#   FROGGY  dev 3/70 (4,3%)   ATH  $61.182   techo a los  8,1 min
+#   Kermit  dev 3/70 (4,3%)   ATH  $47.335   techo a los 12,1 min
+#
+# Lo que ensenan, y que no encaja con la salida de VOLUMEN-2,5K:
+#
+# 1. HACEN 10x-25x. Entrando por debajo de 5,5K y con techos de 47-61K, vender
+#    el 67% al +50% saca del cohete a los 3,7K. Se capturaria un +33% de un
+#    +2.000%. La escalera corta esta pensada para no perder; esta esta pensada
+#    para no perderselos.
+#
+# 2. EL TECHO TARDA DE 8 A 26 MINUTOS. No es un scalp de segundos: hay que
+#    aguantar. Por eso no hay venta por moneda muerta a los 3 minutos, que en
+#    Dadjak (techo a los 26) habria vendido en plena subida.
+#
+# 3. LA REPUTACION DEL DEV VA EN EL 2%, NO EN EL 10%. Dos de los tres estan en
+#    4,3%: con el 10% de DEV10 se pierden los dos.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# LA SALIDA
+# ─────────────────────────────────────────────────────────────────────────────
+# Al +100% se vende la MITAD. Eso devuelve el capital entero (0,50 x 2,0 = 1,0):
+# a partir de ahi la operacion no puede perder dinero.
+#
+# La otra mitad NO tiene objetivo: la lleva el trailing del 33% desde el maximo.
+# En FROGGY (20x) eso habria salido cerca de 13-14x en vez de a +50%.
+#
+# LO QUE CUESTA, y hay que decirlo: el capital se asegura al +100%, no al +50%.
+# La que no llegue a doblar se pierde entera contra el stop del 33%. Es mas
+# arriesgada que VOLUMEN-2,5K a proposito -- se cambia seguridad por techo.
+
+name: "CORREDORES - misma entrada, salida para 10x"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: false     # se enciende a mano: Manu prueba una y luego la otra
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  # 0,15. Ya no comparte wallet con nadie (DEV10 esta apagada), asi que se
+  # puede subir a 0,30 cuando Manu recargue -- se deja bajo a proposito hasta
+  # comprobar que la estrategia gana dinero de verdad.
+  buy_amount: 0.15
+  buy_slippage: 0.30
+  sell_slippage: 0.90
+
+  exit_strategy: "tp_sl"
+  # ASEGURAR CAPITAL AL +100%: media posicion a x2 devuelve la inversion
+  # entera (0,50 x 2,0 = 1,0). Mas tarde que en VOLUMEN-2,5K a proposito: los
+  # tres ejemplos hicieron 10x-25x y salir al +50% era abandonarlos.
+  take_profit_percentage: 1.00
+  take_profit_sell_percentage: 0.50
+  # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
+  # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+
+  # 33%. Hace de DOS cosas con el mismo numero, que es como esta hecho el bot:
+  #  - stop-loss de entrada: si cae un 33% desde la compra, fuera.
+  #  - trailing: una vez la moneda ha subido un 20%, el listo pasa a medirse
+  #    desde el MAXIMO alcanzado, no desde la entrada.
+  stop_loss_percentage: 0.33
+
+  # ANTI-RUG: si en 4 s se vende el doble de lo que se compra, sale entera sin
+  # esperar al precio. Aqui importa mas que en DEV10: se entra en monedas que
+  # ya se estan moviendo, y ahi el vuelco puede ser instantaneo.
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+
+  # DESACTIVADA. En VOLUMEN-2,5K corta a los 3 min lo que nace plano, pero
+  # aqui seria un tiro en el pie: Dadjak tardo 26 MINUTOS en hacer su techo y
+  # una venta a los 3 la habria sacado en plena subida. Quien decide la salida
+  # es el trailing.
+  venta_muerta_seg: 0
+  venta_muerta_gain: 0.0
+
+  # 90 min. El techo mas tardio de los tres llego a los 26 min; se deja el
+  # triple de margen porque el tope solo esta para el caso en que el precio se
+  # congele y el trailing no llegue a dispararse nunca.
+  max_hold_time: 5400
+  price_check_interval: 1
+  extreme_fast_mode: false
+  # Reserva mas alta que DEV10: es la gasolina para poder firmar las VENTAS de
+  # las dos estrategias. Quedarse sin SOL con posiciones abiertas es perderlas.
+  min_reserve_sol: 0.08
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  # 20M = 0,0017 SOL, el 1,1% de una posicion de 0,15. Menos que DEV10 porque
+  # aqui no se compite por ser el primero en el bloque de creacion: la moneda
+  # ya lleva segundos viva cuando se entra.
+  fixed_amount: 20_000_000
+  extra_percentage: 0.0
+  hard_cap: 20_000_000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+
+  # 15,6 s = los 0,26 min del filtro de Manu. Es una ventana MUY corta para
+  # acumular 2.500 $ de volumen: solo lo consigue la moneda que arranca de
+  # verdad, que es justo lo que se busca. La que tarda mas, ya no interesa.
+  max_token_age: 40
+  max_buy_age: 15.6
+
+  match_string: null
+  bro_address: null
+
+  # ── LA SEÑAL ────────────────────────────────────────────────────────────
+  # 33,3 SOL = ~2.500 $ con SOL a 75 $ (la misma referencia que usa el bot
+  # para el market cap). Es el "Volumen min 2.5K" de la captura.
+  min_volumen_sol: 33.3
+
+  # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
+  # que en ventas. Sin esto, "2.500 $ de volumen" incluye a las que estan
+  # siendo vaciadas.
+  #
+  # VENTANA DE 10 s, no de 3. Con 3 s el filtro vetaba a las seis unicas
+  # candidatas que llegaron a cruzar el volumen, y a las seis por la misma
+  # razon: la ventana estaba VACIA (0,00 / 0,00) en el instante exacto en que
+  # el contador cruzaba el umbral. El volumen se acumula de golpe al nacer y
+  # luego la moneda se queda quieta unos segundos. Con 10 s se mide la
+  # direccion del dinero en el mismo tramo en que se acumulo el volumen, que
+  # es lo que se queria medir desde el principio.
+  min_presion_ratio: 3.0
+  presion_seg: 10.0
+
+  # Que el volumen no sea de dos carteras. 8 compras de 6 manos distintas.
+  min_buys: 8
+  min_titulares: 6
+  min_ops: 0
+  min_first_block_buys: 0
+  min_vol_ventana_sol: 0
+
+  # ── NO REPETIDA ─────────────────────────────────────────────────────────
+  # Lo pidio Manu: si el mismo nombre ya salio en los ultimos 10 minutos, no
+  # se compra. Estos devs relanzan el mismo clon una y otra vez y comprar tres
+  # es pagar tres veces por la misma apuesta. Mas alto que en DEV10 (5 min)
+  # porque aqui se entra mas tarde y da tiempo a que salgan mas clones.
+  no_repeat_name_min: 10
+
+  # ── EL CREADOR: MINIMO 2 MIGRACIONES ────────────────────────────────────
+  # Lo pidio Manu. No es la senal principal -- eso sigue siendo el mercado --
+  # pero descarta al que no ha llevado NUNCA una moneda hasta el final.
+  #
+  # Es un PORCENTAJE, no un numero: el 2% de todo lo que haya lanzado. Un dev
+  # con 50 monedas necesita una migrada; uno con 200, cuatro.
+  #
+  # min_migrations en 1 porque el porcentaje solo dice algo si hay al menos una
+  # migracion detras. El codigo bloquea con `migs < min_migrations O rate <
+  # min_rate`, asi que en la practica manda el 2%.
+  #
+  # Es cinco veces mas permisivo que el 10% de DEV10, que dejaba pasar al 7-8%
+  # de las monedas nuevas. Aun asi sera el filtro que menos deje pasar de los
+  # cuatro: la mayoria de los creadores de pump.fun estan en CERO migraciones,
+  # y esos se caen igual con el 2% que con el 10%.
+  pumpfun_dev:
+    enabled: true
+    min_migrations: 1
+    min_rate: 0.02
+  # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
+  # Son dos listas que el bot mantiene solo mientras opera:
+  #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.
+  #   - blacklist manual (blacklist_devs.json), vetos permanentes.
+  # Asi la estrategia se va limpiando sola: el que te la juega una vez entra en
+  # cuenta, y a la segunda queda fuera para siempre. En DEV10 esto estaba
+  # desactivado porque bloqueaba sin mirar la tasa; aqui interesa que sume.
+  ignorar_listas_de_devs: false
+
+  # Techo de 5.500 $. La captura traia 5K; Manu lo sube un poco el 10-ago para
+  # dar margen: una moneda que hace 2.500 $ de volumen en 15 s se mueve rapido
+  # y quedarse en 5.000 clavados la deja fuera por unos cientos de dolares.
+  # Sin suelo: lo que importa es no entrar arriba, no entrar tarde.
+  min_entry_mc: 0
+  max_entry_mc: 5500
+  min_curve_sol: 0
+
+  allow_mayhem: false        # decision de Manu: solo pump.fun normal
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false         # DINERO REAL
+
+  # Anti-concentracion: si un solo titular tiene mas del 15%, ese es el que va
+  # a vender encima. Aqui si se mira, porque se entra despues del reparto
+  # inicial y el dato ya es fiable.
+  max_holder_pct: 0.15
+  max_dev_hold_pct: 0.05
+  min_holders: 0
+  holder_bypass_ratio: 0
+  redes_originales: false
+  min_holders_gmgn: 0
+  senal_gmgn: []
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  # El proceso que vigila posiciones abiertas no puede quedarse sin cuota
+  # para vender, asi que se deja margen.
+  max_rps: 8
