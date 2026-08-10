@@ -344,8 +344,22 @@ filters:
   min_supply_en_manos: 0.10
 
   max_holder_pct: 0.15
+
+  # BUNDLE: cuanto suman TODOS los grandes titulares juntos, excluida la curva.
+  # max_holder_pct mira al mayor de uno en uno y se puede burlar repartiendo la
+  # misma bolsa entre diez carteras del mismo dueño -- que es exactamente como
+  # se monta un bundle. Esto mira la suma: si los veinte mayores tienen mas del
+  # 30% del supply, la moneda esta en pocas manos aunque ninguna destaque.
+  max_bundle_pct: 0.30
   max_dev_hold_pct: 0.05
-  min_holders: 0
+  # TITULARES REALES DISTINTOS, sin contar la curva. El supply en manos dice
+  # CUANTO se ha comprado; esto dice ENTRE CUANTOS. Se puede tener un 20% del
+  # supply fuera y que lo tenga una sola cartera: eso es un bundle esperando a
+  # dumpear, no demanda. Se piden 8.
+  #
+  # Tope duro del RPC: getTokenLargestAccounts devuelve 20 cuentas, asi que
+  # este numero no puede pasar de 19.
+  min_holders: 8
   holder_bypass_ratio: 0
   redes_originales: false
   min_holders_gmgn: 0
