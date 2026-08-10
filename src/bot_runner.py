@@ -227,6 +227,8 @@ async def start_bot(config_path: str):
             ignorar_listas_de_devs=cfg.get("filters", {}).get(
                 "ignorar_listas_de_devs", False
             ),
+            min_presion_ratio=cfg.get("filters", {}).get("min_presion_ratio", 0),
+            presion_seg=cfg.get("filters", {}).get("presion_seg", 3.0),
             mayhem_buy_amount=cfg["trade"].get("mayhem_buy_amount", 0),
             mayhem_max_perdidas=cfg["trade"].get("mayhem_max_perdidas", 0),
             max_buy_age=cfg.get("filters", {}).get("max_buy_age", 0.0),

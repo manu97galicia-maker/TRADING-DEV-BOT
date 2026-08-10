@@ -403,6 +403,12 @@ class UniversalTrader:
         # ningun lado. 0 = sin filtro.
         min_vol_ventana_sol: float = 0.0,
         vol_ventana_seg: float = 3.0,
+        # PRESION COMPRADORA EN LA ENTRADA. Cuantas veces mas SOL se compran
+        # que se venden en los ultimos `presion_seg` segundos. 0 = no se mira.
+        # El volumen solo dice que hay movimiento; esto dice hacia donde va, y
+        # evita entrar justo cuando el dinero esta saliendo.
+        min_presion_ratio: float = 0.0,
+        presion_seg: float = 3.0,
         # Firma de demanda externa en dos tiempos. Se configura como bloque y
         # queda desactivada por defecto para no cambiar bots existentes.
         second_wave: dict | None = None,
@@ -676,6 +682,8 @@ class UniversalTrader:
         self.max_volumen_sol = float(max_volumen_sol or 0)
         self.min_vol_ventana_sol = float(min_vol_ventana_sol or 0)
         self.vol_ventana_seg = float(vol_ventana_seg or 3.0)
+        self.min_presion_ratio = float(min_presion_ratio or 0)
+        self.presion_seg = float(presion_seg or 3.0)
         self.second_wave = dict(second_wave or {})
         self.senal_gmgn = [int(x) for x in (senal_gmgn or [])]
         self.anti_rug_ratio = float(anti_rug_ratio or 0)
@@ -1866,11 +1874,16 @@ class UniversalTrader:
                 from monitoring.volumen import titulares as _n_tit
                 from monitoring.volumen import volumen_sol as _vol_sol
                 from monitoring.volumen import metricas_segunda_ola as _segunda_ola
+                from monitoring.volumen import presion as _presion
 
                 _nacida = self.token_timestamps.get(str(token_info.mint))
                 _t0 = _nacida if _nacida is not None else monotonic()
                 _visto_vol = 0.0
                 _visto_buys = _visto_first_buys = _visto_ops = _visto_tit = 0
+                #: Ultima lectura de presion que NO paso, para el aviso de
+                #: descarte: sin esto no se sabe si sobro el dinero o la
+                #: direccion del dinero.
+                _visto_presion = "no medida"
                 # Ventana corta: mirar cada medio segundo se come casi la mitad
                 # de una ventana de 3 s. Con 0,15 s se comprueba ~20 veces y se
                 # compra en el instante en que cumple.
@@ -1900,6 +1913,27 @@ class UniversalTrader:
                     if self.min_buys > 0 and _b < self.min_buys:
                         await asyncio.sleep(_paso)
                         continue
+                    # PRESION COMPRADORA. Se comprueba JUSTO despues del
+                    # volumen y antes de mirar la curva: llegar al volumen
+                    # pedido no dice nada de la direccion -- se llega igual
+                    # subiendo que mientras todos venden. Aqui se exige que en
+                    # los ultimos segundos entre mas dinero del que sale, para
+                    # no comprar la primera vela roja de un dump.
+                    if self.min_presion_ratio > 0:
+                        _pc, _pv = _presion(str(token_info.mint), self.presion_seg)
+                        # Sin ventas la division no vale; con compras y cero
+                        # ventas la presion es inmejorable y se deja pasar.
+                        _ok_presion = (
+                            _pc > 0
+                            if _pv <= 0
+                            else (_pc / _pv) >= self.min_presion_ratio
+                        )
+                        if not _ok_presion:
+                            _visto_presion = (
+                                f"{_pc:.2f} comprados / {_pv:.2f} vendidos"
+                            )
+                            await asyncio.sleep(_paso)
+                            continue
                     if (
                         self.min_first_block_buys > 0
                         and _fb < self.min_first_block_buys
@@ -2009,7 +2043,8 @@ class UniversalTrader:
                         f"{_visto_vol:.1f} SOL, {_visto_buys} compras, "
                         f"{_visto_first_buys} en primer bloque, "
                         f"{_visto_ops} tx, "
-                        f"{_visto_tit} titulares)"
+                        f"{_visto_tit} titulares, "
+                        f"presion: {_visto_presion})"
                     )
                     if _tarea_redes is not None:
                         _tarea_redes.cancel()

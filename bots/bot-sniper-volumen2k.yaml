@@ -1,0 +1,203 @@
+# VOLUMEN-2K — entra justo cuando la moneda cumple los 2.000 $ de volumen,
+# pero SOLO si ese volumen viene de compras.
+#
+# Corre EN PARALELO a DEV10 y no se pisa con ella: DEV10 pregunta QUIEN lanza y
+# no mira el mercado; esta no mira al creador en absoluto y pregunta QUE esta
+# haciendo el dinero. Comparten wallet, asi que cada una lleva su reserva.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# LA IDEA
+# ─────────────────────────────────────────────────────────────────────────────
+# El volumen es el momento en que la moneda arranca. Pero llegar a 2.000 $ no
+# dice hacia donde: se llega igual subiendo que mientras todos venden, y
+# comprar la primera vela roja de un dump es la forma mas rapida de perder.
+#
+# Por eso van las dos condiciones juntas:
+#   1. VOLUMEN: 26,7 SOL negociados (~2.000 $ con SOL a 75 $).
+#   2. DIRECCION: en los ultimos 3 s han entrado al menos el TRIPLE de SOL en
+#      compras que en ventas. Es el filtro nuevo `min_presion_ratio`.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# LA SALIDA: PRIMERO EL CAPITAL, LUEGO SE DEJA CORRER
+# ─────────────────────────────────────────────────────────────────────────────
+# Al +50% se vende el 67% de la posicion. Eso devuelve la inversion entera
+# (0,67 x 1,5 = 1,0): a partir de ahi lo que queda en la mesa ya es ganancia y
+# no se puede perder dinero en esta operacion.
+#
+# El 33% restante NO tiene objetivo fijo: lo gestiona el trailing stop, que se
+# arma solo cuando la moneda sube un 20% y va subiendo con el precio. Si cae un
+# 33% desde el maximo que haya tocado, se vende todo lo que quede. Asi una que
+# se va a x10 no se corta en un escalon, y una que se da la vuelta no devuelve
+# todo lo ganado.
+#
+# El mismo 33% hace de stop-loss de entrada mientras la moneda no haya subido
+# un 20%: es el valor que pidio Manu y en el codigo los dos usan el mismo
+# campo (`stop_loss_percentage`).
+
+name: "VOLUMEN-2K - volumen con presion compradora"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  # 0,15 y no 0,30: comparte wallet con DEV10, que ya reserva 0,30 por
+  # operacion. Con 0,77 SOL en la cartera no caben dos estrategias a tamano
+  # completo sin quedarse sin gasolina para vender.
+  buy_amount: 0.15
+  buy_slippage: 0.30
+  sell_slippage: 0.90
+
+  exit_strategy: "tp_sl"
+  # ASEGURAR CAPITAL: 67% al +50% devuelve la inversion entera (0,67 x 1,5 = 1).
+  # Lo que sigue dentro a partir de ese momento es dinero regalado.
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 0.67
+  # Sin mas escalones a proposito: el 33% que queda lo gestiona el trailing.
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+
+  # 33%. Hace de DOS cosas con el mismo numero, que es como esta hecho el bot:
+  #  - stop-loss de entrada: si cae un 33% desde la compra, fuera.
+  #  - trailing: una vez la moneda ha subido un 20%, el listo pasa a medirse
+  #    desde el MAXIMO alcanzado, no desde la entrada.
+  stop_loss_percentage: 0.33
+
+  # ANTI-RUG: si en 4 s se vende el doble de lo que se compra, sale entera sin
+  # esperar al precio. Aqui importa mas que en DEV10: se entra en monedas que
+  # ya se estan moviendo, y ahi el vuelco puede ser instantaneo.
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+
+  # A los 3 min, si sigue por debajo de la entrada, se vende y se libera la
+  # posicion. Con la wallet compartida, una moneda plana ocupando capital es
+  # una entrada que DEV10 no puede hacer.
+  venta_muerta_seg: 180
+  venta_muerta_gain: 0.0
+
+  # 45 min: el trailing es quien manda: esto es solo el tope por si el precio
+  # se queda congelado y el trailing nunca llega a dispararse.
+  max_hold_time: 2700
+  price_check_interval: 1
+  extreme_fast_mode: false
+  # Reserva mas alta que DEV10: es la gasolina para poder firmar las VENTAS de
+  # las dos estrategias. Quedarse sin SOL con posiciones abiertas es perderlas.
+  min_reserve_sol: 0.08
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  # 20M = 0,0017 SOL, el 1,1% de una posicion de 0,15. Menos que DEV10 porque
+  # aqui no se compite por ser el primero en el bloque de creacion: la moneda
+  # ya lleva segundos viva cuando se entra.
+  fixed_amount: 20_000_000
+  extra_percentage: 0.0
+  hard_cap: 20_000_000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+
+  # 90 s de margen: hay que darle tiempo a acumular los 2.000 $ de volumen.
+  # DEV10 compra en 3 s porque su senal esta en el nacimiento; esta necesita
+  # ver como se comporta el mercado, asi que la vigila casi un minuto y medio.
+  max_token_age: 120
+  max_buy_age: 90
+
+  match_string: null
+  bro_address: null
+
+  # ── LA SEÑAL ────────────────────────────────────────────────────────────
+  # 26,7 SOL = ~2.000 $ con SOL a 75 $ (la misma referencia que usa el bot
+  # para calcular el market cap).
+  min_volumen_sol: 26.7
+
+  # DIRECCION DEL DINERO. Filtro nuevo: en los ultimos 3 s tienen que haber
+  # entrado 3 veces mas SOL en compras que en ventas. Sin esto, "2.000 $ de
+  # volumen" incluye a las que estan siendo vaciadas.
+  min_presion_ratio: 3.0
+  presion_seg: 3.0
+
+  # Que el volumen no sea de dos carteras. 8 compras de 6 manos distintas.
+  min_buys: 8
+  min_titulares: 6
+  min_ops: 0
+  min_first_block_buys: 0
+  min_vol_ventana_sol: 0
+
+  # ── NO REPETIDA ─────────────────────────────────────────────────────────
+  # Lo pidio Manu: si el mismo nombre ya salio en los ultimos 10 minutos, no
+  # se compra. Estos devs relanzan el mismo clon una y otra vez y comprar tres
+  # es pagar tres veces por la misma apuesta. Mas alto que en DEV10 (5 min)
+  # porque aqui se entra mas tarde y da tiempo a que salgan mas clones.
+  no_repeat_name_min: 10
+
+  # ── LO QUE NO SE MIRA ───────────────────────────────────────────────────
+  # El creador da igual: la senal es el mercado. Es lo que hace que esta
+  # estrategia y DEV10 no compren lo mismo.
+  pumpfun_dev:
+    enabled: false
+  ignorar_listas_de_devs: true
+
+  # Sin banda de market cap: la moneda que hace 2.000 $ de volumen ya ha
+  # subido, y un techo la dejaria fuera justo por la razon que la hace buena.
+  min_entry_mc: 0
+  max_entry_mc: 0
+  min_curve_sol: 0
+
+  allow_mayhem: false        # igual que DEV10, por decision de Manu
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false         # DINERO REAL
+
+  # Anti-concentracion: si un solo titular tiene mas del 15%, ese es el que va
+  # a vender encima. Aqui si se mira, porque se entra despues del reparto
+  # inicial y el dato ya es fiable.
+  max_holder_pct: 0.15
+  max_dev_hold_pct: 0.05
+  min_holders: 0
+  holder_bypass_ratio: 0
+  redes_originales: false
+  min_holders_gmgn: 0
+  senal_gmgn: []
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  # Mas bajo que DEV10: son dos procesos contra el mismo RPC y el que vigila
+  # posiciones abiertas no puede quedarse sin cuota para vender.
+  max_rps: 8
