@@ -409,6 +409,9 @@ class UniversalTrader:
         # evita entrar justo cuando el dinero esta saliendo.
         min_presion_ratio: float = 0.0,
         presion_seg: float = 3.0,
+        # Caida desde el MAXIMO que dispara el trailing. Si no se pone, se
+        # usa stop_loss_percentage, que es como funcionaba antes.
+        trailing_stop_percentage: float = 0.0,
         # Firma de demanda externa en dos tiempos. Se configura como bloque y
         # queda desactivada por defecto para no cambiar bots existentes.
         second_wave: dict | None = None,
@@ -684,6 +687,14 @@ class UniversalTrader:
         self.vol_ventana_seg = float(vol_ventana_seg or 3.0)
         self.min_presion_ratio = float(min_presion_ratio or 0)
         self.presion_seg = float(presion_seg or 3.0)
+        # El stop de ENTRADA y el TRAILING eran el mismo numero, y no pueden
+        # serlo: el de entrada tiene que aguantar el zarandeo del nacimiento
+        # (medido el 10-ago: Kermit se hundio un 44% antes de hacer 13x) y el
+        # trailing tiene que ser corto para no devolver media ganancia desde
+        # el techo. Si no se configura, se comporta como antes.
+        self.trailing_stop_percentage = float(
+            trailing_stop_percentage or stop_loss_percentage or 0
+        )
         self.second_wave = dict(second_wave or {})
         self.senal_gmgn = [int(x) for x in (senal_gmgn or [])]
         self.anti_rug_ratio = float(anti_rug_ratio or 0)
@@ -3041,13 +3052,13 @@ class UniversalTrader:
                 peak_price = max(peak_price, price)
                 last_price = price
                 if (
-                    self.stop_loss_percentage
+                    self.trailing_stop_percentage
                     and peak_price >= entry_price * 1.2
-                    and price <= peak_price * (1 - self.stop_loss_percentage)
+                    and price <= peak_price * (1 - self.trailing_stop_percentage)
                 ):
                     logger.info(
                         f"TRAILING STOP {token_info.symbol}: {price:.8f} SOL <= pico "
-                        f"{peak_price:.8f} -{self.stop_loss_percentage * 100:.0f}% "
+                        f"{peak_price:.8f} -{self.trailing_stop_percentage * 100:.0f}% "
                         f"-> vendo TODO (anti pump&dump, moonbag incluido)"
                     )
                     if await self._sell_amount(

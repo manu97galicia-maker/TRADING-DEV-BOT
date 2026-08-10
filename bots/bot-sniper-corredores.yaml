@@ -67,11 +67,26 @@ trade:
   tp4_gain: 0
   tp4_sell: 0
 
-  # 33%. Hace de DOS cosas con el mismo numero, que es como esta hecho el bot:
-  #  - stop-loss de entrada: si cae un 33% desde la compra, fuera.
-  #  - trailing: una vez la moneda ha subido un 20%, el listo pasa a medirse
-  #    desde el MAXIMO alcanzado, no desde la entrada.
-  stop_loss_percentage: 0.33
+  # STOP DE ENTRADA: 50%. Medido sobre los tres corredores de Manu, simulando
+  # la entrada real del bot y mirando la caida maxima ANTES de que despegaran:
+  #
+  #   FROGGY  entrada $2.501  techo $60.485  24,2x   cayo  -0%
+  #   Dadjak  entrada $3.095  techo $62.829  20,3x   cayo -17%
+  #   Kermit  entrada $4.248  techo $56.249  13,2x   cayo -44%  <-- el caro
+  #
+  # Con el 33% anterior, Kermit se vendia justo antes de hacer 13x. Las tres
+  # sufrieron su peor caida en los PRIMEROS 30 SEGUNDOS: es el zarandeo del
+  # nacimiento, no un dump. El 50% deja pasar ese ruido.
+  #
+  # Lo que cuesta: la que se hunda de verdad se lleva la mitad de la posicion
+  # en vez de un tercio. Es el precio de no soltar a un 13x.
+  stop_loss_percentage: 0.50
+
+  # TRAILING: 33%, separado del stop de entrada (campo nuevo). Antes eran el
+  # mismo numero y no pueden serlo: el de entrada tiene que ser ancho para
+  # aguantar el nacimiento, y este corto para no devolver media ganancia desde
+  # el techo. Se arma cuando la moneda sube un 20% y sigue al maximo.
+  trailing_stop_percentage: 0.33
 
   # ANTI-RUG: si en 4 s se vende el doble de lo que se compra, sale entera sin
   # esperar al precio. Aqui importa mas que en DEV10: se entra en monedas que

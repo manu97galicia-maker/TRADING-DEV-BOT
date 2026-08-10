@@ -72,7 +72,10 @@ trade:
   #  - stop-loss de entrada: si cae un 33% desde la compra, fuera.
   #  - trailing: una vez la moneda ha subido un 20%, el listo pasa a medirse
   #    desde el MAXIMO alcanzado, no desde la entrada.
-  stop_loss_percentage: 0.33
+  stop_loss_percentage: 0.50
+  # Trailing separado del stop de entrada (ver bot-sniper-corredores.yaml para
+  # la medicion): 50% para aguantar el nacimiento, 33% para seguir al maximo.
+  trailing_stop_percentage: 0.33
 
   # ANTI-RUG: si en 4 s se vende el doble de lo que se compra, sale entera sin
   # esperar al precio. Aqui importa mas que en DEV10: se entra en monedas que
