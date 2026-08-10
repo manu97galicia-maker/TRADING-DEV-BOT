@@ -53,7 +53,16 @@ trade:
   # comprobar que la estrategia gana dinero de verdad.
   buy_amount: 0.15
   buy_slippage: 0.30
-  sell_slippage: 0.90
+  # 0,35, no 0,90. Con el 90% el bot aceptaba cobrar hasta un 90% MENOS de lo
+  # esperado y lo apuntaba como si hubiera cobrado entero: es la principal
+  # sospecha de por que el P&L teorico decia +0,16 mientras la cartera perdia
+  # 0,75. Con 0,35 la venta que solo se pueda ejecutar tirando el precio se
+  # rechaza y se reintenta, en vez de regalarla.
+  #
+  # El riesgo del otro lado, y hay que saberlo: en una moneda que se hunde muy
+  # deprisa un margen corto puede dejar la venta sin ejecutar. Por eso se deja
+  # en 0,35 y no mas abajo, y sigue estando el respaldo de Jupiter.
+  sell_slippage: 0.35
 
   exit_strategy: "tp_sl"
   # ASEGURAR CAPITAL: 67% al +50% devuelve la inversion entera (0,67 x 1,5 = 1).

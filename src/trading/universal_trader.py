@@ -592,6 +592,14 @@ class UniversalTrader:
         self.tp_tiers_aggressive = build_tiers([(1.0, 0.20), (3.0, 0.20), (9.0, 0.20)])
         self._creator_bestpeak = _load_creator_bestpeak(bro_address)
 
+        #: Firmas de cada operacion, por mint: la de compra y las de todas las
+        #: ventas. Sirven para medir el P&L REAL contra la cadena. El P&L que
+        #: calcula el bot es `tokens x precio observado`, que NO es el SOL que
+        #: entra en la cartera: no descuenta la comision de pump.fun, ni el
+        #: impacto de la venta, ni lo que se pierde por slippage. El 9-ago
+        #: reporto +0,16 SOL mientras la wallet perdia 0,75.
+        self._sigs_operacion: dict[str, list[str]] = {}
+
         #: Ventas fallidas seguidas por mint. Cada intento fallido paga comision
         #: igual, asi que a partir de MAX_FALLOS_VENTA se deja de intentar en vez
         #: de reintentar cada segundo hasta agotar la wallet (ver _sell_amount).
@@ -2629,6 +2637,7 @@ class UniversalTrader:
         logger.info(
             f"Successfully bought {token_info.symbol} on {token_info.platform.value}"
         )
+        self._anota_firma(str(token_info.mint), buy_result.tx_signature)
         self._log_trade(
             "buy",
             token_info,
@@ -2752,6 +2761,43 @@ class UniversalTrader:
             logger.debug(f"no pude leer el saldo de {token_info.symbol}: {exc}")
             return None
 
+    def _anota_firma(self, mint: str, sig: str | None) -> None:
+        """Guarda la firma de una compra o venta para la contabilidad real."""
+        if sig:
+            self._sigs_operacion.setdefault(str(mint), []).append(str(sig))
+
+    async def _pnl_real(self, mint: str) -> float | None:
+        """SOL que de verdad entro y salio de la cartera en esta operacion.
+
+        Suma el delta de saldo de la wallet en cada transaccion de la operacion,
+        leido de la cadena (preBalances/postBalances). Incluye comisiones,
+        impacto de precio y slippage, que es justo lo que el P&L teorico se deja
+        fuera. Devuelve None si no se puede leer alguna transaccion.
+        """
+        sigs = self._sigs_operacion.pop(str(mint), [])
+        if not sigs:
+            return None
+        yo = str(self.wallet.pubkey)
+        neto = 0.0
+        for sig in sigs:
+            try:
+                tx = await self.solana_client._get_transaction_result(sig)
+            except Exception:  # noqa: BLE001
+                return None
+            if not tx:
+                return None
+            claves = [
+                str(k.get("pubkey") if isinstance(k, dict) else k)
+                for k in tx["transaction"]["message"]["accountKeys"]
+            ]
+            if yo not in claves:
+                return None
+            i = claves.index(yo)
+            neto += (
+                tx["meta"]["postBalances"][i] - tx["meta"]["preBalances"][i]
+            ) / LAMPORTS_PER_SOL
+        return neto
+
     async def _sell_amount(
         self,
         token_info: TokenInfo,
@@ -2812,6 +2858,7 @@ class UniversalTrader:
                 sell_result.tx_signature,
                 reason,
             )
+            self._anota_firma(str(token_info.mint), sell_result.tx_signature)
             return True
 
         # Fallback: the curve sell may have failed because the token migrated
@@ -2833,6 +2880,7 @@ class UniversalTrader:
         if ok:
             self._fallos_venta.pop(mint, None)
             logger.info("Sold %s via Jupiter (%s) tx=%s", token_info.symbol, reason, sig)
+            self._anota_firma(str(token_info.mint), sig)
             self._log_trade("sell", token_info, ref_price, amount, sig, reason)
             return True
 
@@ -3295,6 +3343,31 @@ class UniversalTrader:
             f"{realized_sol:.4f} + moonbag {held_val:.4f} - coste {cost_sol:.4f}) "
             f"-> {_outcome} [rug-streak dev]"
         )
+
+        # EL NUMERO QUE MANDA. El de arriba es `tokens x precio observado` y no
+        # descuenta comision de pump.fun, impacto de la venta ni slippage; el
+        # 9-ago sumaba +0,16 SOL mientras la cartera perdia 0,75. Este lee el
+        # movimiento real de la wallet en la cadena.
+        try:
+            _real = await self._pnl_real(str(token_info.mint))
+        except Exception:  # noqa: BLE001
+            _real = None
+        if _real is not None:
+            _dif = _real - net_sol
+            logger.info(
+                "%s: P&L REAL %+.4f SOL (cadena) | el teorico decia %+.4f -> "
+                "se equivocaba en %+.4f%s",
+                token_info.symbol,
+                _real,
+                net_sol,
+                _dif,
+                " (+ moonbag sin vender)" if held_val > 1e-9 else "",
+            )
+        else:
+            logger.warning(
+                "%s: no pude leer el P&L real de la cadena; solo hay el teorico",
+                token_info.symbol,
+            )
 
         # RACHA DE LAS MAYHEM. Se mide con el mismo P&L neto de arriba: salir con
         # menos SOL de los que entraron es perder, y da igual que tocara un TP
