@@ -1,0 +1,139 @@
+{
+ "generado": "2026-08-10 12:26 UTC",
+ "objetivo_lanzamientos_dia": 50,
+ "esperados_dia": 54.4,
+ "wallets": [
+  "yHCxHBEaJW5tbndqC8JciSThr7U1cqLpdcsvHcx6PRe",
+  "H6zpaY14WgkEmB3MJTvC7Wb5PQJkBVLd4KwLD2ktVgop",
+  "5YrSPToJW3Q5TW6ppiSNduYTLF58GNr4j9yCefBP2xj9",
+  "6KJBbAypiJVmwtbeV5VLp97KWwHKM1uEPQKALzqUaDe9",
+  "65fzeNDvLrmxUesoYQxi6jihEfLknFfEXKwqU2k4BKBt",
+  "BTf4A2exGK9BCVDNzy65b9dUzXgMqB4weVkvTMFQsadd",
+  "AjkuWEJdiQBy7GvFL8ZDzSvafuAZNCovCL8hPRdzrXTC",
+  "4BYjXY3RS1wKVo89g9rJQF76TWiwVxZBHRhdzCed563R",
+  "H2v3MsRwLfJgfunojnenvdrEQ3qsNjqHFnjULEdVeQAs",
+  "8NJ7Ujpji8uMF2675mqaTSEm2DCbfJA7fiRKtiaqkaLN",
+  "6MAmqJ7aGtTReML2DezAzmRckQyFoGfKKf6gWVak7P2d",
+  "HPRBXaMARD4wCijg3H9NDSH8JTVFwk3fe4PVes1Gemn8",
+  "EQrFbWGMhpS49eWLtNZNYQapf9YYM5i4gPNo26j4fJAf"
+ ],
+ "detalle": [
+  {
+   "dev": "yHCxHBEaJW5tbndqC8JciSThr7U1cqLpdcsvHcx6PRe",
+   "lanzamientos": 70,
+   "migradas": 70,
+   "tasa": 1.0,
+   "dia_7d": 1.8571428571428572,
+   "ayer": 6,
+   "media_historica": 1.968101013565514
+  },
+  {
+   "dev": "H6zpaY14WgkEmB3MJTvC7Wb5PQJkBVLd4KwLD2ktVgop",
+   "lanzamientos": 70,
+   "migradas": 29,
+   "tasa": 0.4142857142857143,
+   "dia_7d": 1.0,
+   "ayer": 3,
+   "media_historica": 0.8776192719852116
+  },
+  {
+   "dev": "5YrSPToJW3Q5TW6ppiSNduYTLF58GNr4j9yCefBP2xj9",
+   "lanzamientos": 33,
+   "migradas": 8,
+   "tasa": 0.24242424242424243,
+   "dia_7d": 0.7142857142857143,
+   "ayer": 2,
+   "media_historica": 0.4139967251395417
+  },
+  {
+   "dev": "6KJBbAypiJVmwtbeV5VLp97KWwHKM1uEPQKALzqUaDe9",
+   "lanzamientos": 27,
+   "migradas": 4,
+   "tasa": 0.14814814814814814,
+   "dia_7d": 2.142857142857143,
+   "ayer": 2,
+   "media_historica": 1.8691109544259985
+  },
+  {
+   "dev": "65fzeNDvLrmxUesoYQxi6jihEfLknFfEXKwqU2k4BKBt",
+   "lanzamientos": 21,
+   "migradas": 3,
+   "tasa": 0.14285714285714285,
+   "dia_7d": 2.5714285714285716,
+   "ayer": 5,
+   "media_historica": 1.3340970470308915
+  },
+  {
+   "dev": "BTf4A2exGK9BCVDNzy65b9dUzXgMqB4weVkvTMFQsadd",
+   "lanzamientos": 70,
+   "migradas": 10,
+   "tasa": 0.14285714285714285,
+   "dia_7d": 1.1428571428571428,
+   "ayer": 3,
+   "media_historica": 0.43249529979583046
+  },
+  {
+   "dev": "AjkuWEJdiQBy7GvFL8ZDzSvafuAZNCovCL8hPRdzrXTC",
+   "lanzamientos": 70,
+   "migradas": 6,
+   "tasa": 0.08571428571428572,
+   "dia_7d": 10.0,
+   "ayer": 21,
+   "media_historica": 25.783568091129222
+  },
+  {
+   "dev": "4BYjXY3RS1wKVo89g9rJQF76TWiwVxZBHRhdzCed563R",
+   "lanzamientos": 70,
+   "migradas": 6,
+   "tasa": 0.08571428571428572,
+   "dia_7d": 5.0,
+   "ayer": 4,
+   "media_historica": 6.560094062724391
+  },
+  {
+   "dev": "H2v3MsRwLfJgfunojnenvdrEQ3qsNjqHFnjULEdVeQAs",
+   "lanzamientos": 70,
+   "migradas": 6,
+   "tasa": 0.08571428571428572,
+   "dia_7d": 1.4285714285714286,
+   "ayer": 7,
+   "media_historica": 1.396472291177403
+  },
+  {
+   "dev": "8NJ7Ujpji8uMF2675mqaTSEm2DCbfJA7fiRKtiaqkaLN",
+   "lanzamientos": 70,
+   "migradas": 5,
+   "tasa": 0.07142857142857142,
+   "dia_7d": 10.0,
+   "ayer": 70,
+   "media_historica": 70.0
+  },
+  {
+   "dev": "6MAmqJ7aGtTReML2DezAzmRckQyFoGfKKf6gWVak7P2d",
+   "lanzamientos": 70,
+   "migradas": 5,
+   "tasa": 0.07142857142857142,
+   "dia_7d": 5.571428571428571,
+   "ayer": 10,
+   "media_historica": 2.7299662545837973
+  },
+  {
+   "dev": "HPRBXaMARD4wCijg3H9NDSH8JTVFwk3fe4PVes1Gemn8",
+   "lanzamientos": 70,
+   "migradas": 5,
+   "tasa": 0.07142857142857142,
+   "dia_7d": 5.571428571428571,
+   "ayer": 5,
+   "media_historica": 4.418891638518883
+  },
+  {
+   "dev": "EQrFbWGMhpS49eWLtNZNYQapf9YYM5i4gPNo26j4fJAf",
+   "lanzamientos": 62,
+   "migradas": 4,
+   "tasa": 0.06451612903225806,
+   "dia_7d": 7.428571428571429,
+   "ayer": 8,
+   "media_historica": 7.079936083910353
+  }
+ ]
+}
