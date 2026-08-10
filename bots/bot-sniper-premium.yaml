@@ -53,7 +53,7 @@ platform: "pump_fun"
 trade:
   # 0,30 desde el 10-ago: Manu envia fondos y quiere ese tamano por
   # lanzamiento de los buenos.
-  buy_amount: 0.15
+  buy_amount: 0.20
   buy_slippage: 0.30
   # 0,35, no 0,90. Con el 90% el bot aceptaba cobrar hasta un 90% MENOS de lo
   # esperado y lo apuntaba como si hubiera cobrado entero: es la principal
@@ -125,7 +125,12 @@ trade:
   # aqui seria un tiro en el pie: Dadjak tardo 26 MINUTOS en hacer su techo y
   # una venta a los 3 la habria sacado en plena subida. Quien decide la salida
   # es el trailing.
-  venta_muerta_seg: 0
+  # CONTRA EL SANGRADO. Estaba en 0 -- desactivada -- y ese es el agujero por
+  # el que se fue el dinero hoy: la moneda que hace pico al nacer y luego se
+  # desangra se quedaba dentro hasta el stop del -50%. A los 120 s se mira UNA
+  # vez: si no esta por encima de la entrada, fuera. Si va en verde se la deja
+  # correr y ya no se vuelve a preguntar.
+  venta_muerta_seg: 120
   venta_muerta_gain: 0.0
 
   # 90 min. El techo mas tardio de los tres llego a los 26 min; se deja el
@@ -273,6 +278,18 @@ filters:
   # Anti-concentracion: si un solo titular tiene mas del 15%, ese es el que va
   # a vender encima. Aqui si se mira, porque se entra despues del reparto
   # inicial y el dato ya es fiable.
+  # CUANTO SE HA COMPRADO DE VERDAD. Es el filtro que sale del analisis de las
+  # cinco monedas del 10-ago y el unico que caza a la mala que pasaba todo lo
+  # demas:
+  #
+  #   la que subio   25,5% del supply en manos  -> COMPRAR
+  #   una mala        2,7%   (anti-humo OK, dev 2 de 7 = 28,6%)  -> fuera
+  #   dos dumps         0%                                       -> fuera
+  #
+  # Se pide 10%: la buena tenia dos veces y media eso, y las malas ni la cuarta
+  # parte. Cuesta una llamada RPC, la misma que ya se hacia para los holders.
+  min_supply_en_manos: 0.10
+
   max_holder_pct: 0.15
   max_dev_hold_pct: 0.05
   min_holders: 0

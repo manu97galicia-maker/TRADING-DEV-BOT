@@ -239,6 +239,9 @@ async def start_bot(config_path: str):
                 "max_mc_por_sol_curva", 0
             ),
             max_perdidas_seguidas=cfg["trade"].get("max_perdidas_seguidas", 0),
+            min_supply_en_manos=cfg.get("filters", {}).get(
+                "min_supply_en_manos", 0
+            ),
             trailing_stop_percentage=cfg["trade"].get("trailing_stop_percentage", 0),
             vender_todo_en_stop=cfg["trade"].get("vender_todo_en_stop", False),
             mayhem_buy_amount=cfg["trade"].get("mayhem_buy_amount", 0),

@@ -415,6 +415,9 @@ class UniversalTrader:
         # Perdidas seguidas antes de que la estrategia deje de comprar.
         # 0 = nunca para.
         max_perdidas_seguidas: int = 0,
+        # Porcentaje MINIMO del supply que tiene que estar ya en manos de
+        # compradores, es decir, fuera de la curva. 0 = no se mira.
+        min_supply_en_manos: float = 0.0,
         # Caida desde el MAXIMO que dispara el trailing. Si no se pone, se
         # usa stop_loss_percentage, que es como funcionaba antes.
         trailing_stop_percentage: float = 0.0,
@@ -716,6 +719,19 @@ class UniversalTrader:
         #: perdidas seguidas esta deja de COMPRAR -- sigue vendiendo lo que
         #: tenga abierto, que abandonarlo seria peor. Una ganadora pone el
         #: contador a cero: se corta una mala racha, no el historico.
+        #: CUANTO SE HA COMPRADO DE VERDAD. Medido el 10-ago sobre cuatro
+        #: monedas, es lo que mejor separa a la que sube de las que se
+        #: hunden, y separa lo que los demas filtros no ven:
+        #:
+        #:   la que subio  curva 74,5% -> 25,5% del supply en manos
+        #:   una mala      curva 97,3% ->  2,7%   (pasaba el anti-humo Y
+        #:                                        tenia buen dev: 2 de 7)
+        #:   dos dumps     curva  100% ->  0%
+        #:
+        #: Un market cap que sube con el 97% del supply todavia dentro de la
+        #: curva no lo ha pagado nadie: se empujo con cuatro duros. Esto es
+        #: lo unico que lo caza ANTES de comprar.
+        self.min_supply_en_manos = float(min_supply_en_manos or 0)
         self.max_perdidas_seguidas = int(max_perdidas_seguidas or 0)
         self._perdidas_seguidas = 0
         self._parado_por_perdidas = False
@@ -1609,6 +1625,7 @@ class UniversalTrader:
             self.max_holder_pct <= 0
             and self.min_holders <= 0
             and self.max_bundle_pct <= 0
+            and self.min_supply_en_manos <= 0
             and not self.require_zero_initial_holders
         ):
             return False
@@ -1654,6 +1671,25 @@ class UniversalTrader:
                     "(se exigen 0) -> se omite"
                 )
                 return True
+
+            # CUANTO SE HA COMPRADO DE VERDAD. Todo lo que no esta en la curva
+            # lo tiene alguien que lo pago. Si la curva sigue teniendo casi todo,
+            # el precio subio sin que nadie comprara y no hay a quien vendérselo.
+            if self.min_supply_en_manos > 0 and curve_ata:
+                _en_curva = sum(
+                    float(a.get("amount") or 0)
+                    for a in accts
+                    if a.get("address") == curve_ata
+                )
+                _fuera = (supply - _en_curva) / supply if supply > 0 else 0.0
+                if _fuera < self.min_supply_en_manos:
+                    logger.info(
+                        f"Evitado {token_info.symbol}: solo el {_fuera * 100:.1f}% "
+                        f"del supply esta en manos de alguien (se exige "
+                        f"{self.min_supply_en_manos * 100:.0f}%) — el precio subio "
+                        f"sin compradores"
+                    )
+                    return True
 
             # Filtro ORGÁNICO: cuenta poseedores reales (con saldo>0, excluida la
             # curva). Pocos holders = bundle/dev-spam, no compra real de gente.
