@@ -1,0 +1,132 @@
+{
+ "criterio": "union de top_devs_premium (no dumpean, medido a los 2-4 min) y top_devs_200k (han pasado de $200K sin ser granjas), menos los vetados y auto-baneados",
+ "en_ambas_listas": [],
+ "wallets": [
+  "2Vgmp9bTNzvj1D5XaFNdUtNDxaRFH2UGPJXrcUPVGj1B",
+  "3FiWnNDTZrKPbjPeMiTe2r5m5zygxSu57ePck5LUQp7d",
+  "3HcBRzsgLUpYxFkMnbzUajaGC7pnZLxvRoqAfoWKar95",
+  "3fKF8cbyWKU56fpFkrQ1E6zJoAh4mqArdsPoUE6ycTKL",
+  "3yKebvkagP4iokHryqnE5KnTQUSqdExvS3iFkGPXykLP",
+  "4DrtsW86GarGJJeYrBwYCjoyMgDPG95QWSGhFHvCkU2s",
+  "4diartmEWRD21TUA8rf82PiKEJ28ZTUVMKKYujXT2pzo",
+  "5n9KsxgRrJc4x8E7Zi8WHZDQrJxmg9ucDJigMT149Sx8",
+  "5t9xBNuDdGTGpjaPTx6hKd7sdRJbvtKS8Mhq6qVbo8Qz",
+  "6Wg4aeZ29WRKDsM695c7tTT8oYAcbvFq7DYn8416BPBg",
+  "7VzKD7nTQg9ypcJtT1cA34aa9wLGRHzjGvZNQx53r8WA",
+  "862TYSvRYoiHAK3F3WwTRYAfuGiQaGdxedN9AGvRGWo2",
+  "8ExM9dgr9e73DNf79CC6CmUUvicmqMw7xdddzH5uVArs",
+  "8Z98mNxU5K4TnW4Y2gJSHotTtGYKEYPiFuxQLxTTvVMc",
+  "8gxNUi3uDnqPdpVciCAf8EDD6Bc1e5spQijXBzwGjRsW",
+  "8p8Q3VqAeqWhxtSYiisnQiB97u4sGHWY5NeXEttemomS",
+  "99i9uVA7Q56bY22ajKKUfTZTgTeP5yCtVGsrG9J4pDYQ",
+  "9BjcGY9ZfMvS13ozDRMwCaR2toE71hiLBXXvqBcGmeiU",
+  "AMRsSeU5JpqwQWJGNLMpZzRCZSFEwYQYbMnms3dD4311",
+  "AQdBYZNy3BZ1vouGUjA1w9Ay7aq7kH5UQSuh4LQWKotY",
+  "CEUA7zVoDRqRYoeHTP58UHU6TR8yvtVbeLrX1dppqoXJ",
+  "D2hrzDdF5JDeunEyfKC74PuERdfT3NomExBYmgfNFhaZ",
+  "DFrfDB7vsQRNQYFWyQwtihMWGEfD8vAPPHFEW6krXytc",
+  "DxQ1iNidsGap2kr14VdEzA8NheqXabfh6fRkvZQbnZVY",
+  "F5ExBJxM7zJhowwSBYGMTQVesxWvNzsPJhJTuXxLHiyZ",
+  "FFcNgJj4SV2eDMyDJRk8EWBX7w14hH3KUqVu77C7HtjQ",
+  "FMnsbMPjACEFySV3xLWx2NJemW7X7FgwvonTZj6PFjTQ",
+  "FbnfApAErNPUKvYsaDmTidzf5EGRB6Ltoes13gMCafJJ",
+  "HoKiWhcU3YBN9f5Uxj1bBLkcWkw5iDEQbPiiU6EnYCwQ",
+  "Hqs2PZXsJoP3oE2mmmQpWxc6psYxwJ5CxNFvGtRQ64ns",
+  "fxBqeLVLLiZCpt2TzsUdYafLMJbN6RMdqYTzeovqK6k"
+ ],
+ "origen": {
+  "2Vgmp9bTNzvj1D5XaFNdUtNDxaRFH2UGPJXrcUPVGj1B": [
+   "premium"
+  ],
+  "3FiWnNDTZrKPbjPeMiTe2r5m5zygxSu57ePck5LUQp7d": [
+   "premium"
+  ],
+  "3HcBRzsgLUpYxFkMnbzUajaGC7pnZLxvRoqAfoWKar95": [
+   "200k"
+  ],
+  "3fKF8cbyWKU56fpFkrQ1E6zJoAh4mqArdsPoUE6ycTKL": [
+   "premium"
+  ],
+  "3yKebvkagP4iokHryqnE5KnTQUSqdExvS3iFkGPXykLP": [
+   "200k"
+  ],
+  "4DrtsW86GarGJJeYrBwYCjoyMgDPG95QWSGhFHvCkU2s": [
+   "premium"
+  ],
+  "4diartmEWRD21TUA8rf82PiKEJ28ZTUVMKKYujXT2pzo": [
+   "200k"
+  ],
+  "5n9KsxgRrJc4x8E7Zi8WHZDQrJxmg9ucDJigMT149Sx8": [
+   "200k"
+  ],
+  "5t9xBNuDdGTGpjaPTx6hKd7sdRJbvtKS8Mhq6qVbo8Qz": [
+   "premium"
+  ],
+  "6Wg4aeZ29WRKDsM695c7tTT8oYAcbvFq7DYn8416BPBg": [
+   "200k"
+  ],
+  "7VzKD7nTQg9ypcJtT1cA34aa9wLGRHzjGvZNQx53r8WA": [
+   "premium"
+  ],
+  "862TYSvRYoiHAK3F3WwTRYAfuGiQaGdxedN9AGvRGWo2": [
+   "premium"
+  ],
+  "8ExM9dgr9e73DNf79CC6CmUUvicmqMw7xdddzH5uVArs": [
+   "200k"
+  ],
+  "8Z98mNxU5K4TnW4Y2gJSHotTtGYKEYPiFuxQLxTTvVMc": [
+   "200k"
+  ],
+  "8gxNUi3uDnqPdpVciCAf8EDD6Bc1e5spQijXBzwGjRsW": [
+   "200k"
+  ],
+  "8p8Q3VqAeqWhxtSYiisnQiB97u4sGHWY5NeXEttemomS": [
+   "200k"
+  ],
+  "99i9uVA7Q56bY22ajKKUfTZTgTeP5yCtVGsrG9J4pDYQ": [
+   "200k"
+  ],
+  "9BjcGY9ZfMvS13ozDRMwCaR2toE71hiLBXXvqBcGmeiU": [
+   "premium"
+  ],
+  "AMRsSeU5JpqwQWJGNLMpZzRCZSFEwYQYbMnms3dD4311": [
+   "premium"
+  ],
+  "AQdBYZNy3BZ1vouGUjA1w9Ay7aq7kH5UQSuh4LQWKotY": [
+   "200k"
+  ],
+  "CEUA7zVoDRqRYoeHTP58UHU6TR8yvtVbeLrX1dppqoXJ": [
+   "200k"
+  ],
+  "D2hrzDdF5JDeunEyfKC74PuERdfT3NomExBYmgfNFhaZ": [
+   "premium"
+  ],
+  "DFrfDB7vsQRNQYFWyQwtihMWGEfD8vAPPHFEW6krXytc": [
+   "premium"
+  ],
+  "DxQ1iNidsGap2kr14VdEzA8NheqXabfh6fRkvZQbnZVY": [
+   "premium"
+  ],
+  "F5ExBJxM7zJhowwSBYGMTQVesxWvNzsPJhJTuXxLHiyZ": [
+   "premium"
+  ],
+  "FFcNgJj4SV2eDMyDJRk8EWBX7w14hH3KUqVu77C7HtjQ": [
+   "premium"
+  ],
+  "FMnsbMPjACEFySV3xLWx2NJemW7X7FgwvonTZj6PFjTQ": [
+   "200k"
+  ],
+  "FbnfApAErNPUKvYsaDmTidzf5EGRB6Ltoes13gMCafJJ": [
+   "200k"
+  ],
+  "HoKiWhcU3YBN9f5Uxj1bBLkcWkw5iDEQbPiiU6EnYCwQ": [
+   "premium"
+  ],
+  "Hqs2PZXsJoP3oE2mmmQpWxc6psYxwJ5CxNFvGtRQ64ns": [
+   "200k"
+  ],
+  "fxBqeLVLLiZCpt2TzsUdYafLMJbN6RMdqYTzeovqK6k": [
+   "200k"
+  ]
+ }
+}

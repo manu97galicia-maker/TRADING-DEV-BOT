@@ -54,7 +54,7 @@ platform: "pump_fun"
 trade:
   # 0,30 desde el 10-ago: Manu envia fondos y quiere ese tamano por
   # lanzamiento de los buenos.
-  buy_amount: 0.30
+  buy_amount: 0.15
   buy_slippage: 0.30
   # 0,35, no 0,90. Con el 90% el bot aceptaba cobrar hasta un 90% MENOS de lo
   # esperado y lo apuntaba como si hubiera cobrado entero: es la principal
@@ -68,6 +68,11 @@ trade:
   sell_slippage: 0.35
 
   exit_strategy: "tp_sl"
+  # APRETADA EL 10-ago: 75% al +45% devuelve 1,0875 veces la inversion. Con el
+  # tamano en 0,15 y el ritmo que llevaba (240 compras/dia proyectadas) hacia
+  # falta que cada operacion cerrada dejara de restar. Lo que quede corriendo
+  # es el 25%.
+  #
   # CAPITAL PRONTO, RESTO A CORRER. Manu lo pidio asi, y los datos le dan la
   # razon: la mediana de ATH de los mejores devs medidos es de $5.148, y con
   # entradas de ~$3.700 el +100% cae JUSTO por encima de donde muere la moneda
@@ -78,7 +83,7 @@ trade:
   # Queda el 30% dentro, sin objetivo, para el trailing. Es la mezcla que
   # pidio: recuperar pronto y dejar correr lo que sobra.
   take_profit_percentage: 0.45
-  take_profit_sell_percentage: 0.70
+  take_profit_sell_percentage: 0.75
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
   tp2_gain: 0
@@ -186,7 +191,7 @@ filters:
   # ── LA SEÑAL ────────────────────────────────────────────────────────────
   # 33,3 SOL = ~2.500 $ con SOL a 75 $ (la misma referencia que usa el bot
   # para el market cap). Es el "Volumen min 2.5K" de la captura.
-  min_volumen_sol: 33.3
+  min_volumen_sol: 60.0
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
   # que en ventas. Sin esto, "2.500 $ de volumen" incluye a las que estan
@@ -233,8 +238,8 @@ filters:
   # y esos se caen igual con el 2% que con el 10%.
   pumpfun_dev:
     enabled: true
-    min_migrations: 1
-    min_rate: 0.02
+    min_migrations: 3
+    min_rate: 0.10
   # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
   # Son dos listas que el bot mantiene solo mientras opera:
   #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.
