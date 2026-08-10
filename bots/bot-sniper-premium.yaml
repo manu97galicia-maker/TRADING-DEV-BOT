@@ -98,8 +98,17 @@ trade:
   # Sigue siendo mas suave que CORREDORES (70% al +45%): se deja el 40% dentro,
   # no el 30%, porque estos devs tienen una mediana de pico de $19.392 sobre
   # entradas de ~$3.700 -- la moneda mediana hace un x5 y hay que estar dentro.
-  take_profit_percentage: 0.45
-  take_profit_sell_percentage: 0.70
+  # REEQUILIBRADO el 10-ago con 13 operaciones reales delante. Lo que decian:
+  #
+  #   ganancia media   +5,9% de la posicion
+  #   perdida media   -47,6% de la posicion
+  #   NINGUNA de las 13 llego al +45%: el escalon no se disparo ni una vez
+  #
+  # Se arriesgaba un 45% para ganar un 6%. Eso exige acertar el 91% de las
+  # veces, y ningun filtro de entrada da eso. El objetivo pasa a +25%, que es
+  # alcanzable, y se vende el 80%: 0,80 x 1,25 = 1,00, el capital vuelve entero.
+  take_profit_percentage: 0.25
+  take_profit_sell_percentage: 0.80
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
   tp2_gain: 0
@@ -122,10 +131,14 @@ trade:
   #
   # Lo que cuesta: la que se hunda de verdad se lleva la mitad de la posicion
   # en vez de un tercio. Es el precio de no soltar a un 13x.
-  # 45%, ajustado por Manu. Recordatorio de lo medido: Kermit cayo un 44% antes
-  # de hacer x13, asi que 45 la salva por un pelo y cualquier cosa por debajo la
-  # habria soltado.
-  stop_loss_percentage: 0.45
+  # 25%, bajado de 45% el 10-ago. El 45 venia de Kermit, que cayo un 44% antes
+  # de hacer x13 -- pero Kermit era una ganadora ELEGIDA A POSTERIORI. En las 13
+  # operaciones reales el stop ancho no salvo ni una: se comio entero en las
+  # perdedoras (-47,6% de media) y ninguna llego nunca al objetivo.
+  #
+  # Con 25% arriba y 25% abajo la apuesta es simetrica: basta acertar la mitad
+  # de las veces para no perder, en vez de nueve de cada diez.
+  stop_loss_percentage: 0.25
 
   # TRAILING: 33%, separado del stop de entrada (campo nuevo). Antes eran el
   # mismo numero y no pueden serlo: el de entrada tiene que ser ancho para
@@ -169,7 +182,10 @@ trade:
   # las dos estrategias. Quedarse sin SOL con posiciones abiertas es perderlas.
   min_reserve_sol: 0.15
 
-  # CORTA-CIRCUITOS: dos perdidas seguidas y esta estrategia deja de COMPRAR.
+  # CORTA-CIRCUITOS: TRES perdidas seguidas y esta estrategia deja de COMPRAR.
+  # Subido de 2 a 3 el 10-ago. Con 2 saltaba demasiado pronto: hoy corto dos
+  # veces la estrategia despues de dos operaciones que, siendo malas, entraban
+  # dentro de lo normal en esto. Tres seguidas ya no es mala suerte.
   # Lo pidio Manu al encender las tres a la vez, y es lo correcto: comparten
   # cartera, asi que la que se tuerce se lleva por delante el saldo de las
   # otras dos. Sin esto, una racha mala de una vacia el bote de las tres.
@@ -183,7 +199,7 @@ trade:
   #
   # Una ganadora pone el contador a cero: se corta una mala racha, no el
   # historico. Para reactivarla, reiniciar el servicio.
-  max_perdidas_seguidas: 2
+  max_perdidas_seguidas: 3
 
 priority_fees:
   enable_dynamic: false
