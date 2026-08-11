@@ -392,7 +392,16 @@ filters:
   #
   # Y encaja con el filtro del supply: llegar a 4.000 con el 10% del supply ya
   # vendido significa que ese market cap lo ha pagado gente.
-  min_entry_mc: 4000
+  # SUELO A 5.200 $, pedido por Manu el 11-ago.
+  #
+  # AVISO: con el techo en 5.500 la banda se queda en 300 dolares de ancho. Una
+  # moneda tiene que caer justo en esa rendija dentro de los primeros 6
+  # segundos, y eso casi no pasa: de las diez operaciones medidas, los market
+  # caps de entrada fueron 4.017 · 4.019 · 4.037 · 4.260 · 4.401 · 4.684 ·
+  # 4.703 · 5.027 · 5.413. Solo UNA habria entrado en la banda nueva.
+  #
+  # Si esto se queda seco, el arreglo es subir el techo, no bajar el suelo.
+  min_entry_mc: 5200
   max_entry_mc: 5500
   # ANTI-HUMO. Maximo de dolares de market cap por cada SOL que hay DE VERDAD
   # dentro de la curva. Una moneda sana de pump.fun lleva ~1,5 SOL a los $4K y
