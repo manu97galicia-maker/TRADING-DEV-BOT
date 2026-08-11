@@ -301,6 +301,10 @@ class UniversalTrader:
         rugs_para_bloquear: int = 2,
         # Mover el stop al precio de entrada en cuanto cobra el primer TP.
         stop_a_entrada_tras_tp: bool = False,
+        # Segunda puerta de entrada: {max_mc, min_volumen_sol}. Si la moneda
+        # se paso de max_entry_mc pero sigue por debajo de este max_mc Y ha
+        # movido ese volumen, se compra igual.
+        entrada_alternativa: dict | None = None,
         price_check_interval: int = 10,
         # Priority fee configuration
         enable_dynamic_priority_fee: bool = False,
@@ -645,6 +649,15 @@ class UniversalTrader:
         #: Encaja con una estrategia SIN stop de entrada -- se acepta el
         #: riesgo hasta el primer escalon, y a partir de ahi ya no.
         self.stop_a_entrada_tras_tp = bool(stop_a_entrada_tras_tp)
+        #: SEGUNDA PUERTA DE ENTRADA. La banda normal compra en el
+        #: nacimiento, donde no hay volumen que medir porque no ha dado
+        #: tiempo. Esta deja pasar tambien a la que ya se ha movido de ahi,
+        #: pero exigiendole a cambio lo que la primera no puede pedir:
+        #: volumen de verdad. Son dos caminos alternativos, no dos
+        #: condiciones que haya que cumplir a la vez.
+        _ea = entrada_alternativa or {}
+        self.entrada_alt_max_mc = float(_ea.get('max_mc') or 0)
+        self.entrada_alt_min_vol = float(_ea.get('min_volumen_sol') or 0)
         # TP AGRESIVO para devs moonshot (los que suelen llegar MUY alto): objetivos
         # más altos y moonbag más grande para pillar el pump. +100/300/900%, vende
         # 20% en cada uno, moonbag 40% (vs el normal +50/150/300% moonbag 20%).
@@ -2240,12 +2253,35 @@ class UniversalTrader:
                             return
 
                     if self.max_entry_mc > 0 and _mc > self.max_entry_mc:
-                        logger.info(
-                            f"Evitado {token_info.symbol}: se paso de la banda "
-                            f"(MC ${_mc:,.0f} > ${self.max_entry_mc:,.0f}) "
-                            f"mientras se vigilaba"
+                        # SEGUNDA PUERTA. Se paso de la banda del nacimiento,
+                        # pero si sigue por debajo del techo alternativo Y ha
+                        # movido volumen de verdad, se compra igual: ahi ya no
+                        # se compra a ciegas, se compra algo que el mercado ha
+                        # empezado a pagar.
+                        _alt_ok = (
+                            self.entrada_alt_max_mc > 0
+                            and _mc <= self.entrada_alt_max_mc
+                            and _v >= self.entrada_alt_min_vol
                         )
-                        return
+                        if not _alt_ok:
+                            _porque = ""
+                            if self.entrada_alt_max_mc > 0:
+                                _porque = (
+                                    f" · la 2a puerta pide MC<="
+                                    f"${self.entrada_alt_max_mc:,.0f} con "
+                                    f"{self.entrada_alt_min_vol:.0f} SOL y hay "
+                                    f"{_v:.1f}"
+                                )
+                            logger.info(
+                                f"Evitado {token_info.symbol}: se paso de la banda "
+                                f"(MC ${_mc:,.0f} > ${self.max_entry_mc:,.0f})"
+                                f"{_porque}"
+                            )
+                            return
+                        logger.info(
+                            f"{token_info.symbol}: entra por la SEGUNDA PUERTA "
+                            f"(MC ${_mc:,.0f} con {_v:.1f} SOL de volumen)"
+                        )
                     if self.min_entry_mc > 0 and _mc < self.min_entry_mc:
                         await asyncio.sleep(_paso)
                         continue

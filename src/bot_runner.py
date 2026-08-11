@@ -143,6 +143,9 @@ async def start_bot(config_path: str):
             stop_a_entrada_tras_tp=cfg["trade"].get(
                 "stop_a_entrada_tras_tp", False
             ),
+            entrada_alternativa=cfg.get("filters", {}).get(
+                "entrada_alternativa"
+            ),
             price_check_interval=cfg["trade"].get("price_check_interval", 10),
             # Listener configuration
             listener_type=cfg["filters"]["listener_type"],
