@@ -275,11 +275,16 @@ filters:
   # no hace falta ponerlo: lo que buscaba es no comprar dentro del bloque de
   # creacion, y de eso ya se encarga max_first_block_pct, que ademas mide la
   # PROPORCION de bundle en vez de un tiempo.
-  # DOS SEGUNDOS, pedido por Manu. Es muy exigente combinado con lo demas: hay
-  # que juntar 26,7 SOL de volumen Y pasar de 5.200 $ de market cap en ese
-  # tiempo. Se puede -- CNUT lo hizo: 39,2 SOL y 6.294 $ a los 1,5 s -- pero
-  # solo lo consigue la que explota de verdad al nacer.
-  max_buy_age: 2
+  # TRES SEGUNDOS. Se probo con 2 y no compro NADA en 50 monedas, y la medicion
+  # dice por que: en 2 segundos lo maximo que llegaron a mover fue 2,3 · 1,0 ·
+  # 0,1 · 2,9 SOL. Se exigen 26,7. El umbral estaba diez veces por encima de lo
+  # que existe en esa ventana, y el market cap igual: con 2 SOL negociados la
+  # moneda vale ~2.300 $, no los 5.200 que se piden.
+  #
+  # Los 2 segundos y el resto de filtros no pueden convivir. Tres si, y el
+  # numero no es inventado: es donde entro Iphigenia -- 2,5 s, 28,3 SOL, MC
+  # 5.458 $ -- que es la operacion que Manu dio por buena y la que gano.
+  max_buy_age: 3
 
   match_string: null
   bro_address: null
