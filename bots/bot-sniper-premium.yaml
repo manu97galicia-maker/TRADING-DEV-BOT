@@ -395,7 +395,7 @@ filters:
   #
   # Entrar pronto NO garantiza nada (IBB entro a 3,0 s y perdio 0,128), pero
   # entrar tarde si ha garantizado perder.
-  max_token_age: 20
+  max_token_age: 15
   # 7,8 s = los 0,13 min de la captura. El limite inferior de 0,01 min (0,6 s)
   # no hace falta ponerlo: lo que buscaba es no comprar dentro del bloque de
   # creacion, y de eso ya se encarga max_first_block_pct, que ademas mide la
@@ -421,20 +421,21 @@ filters:
   #
   # 1,5 y no 1,0 clavado para dejar margen a la cola de 0,60 s: apurar al
   # segundo exacto tiraria las que caen en el peor caso de latencia.
-  # SEIS SEGUNDOS: los 0,1 min de la pantalla de filtros de Manu. Es un PLAZO,
-  # no una espera -- el bot comprueba cada 0,15 s y compra en el instante en que
-  # se cumplen las condiciones.
+  # DOS SEGUNDOS: comprar al momento, como pide Manu.
   #
-  # Coincide con lo que muestra el buscador de GMGN: monedas de 0,6 a 6 s con
-  # 4-50K de market cap y 3-60K de volumen. Existen, son pocas, y son las que
-  # arrancan de golpe.
+  # Para que esto funcione ha habido que quitar el volumen minimo y el suelo de
+  # market cap, y no es un descuido: en el segundo 1 la moneda vale 2.097 $ --
+  # el precio de salida de la curva, igual para todas -- y NO HA NEGOCIADO
+  # NADA. Pedirle 3.000 $ de volumen o 4.000 de market cap ahi es pedir algo
+  # que todavia no existe, y era la razon de que no comprara.
   #
-  # Lo que queda fuera con este plazo, y conviene saberlo: las que tardan
-  # minutos en despegar. jef hizo x7,8 pero tardo 460 s en su techo y a los 6 s
-  # tenia el volumen a cero; rDOG migro a los 160 s; Leelavati llego a su techo
-  # a los 27 min. Ninguna de esas se caza aqui -- son otro perfil y harian falta
-  # 60-120 s de plazo.
-  max_buy_age: 6
+  # Queda una sola señal disponible en ese instante: quien lanza. Por eso el
+  # filtro del creador (10% migrado, minimo 2 migraciones) es ahora lo unico
+  # que decide, y se paga con no saber nada del mercado.
+  #
+  # El techo de 50.000 se mantiene por si la moneda salta de golpe: no se
+  # compra arriba aunque se llegue tarde por unos milisegundos.
+  max_buy_age: 2
 
   match_string: null
   bro_address: null
@@ -489,7 +490,7 @@ filters:
   # 12 SOL deja pasar a las Leelavati sin abrir la puerta a cualquier cosa. El
   # trabajo de descartar bundles lo hacen max_first_block_pct y min_titulares,
   # que miran ENTRE CUANTAS MANOS se mueve el dinero en vez de cuanto.
-  min_volumen_sol: 40
+  min_volumen_sol: 0
   max_volumen_sol: 800
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
@@ -713,7 +714,7 @@ filters:
   # El techo de 50.000 no es comprar caro: con la ventana en menos de 8
   # segundos, una moneda que ya esta en 40K ha explotado, no esta cara por
   # vieja.
-  min_entry_mc: 4000
+  min_entry_mc: 0
   max_entry_mc: 50000
 
   # SEGUNDA PUERTA DE ENTRADA. La banda de arriba compra en el nacimiento, donde
