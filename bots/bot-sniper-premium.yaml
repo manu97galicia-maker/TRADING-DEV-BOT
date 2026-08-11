@@ -115,16 +115,16 @@ trade:
   # Se arriesgaba un 45% para ganar un 6%. Eso exige acertar el 91% de las
   # veces, y ningun filtro de entrada da eso. El objetivo pasa a +25%, que es
   # alcanzable, y se vende el 80%: 0,80 x 1,25 = 1,00, el capital vuelve entero.
-  take_profit_percentage: 0.25
-  take_profit_sell_percentage: 0.80
+  take_profit_percentage: 0.40
+  take_profit_sell_percentage: 0.40
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
-  tp2_gain: 0
-  tp2_sell: 0
-  tp3_gain: 0
-  tp3_sell: 0
-  tp4_gain: 0
-  tp4_sell: 0
+  tp2_gain: 1.00
+  tp2_sell: 0.25
+  tp3_gain: 2.25
+  tp3_sell: 0.25
+  tp4_gain: 6.00
+  tp4_sell: 0.10
 
   # STOP DE ENTRADA: 50%. Medido sobre los tres corredores de Manu, simulando
   # la entrada real del bot y mirando la caida maxima ANTES de que despegaran:
@@ -217,7 +217,11 @@ trade:
   #
   # Una ganadora pone el contador a cero: se corta una mala racha, no el
   # historico. Para reactivarla, reiniciar el servicio.
-  max_perdidas_seguidas: 3
+  # SUBIDO de 3 a 5. Manu se queja de que "se para todo el rato" y tiene razon:
+  # el servicio nunca se ha caido (NRestarts=0), lo que paraba la compra era
+  # este contador, que salto dos veces en unas horas. Con perdidas contenidas
+  # en el -25% del stop, tres seguidas entran dentro de lo normal; cinco ya no.
+  max_perdidas_seguidas: 5
 
 priority_fees:
   enable_dynamic: false
@@ -271,7 +275,11 @@ filters:
   # no hace falta ponerlo: lo que buscaba es no comprar dentro del bloque de
   # creacion, y de eso ya se encarga max_first_block_pct, que ademas mide la
   # PROPORCION de bundle en vez de un tiempo.
-  max_buy_age: 7.8
+  # DOS SEGUNDOS, pedido por Manu. Es muy exigente combinado con lo demas: hay
+  # que juntar 26,7 SOL de volumen Y pasar de 5.200 $ de market cap en ese
+  # tiempo. Se puede -- CNUT lo hizo: 39,2 SOL y 6.294 $ a los 1,5 s -- pero
+  # solo lo consigue la que explota de verdad al nacer.
+  max_buy_age: 2
 
   match_string: null
   bro_address: null
@@ -335,7 +343,12 @@ filters:
   # Muestra pequeña -- cuatro contra dos -- asi que esto hay que volver a
   # mirarlo con el estudio de las proximas ocho operaciones. Pero el separador
   # es limpio y tiene explicacion, no es una correlacion suelta.
-  max_first_block_pct: 0.25
+  # DESACTIVADO por Manu el 11-ago. Era el separador mas limpio que habiamos
+  # encontrado (las que cobraban tenian 2-16% de compras en el bloque de
+  # creacion, las que morian 34-38%), pero con la ventana en 2 segundos casi
+  # todas las compras son del principio y el filtro tumbaria casi todo. Queda
+  # el numero aqui por si se quiere recuperar: 0.25.
+  max_first_block_pct: 0
   min_vol_ventana_sol: 0
 
   # ── NO REPETIDA ─────────────────────────────────────────────────────────
