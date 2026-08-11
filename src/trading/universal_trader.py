@@ -418,6 +418,9 @@ class UniversalTrader:
         # Porcentaje MINIMO del supply que tiene que estar ya en manos de
         # compradores, es decir, fuera de la curva. 0 = no se mira.
         min_supply_en_manos: float = 0.0,
+        # Fraccion MAXIMA de las compras que puede haber ocurrido en el
+        # bloque de creacion. 0 = no se mira.
+        max_first_block_pct: float = 0.0,
         # DEVS MARCADOS: fichero de wallets que se han ganado mas confianza.
         # No deciden si se compra, solo cuanto y con que paciencia.
         devs_marcados: str | None = None,
@@ -738,6 +741,22 @@ class UniversalTrader:
         #: curva no lo ha pagado nadie: se empujo con cuatro duros. Esto es
         #: lo unico que lo caza ANTES de comprar.
         self.min_supply_en_manos = float(min_supply_en_manos or 0)
+        #: CUANTO DE LO COMPRADO ES BUNDLE. Comprar en el bloque de creacion
+        #: no es demanda: es un sniper o el propio dev entrando a precio
+        #: cero, y su unica salida eres tu. Medido sobre las seis primeras
+        #: operaciones del 11-ago, separa sin solapamiento:
+        #:
+        #:   PHILO      1 de 45 ( 2%)  cobro el +25%
+        #:   Crocodile  4 de 42 (10%)  cobro el +25%
+        #:   Terry      7 de 53 (13%)  cobro el +25%
+        #:   Roger      4 de 25 (16%)  cobro el +25%
+        #:   test      10 de 29 (34%)  stop entero
+        #:   FARM      14 de 37 (38%)  stop entero
+        #:
+        #: Se mira la PROPORCION y no el numero absoluto porque una moneda
+        #: con 100 compras y 10 en el primer bloque esta sana y una con 15 y
+        #: 10 no lo esta.
+        self.max_first_block_pct = float(max_first_block_pct or 0)
         #: DOS VELOCIDADES, segun de quien venga la moneda. Con un creador
         #: cualquiera que cumpla el minimo se va a lo seguro: se recupera el
         #: capital cuanto antes, porque no se sabe casi nada de el. Con uno
@@ -2069,6 +2088,21 @@ class UniversalTrader:
                     ):
                         await asyncio.sleep(_paso)
                         continue
+                    # BUNDLE EN EL NACIMIENTO. Se descarta entera, no se espera:
+                    # la proporcion de compras hechas en el bloque de creacion
+                    # solo puede empeorar con el tiempo si el resto no compra, y
+                    # si mejora es porque ha entrado gente -- pero el bundle
+                    # sigue ahi con su bolsa a precio cero.
+                    if self.max_first_block_pct > 0 and _b > 0:
+                        _pct_bundle = _fb / _b
+                        if _pct_bundle > self.max_first_block_pct:
+                            logger.info(
+                                f"Evitado {token_info.symbol}: BUNDLE — "
+                                f"{_fb} de {_b} compras ({_pct_bundle * 100:.0f}%) "
+                                f"en el bloque de creacion, maximo "
+                                f"{self.max_first_block_pct * 100:.0f}%"
+                            )
+                            return
                     # PARTICIPACION. El volumen solo dice cuanto dinero se ha
                     # movido; esto dice entre cuantas manos. Una moneda con el
                     # volumen hecho de una sola compra del creador cumple el

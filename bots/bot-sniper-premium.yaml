@@ -264,6 +264,22 @@ filters:
   min_titulares: 0
   min_ops: 0
   min_first_block_buys: 0
+
+  # BUNDLE EN EL NACIMIENTO. Maxima proporcion de las compras que puede venir
+  # del bloque de creacion. Sale de las seis primeras operaciones del 11-ago y
+  # separa sin solapamiento:
+  #
+  #   cobraron el +25%:  2%, 10%, 13%, 16%
+  #   stop entero     :         34%, 38%
+  #
+  # Se pone en 25%, en medio del hueco. Comprar en el bloque de creacion no es
+  # demanda: es un sniper o el propio dev entrando a precio cero, y su unica
+  # salida eres tu.
+  #
+  # Muestra pequeña -- cuatro contra dos -- asi que esto hay que volver a
+  # mirarlo con el estudio de las proximas ocho operaciones. Pero el separador
+  # es limpio y tiene explicacion, no es una correlacion suelta.
+  max_first_block_pct: 0.25
   min_vol_ventana_sol: 0
 
   # ── NO REPETIDA ─────────────────────────────────────────────────────────
