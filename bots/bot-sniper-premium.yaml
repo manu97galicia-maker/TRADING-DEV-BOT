@@ -315,7 +315,18 @@ filters:
   # Encaja con lo medido: en la ventana de 3 segundos las monedas movian entre
   # 0,1 y 2,9 SOL, asi que 26,7 era inalcanzable y 5,33 esta al alcance de las
   # que arrancan con fuerza.
-  min_volumen_sol: 5.33
+  # 40 SOL = ~3.000 $ con SOL a 75. Subido desde 5,33 el 11-ago.
+  #
+  # OJO CON ESTO, que es contraintuitivo: mover 3.000 $ en TRES SEGUNDOS es
+  # justo lo que hace un bundle. TOADABU junto 20,3 SOL en 0,2 s con cinco
+  # carteras, y era un rug. Una moneda organica rara vez llega ahi tan pronto
+  # -- las medidas movian 0,1 a 2,9 SOL en esa ventana.
+  #
+  # Por eso este umbral NO se puede llevar solo: son los filtros de bundle
+  # (max_first_block_pct) y de titulares distintos (min_titulares) los que
+  # separan al que mueve 40 SOL porque le compra gente del que los mueve el
+  # solo. Si alguna vez se quitan esos dos, hay que bajar este.
+  min_volumen_sol: 40
   max_volumen_sol: 800
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
@@ -394,7 +405,9 @@ filters:
   # habria bloqueado todo sin que se viera el motivo. Se mantiene la proporcion:
   # que una parte del volumen sea RECIENTE, que es lo que distingue a la que
   # sigue viva de la que hizo un chorro y se murio.
-  min_vol_ventana_sol: 2
+  # Un cuarto del total exigido: parte del volumen tiene que ser de AHORA, no
+  # todo del chorro inicial.
+  min_vol_ventana_sol: 10
   vol_ventana_seg: 1
 
   # ── NO REPETIDA ─────────────────────────────────────────────────────────
