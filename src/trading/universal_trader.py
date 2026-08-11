@@ -394,6 +394,14 @@ class UniversalTrader:
         # conoce a 1 de cada 3 monedas, asi que a esta edad es el unico que
         # sirve. 0 = desactivado.
         min_titulares: int = 0,
+        # TECHO de carteras distintas. Suena al reves y no lo es: medido sobre
+        # 279 monedas contra su maximo real, las que juntan 30 o mas carteras
+        # en el primer segundo rinden PEOR que las de 15-29 (39% llega al +30%
+        # frente al 54%, y ninguna migro). Treinta compradores distintos en un
+        # segundo no son treinta personas: es una granja repartida en carteras
+        # para que no parezca un bundle. Es justo la trampa que min_titulares
+        # no ve. 0 = sin techo.
+        max_titulares: int = 0,
         # Exigir que la moneda traiga redes sociales SUYAS: un enlace a una
         # cuenta (no al tuit de otro, que es lo que trae la mayoria) y que esa
         # cuenta no la haya usado ya otra moneda en las ultimas 6 horas.
@@ -769,6 +777,7 @@ class UniversalTrader:
         self.min_first_block_buys = int(min_first_block_buys or 0)
         self.min_ops = int(min_ops or 0)
         self.min_titulares = int(min_titulares or 0)
+        self.max_titulares = int(max_titulares or 0)
         self.redes_originales = bool(redes_originales)
         self.redes_timeout = float(redes_timeout or 1.5)
         self.max_volumen_sol = float(max_volumen_sol or 0)
@@ -2180,6 +2189,16 @@ class UniversalTrader:
                     if self.min_titulares > 0 and _h < self.min_titulares:
                         await asyncio.sleep(_paso)
                         continue
+                    if self.max_titulares > 0 and _h > self.max_titulares:
+                        # Este NO espera: las carteras solo suben, asi que si ya
+                        # se paso del techo no va a volver a bajar. Seguir dando
+                        # vueltas seria gastar la ventana en una moneda perdida.
+                        logger.info(
+                            f"Evitado {token_info.symbol}: {_h} carteras "
+                            f"distintas en {monotonic() - _t0:.1f}s "
+                            f"(> {self.max_titulares}) -> granja repartida"
+                        )
+                        return
                     if self.second_wave.get("enabled"):
                         _sw = self.second_wave
                         _m = _segunda_ola(

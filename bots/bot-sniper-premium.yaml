@@ -435,7 +435,21 @@ filters:
   #
   # El techo de 50.000 se mantiene por si la moneda salta de golpe: no se
   # compra arriba aunque se llegue tarde por unos milisegundos.
-  max_buy_age: 2
+  # Medido el 11-ago sobre 279 monedas que el bot vio y clasifico, comparadas
+  # contra su `ath_market_cap` real de pump.fun -- a donde LLEGARON, que es lo
+  # que importa cuando se vende por el camino.
+  #
+  # A DOS SEGUNDOS NO CABE NADA. De las 279, las que cumplian el perfil bueno
+  # (poco bloque de creacion + volumen + carteras) y ademas se veian en menos de
+  # dos segundos eran DOS. A cuatro segundos son once, y ese grupo es el mejor
+  # de todo lo medido: 82% llega al +30% y el 18% migra.
+  #
+  # Manu lleva la sesion entera pidiendo comprar al segundo, y tiene razon en el
+  # motivo -- llegar tarde es comprar el techo de otro. Pero al segundo el bot
+  # esta ciego: el unico filtro que puede aplicar es quien es el creador, y eso
+  # esta medido mas abajo y no funciona. Cuatro segundos siguen siendo antes que
+  # cualquier humano, y son los que permiten MIRAR antes de pagar.
+  max_buy_age: 4
 
   match_string: null
   bro_address: null
@@ -490,7 +504,12 @@ filters:
   # 12 SOL deja pasar a las Leelavati sin abrir la puerta a cualquier cosa. El
   # trabajo de descartar bundles lo hacen max_first_block_pct y min_titulares,
   # que miran ENTRE CUANTAS MANOS se mueve el dinero en vez de cuanto.
-  min_volumen_sol: 0
+  #
+  # 15 SOL. Con 15 o mas, el 54% llega al +30%; por debajo de 15, el 34%. No es
+  # el volumen en si: es que sin el no hay nadie al otro lado cuando toque
+  # vender. (Ojo: esto NO contradice el caso Leelavati. Alli el error fue pedir
+  # 40 SOL en 3 segundos, que solo cumplen los bundles.)
+  min_volumen_sol: 15
   max_volumen_sol: 800
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
@@ -528,11 +547,14 @@ filters:
   # No cuesta tiempo: los dos contadores viven en memoria desde los logs del
   # websocket. En cuanto se cumplen, se compra en esa misma vuelta del bucle
   # (0,15 s), sin esperar a agotar el plazo.
+  # Techo nuevo: 30+ carteras en el primer segundo rinden peor que 15-29 (39%
+  # frente a 54% al +30%, y cero migraciones). Ver el comentario del codigo.
+  max_titulares: 29
   min_buys: 3
   # OCHO CARTERAS DISTINTAS. TOADABU tenia CINCO moviendo 20,3 SOL. El volumen
   # solo dice cuanto dinero se movio; esto dice entre cuantas manos, que es lo
   # que un bundle no puede fabricar barato.
-  min_titulares: 3
+  min_titulares: 5
   min_ops: 0
   min_first_block_buys: 0
 
@@ -567,7 +589,16 @@ filters:
   # Se pone en 50% y no en el 25% de antes porque la ventana es de 3 segundos y
   # ahi una parte grande de las compras son legitimamente del principio. Con 50%
   # se corta la mayoria absoluta de bundle sin tumbar a las sanas.
-  max_first_block_pct: 0
+  #
+  # EL FILTRO QUE MAS MANDA DE TODOS, y el que Manu pidio al acordarse de
+  # Applecat. Por debajo del 30% de compras en el bloque de creacion el 56%
+  # llega al +30% (mediana 1,33x); con el 100% --bundle puro-- baja al 29%
+  # (mediana 1,09x). La escala es limpia y monotona: cuanto mas concentrado el
+  # arranque, peor acaba.
+  #
+  # Aquel Applecat del dia 11 tenia 4 de 6 compras en el bloque de creacion
+  # (67%) y con la configuracion de esta manana SE HABRIA COMPRADO.
+  max_first_block_pct: 0.30
   # QUE EL DINERO SIGA ENTRANDO AHORA MISMO. min_volumen_sol mira TODO lo
   # negociado desde que nacio: una moneda que hizo un chorro de 30 SOL en el
   # primer segundo y se quedo muerta lo cumple igual que una que sigue viva.
@@ -660,7 +691,30 @@ filters:
   # La lista de devs marcados NO desaparece: sigue decidiendo el tamano de la
   # compra (0,30 en vez de 0,20) y la paciencia de la salida.
   pumpfun_dev:
-    enabled: true
+  # Medido el 11-ago sobre 279 monedas que el bot vio y clasifico, comparadas
+  # contra su `ath_market_cap` real de pump.fun -- a donde LLEGARON, que es lo
+  # que importa cuando se vende por el camino.
+    #
+    # APAGADO EL 11-AGO. Se comprobo lo unico que decide: coger las monedas que
+    # pasaron TODOS los demas filtros y partirlas en dos, las que el dev dejo
+    # pasar y las que bloqueo. Si el filtro sirviera, el segundo grupo seria
+    # peor. No lo es:
+    #
+    #                        pasaron el dev    las bloqueo el dev
+    #     llegan al +30%          45%                42%
+    #     llegan a 2x             20%                24%
+    #     migran                   3%                 8%
+    #     las mayores        20x 9,9x 8,3x     349x 72x 58x 25x
+    #
+    # No protege de nada --el porcentaje que llega al take-profit es el mismo--
+    # y nos quita la cola entera: el doble de migraciones y todos los monstruos.
+    # Es lo que bloqueo RDOG (7,8x, migro) y Fritz, las dos que Manu senalo.
+    #
+    # El motivo de fondo: en pump.fun el creador que ya migro algo lanza poco y
+    # con calma, y el que revienta la pantalla tiene 70 lanzamientos y 1 exito.
+    # Pero la moneda que se dispara no la mueve el creador, la mueve quien
+    # compra. Y a eso se mira con los filtros de arriba, que si funcionan.
+    enabled: false
     # MAS DE UNA MIGRACION, y nada mas. Sin porcentaje: min_rate en 0 hace que
     # el codigo (`migs < min_migrations O rate < min_rate`) decida solo por el
     # numero.
