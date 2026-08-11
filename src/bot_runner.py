@@ -245,6 +245,7 @@ async def start_bot(config_path: str):
             max_first_block_pct=cfg.get("filters", {}).get(
                 "max_first_block_pct", 0
             ),
+            max_posiciones=cfg["trade"].get("max_posiciones", 0),
             devs_marcados=cfg["trade"].get("devs_marcados"),
             buy_amount_marcados=cfg["trade"].get("buy_amount_marcados", 0),
             tp_marcados=cfg["trade"].get("tp_marcados", 0),

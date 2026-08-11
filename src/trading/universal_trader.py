@@ -421,6 +421,8 @@ class UniversalTrader:
         # Fraccion MAXIMA de las compras que puede haber ocurrido en el
         # bloque de creacion. 0 = no se mira.
         max_first_block_pct: float = 0.0,
+        # Posiciones abiertas a la vez. 0 = sin tope propio (manda el saldo).
+        max_posiciones: int = 0,
         # DEVS MARCADOS: fichero de wallets que se han ganado mas confianza.
         # No deciden si se compra, solo cuanto y con que paciencia.
         devs_marcados: str | None = None,
@@ -655,7 +657,13 @@ class UniversalTrader:
         #  - _position_semaphore caps simultaneous OPEN positions so background
         #    buys/exit-monitors can't drain the wallet.
         self._filter_semaphore = asyncio.Semaphore(8)
-        self._position_semaphore = asyncio.Semaphore(20)  # sin tope práctico (2026-07-28): el límite real es el SOL disponible (spend-lock + min_reserve_sol)
+        #: Posiciones abiertas simultaneas. Antes estaba fijo en 20, que era
+        #: no tener tope: el limite real lo ponia el saldo. Manu lo quiere
+        #: explicito en 3 -- con una reserva de solo 0,03 SOL, el freno del
+        #: saldo llega tarde y conviene decir cuantas se abren de verdad.
+        #: Sigue mandando el que se quede corto de los dos: si no hay SOL
+        #: para la tercera, no se abre aunque el tope lo permita.
+        self._position_semaphore = asyncio.Semaphore(int(max_posiciones or 20))
         # Bounded concurrency for paper price-watchers (protects the RPC).
         self._watch_semaphore = asyncio.Semaphore(8)
 
