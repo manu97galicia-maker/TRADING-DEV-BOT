@@ -151,21 +151,24 @@ filters:
   # 40 SOL = ~3.000 $ (SOL a 75 $). "Volumen min 3K".
   min_volumen_sol: 40.0
 
-  # DIRECCION DEL DINERO: DESACTIVADO. Manu no lo pidio para esta estrategia.
-  # AVISO: sin esto, "3.000 $ de volumen" tambien cuenta a las que se estan
-  # vaciando. Para exigir que entre mas dinero en compras que en ventas, poner
-  # p.ej. min_presion_ratio: 3.0 y presion_seg: 10.0 (como en volumen2k).
-  min_presion_ratio: 0
+  # DIRECCION DEL DINERO: ACTIVADO (Manu, 11-ago). Exige que en los ultimos
+  # 10 s haya entrado 3x mas SOL en compras que en ventas. Sin esto, "3.000 $
+  # de volumen" tambien contaria a las que se estan vaciando: es el filtro que
+  # separa un arranque de un dump con volumen.
+  min_presion_ratio: 3.0
   presion_seg: 10.0
-  min_buys: 0
-  min_titulares: 0
+  # MINIMO DE COMPRADORES REALES (Manu, 11-ago): 8 compras de al menos 6 manos
+  # distintas, para que el volumen no sea 2 bots inflando el contador.
+  min_buys: 8
+  min_titulares: 6
   min_ops: 0
   min_first_block_buys: 0
   min_vol_ventana_sol: 0
 
-  # No repetir la misma moneda: DESACTIVADO (no pedido). Para evitar comprar el
-  # mismo clon dos veces en pocos minutos, poner no_repeat_name_min: 10.
-  no_repeat_name_min: 0
+  # NO REPETIR LA MISMA MONEDA (Manu, 11-ago): si el mismo nombre ya salio en
+  # los ultimos 10 min, no se compra. Estos devs relanzan el mismo clon una y
+  # otra vez y comprar tres es pagar tres veces por la misma apuesta.
+  no_repeat_name_min: 10
 
   # Filtro de reputacion del dev: DESACTIVADO (no pedido). La señal aqui es el
   # mercado (volumen + market cap), no la persona.
@@ -188,10 +191,12 @@ filters:
   yolo_mode: true
   paper_trade: false          # DINERO REAL
 
-  # Concentracion de holders: DESACTIVADO (no pedido). Para descartar monedas
-  # con un titular por encima del 15%, poner max_holder_pct: 0.15.
-  max_holder_pct: 0.0
-  max_dev_hold_pct: 0.0
+  # ANTI-CONCENTRACION (Manu, 11-ago): descarta la moneda si un solo titular
+  # tiene mas del 15% del supply (el que va a vender encima) o si el dev
+  # conserva mas del 5%. Aqui el dato es fiable porque se entra despues del
+  # reparto inicial.
+  max_holder_pct: 0.15
+  max_dev_hold_pct: 0.05
   min_holders: 0
   holder_bypass_ratio: 0
   redes_originales: false
