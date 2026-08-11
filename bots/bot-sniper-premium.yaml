@@ -327,9 +327,25 @@ priority_fees:
   # 20M = 0,0017 SOL, el 1,1% de una posicion de 0,15. Menos que DEV10 porque
   # aqui no se compite por ser el primero en el bloque de creacion: la moneda
   # ya lleva segundos viva cuando se entra.
-  fixed_amount: 20_000_000
+  # 100M microlamports por unidad de computo, subido de 20M el 11-ago para
+  # entrar antes. La cuenta, que conviene tener delante:
+  #
+  #     fee = precio x unidades de computo
+  #     100M x 140.000 CU = 0,0140 SOL en la compra
+  #     100M x 120.000 CU = 0,0120 SOL en cada venta
+  #
+  # Sobre una posicion de 0,35 SOL eso es un 4% en la compra. Y una operacion
+  # completa lleva 4 transacciones -- compra, el 80% al +30%, y los dos
+  # escalones de market cap -- asi que el viaje entero cuesta ~0,05 SOL: un 14%
+  # de la posicion.
+  #
+  # Se acepta porque perder la entrada cuesta mas que la comision: DYOR paso de
+  # 2.097 a 12.502 $ en segundo y medio, y ahi no se compite pagando poco. Pero
+  # si las operaciones salen justas de rentabilidad, este es el primer numero
+  # que hay que revisar.
+  fixed_amount: 100_000_000
   extra_percentage: 0.0
-  hard_cap: 20_000_000
+  hard_cap: 100_000_000
 
 retries:
   max_attempts: 2
