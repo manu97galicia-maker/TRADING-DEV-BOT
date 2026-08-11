@@ -180,7 +180,17 @@ trade:
   extreme_fast_mode: false
   # Reserva mas alta que DEV10: es la gasolina para poder firmar las VENTAS de
   # las dos estrategias. Quedarse sin SOL con posiciones abiertas es perderlas.
-  min_reserve_sol: 0.08
+  # RESERVA DE GASOLINA: 0,03 SOL, bajada de 0,08 el 11-ago a peticion de Manu.
+  #
+  # Es lo que el bot nunca gasta para poder firmar SUS VENTAS. Quedarse sin SOL
+  # con posiciones abiertas es perderlas: no habria con que pagar la salida.
+  #
+  # 0,03 es holgado con lo medido: 40 transacciones reales de este bot costaron
+  # 0,0093 SOL en total (0,00023 de media), asi que 0,03 da para mas de cien
+  # firmas. Lo que si consume de verdad es la renta de cada cuenta de token
+  # (~0,002 SOL, que se recupera al cerrarla): con 0,03 caben unas quince
+  # posiciones abiertas a la vez, muy por encima de las que permite el saldo.
+  min_reserve_sol: 0.03
 
   # CORTA-CIRCUITOS: TRES perdidas seguidas y esta estrategia deja de COMPRAR.
   # Subido de 2 a 3 el 10-ago. Con 2 saltaba demasiado pronto: hoy corto dos
