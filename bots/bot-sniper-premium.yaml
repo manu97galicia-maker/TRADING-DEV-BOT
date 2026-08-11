@@ -60,7 +60,7 @@ trade:
   # por no dumpear y por haber hecho monedas de +200K -- llevan 0,30: mas ficha
   # donde hay mas informacion. La lista ya NO decide si se compra (eso lo hace
   # el 1% migrado en vivo), solo cuanto.
-  buy_amount: 0.30
+  buy_amount: 0.10
 
   # MAXIMO 3 POSICIONES A LA VEZ. Antes el tope estaba fijo en 20 dentro del
   # codigo, que era como no tenerlo: el freno lo ponia el saldo. Con la reserva
@@ -70,7 +70,7 @@ trade:
   # la tercera no se abre, aunque el tope lo permita.
   max_posiciones: 3
   devs_marcados: "top_devs_buenos.json"
-  buy_amount_marcados: 0.35
+  buy_amount_marcados: 0.12
 
   # ── DOS VELOCIDADES DE SALIDA ────────────────────────────────────────────
   # ARRIESGADOS (dev cualquiera que pase el 1%): recuperar y correr. El primer
@@ -372,7 +372,20 @@ filters:
   # (max_first_block_pct) y de titulares distintos (min_titulares) los que
   # separan al que mueve 40 SOL porque le compra gente del que los mueve el
   # solo. Si alguna vez se quitan esos dos, hay que bajar este.
-  min_volumen_sol: 40
+  # BAJADO de 40 a 12 SOL el 11-ago, y esta vez con la prueba delante:
+  #
+  #   PVE        46,5 SOL en 1,2 s  ->  -0,1342 SOL
+  #   WIWI       40,2 SOL en 2,1 s  ->  -0,0774 SOL
+  #   Leelavati  16,0 SOL en 3,0 s  ->  x58 ... y se RECHAZO por volumen
+  #
+  # El volumen alto en tres segundos NO predice ganancia: predice bundle. Las
+  # dos que superaron los 40 SOL perdieron, y la que hizo x58 -- migro y llego
+  # a 121.636 $ de ATH -- se quedo en 16 SOL y el filtro la tiro.
+  #
+  # 12 SOL deja pasar a las Leelavati sin abrir la puerta a cualquier cosa. El
+  # trabajo de descartar bundles lo hacen max_first_block_pct y min_titulares,
+  # que miran ENTRE CUANTAS MANOS se mueve el dinero en vez de cuanto.
+  min_volumen_sol: 12
   max_volumen_sol: 800
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
@@ -453,7 +466,7 @@ filters:
   # sigue viva de la que hizo un chorro y se murio.
   # Un cuarto del total exigido: parte del volumen tiene que ser de AHORA, no
   # todo del chorro inicial.
-  min_vol_ventana_sol: 10
+  min_vol_ventana_sol: 4
   vol_ventana_seg: 1
 
   # ── NO REPETIDA ─────────────────────────────────────────────────────────
