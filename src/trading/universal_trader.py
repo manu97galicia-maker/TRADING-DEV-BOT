@@ -402,6 +402,20 @@ class UniversalTrader:
         # para que no parezca un bundle. Es justo la trampa que min_titulares
         # no ve. 0 = sin techo.
         max_titulares: int = 0,
+        # COMPRAS POR CARTERA: cuantas veces compra de media cada mano distinta.
+        # Es el segundo patron mas fuerte medido el 11-ago, y el mas dificil de
+        # falsear. Entre 1,3 y 1,8 el 90% de las monedas llega al +30%; por
+        # debajo de 1,3 baja al 73%.
+        #
+        # Lo que distingue: por debajo de 1,3 cada cartera compra una vez y se
+        # va -- es un reparto, no interes. Muy por encima de 2 es una sola mano
+        # dandole al boton para inflar el contador de operaciones. En medio esta
+        # lo que parece gente: entras, miras, y algunos repiten.
+        #
+        # Chief, la que Manu quiere repetir, tenia 32 compras entre 21 carteras:
+        # 1,5. Los dos a 0 = desactivado.
+        min_compras_por_cartera: float = 0.0,
+        max_compras_por_cartera: float = 0.0,
         # Exigir que la moneda traiga redes sociales SUYAS: un enlace a una
         # cuenta (no al tuit de otro, que es lo que trae la mayoria) y que esa
         # cuenta no la haya usado ya otra moneda en las ultimas 6 horas.
@@ -778,6 +792,8 @@ class UniversalTrader:
         self.min_ops = int(min_ops or 0)
         self.min_titulares = int(min_titulares or 0)
         self.max_titulares = int(max_titulares or 0)
+        self.min_compras_por_cartera = float(min_compras_por_cartera or 0)
+        self.max_compras_por_cartera = float(max_compras_por_cartera or 0)
         self.redes_originales = bool(redes_originales)
         self.redes_timeout = float(redes_timeout or 1.5)
         self.max_volumen_sol = float(max_volumen_sol or 0)
@@ -2189,6 +2205,24 @@ class UniversalTrader:
                     if self.min_titulares > 0 and _h < self.min_titulares:
                         await asyncio.sleep(_paso)
                         continue
+                    if (self.min_compras_por_cartera > 0 or
+                            self.max_compras_por_cartera > 0) and _h > 0:
+                        _ratio = _b / _h
+                        if (self.min_compras_por_cartera > 0
+                                and _ratio < self.min_compras_por_cartera):
+                            # Este SI espera: el ratio sube segun repiten, asi
+                            # que puede cumplir mas adelante dentro del plazo.
+                            await asyncio.sleep(_paso)
+                            continue
+                        if (self.max_compras_por_cartera > 0
+                                and _ratio > self.max_compras_por_cartera):
+                            logger.info(
+                                f"Evitado {token_info.symbol}: {_b} compras "
+                                f"entre {_h} carteras = {_ratio:.1f} por mano "
+                                f"(> {self.max_compras_por_cartera}) -> una "
+                                f"sola mano inflando el contador"
+                            )
+                            return
                     if self.max_titulares > 0 and _h > self.max_titulares:
                         # Este NO espera: las carteras solo suben, asi que si ya
                         # se paso del techo no va a volver a bajar. Seguir dando

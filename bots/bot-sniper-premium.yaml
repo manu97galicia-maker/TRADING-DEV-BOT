@@ -60,7 +60,11 @@ trade:
   # por no dumpear y por haber hecho monedas de +200K -- llevan 0,30: mas ficha
   # donde hay mas informacion. La lista ya NO decide si se compra (eso lo hace
   # el 1% migrado en vivo), solo cuanto.
-  buy_amount: 0.30
+  # 0,15 y no los 0,2 que pidio Manu, porque con 0,2317 SOL en la wallet NO
+  # CABEN: el bot reserva importe x 1,25 (deslizamiento) + 0,013 de comision de
+  # prioridad, o sea 0,263 para una compra de 0,2, y libre solo hay 0,21.
+  # SNOWKID cumplia todo a los 3,6 s y se quedo fuera por esto.
+  buy_amount: 0.15
 
   # MAXIMO 3 POSICIONES A LA VEZ. Antes el tope estaba fijo en 20 dentro del
   # codigo, que era como no tenerlo: el freno lo ponia el saldo. Con la reserva
@@ -68,7 +72,8 @@ trade:
   #
   # Mandan los DOS a la vez, y gana el que se quede corto: si no hay SOL para
   # la tercera no se abre, aunque el tope lo permita.
-  max_posiciones: 3
+  # Una sola: con 0,25 SOL en la wallet no hay para dos de 0,2.
+  max_posiciones: 1
   devs_marcados: "top_devs_buenos.json"
   # 0,50 SOL si la moneda viene de uno de los devs MARCADOS, contra los 0,30
   # de cualquier otro que cumpla el 10%. La lista son los 31 de
@@ -78,7 +83,7 @@ trade:
   #
   # La lista NO decide si se compra -- eso lo sigue haciendo el 10% migrado
   # calculado en vivo -- solo cuanto. Mas ficha donde hay mas informacion.
-  buy_amount_marcados: 0.30
+  buy_amount_marcados: 0.15
 
   # ── DOS VELOCIDADES DE SALIDA ────────────────────────────────────────────
   # ARRIESGADOS (dev cualquiera que pase el 1%): recuperar y correr. El primer
@@ -307,7 +312,7 @@ trade:
   # firmas. Lo que si consume de verdad es la renta de cada cuenta de token
   # (~0,002 SOL, que se recupera al cerrarla): con 0,03 caben unas quince
   # posiciones abiertas a la vez, muy por encima de las que permite el saldo.
-  min_reserve_sol: 0.03
+  min_reserve_sol: 0.02
 
   # CORTA-CIRCUITOS: TRES perdidas seguidas y esta estrategia deja de COMPRAR.
   # Subido de 2 a 3 el 10-ago. Con 2 saltaba demasiado pronto: hoy corto dos
@@ -449,7 +454,10 @@ filters:
   # esta ciego: el unico filtro que puede aplicar es quien es el creador, y eso
   # esta medido mas abajo y no funciona. Cuatro segundos siguen siendo antes que
   # cualquier humano, y son los que permiten MIRAR antes de pagar.
-  max_buy_age: 4
+  # 12 s = los 0,2 min de arriba del filtro de GMGN que paso Manu. Es un PLAZO,
+  # no una espera: se compra en la vuelta en que se cumple todo (cada 0,15 s).
+  # Ampliarlo no hace al bot mas lento, solo le da mas ocasiones de llegar.
+  max_buy_age: 12
 
   match_string: null
   bro_address: null
@@ -509,7 +517,7 @@ filters:
   # el volumen en si: es que sin el no hay nadie al otro lado cuando toque
   # vender. (Ojo: esto NO contradice el caso Leelavati. Alli el error fue pedir
   # 40 SOL en 3 segundos, que solo cumplen los bundles.)
-  min_volumen_sol: 15
+  min_volumen_sol: 40      # 3.000 $ del filtro de Manu, a 75 $/SOL
   max_volumen_sol: 800
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
@@ -549,12 +557,18 @@ filters:
   # (0,15 s), sin esperar a agotar el plazo.
   # Techo nuevo: 30+ carteras en el primer segundo rinden peor que 15-29 (39%
   # frente a 54% al +30%, y cero migraciones). Ver el comentario del codigo.
-  max_titulares: 29
+  # Subido de 29 a 45 solo por esta tanda: con 40 SOL de volumen exigidos, un
+  # techo de 29 carteras chocaria con el suelo de volumen y no dispararia nunca.
+  max_titulares: 35
   min_buys: 3
   # OCHO CARTERAS DISTINTAS. TOADABU tenia CINCO moviendo 20,3 SOL. El volumen
   # solo dice cuanto dinero se movio; esto dice entre cuantas manos, que es lo
   # que un bundle no puede fabricar barato.
-  min_titulares: 5
+  # El perfil de Chief: 21 carteras. Por debajo de 12 la moneda no ha reunido
+  # a nadie todavia y por encima de 35 empieza a oler a granja repartida.
+  min_titulares: 12
+  min_compras_por_cartera: 1.2
+  max_compras_por_cartera: 2.0
   min_ops: 0
   min_first_block_buys: 0
 
@@ -598,7 +612,11 @@ filters:
   #
   # Aquel Applecat del dia 11 tenia 4 de 6 compras en el bloque de creacion
   # (67%) y con la configuracion de esta manana SE HABRIA COMPRADO.
-  max_first_block_pct: 0.30
+  # Apretado de 30% a 20% el 11-ago buscando mas monedas como Chief, que tenia
+  # un 9%. Por bandas, contra el maximo real: <10% da 2,54x de mediana y un 34%
+  # que llega a 3x; 20-30% da 1,81x y un 18%. Deja 102 ocasiones al dia, de
+  # sobra.
+  max_first_block_pct: 0.20
   # QUE EL DINERO SIGA ENTRANDO AHORA MISMO. min_volumen_sol mira TODO lo
   # negociado desde que nacio: una moneda que hizo un chorro de 30 SOL en el
   # primer segundo y se quedo muerta lo cumple igual que una que sigue viva.
@@ -782,7 +800,7 @@ filters:
   # El techo de 50.000 no es comprar caro: con la ventana en menos de 8
   # segundos, una moneda que ya esta en 40K ha explotado, no esta cara por
   # vieja.
-  min_entry_mc: 0
+  min_entry_mc: 4000
   max_entry_mc: 50000
 
   # SEGUNDA PUERTA DE ENTRADA. La banda de arriba compra en el nacimiento, donde
