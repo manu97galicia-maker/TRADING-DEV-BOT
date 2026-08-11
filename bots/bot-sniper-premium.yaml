@@ -70,7 +70,15 @@ trade:
   # la tercera no se abre, aunque el tope lo permita.
   max_posiciones: 3
   devs_marcados: "top_devs_buenos.json"
-  buy_amount_marcados: 0.30
+  # 0,50 SOL si la moneda viene de uno de los devs MARCADOS, contra los 0,30
+  # de cualquier otro que cumpla el 10%. La lista son los 31 de
+  # top_devs_buenos.json, medidos por dos criterios distintos: que no dumpean
+  # (conservan >=60% del precio a los 2-4 min) y que han hecho monedas de
+  # +200K sin ser granjas.
+  #
+  # La lista NO decide si se compra -- eso lo sigue haciendo el 10% migrado
+  # calculado en vivo -- solo cuanto. Mas ficha donde hay mas informacion.
+  buy_amount_marcados: 0.50
 
   # ── DOS VELOCIDADES DE SALIDA ────────────────────────────────────────────
   # ARRIESGADOS (dev cualquiera que pase el 1%): recuperar y correr. El primer
