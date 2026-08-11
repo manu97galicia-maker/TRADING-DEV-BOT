@@ -1,0 +1,234 @@
+# ESCALERA-MC — entrada en 6 s con volumen, salida escalonada por market cap.
+#
+# Pedida por Manu el 11-ago. La idea: entrar MUY temprano (primeros 6 s) en una
+# moneda que ya ha demostrado arranque (>=3.000 $ de volumen) pero sigue barata
+# (market cap entre 5.200 $ y 8.000 $), asegurar capital pronto con un take
+# profit en % y luego dejar correr el resto vendiendo por objetivos de market
+# cap absolutos: 12K, 19K y 28K, guardando un moonbag para "lo que quede".
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# LA ENTRADA  (los 4 numeros que pidio Manu)
+# ─────────────────────────────────────────────────────────────────────────────
+#   1. EDAD      : dentro de los primeros 6 s de vida (max_buy_age).
+#                  No hay minimo de edad configurable en el bot, asi que entra
+#                  en cuanto pasa los filtros dentro de esa ventana -> "compra
+#                  rapido" en cuanto se confirman las condiciones.
+#   2. VOLUMEN   : >= 3.000 $ = 40 SOL (con SOL a 75 $, la referencia del bot).
+#   3. MARKET CAP: entre 5.200 $ (suelo) y 8.000 $ (techo). El techo es clave:
+#                  el primer objetivo de venta es 12K, asi que entrar por encima
+#                  de 8K deja poco recorrido hasta el primer escalon.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# LA SALIDA  (60% al +35%, y el resto por market cap)
+# ─────────────────────────────────────────────────────────────────────────────
+#   - TP1: al +35% de precio se vende el 60% de la posicion (escalera de %).
+#   - El 40% restante lo gestiona la ESCALERA DE MARKET CAP, que en el codigo
+#     solo se arma DESPUES de que dispare toda la escalera de % (aqui, tras el
+#     TP1). Las fracciones son sobre la posicion ORIGINAL:
+#         12K -> vende 10%
+#         19K -> vende 10%
+#         28K -> vende 10%
+#         (queda un 10% de moonbag = "hold lo que quede")
+#
+#   NOTA sobre el moonbag: por defecto el bot le pone al moonbag un trailing
+#   igual al stop_loss (42%) que lo vende si cae desde el pico. Como Manu pidio
+#   "hold lo que quede", se pone trailing_stop_percentage muy alto (0.95) para
+#   que NO se dispare: el 10% final se aguanta hasta max_hold_time. Si algun dia
+#   se prefiere protegerlo con un trailing corto, basta con bajar ese numero.
+
+name: "ESCALERA-MC - 6s, vol 3K, MC 5.2-8K, salida 12/19/28K"
+env_file: ".env"
+
+# Solo avisos de compra, como en corredores/volumen2k: el aviso que no hay que
+# perderse es "acabo de gastar tu dinero". Quitar esta clave devuelve todo.
+avisos_telegram: ["compra"]
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  # 0,20 SOL por compra (pedido por Manu).
+  buy_amount: 0.20
+  buy_slippage: 0.30
+  # 0,35 como en corredores/volumen2k: con margenes altos el bot aceptaba
+  # cobrar mucho menos de lo esperado y lo apuntaba como venta entera. 0,35
+  # rechaza y reintenta la venta que solo se ejecutaria tirando el precio.
+  sell_slippage: 0.35
+
+  exit_strategy: "tp_sl"
+  # TP1: 60% al +35%. Unico escalon en %; a partir de aqui manda la escalera
+  # de market cap (que en el codigo se arma cuando TODA la escalera de % ha
+  # disparado, es decir, tras este TP1).
+  take_profit_percentage: 0.35
+  take_profit_sell_percentage: 0.60
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+
+  # ── SALIDA POR MARKET CAP ABSOLUTO ──────────────────────────────────────
+  # El "resto dividido entre cuatro": tres escalones de 10% (sobre la posicion
+  # original) a 12K / 19K / 28K, y el cuarto 10% queda de moonbag.
+  mc_take_profit_tiers:
+    - {target_mc: 12000, sell: 0.10}
+    - {target_mc: 19000, sell: 0.10}
+    - {target_mc: 28000, sell: 0.10}
+  final_target_mc: 0
+
+  # STOP DE ENTRADA: 42% (pedido por Manu). Si la moneda cae un 42% desde la
+  # entrada, fuera.
+  stop_loss_percentage: 0.42
+
+  # MOONBAG EN HOLD: trailing casi desactivado (0,95) para respetar el "hold
+  # lo que quede". Sin esto, el moonbag heredaria el 42% del stop y se venderia
+  # en el primer retroceso fuerte desde el pico.
+  trailing_stop_percentage: 0.95
+
+  # ANTI-RUG: si en 4 s se vende el doble de lo que se compra, sale entera sin
+  # esperar al precio. Es la misma proteccion que llevan las otras estrategias
+  # que entran con la moneda ya en movimiento.
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+
+  # Sin venta por moneda muerta: la escalera va hasta 28K y cortar pronto seria
+  # sacar a una que aun no ha corrido. Quien decide la salida son los objetivos.
+  venta_muerta_seg: 0
+  venta_muerta_gain: 0.0
+
+  # 2 h de tope. Solo esta para el caso en que el precio se congele: el moonbag
+  # en hold se mantiene hasta aqui.
+  max_hold_time: 7200
+  price_check_interval: 1
+  # OJO: NO se puede usar extreme_fast_mode. Ese modo salta la lectura del
+  # estado de la curva por RPC, y esta estrategia NECESITA esa lectura para
+  # medir volumen y market cap antes de comprar. La entrada rapida se consigue
+  # con la comision de prioridad fija de abajo y retries cortos.
+  extreme_fast_mode: false
+  # Reserva minima: 0,03 SOL siempre quedan sin tocar (pedido por Manu).
+  min_reserve_sol: 0.03
+
+  # VARIAS POSICIONES A LA VEZ, limitadas por la reserva. 0 = el bot permite
+  # hasta 20 en paralelo; en la practica manda min_reserve_sol: cada compra
+  # comprueba que quede saldo por encima de la reserva antes de entrar.
+  max_posiciones: 0
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  # 30M = 0,00255 SOL, ~1,3% de una posicion de 0,20. Un pelin mas que las
+  # estrategias de volumen (20M) para "comprar rapido" en cuanto se confirman
+  # las condiciones, sin pasarse: aqui no se compite por el bloque 0.
+  fixed_amount: 30_000_000
+  extra_percentage: 0.0
+  hard_cap: 30_000_000
+
+retries:
+  # 2 intentos: si a la segunda no ha entrado, la moneda ya no esta al precio
+  # por el que se iba a comprar. wait 0 para no perder la ventana de 6 s.
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+
+  # Ventana de compra: 6 s (los "seis segundos" de Manu). max_token_age algo
+  # mayor para que el listener no descarte la moneda antes de evaluarla.
+  max_token_age: 30
+  max_buy_age: 6
+
+  match_string: null
+  bro_address: null
+
+  # ── LA SEÑAL: VOLUMEN ───────────────────────────────────────────────────
+  # 40 SOL = ~3.000 $ (SOL a 75 $). "Volumen min 3K".
+  min_volumen_sol: 40.0
+
+  # DIRECCION DEL DINERO: DESACTIVADO. Manu no lo pidio para esta estrategia.
+  # AVISO: sin esto, "3.000 $ de volumen" tambien cuenta a las que se estan
+  # vaciando. Para exigir que entre mas dinero en compras que en ventas, poner
+  # p.ej. min_presion_ratio: 3.0 y presion_seg: 10.0 (como en volumen2k).
+  min_presion_ratio: 0
+  presion_seg: 10.0
+  min_buys: 0
+  min_titulares: 0
+  min_ops: 0
+  min_first_block_buys: 0
+  min_vol_ventana_sol: 0
+
+  # No repetir la misma moneda: DESACTIVADO (no pedido). Para evitar comprar el
+  # mismo clon dos veces en pocos minutos, poner no_repeat_name_min: 10.
+  no_repeat_name_min: 0
+
+  # Filtro de reputacion del dev: DESACTIVADO (no pedido). La señal aqui es el
+  # mercado (volumen + market cap), no la persona.
+  pumpfun_dev:
+    enabled: false
+  ignorar_listas_de_devs: true
+
+  # ── MARKET CAP DE ENTRADA: 5.200 $ – 8.000 $ ────────────────────────────
+  min_entry_mc: 5200
+  max_entry_mc: 8000
+  # ANTI-HUMO: maximo de $ de market cap por cada SOL REAL dentro de la curva.
+  # Importa MUCHO en esta estrategia porque se filtra POR market cap: un MC de
+  # 5.200 $ empujado con cuatro duros sobre una curva seca pasaria el filtro y
+  # luego no habria con que salir. 6000 deja margen a las sanas y corta el humo.
+  max_mc_por_sol_curva: 6000
+  min_curve_sol: 1.5
+
+  allow_mayhem: false
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false          # DINERO REAL
+
+  # Concentracion de holders: DESACTIVADO (no pedido). Para descartar monedas
+  # con un titular por encima del 15%, poner max_holder_pct: 0.15.
+  max_holder_pct: 0.0
+  max_dev_hold_pct: 0.0
+  min_holders: 0
+  holder_bypass_ratio: 0
+  redes_originales: false
+  min_holders_gmgn: 0
+  senal_gmgn: []
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  # El proceso vigila posiciones abiertas y tiene que poder firmar las VENTAS,
+  # asi que se deja margen de cuota.
+  max_rps: 8
+
+compute_units:
+  # Sin esto la VENTA de tokens Token-2022 revienta con "Computational budget
+  # exceeded" y hay que salir por Jupiter (mas lento, peor precio). Mismos
+  # valores que corredores/volumen2k, ya probados el 10-ago.
+  buy: 140000
+  sell: 120000
