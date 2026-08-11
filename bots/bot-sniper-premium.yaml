@@ -60,7 +60,7 @@ trade:
   # por no dumpear y por haber hecho monedas de +200K -- llevan 0,30: mas ficha
   # donde hay mas informacion. La lista ya NO decide si se compra (eso lo hace
   # el 1% migrado en vivo), solo cuanto.
-  buy_amount: 0.10
+  buy_amount: 0.20
 
   # MAXIMO 3 POSICIONES A LA VEZ. Antes el tope estaba fijo en 20 dentro del
   # codigo, que era como no tenerlo: el freno lo ponia el saldo. Con la reserva
@@ -70,7 +70,7 @@ trade:
   # la tercera no se abre, aunque el tope lo permita.
   max_posiciones: 3
   devs_marcados: "top_devs_buenos.json"
-  buy_amount_marcados: 0.12
+  buy_amount_marcados: 0.25
 
   # ── DOS VELOCIDADES DE SALIDA ────────────────────────────────────────────
   # ARRIESGADOS (dev cualquiera que pase el 1%): recuperar y correr. El primer
@@ -642,7 +642,23 @@ filters:
   holder_bypass_ratio: 0
   redes_originales: false
   min_holders_gmgn: 0
-  senal_gmgn: []
+  # SEÑAL DE GMGN, tipo 18. Estaba medido en el repo desde el 4-ago y sin usar:
+  #
+  #     tipo 12   2,34x mediano   92% subio +30%   salta a ~$27.700
+  #     tipo  6   2,16x           86%              ~$10.700
+  #     tipo 18   2,00x           86%              ~$4.600   <-- este
+  #     tipo  7   1,00x           26%              ~$2.600
+  #
+  # Se coge el 18 porque es el unico que salta en la banda de compra: los otros
+  # buenos avisan cuando la moneda ya vale 10-30K y ahi ya se entra tarde.
+  #
+  # 86% de acierto es muchisimo mas que el 1 de cada 4-6 que llevamos midiendo,
+  # asi que merece la pena probarlo aunque reduzca las compras.
+  #
+  # No cuesta tiempo: un refrescador en segundo plano pide la lista completa
+  # cada pocos segundos y el filtro solo mira un diccionario en memoria. Coste
+  # por moneda: cero. Necesita gmgn-cli en el servidor, que esta instalado.
+  senal_gmgn: [18]
 
   buy_on_dex_paid:
     enabled: false
