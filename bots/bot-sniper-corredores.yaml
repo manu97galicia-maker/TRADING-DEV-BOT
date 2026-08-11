@@ -47,7 +47,7 @@ rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
-enabled: true      # ACTIVA desde el 10-ago: Manu empieza cazando corredores
+enabled: false     # DESACTIVADA 11-ago: solo corre ESCALERA-MC (peticion de Manu)
 separate_process: true
 platform: "pump_fun"
 
