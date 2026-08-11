@@ -176,6 +176,14 @@ trade:
   # El suelo NO baja nunca: una vez armado se queda, aunque la moneda se
   # desplome. Va comprobado ANTES que el trailing del 33% porque en monedas
   # grandes es mas apretado y tiene que poder disparar primero.
+  # UN SOLO RUG Y FUERA. Antes hacian falta dos para no vetar a un dev por una
+  # mala racha, pero con miles de creadores en pump.fun sobran candidatos: el
+  # que te la juega una vez no merece una segunda oportunidad con dinero real.
+  #
+  # Se apunta a las DOS identidades del creador (user y creator), asi que no se
+  # escapa firmando con una cartera nueva si deja el mismo creator.
+  rugs_para_bloquear: 1
+
   suelos_por_mc:
     - {alcanza: 15000,  suelo: 9000}
     - {alcanza: 20000,  suelo: 13500}

@@ -297,6 +297,8 @@ class UniversalTrader:
         # SUELOS QUE SUBEN CON LA MONEDA: [{alcanza, suelo}, ...] en dolares
         # de market cap. Al tocar `alcanza`, se arma un suelo en `suelo`.
         suelos_por_mc: list | None = None,
+        # Rugs acumulados que bloquean a un dev para siempre.
+        rugs_para_bloquear: int = 2,
         price_check_interval: int = 10,
         # Priority fee configuration
         enable_dynamic_priority_fee: bool = False,
@@ -630,6 +632,11 @@ class UniversalTrader:
             if alcanza > 0 and 0 < suelo < alcanza:
                 self.suelos_por_mc.append((alcanza, suelo))
         self.suelos_por_mc.sort(key=lambda x: x[0])
+        #: Con cuantos rugs se veta a un dev. Manu lo quiere en 1: el que te
+        #: la juega una vez no merece una segunda oportunidad con dinero de
+        #: verdad. Antes eran 2 para no vetar por una mala racha, pero con
+        #: miles de creadores en pump.fun sobran candidatos.
+        self.rugs_para_bloquear = max(1, int(rugs_para_bloquear or 2))
         # TP AGRESIVO para devs moonshot (los que suelen llegar MUY alto): objetivos
         # más altos y moonbag más grande para pillar el pump. +100/300/900%, vende
         # 20% en cada uno, moonbag 40% (vs el normal +50/150/300% moonbag 20%).
@@ -3944,7 +3951,7 @@ class UniversalTrader:
         prev = int(data.get(dev, 0))
         if outcome in {"rug", "hardrug"}:
             data[dev] = prev + 1
-            if data[dev] >= 2:
+            if data[dev] >= self.rugs_para_bloquear:
                 logger.warning(
                     "DEV BLOQUEADO %s: %s rugs acumulados -> no se le compra mas",
                     dev,

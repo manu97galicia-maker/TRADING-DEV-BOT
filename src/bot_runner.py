@@ -139,6 +139,7 @@ async def start_bot(config_path: str):
             final_target_mc=cfg["trade"].get("final_target_mc", 0),
             mc_take_profit_tiers=cfg["trade"].get("mc_take_profit_tiers"),
             suelos_por_mc=cfg["trade"].get("suelos_por_mc"),
+            rugs_para_bloquear=cfg["trade"].get("rugs_para_bloquear", 2),
             price_check_interval=cfg["trade"].get("price_check_interval", 10),
             # Listener configuration
             listener_type=cfg["filters"]["listener_type"],
