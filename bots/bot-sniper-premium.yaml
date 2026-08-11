@@ -60,9 +60,9 @@ trade:
   # por no dumpear y por haber hecho monedas de +200K -- llevan 0,30: mas ficha
   # donde hay mas informacion. La lista ya NO decide si se compra (eso lo hace
   # el 1% migrado en vivo), solo cuanto.
-  buy_amount: 0.20
+  buy_amount: 0.10
   devs_marcados: "top_devs_buenos.json"
-  buy_amount_marcados: 0.30
+  buy_amount_marcados: 0.15
 
   # ── DOS VELOCIDADES DE SALIDA ────────────────────────────────────────────
   # ARRIESGADOS (dev cualquiera que pase el 1%): recuperar y correr. El primer
@@ -180,7 +180,7 @@ trade:
   extreme_fast_mode: false
   # Reserva mas alta que DEV10: es la gasolina para poder firmar las VENTAS de
   # las dos estrategias. Quedarse sin SOL con posiciones abiertas es perderlas.
-  min_reserve_sol: 0.15
+  min_reserve_sol: 0.06
 
   # CORTA-CIRCUITOS: TRES perdidas seguidas y esta estrategia deja de COMPRAR.
   # Subido de 2 a 3 el 10-ago. Con 2 saltaba demasiado pronto: hoy corto dos
