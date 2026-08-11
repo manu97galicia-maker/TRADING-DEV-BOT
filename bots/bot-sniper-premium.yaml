@@ -222,7 +222,25 @@ trade:
     - {alcanza: 100000, suelo: 88000}
     - {alcanza: 200000, suelo: 180000}
 
-  stop_loss_percentage: 0.95
+  # STOP DEL 35%, puesto el 11-ago despues del caso Parmesan.
+  #
+  # Antes no habia ninguno: 0,95 significaba "que caiga hasta casi cero". El
+  # razonamiento era que el 80% al +30% compensaba el riesgo. Parmesan demostro
+  # que no: se fue a -49%, la curva se quedo con 0,0035 SOL y la posicion ya no
+  # se pudo vender NI POR JUPITER. Ocho intentos, primero Custom 6024 y despues
+  # directamente sin ruta.
+  #
+  # Lo que fallo no fue la deteccion sino la ejecucion: el anti-rug salto SIETE
+  # veces con lecturas correctas (6,9 SOL vendidos contra 0,0 comprados) y no
+  # pudo vender porque para entonces ya no habia curva legible. Una red que
+  # solo funciona mientras hay liquidez no sirve para lo unico de lo que hay
+  # que protegerse.
+  #
+  # Un stop por PRECIO salta antes, cuando todavia queda con quien negociar.
+  # 35% deja respirar el zarandeo del nacimiento -- Kermit se hundio un 44%
+  # antes de hacer x13, asi que alguna buena se perdera -- pero evita quedarse
+  # con la bolsa entera de una que se va a cero.
+  stop_loss_percentage: 0.35
 
   # TRAILING: 33%, separado del stop de entrada (campo nuevo). Antes eran el
   # mismo numero y no pueden serlo: el de entrada tiene que ser ancho para
@@ -253,7 +271,11 @@ trade:
   # desangra se quedaba dentro hasta el stop del -50%. A los 120 s se mira UNA
   # vez: si no esta por encima de la entrada, fuera. Si va en verde se la deja
   # correr y ya no se vuelve a preguntar.
-  venta_muerta_seg: 0
+  # Y a los 90 segundos, si no esta por encima de la entrada, fuera. Es la otra
+  # mitad del mismo problema: la que nace plana y se desangra despacio no
+  # dispara el anti-rug ni llega al stop, se queda ocupando una posicion hasta
+  # que ya no hay a quien venderle.
+  venta_muerta_seg: 90
   venta_muerta_gain: 0.0
 
   # 90 min. El techo mas tardio de los tres llego a los 26 min; se deja el
