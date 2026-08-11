@@ -325,7 +325,16 @@ filters:
   # se compra. Estos devs relanzan el mismo clon una y otra vez y comprar tres
   # es pagar tres veces por la misma apuesta. Mas alto que en DEV10 (5 min)
   # porque aqui se entra mas tarde y da tiempo a que salgan mas clones.
-  no_repeat_name_min: 10
+  # BAJADO de 10 a 3 minutos el 11-ago. Medido en vivo: de todos los descartes,
+  # 288 eran por nombre repetido -- mas que cualquier otro filtro, incluido el
+  # de volumen (216). Era el tapon principal y el numero lo habia puesto yo, no
+  # Manu.
+  #
+  # Con 3 minutos se sigue evitando lo que importa: comprar dos clones seguidos
+  # del mismo dev en la misma rafaga. Lo que deja pasar es el nombre que se
+  # repite mas tarde, que muchas veces es otro creador distinto usando un
+  # nombre popular.
+  no_repeat_name_min: 3
 
   # ── EL CREADOR: MINIMO 2 MIGRACIONES ────────────────────────────────────
   # Lo pidio Manu. No es la senal principal -- eso sigue siendo el mercado --
