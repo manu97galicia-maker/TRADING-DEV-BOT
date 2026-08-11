@@ -635,21 +635,27 @@ filters:
   # segundos, una moneda que ya esta en 40K ha explotado, no esta cara por
   # vieja.
   min_entry_mc: 0
-  max_entry_mc: 2600
+  max_entry_mc: 4600
 
   # SEGUNDA PUERTA DE ENTRADA. La banda de arriba compra en el nacimiento, donde
   # no hay volumen que medir porque no ha dado tiempo a que lo haya. Esta deja
   # pasar tambien a la que ya se ha movido de ahi, pero exigiendole a cambio lo
   # que la primera no puede pedir: volumen de verdad.
   #
-  #   puerta 1: MC < 2.600            (solo manda el creador)
-  #   puerta 2: MC < 4.500 Y >= 40 SOL de volumen (~3.000 $)
+  # DESACTIVADA (max_mc: 0) el 11-ago. Manu sube el techo de compra a 4.600, y
+  # con eso la segunda puerta se queda sin funcion: cubria de 2.600 a 4.500
+  # exigiendo volumen, y ahora esa franja entra por la puerta principal sin
+  # exigir nada. Tener las dos seria pedir volumen para nada.
+  #
+  # Se deja el bloque escrito por si se vuelve a subir el techo principal y hace
+  # falta una franja alta con condiciones: entonces bastaria poner aqui un
+  # max_mc por encima de max_entry_mc.
   #
   # Son alternativas: basta cumplir UNA. Y la logica se sostiene -- por debajo
   # de 2.600 se compra a ciegas porque no hay nada que mirar, y de 2.600 a
   # 4.500 solo se compra si el mercado ya ha empezado a pagarla.
   entrada_alternativa:
-    max_mc: 4500
+    max_mc: 0
     min_volumen_sol: 40
   # ANTI-HUMO. Maximo de dolares de market cap por cada SOL que hay DE VERDAD
   # dentro de la curva. Una moneda sana de pump.fun lleva ~1,5 SOL a los $4K y
