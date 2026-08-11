@@ -38,7 +38,7 @@
 # el 100%: se asume ese riesgo a cambio de dejar el 60% de la posicion corriendo
 # hacia la mediana real de estos devs. El resto lo gestiona el trailing.
 
-name: "PREMIUM - dev con 2+ migraciones y compra real detras"
+name: "DEV10 - creador que migra 10%+, compra bajo 2,6K, TP 80% sin stop"
 env_file: ".env"
 
 # SOLO AVISOS DE COMPRA. El bot mandaba tambien senales, moonbags cada 5
@@ -128,16 +128,16 @@ trade:
   #
   # OJO: el stop-loss SI se lleva el moonbag (vender_todo_en_stop: true). Un
   # moonbag tiene sentido en una moneda que sube, no en una que se hunde.
-  take_profit_percentage: 0.40
-  take_profit_sell_percentage: 0.30
+  take_profit_percentage: 0.80
+  take_profit_sell_percentage: 1.00
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
-  tp2_gain: 1.00
-  tp2_sell: 0.25
-  tp3_gain: 2.25
-  tp3_sell: 0.25
-  tp4_gain: 3.00
-  tp4_sell: 0.10
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
 
   # STOP DE ENTRADA: 50%. Medido sobre los tres corredores de Manu, simulando
   # la entrada real del bot y mirando la caida maxima ANTES de que despegaran:
@@ -192,13 +192,13 @@ trade:
     - {alcanza: 100000, suelo: 88000}
     - {alcanza: 200000, suelo: 180000}
 
-  stop_loss_percentage: 0.25
+  stop_loss_percentage: 0.95
 
   # TRAILING: 33%, separado del stop de entrada (campo nuevo). Antes eran el
   # mismo numero y no pueden serlo: el de entrada tiene que ser ancho para
   # aguantar el nacimiento, y este corto para no devolver media ganancia desde
   # el techo. Se arma cuando la moneda sube un 20% y sigue al maximo.
-  trailing_stop_percentage: 0.33
+  trailing_stop_percentage: 0
 
   # EL STOP SE LO LLEVA TODO. Sin esto el bot respeta el "moonbag" (lo que
   # no cubren los escalones de take-profit) incluso al saltar el stop, y
@@ -223,7 +223,7 @@ trade:
   # desangra se quedaba dentro hasta el stop del -50%. A los 120 s se mira UNA
   # vez: si no esta por encima de la entrada, fuera. Si va en verde se la deja
   # correr y ya no se vuelve a preguntar.
-  venta_muerta_seg: 120
+  venta_muerta_seg: 0
   venta_muerta_gain: 0.0
 
   # 90 min. El techo mas tardio de los tres llego a los 26 min; se deja el
@@ -316,7 +316,7 @@ filters:
   #
   # Entrar pronto NO garantiza nada (IBB entro a 3,0 s y perdio 0,128), pero
   # entrar tarde si ha garantizado perder.
-  max_token_age: 30
+  max_token_age: 20
   # 7,8 s = los 0,13 min de la captura. El limite inferior de 0,01 min (0,6 s)
   # no hace falta ponerlo: lo que buscaba es no comprar dentro del bloque de
   # creacion, y de eso ya se encarga max_first_block_pct, que ademas mide la
@@ -330,7 +330,7 @@ filters:
   # Los 2 segundos y el resto de filtros no pueden convivir. Tres si, y el
   # numero no es inventado: es donde entro Iphigenia -- 2,5 s, 28,3 SOL, MC
   # 5.458 $ -- que es la operacion que Manu dio por buena y la que gano.
-  max_buy_age: 3
+  max_buy_age: 5
 
   match_string: null
   bro_address: null
@@ -385,7 +385,7 @@ filters:
   # 12 SOL deja pasar a las Leelavati sin abrir la puerta a cualquier cosa. El
   # trabajo de descartar bundles lo hacen max_first_block_pct y min_titulares,
   # que miran ENTRE CUANTAS MANOS se mueve el dinero en vez de cuanto.
-  min_volumen_sol: 12
+  min_volumen_sol: 0
   max_volumen_sol: 800
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
@@ -405,7 +405,7 @@ filters:
   #
   # 1,5 y no 3 porque en una ventana de 2 segundos hay poca muestra y un ratio
   # alto vetaria por ruido.
-  min_presion_ratio: 1.5
+  min_presion_ratio: 0
   presion_seg: 2
 
   # Que el volumen no sea de dos carteras. 8 compras de 6 manos distintas.
@@ -413,7 +413,7 @@ filters:
   # OCHO CARTERAS DISTINTAS. TOADABU tenia CINCO moviendo 20,3 SOL. El volumen
   # solo dice cuanto dinero se movio; esto dice entre cuantas manos, que es lo
   # que un bundle no puede fabricar barato.
-  min_titulares: 8
+  min_titulares: 0
   min_ops: 0
   min_first_block_buys: 0
 
@@ -448,7 +448,7 @@ filters:
   # Se pone en 50% y no en el 25% de antes porque la ventana es de 3 segundos y
   # ahi una parte grande de las compras son legitimamente del principio. Con 50%
   # se corta la mayoria absoluta de bundle sin tumbar a las sanas.
-  max_first_block_pct: 0.50
+  max_first_block_pct: 0
   # QUE EL DINERO SIGA ENTRANDO AHORA MISMO. min_volumen_sol mira TODO lo
   # negociado desde que nacio: una moneda que hizo un chorro de 30 SOL en el
   # primer segundo y se quedo muerta lo cumple igual que una que sigue viva.
@@ -466,7 +466,7 @@ filters:
   # sigue viva de la que hizo un chorro y se murio.
   # Un cuarto del total exigido: parte del volumen tiene que ser de AHORA, no
   # todo del chorro inicial.
-  min_vol_ventana_sol: 4
+  min_vol_ventana_sol: 0
   vol_ventana_seg: 1
 
   # ── NO REPETIDA ─────────────────────────────────────────────────────────
@@ -515,7 +515,7 @@ filters:
   # La lista de devs marcados NO desaparece: sigue decidiendo el tamano de la
   # compra (0,30 en vez de 0,20) y la paciencia de la salida.
   pumpfun_dev:
-    enabled: false
+    enabled: true
     # MAS DE UNA MIGRACION, y nada mas. Sin porcentaje: min_rate en 0 hace que
     # el codigo (`migs < min_migrations O rate < min_rate`) decida solo por el
     # numero.
@@ -535,8 +535,8 @@ filters:
     #
     # min_migrations en 1 porque un porcentaje sobre cero migraciones no dice
     # nada. El codigo bloquea con `migs < min_migrations O rate < min_rate`.
-    min_migrations: 1
-    min_rate: 0.01
+    min_migrations: 3
+    min_rate: 0.10
   # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
   # Son dos listas que el bot mantiene solo mientras opera:
   #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.
@@ -583,8 +583,8 @@ filters:
   # El techo de 50.000 no es comprar caro: con la ventana en menos de 8
   # segundos, una moneda que ya esta en 40K ha explotado, no esta cara por
   # vieja.
-  min_entry_mc: 4600
-  max_entry_mc: 50000
+  min_entry_mc: 0
+  max_entry_mc: 2600
   # ANTI-HUMO. Maximo de dolares de market cap por cada SOL que hay DE VERDAD
   # dentro de la curva. Una moneda sana de pump.fun lleva ~1,5 SOL a los $4K y
   # ~10 SOL a los $20K: eso son 2.000-2.700 $ por SOL. Con el limite en 6000
@@ -597,12 +597,12 @@ filters:
   # marcaba 27 millones de MC con 0,198 SOL dentro.
   #
   # No cuesta tiempo: la curva ya se lee para calcular el market cap.
-  max_mc_por_sol_curva: 6000
+  max_mc_por_sol_curva: 0
 
   # Suelo absoluto de SOL en la curva, por si el ratio se colase.
-  min_curve_sol: 1.5
+  min_curve_sol: 0
 
-  allow_mayhem: false        # decision de Manu: solo pump.fun normal
+  allow_mayhem: false
   marry_mode: false
   yolo_mode: true
   paper_trade: false         # DINERO REAL
@@ -620,17 +620,17 @@ filters:
   #
   # Se pide 10%: la buena tenia dos veces y media eso, y las malas ni la cuarta
   # parte. Cuesta una llamada RPC, la misma que ya se hacia para los holders.
-  min_supply_en_manos: 0.10
+  min_supply_en_manos: 0
 
-  max_holder_pct: 0.15
+  max_holder_pct: 0
 
   # BUNDLE: cuanto suman TODOS los grandes titulares juntos, excluida la curva.
   # max_holder_pct mira al mayor de uno en uno y se puede burlar repartiendo la
   # misma bolsa entre diez carteras del mismo dueño -- que es exactamente como
   # se monta un bundle. Esto mira la suma: si los veinte mayores tienen mas del
   # 30% del supply, la moneda esta en pocas manos aunque ninguna destaque.
-  max_bundle_pct: 0.30
-  max_dev_hold_pct: 0.05
+  max_bundle_pct: 0
+  max_dev_hold_pct: 0
   # TITULARES REALES DISTINTOS, sin contar la curva. El supply en manos dice
   # CUANTO se ha comprado; esto dice ENTRE CUANTOS. Se puede tener un 20% del
   # supply fuera y que lo tenga una sola cartera: eso es un bundle esperando a
@@ -638,7 +638,7 @@ filters:
   #
   # Tope duro del RPC: getTokenLargestAccounts devuelve 20 cuentas, asi que
   # este numero no puede pasar de 19.
-  min_holders: 8
+  min_holders: 0
   holder_bypass_ratio: 0
   redes_originales: false
   min_holders_gmgn: 0
@@ -658,7 +658,7 @@ filters:
   # No cuesta tiempo: un refrescador en segundo plano pide la lista completa
   # cada pocos segundos y el filtro solo mira un diccionario en memoria. Coste
   # por moneda: cero. Necesita gmgn-cli en el servidor, que esta instalado.
-  senal_gmgn: [18]
+  senal_gmgn: []
 
   buy_on_dex_paid:
     enabled: false
