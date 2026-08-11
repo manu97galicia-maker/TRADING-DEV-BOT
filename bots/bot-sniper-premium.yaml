@@ -243,7 +243,15 @@ filters:
   # llegar a 4.000 de valoracion significa que casi todo lo que vale la moneda
   # se ha pagado de verdad. Es lo contrario del caso malo que analizamos, que
   # subia a 8.542 con el 97% del supply sin vender.
-  min_volumen_sol: 40
+  # BAJADO de 40 a 30 SOL (~2.250 $) el 11-ago. Medido en vivo: en 139 monedas
+  # los volumenes mas altos que se vieron fueron 44,9 · 36,2 · 35,9 SOL. El
+  # umbral estaba justo por encima de donde vive casi todo, asi que el bot se
+  # pasaba las horas mirando monedas que rozaban sin llegar.
+  #
+  # No se toca nada mas a proposito: el filtro anti-bundle todavia no ha tenido
+  # ni una operacion con la que demostrarse, y mover dos cosas a la vez impide
+  # saber cual causo que.
+  min_volumen_sol: 30
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
   # que en ventas. Sin esto, "2.500 $ de volumen" incluye a las que estan
