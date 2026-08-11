@@ -336,7 +336,7 @@ filters:
   #
   # Entrar pronto NO garantiza nada (IBB entro a 3,0 s y perdio 0,128), pero
   # entrar tarde si ha garantizado perder.
-  max_token_age: 20
+  max_token_age: 10
   # 7,8 s = los 0,13 min de la captura. El limite inferior de 0,01 min (0,6 s)
   # no hace falta ponerlo: lo que buscaba es no comprar dentro del bloque de
   # creacion, y de eso ya se encarga max_first_block_pct, que ademas mide la
@@ -350,7 +350,19 @@ filters:
   # Los 2 segundos y el resto de filtros no pueden convivir. Tres si, y el
   # numero no es inventado: es donde entro Iphigenia -- 2,5 s, 28,3 SOL, MC
   # 5.458 $ -- que es la operacion que Manu dio por buena y la que gano.
-  max_buy_age: 5
+  # SEGUNDO Y MEDIO. Manu quiere comprar en el primer segundo y aqui SI se
+  # puede, a diferencia de cuando se intento con filtros de volumen: no hay que
+  # esperar a que se acumule nada, la unica condicion es quien lanza.
+  #
+  # Medida la unica llamada que hay en el camino -- el historial del creador
+  # contra la API de pump.fun -- sale a 0,18 s de mediana (0,16 min, 0,60 max).
+  # Cabe de sobra. Y ademas se pide EN CUANTO aparece la moneda, no al decidir,
+  # asi que para cuando toca comprar ya esta en memoria; el resultado se cachea
+  # 10 minutos por creador, asi que a partir de su segunda moneda es inmediato.
+  #
+  # 1,5 y no 1,0 clavado para dejar margen a la cola de 0,60 s: apurar al
+  # segundo exacto tiraria las que caen en el peor caso de latencia.
+  max_buy_age: 1.5
 
   match_string: null
   bro_address: null
