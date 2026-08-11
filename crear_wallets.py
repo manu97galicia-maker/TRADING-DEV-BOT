@@ -120,8 +120,56 @@ def repartir(total: float) -> None:
 
     for w, m in zip(wallets, montos):
         print(f"  {w['n']:2d}. {w['address'][:20]}...  {m:.5f} SOL")
-    print("\nEsto MUEVE DINERO DE VERDAD. Para ejecutarlo:")
-    print("    python crear_wallets.py repartir", total, "--confirmar")
+
+    if "--confirmar" not in sys.argv:
+        print("\nEsto MUEVE DINERO DE VERDAD. Para ejecutarlo:")
+        print(f"    python crear_wallets.py repartir {total} --confirmar")
+        return
+
+    # Una transferencia por wallet, no las veinte en una sola transaccion. En
+    # una sola caben, pero si falla se cae entera y no se sabe cual quedo sin
+    # enviar; de una en una, un fallo suelto no arrastra a las demas.
+    import base64
+
+    from solders.hash import Hash
+    from solders.message import Message
+    from solders.pubkey import Pubkey
+    from solders.system_program import TransferParams, transfer
+    from solders.transaction import Transaction
+
+    print("\nEnviando...")
+    enviadas = fallidas = 0
+    for w, m in zip(wallets, montos):
+        lamports = int(round(m * 1e9))
+        if lamports <= 0:
+            continue
+        try:
+            bh = _rpc("getLatestBlockhash", [{"commitment": "finalized"}])
+            blockhash = Hash.from_string(bh["result"]["value"]["blockhash"])
+            ix = transfer(TransferParams(
+                from_pubkey=origen.pubkey(),
+                to_pubkey=Pubkey.from_string(w["address"]),
+                lamports=lamports,
+            ))
+            msg = Message.new_with_blockhash([ix], origen.pubkey(), blockhash)
+            tx = Transaction([origen], msg, blockhash)
+            r = _rpc("sendTransaction", [
+                base64.b64encode(bytes(tx)).decode(),
+                {"encoding": "base64", "preflightCommitment": "confirmed"},
+            ])
+            if "error" in r:
+                print(f"  {w['n']:2d}. FALLO: {str(r['error'])[:80]}")
+                fallidas += 1
+            else:
+                print(f"  {w['n']:2d}. {m:.5f} SOL enviados  tx {r['result'][:16]}...")
+                enviadas += 1
+        except Exception as e:  # noqa: BLE001
+            print(f"  {w['n']:2d}. FALLO: {type(e).__name__}: {e}")
+            fallidas += 1
+        time.sleep(0.6)
+
+    print(f"\n{enviadas} enviadas, {fallidas} fallidas.")
+    print("Comprueba con:  python crear_wallets.py saldos")
 
 
 def saldos() -> None:

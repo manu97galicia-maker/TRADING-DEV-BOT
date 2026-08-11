@@ -299,6 +299,8 @@ class UniversalTrader:
         suelos_por_mc: list | None = None,
         # Rugs acumulados que bloquean a un dev para siempre.
         rugs_para_bloquear: int = 2,
+        # Mover el stop al precio de entrada en cuanto cobra el primer TP.
+        stop_a_entrada_tras_tp: bool = False,
         price_check_interval: int = 10,
         # Priority fee configuration
         enable_dynamic_priority_fee: bool = False,
@@ -637,6 +639,12 @@ class UniversalTrader:
         #: verdad. Antes eran 2 para no vetar por una mala racha, pero con
         #: miles de creadores en pump.fun sobran candidatos.
         self.rugs_para_bloquear = max(1, int(rugs_para_bloquear or 2))
+        #: STOP A LA ENTRADA TRAS EL PRIMER TAKE-PROFIT. Lo que queda dentro
+        #: despues de cobrar el primer escalon deja de poder convertirse en
+        #: perdida: si el precio vuelve a lo que se pago, se cierra.
+        #: Encaja con una estrategia SIN stop de entrada -- se acepta el
+        #: riesgo hasta el primer escalon, y a partir de ahi ya no.
+        self.stop_a_entrada_tras_tp = bool(stop_a_entrada_tras_tp)
         # TP AGRESIVO para devs moonshot (los que suelen llegar MUY alto): objetivos
         # más altos y moonbag más grande para pillar el pump. +100/300/900%, vende
         # 20% en cada uno, moonbag 40% (vs el normal +50/150/300% moonbag 20%).
@@ -3444,6 +3452,19 @@ class UniversalTrader:
                         executed[i] = True
                         remaining -= amount
                         had_tp = True  # el dev entregó un pump -> no es rug
+                        # STOP A LA ENTRADA. En cuanto cobra el primer escalon,
+                        # lo que sigue dentro deja de poder acabar en perdida:
+                        # si el precio vuelve a lo que se pago, se cierra.
+                        if (
+                            self.stop_a_entrada_tras_tp
+                            and (sl_price is None or sl_price < entry_price)
+                        ):
+                            sl_price = entry_price
+                            logger.info(
+                                f"STOP MOVIDO A LA ENTRADA {token_info.symbol}: "
+                                f"cobrado {reason}, el resto ya no puede perder "
+                                f"(suelo {entry_price:.8f} SOL)"
+                            )
 
                 if remaining <= 1e-9:
                     fully_exited = True

@@ -202,6 +202,16 @@ trade:
   #
   # Se apunta a las DOS identidades del creador (user y creator), asi que no se
   # escapa firmando con una cartera nueva si deja el mismo creator.
+  # EN CUANTO COBRA EL PRIMER ESCALON, EL STOP SUBE A LA ENTRADA. Lo pidio
+  # Manu y encaja perfecto con esta estrategia, que no lleva stop de entrada:
+  # se acepta el riesgo hasta el +30%, y a partir de ahi el 20% que sigue
+  # dentro no puede convertirse en perdida -- si el precio vuelve a lo que se
+  # pago, se cierra.
+  #
+  # Combinado con el primer escalon (80% al +30% = 1,04x recuperado), a partir
+  # de ese momento la operacion esta cerrada en verde pase lo que pase.
+  stop_a_entrada_tras_tp: true
+
   rugs_para_bloquear: 1
 
   suelos_por_mc:
