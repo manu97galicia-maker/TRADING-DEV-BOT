@@ -240,7 +240,18 @@ trade:
   # 35% deja respirar el zarandeo del nacimiento -- Kermit se hundio un 44%
   # antes de hacer x13, asi que alguna buena se perdera -- pero evita quedarse
   # con la bolsa entera de una que se va a cero.
-  stop_loss_percentage: 0.35
+  # 50%, ampliado desde el 35% el 11-ago. Da mas aire al zarandeo del
+  # nacimiento -- Kermit se hundio un 44% antes de hacer x13, y con el stop en
+  # 35% se habria soltado justo antes.
+  #
+  # El coste esta claro y es aritmetico: la que salga mal ahora se lleva la
+  # MITAD de la posicion. Sobre 0,30 SOL son 0,15 por operacion fallida.
+  #
+  # Lo que lo hace defendible es el primer escalon: al +30% se vende el 80% y
+  # el stop sube inmediatamente al precio de entrada. O sea que el 50% solo
+  # esta expuesto en el tramo entre la compra y ese +30%; a partir de ahi la
+  # operacion ya no puede perder.
+  stop_loss_percentage: 0.50
 
   # TRAILING: 33%, separado del stop de entrada (campo nuevo). Antes eran el
   # mismo numero y no pueden serlo: el de entrada tiene que ser ancho para
