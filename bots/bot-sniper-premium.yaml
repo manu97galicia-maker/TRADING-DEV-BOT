@@ -60,7 +60,7 @@ trade:
   # por no dumpear y por haber hecho monedas de +200K -- llevan 0,30: mas ficha
   # donde hay mas informacion. La lista ya NO decide si se compra (eso lo hace
   # el 1% migrado en vivo), solo cuanto.
-  buy_amount: 0.30
+  buy_amount: 0.50
 
   # MAXIMO 3 POSICIONES A LA VEZ. Antes el tope estaba fijo en 20 dentro del
   # codigo, que era como no tenerlo: el freno lo ponia el saldo. Con la reserva
