@@ -340,7 +340,10 @@ filters:
 
   # Que el volumen no sea de dos carteras. 8 compras de 6 manos distintas.
   min_buys: 0
-  min_titulares: 0
+  # OCHO CARTERAS DISTINTAS. TOADABU tenia CINCO moviendo 20,3 SOL. El volumen
+  # solo dice cuanto dinero se movio; esto dice entre cuantas manos, que es lo
+  # que un bundle no puede fabricar barato.
+  min_titulares: 8
   min_ops: 0
   min_first_block_buys: 0
 
@@ -363,7 +366,19 @@ filters:
   # creacion, las que morian 34-38%), pero con la ventana en 2 segundos casi
   # todas las compras son del principio y el filtro tumbaria casi todo. Queda
   # el numero aqui por si se quiere recuperar: 0.25.
-  max_first_block_pct: 0
+  # REACTIVADO el 11-ago por TOADABU, que costo 0,1432 SOL:
+  #
+  #   CUMPLE TOADABU: 20,3 SOL en 5 compras, 5 EN PRIMER BLOQUE, 5 wallets,
+  #                   MC 5.887 $ a los 0,2 s
+  #
+  # El 100% de las compras en el bloque de creacion, y 20,3 SOL entre cinco
+  # carteras: cuatro SOL cada una. Eso no es demanda, es un bundle comprandose
+  # a si mismo para fabricar volumen y atraer justo a un bot como este.
+  #
+  # Se pone en 50% y no en el 25% de antes porque la ventana es de 3 segundos y
+  # ahi una parte grande de las compras son legitimamente del principio. Con 50%
+  # se corta la mayoria absoluta de bundle sin tumbar a las sanas.
+  max_first_block_pct: 0.50
   # QUE EL DINERO SIGA ENTRANDO AHORA MISMO. min_volumen_sol mira TODO lo
   # negociado desde que nacio: una moneda que hizo un chorro de 30 SOL en el
   # primer segundo y se quedo muerta lo cumple igual que una que sigue viva.
