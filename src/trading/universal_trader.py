@@ -2081,10 +2081,17 @@ class UniversalTrader:
                 #: descarte: sin esto no se sabe si sobro el dinero o la
                 #: direccion del dinero.
                 _visto_presion = "no medida"
-                # Ventana corta: mirar cada medio segundo se come casi la mitad
-                # de una ventana de 3 s. Con 0,15 s se comprueba ~20 veces y se
-                # compra en el instante en que cumple.
-                _paso = 0.15 if self.max_buy_age <= 6 else 0.5
+                # SIEMPRE 0,15 s. Antes se pasaba a 0,5 con ventanas de mas de
+                # 6 segundos, y eso costaba velocidad justo donde importa: con
+                # la ventana en 18 s se miraba 3 veces menos, asi que entre que
+                # la moneda cumplia y el bot se enteraba podian pasar medio
+                # segundo -- una eternidad en una moneda que hace x6 en segundo
+                # y medio (caso DYOR: 2.097 -> 12.502 $).
+                #
+                # No cuesta RPC: en cada vuelta solo se miran contadores que ya
+                # estan en memoria. La curva, que es la unica llamada de red, se
+                # consulta solo cuando el volumen ya cumple.
+                _paso = 0.15
                 # Primera comprobacion inmediata: si la moneda ya cumple al
                 # segundo 1, se compra al segundo 1. Solo se duerme cuando NO
                 # cumple, nunca antes de mirar.

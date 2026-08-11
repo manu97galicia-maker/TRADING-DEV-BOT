@@ -71,6 +71,24 @@ async def _cotizar(
     return quote if quote and quote.get("outAmount") else None
 
 
+async def _cotizar_compra(
+    s: aiohttp.ClientSession, mint: str, lamports: int, slippage_bps: int
+) -> dict | None:
+    """Cotiza SOL -> token. Es el espejo de `_cotizar`, con los mints al reves."""
+    params = {
+        "inputMint": WSOL,
+        "outputMint": mint,
+        "amount": str(lamports),
+        "slippageBps": str(slippage_bps),
+        "restrictIntermediateTokens": "true",
+    }
+    async with s.get(QUOTE_URL, params=params) as r:
+        if r.status != 200:
+            return None
+        quote = await r.json()
+    return quote if quote and quote.get("outAmount") else None
+
+
 async def _construir(
     s: aiohttp.ClientSession, quote: dict, keypair: object
 ) -> tuple[bytes, int] | None:
@@ -211,3 +229,65 @@ async def jupiter_sell(
         return False, None, f"firma/envio: {exc}"
 
     return False, None, "sin variante viable -> " + "; ".join(motivos)
+
+
+async def jupiter_buy(
+    keypair: object,
+    mint: str,
+    sol_amount: float,
+    slippage_bps: int = 2500,
+    rpc: str | None = None,
+) -> tuple[bool, str | None, str | None, float]:
+    """Compra ``mint`` gastando ``sol_amount`` SOL, via Jupiter.
+
+    Hace falta porque el comprador normal del bot entra por la curva de
+    pump.fun, y una moneda que YA HA MIGRADO no tiene curva: su liquidez esta
+    en un pool. Para snipear migraciones no hay otra via.
+
+    A diferencia de la venta, aqui NO se prueban fracciones: si no cabe la
+    compra que se pide, se cancela. Comprar menos de lo decidido cambia la
+    apuesta sin avisar, y en una entrada por migracion el tamaño es justamente
+    lo que se ha calculado que se puede arriesgar.
+
+    Se simula antes de enviar, asi que un ``ok=True`` significa que la red la
+    acepto, no solo que se mando.
+
+    Returns:
+        ``(ok, firma, error, tokens_estimados)``.
+    """
+    rpc = rpc or os.getenv("SOLANA_NODE_RPC_ENDPOINT")
+    if not rpc:
+        return False, None, "RPC no configurado", 0.0
+    lamports = int(sol_amount * 1_000_000_000)
+    if lamports <= 0:
+        return False, None, "cantidad cero", 0.0
+
+    try:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as s:
+            quote = await _cotizar_compra(s, mint, lamports, slippage_bps)
+            if not quote:
+                return False, None, "sin ruta de compra", 0.0
+            tokens = int(quote.get("outAmount") or 0) / 1_000_000
+
+            construido = await _construir(s, quote, keypair)
+            if not construido:
+                return False, None, "Jupiter no devolvio tx", 0.0
+            raw, tam = construido
+            if tam > MAX_TX_BYTES:
+                return False, None, f"tx {tam}B > {MAX_TX_BYTES}", 0.0
+
+            err = await _simular(s, rpc, raw)
+            if err:
+                return False, None, f"simulacion: {err[:80]}", 0.0
+
+            res = await _rpc(
+                s, rpc, "sendTransaction",
+                [base64.b64encode(raw).decode(),
+                 {"encoding": "base64", "skipPreflight": True,
+                  "maxRetries": 3}],
+            )
+            if "error" in res:
+                return False, None, str(res["error"])[:120], 0.0
+            return True, res.get("result"), None, tokens
+    except Exception as e:  # noqa: BLE001
+        return False, None, f"{type(e).__name__}: {e}", 0.0
