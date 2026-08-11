@@ -572,7 +572,24 @@ filters:
   # 7 de 45 monedas al filtro del dev; sin el, 14 de 23. Reduce mucho el
   # caudal. Si algun dia el bot no compra nada en horas, este es el primer
   # sitio donde mirar -- pero es una decision tomada a sabiendas, no un olvido.
-  no_repeat_name_min: 3
+  # DESACTIVADO el 11-ago, y esta vez con la prueba delante. El caso rDOG:
+  #
+  #   HNqQjpL3...  MIGRADA, ATH 33.504 $ (x16), dev 7 migradas de 70 = 10%
+  #                -> "Evitado: ya salio una moneda con ese nombre en 3 min"
+  #
+  # El creador CUMPLIA el filtro del 10%. La moneda migro e hizo x16. Y la
+  # bloqueo esto. Antes el bot habia comprado la primera rDOG del mismo dev
+  # (C5LCLS...), que se quedo en x4,8 y se hundio.
+  #
+  # Ese es el patron y hay que aceptarlo: estos creadores relanzan el MISMO
+  # nombre hasta que una prende. Bloquear el nombre repetido significa comprar
+  # solo el primer intento -- que suele ser el que falla -- y descartar
+  # justamente el que funciona.
+  #
+  # Lo que protegia (no pagar dos veces por el mismo clon) lo cubre ahora el
+  # filtro del creador: si el dev no llega al 10%, no se compra ninguna de sus
+  # veinte. Si llega, sus relanzamientos son precisamente lo que se quiere.
+  no_repeat_name_min: 0
 
   # ── EL CREADOR: MINIMO 2 MIGRACIONES ────────────────────────────────────
   # Lo pidio Manu. No es la senal principal -- eso sigue siendo el mercado --
