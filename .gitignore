@@ -188,3 +188,6 @@ trades/trades.log
 open_position*.json
 pumpfun-bonkfun-bot/
 paper_1s_resultado.json
+
+# Claves de las wallets generadas: ESTO ES DINERO, nunca al repo
+wallets_generadas.json
