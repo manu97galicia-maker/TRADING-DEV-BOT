@@ -249,7 +249,7 @@ filters:
   # Entrar pronto NO garantiza nada (IBB entro a 3,0 s y perdio 0,128), pero
   # entrar tarde si ha garantizado perder.
   max_token_age: 30
-  max_buy_age: 8
+  max_buy_age: 6
 
   match_string: null
   bro_address: null
