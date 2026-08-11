@@ -294,6 +294,9 @@ class UniversalTrader:
         tp4_sell: float | None = None,
         final_target_mc: float = 0.0,
         mc_take_profit_tiers: list | None = None,
+        # SUELOS QUE SUBEN CON LA MONEDA: [{alcanza, suelo}, ...] en dolares
+        # de market cap. Al tocar `alcanza`, se arma un suelo en `suelo`.
+        suelos_por_mc: list | None = None,
         price_check_interval: int = 10,
         # Priority fee configuration
         enable_dynamic_priority_fee: bool = False,
@@ -606,6 +609,27 @@ class UniversalTrader:
             if target_mc > 0 and 0 < sell <= 1:
                 self.mc_take_profit_tiers.append((target_mc, sell))
         self.mc_take_profit_tiers.sort(key=lambda item: item[0])
+        #: SUELO QUE SUBE CON LA MONEDA (trinquete). En cuanto el market cap
+        #: toca un escalon, queda armado un suelo por debajo; si luego cae
+        #: ahi, se vende TODO. A diferencia del trailing del 33%, que mide un
+        #: porcentaje desde el maximo, esto son cifras absolutas que Manu
+        #: puede razonar: 'si llego a 15K, que no baje de 9K'.
+        #:
+        #: El margen se estrecha segun sube, y es deliberado: perder un 40%
+        #: desde 15K cuesta poco, perder un 40% desde 100K es tirar la
+        #: operacion entera.
+        self.suelos_por_mc: list[tuple[float, float]] = []
+        for item in suelos_por_mc or []:
+            if not isinstance(item, dict):
+                continue
+            try:
+                alcanza = float(item.get('alcanza') or 0)
+                suelo = float(item.get('suelo') or 0)
+            except (TypeError, ValueError):
+                continue
+            if alcanza > 0 and 0 < suelo < alcanza:
+                self.suelos_por_mc.append((alcanza, suelo))
+        self.suelos_por_mc.sort(key=lambda x: x[0])
         # TP AGRESIVO para devs moonshot (los que suelen llegar MUY alto): objetivos
         # más altos y moonbag más grande para pillar el pump. +100/300/900%, vende
         # 20% en cada uno, moonbag 40% (vs el normal +50/150/300% moonbag 20%).
@@ -3120,6 +3144,8 @@ class UniversalTrader:
         )
         mc_tiers = self.mc_take_profit_tiers
         mc_executed = [False] * len(mc_tiers)
+        #: Suelo armado por el trinquete. Solo sube, nunca baja.
+        suelo_mc = 0.0
         had_tp = False  # ¿disparó algún TP? (para el auto-baneo de devs)
         hit_sl = False  # ¿saltó el stop-loss sin TP previo? = rug
         logger.info(
@@ -3276,6 +3302,38 @@ class UniversalTrader:
                 # (incluido el moonbag) en vez de dejarlo caer a cero.
                 peak_price = max(peak_price, price)
                 last_price = price
+
+                # TRINQUETE POR MARKET CAP. Va ANTES del trailing porcentual a
+                # proposito: es mas apretado en las monedas grandes y tiene que
+                # poder dispararse antes. En cuanto el market cap toca un
+                # escalon queda armado un suelo, y ese suelo no baja nunca --
+                # aunque la moneda se desplome, el suelo se queda donde estaba.
+                if self.suelos_por_mc and remaining > 1e-9:
+                    _mc_ahora = price * _PUMP_TOTAL_SUPPLY * _SOL_USD
+                    for _alcanza, _suelo in self.suelos_por_mc:
+                        if _mc_ahora >= _alcanza and _suelo > suelo_mc:
+                            suelo_mc = _suelo
+                            logger.info(
+                                f"SUELO ARMADO {token_info.symbol}: toco "
+                                f"${_mc_ahora:,.0f} -> no puede bajar de "
+                                f"${_suelo:,.0f}"
+                            )
+                    if suelo_mc > 0 and _mc_ahora < suelo_mc:
+                        logger.info(
+                            f"SUELO ROTO {token_info.symbol}: ${_mc_ahora:,.0f} "
+                            f"< ${suelo_mc:,.0f} -> vendo TODO (ganancia "
+                            f"asegurada)"
+                        )
+                        if await self._sell_amount(
+                            token_info, remaining, price, "suelo_por_mc"
+                        ):
+                            realized_sol += remaining * price
+                            remaining = 0.0
+                            fully_exited = True
+                            break
+                        await asyncio.sleep(self.price_check_interval)
+                        continue
+
                 if (
                     self.trailing_stop_percentage
                     and peak_price >= entry_price * 1.2
