@@ -395,7 +395,7 @@ filters:
   #
   # Entrar pronto NO garantiza nada (IBB entro a 3,0 s y perdio 0,128), pero
   # entrar tarde si ha garantizado perder.
-  max_token_age: 20
+  max_token_age: 120
   # 7,8 s = los 0,13 min de la captura. El limite inferior de 0,01 min (0,6 s)
   # no hace falta ponerlo: lo que buscaba es no comprar dentro del bloque de
   # creacion, y de eso ya se encarga max_first_block_pct, que ademas mide la
@@ -421,7 +421,26 @@ filters:
   #
   # 1,5 y no 1,0 clavado para dejar margen a la cola de 0,60 s: apurar al
   # segundo exacto tiraria las que caen en el peor caso de latencia.
-  max_buy_age: 6
+  # 90 SEGUNDOS. Ojo: esto NO es una espera, es un PLAZO. El bot compra en el
+  # instante en que se cumplen las condiciones -- comprueba cada 0,15 s -- y lo
+  # unico que cambia es cuando se rinde y deja de mirar.
+  #
+  # Con 6 segundos se rendia demasiado pronto y perdia justo las que Manu
+  # quiere cazar, porque ninguna de ellas explota en ese tramo:
+  #
+  #   jef        x7,8  -> tardo 460 s en su techo. Descartada a los 6 s con
+  #                       el volumen aun a cero, y el dev era 10/70 (14%)
+  #   rDOG       x16   -> migro a los 160 s
+  #   Leelavati  x58   -> techo a los 27 min
+  #
+  # En 6 segundos casi ninguna moneda llega a los 40 SOL de volumen que se
+  # exigen: en el log se ven 1,0 · 8,9 · 13,5 · 0,0 SOL en esa ventana. Se
+  # estaba compitiendo por milisegundos contra bots con nodos propios, y
+  # perdiendo las que se ganan por criterio.
+  #
+  # El techo de market cap (50.000) sigue impidiendo entrar arriba, que es la
+  # proteccion real contra comprar tarde.
+  max_buy_age: 90
 
   match_string: null
   bro_address: null
