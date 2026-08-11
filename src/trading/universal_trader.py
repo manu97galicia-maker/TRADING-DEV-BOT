@@ -3300,8 +3300,16 @@ class UniversalTrader:
                                 token_info, remaining, entry_price, pool_address
                             )
                         break
-                    await asyncio.sleep(self.price_check_interval)
-                    continue
+                    # NO se hace `continue` aqui, y es importante. Antes se
+                    # hacia, y eso significaba que en cuanto saltaba el primer
+                    # take-profit el bucle entraba en esta rama en cada vuelta y
+                    # se saltaba TODO lo de abajo: anti-rug, trinquete y
+                    # stop-loss. Con la configuracion actual dejaba muerta la
+                    # proteccion principal -- el stop que sube al precio de
+                    # entrada tras el primer TP no se habria disparado nunca.
+                    #
+                    # Ahora se sigue el bucle: los escalones de market cap se
+                    # atienden si toca y las protecciones se comprueban igual.
 
                 # ANTI-RUG: salida de emergencia por presion vendedora.
                 #
