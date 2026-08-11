@@ -60,7 +60,7 @@ trade:
   # por no dumpear y por haber hecho monedas de +200K -- llevan 0,30: mas ficha
   # donde hay mas informacion. La lista ya NO decide si se compra (eso lo hace
   # el 1% migrado en vivo), solo cuanto.
-  buy_amount: 0.35
+  buy_amount: 0.50
 
   # MAXIMO 3 POSICIONES A LA VEZ. Antes el tope estaba fijo en 20 dentro del
   # codigo, que era como no tenerlo: el freno lo ponia el saldo. Con la reserva
@@ -78,7 +78,7 @@ trade:
   #
   # La lista NO decide si se compra -- eso lo sigue haciendo el 10% migrado
   # calculado en vivo -- solo cuanto. Mas ficha donde hay mas informacion.
-  buy_amount_marcados: 0.35
+  buy_amount_marcados: 0.50
 
   # ── DOS VELOCIDADES DE SALIDA ────────────────────────────────────────────
   # ARRIESGADOS (dev cualquiera que pase el 1%): recuperar y correr. El primer
@@ -384,7 +384,7 @@ filters:
   #
   # Entrar pronto NO garantiza nada (IBB entro a 3,0 s y perdio 0,128), pero
   # entrar tarde si ha garantizado perder.
-  max_token_age: 40
+  max_token_age: 20
   # 7,8 s = los 0,13 min de la captura. El limite inferior de 0,01 min (0,6 s)
   # no hace falta ponerlo: lo que buscaba es no comprar dentro del bloque de
   # creacion, y de eso ya se encarga max_first_block_pct, que ademas mide la
@@ -410,7 +410,7 @@ filters:
   #
   # 1,5 y no 1,0 clavado para dejar margen a la cola de 0,60 s: apurar al
   # segundo exacto tiraria las que caen en el peor caso de latencia.
-  max_buy_age: 18
+  max_buy_age: 6
 
   match_string: null
   bro_address: null
@@ -466,7 +466,7 @@ filters:
   # trabajo de descartar bundles lo hacen max_first_block_pct y min_titulares,
   # que miran ENTRE CUANTAS MANOS se mueve el dinero en vez de cuanto.
   min_volumen_sol: 40
-  max_volumen_sol: 1333
+  max_volumen_sol: 800
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
   # que en ventas. Sin esto, "2.500 $ de volumen" incluye a las que estan
