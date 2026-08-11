@@ -525,7 +525,18 @@ filters:
   # del mismo dev en la misma rafaga. Lo que deja pasar es el nombre que se
   # repite mas tarde, que muchas veces es otro creador distinto usando un
   # nombre popular.
-  no_repeat_name_min: 3
+  # DESACTIVADO el 11-ago. Medido en vivo: de 99 monedas, 62 se descartaban por
+  # nombre repetido -- el 63%, mas que todos los demas filtros juntos -- y
+  # ninguna llegaba siquiera a la comprobacion del creador.
+  #
+  # Y en ESTA estrategia el filtro juega en contra: la señal es el dev, y los
+  # devs buenos son justamente los que relanzan sin parar. Uno con 70
+  # lanzamientos reutiliza nombres todo el rato. Bloquear el nombre repetido
+  # aqui es bloquear a los creadores que se quiere cazar.
+  #
+  # Tenia sentido cuando la señal era el mercado y comprar tres clones seguidos
+  # era pagar tres veces por la misma apuesta. Ahora no.
+  no_repeat_name_min: 0
 
   # ── EL CREADOR: MINIMO 2 MIGRACIONES ────────────────────────────────────
   # Lo pidio Manu. No es la senal principal -- eso sigue siendo el mercado --
