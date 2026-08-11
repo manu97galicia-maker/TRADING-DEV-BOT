@@ -643,14 +643,14 @@ filters:
   # que la primera no puede pedir: volumen de verdad.
   #
   #   puerta 1: MC < 2.600            (solo manda el creador)
-  #   puerta 2: MC < 4.500 Y >= 26,7 SOL de volumen (~2.000 $)
+  #   puerta 2: MC < 4.500 Y >= 40 SOL de volumen (~3.000 $)
   #
   # Son alternativas: basta cumplir UNA. Y la logica se sostiene -- por debajo
   # de 2.600 se compra a ciegas porque no hay nada que mirar, y de 2.600 a
   # 4.500 solo se compra si el mercado ya ha empezado a pagarla.
   entrada_alternativa:
     max_mc: 4500
-    min_volumen_sol: 26.7
+    min_volumen_sol: 40
   # ANTI-HUMO. Maximo de dolares de market cap por cada SOL que hay DE VERDAD
   # dentro de la curva. Una moneda sana de pump.fun lleva ~1,5 SOL a los $4K y
   # ~10 SOL a los $20K: eso son 2.000-2.700 $ por SOL. Con el limite en 6000
