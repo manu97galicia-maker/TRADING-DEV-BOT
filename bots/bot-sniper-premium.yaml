@@ -249,7 +249,11 @@ filters:
   # Entrar pronto NO garantiza nada (IBB entro a 3,0 s y perdio 0,128), pero
   # entrar tarde si ha garantizado perder.
   max_token_age: 30
-  max_buy_age: 6
+  # 7,8 s = los 0,13 min de la captura. El limite inferior de 0,01 min (0,6 s)
+  # no hace falta ponerlo: lo que buscaba es no comprar dentro del bloque de
+  # creacion, y de eso ya se encarga max_first_block_pct, que ademas mide la
+  # PROPORCION de bundle en vez de un tiempo.
+  max_buy_age: 7.8
 
   match_string: null
   bro_address: null
@@ -273,7 +277,11 @@ filters:
   # No se toca nada mas a proposito: el filtro anti-bundle todavia no ha tenido
   # ni una operacion con la que demostrarse, y mover dos cosas a la vez impide
   # saber cual causo que.
-  min_volumen_sol: 30
+  # VOLUMEN 2K - 60K de la captura, con SOL a 75 $.
+  # El TECHO importa tanto como el suelo: por encima de 60.000 $ de volumen ya
+  # no eres el que entra pronto, eres la salida de otro.
+  min_volumen_sol: 26.7
+  max_volumen_sol: 800
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
   # que en ventas. Sin esto, "2.500 $ de volumen" incluye a las que estan
@@ -401,8 +409,15 @@ filters:
   # 4.703 · 5.027 · 5.413. Solo UNA habria entrado en la banda nueva.
   #
   # Si esto se queda seco, el arreglo es subir el techo, no bajar el suelo.
-  min_entry_mc: 5200
-  max_entry_mc: 5500
+  # BANDA DE LA CAPTURA del 11-ago: MKT Cap 4K - 50K.
+  #
+  # El techo pasa de 5.500 a 50.000, que es el cambio grande. Con 5.500 la
+  # banda era de 300 dolares de ancho y no entraba practicamente nada; con
+  # 50.000 caben las que despegan de verdad sin dejar de comprar barato, porque
+  # el suelo sigue en 4.000 y la ventana en menos de 8 segundos: una moneda que
+  # esta en 40K a los 6 segundos ha explotado, no esta cara por vieja.
+  min_entry_mc: 4000
+  max_entry_mc: 50000
   # ANTI-HUMO. Maximo de dolares de market cap por cada SOL que hay DE VERDAD
   # dentro de la curva. Una moneda sana de pump.fun lleva ~1,5 SOL a los $4K y
   # ~10 SOL a los $20K: eso son 2.000-2.700 $ por SOL. Con el limite en 6000
