@@ -128,8 +128,20 @@ trade:
   #
   # OJO: el stop-loss SI se lleva el moonbag (vender_todo_en_stop: true). Un
   # moonbag tiene sentido en una moneda que sube, no en una que se hunde.
-  take_profit_percentage: 0.80
-  take_profit_sell_percentage: 1.00
+  # SALIDA COMPLETA (11-ago):
+  #   +30%          vende el 80%   -> devuelve 1,04x, el capital ya esta a salvo
+  #   MC 9.000 $    vende el 10%
+  #   MC 19.000 $   vende el 10%
+  #
+  # Los dos ultimos van por MARKET CAP y no por porcentaje a proposito: desde
+  # una entrada de ~2.300 $, 9K es un x3,9 y 19K un x8,3. Decirlo en cifras
+  # absolutas es mas facil de razonar que en multiplos.
+  mc_take_profit_tiers:
+    - {target_mc: 9000,  sell: 0.10}
+    - {target_mc: 19000, sell: 0.10}
+
+  take_profit_percentage: 0.30
+  take_profit_sell_percentage: 0.80
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
   tp2_gain: 0
