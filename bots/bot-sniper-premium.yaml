@@ -115,15 +115,28 @@ trade:
   # Se arriesgaba un 45% para ganar un 6%. Eso exige acertar el 91% de las
   # veces, y ningun filtro de entrada da eso. El objetivo pasa a +25%, que es
   # alcanzable, y se vende el 80%: 0,80 x 1,25 = 1,00, el capital vuelve entero.
+  # ESCALERA DE MANU (11-ago):
+  #   +40%   vende 30%
+  #   +100%  vende 25%
+  #   +225%  vende 25%
+  #   +300%  vende 10%  (la mitad de lo que quedaba)
+  #   y el 10% restante SE MANTIENE: moonbag que no se vende sola.
+  #
+  # Suma 90% vendido. Ese 10% que queda no tiene objetivo ni lo toca el
+  # take-profit: el bot avisa por Telegram cada 5 minutos mientras siga en la
+  # cartera para que Manu lo venda a mano cuando quiera.
+  #
+  # OJO: el stop-loss SI se lleva el moonbag (vender_todo_en_stop: true). Un
+  # moonbag tiene sentido en una moneda que sube, no en una que se hunde.
   take_profit_percentage: 0.40
-  take_profit_sell_percentage: 0.40
+  take_profit_sell_percentage: 0.30
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
   tp2_gain: 1.00
   tp2_sell: 0.25
   tp3_gain: 2.25
   tp3_sell: 0.25
-  tp4_gain: 6.00
+  tp4_gain: 3.00
   tp4_sell: 0.10
 
   # STOP DE ENTRADA: 50%. Medido sobre los tres corredores de Manu, simulando
