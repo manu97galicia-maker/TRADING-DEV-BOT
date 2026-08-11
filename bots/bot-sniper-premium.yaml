@@ -320,8 +320,14 @@ filters:
   # luego la moneda se queda quieta unos segundos. Con 10 s se mide la
   # direccion del dinero en el mismo tramo en que se acumulo el volumen, que
   # es lo que se queria medir desde el principio.
-  min_presion_ratio: 0
-  presion_seg: 10.0
+  # Y QUE ESE DINERO SEA DE COMPRA. Un estallido puede ser gente entrando o el
+  # bundle saliendo, y en volumen se parecen. Se exige que en los ultimos 2
+  # segundos entre al menos 1,5 veces mas SOL en compras que en ventas.
+  #
+  # 1,5 y no 3 porque en una ventana de 2 segundos hay poca muestra y un ratio
+  # alto vetaria por ruido.
+  min_presion_ratio: 1.5
+  presion_seg: 2
 
   # Que el volumen no sea de dos carteras. 8 compras de 6 manos distintas.
   min_buys: 0
@@ -349,7 +355,18 @@ filters:
   # todas las compras son del principio y el filtro tumbaria casi todo. Queda
   # el numero aqui por si se quiere recuperar: 0.25.
   max_first_block_pct: 0
-  min_vol_ventana_sol: 0
+  # QUE EL DINERO SIGA ENTRANDO AHORA MISMO. min_volumen_sol mira TODO lo
+  # negociado desde que nacio: una moneda que hizo un chorro de 30 SOL en el
+  # primer segundo y se quedo muerta lo cumple igual que una que sigue viva.
+  #
+  # Es el patron del grafico que paso Manu el 11-ago: vertical hasta 11,9K y
+  # despues plano, con las barras de volumen en cero. Comprar ahi es entrar
+  # cuando el movimiento YA TERMINO -- se compro a 11,14K y se vendio a 10,55K.
+  #
+  # Esto exige 10 SOL negociados en el ULTIMO segundo. No mide cuanto se movio,
+  # mide si se sigue moviendo.
+  min_vol_ventana_sol: 10
+  vol_ventana_seg: 1
 
   # ── NO REPETIDA ─────────────────────────────────────────────────────────
   # Lo pidio Manu: si el mismo nombre ya salio en los ultimos 10 minutos, no
