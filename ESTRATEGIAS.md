@@ -42,18 +42,22 @@ Ganando +24% cuando acierta (vender 80% en el +30%):
 
 ### Los costes fijos
 
-~0,02 SOL por ida y vuelta: comisión de prioridad de compra (0,013) + la de
-venta + el alquiler de la cuenta de token.
+Medido en la cadena sobre 14 transacciones reales el 12 de agosto: la comisión
+de red es de **0,00033 SOL de media**. Sumando el alquiler de la cuenta de
+token (0,00204, recuperable al cerrarla), una ida y vuelta cuesta unos
+**0,0023 SOL**.
 
 | posición | se lo llevan las comisiones |
 |---|---|
-| 0,15 SOL | **13%** |
-| 0,30 SOL | 6,7% |
-| 0,50 SOL | 4% |
-| 1,00 SOL | 2% |
+| 0,15 SOL | **1,5%** |
+| 0,30 SOL | 0,8% |
+| 0,50 SOL | 0,5% |
 
-**Por debajo de ~0,5 SOL por posición las comisiones se comen buena parte de la
-ventaja.** A 0,15 se opera, pero con el margen muy justo.
+**Corrección**: una versión anterior de este documento decía 0,02 SOL por ida y
+vuelta y un 13% sobre 0,15. Estaba mal: venía de suponer que `fixed_amount:
+100_000_000` se cobraba entero, cuando son microlamports por unidad de cómputo
+y el consumo real ronda las 110.000 unidades. **Operar a 0,15 SOL es viable**;
+la conclusión de que "no funciona por debajo de 0,5 SOL" no se sostiene.
 
 ---
 

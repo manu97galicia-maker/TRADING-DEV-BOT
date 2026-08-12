@@ -460,6 +460,9 @@ class UniversalTrader:
         # No deciden si se compra, solo cuanto y con que paciencia.
         devs_marcados: str | None = None,
         buy_amount_marcados: float = 0.0,
+        # Techo absoluto de gasto por compra, en SOL, por encima de cualquier
+        # otra via. Ver el comentario del TOPE DURO mas abajo.
+        tope_compra_sol: float = 0.0,
         tp_marcados: float = 0.0,
         tp_sell_marcados: float = 0.0,
         # Caida desde el MAXIMO que dispara el trailing. Si no se pone, se
@@ -862,6 +865,9 @@ class UniversalTrader:
                 buy_amount_marcados or buy_amount,
             )
         self.buy_amount_marcados = float(buy_amount_marcados or 0)
+        # Maximo absoluto por compra, en SOL. 0 = sin tope. Se lee del YAML
+        # como `tope_compra_sol`.
+        self.tope_compra_sol = float(tope_compra_sol or 0)
         self.tp_tiers_marcados = build_tiers(
             [(tp_marcados, tp_sell_marcados)]
         ) if tp_marcados and tp_sell_marcados else []
@@ -2776,6 +2782,20 @@ class UniversalTrader:
                     _importe = self.buy_amount_marcados
                 else:
                     _importe = self.buy_amount
+
+                # TOPE DURO. El 12-ago la cadena registro compras de 0,25 y
+                # 0,30 SOL con `buy_amount: 0.15` configurado, y el log del bot
+                # solo apunto dos de la docena que hubo. Hasta saber por que,
+                # esto garantiza que ninguna via --marcados, mayhem, o la que
+                # sea-- pueda gastar mas de lo que Manu ha autorizado.
+                _tope = float(getattr(self, "tope_compra_sol", 0) or 0)
+                if _tope > 0 and _importe > _tope:
+                    logger.warning(
+                        "TOPE: se iba a comprar %.4f SOL de %s y el maximo "
+                        "autorizado es %.4f. Se recorta.",
+                        _importe, token_info.symbol, _tope,
+                    )
+                    _importe = _tope
                 need = int(
                     _importe * (1 + self.buy_slippage) * LAMPORTS_PER_SOL
                 ) + self._fee_headroom_lamports
