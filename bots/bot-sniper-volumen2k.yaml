@@ -50,7 +50,10 @@ rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
-enabled: true
+# DESACTIVADA: la sustituye PORTAVIONES (bot-sniper-portaviones.yaml), que corre
+# la misma maquinaria con la puerta de volumen a 1.970 $ y MC 3.200-5.500 $. Se
+# apaga para evitar compras duplicadas sobre la misma wallet.
+enabled: false
 separate_process: true
 platform: "pump_fun"
 

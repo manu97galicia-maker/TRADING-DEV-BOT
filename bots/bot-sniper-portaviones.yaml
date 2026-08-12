@@ -1,27 +1,28 @@
 # PORTAVIONES — misma maquinaria que VOLUMEN-2,5K, con la puerta de volumen
-# bajada a 1.900 $.
+# bajada a 1.970 $ y una ventana de market cap 3.200-5.500 $.
 #
 # Es la estrategia activa (VOLUMEN-2,5K) pero abriendo mas la primera puerta:
 # donde aquella pide 2.500 $ movidos en los primeros 15 s, esta se conforma con
-# 1.900 $. Baja el liston de "esto arranca de verdad" para pillar antes al que
+# 1.970 $. Baja el liston de "esto arranca de verdad" para pillar antes al que
 # esta empezando a tirar, a cambio de dejar entrar a alguna que se quede en agua
-# de borrajas. El resto de filtros -- presion compradora, MC < 5,5K, ventana de
-# 15,6 s, dev con 2% migrado, no repetida -- siguen intactos, que son los que
-# separan el volumen bueno del volumen de un vaciado.
+# de borrajas. El resto de filtros -- presion compradora, ventana de 15,6 s, dev
+# con 2% migrado, no repetida -- siguen intactos, que son los que separan el
+# volumen bueno del volumen de un vaciado.
 #
 # La salida es la MISMA que VOLUMEN-2,5K y por las mismas razones (asegurar
 # capital al +50% vendiendo el 67% y dejar correr el 33% con el trailing); no se
-# toca nada de eso porque esta medido y funciona.
+# toca nada de eso porque esta medido y funciona. Las protecciones anti-rug
+# tambien quedan identicas.
 #
-#   Unico cambio real frente a VOLUMEN-2,5K: min_volumen_sol 33,3 -> 25,3.
-#   1.900 $ / 75 $ por SOL = 25,3 SOL (misma referencia _SOL_USD del codigo).
+#   Cambios frente a VOLUMEN-2,5K:
+#     - min_volumen_sol 33,3 -> 26,27  (1.970 $ / 75 $ por SOL, ref. _SOL_USD).
+#     - min_entry_mc 0 -> 3.200 $      (antes sin suelo).
+#     - max_entry_mc 5.500 $           (igual).
 #
-# NOTA sobre la wallet: comparte cartera con VOLUMEN-2,5K. Como PORTAVIONES pilla
-# todo lo que pilla aquella y ademas lo de menos volumen, las dos se solaparan.
-# Si se quiere que PORTAVIONES sea la que manda, poner enabled: false en
-# bot-sniper-volumen2k.yaml antes de reiniciar el runner.
+# PORTAVIONES es la que manda: bot-sniper-volumen2k.yaml queda con enabled:
+# false para evitar compras duplicadas sobre la misma wallet.
 
-name: "PORTAVIONES - 15s, MC<5,5K, volumen 1.900 con presion compradora"
+name: "PORTAVIONES - 15s, MC 3.200-5.500, volumen 1.970 con presion compradora"
 env_file: ".env"
 
 # SOLO AVISOS DE COMPRA (ver bot-sniper-volumen2k.yaml). Quitar esta clave
@@ -107,9 +108,9 @@ filters:
   bro_address: null
 
   # ── LA SEÑAL ────────────────────────────────────────────────────────────
-  # 25,3 SOL = ~1.900 $ con SOL a 75 $ (referencia _SOL_USD del codigo). Es la
-  # puerta bajada de PORTAVIONES: 1.900 $ en vez de los 2.500 $ de VOLUMEN-2,5K.
-  min_volumen_sol: 25.3
+  # 26,27 SOL = ~1.970 $ con SOL a 75 $ (referencia _SOL_USD del codigo). Es la
+  # puerta bajada de PORTAVIONES: 1.970 $ en vez de los 2.500 $ de VOLUMEN-2,5K.
+  min_volumen_sol: 26.27
 
   # DIRECCION DEL DINERO: al menos el triple de SOL en compras que en ventas en
   # los ultimos 10 s. Sin esto, el volumen incluye a las que estan siendo
@@ -141,8 +142,10 @@ filters:
   # manual. La estrategia se va limpiando sola.
   ignorar_listas_de_devs: false
 
-  # Techo de 5.500 $. Sin suelo: lo que importa es no entrar arriba.
-  min_entry_mc: 0
+  # Ventana de market cap 3.200-5.500 $. Con suelo (3.200) para no entrar tan
+  # pegado al nacimiento (2.097 $ estructural) y techo (5.500) para no entrar
+  # arriba.
+  min_entry_mc: 3200
   max_entry_mc: 5500
   min_curve_sol: 0
 
