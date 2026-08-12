@@ -759,7 +759,12 @@ filters:
     # min_migrations en 1 porque un porcentaje sobre cero migraciones no dice
     # nada. El codigo bloquea con `migs < min_migrations O rate < min_rate`.
     min_migrations: 1
-    min_rate: 0.30
+    # BAJADO DE 0,30 A 0,10 para que haya operaciones. Medido sobre el flujo
+    # real: con 30% pasan 33 lanzamientos al dia (0,7% del total) y salen unas
+    # 3 compras diarias -- con eso no se hacen 20 operaciones ni en una semana.
+    # Con 10% pasan 250 al dia y salen ~25 compras, que es el ritmo que Manu
+    # pide, y el resto de filtros (nacimiento, bundle, carteras) no se tocan.
+    min_rate: 0.10
   # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
   # Son dos listas que el bot mantiene solo mientras opera:
   #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.
