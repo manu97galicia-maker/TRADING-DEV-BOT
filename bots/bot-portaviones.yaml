@@ -1,0 +1,163 @@
+# PORTAVIONES — variante mas temprana y barata de ESCALERA-MC.
+#
+# Pedida por Manu el 11-ago con 3 numeros: 0,15 SOL por entrada, volumen minimo
+# 1.970 $ y market cap minimo 3.200 $. Es una entrada mas permisiva que
+# ESCALERA (que pedia 3.000 $ de volumen y 5.200 $ de MC): entra antes y mas
+# barato.
+#
+# LO QUE HE HEREDADO DE ESCALERA (marcado con [HEREDADO]): edad de compra,
+# techo de market cap, la salida entera y los filtros de seguridad. Manu solo
+# dio los 3 numeros de arriba; si Portaviones lleva otra salida u otra edad,
+# se cambian estos campos y ya.
+
+name: "PORTAVIONES - 0,15 SOL, vol 1970$, MC min 3200$"
+env_file: ".env"
+
+avisos_telegram: ["compra"]
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  # 0,15 SOL por entrada (Manu).
+  buy_amount: 0.15
+  buy_slippage: 0.30
+  sell_slippage: 0.35
+
+  exit_strategy: "tp_sl"
+  # [HEREDADO de ESCALERA] 60% al +35%, luego escalera de market cap.
+  take_profit_percentage: 0.35
+  take_profit_sell_percentage: 0.60
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+
+  # [HEREDADO de ESCALERA] tres escalones de 10% a 12K / 19K / 28K, y el 10%
+  # final queda de moonbag para venderlo a mano.
+  mc_take_profit_tiers:
+    - {target_mc: 12000, sell: 0.10}
+    - {target_mc: 19000, sell: 0.10}
+    - {target_mc: 28000, sell: 0.10}
+  final_target_mc: 0
+
+  # [HEREDADO de ESCALERA] stop de entrada 42% y moonbag en hold.
+  stop_loss_percentage: 0.42
+  trailing_stop_percentage: 0.95
+
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+
+  venta_muerta_seg: 0
+  venta_muerta_gain: 0.0
+
+  max_hold_time: 7200
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.03
+  max_posiciones: 0
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  # 30M = 0,00255 SOL (~1,7% de 0,15). Prioridad para entrar rapido.
+  fixed_amount: 30_000_000
+  extra_percentage: 0.0
+  hard_cap: 30_000_000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+
+  # [HEREDADO de ESCALERA] ventana de compra de 6 s. Manu no dio edad para
+  # Portaviones; si quiere otra, se cambia max_buy_age.
+  max_token_age: 30
+  max_buy_age: 6
+
+  match_string: null
+  bro_address: null
+
+  # ── SEÑAL: VOLUMEN (Manu) ───────────────────────────────────────────────
+  # 26,3 SOL = 1.970 $ con SOL a 75 $.
+  min_volumen_sol: 26.3
+
+  # [HEREDADO de ESCALERA] presion compradora 3x en 10 s.
+  min_presion_ratio: 3.0
+  presion_seg: 10.0
+  # [HEREDADO de ESCALERA] minimo de compradores reales.
+  min_buys: 8
+  min_titulares: 6
+  min_ops: 0
+  min_first_block_buys: 0
+  min_vol_ventana_sol: 0
+
+  # [HEREDADO de ESCALERA] no repetir el mismo clon en 10 min.
+  no_repeat_name_min: 10
+
+  # Sin filtro de dev (como ESCALERA): la señal es el mercado.
+  pumpfun_dev:
+    enabled: false
+  ignorar_listas_de_devs: true
+
+  # ── MARKET CAP DE ENTRADA ───────────────────────────────────────────────
+  # Suelo 3.200 $ (Manu). Techo [HEREDADO de ESCALERA] en 8.000 $.
+  min_entry_mc: 3200
+  max_entry_mc: 8000
+  # [HEREDADO de ESCALERA] anti-humo: MC real, no inflado sobre curva seca.
+  max_mc_por_sol_curva: 6000
+  min_curve_sol: 1.5
+
+  allow_mayhem: false
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false          # DINERO REAL
+
+  # [HEREDADO de ESCALERA] anti-concentracion.
+  max_holder_pct: 0.15
+  max_dev_hold_pct: 0.05
+  min_holders: 0
+  holder_bypass_ratio: 0
+  redes_originales: false
+  min_holders_gmgn: 0
+  senal_gmgn: []
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 8
+
+compute_units:
+  buy: 140000
+  sell: 120000
