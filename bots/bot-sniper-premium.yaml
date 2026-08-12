@@ -87,6 +87,10 @@ trade:
   buy_amount_marcados: 0.15
   # Techo absoluto: ninguna via puede gastar mas de esto.
   tope_compra_sol: 0.15
+  # Selector automatico: con 10 operaciones cerradas por estrategia,
+  # deja viva solo la de mejor retorno real y apaga el resto.
+  usar_selector: true
+  nombre_estrategia: nacimiento-2750
 
   # ── DOS VELOCIDADES DE SALIDA ────────────────────────────────────────────
   # ARRIESGADOS (dev cualquiera que pase el 1%): recuperar y correr. El primer

@@ -463,6 +463,10 @@ class UniversalTrader:
         # Techo absoluto de gasto por compra, en SOL, por encima de cualquier
         # otra via. Ver el comentario del TOPE DURO mas abajo.
         tope_compra_sol: float = 0.0,
+        # Selector automatico: con 10 operaciones cerradas por estrategia deja
+        # viva solo la de mejor retorno REAL. Ver src/trading/selector.py.
+        usar_selector: bool = False,
+        nombre_estrategia: str = "",
         tp_marcados: float = 0.0,
         tp_sell_marcados: float = 0.0,
         # Caida desde el MAXIMO que dispara el trailing. Si no se pone, se
@@ -868,6 +872,22 @@ class UniversalTrader:
         # Maximo absoluto por compra, en SOL. 0 = sin tope. Se lee del YAML
         # como `tope_compra_sol`.
         self.tope_compra_sol = float(tope_compra_sol or 0)
+        #: Nombre con el que esta estrategia cuenta sus resultados. Por defecto
+        #: el del fichero de configuracion, para que dos bots distintos no
+        #: mezclen sus numeros.
+        self.nombre_estrategia = str(nombre_estrategia or "sin-nombre")
+        self._selector = None
+        if usar_selector:
+            try:
+                from trading.selector import Selector
+
+                self._selector = Selector()
+                logger.info(
+                    "selector activo para '%s'\n%s",
+                    self.nombre_estrategia, self._selector.resumen(),
+                )
+            except Exception:  # noqa: BLE001
+                logger.warning("selector: no se pudo cargar, se sigue sin el")
         self.tp_tiers_marcados = build_tiers(
             [(tp_marcados, tp_sell_marcados)]
         ) if tp_marcados and tp_sell_marcados else []
@@ -2783,6 +2803,15 @@ class UniversalTrader:
                 else:
                     _importe = self.buy_amount
 
+                if self._selector is not None and not self._selector.puede_operar(
+                    self.nombre_estrategia
+                ):
+                    logger.info(
+                        "Evitado %s: el selector ya eligio otra estrategia",
+                        token_info.symbol,
+                    )
+                    return
+
                 # TOPE DURO. El 12-ago la cadena registro compras de 0,25 y
                 # 0,30 SOL con `buy_amount: 0.15` configurado, y el log del bot
                 # solo apunto dos de la docena que hubo. Hasta saber por que,
@@ -3770,6 +3799,16 @@ class UniversalTrader:
             _para_racha = (
                 (_real + held_val) if _real is not None else net_sol
             )
+            # SELECTOR. Se le pasa este mismo numero y no el teorico: el
+            # teorico ha llegado a equivocarse de signo, y un selector
+            # alimentado con el elegiria la estrategia que peor va.
+            if self._selector is not None:
+                try:
+                    self._selector.apunta(
+                        self.nombre_estrategia, _para_racha, self.buy_amount
+                    )
+                except Exception:  # noqa: BLE001
+                    logger.warning("selector: no se pudo apuntar la operacion")
             if _para_racha < 0:
                 self._perdidas_seguidas += 1
                 logger.warning(
