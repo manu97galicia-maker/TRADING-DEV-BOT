@@ -46,7 +46,8 @@ env_file: ".env"
 # Eso convierte el canal en ruido y se acaba ignorando -- justo el aviso
 # que no hay que ignorar es el de "acabo de gastar tu dinero".
 # Quitar esta clave devuelve todos los avisos.
-avisos_telegram: ["compra"]
+# Telegram apagado hasta nuevo aviso.
+avisos_telegram: []
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
@@ -73,7 +74,7 @@ trade:
   # Mandan los DOS a la vez, y gana el que se quede corto: si no hay SOL para
   # la tercera no se abre, aunque el tope lo permita.
   # Una sola: con 0,25 SOL en la wallet no hay para dos de 0,2.
-  max_posiciones: 1
+  max_posiciones: 3
   devs_marcados: "top_devs_buenos.json"
   # 0,50 SOL si la moneda viene de uno de los devs MARCADOS, contra los 0,30
   # de cualquier otro que cumpla el 10%. La lista son los 31 de
@@ -154,15 +155,15 @@ trade:
     - {target_mc: 19000, sell: 0.10}
 
   take_profit_percentage: 0.30
-  take_profit_sell_percentage: 0.80
+  take_profit_sell_percentage: 0.50
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
-  tp2_gain: 0
-  tp2_sell: 0
-  tp3_gain: 0
-  tp3_sell: 0
-  tp4_gain: 0
-  tp4_sell: 0
+  tp2_gain: 0.70
+  tp2_sell: 0.125
+  tp3_gain: 1.10
+  tp3_sell: 0.125
+  tp4_gain: 1.50
+  tp4_sell: 0.125
 
   # STOP DE ENTRADA: 50%. Medido sobre los tres corredores de Manu, simulando
   # la entrada real del bot y mirando la caida maxima ANTES de que despegaran:
@@ -256,7 +257,7 @@ trade:
   # el stop sube inmediatamente al precio de entrada. O sea que el 50% solo
   # esta expuesto en el tramo entre la compra y ese +30%; a partir de ahi la
   # operacion ya no puede perder.
-  stop_loss_percentage: 0.50
+  stop_loss_percentage: 0.35
 
   # TRAILING: 33%, separado del stop de entrada (campo nuevo). Antes eran el
   # mismo numero y no pueden serlo: el de entrada tiene que ser ancho para
@@ -335,7 +336,9 @@ trade:
   # el servicio nunca se ha caido (NRestarts=0), lo que paraba la compra era
   # este contador, que salto dos veces en unas horas. Con perdidas contenidas
   # en el -25% del stop, tres seguidas entran dentro de lo normal; cinco ya no.
-  max_perdidas_seguidas: 5
+  # DOS. Si la estrategia falla dos veces seguidas se bloquea sola en vez de
+  # seguir sangrando.
+  max_perdidas_seguidas: 2
 
 priority_fees:
   enable_dynamic: false
@@ -457,7 +460,7 @@ filters:
   # 12 s = los 0,2 min de arriba del filtro de GMGN que paso Manu. Es un PLAZO,
   # no una espera: se compra en la vuelta en que se cumple todo (cada 0,15 s).
   # Ampliarlo no hace al bot mas lento, solo le da mas ocasiones de llegar.
-  max_buy_age: 12
+  max_buy_age: 6
 
   match_string: null
   bro_address: null
@@ -517,7 +520,10 @@ filters:
   # el volumen en si: es que sin el no hay nadie al otro lado cuando toque
   # vender. (Ojo: esto NO contradice el caso Leelavati. Alli el error fue pedir
   # 40 SOL en 3 segundos, que solo cumplen los bundles.)
-  min_volumen_sol: 40      # 3.000 $ del filtro de Manu, a 75 $/SOL
+  # CERO, y es a proposito. A 2.750 $ la moneda acaba de nacer y todavia no hay
+  # volumen que medir; exigirlo obliga a esperar, y esperar es entrar a 8K --
+  # que es lo que perdio cuatro veces seguidas el 11-ago.
+  min_volumen_sol: 0
   max_volumen_sol: 800
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
@@ -559,16 +565,16 @@ filters:
   # frente a 54% al +30%, y cero migraciones). Ver el comentario del codigo.
   # Subido de 29 a 45 solo por esta tanda: con 40 SOL de volumen exigidos, un
   # techo de 29 carteras chocaria con el suelo de volumen y no dispararia nunca.
-  max_titulares: 35
+  max_titulares: 0
   min_buys: 3
   # OCHO CARTERAS DISTINTAS. TOADABU tenia CINCO moviendo 20,3 SOL. El volumen
   # solo dice cuanto dinero se movio; esto dice entre cuantas manos, que es lo
   # que un bundle no puede fabricar barato.
   # El perfil de Chief: 21 carteras. Por debajo de 12 la moneda no ha reunido
   # a nadie todavia y por encima de 35 empieza a oler a granja repartida.
-  min_titulares: 12
-  min_compras_por_cartera: 1.2
-  max_compras_por_cartera: 2.0
+  min_titulares: 3
+  min_compras_por_cartera: 0
+  max_compras_por_cartera: 0
   min_ops: 0
   min_first_block_buys: 0
 
@@ -616,7 +622,7 @@ filters:
   # un 9%. Por bandas, contra el maximo real: <10% da 2,54x de mediana y un 34%
   # que llega a 3x; 20-30% da 1,81x y un 18%. Deja 102 ocasiones al dia, de
   # sobra.
-  max_first_block_pct: 0.20
+  max_first_block_pct: 0.30
   # QUE EL DINERO SIGA ENTRANDO AHORA MISMO. min_volumen_sol mira TODO lo
   # negociado desde que nacio: una moneda que hizo un chorro de 30 SOL en el
   # primer segundo y se quedo muerta lo cumple igual que una que sigue viva.
@@ -732,7 +738,7 @@ filters:
     # con calma, y el que revienta la pantalla tiene 70 lanzamientos y 1 exito.
     # Pero la moneda que se dispara no la mueve el creador, la mueve quien
     # compra. Y a eso se mira con los filtros de arriba, que si funcionan.
-    enabled: false
+    enabled: true
     # MAS DE UNA MIGRACION, y nada mas. Sin porcentaje: min_rate en 0 hace que
     # el codigo (`migs < min_migrations O rate < min_rate`) decida solo por el
     # numero.
@@ -752,8 +758,8 @@ filters:
     #
     # min_migrations en 1 porque un porcentaje sobre cero migraciones no dice
     # nada. El codigo bloquea con `migs < min_migrations O rate < min_rate`.
-    min_migrations: 2
-    min_rate: 0.10
+    min_migrations: 1
+    min_rate: 0.30
   # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
   # Son dos listas que el bot mantiene solo mientras opera:
   #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.
@@ -800,8 +806,8 @@ filters:
   # El techo de 50.000 no es comprar caro: con la ventana en menos de 8
   # segundos, una moneda que ya esta en 40K ha explotado, no esta cara por
   # vieja.
-  min_entry_mc: 4000
-  max_entry_mc: 50000
+  min_entry_mc: 0
+  max_entry_mc: 2750
 
   # SEGUNDA PUERTA DE ENTRADA. La banda de arriba compra en el nacimiento, donde
   # no hay volumen que medir porque no ha dado tiempo a que lo haya. Esta deja
