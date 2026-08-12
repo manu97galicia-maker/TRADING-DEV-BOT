@@ -738,7 +738,16 @@ filters:
     # con calma, y el que revienta la pantalla tiene 70 lanzamientos y 1 exito.
     # Pero la moneda que se dispara no la mueve el creador, la mueve quien
     # compra. Y a eso se mira con los filtros de arriba, que si funcionan.
-    enabled: true
+    # APAGADO para la tanda de 20 operaciones que pidio Manu. Con 30% salian
+    # ~3 compras al dia; con 10% tampoco disparo NINGUNA en 7 minutos porque
+    # los devs que llegan al nacimiento con arranque limpio tienen 0
+    # migraciones (App cumplia perfecto -- MC 2.097 $, 1 de 27 en el bloque de
+    # creacion, 27 carteras a los 3,5 s -- y la paro esto).
+    #
+    # Lo que protege ahora es la ESTRUCTURA, no la reputacion: comprando a
+    # 2.750 $ como mucho, el suelo de la curva (2.097 $) esta a un 24%, asi que
+    # el stop del 35% es mas ancho que la caida maxima posible.
+    enabled: false
     # MAS DE UNA MIGRACION, y nada mas. Sin porcentaje: min_rate en 0 hace que
     # el codigo (`migs < min_migrations O rate < min_rate`) decida solo por el
     # numero.
