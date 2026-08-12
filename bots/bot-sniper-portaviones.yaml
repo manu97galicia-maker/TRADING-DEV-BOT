@@ -39,6 +39,18 @@ platform: "pump_fun"
 trade:
   # 0,15 SOL por operacion, como pidio Manu para PORTAVIONES.
   buy_amount: 0.15
+  # TOPE DURO al mismo 0,15. El 12-ago la cadena registro compras de 0,25 y
+  # 0,30 SOL con `buy_amount: 0.15` configurado, y el fallo sigue sin
+  # encontrarse. Esto no lo arregla: garantiza que ninguna via pueda gastar mas
+  # de lo autorizado. Como PORTAVIONES es ahora la UNICA estrategia viva y opera
+  # con dinero real, va puesto.
+  tope_compra_sol: 0.15
+  # Nombre con el que cuenta sus resultados (selector y racha).
+  nombre_estrategia: portaviones
+  # Selector APAGADO: con una sola estrategia viva no hay entre que elegir, y
+  # encendido se apagaria sola tras 10 operaciones si va en perdidas. Es una
+  # decision de Manu, no un ajuste tecnico.
+  usar_selector: false
   buy_slippage: 0.30
   # 0,35, no 0,90 (ver bot-sniper-volumen2k.yaml): rechaza la venta que solo se
   # ejecuta tirando el precio en vez de regalarla, con respaldo de Jupiter.

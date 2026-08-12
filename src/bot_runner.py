@@ -277,6 +277,18 @@ async def start_bot(config_path: str):
             compute_units=cfg.get("compute_units", {}),
             # Node provider configuration
             max_rps=cfg.get("node", {}).get("max_rps", 25),
+            # TOPE DURO, SELECTOR Y NOMBRE. El trader ya aceptaba estos tres
+            # desde aa55744 y la comprobacion del tope estaba escrita, pero
+            # ningun sitio los leia del YAML: `tope_compra_sol` se quedaba en 0
+            # (= sin tope) para TODOS los bots, incluido el que lo llevaba
+            # puesto en su fichero. El tope no llegaba a aplicarse nunca.
+            tope_compra_sol=cfg["trade"].get("tope_compra_sol", 0),
+            usar_selector=cfg["trade"].get("usar_selector", False),
+            # Por defecto, el nombre del fichero: asi dos estrategias distintas
+            # no mezclan sus numeros en el selector.
+            nombre_estrategia=cfg["trade"].get(
+                "nombre_estrategia", Path(config_path).stem
+            ),
         )
 
         await trader.start()
