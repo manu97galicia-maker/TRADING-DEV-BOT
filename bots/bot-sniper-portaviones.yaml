@@ -1,0 +1,196 @@
+# PORTAVIONES — misma maquinaria que VOLUMEN-2,5K, con la puerta de volumen
+# bajada a 1.900 $.
+#
+# Es la estrategia activa (VOLUMEN-2,5K) pero abriendo mas la primera puerta:
+# donde aquella pide 2.500 $ movidos en los primeros 15 s, esta se conforma con
+# 1.900 $. Baja el liston de "esto arranca de verdad" para pillar antes al que
+# esta empezando a tirar, a cambio de dejar entrar a alguna que se quede en agua
+# de borrajas. El resto de filtros -- presion compradora, MC < 5,5K, ventana de
+# 15,6 s, dev con 2% migrado, no repetida -- siguen intactos, que son los que
+# separan el volumen bueno del volumen de un vaciado.
+#
+# La salida es la MISMA que VOLUMEN-2,5K y por las mismas razones (asegurar
+# capital al +50% vendiendo el 67% y dejar correr el 33% con el trailing); no se
+# toca nada de eso porque esta medido y funciona.
+#
+#   Unico cambio real frente a VOLUMEN-2,5K: min_volumen_sol 33,3 -> 25,3.
+#   1.900 $ / 75 $ por SOL = 25,3 SOL (misma referencia _SOL_USD del codigo).
+#
+# NOTA sobre la wallet: comparte cartera con VOLUMEN-2,5K. Como PORTAVIONES pilla
+# todo lo que pilla aquella y ademas lo de menos volumen, las dos se solaparan.
+# Si se quiere que PORTAVIONES sea la que manda, poner enabled: false en
+# bot-sniper-volumen2k.yaml antes de reiniciar el runner.
+
+name: "PORTAVIONES - 15s, MC<5,5K, volumen 1.900 con presion compradora"
+env_file: ".env"
+
+# SOLO AVISOS DE COMPRA (ver bot-sniper-volumen2k.yaml). Quitar esta clave
+# devuelve todos los avisos.
+avisos_telegram: ["compra"]
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  # 0,15 SOL por operacion, como pidio Manu para PORTAVIONES.
+  buy_amount: 0.15
+  buy_slippage: 0.30
+  # 0,35, no 0,90 (ver bot-sniper-volumen2k.yaml): rechaza la venta que solo se
+  # ejecuta tirando el precio en vez de regalarla, con respaldo de Jupiter.
+  sell_slippage: 0.35
+
+  exit_strategy: "tp_sl"
+  # ASEGURAR CAPITAL: 67% al +50% devuelve la inversion entera (0,67 x 1,5 = 1).
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 0.67
+  # Sin mas escalones a proposito: el 33% que queda lo gestiona el trailing.
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+
+  # 50% de stop de entrada; el trailing (33%) se mide desde el maximo una vez la
+  # moneda ha subido un 20%. Mismos numeros que VOLUMEN-2,5K.
+  stop_loss_percentage: 0.50
+  trailing_stop_percentage: 0.33
+
+  # EL STOP SE LO LLEVA TODO: sin esto un stop vendia media posicion y abandonaba
+  # la otra media en una moneda hundiendose.
+  vender_todo_en_stop: true
+
+  # ANTI-RUG: si en 4 s se vende el doble de lo que se compra, sale entera.
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+
+  # A los 3 min, si sigue por debajo de la entrada, se vende y libera capital.
+  venta_muerta_seg: 180
+  venta_muerta_gain: 0.0
+
+  # 45 min: tope por si el precio se congela y el trailing nunca se dispara.
+  max_hold_time: 2700
+  price_check_interval: 1
+  extreme_fast_mode: false
+  # Reserva para poder firmar las VENTAS; quedarse sin SOL con posiciones
+  # abiertas es perderlas.
+  min_reserve_sol: 0.08
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  # 20M = 0,0017 SOL, ~1,1% de una posicion de 0,15. La moneda ya lleva segundos
+  # viva cuando se entra: no se compite por el bloque de creacion.
+  fixed_amount: 20_000_000
+  extra_percentage: 0.0
+  hard_cap: 20_000_000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+
+  # 15,6 s = los 0,26 min del filtro de Manu. Ventana corta para acumular
+  # volumen: solo la cruza la moneda que arranca de verdad.
+  max_token_age: 40
+  max_buy_age: 15.6
+
+  match_string: null
+  bro_address: null
+
+  # ── LA SEÑAL ────────────────────────────────────────────────────────────
+  # 25,3 SOL = ~1.900 $ con SOL a 75 $ (referencia _SOL_USD del codigo). Es la
+  # puerta bajada de PORTAVIONES: 1.900 $ en vez de los 2.500 $ de VOLUMEN-2,5K.
+  min_volumen_sol: 25.3
+
+  # DIRECCION DEL DINERO: al menos el triple de SOL en compras que en ventas en
+  # los ultimos 10 s. Sin esto, el volumen incluye a las que estan siendo
+  # vaciadas. Ventana de 10 s (no 3) para medir en el mismo tramo en que se
+  # acumulo el volumen.
+  min_presion_ratio: 3.0
+  presion_seg: 10.0
+
+  # Que el volumen no sea de dos carteras: 8 compras de 6 manos distintas.
+  min_buys: 8
+  min_titulares: 6
+  min_ops: 0
+  min_first_block_buys: 0
+  min_vol_ventana_sol: 0
+
+  # ── NO REPETIDA ─────────────────────────────────────────────────────────
+  # Si el mismo nombre ya salio en los ultimos 10 min, no se compra: estos devs
+  # relanzan el mismo clon una y otra vez.
+  no_repeat_name_min: 10
+
+  # ── EL CREADOR: MINIMO 2% MIGRADO ───────────────────────────────────────
+  # Descarta al que no ha llevado NUNCA una moneda hasta el final. Es un
+  # porcentaje (2% de lo lanzado), no un numero fijo.
+  pumpfun_dev:
+    enabled: true
+    min_migrations: 1
+    min_rate: 0.02
+  # Filtrado acumulativo de devs: auto-baneo al que rugea dos veces + blacklist
+  # manual. La estrategia se va limpiando sola.
+  ignorar_listas_de_devs: false
+
+  # Techo de 5.500 $. Sin suelo: lo que importa es no entrar arriba.
+  min_entry_mc: 0
+  max_entry_mc: 5500
+  min_curve_sol: 0
+
+  allow_mayhem: false        # solo pump.fun normal
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false         # DINERO REAL
+
+  # Anti-concentracion: si un titular tiene mas del 15%, es el que va a vender
+  # encima.
+  max_holder_pct: 0.15
+  max_dev_hold_pct: 0.05
+  min_holders: 0
+  holder_bypass_ratio: 0
+  redes_originales: false
+  min_holders_gmgn: 0
+  senal_gmgn: []
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  # El proceso que vigila posiciones abiertas no puede quedarse sin cuota para
+  # vender.
+  max_rps: 8
+
+compute_units:
+  # Sin esto la VENTA revienta con "Computational budget exceeded" (Token-2022
+  # gasta mas computo).
+  buy: 140000
+  sell: 120000
