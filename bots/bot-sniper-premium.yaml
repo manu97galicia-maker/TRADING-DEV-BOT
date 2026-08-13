@@ -65,7 +65,7 @@ trade:
   # CABEN: el bot reserva importe x 1,25 (deslizamiento) + 0,013 de comision de
   # prioridad, o sea 0,263 para una compra de 0,2, y libre solo hay 0,21.
   # SNOWKID cumplia todo a los 3,6 s y se quedo fuera por esto.
-  buy_amount: 0.07
+  buy_amount: 0.1
 
   # MAXIMO 3 POSICIONES A LA VEZ. Antes el tope estaba fijo en 20 dentro del
   # codigo, que era como no tenerlo: el freno lo ponia el saldo. Con la reserva
@@ -94,7 +94,7 @@ trade:
   #
   # La lista NO decide si se compra -- eso lo sigue haciendo el 10% migrado
   # calculado en vivo -- solo cuanto. Mas ficha donde hay mas informacion.
-  buy_amount_marcados: 0.07
+  buy_amount_marcados: 0.1
   # Creadores que se compran SIEMPRE: se saltan el auto-bloqueo por
   # rugs, la puerta de la tasa de migracion y el 'solo mayhem'.
   #
@@ -107,9 +107,9 @@ trade:
   devs_marcados: ["FdFV6tJPvkRq6YRwnsBSYLJX3uQ55F9UdfHWTWu6Kzyf"]
   # Las mayhem entran con menos: rinden el doble de mediana pero
   # tambien fallan mas, asi que van a media apuesta.
-  mayhem_buy_amount: 0.07
+  mayhem_buy_amount: 0.1
   # Techo absoluto: ninguna via puede gastar mas de esto.
-  tope_compra_sol: 0.07
+  tope_compra_sol: 0.1
   # Selector automatico: con 10 operaciones cerradas por estrategia,
   # deja viva solo la de mejor retorno real y apaga el resto.
   usar_selector: true
@@ -193,17 +193,33 @@ trade:
   # El 50% que queda, repartido en cuatro por market cap. Los escalones se
   # arman DESPUES del +40%, asi que primero se recupera y luego se estira.
   mc_take_profit_tiers:
-    - {target_mc: 8000,  sell: 0.125}
-    - {target_mc: 12000, sell: 0.125}
-    - {target_mc: 24000, sell: 0.125}
-    - {target_mc: 36000, sell: 0.125}
+    - {target_mc: 8000,  sell: 0.05}
+    - {target_mc: 12000, sell: 0.05}
+    - {target_mc: 24000, sell: 0.05}
+    - {target_mc: 36000, sell: 0.05}
 
   # +50% VENDE 60%. Ojo al numero: 0,60 x 1,5 = 0,90, o sea que devuelve el 90%
   # del capital, no el 100%. Para recuperarlo entero harian falta el 67%. Se
   # deja en 60 porque es lo que pidio Manu; lo que queda en riesgo hasta que el
   # stop suba a la entrada es 0,10 del capital.
   take_profit_percentage: 0.40
-  take_profit_sell_percentage: 0.50
+  # 80%, subido desde el 50%. Medido sobre 588 monedas que entraron en esta
+  # misma banda, con su recorrido real:
+  #
+  #   vende 50% en el +40% y el resto por market cap  -> media +0,16
+  #   vende 80%                                       -> media +0,23
+  #   vende 100%                                      -> media +0,24
+  #
+  # El motivo: TODO pasa en los primeros 30 segundos (maximo mediano 1,75x, y
+  # en toda la vida de la moneda solo 1,80x) y luego acaban a 0,90x. El 50% que
+  # se dejaba corriendo hasta 8K era peso muerto: 8K desde 2.450 es un 3,3x y
+  # casi ninguna llega.
+  #
+  # Se deja en 80 y no en 100 porque la diferencia son 0,0013 SOL por operacion
+  # --ruido-- y ese 20% es el billete para la que se vaya a 10x, que esta
+  # simulacion no premia bien: solo mide hasta donde llegaron, no hasta donde
+  # podrian llegar.
+  take_profit_sell_percentage: 0.80
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
   tp2_gain: 0
