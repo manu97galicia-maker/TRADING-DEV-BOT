@@ -932,13 +932,17 @@ filters:
   # AVISO: eso son 5 de 5, pero es la muestra de lo que esta haciendo AHORA.
   # No se su historial completo, asi que no se su porcentaje de acierto real.
   copy_wallets:
-    enabled: true
+    # APAGADO: en modo copia el bot deja de procesar el flujo general
+    # (`vistas 0` en el log), asi que copy-trading y solo-mayhem no caben
+    # en el mismo proceso. La wallet y el hallazgo quedan aqui para
+    # levantarlo como bot aparte cuando toque.
+    enabled: false
     wallets: ["HTVZVEQMBsNanubDPTs3CxDAEGNFQHJY8c1441iy2S5r"]
     poll_interval: 2.0
   # APAGADO al activar el copy-trading. Las monedas que toca HTVZ no tienen por
   # que estar en mayhem, y con esto puesto se descartarian casi todas: la señal
   # nueva quedaria inerte. Se elige la señal medida sobre la preferencia.
-  require_mayhem: false
+  require_mayhem: true
   marry_mode: false
   yolo_mode: true
   paper_trade: false         # DINERO REAL
