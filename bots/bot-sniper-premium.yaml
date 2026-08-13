@@ -163,16 +163,20 @@ trade:
     - {target_mc: 9000,  sell: 0.10}
     - {target_mc: 19000, sell: 0.10}
 
-  take_profit_percentage: 1.00
-  take_profit_sell_percentage: 0.50
+  # +50% VENDE 60%. Ojo al numero: 0,60 x 1,5 = 0,90, o sea que devuelve el 90%
+  # del capital, no el 100%. Para recuperarlo entero harian falta el 67%. Se
+  # deja en 60 porque es lo que pidio Manu; lo que queda en riesgo hasta que el
+  # stop suba a la entrada es 0,10 del capital.
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 0.60
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
-  tp2_gain: 2.00
-  tp2_sell: 0.25
-  tp3_gain: 3.00
-  tp3_sell: 0.25
-  tp4_gain: 0
-  tp4_sell: 0
+  tp2_gain: 1.00
+  tp2_sell: 0.133
+  tp3_gain: 2.00
+  tp3_sell: 0.133
+  tp4_gain: 4.00
+  tp4_sell: 0.134
 
   # STOP DE ENTRADA: 50%. Medido sobre los tres corredores de Manu, simulando
   # la entrada real del bot y mirando la caida maxima ANTES de que despegaran:
