@@ -849,7 +849,7 @@ filters:
     # 20%. Medido sobre el flujo real: 120 creadores, 94 lanzamientos al dia,
     # el 1,9% de todo. Con el 30% eran 33 al dia y salian ~3 compras; con esto
     # deberian salir del orden de 8-15 diarias.
-    min_rate: 0.40
+    min_rate: 0.30
   # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
   # Son dos listas que el bot mantiene solo mientras opera:
   #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.
