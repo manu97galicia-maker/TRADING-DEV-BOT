@@ -437,7 +437,7 @@ filters:
   #
   # Entrar pronto NO garantiza nada (IBB entro a 3,0 s y perdio 0,128), pero
   # entrar tarde si ha garantizado perder.
-  max_token_age: 15
+  max_token_age: 20
   # 7,8 s = los 0,13 min de la captura. El limite inferior de 0,01 min (0,6 s)
   # no hace falta ponerlo: lo que buscaba es no comprar dentro del bloque de
   # creacion, y de eso ya se encarga max_first_block_pct, que ademas mide la
@@ -494,18 +494,13 @@ filters:
   # 12 s = los 0,2 min de arriba del filtro de GMGN que paso Manu. Es un PLAZO,
   # no una espera: se compra en la vuelta en que se cumple todo (cada 0,15 s).
   # Ampliarlo no hace al bot mas lento, solo le da mas ocasiones de llegar.
-  max_buy_age: 9
+  max_buy_age: 12
 
   match_string: null
   bro_address: null
-  # BAJADO DE 5 A 2 SOL. Con 5 (los 400 $ del filtro de GMGN) el bot vio 216
-  # monedas seguidas sin que ninguna cumpliera: para cuando han entrado 5 SOL,
-  # el market cap casi siempre se ha pasado ya de 2.600. Las dos condiciones se
-  # peleaban. Con 2 SOL sigue habiendo alguien dentro --no somos nosotros el
-  # mercado, que fue lo que hundio las operaciones de la tarde-- y la banda
-  # vuelve a ser alcanzable.
-  min_volumen_sol: 2
-  max_volumen_sol: 27
+  # Sin minimo: el dev es quien filtra ahora.
+  min_volumen_sol: 0
+  max_volumen_sol: 0
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
   # que en ventas. Sin esto, "2.500 $ de volumen" incluye a las que estan
@@ -783,9 +778,14 @@ filters:
   # El techo de 50.000 no es comprar caro: con la ventana en menos de 8
   # segundos, una moneda que ya esta en 40K ha explotado, no esta cara por
   # vieja.
-  min_entry_mc: 2300
-  # Sin techo en modo copia: la idea es comprar lo que compra el, no filtrarlo.
-  max_entry_mc: 2600
+  min_entry_mc: 0
+  # 10.000 y no "sin techo". El cuello lo hacia la banda estrecha de 2.300-2.600
+  # cruzada con el dev, y esa se quita. Pero un techo tiene que quedar: toda
+  # moneda nace a 2.097 $ y ese es el suelo al que vuelve si todos venden, asi
+  # que comprando a 8.580 la caida maxima es del 76%. El 13-ago se hicieron
+  # cuatro compras a 4-11K y las cuatro perdieron ~70%. Diez mil deja pasar casi
+  # todo sin abrir la puerta a eso.
+  max_entry_mc: 10000
 
   # SEGUNDA PUERTA DE ENTRADA. La banda de arriba compra en el nacimiento, donde
   # no hay volumen que medir porque no ha dado tiempo a que lo haya. Esta deja
