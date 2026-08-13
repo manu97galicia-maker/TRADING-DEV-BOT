@@ -465,6 +465,15 @@ class UniversalTrader:
         # Techo absoluto de gasto por compra, en SOL, por encima de cualquier
         # otra via. Ver el comentario del TOPE DURO mas abajo.
         tope_compra_sol: float = 0.0,
+        # FRANJA HORARIA en la que se opera, hora de España. Fuera de ella el
+        # bot sigue mirando el flujo pero no compra. {inicio: 18, fin: 2} son
+        # las seis de la tarde a las dos de la madrugada -- cruza medianoche, y
+        # eso hay que tratarlo aparte: 18 <= h < 24 O 0 <= h < 2.
+        #
+        # No se usa la hora del servidor: el droplet va en UTC y España esta en
+        # UTC+2 en verano y UTC+1 en invierno. Con la hora del servidor la
+        # franja se correria sola al cambiar la hora.
+        horario: dict | None = None,
         # Techo del max_sol_cost de la compra, incluido el slippage.
         tope_compra_total_sol: float = 0.0,
         # Selector automatico: con 10 operaciones cerradas por estrategia deja
@@ -878,6 +887,7 @@ class UniversalTrader:
         # Maximo absoluto por compra, en SOL. 0 = sin tope. Se lee del YAML
         # como `tope_compra_sol`.
         self.tope_compra_sol = float(tope_compra_sol or 0)
+        self.horario = horario or {}
         #: SOL cobrado en la ultima venta. Cero si no se vendio nada.
         #: Es lo que se suma al total realizado, en vez del estimado:
         #: el 12-ago un cierre sin venta se apunto como +0,1496 SOL.
@@ -2033,6 +2043,14 @@ class UniversalTrader:
                 logger.info(f"Evitado {token_info.symbol}: mayhem mode")
                 return
 
+            if not self._dentro_del_horario():
+                logger.info(
+                    f"Evitado {token_info.symbol}: fuera de la franja horaria "
+                    f"({self.horario.get('inicio')}:00-{self.horario.get('fin')}:00 "
+                    f"hora de España)"
+                )
+                return
+
             # CORTA-CIRCUITOS DE LA ESTRATEGIA ENTERA. Va el primero de todos:
             # si esta parada, no tiene sentido gastar ni una comprobacion mas.
             if self._parado_por_perdidas:
@@ -3158,6 +3176,37 @@ class UniversalTrader:
         except Exception as exc:  # noqa: BLE001
             logger.debug(f"no pude leer el saldo de {token_info.symbol}: {exc}")
             return None
+
+    def _dentro_del_horario(self) -> bool:
+        """True si toca operar ahora, en hora de España.
+
+        Sin franja configurada se opera siempre. La hora se saca de la zona
+        `Europe/Madrid` y no del reloj del servidor: el droplet va en UTC, y
+        usar su hora movería la franja una hora entera al cambiar a horario de
+        invierno sin que nadie tocara nada.
+        """
+        if not self.horario:
+            return True
+        try:
+            inicio = int(self.horario.get("inicio", 0))
+            fin = int(self.horario.get("fin", 24))
+        except (TypeError, ValueError):
+            return True
+        if inicio == fin:
+            return True
+        try:
+            from zoneinfo import ZoneInfo
+
+            ahora = datetime.now(ZoneInfo("Europe/Madrid")).hour
+        except Exception:  # noqa: BLE001
+            # Sin zona horaria disponible se opera, que es el fallo menos malo:
+            # quedarse mudo por no saber la hora seria peor que operar de mas.
+            return True
+        if inicio < fin:
+            return inicio <= ahora < fin
+        # La franja cruza medianoche (18 -> 2): vale la cola del dia o la
+        # cabeza del siguiente.
+        return ahora >= inicio or ahora < fin
 
     def _es_marcado(self, token_info: TokenInfo) -> bool:
         """True si la moneda viene de un dev de la lista de confianza."""

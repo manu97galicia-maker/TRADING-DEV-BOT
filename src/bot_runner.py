@@ -143,6 +143,7 @@ async def start_bot(config_path: str):
             stop_a_entrada_tras_tp=cfg["trade"].get(
                 "stop_a_entrada_tras_tp", False
             ),
+            stop_al_tp_tras_tp=cfg["trade"].get("stop_al_tp_tras_tp", False),
             entrada_alternativa=cfg.get("filters", {}).get(
                 "entrada_alternativa"
             ),
@@ -256,6 +257,16 @@ async def start_bot(config_path: str):
             max_posiciones=cfg["trade"].get("max_posiciones", 0),
             devs_marcados=cfg["trade"].get("devs_marcados"),
             buy_amount_marcados=cfg["trade"].get("buy_amount_marcados", 0),
+            tope_compra_sol=cfg["trade"].get("tope_compra_sol", 0),
+            # Estos dos se añadieron al trader pero se habian quedado sin
+            # cablear aqui, asi que `usar_selector: true` en el YAML no llegaba
+            # a ninguna parte y el selector nunca conto una sola operacion.
+            usar_selector=cfg["trade"].get("usar_selector", False),
+            nombre_estrategia=cfg["trade"].get("nombre_estrategia", ""),
+            horario=cfg.get("filters", {}).get("horario"),
+            tope_compra_total_sol=cfg["trade"].get(
+                "tope_compra_total_sol", 0
+            ),
             tp_marcados=cfg["trade"].get("tp_marcados", 0),
             tp_sell_marcados=cfg["trade"].get("tp_sell_marcados", 0),
             trailing_stop_percentage=cfg["trade"].get("trailing_stop_percentage", 0),
