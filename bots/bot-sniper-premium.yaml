@@ -74,7 +74,11 @@ trade:
   # Mandan los DOS a la vez, y gana el que se quede corto: si no hay SOL para
   # la tercera no se abre, aunque el tope lo permita.
   # Una sola: con 0,25 SOL en la wallet no hay para dos de 0,2.
-  max_posiciones: 3
+  # 25 EN MODO COPIA. Con `exit_strategy: manual` las posiciones NO se cierran
+  # solas, asi que este numero no es "cuantas a la vez" sino "cuantas compra en
+  # total antes de pararse". Con 3 habria comprado tres y se habria quedado
+  # mudo el resto del dia. 25 x 0,05 = 1,25 SOL, que es lo que hay.
+  max_posiciones: 25
   # 0,50 SOL si la moneda viene de uno de los devs MARCADOS, contra los 0,30
   # de cualquier otro que cumpla el 10%. La lista son los 31 de
   # top_devs_buenos.json, medidos por dos criterios distintos: que no dumpean
