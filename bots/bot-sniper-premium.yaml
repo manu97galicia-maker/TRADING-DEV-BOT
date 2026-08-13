@@ -554,66 +554,19 @@ filters:
   max_compras_por_cartera: 0
   min_ops: 0
   min_first_block_buys: 0
-
-  # BUNDLE EN EL NACIMIENTO. Maxima proporcion de las compras que puede venir
-  # del bloque de creacion. Sale de las seis primeras operaciones del 11-ago y
-  # separa sin solapamiento:
+  # APAGADO. Cleo --la que compro Manu, 18,3x y migrada-- era 9 de 9 compras en
+  # el bloque de creacion y este filtro la tiro. Medido con LA SALIDA DE AHORA
+  # (+40% vende 80%, sin stop, muerta a los 2 min) sobre 447 monedas:
   #
-  #   cobraron el +25%:  2%, 10%, 13%, 16%
-  #   stop entero     :         34%, 38%
+  #     bundle 100%      media +0,18   64% ganan   (n=11, muestra corta)
+  #     bundle 50-99%    media +0,10   49%
+  #     bundle <50%      media +0,21   70%
+  #     todas            media +0,20   68%
   #
-  # Se pone en 25%, en medio del hueco. Comprar en el bloque de creacion no es
-  # demanda: es un sniper o el propio dev entrando a precio cero, y su unica
-  # salida eres tu.
-  #
-  # Muestra pequeña -- cuatro contra dos -- asi que esto hay que volver a
-  # mirarlo con el estudio de las proximas ocho operaciones. Pero el separador
-  # es limpio y tiene explicacion, no es una correlacion suelta.
-  # DESACTIVADO por Manu el 11-ago. Era el separador mas limpio que habiamos
-  # encontrado (las que cobraban tenian 2-16% de compras en el bloque de
-  # creacion, las que morian 34-38%), pero con la ventana en 2 segundos casi
-  # todas las compras son del principio y el filtro tumbaria casi todo. Queda
-  # el numero aqui por si se quiere recuperar: 0.25.
-  # REACTIVADO el 11-ago por TOADABU, que costo 0,1432 SOL:
-  #
-  #   CUMPLE TOADABU: 20,3 SOL en 5 compras, 5 EN PRIMER BLOQUE, 5 wallets,
-  #                   MC 5.887 $ a los 0,2 s
-  #
-  # El 100% de las compras en el bloque de creacion, y 20,3 SOL entre cinco
-  # carteras: cuatro SOL cada una. Eso no es demanda, es un bundle comprandose
-  # a si mismo para fabricar volumen y atraer justo a un bot como este.
-  #
-  # Se pone en 50% y no en el 25% de antes porque la ventana es de 3 segundos y
-  # ahi una parte grande de las compras son legitimamente del principio. Con 50%
-  # se corta la mayoria absoluta de bundle sin tumbar a las sanas.
-  #
-  # EL FILTRO QUE MAS MANDA DE TODOS, y el que Manu pidio al acordarse de
-  # Applecat. Por debajo del 30% de compras en el bloque de creacion el 56%
-  # llega al +30% (mediana 1,33x); con el 100% --bundle puro-- baja al 29%
-  # (mediana 1,09x). La escala es limpia y monotona: cuanto mas concentrado el
-  # arranque, peor acaba.
-  #
-  # Aquel Applecat del dia 11 tenia 4 de 6 compras en el bloque de creacion
-  # (67%) y con la configuracion de esta manana SE HABRIA COMPRADO.
-  # Apretado de 30% a 20% el 11-ago buscando mas monedas como Chief, que tenia
-  # un 9%. Por bandas, contra el maximo real: <10% da 2,54x de mediana y un 34%
-  # que llega a 3x; 20-30% da 1,81x y un 18%. Deja 102 ocasiones al dia, de
-  # sobra.
-  # APRETADO DE 0,30 A 0,10 para ir a por el x3. Medido sobre 655 monedas con
-  # su recorrido real de precio, entrando al nacimiento:
-  #
-  #     bundle <10%    39% llegan a x3
-  #     bundle 10-30%  19%
-  #     bundle 30-60%  15%
-  #
-  # Duplica la probabilidad del x3, y sigue dejando 137 monedas al dia antes
-  # del resto de filtros -- de sobra.
-  # SUBIDO DE 0,10 A 0,50. El 10% era imposible de cumplir aqui: para que el
-  # primer bloque quede por debajo del 10% hacen falta 11 compras o mas, y a
-  # 2.750 $ dentro de 6 segundos lo que hay son una o dos. Resultado: 799
-  # monedas vistas y CERO compras. El 39% de x3 que medi para esa banda salia
-  # de monedas que ya tenian decenas de compras -- no de estas.
-  max_first_block_pct: 0.50
+  # El filtro aporta 0,001 SOL por operacion: ruido. Y tiene sentido que asi
+  # sea: importaba cuando el objetivo era llegar lejos, pero con un +40% que se
+  # toca en los primeros 30 segundos hasta un bundle puro llega.
+  max_first_block_pct: 0
   # QUE EL DINERO SIGA ENTRANDO AHORA MISMO. min_volumen_sol mira TODO lo
   # negociado desde que nacio: una moneda que hizo un chorro de 30 SOL en el
   # primer segundo y se quedo muerta lo cumple igual que una que sigue viva.
@@ -938,12 +891,15 @@ filters:
   # este numero no puede pasar de 19.
   min_holders: 0
   holder_bypass_ratio: 0
-  # REDES PROPIAS. Exige que el enlace sea a una CUENTA y no al tuit de otro
-  # --que es lo que trae casi toda moneda nueva: se enganchan a un post ajeno
-  # con alcance para aparentar respaldo-- y que esa cuenta no la haya usado ya
-  # otra moneda en las ultimas horas, que es la firma del que lanza veinte
-  # clones. Se pide en paralelo con el resto, asi que no añade espera.
-  redes_originales: true
+  # APAGADO tambien. Las redes de Cleo eran
+  # x.com/sSEA7z/status/2087866572698173511 -- el tuit de otro-- y aun asi hizo
+  # 18,3x. Ademas, de los 6 rechazos que llego a hacer, DOS fueron por "no se
+  # pudo leer el metadata": con 1,5 s de plazo un fallo de red descarta una
+  # moneda buena, y eso no es filtrar, es perder por timeout.
+  #
+  # El razonamiento del modulo sigue siendo bueno y el codigo se queda; lo que
+  # no hay es prueba de que pagar por el.
+  redes_originales: false
   min_holders_gmgn: 0
   # SEÑAL DE GMGN, tipo 18. Estaba medido en el repo desde el 4-ago y sin usar:
   #
