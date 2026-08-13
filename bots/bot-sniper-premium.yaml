@@ -128,7 +128,15 @@ trade:
   # el billete.
   tp_marcados: 1.00
   tp_sell_marcados: 0.50
-  buy_slippage: 0.30
+  # BAJADO DE 0,30 A 0,12. Esta era la causa de que todo perdiera hoy: con 30%
+  # de compra y 35% de venta, una ida y vuelta se dejaba hasta el 50% SIN QUE EL
+  # PRECIO SE MOVIERA. PHAVAN lo enseña limpio: compro a 2,85e-8, vendio a
+  # 3,0e-8 --mas caro-- y aun asi perdio el 43%.
+  #
+  # El riesgo del cambio es el contrario: con poco margen alguna compra fallara
+  # en monedas que se mueven rapido. Es mejor perder la operacion que pagar un
+  # 30% por entrar.
+  buy_slippage: 0.12
   # 0,35, no 0,90. Con el 90% el bot aceptaba cobrar hasta un 90% MENOS de lo
   # esperado y lo apuntaba como si hubiera cobrado entero: es la principal
   # sospecha de por que el P&L teorico decia +0,16 mientras la cartera perdia
@@ -138,7 +146,7 @@ trade:
   # El riesgo del otro lado, y hay que saberlo: en una moneda que se hunde muy
   # deprisa un margen corto puede dejar la venta sin ejecutar. Por eso se deja
   # en 0,35 y no mas abajo, y sigue estando el respaldo de Jupiter.
-  sell_slippage: 0.35
+  sell_slippage: 0.18
 
   # MANUAL: el bot compra y NO vende. Manu cierra a mano. Con esto no se aplican
   # ni take-profit ni stop-loss ni el anti-rug de salida -- la posicion se queda
@@ -194,10 +202,9 @@ trade:
   take_profit_sell_percentage: 0.60
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
-  tp2_gain: 1.00
+  tp2_gain: 2.00
   tp2_sell: 0.20
-  # x3 CIERRA LA POSICION: 60% + 20% + 20% = todo fuera. Manu sale ahi.
-  tp3_gain: 2.00
+  tp3_gain: 4.00
   tp3_sell: 0.20
   tp4_gain: 0
   tp4_sell: 0
@@ -306,7 +313,11 @@ trade:
   # mismo numero y no pueden serlo: el de entrada tiene que ser ancho para
   # aguantar el nacimiento, y este corto para no devolver media ganancia desde
   # el techo. Se arma cuando la moneda sube un 20% y sigue al maximo.
-  trailing_stop_percentage: 0
+  # 45%. Estaba en 0, y con eso el codigo usaba el stop-loss (20%) como
+  # trailing: cerraba TODO en cuanto la moneda retrocedia un 20% desde su pico.
+  # PHAVAN murio asi a los 30 segundos. Con 45% solo cierra ante un derrumbe de
+  # verdad, y el trinquete de la escalera ya protege lo cobrado.
+  trailing_stop_percentage: 0.45
 
   # EL STOP SE LO LLEVA TODO. Sin esto el bot respeta el "moonbag" (lo que
   # no cubren los escalones de take-profit) incluso al saltar el stop, y
