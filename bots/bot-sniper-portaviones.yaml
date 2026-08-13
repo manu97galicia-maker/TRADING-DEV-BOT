@@ -16,13 +16,13 @@
 #
 #   Cambios frente a VOLUMEN-2,5K:
 #     - min_volumen_sol 33,3 -> 26,27  (1.970 $ / 75 $ por SOL, ref. _SOL_USD).
-#     - min_entry_mc 0 -> 3.200 $      (antes sin suelo).
-#     - max_entry_mc 5.500 $           (igual).
+#     - min_entry_mc 0 -> 3.250 $      (antes sin suelo).
+#     - max_entry_mc 5.500 -> 4.550 $.
 #
 # PORTAVIONES es la que manda: bot-sniper-volumen2k.yaml queda con enabled:
 # false para evitar compras duplicadas sobre la misma wallet.
 
-name: "PORTAVIONES - 15s, MC 3.200-5.500, volumen 1.970 con presion compradora"
+name: "PORTAVIONES - 15s, MC 3.250-4.550, volumen 1.970 con presion compradora"
 env_file: ".env"
 
 # SOLO AVISOS DE COMPRA (ver bot-sniper-volumen2k.yaml). Quitar esta clave
@@ -154,11 +154,16 @@ filters:
   # manual. La estrategia se va limpiando sola.
   ignorar_listas_de_devs: false
 
-  # Ventana de market cap 3.200-5.500 $. Con suelo (3.200) para no entrar tan
-  # pegado al nacimiento (2.097 $ estructural) y techo (5.500) para no entrar
-  # arriba.
-  min_entry_mc: 3200
-  max_entry_mc: 5500
+  # Ventana de market cap 3.250-4.550 $. El suelo (3.250) evita entrar pegado al
+  # nacimiento (2.097 $ es el suelo estructural de toda moneda de pump.fun); el
+  # techo (4.550) evita entrar arriba, donde la caida hasta ese suelo ya es
+  # demasiado grande.
+  #
+  # Es una banda de 1.300 $, mas estrecha que los 3.200-5.500 anteriores por
+  # arriba. Sumada al volumen de 1.970 $ en 15,6 s, filtra bastante: hay que
+  # contar con ver POCAS operaciones. Eso es el diseno, no un fallo.
+  min_entry_mc: 3250
+  max_entry_mc: 4550
   min_curve_sol: 0
 
   allow_mayhem: false        # solo pump.fun normal
