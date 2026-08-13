@@ -916,7 +916,29 @@ filters:
   # lanzamientos y rinden el doble que el resto.
   # SOLO MAYHEM. `require_mayhem` descarta todo lo que no lo sea.
   allow_mayhem: true
-  require_mayhem: true
+
+  # COPIAR A LA MAQUINARIA. Hallazgo del 13-ago: de las tres monedas que Manu
+  # señalo como "mega pump", una sola cartera aparece en LAS TRES --
+  # HTVZVEQMBsNanubDPTs3CxDAEGNFQHJY8c1441iy2S5r, etiquetada bundler-- con el
+  # mismo patron exacto: 26 transacciones, ~1.200-1.300 $, y no vende nunca.
+  #
+  # Lo primero que hice fue comprobar si era un servicio generico. Va a 1.417
+  # tx/hora, que apuntaba a eso, pero al mirar QUE toca resulta que en sus
+  # ultimas 60 transacciones solo hay CINCO monedas: las tres de Manu y dos
+  # que no conociamos. Y las cinco han hecho entre 14x y 116x desde el
+  # nacimiento, con creadores DISTINTOS -- no es un equipo lanzando bajo cinco
+  # nombres, es un servicio que aparece en monedas que se disparan.
+  #
+  # AVISO: eso son 5 de 5, pero es la muestra de lo que esta haciendo AHORA.
+  # No se su historial completo, asi que no se su porcentaje de acierto real.
+  copy_wallets:
+    enabled: true
+    wallets: ["HTVZVEQMBsNanubDPTs3CxDAEGNFQHJY8c1441iy2S5r"]
+    poll_interval: 2.0
+  # APAGADO al activar el copy-trading. Las monedas que toca HTVZ no tienen por
+  # que estar en mayhem, y con esto puesto se descartarian casi todas: la señal
+  # nueva quedaria inerte. Se elige la señal medida sobre la preferencia.
+  require_mayhem: false
   marry_mode: false
   yolo_mode: true
   paper_trade: false         # DINERO REAL
