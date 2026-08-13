@@ -301,6 +301,8 @@ class UniversalTrader:
         rugs_para_bloquear: int = 2,
         # Mover el stop al precio de entrada en cuanto cobra el primer TP.
         stop_a_entrada_tras_tp: bool = False,
+        # Mover el stop al precio objetivo del TP que acaba de ejecutarse.
+        stop_al_tp_tras_tp: bool = False,
         # Segunda puerta de entrada: {max_mc, min_volumen_sol}. Si la moneda
         # se paso de max_entry_mc pero sigue por debajo de este max_mc Y ha
         # movido ese volumen, se compra igual.
@@ -463,6 +465,8 @@ class UniversalTrader:
         # Techo absoluto de gasto por compra, en SOL, por encima de cualquier
         # otra via. Ver el comentario del TOPE DURO mas abajo.
         tope_compra_sol: float = 0.0,
+        # Techo del max_sol_cost de la compra, incluido el slippage.
+        tope_compra_total_sol: float = 0.0,
         # Selector automatico: con 10 operaciones cerradas por estrategia deja
         # viva solo la de mejor retorno REAL. Ver src/trading/selector.py.
         usar_selector: bool = False,
@@ -678,6 +682,7 @@ class UniversalTrader:
         #: Encaja con una estrategia SIN stop de entrada -- se acepta el
         #: riesgo hasta el primer escalon, y a partir de ahi ya no.
         self.stop_a_entrada_tras_tp = bool(stop_a_entrada_tras_tp)
+        self.stop_al_tp_tras_tp = bool(stop_al_tp_tras_tp)
         #: SEGUNDA PUERTA DE ENTRADA. La banda normal compra en el
         #: nacimiento, donde no hay volumen que medir porque no ha dado
         #: tiempo. Esta deja pasar tambien a la que ya se ha movido de ahi,
@@ -872,6 +877,11 @@ class UniversalTrader:
         # Maximo absoluto por compra, en SOL. 0 = sin tope. Se lee del YAML
         # como `tope_compra_sol`.
         self.tope_compra_sol = float(tope_compra_sol or 0)
+        #: SOL cobrado en la ultima venta. Cero si no se vendio nada.
+        #: Es lo que se suma al total realizado, en vez del estimado:
+        #: el 12-ago un cierre sin venta se apunto como +0,1496 SOL.
+        self._ultimo_cobro = 0.0
+        self.tope_compra_total_sol = float(tope_compra_total_sol or 0)
         #: Nombre con el que esta estrategia cuenta sus resultados. Por defecto
         #: el del fichero de configuracion, para que dos bots distintos no
         #: mezclen sus numeros.
@@ -2825,6 +2835,19 @@ class UniversalTrader:
                         _importe, token_info.symbol, _tope,
                     )
                     _importe = _tope
+                _tope_total = float(
+                    getattr(self, "tope_compra_total_sol", 0) or 0
+                )
+                _coste_maximo = _importe * (1 + self.buy_slippage)
+                if _tope_total > 0 and _coste_maximo > _tope_total:
+                    _importe = _tope_total / (1 + self.buy_slippage)
+                    logger.warning(
+                        "TOPE TOTAL: compra nominal recortada a %.6f SOL; "
+                        "con %.1f%% de slippage no puede superar %.4f SOL.",
+                        _importe,
+                        self.buy_slippage * 100,
+                        _tope_total,
+                    )
                 need = int(
                     _importe * (1 + self.buy_slippage) * LAMPORTS_PER_SOL
                 ) + self._fee_headroom_lamports
@@ -3098,6 +3121,30 @@ class UniversalTrader:
                 self.wallet.pubkey, token_info.mint, token_info.token_program_id
             )
             crudo = await self.solana_client.get_token_account_balance(ata)
+            if crudo is None:
+                return None
+            if crudo > 0:
+                return crudo / 10**TOKEN_DECIMALS
+            # CERO NO ES CERO A LA PRIMERA. El 12-ago `degen` leyo 0 tokens
+            # recien comprada --la cuenta todavia no se veia en ese nodo-- y el
+            # bot dio la posicion por cerrada sin vender nada, apuntando ademas
+            # que habia cobrado 0,1496 SOL. La cadena dice que se perdieron los
+            # 0,1687 enteros.
+            #
+            # Un cero puede ser "no queda nada" o "el RPC aun no lo ve", y las
+            # dos cosas no se parecen en nada: una cierra la posicion y la otra
+            # la abandona. Se vuelve a preguntar tras una pausa y solo se cree
+            # el cero si sale dos veces.
+            await asyncio.sleep(1.5)
+            crudo = await self.solana_client.get_token_account_balance(ata)
+            if crudo is None:
+                return None
+            if crudo > 0:
+                logger.warning(
+                    "%s: el saldo salio 0 y a la segunda lectura habia %.6f "
+                    "tokens. Era retraso del RPC, no una posicion cerrada.",
+                    token_info.symbol, crudo / 10**TOKEN_DECIMALS,
+                )
             return crudo / 10**TOKEN_DECIMALS
         except Exception as exc:  # noqa: BLE001
             logger.debug(f"no pude leer el saldo de {token_info.symbol}: {exc}")
@@ -3175,7 +3222,12 @@ class UniversalTrader:
         # deja de pagar: si no ha salido en 3, no va a salir en 300.
         mint = str(token_info.mint)
         if self._fallos_venta.get(mint, 0) >= self.MAX_FALLOS_VENTA:
+            self._ultimo_cobro = 0.0
             return False
+
+        # Se pone a cero ANTES de intentar nada: cada camino que si cobre lo
+        # rellena, y asi ningun fallo puede dejar el valor de la venta anterior.
+        self._ultimo_cobro = 0.0
 
         real = await self._saldo_real_tokens(token_info)
         if real is not None:
@@ -3184,6 +3236,10 @@ class UniversalTrader:
                     f"{token_info.symbol}: no quedan tokens que vender ({reason}); "
                     f"la posicion ya estaba cerrada"
                 )
+                # No se ha cobrado NADA. Quien llama suma `self._ultimo_cobro`
+                # al total realizado, asi que dejarlo en cero es lo que impide
+                # que un cierre sin venta se apunte como ingreso.
+                self._ultimo_cobro = 0.0
                 return True  # nada que vender = objetivo cumplido, no un fallo
             if amount > real:
                 logger.info(
@@ -3210,6 +3266,7 @@ class UniversalTrader:
                 reason,
             )
             self._anota_firma(str(token_info.mint), sell_result.tx_signature)
+            self._ultimo_cobro = sell_result.amount * sell_result.price
             return True
 
         # Fallback: the curve sell may have failed because the token migrated
@@ -3233,6 +3290,7 @@ class UniversalTrader:
             logger.info("Sold %s via Jupiter (%s) tx=%s", token_info.symbol, reason, sig)
             self._anota_firma(str(token_info.mint), sig)
             self._log_trade("sell", token_info, ref_price, amount, sig, reason)
+            self._ultimo_cobro = amount * ref_price
             return True
 
         fallos = self._fallos_venta.get(mint, 0) + 1
@@ -3381,7 +3439,7 @@ class UniversalTrader:
                     and price >= target_price
                 ):
                     if await self._sell_amount(token_info, remaining, price, "final_target_mc"):
-                        realized_sol += remaining * price
+                        realized_sol += self._ultimo_cobro
                         remaining = 0.0
                         fully_exited = True
                         break
@@ -3400,7 +3458,7 @@ class UniversalTrader:
                         if await self._sell_amount(
                             token_info, amount, price, f"mc_tier_${target_mc:.0f}"
                         ):
-                            realized_sol += amount * price
+                            realized_sol += self._ultimo_cobro
                             remaining -= amount
                             mc_executed[i] = True
                     if all(mc_executed):
@@ -3457,7 +3515,7 @@ class UniversalTrader:
                             except Exception:  # noqa: BLE001
                                 pass
                             if await self._sell_amount(token_info, remaining, price):
-                                realized_sol += remaining * price
+                                realized_sol += self._ultimo_cobro
                                 remaining = 0.0
                                 hit_sl = True
                                 break
@@ -3495,7 +3553,7 @@ class UniversalTrader:
                         if await self._sell_amount(
                             token_info, remaining, price, "suelo_por_mc"
                         ):
-                            realized_sol += remaining * price
+                            realized_sol += self._ultimo_cobro
                             remaining = 0.0
                             fully_exited = True
                             break
@@ -3515,7 +3573,7 @@ class UniversalTrader:
                     if await self._sell_amount(
                         token_info, remaining, price, "trailing_stop"
                     ):
-                        realized_sol += remaining * price
+                        realized_sol += self._ultimo_cobro
                         remaining = 0.0
                         fully_exited = True
                         break
@@ -3528,7 +3586,7 @@ class UniversalTrader:
                 )
                 _before_manual = remaining
                 remaining = await self._check_manual_sell(token_info, remaining, price)
-                realized_sol += max(0.0, _before_manual - remaining) * price
+                realized_sol += self._ultimo_cobro
                 if remaining <= 1e-9:
                     fully_exited = True
                     break
@@ -3539,7 +3597,7 @@ class UniversalTrader:
                 if pt is not None and pt >= position_start_wall:
                     logger.info("PANIC SELL for %s — dumping remaining", token_info.symbol)
                     if await self._sell_amount(token_info, remaining, price, "panic_sell"):
-                        realized_sol += remaining * price
+                        realized_sol += self._ultimo_cobro
                         remaining = 0.0
                         fully_exited = True
                         break
@@ -3578,7 +3636,7 @@ class UniversalTrader:
                     if await self._sell_amount(
                         token_info, to_sell, price, "stop_loss"
                     ):
-                        realized_sol += to_sell * price
+                        realized_sol += self._ultimo_cobro
                         remaining -= to_sell
                         if remaining > 1e-9:
                             self._record_moonbag(
@@ -3601,7 +3659,7 @@ class UniversalTrader:
                         continue
                     reason = f"tp_tier{i + 1}_+{tiers[i].gain * 100:.0f}%"
                     if await self._sell_amount(token_info, amount, price, reason):
-                        realized_sol += amount * price
+                        realized_sol += self._ultimo_cobro
                         executed[i] = True
                         remaining -= amount
                         had_tp = True  # el dev entregó un pump -> no es rug
@@ -3618,13 +3676,29 @@ class UniversalTrader:
                                 f"cobrado {reason}, el resto ya no puede perder "
                                 f"(suelo {entry_price:.8f} SOL)"
                             )
+                        if self.stop_al_tp_tras_tp:
+                            _tp_price = entry_price * (1 + tiers[i].gain)
+                            if sl_price is None or sl_price < _tp_price:
+                                sl_price = _tp_price
+                                logger.info(
+                                    f"STOP MOVIDO A TP{i + 1} {token_info.symbol}: "
+                                    f"el resto no puede bajar de {sl_price:.8f} SOL"
+                                )
 
                 if remaining <= 1e-9:
                     fully_exited = True
                     break
 
-                # All tiers done -> hold the moonbag and stop monitoring.
-                if tiers and all(executed) and target_price is None and not mc_tiers:
+                # Without a trailing or TP floor, the remainder becomes a
+                # manually managed moonbag and monitoring can stop.
+                if (
+                    tiers
+                    and all(executed)
+                    and target_price is None
+                    and not mc_tiers
+                    and not self.trailing_stop_percentage
+                    and not self.stop_al_tp_tras_tp
+                ):
                     logger.info(
                         f"All TP tiers hit for {token_info.symbol} — "
                         f"holding moonbag {moonbag * 100:.0f}% "
@@ -3677,7 +3751,7 @@ class UniversalTrader:
                             token_info, remaining, price, "muerta"
                         ):
                             _muerta_revisada = True
-                            realized_sol += remaining * price
+                            realized_sol += self._ultimo_cobro
                             remaining = 0.0
                             fully_exited = True
                             break
@@ -3706,7 +3780,7 @@ class UniversalTrader:
                         if await self._sell_amount(
                             token_info, to_sell, price, "max_hold_time"
                         ):
-                            realized_sol += to_sell * price
+                            realized_sol += self._ultimo_cobro
                             remaining -= to_sell
                         else:
                             logger.warning(
