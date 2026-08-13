@@ -65,7 +65,7 @@ trade:
   # CABEN: el bot reserva importe x 1,25 (deslizamiento) + 0,013 de comision de
   # prioridad, o sea 0,263 para una compra de 0,2, y libre solo hay 0,21.
   # SNOWKID cumplia todo a los 3,6 s y se quedo fuera por esto.
-  buy_amount: 0.05
+  buy_amount: 0.4
 
   # MAXIMO 3 POSICIONES A LA VEZ. Antes el tope estaba fijo en 20 dentro del
   # codigo, que era como no tenerlo: el freno lo ponia el saldo. Con la reserva
@@ -78,7 +78,11 @@ trade:
   # solas, asi que este numero no es "cuantas a la vez" sino "cuantas compra en
   # total antes de pararse". Con 3 habria comprado tres y se habria quedado
   # mudo el resto del dia. 25 x 0,05 = 1,25 SOL, que es lo que hay.
-  max_posiciones: 25
+  # 3 a 0,4 SOL. El bot reserva importe x 1,30 (deslizamiento) + comision por
+  # cada compra en vuelo, o sea 0,533 por posicion: con 1,52 libres no caben
+  # mas de tres. Y como la salida es manual, estas no se cierran solas -- son
+  # tres compras en total, no tres a la vez.
+  max_posiciones: 3
   # 0,50 SOL si la moneda viene de uno de los devs MARCADOS, contra los 0,30
   # de cualquier otro que cumpla el 10%. La lista son los 31 de
   # top_devs_buenos.json, medidos por dos criterios distintos: que no dumpean
@@ -87,7 +91,7 @@ trade:
   #
   # La lista NO decide si se compra -- eso lo sigue haciendo el 10% migrado
   # calculado en vivo -- solo cuanto. Mas ficha donde hay mas informacion.
-  buy_amount_marcados: 0.05
+  buy_amount_marcados: 0.4
   # Creadores que se compran SIEMPRE: se saltan el auto-bloqueo por
   # rugs, la puerta de la tasa de migracion y el 'solo mayhem'.
   #
@@ -100,9 +104,9 @@ trade:
   devs_marcados: ["FdFV6tJPvkRq6YRwnsBSYLJX3uQ55F9UdfHWTWu6Kzyf"]
   # Las mayhem entran con menos: rinden el doble de mediana pero
   # tambien fallan mas, asi que van a media apuesta.
-  mayhem_buy_amount: 0.05
+  mayhem_buy_amount: 0.4
   # Techo absoluto: ninguna via puede gastar mas de esto.
-  tope_compra_sol: 0.05
+  tope_compra_sol: 0.4
   # Selector automatico: con 10 operaciones cerradas por estrategia,
   # deja viva solo la de mejor retorno real y apaga el resto.
   usar_selector: true
