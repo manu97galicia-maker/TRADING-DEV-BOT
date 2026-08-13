@@ -35,11 +35,16 @@ class PlatformAwareBuyer(Trader):
         compute_units: dict | None = None,
         allow_mayhem: bool = False,
         require_mayhem: bool = False,
+        # Creadores que se compran SIEMPRE. Se saltan `require_mayhem`: pedir
+        # "snipea a este dev" manda sobre "solo mayhem", porque si no, de sus
+        # lanzamientos solo se cogeria la fraccion que salga en mayhem.
+        devs_marcados: set | None = None,
     ):
         """Initialize platform-aware token buyer."""
         self.allow_mayhem = bool(allow_mayhem)
         # "Only mayhem" strategies: buy exclusively pump.fun mayhem-mode tokens.
         self.require_mayhem = bool(require_mayhem)
+        self._devs_marcados = {str(d) for d in (devs_marcados or ())}
         self.client = client
         self.wallet = wallet
         self.priority_fee_manager = priority_fee_manager
@@ -190,7 +195,17 @@ class PlatformAwareBuyer(Trader):
             # token. Checked here (after pool_state is fetched above) because the
             # is_mayhem_mode flag is only authoritative once the bonding curve
             # has been read — earlier listeners often report it as False.
-            if self.require_mayhem and not getattr(
+            _marcado = bool(self._devs_marcados) and bool(
+                {str(token_info.user),
+                 str(getattr(token_info, "creator", "") or "")}
+                & self._devs_marcados
+            )
+            if _marcado and self.require_mayhem:
+                logger.info(
+                    f"{token_info.symbol}: dev marcado, se salta el filtro de "
+                    f"solo-mayhem"
+                )
+            if self.require_mayhem and not _marcado and not getattr(
                 token_info, "is_mayhem_mode", False
             ):
                 logger.info(

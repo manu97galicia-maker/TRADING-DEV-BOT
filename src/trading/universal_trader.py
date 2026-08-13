@@ -584,6 +584,7 @@ class UniversalTrader:
             # require_mayhem implies mayhem tokens must be buyable, so OR it in.
             allow_mayhem=bool(allow_mayhem) or bool(require_mayhem),
             require_mayhem=bool(require_mayhem),
+            devs_marcados=set(devs_marcados or ()),
         )
 
         self.seller = PlatformAwareSeller(
@@ -2013,7 +2014,13 @@ class UniversalTrader:
                     return
 
                 # Auto-baneo: dev que ha rugeado 2 veces seguidas -> no se compra.
-                if self._is_dev_blocked(_dev_user, _dev_creator):
+                # Los marcados se lo saltan: si Manu pide expresamente snipear a
+                # uno, esa decision manda sobre el contador automatico. La
+                # BLACKLIST MANUAL de arriba NO se salta -- esa es una decision
+                # explicita en sentido contrario y tiene que pesar mas.
+                if self._is_dev_blocked(_dev_user, _dev_creator) and not self._es_marcado(
+                    token_info
+                ):
                     logger.info(
                         f"Evitado {token_info.symbol}: dev "
                         f"{_dev_user[:8]} BLOQUEADO (2 rugs acumulados)"
@@ -2650,7 +2657,9 @@ class UniversalTrader:
                 # Pump.fun creator-migration filter (dev's track record via the
                 # pump.fun API — the data RugCheck lacks). Buy only if the dev
                 # has migrated >= min_migrations tokens AND rate >= min_rate.
-                if self.pumpfun_dev.get("enabled"):
+                if self.pumpfun_dev.get("enabled") and not self._es_marcado(
+                    token_info
+                ):
                     creator = getattr(token_info, "creator", None)
                     if not creator:
                         logger.info(f"{token_info.symbol}: sin creator; se omite")

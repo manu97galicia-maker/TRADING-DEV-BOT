@@ -75,7 +75,6 @@ trade:
   # la tercera no se abre, aunque el tope lo permita.
   # Una sola: con 0,25 SOL en la wallet no hay para dos de 0,2.
   max_posiciones: 3
-  devs_marcados: "top_devs_buenos.json"
   # 0,50 SOL si la moneda viene de uno de los devs MARCADOS, contra los 0,30
   # de cualquier otro que cumpla el 10%. La lista son los 31 de
   # top_devs_buenos.json, medidos por dos criterios distintos: que no dumpean
@@ -85,6 +84,16 @@ trade:
   # La lista NO decide si se compra -- eso lo sigue haciendo el 10% migrado
   # calculado en vivo -- solo cuanto. Mas ficha donde hay mas informacion.
   buy_amount_marcados: 0.05
+  # Creadores que se compran SIEMPRE: se saltan el auto-bloqueo por
+  # rugs, la puerta de la tasa de migracion y el 'solo mayhem'.
+  #
+  # FdFV6tJP: 70 monedas, 1 migrada (1%). Pero esa una es BOIUNA,
+  # con 3.852.192 $ de maximo, 82.514 $ de liquidez REAL y 14,9M $
+  # de volumen diario -- verificado en DexScreener, no es market cap
+  # inflado. Y la mediana de sus 70 es 5.531 $, que desde el
+  # nacimiento (2.097 $) son 2,6x: la moneda mediana de este dev
+  # llega al +50% y a x2. El bot lo tenia auto-bloqueado por 2 rugs.
+  devs_marcados: ["FdFV6tJPvkRq6YRwnsBSYLJX3uQ55F9UdfHWTWu6Kzyf"]
   # Las mayhem entran con menos: rinden el doble de mediana pero
   # tambien fallan mas, asi que van a media apuesta.
   mayhem_buy_amount: 0.05
