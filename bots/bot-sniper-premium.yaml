@@ -195,11 +195,12 @@ trade:
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
   tp2_gain: 1.00
-  tp2_sell: 0.133
+  tp2_sell: 0.20
+  # x3 CIERRA LA POSICION: 60% + 20% + 20% = todo fuera. Manu sale ahi.
   tp3_gain: 2.00
-  tp3_sell: 0.133
-  tp4_gain: 4.00
-  tp4_sell: 0.134
+  tp3_sell: 0.20
+  tp4_gain: 0
+  tp4_sell: 0
 
   # STOP DE ENTRADA: 50%. Medido sobre los tres corredores de Manu, simulando
   # la entrada real del bot y mirando la caida maxima ANTES de que despegaran:
@@ -849,7 +850,11 @@ filters:
     # 20%. Medido sobre el flujo real: 120 creadores, 94 lanzamientos al dia,
     # el 1,9% de todo. Con el 30% eran 33 al dia y salian ~3 compras; con esto
     # deberian salir del orden de 8-15 diarias.
-    min_rate: 0.30
+    # SIN PORCENTAJE. Solo se le pide al creador haber migrado una vez alguna
+    # vez. Medido: 851 creadores lo cumplen, 1.163 lanzamientos al dia entre
+    # todos, y cruzado con mayhem quedan ~151 al dia. Con el 30% eran 3,5, que
+    # no daba ni para juntar muestra.
+    min_rate: 0
   # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
   # Son dos listas que el bot mantiene solo mientras opera:
   #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.
