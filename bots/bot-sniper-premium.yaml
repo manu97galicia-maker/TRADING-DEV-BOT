@@ -129,7 +129,10 @@ trade:
   # en 0,35 y no mas abajo, y sigue estando el respaldo de Jupiter.
   sell_slippage: 0.35
 
-  exit_strategy: "tp_sl"
+  # MANUAL: el bot compra y NO vende. Manu cierra a mano. Con esto no se aplican
+  # ni take-profit ni stop-loss ni el anti-rug de salida -- la posicion se queda
+  # abierta hasta que alguien la venda.
+  exit_strategy: "manual"
   # CAPITAL ENTERO EN EL PRIMER ESCALON. Manu pide ir a lo que mas probabilidad
   # tiene de ganar "o al menos no perder", y esto ultimo se consigue aqui: 60%
   # al +70% devuelve 1,02 veces la inversion. A partir de ese momento la
@@ -373,7 +376,9 @@ trade:
   # riesgo lo limita el tamaño (0,05 x 20 = 1 SOL), no este contador. Ocho
   # perdidas seguidas son 0,4 SOL y siguen siendo una red por si algo va mal de
   # verdad. Volver a 2 cuando acabe la medicion.
-  max_perdidas_seguidas: 8
+  # Sin corta-circuitos: vendiendo a mano, el bot no sabe si una operacion gano
+  # o perdio, asi que un contador de rachas no significaria nada.
+  max_perdidas_seguidas: 0
 
 priority_fees:
   enable_dynamic: false
@@ -438,7 +443,7 @@ filters:
   #
   # Entrar pronto NO garantiza nada (IBB entro a 3,0 s y perdio 0,128), pero
   # entrar tarde si ha garantizado perder.
-  max_token_age: 15
+  max_token_age: 0
   # 7,8 s = los 0,13 min de la captura. El limite inferior de 0,01 min (0,6 s)
   # no hace falta ponerlo: lo que buscaba es no comprar dentro del bloque de
   # creacion, y de eso ya se encarga max_first_block_pct, que ademas mide la
@@ -495,7 +500,7 @@ filters:
   # 12 s = los 0,2 min de arriba del filtro de GMGN que paso Manu. Es un PLAZO,
   # no una espera: se compra en la vuelta en que se cumple todo (cada 0,15 s).
   # Ampliarlo no hace al bot mas lento, solo le da mas ocasiones de llegar.
-  max_buy_age: 6
+  max_buy_age: 0
 
   match_string: null
   bro_address: null
@@ -601,13 +606,13 @@ filters:
   # Subido de 29 a 45 solo por esta tanda: con 40 SOL de volumen exigidos, un
   # techo de 29 carteras chocaria con el suelo de volumen y no dispararia nunca.
   max_titulares: 0
-  min_buys: 2
+  min_buys: 0
   # OCHO CARTERAS DISTINTAS. TOADABU tenia CINCO moviendo 20,3 SOL. El volumen
   # solo dice cuanto dinero se movio; esto dice entre cuantas manos, que es lo
   # que un bundle no puede fabricar barato.
   # El perfil de Chief: 21 carteras. Por debajo de 12 la moneda no ha reunido
   # a nadie todavia y por encima de 35 empieza a oler a granja repartida.
-  min_titulares: 2
+  min_titulares: 0
   min_compras_por_cartera: 0
   max_compras_por_cartera: 0
   min_ops: 0
@@ -671,7 +676,7 @@ filters:
   # 2.750 $ dentro de 6 segundos lo que hay son una o dos. Resultado: 799
   # monedas vistas y CERO compras. El 39% de x3 que medi para esa banda salia
   # de monedas que ya tenian decenas de compras -- no de estas.
-  max_first_block_pct: 0.50
+  max_first_block_pct: 0
   # QUE EL DINERO SIGA ENTRANDO AHORA MISMO. min_volumen_sol mira TODO lo
   # negociado desde que nacio: una moneda que hizo un chorro de 30 SOL en el
   # primer segundo y se quedo muerta lo cumple igual que una que sigue viva.
@@ -881,7 +886,8 @@ filters:
   # segundos, una moneda que ya esta en 40K ha explotado, no esta cara por
   # vieja.
   min_entry_mc: 0
-  max_entry_mc: 2750
+  # Sin techo en modo copia: la idea es comprar lo que compra el, no filtrarlo.
+  max_entry_mc: 0
 
   # SEGUNDA PUERTA DE ENTRADA. La banda de arriba compra en el nacimiento, donde
   # no hay volumen que medir porque no ha dado tiempo a que lo haya. Esta deja
@@ -944,13 +950,16 @@ filters:
     # (`vistas 0` en el log), asi que copy-trading y solo-mayhem no caben
     # en el mismo proceso. La wallet y el hallazgo quedan aqui para
     # levantarlo como bot aparte cuando toque.
-    enabled: false
-    wallets: ["HTVZVEQMBsNanubDPTs3CxDAEGNFQHJY8c1441iy2S5r"]
+    enabled: true
+    wallets: ["H4DDbnT11vtY7N2AcFEiaSvRyYzPpcLL9GAzDq6r167C"]
+    # HTVZVEQMBsNanubDPTs3CxDAEGNFQHJY8c1441iy2S5r  <- el bundler del hallazgo
+    #   del 13-ago (5 de 5 monedas suyas hicieron 14x-116x). Guardado aqui por
+    #   si se quiere cambiar; solo se puede seguir a una tanda a la vez.
     poll_interval: 2.0
   # APAGADO al activar el copy-trading. Las monedas que toca HTVZ no tienen por
   # que estar en mayhem, y con esto puesto se descartarian casi todas: la señal
   # nueva quedaria inerte. Se elige la señal medida sobre la preferencia.
-  require_mayhem: true
+  require_mayhem: false
   marry_mode: false
   yolo_mode: true
   paper_trade: false         # DINERO REAL
