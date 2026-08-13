@@ -65,7 +65,7 @@ trade:
   # CABEN: el bot reserva importe x 1,25 (deslizamiento) + 0,013 de comision de
   # prioridad, o sea 0,263 para una compra de 0,2, y libre solo hay 0,21.
   # SNOWKID cumplia todo a los 3,6 s y se quedo fuera por esto.
-  buy_amount: 0.05
+  buy_amount: 0.07
 
   # MAXIMO 3 POSICIONES A LA VEZ. Antes el tope estaba fijo en 20 dentro del
   # codigo, que era como no tenerlo: el freno lo ponia el saldo. Con la reserva
@@ -94,7 +94,7 @@ trade:
   #
   # La lista NO decide si se compra -- eso lo sigue haciendo el 10% migrado
   # calculado en vivo -- solo cuanto. Mas ficha donde hay mas informacion.
-  buy_amount_marcados: 0.05
+  buy_amount_marcados: 0.07
   # Creadores que se compran SIEMPRE: se saltan el auto-bloqueo por
   # rugs, la puerta de la tasa de migracion y el 'solo mayhem'.
   #
@@ -107,9 +107,9 @@ trade:
   devs_marcados: ["FdFV6tJPvkRq6YRwnsBSYLJX3uQ55F9UdfHWTWu6Kzyf"]
   # Las mayhem entran con menos: rinden el doble de mediana pero
   # tambien fallan mas, asi que van a media apuesta.
-  mayhem_buy_amount: 0.05
+  mayhem_buy_amount: 0.07
   # Techo absoluto: ninguna via puede gastar mas de esto.
-  tope_compra_sol: 0.05
+  tope_compra_sol: 0.07
   # Selector automatico: con 10 operaciones cerradas por estrategia,
   # deja viva solo la de mejor retorno real y apaga el resto.
   usar_selector: true
@@ -190,22 +190,26 @@ trade:
   # Los dos ultimos van por MARKET CAP y no por porcentaje a proposito: desde
   # una entrada de ~2.300 $, 9K es un x3,9 y 19K un x8,3. Decirlo en cifras
   # absolutas es mas facil de razonar que en multiplos.
+  # El 50% que queda, repartido en cuatro por market cap. Los escalones se
+  # arman DESPUES del +40%, asi que primero se recupera y luego se estira.
   mc_take_profit_tiers:
-    - {target_mc: 9000,  sell: 0.10}
-    - {target_mc: 19000, sell: 0.10}
+    - {target_mc: 8000,  sell: 0.125}
+    - {target_mc: 12000, sell: 0.125}
+    - {target_mc: 24000, sell: 0.125}
+    - {target_mc: 36000, sell: 0.125}
 
   # +50% VENDE 60%. Ojo al numero: 0,60 x 1,5 = 0,90, o sea que devuelve el 90%
   # del capital, no el 100%. Para recuperarlo entero harian falta el 67%. Se
   # deja en 60 porque es lo que pidio Manu; lo que queda en riesgo hasta que el
   # stop suba a la entrada es 0,10 del capital.
-  take_profit_percentage: 0.50
-  take_profit_sell_percentage: 0.60
+  take_profit_percentage: 0.40
+  take_profit_sell_percentage: 0.50
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
-  tp2_gain: 2.00
-  tp2_sell: 0.20
-  tp3_gain: 4.00
-  tp3_sell: 0.20
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
   tp4_gain: 0
   tp4_sell: 0
 
@@ -271,53 +275,10 @@ trade:
     - {alcanza: 50000,  suelo: 42000}
     - {alcanza: 100000, suelo: 88000}
     - {alcanza: 200000, suelo: 180000}
-
-  # STOP DEL 35%, puesto el 11-ago despues del caso Parmesan.
-  #
-  # Antes no habia ninguno: 0,95 significaba "que caiga hasta casi cero". El
-  # razonamiento era que el 80% al +30% compensaba el riesgo. Parmesan demostro
-  # que no: se fue a -49%, la curva se quedo con 0,0035 SOL y la posicion ya no
-  # se pudo vender NI POR JUPITER. Ocho intentos, primero Custom 6024 y despues
-  # directamente sin ruta.
-  #
-  # Lo que fallo no fue la deteccion sino la ejecucion: el anti-rug salto SIETE
-  # veces con lecturas correctas (6,9 SOL vendidos contra 0,0 comprados) y no
-  # pudo vender porque para entonces ya no habia curva legible. Una red que
-  # solo funciona mientras hay liquidez no sirve para lo unico de lo que hay
-  # que protegerse.
-  #
-  # Un stop por PRECIO salta antes, cuando todavia queda con quien negociar.
-  # 35% deja respirar el zarandeo del nacimiento -- Kermit se hundio un 44%
-  # antes de hacer x13, asi que alguna buena se perdera -- pero evita quedarse
-  # con la bolsa entera de una que se va a cero.
-  # 50%, ampliado desde el 35% el 11-ago. Da mas aire al zarandeo del
-  # nacimiento -- Kermit se hundio un 44% antes de hacer x13, y con el stop en
-  # 35% se habria soltado justo antes.
-  #
-  # El coste esta claro y es aritmetico: la que salga mal ahora se lleva la
-  # MITAD de la posicion. Sobre 0,30 SOL son 0,15 por operacion fallida.
-  #
-  # Lo que lo hace defendible es el primer escalon: al +30% se vende el 80% y
-  # el stop sube inmediatamente al precio de entrada. O sea que el 50% solo
-  # esta expuesto en el tramo entre la compra y ese +30%; a partir de ahi la
-  # operacion ya no puede perder.
-  # BAJADO DE 0,30 A 0,20. En las 655 medidas, las que llegan a x3 NO retroceden
-  # por el camino: van directas. El stop ancho no estaba protegiendo a ningun
-  # ganador, solo tardaba mas en cortar a las perdedoras. Acortarlo sale gratis.
-  #
-  # (Matiz honesto: con velas de 30 s un bache dentro de la vela no se ve, asi
-  # que el "no retroceden" puede estar algo inflado. Por eso 20 y no 15.)
-  stop_loss_percentage: 0.20
-
-  # TRAILING: 33%, separado del stop de entrada (campo nuevo). Antes eran el
-  # mismo numero y no pueden serlo: el de entrada tiene que ser ancho para
-  # aguantar el nacimiento, y este corto para no devolver media ganancia desde
-  # el techo. Se arma cuando la moneda sube un 20% y sigue al maximo.
-  # 45%. Estaba en 0, y con eso el codigo usaba el stop-loss (20%) como
-  # trailing: cerraba TODO en cuanto la moneda retrocedia un 20% desde su pico.
-  # PHAVAN murio asi a los 30 segundos. Con 45% solo cierra ante un derrumbe de
-  # verdad, y el trinquete de la escalera ya protege lo cobrado.
-  trailing_stop_percentage: 0.45
+  # SIN STOP. Manu lo quita a proposito. Lo que cierra una operacion que no
+  # funciona es la venta por muerta de abajo, no un porcentaje de caida.
+  stop_loss_percentage: 0
+  trailing_stop_percentage: 0
 
   # EL STOP SE LO LLEVA TODO. Sin esto el bot respeta el "moonbag" (lo que
   # no cubren los escalones de take-profit) incluso al saltar el stop, y
@@ -332,22 +293,12 @@ trade:
   anti_rug_ratio: 2.0
   anti_rug_seg: 4
   anti_rug_min_sol: 3
-
-  # DESACTIVADA. En VOLUMEN-2,5K corta a los 3 min lo que nace plano, pero
-  # aqui seria un tiro en el pie: Dadjak tardo 26 MINUTOS en hacer su techo y
-  # una venta a los 3 la habria sacado en plena subida. Quien decide la salida
-  # es el trailing.
-  # CONTRA EL SANGRADO. Estaba en 0 -- desactivada -- y ese es el agujero por
-  # el que se fue el dinero hoy: la moneda que hace pico al nacer y luego se
-  # desangra se quedaba dentro hasta el stop del -50%. A los 120 s se mira UNA
-  # vez: si no esta por encima de la entrada, fuera. Si va en verde se la deja
-  # correr y ya no se vuelve a preguntar.
-  # Y a los 90 segundos, si no esta por encima de la entrada, fuera. Es la otra
-  # mitad del mismo problema: la que nace plana y se desangra despacio no
-  # dispara el anti-rug ni llega al stop, se queda ocupando una posicion hasta
-  # que ya no hay a quien venderle.
-  venta_muerta_seg: 90
-  venta_muerta_gain: 0.0
+  # DOS MINUTOS POR DEBAJO DEL PRECIO DE COMPRA -> fuera todo. Con el stop
+  # quitado, esto es lo unico que cierra una operacion que no arranca, y es
+  # mejor freno que un porcentaje: no le importa cuanto ha caido sino cuanto
+  # tiempo lleva sin recuperar lo que se pago.
+  venta_muerta_seg: 120
+  venta_muerta_gain: 0
 
   # 90 min. El techo mas tardio de los tres llego a los 26 min; se deja el
   # triple de margen porque el tope solo esta para el caso en que el precio se
@@ -523,71 +474,12 @@ filters:
   # 12 s = los 0,2 min de arriba del filtro de GMGN que paso Manu. Es un PLAZO,
   # no una espera: se compra en la vuelta en que se cumple todo (cada 0,15 s).
   # Ampliarlo no hace al bot mas lento, solo le da mas ocasiones de llegar.
-  max_buy_age: 6
+  max_buy_age: 9
 
   match_string: null
   bro_address: null
-
-  # ── LA SEÑAL ────────────────────────────────────────────────────────────
-  # 33,3 SOL = ~2.500 $ con SOL a 75 $ (la misma referencia que usa el bot
-  # para el market cap). Es el "Volumen min 2.5K" de la captura.
-  # 40 SOL = ~3.000 $ con SOL a 75 $, la misma referencia con la que el bot
-  # calcula el market cap. Estaba en 0 porque la señal era la lista de devs;
-  # ahora que la entrada la decide el mercado hace falta exigir movimiento.
-  #
-  # Encaja con el suelo de 4.000 $ de market cap: 3.000 $ negociados para
-  # llegar a 4.000 de valoracion significa que casi todo lo que vale la moneda
-  # se ha pagado de verdad. Es lo contrario del caso malo que analizamos, que
-  # subia a 8.542 con el 97% del supply sin vender.
-  # BAJADO de 40 a 30 SOL (~2.250 $) el 11-ago. Medido en vivo: en 139 monedas
-  # los volumenes mas altos que se vieron fueron 44,9 · 36,2 · 35,9 SOL. El
-  # umbral estaba justo por encima de donde vive casi todo, asi que el bot se
-  # pasaba las horas mirando monedas que rozaban sin llegar.
-  #
-  # No se toca nada mas a proposito: el filtro anti-bundle todavia no ha tenido
-  # ni una operacion con la que demostrarse, y mover dos cosas a la vez impide
-  # saber cual causo que.
-  # VOLUMEN 2K - 60K de la captura, con SOL a 75 $.
-  # El TECHO importa tanto como el suelo: por encima de 60.000 $ de volumen ya
-  # no eres el que entra pronto, eres la salida de otro.
-  # 5,33 SOL = ~400 $ con SOL a 75. Bajado desde 26,7 (2.000 $) el 11-ago.
-  # Encaja con lo medido: en la ventana de 3 segundos las monedas movian entre
-  # 0,1 y 2,9 SOL, asi que 26,7 era inalcanzable y 5,33 esta al alcance de las
-  # que arrancan con fuerza.
-  # 40 SOL = ~3.000 $ con SOL a 75. Subido desde 5,33 el 11-ago.
-  #
-  # OJO CON ESTO, que es contraintuitivo: mover 3.000 $ en TRES SEGUNDOS es
-  # justo lo que hace un bundle. TOADABU junto 20,3 SOL en 0,2 s con cinco
-  # carteras, y era un rug. Una moneda organica rara vez llega ahi tan pronto
-  # -- las medidas movian 0,1 a 2,9 SOL en esa ventana.
-  #
-  # Por eso este umbral NO se puede llevar solo: son los filtros de bundle
-  # (max_first_block_pct) y de titulares distintos (min_titulares) los que
-  # separan al que mueve 40 SOL porque le compra gente del que los mueve el
-  # solo. Si alguna vez se quitan esos dos, hay que bajar este.
-  # BAJADO de 40 a 12 SOL el 11-ago, y esta vez con la prueba delante:
-  #
-  #   PVE        46,5 SOL en 1,2 s  ->  -0,1342 SOL
-  #   WIWI       40,2 SOL en 2,1 s  ->  -0,0774 SOL
-  #   Leelavati  16,0 SOL en 3,0 s  ->  x58 ... y se RECHAZO por volumen
-  #
-  # El volumen alto en tres segundos NO predice ganancia: predice bundle. Las
-  # dos que superaron los 40 SOL perdieron, y la que hizo x58 -- migro y llego
-  # a 121.636 $ de ATH -- se quedo en 16 SOL y el filtro la tiro.
-  #
-  # 12 SOL deja pasar a las Leelavati sin abrir la puerta a cualquier cosa. El
-  # trabajo de descartar bundles lo hacen max_first_block_pct y min_titulares,
-  # que miran ENTRE CUANTAS MANOS se mueve el dinero en vez de cuanto.
-  #
-  # 15 SOL. Con 15 o mas, el 54% llega al +30%; por debajo de 15, el 34%. No es
-  # el volumen en si: es que sin el no hay nadie al otro lado cuando toque
-  # vender. (Ojo: esto NO contradice el caso Leelavati. Alli el error fue pedir
-  # 40 SOL en 3 segundos, que solo cumplen los bundles.)
-  # CERO, y es a proposito. A 2.750 $ la moneda acaba de nacer y todavia no hay
-  # volumen que medir; exigirlo obliga a esperar, y esperar es entrar a 8K --
-  # que es lo que perdio cuatro veces seguidas el 11-ago.
-  min_volumen_sol: 0
-  max_volumen_sol: 800
+  min_volumen_sol: 5
+  max_volumen_sol: 27
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
   # que en ventas. Sin esto, "2.500 $ de volumen" incluye a las que estan
@@ -912,9 +804,9 @@ filters:
   # El techo de 50.000 no es comprar caro: con la ventana en menos de 8
   # segundos, una moneda que ya esta en 40K ha explotado, no esta cara por
   # vieja.
-  min_entry_mc: 0
+  min_entry_mc: 2300
   # Sin techo en modo copia: la idea es comprar lo que compra el, no filtrarlo.
-  max_entry_mc: 2750
+  max_entry_mc: 2600
 
   # SEGUNDA PUERTA DE ENTRADA. La banda de arriba compra en el nacimiento, donde
   # no hay volumen que medir porque no ha dado tiempo a que lo haya. Esta deja
@@ -986,7 +878,7 @@ filters:
   # APAGADO al activar el copy-trading. Las monedas que toca HTVZ no tienen por
   # que estar en mayhem, y con esto puesto se descartarian casi todas: la señal
   # nueva quedaria inerte. Se elige la señal medida sobre la preferencia.
-  require_mayhem: true
+  require_mayhem: false
   marry_mode: false
   yolo_mode: true
   paper_trade: false         # DINERO REAL

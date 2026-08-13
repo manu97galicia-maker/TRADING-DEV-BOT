@@ -1,7 +1,7 @@
-# VOLUMEN-2,5K — la UNICA estrategia activa desde el 10-ago.
+# PORTAVIONES — la unica estrategia activa.
 #
 # Sale de los filtros que Manu pasó en captura: edad maxima 0,26 min, market
-# cap maximo 5K (subido a 5,5K) y volumen minimo 2,5K. Sustituye a DEV10.
+# cap entre 3,2K y 5,5K y volumen minimo $1.970. Sustituye a DEV10.
 #
 # ─────────────────────────────────────────────────────────────────────────────
 # LA IDEA
@@ -37,7 +37,7 @@
 # un 20%: es el valor que pidio Manu y en el codigo los dos usan el mismo
 # campo (`stop_loss_percentage`).
 
-name: "VOLUMEN-2,5K - 15s, MC<5,5K, volumen 2,5K con presion compradora"
+name: "PORTAVIONES - dev con tasa de migracion 10%+"
 env_file: ".env"
 
 # SOLO AVISOS DE COMPRA. El bot mandaba tambien senales, moonbags cada 5
@@ -50,16 +50,18 @@ rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
-enabled: true
+enabled: false
 separate_process: true
 platform: "pump_fun"
 
 trade:
-  # 0,15. Ya no comparte wallet con nadie (DEV10 esta apagada), asi que se
-  # puede subir a 0,30 cuando Manu recargue -- se deja bajo a proposito hasta
-  # comprobar que la estrategia gana dinero de verdad.
+  # El nominal solicitado es 0,15, pero el tope total inferior lo recorta
+  # antes de construir la instruccion para incluir el slippage.
   buy_amount: 0.15
   buy_slippage: 0.30
+  # Tope del coste autorizado por la instruccion: nominal + slippage.
+  # Con 30%, el nominal se recorta a 0,115384615 SOL.
+  tope_compra_total_sol: 0.15
   # 0,35, no 0,90. Con el 90% el bot aceptaba cobrar hasta un 90% MENOS de lo
   # esperado y lo apuntaba como si hubiera cobrado entero: es la principal
   # sospecha de por que el P&L teorico decia +0,16 mientras la cartera perdia
@@ -76,6 +78,8 @@ trade:
   # Lo que sigue dentro a partir de ese momento es dinero regalado.
   take_profit_percentage: 0.50
   take_profit_sell_percentage: 0.67
+  # Tras TP1, el 33% restante no puede volver a bajar del precio de TP1.
+  stop_al_tp_tras_tp: true
   # Sin mas escalones a proposito: el 33% que queda lo gestiona el trailing.
   tp2_gain: 0
   tp2_sell: 0
@@ -139,19 +143,15 @@ retries:
 filters:
   listener_type: "logs"
 
-  # 15,6 s = los 0,26 min del filtro de Manu. Es una ventana MUY corta para
-  # acumular 2.500 $ de volumen: solo lo consigue la moneda que arranca de
-  # verdad, que es justo lo que se busca. La que tarda mas, ya no interesa.
-  max_token_age: 40
-  max_buy_age: 15.6
+  # Compra en cuanto termina la consulta del historial del creador.
+  max_token_age: 15
+  max_buy_age: 7
 
   match_string: null
   bro_address: null
 
   # ── LA SEÑAL ────────────────────────────────────────────────────────────
-  # 33,3 SOL = ~2.500 $ con SOL a 75 $ (la misma referencia que usa el bot
-  # para el market cap). Es el "Volumen min 2.5K" de la captura.
-  min_volumen_sol: 33.3
+  min_volumen_sol: 0
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
   # que en ventas. Sin esto, "2.500 $ de volumen" incluye a las que estan
@@ -164,12 +164,12 @@ filters:
   # luego la moneda se queda quieta unos segundos. Con 10 s se mide la
   # direccion del dinero en el mismo tramo en que se acumulo el volumen, que
   # es lo que se queria medir desde el principio.
-  min_presion_ratio: 3.0
+  min_presion_ratio: 0
   presion_seg: 10.0
 
   # Que el volumen no sea de dos carteras. 8 compras de 6 manos distintas.
-  min_buys: 8
-  min_titulares: 6
+  min_buys: 0
+  min_titulares: 0
   min_ops: 0
   min_first_block_buys: 0
   min_vol_ventana_sol: 0
@@ -179,7 +179,7 @@ filters:
   # se compra. Estos devs relanzan el mismo clon una y otra vez y comprar tres
   # es pagar tres veces por la misma apuesta. Mas alto que en DEV10 (5 min)
   # porque aqui se entra mas tarde y da tiempo a que salgan mas clones.
-  no_repeat_name_min: 10
+  no_repeat_name_min: 0
 
   # ── EL CREADOR: MINIMO 2 MIGRACIONES ────────────────────────────────────
   # Lo pidio Manu. No es la senal principal -- eso sigue siendo el mercado --
@@ -199,7 +199,7 @@ filters:
   pumpfun_dev:
     enabled: true
     min_migrations: 1
-    min_rate: 0.02
+    min_rate: 0.10
   # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
   # Son dos listas que el bot mantiene solo mientras opera:
   #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.
@@ -207,14 +207,11 @@ filters:
   # Asi la estrategia se va limpiando sola: el que te la juega una vez entra en
   # cuenta, y a la segunda queda fuera para siempre. En DEV10 esto estaba
   # desactivado porque bloqueaba sin mirar la tasa; aqui interesa que sume.
-  ignorar_listas_de_devs: false
+  ignorar_listas_de_devs: true
 
-  # Techo de 5.500 $. La captura traia 5K; Manu lo sube un poco el 10-ago para
-  # dar margen: una moneda que hace 2.500 $ de volumen en 15 s se mueve rapido
-  # y quedarse en 5.000 clavados la deja fuera por unos cientos de dolares.
-  # Sin suelo: lo que importa es no entrar arriba, no entrar tarde.
+  # Sin filtro de market cap: manda exclusivamente el historial del creador.
   min_entry_mc: 0
-  max_entry_mc: 5500
+  max_entry_mc: 0
   min_curve_sol: 0
 
   allow_mayhem: false        # decision de Manu: solo pump.fun normal
@@ -225,8 +222,8 @@ filters:
   # Anti-concentracion: si un solo titular tiene mas del 15%, ese es el que va
   # a vender encima. Aqui si se mira, porque se entra despues del reparto
   # inicial y el dato ya es fiable.
-  max_holder_pct: 0.15
-  max_dev_hold_pct: 0.05
+  max_holder_pct: 0
+  max_dev_hold_pct: 0
   min_holders: 0
   holder_bypass_ratio: 0
   redes_originales: false
