@@ -494,7 +494,13 @@ filters:
 
   match_string: null
   bro_address: null
-  min_volumen_sol: 5
+  # BAJADO DE 5 A 2 SOL. Con 5 (los 400 $ del filtro de GMGN) el bot vio 216
+  # monedas seguidas sin que ninguna cumpliera: para cuando han entrado 5 SOL,
+  # el market cap casi siempre se ha pasado ya de 2.600. Las dos condiciones se
+  # peleaban. Con 2 SOL sigue habiendo alguien dentro --no somos nosotros el
+  # mercado, que fue lo que hundio las operaciones de la tarde-- y la banda
+  # vuelve a ser alcanzable.
+  min_volumen_sol: 2
   max_volumen_sol: 27
 
   # DIRECCION DEL DINERO: tienen que haber entrado 3 veces mas SOL en compras
@@ -932,7 +938,12 @@ filters:
   # este numero no puede pasar de 19.
   min_holders: 0
   holder_bypass_ratio: 0
-  redes_originales: false
+  # REDES PROPIAS. Exige que el enlace sea a una CUENTA y no al tuit de otro
+  # --que es lo que trae casi toda moneda nueva: se enganchan a un post ajeno
+  # con alcance para aparentar respaldo-- y que esa cuenta no la haya usado ya
+  # otra moneda en las ultimas horas, que es la firma del que lanza veinte
+  # clones. Se pide en paralelo con el resto, asi que no añade espera.
+  redes_originales: true
   min_holders_gmgn: 0
   # SEÑAL DE GMGN, tipo 18. Estaba medido en el repo desde el 4-ago y sin usar:
   #
