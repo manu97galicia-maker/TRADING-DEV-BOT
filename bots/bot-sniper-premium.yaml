@@ -266,7 +266,13 @@ trade:
   # el stop sube inmediatamente al precio de entrada. O sea que el 50% solo
   # esta expuesto en el tramo entre la compra y ese +30%; a partir de ahi la
   # operacion ya no puede perder.
-  stop_loss_percentage: 0.30
+  # BAJADO DE 0,30 A 0,20. En las 655 medidas, las que llegan a x3 NO retroceden
+  # por el camino: van directas. El stop ancho no estaba protegiendo a ningun
+  # ganador, solo tardaba mas en cortar a las perdedoras. Acortarlo sale gratis.
+  #
+  # (Matiz honesto: con velas de 30 s un bache dentro de la vela no se ve, asi
+  # que el "no retroceden" puede estar algo inflado. Por eso 20 y no 15.)
+  stop_loss_percentage: 0.20
 
   # TRAILING: 33%, separado del stop de entrada (campo nuevo). Antes eran el
   # mismo numero y no pueden serlo: el de entrada tiene que ser ancho para
@@ -631,7 +637,16 @@ filters:
   # un 9%. Por bandas, contra el maximo real: <10% da 2,54x de mediana y un 34%
   # que llega a 3x; 20-30% da 1,81x y un 18%. Deja 102 ocasiones al dia, de
   # sobra.
-  max_first_block_pct: 0.30
+  # APRETADO DE 0,30 A 0,10 para ir a por el x3. Medido sobre 655 monedas con
+  # su recorrido real de precio, entrando al nacimiento:
+  #
+  #     bundle <10%    39% llegan a x3
+  #     bundle 10-30%  19%
+  #     bundle 30-60%  15%
+  #
+  # Duplica la probabilidad del x3, y sigue dejando 137 monedas al dia antes
+  # del resto de filtros -- de sobra.
+  max_first_block_pct: 0.10
   # QUE EL DINERO SIGA ENTRANDO AHORA MISMO. min_volumen_sol mira TODO lo
   # negociado desde que nacio: una moneda que hizo un chorro de 30 SOL en el
   # primer segundo y se quedo muerta lo cumple igual que una que sigue viva.
