@@ -392,9 +392,26 @@ priority_fees:
   # 2.097 a 12.502 $ en segundo y medio, y ahi no se compite pagando poco. Pero
   # si las operaciones salen justas de rentabilidad, este es el primer numero
   # que hay que revisar.
-  fixed_amount: 100_000_000
+  # BAJADO A 20M el 13-ago. La cuenta con el tamaño de AHORA (0,1 SOL):
+  #
+  #     100M x 140.000 CU = 0,0140 por compra  -> 14% de la posicion
+  #     100M x 120.000 CU = 0,0120 por venta   -> 12%
+  #     ida y vuelta                             26%
+  #
+  #      20M x 140.000 CU = 0,0028 por compra  -> 2,8%
+  #      20M x 120.000 CU = 0,0024 por venta   -> 2,4%
+  #     ida y vuelta                             5,2%
+  #
+  # Los 100M se pusieron cuando se operaba con 0,35 SOL, donde eran un 4%. Con
+  # 0,1 son un 26% y se comen la ventaja entera: ZOLANA salio de la wallet por
+  # 0,1176 cuando a la curva llegaron 0,1003.
+  #
+  # Lo que se pierde: algo de velocidad. Se asume porque esta estrategia NO
+  # compite por el bloque de creacion --entra entre el segundo 0 y el 9, con la
+  # moneda ya viva-- que es justo lo que dice el comentario de arriba.
+  fixed_amount: 20_000_000
   extra_percentage: 0.0
-  hard_cap: 100_000_000
+  hard_cap: 20_000_000
 
 retries:
   max_attempts: 2
