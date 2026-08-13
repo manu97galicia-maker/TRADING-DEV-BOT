@@ -796,7 +796,15 @@ filters:
     # Lo que protege ahora es la ESTRUCTURA, no la reputacion: comprando a
     # 2.750 $ como mucho, el suelo de la curva (2.097 $) esta a un 24%, asi que
     # el stop del 35% es mas ancho que la caida maxima posible.
-    enabled: true
+    # APAGADO: era lo unico que impedia operar. Las 16 candidatas de tres
+    # minutos cumplian todo --MC 2.227-2.516, entrando entre el segundo 0,2
+    # y el 4,9-- y las 16 murieron aqui, con creadores de 0 migraciones de 0
+    # lanzamientos. Ya estaba medido: solo el 1,9% del flujo tiene un dev con
+    # 20% o mas, asi que con esta puerta no hay tanda de 20 operaciones.
+    #
+    # Lo que protege sin ella es la ESTRUCTURA: comprando a 2.750 como mucho,
+    # el suelo de la curva (2.097) esta a un 24% y el stop del 20% corta antes.
+    enabled: false
     # MAS DE UNA MIGRACION, y nada mas. Sin porcentaje: min_rate en 0 hace que
     # el codigo (`migs < min_migrations O rate < min_rate`) decida solo por el
     # numero.
