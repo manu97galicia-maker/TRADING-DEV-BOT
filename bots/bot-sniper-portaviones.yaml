@@ -39,11 +39,15 @@ platform: "pump_fun"
 trade:
   # 0,15 SOL por operacion, como pidio Manu para PORTAVIONES.
   buy_amount: 0.15
-  # TOPE DURO al mismo 0,15. El 12-ago la cadena registro compras de 0,25 y
-  # 0,30 SOL con `buy_amount: 0.15` configurado, y el fallo sigue sin
-  # encontrarse. Esto no lo arregla: garantiza que ninguna via pueda gastar mas
-  # de lo autorizado. Como PORTAVIONES es ahora la UNICA estrategia viva y opera
-  # con dinero real, va puesto.
+  # TOPE DURO al mismo 0,15. Limita el importe NOMINAL de la compra: el que se
+  # elige antes de firmar (buy_amount, o el de mayhem/marcados si los hubiera).
+  #
+  # OJO, NO es el tope del gasto real en cadena. La instruccion de pump.fun pide
+  # una cantidad EXACTA de tokens y lleva un `max_sol_cost` = importe x (1 +
+  # buy_slippage). Con slippage 0,30 esta compra puede llegar a costar 0,195 SOL
+  # aunque el nominal sean 0,15. Para que el tope acotase el gasto real habria
+  # que aplicarlo al max_sol_cost, y eso dejaria la compra sin margen y haria
+  # fallar muchas entradas: es una decision de Manu, no un ajuste tecnico.
   tope_compra_sol: 0.15
   # Nombre con el que cuenta sus resultados (selector y racha).
   nombre_estrategia: portaviones
