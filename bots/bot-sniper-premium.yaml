@@ -65,7 +65,7 @@ trade:
   # CABEN: el bot reserva importe x 1,25 (deslizamiento) + 0,013 de comision de
   # prioridad, o sea 0,263 para una compra de 0,2, y libre solo hay 0,21.
   # SNOWKID cumplia todo a los 3,6 s y se quedo fuera por esto.
-  buy_amount: 0.5
+  buy_amount: 0.05
 
   # MAXIMO 3 POSICIONES A LA VEZ. Antes el tope estaba fijo en 20 dentro del
   # codigo, que era como no tenerlo: el freno lo ponia el saldo. Con la reserva
@@ -85,7 +85,7 @@ trade:
   # 2 a 0,5 SOL. El bot reserva importe x 1,30 + comision = 0,663 por compra en
   # vuelo; con 1,38 libres no caben tres. Y con salida manual no se cierran
   # solas: son dos compras en total hasta que Manu venda algo.
-  max_posiciones: 2
+  max_posiciones: 3
   # 0,50 SOL si la moneda viene de uno de los devs MARCADOS, contra los 0,30
   # de cualquier otro que cumpla el 10%. La lista son los 31 de
   # top_devs_buenos.json, medidos por dos criterios distintos: que no dumpean
@@ -94,7 +94,7 @@ trade:
   #
   # La lista NO decide si se compra -- eso lo sigue haciendo el 10% migrado
   # calculado en vivo -- solo cuanto. Mas ficha donde hay mas informacion.
-  buy_amount_marcados: 0.5
+  buy_amount_marcados: 0.05
   # Creadores que se compran SIEMPRE: se saltan el auto-bloqueo por
   # rugs, la puerta de la tasa de migracion y el 'solo mayhem'.
   #
@@ -107,9 +107,9 @@ trade:
   devs_marcados: ["FdFV6tJPvkRq6YRwnsBSYLJX3uQ55F9UdfHWTWu6Kzyf"]
   # Las mayhem entran con menos: rinden el doble de mediana pero
   # tambien fallan mas, asi que van a media apuesta.
-  mayhem_buy_amount: 0.5
+  mayhem_buy_amount: 0.05
   # Techo absoluto: ninguna via puede gastar mas de esto.
-  tope_compra_sol: 0.5
+  tope_compra_sol: 0.05
   # Selector automatico: con 10 operaciones cerradas por estrategia,
   # deja viva solo la de mejor retorno real y apaga el resto.
   usar_selector: true
@@ -143,7 +143,7 @@ trade:
   # MANUAL: el bot compra y NO vende. Manu cierra a mano. Con esto no se aplican
   # ni take-profit ni stop-loss ni el anti-rug de salida -- la posicion se queda
   # abierta hasta que alguien la venda.
-  exit_strategy: "manual"
+  exit_strategy: "tp_sl"
   # CAPITAL ENTERO EN EL PRIMER ESCALON. Manu pide ir a lo que mas probabilidad
   # tiene de ganar "o al menos no perder", y esto ultimo se consigue aqui: 60%
   # al +70% devuelve 1,02 veces la inversion. A partir de ese momento la
@@ -389,7 +389,7 @@ trade:
   # verdad. Volver a 2 cuando acabe la medicion.
   # Sin corta-circuitos: vendiendo a mano, el bot no sabe si una operacion gano
   # o perdio, asi que un contador de rachas no significaria nada.
-  max_perdidas_seguidas: 0
+  max_perdidas_seguidas: 4
 
 priority_fees:
   enable_dynamic: false
@@ -454,7 +454,7 @@ filters:
   #
   # Entrar pronto NO garantiza nada (IBB entro a 3,0 s y perdio 0,128), pero
   # entrar tarde si ha garantizado perder.
-  max_token_age: 0
+  max_token_age: 15
   # 7,8 s = los 0,13 min de la captura. El limite inferior de 0,01 min (0,6 s)
   # no hace falta ponerlo: lo que buscaba es no comprar dentro del bloque de
   # creacion, y de eso ya se encarga max_first_block_pct, que ademas mide la
@@ -511,7 +511,7 @@ filters:
   # 12 s = los 0,2 min de arriba del filtro de GMGN que paso Manu. Es un PLAZO,
   # no una espera: se compra en la vuelta en que se cumple todo (cada 0,15 s).
   # Ampliarlo no hace al bot mas lento, solo le da mas ocasiones de llegar.
-  max_buy_age: 0
+  max_buy_age: 6
 
   match_string: null
   bro_address: null
@@ -617,13 +617,13 @@ filters:
   # Subido de 29 a 45 solo por esta tanda: con 40 SOL de volumen exigidos, un
   # techo de 29 carteras chocaria con el suelo de volumen y no dispararia nunca.
   max_titulares: 0
-  min_buys: 0
+  min_buys: 2
   # OCHO CARTERAS DISTINTAS. TOADABU tenia CINCO moviendo 20,3 SOL. El volumen
   # solo dice cuanto dinero se movio; esto dice entre cuantas manos, que es lo
   # que un bundle no puede fabricar barato.
   # El perfil de Chief: 21 carteras. Por debajo de 12 la moneda no ha reunido
   # a nadie todavia y por encima de 35 empieza a oler a granja repartida.
-  min_titulares: 0
+  min_titulares: 2
   min_compras_por_cartera: 0
   max_compras_por_cartera: 0
   min_ops: 0
@@ -687,7 +687,7 @@ filters:
   # 2.750 $ dentro de 6 segundos lo que hay son una o dos. Resultado: 799
   # monedas vistas y CERO compras. El 39% de x3 que medi para esa banda salia
   # de monedas que ya tenian decenas de compras -- no de estas.
-  max_first_block_pct: 0
+  max_first_block_pct: 0.50
   # QUE EL DINERO SIGA ENTRANDO AHORA MISMO. min_volumen_sol mira TODO lo
   # negociado desde que nacio: una moneda que hizo un chorro de 30 SOL en el
   # primer segundo y se quedo muerta lo cumple igual que una que sigue viva.
@@ -820,7 +820,7 @@ filters:
     #
     # Lo que protege sin ella es la ESTRUCTURA: comprando a 2.750 como mucho,
     # el suelo de la curva (2.097) esta a un 24% y el stop del 20% corta antes.
-    enabled: false
+    enabled: true
     # MAS DE UNA MIGRACION, y nada mas. Sin porcentaje: min_rate en 0 hace que
     # el codigo (`migs < min_migrations O rate < min_rate`) decida solo por el
     # numero.
@@ -849,7 +849,7 @@ filters:
     # 20%. Medido sobre el flujo real: 120 creadores, 94 lanzamientos al dia,
     # el 1,9% de todo. Con el 30% eran 33 al dia y salian ~3 compras; con esto
     # deberian salir del orden de 8-15 diarias.
-    min_rate: 0.20
+    min_rate: 0.40
   # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
   # Son dos listas que el bot mantiene solo mientras opera:
   #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.
@@ -898,7 +898,7 @@ filters:
   # vieja.
   min_entry_mc: 0
   # Sin techo en modo copia: la idea es comprar lo que compra el, no filtrarlo.
-  max_entry_mc: 0
+  max_entry_mc: 2750
 
   # SEGUNDA PUERTA DE ENTRADA. La banda de arriba compra en el nacimiento, donde
   # no hay volumen que medir porque no ha dado tiempo a que lo haya. Esta deja
@@ -961,8 +961,8 @@ filters:
     # (`vistas 0` en el log), asi que copy-trading y solo-mayhem no caben
     # en el mismo proceso. La wallet y el hallazgo quedan aqui para
     # levantarlo como bot aparte cuando toque.
-    enabled: true
-    wallets: ["H4DDbnT11vtY7N2AcFEiaSvRyYzPpcLL9GAzDq6r167C", "nya666pQkP3PzWxi7JngU3rRMHuc7zbLK8c8wxQ4qpT"]
+    enabled: false
+    wallets: []
     # HTVZVEQMBsNanubDPTs3CxDAEGNFQHJY8c1441iy2S5r  <- el bundler del hallazgo
     #   del 13-ago (5 de 5 monedas suyas hicieron 14x-116x). Guardado aqui por
     #   si se quiere cambiar; solo se puede seguir a una tanda a la vez.
@@ -970,7 +970,7 @@ filters:
   # APAGADO al activar el copy-trading. Las monedas que toca HTVZ no tienen por
   # que estar en mayhem, y con esto puesto se descartarian casi todas: la señal
   # nueva quedaria inerte. Se elige la señal medida sobre la preferencia.
-  require_mayhem: false
+  require_mayhem: true
   marry_mode: false
   yolo_mode: true
   paper_trade: false         # DINERO REAL
