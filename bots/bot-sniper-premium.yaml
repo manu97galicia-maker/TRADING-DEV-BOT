@@ -581,13 +581,13 @@ filters:
   # Subido de 29 a 45 solo por esta tanda: con 40 SOL de volumen exigidos, un
   # techo de 29 carteras chocaria con el suelo de volumen y no dispararia nunca.
   max_titulares: 0
-  min_buys: 3
+  min_buys: 2
   # OCHO CARTERAS DISTINTAS. TOADABU tenia CINCO moviendo 20,3 SOL. El volumen
   # solo dice cuanto dinero se movio; esto dice entre cuantas manos, que es lo
   # que un bundle no puede fabricar barato.
   # El perfil de Chief: 21 carteras. Por debajo de 12 la moneda no ha reunido
   # a nadie todavia y por encima de 35 empieza a oler a granja repartida.
-  min_titulares: 3
+  min_titulares: 2
   min_compras_por_cartera: 0
   max_compras_por_cartera: 0
   min_ops: 0
@@ -646,7 +646,12 @@ filters:
   #
   # Duplica la probabilidad del x3, y sigue dejando 137 monedas al dia antes
   # del resto de filtros -- de sobra.
-  max_first_block_pct: 0.10
+  # SUBIDO DE 0,10 A 0,50. El 10% era imposible de cumplir aqui: para que el
+  # primer bloque quede por debajo del 10% hacen falta 11 compras o mas, y a
+  # 2.750 $ dentro de 6 segundos lo que hay son una o dos. Resultado: 799
+  # monedas vistas y CERO compras. El 39% de x3 que medi para esa banda salia
+  # de monedas que ya tenian decenas de compras -- no de estas.
+  max_first_block_pct: 0.50
   # QUE EL DINERO SIGA ENTRANDO AHORA MISMO. min_volumen_sol mira TODO lo
   # negociado desde que nacio: una moneda que hizo un chorro de 30 SOL en el
   # primer segundo y se quedo muerta lo cumple igual que una que sigue viva.
@@ -889,7 +894,9 @@ filters:
 
   # MAYHEM DENTRO. Estaba excluido y eso costaba dinero: son el 37-43% de los
   # lanzamientos y rinden el doble que el resto.
+  # SOLO MAYHEM. `require_mayhem` descarta todo lo que no lo sea.
   allow_mayhem: true
+  require_mayhem: true
   marry_mode: false
   yolo_mode: true
   paper_trade: false         # DINERO REAL
