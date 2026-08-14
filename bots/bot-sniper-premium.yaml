@@ -505,13 +505,16 @@ filters:
   # Subido de 29 a 45 solo por esta tanda: con 40 SOL de volumen exigidos, un
   # techo de 29 carteras chocaria con el suelo de volumen y no dispararia nunca.
   max_titulares: 0
-  min_buys: 2
-  # 2, no 30. "Comprar de primero" y "esperar a 30 carteras" son
-  # incompatibles: juntar 30 lleva 8 segundos de mediana, y para entonces ya no
-  # eres el primero. Dos carteras distintas es lo minimo que separa a la moneda
-  # en la que solo se ha comprado el dev a si mismo, que es la mediana de lo
-  # que hay en el primer segundo.
-  min_titulares: 2
+  # SIN CONDICIONES DE MERCADO. Manu lo deja claro: "solo quiero esto -- moneda
+  # recien lanzada en mayhem cuyo dev haya migrado +30%". Los 2 compradores y
+  # las 2 carteras los habia puesto yo, no el.
+  #
+  # Lo que se acepta al quitarlos: se comprara tambien la moneda en la que solo
+  # se ha comprado el dev a si mismo, que es la mediana de lo que hay en el
+  # primer segundo. Lo que lo hace asumible es el techo de 3.000 $: el suelo de
+  # la curva esta en 2.097, asi que la caida maxima estructural es del 30%.
+  min_buys: 0
+  min_titulares: 0
   min_compras_por_cartera: 0
   max_compras_por_cartera: 0
   min_ops: 0
