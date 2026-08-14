@@ -735,9 +735,10 @@ filters:
     # min_migrations en 1 porque un porcentaje sobre cero migraciones no dice
     # nada. El codigo bloquea con `migs < min_migrations O rate < min_rate`.
     min_migrations: 1
-    # 10% migrado minimo. Medido: 253 creadores lo cumplen, 208 lanzamientos al
-    # dia entre todos, y cruzado con mayhem quedan ~27 al dia.
-    min_rate: 0.10
+    # 20% migrado minimo. Medido sobre el flujo real: 120 creadores lo cumplen,
+    # 78,7 lanzamientos al dia entre todos, y cruzado con mayhem quedan ~10 al
+    # dia. Con el 10% eran 27; con el 30%, 3,5.
+    min_rate: 0.20
   # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
   # Son dos listas que el bot mantiene solo mientras opera:
   #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.
