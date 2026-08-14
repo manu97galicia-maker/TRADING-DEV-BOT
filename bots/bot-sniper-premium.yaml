@@ -206,7 +206,7 @@ trade:
   # del capital, no el 100%. Para recuperarlo entero harian falta el 67%. Se
   # deja en 60 porque es lo que pidio Manu; lo que queda en riesgo hasta que el
   # stop suba a la entrada es 0,10 del capital.
-  take_profit_percentage: 0.30
+  take_profit_percentage: 1.00
   # 80% y no 50%: medido sobre 588 monedas, vender el 50% y dejar el resto
   # corriendo da media +0,16; vender el 80%, +0,23. El motivo es que TODO pasa
   # en los primeros 30 segundos --maximo mediano 1,75x, y en toda la vida de la
@@ -450,67 +450,10 @@ filters:
   #
   # Entrar pronto NO garantiza nada (IBB entro a 3,0 s y perdio 0,128), pero
   # entrar tarde si ha garantizado perder.
-  max_token_age: 20
-  # 7,8 s = los 0,13 min de la captura. El limite inferior de 0,01 min (0,6 s)
-  # no hace falta ponerlo: lo que buscaba es no comprar dentro del bloque de
-  # creacion, y de eso ya se encarga max_first_block_pct, que ademas mide la
-  # PROPORCION de bundle en vez de un tiempo.
-  # TRES SEGUNDOS. Se probo con 2 y no compro NADA en 50 monedas, y la medicion
-  # dice por que: en 2 segundos lo maximo que llegaron a mover fue 2,3 · 1,0 ·
-  # 0,1 · 2,9 SOL. Se exigen 26,7. El umbral estaba diez veces por encima de lo
-  # que existe en esa ventana, y el market cap igual: con 2 SOL negociados la
-  # moneda vale ~2.300 $, no los 5.200 que se piden.
-  #
-  # Los 2 segundos y el resto de filtros no pueden convivir. Tres si, y el
-  # numero no es inventado: es donde entro Iphigenia -- 2,5 s, 28,3 SOL, MC
-  # 5.458 $ -- que es la operacion que Manu dio por buena y la que gano.
-  # SEGUNDO Y MEDIO. Manu quiere comprar en el primer segundo y aqui SI se
-  # puede, a diferencia de cuando se intento con filtros de volumen: no hay que
-  # esperar a que se acumule nada, la unica condicion es quien lanza.
-  #
-  # Medida la unica llamada que hay en el camino -- el historial del creador
-  # contra la API de pump.fun -- sale a 0,18 s de mediana (0,16 min, 0,60 max).
-  # Cabe de sobra. Y ademas se pide EN CUANTO aparece la moneda, no al decidir,
-  # asi que para cuando toca comprar ya esta en memoria; el resultado se cachea
-  # 10 minutos por creador, asi que a partir de su segunda moneda es inmediato.
-  #
-  # 1,5 y no 1,0 clavado para dejar margen a la cola de 0,60 s: apurar al
-  # segundo exacto tiraria las que caen en el peor caso de latencia.
-  # DOS SEGUNDOS: comprar al momento, como pide Manu.
-  #
-  # Para que esto funcione ha habido que quitar el volumen minimo y el suelo de
-  # market cap, y no es un descuido: en el segundo 1 la moneda vale 2.097 $ --
-  # el precio de salida de la curva, igual para todas -- y NO HA NEGOCIADO
-  # NADA. Pedirle 3.000 $ de volumen o 4.000 de market cap ahi es pedir algo
-  # que todavia no existe, y era la razon de que no comprara.
-  #
-  # Queda una sola señal disponible en ese instante: quien lanza. Por eso el
-  # filtro del creador (10% migrado, minimo 2 migraciones) es ahora lo unico
-  # que decide, y se paga con no saber nada del mercado.
-  #
-  # El techo de 50.000 se mantiene por si la moneda salta de golpe: no se
-  # compra arriba aunque se llegue tarde por unos milisegundos.
-  # Medido el 11-ago sobre 279 monedas que el bot vio y clasifico, comparadas
-  # contra su `ath_market_cap` real de pump.fun -- a donde LLEGARON, que es lo
-  # que importa cuando se vende por el camino.
-  #
-  # A DOS SEGUNDOS NO CABE NADA. De las 279, las que cumplian el perfil bueno
-  # (poco bloque de creacion + volumen + carteras) y ademas se veian en menos de
-  # dos segundos eran DOS. A cuatro segundos son once, y ese grupo es el mejor
-  # de todo lo medido: 82% llega al +30% y el 18% migra.
-  #
-  # Manu lleva la sesion entera pidiendo comprar al segundo, y tiene razon en el
-  # motivo -- llegar tarde es comprar el techo de otro. Pero al segundo el bot
-  # esta ciego: el unico filtro que puede aplicar es quien es el creador, y eso
-  # esta medido mas abajo y no funciona. Cuatro segundos siguen siendo antes que
-  # cualquier humano, y son los que permiten MIRAR antes de pagar.
-  # 12 s = los 0,2 min de arriba del filtro de GMGN que paso Manu. Es un PLAZO,
-  # no una espera: se compra en la vuelta en que se cumple todo (cada 0,15 s).
-  # Ampliarlo no hace al bot mas lento, solo le da mas ocasiones de llegar.
-  # 6 s. "Al momento" no se consigue subiendo este numero ni bajandolo: el bot
-  # comprueba cada 0,15 s y compra en la misma vuelta en que se cumple todo.
-  # Esto solo dice cuando se rinde.
-  max_buy_age: 6
+  max_token_age: 45
+  # 30 s. Juntar 50 carteras lleva 15,6 s de mediana; con la ventana en 6 no
+  # daba tiempo ni a la mitad. Sigue comprando en la vuelta en que se cumple.
+  max_buy_age: 30
 
   match_string: null
   bro_address: null
@@ -558,13 +501,11 @@ filters:
   # Subido de 29 a 45 solo por esta tanda: con 40 SOL de volumen exigidos, un
   # techo de 29 carteras chocaria con el suelo de volumen y no dispararia nunca.
   max_titulares: 0
-  min_buys: 2
-  # OCHO CARTERAS DISTINTAS. TOADABU tenia CINCO moviendo 20,3 SOL. El volumen
-  # solo dice cuanto dinero se movio; esto dice entre cuantas manos, que es lo
-  # que un bundle no puede fabricar barato.
-  # El perfil de Chief: 21 carteras. Por debajo de 12 la moneda no ha reunido
-  # a nadie todavia y por encima de 35 empieza a oler a granja repartida.
-  min_titulares: 2
+  min_buys: 50
+  # 50 CARTERAS DISTINTAS, que es toda la estrategia. Medido sobre 51.567
+  # monedas: solo el 0,50% llega a 50 --unas 50 al dia--, tardan 15,6 segundos
+  # de mediana, y para entonces el market cap ronda los 6.554 $.
+  min_titulares: 50
   min_compras_por_cartera: 0
   max_compras_por_cartera: 0
   min_ops: 0
@@ -714,7 +655,8 @@ filters:
     #
     # Lo que protege sin ella es la ESTRUCTURA: comprando a 2.750 como mucho,
     # el suelo de la curva (2.097) esta a un 24% y el stop del 20% corta antes.
-    enabled: true
+    # SIN FILTRO DE CREADOR: "cualquier moneda" que llegue a 50 carteras.
+    enabled: false
     # MAS DE UNA MIGRACION, y nada mas. Sin porcentaje: min_rate en 0 hace que
     # el codigo (`migs < min_migrations O rate < min_rate`) decida solo por el
     # numero.
@@ -786,12 +728,13 @@ filters:
   # segundos, una moneda que ya esta en 40K ha explotado, no esta cara por
   # vieja.
   min_entry_mc: 0
-  # BAJADO DE 10.000 A 3.000. Toda moneda nace a 2.097 $ y ese es el suelo al
-  # que vuelve si todos venden. Comprando a 2.750 la caida maxima estructural
-  # es del 24%; comprando a 8.580, del 76%. Las cuatro perdidas del 70% del
-  # 13-ago fueron TODAS compras por encima de 4K. El techo alto no daba mas
-  # oportunidades buenas, daba peores entradas.
-  max_entry_mc: 3000
+  # 15.000. A 50 carteras la moneda ya no esta en el nacimiento: la mediana es
+  # 6.554 $, asi que con el techo en 3.000 no habria entrado ninguna.
+  #
+  # AVISO, porque cambia el riesgo: el suelo de la curva sigue en 2.097, asi
+  # que comprando a 6.554 la caida maxima estructural es del 68%, no del 30%.
+  # Aqui el stop del 60% SI llega a dispararse, y hace falta que lo haga.
+  max_entry_mc: 15000
 
   # SEGUNDA PUERTA DE ENTRADA. La banda de arriba compra en el nacimiento, donde
   # no hay volumen que medir porque no ha dado tiempo a que lo haya. Esta deja
@@ -829,11 +772,8 @@ filters:
 
   # Suelo absoluto de SOL en la curva, por si el ratio se colase.
   min_curve_sol: 0
-
-  # MAYHEM DENTRO. Estaba excluido y eso costaba dinero: son el 37-43% de los
-  # lanzamientos y rinden el doble que el resto.
-  # SOLO MAYHEM. `require_mayhem` descarta todo lo que no lo sea.
-  allow_mayhem: true
+  # FUERA LAS MAYHEM: Manu las descarta expresamente en esta version.
+  allow_mayhem: false
 
   # COPIAR A LA MAQUINARIA. Hallazgo del 13-ago: de las tres monedas que Manu
   # señalo como "mega pump", una sola cartera aparece en LAS TRES --
@@ -863,7 +803,7 @@ filters:
   # APAGADO al activar el copy-trading. Las monedas que toca HTVZ no tienen por
   # que estar en mayhem, y con esto puesto se descartarian casi todas: la señal
   # nueva quedaria inerte. Se elige la señal medida sobre la preferencia.
-  require_mayhem: true
+  require_mayhem: false
 
   # SOLO DE 18:00 A 02:00, HORA DE ESPAÑA. Cruza medianoche, y se calcula con
   # la zona Europe/Madrid, no con el reloj del servidor: el droplet va en UTC y
