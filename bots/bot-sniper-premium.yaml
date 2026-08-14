@@ -65,7 +65,7 @@ trade:
   # CABEN: el bot reserva importe x 1,25 (deslizamiento) + 0,013 de comision de
   # prioridad, o sea 0,263 para una compra de 0,2, y libre solo hay 0,21.
   # SNOWKID cumplia todo a los 3,6 s y se quedo fuera por esto.
-  buy_amount: 0.3
+  buy_amount: 0.15
 
   # MAXIMO 3 POSICIONES A LA VEZ. Antes el tope estaba fijo en 20 dentro del
   # codigo, que era como no tenerlo: el freno lo ponia el saldo. Con la reserva
@@ -98,7 +98,7 @@ trade:
   #
   # La lista NO decide si se compra -- eso lo sigue haciendo el 10% migrado
   # calculado en vivo -- solo cuanto. Mas ficha donde hay mas informacion.
-  buy_amount_marcados: 0.3
+  buy_amount_marcados: 0.15
   # Creadores que se compran SIEMPRE: se saltan el auto-bloqueo por
   # rugs, la puerta de la tasa de migracion y el 'solo mayhem'.
   #
@@ -111,9 +111,9 @@ trade:
   devs_marcados: ["FdFV6tJPvkRq6YRwnsBSYLJX3uQ55F9UdfHWTWu6Kzyf"]
   # Las mayhem entran con menos: rinden el doble de mediana pero
   # tambien fallan mas, asi que van a media apuesta.
-  mayhem_buy_amount: 0.3
+  mayhem_buy_amount: 0.15
   # Techo absoluto: ninguna via puede gastar mas de esto.
-  tope_compra_sol: 0.3
+  tope_compra_sol: 0.15
   # Selector automatico: con 10 operaciones cerradas por estrategia,
   # deja viva solo la de mejor retorno real y apaga el resto.
   usar_selector: true
@@ -196,30 +196,29 @@ trade:
   # absolutas es mas facil de razonar que en multiplos.
   # El 50% que queda, repartido en cuatro por market cap. Los escalones se
   # arman DESPUES del +40%, asi que primero se recupera y luego se estira.
-  mc_take_profit_tiers:
-    - {target_mc:  9000, sell: 0.05}
-    - {target_mc: 14000, sell: 0.05}
-    - {target_mc: 24000, sell: 0.05}
-    - {target_mc: 30000, sell: 0.05}
+  # Vacia: los cinco tramos de arriba ya venden el 100%.
+  mc_take_profit_tiers: []
 
   # +50% VENDE 60%. Ojo al numero: 0,60 x 1,5 = 0,90, o sea que devuelve el 90%
   # del capital, no el 100%. Para recuperarlo entero harian falta el 67%. Se
   # deja en 60 porque es lo que pidio Manu; lo que queda en riesgo hasta que el
   # stop suba a la entrada es 0,10 del capital.
-  take_profit_percentage: 1.00
-  # 80% y no 50%: medido sobre 588 monedas, vender el 50% y dejar el resto
-  # corriendo da media +0,16; vender el 80%, +0,23. El motivo es que TODO pasa
-  # en los primeros 30 segundos --maximo mediano 1,75x, y en toda la vida de la
-  # moneda solo 1,80x-- y luego acaban a 0,90x.
-  take_profit_sell_percentage: 0.80
+  take_profit_percentage: 1.20
+  # CINCO TRAMOS HASTA EL +600%, un 20% de la posicion en cada uno:
+  #   +120% · +240% · +360% · +480% · +600%
+  # El primero deja el stop en el precio de compra, asi que a partir de ahi lo
+  # que queda dentro ya no puede acabar en perdida.
+  take_profit_sell_percentage: 0.20
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
-  tp2_gain: 0
-  tp2_sell: 0
-  tp3_gain: 0
-  tp3_sell: 0
-  tp4_gain: 0
-  tp4_sell: 0
+  tp2_gain: 2.40
+  tp2_sell: 0.20
+  tp3_gain: 3.60
+  tp3_sell: 0.20
+  tp4_gain: 4.80
+  tp4_sell: 0.20
+  tp5_gain: 6.00
+  tp5_sell: 0.20
 
   # STOP DE ENTRADA: 50%. Medido sobre los tres corredores de Manu, simulando
   # la entrada real del bot y mirando la caida maxima ANTES de que despegaran:
@@ -287,13 +286,11 @@ trade:
     - {alcanza: 24000, suelo: 14000}
     - {alcanza: 28000, suelo: 24000}
     - {alcanza: 30000, suelo: 28000}
-  # 60%. Ojo a como se combina con el techo de entrada de 3.000 $: el suelo de
-  # la curva esta en 2.097, o sea a un 30% por debajo de una compra a 3.000. Un
-  # stop del 60% queda POR DEBAJO de ese suelo, asi que en la practica casi
-  # nunca llegara a dispararse -- lo que cierra las malas es la venta por
-  # muerta a los 2 minutos. No es un fallo: significa que se aguanta la caida
-  # entera hasta el suelo, que desde 3.000 es asumible.
-  stop_loss_percentage: 0.60
+  # 80%. Como el techo de entrada son 3.000 $ y el suelo de la curva 2.097, la
+  # caida maxima estructural es del 30%: un stop del 80% queda muy por debajo y
+  # no llegara a saltar. Lo que cierra las malas sigue siendo la venta por
+  # muerta a los 2 minutos.
+  stop_loss_percentage: 0.80
   trailing_stop_percentage: 0
 
   # EL STOP SE LO LLEVA TODO. Sin esto el bot respeta el "moonbag" (lo que

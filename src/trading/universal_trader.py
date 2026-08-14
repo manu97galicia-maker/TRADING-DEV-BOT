@@ -292,6 +292,8 @@ class UniversalTrader:
         # (+50/+90/+150/+300) mas moonbag, y solo cabian 3.
         tp4_gain: float | None = None,
         tp4_sell: float | None = None,
+        tp5_gain: float | None = None,
+        tp5_sell: float | None = None,
         final_target_mc: float = 0.0,
         mc_take_profit_tiers: list | None = None,
         # SUELOS QUE SUBEN CON LA MONEDA: [{alcanza, suelo}, ...] en dolares
@@ -650,6 +652,7 @@ class UniversalTrader:
                 (tp2_gain, tp2_sell),
                 (tp3_gain, tp3_sell),
                 (tp4_gain, tp4_sell),
+                (tp5_gain, tp5_sell),
             ]
         )
         self.final_target_mc = float(final_target_mc or 0)

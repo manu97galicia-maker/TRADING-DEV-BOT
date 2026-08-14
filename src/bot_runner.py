@@ -136,6 +136,8 @@ async def start_bot(config_path: str):
             tp3_sell=cfg["trade"].get("tp3_sell"),
             tp4_gain=cfg["trade"].get("tp4_gain"),
             tp4_sell=cfg["trade"].get("tp4_sell"),
+            tp5_gain=cfg["trade"].get("tp5_gain"),
+            tp5_sell=cfg["trade"].get("tp5_sell"),
             final_target_mc=cfg["trade"].get("final_target_mc", 0),
             mc_take_profit_tiers=cfg["trade"].get("mc_take_profit_tiers"),
             suelos_por_mc=cfg["trade"].get("suelos_por_mc"),
