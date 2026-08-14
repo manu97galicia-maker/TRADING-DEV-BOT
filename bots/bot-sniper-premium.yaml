@@ -203,22 +203,19 @@ trade:
   # del capital, no el 100%. Para recuperarlo entero harian falta el 67%. Se
   # deja en 60 porque es lo que pidio Manu; lo que queda en riesgo hasta que el
   # stop suba a la entrada es 0,10 del capital.
-  take_profit_percentage: 1.20
-  # CINCO TRAMOS HASTA EL +600%, un 20% de la posicion en cada uno:
-  #   +120% · +240% · +360% · +480% · +600%
-  # El primero deja el stop en el precio de compra, asi que a partir de ahi lo
-  # que queda dentro ya no puede acabar en perdida.
-  take_profit_sell_percentage: 0.20
+  # x5 DE UNA VEZ: +400% y fuera el 100%. Sin tramos intermedios.
+  take_profit_percentage: 4.00
+  take_profit_sell_percentage: 1.00
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
-  tp2_gain: 2.40
-  tp2_sell: 0.20
-  tp3_gain: 3.60
-  tp3_sell: 0.20
-  tp4_gain: 4.80
-  tp4_sell: 0.20
-  tp5_gain: 6.00
-  tp5_sell: 0.20
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+  tp5_gain: 0
+  tp5_sell: 0
 
   # STOP DE ENTRADA: 50%. Medido sobre los tres corredores de Manu, simulando
   # la entrada real del bot y mirando la caida maxima ANTES de que despegaran:
