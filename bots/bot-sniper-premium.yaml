@@ -812,7 +812,10 @@ filters:
   # APAGADO al activar el copy-trading. Las monedas que toca HTVZ no tienen por
   # que estar en mayhem, y con esto puesto se descartarian casi todas: la señal
   # nueva quedaria inerte. Se elige la señal medida sobre la preferencia.
-  require_mayhem: false
+  # SOLO MAYHEM. Con el dev al 30% eso deja ~3,5 candidatas al dia (27,3
+  # lanzamientos de creadores con 30%+ x el 13% que salen en mayhem), y sobre
+  # eso todavia caen el techo de 3.000 y las 2 carteras. Es un ritmo lento.
+  require_mayhem: true
 
   # SOLO DE 18:00 A 02:00, HORA DE ESPAÑA. Cruza medianoche, y se calcula con
   # la zona Europe/Madrid, no con el reloj del servidor: el droplet va en UTC y
