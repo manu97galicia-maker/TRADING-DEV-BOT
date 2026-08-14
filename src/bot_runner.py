@@ -264,6 +264,7 @@ async def start_bot(config_path: str):
             usar_selector=cfg["trade"].get("usar_selector", False),
             nombre_estrategia=cfg["trade"].get("nombre_estrategia", ""),
             horario=cfg.get("filters", {}).get("horario"),
+            dev_elite=cfg.get("filters", {}).get("dev_elite"),
             tope_compra_total_sol=cfg["trade"].get(
                 "tope_compra_total_sol", 0
             ),

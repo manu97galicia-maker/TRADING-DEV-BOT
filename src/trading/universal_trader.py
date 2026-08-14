@@ -474,6 +474,11 @@ class UniversalTrader:
         # UTC+2 en verano y UTC+1 en invierno. Con la hora del servidor la
         # franja se correria sola al cambiar la hora.
         horario: dict | None = None,
+        # TRATO APARTE PARA LOS CREADORES BUENOS. Cuando el dev supera
+        # `min_rate`, la posicion se gestiona con este stop y esta escalera en
+        # vez de con los generales: si alguien ha migrado 4 de cada 10, se le
+        # aguanta una caida que a un desconocido no se le aguantaria.
+        dev_elite: dict | None = None,
         # Techo del max_sol_cost de la compra, incluido el slippage.
         tope_compra_total_sol: float = 0.0,
         # Selector automatico: con 10 operaciones cerradas por estrategia deja
@@ -888,6 +893,10 @@ class UniversalTrader:
         # como `tope_compra_sol`.
         self.tope_compra_sol = float(tope_compra_sol or 0)
         self.horario = horario or {}
+        self.dev_elite = dev_elite or {}
+        #: Tasa de migracion del creador de cada moneda, guardada al comprar
+        #: para poder decidir la salida sin volver a preguntar a la API.
+        self._tasa_dev: dict[str, float] = {}
         #: SOL cobrado en la ultima venta. Cero si no se vendio nada.
         #: Es lo que se suma al total realizado, en vez del estimado:
         #: el 12-ago un cierre sin venta se apunto como +0,1496 SOL.
@@ -2694,6 +2703,7 @@ class UniversalTrader:
                             f"< {min_migs} y {int(min_rate * 100)}%"
                         )
                         return
+                    self._tasa_dev[str(token_info.mint)] = rate
                     logger.info(
                         f"DEV OK {token_info.symbol}: {migs} migraciones de "
                         f"{launches} lanzamientos ({rate * 100:.0f}%)"
@@ -3406,19 +3416,50 @@ class UniversalTrader:
             )
         else:
             tiers = self.tp_tiers
+        # ¿Es de un creador bueno? Se decide con la tasa que se guardo al
+        # comprobar el dev, no volviendo a preguntar: la API tarda y aqui ya no
+        # hay prisa que valga -- si fallara la consulta se caeria al trato
+        # general sin avisar, que es peor que no tenerlo.
+        _tasa = self._tasa_dev.get(str(token_info.mint), 0.0)
+        _elite = bool(self.dev_elite) and _tasa >= float(
+            self.dev_elite.get("min_rate", 1.0)
+        )
+        if _elite:
+            _t = build_tiers([(
+                self.dev_elite.get("take_profit_percentage"),
+                self.dev_elite.get("take_profit_sell_percentage", 1.0),
+            )])
+            if _t:
+                tiers = _t
+            logger.info(
+                f"{token_info.symbol}: CREADOR BUENO ({_tasa * 100:.0f}% migrado) "
+                f"-> stop {float(self.dev_elite.get('stop_loss_percentage', 0)) * 100:.0f}% "
+                f"y escalera propia"
+            )
+
         executed = [False] * len(tiers)
         remaining = original_qty
-        sl_price = (
-            entry_price * (1 - self.stop_loss_percentage)
-            if self.stop_loss_percentage
-            else None
+        _sl_pct = (
+            float(self.dev_elite.get("stop_loss_percentage", 0)) if _elite
+            else self.stop_loss_percentage
         )
+        sl_price = entry_price * (1 - _sl_pct) if _sl_pct else None
         moonbag = moonbag_fraction(tiers)
         target_price = (
             self.final_target_mc / (_PUMP_TOTAL_SUPPLY * _SOL_USD)
             if self.final_target_mc > 0 else None
         )
         mc_tiers = self.mc_take_profit_tiers
+        if _elite and self.dev_elite.get("mc_take_profit_tiers"):
+            mc_tiers = []
+            for _it in self.dev_elite["mc_take_profit_tiers"]:
+                try:
+                    _mc, _v = float(_it.get("target_mc") or 0), float(_it.get("sell") or 0)
+                except (TypeError, ValueError):
+                    continue
+                if _mc > 0 and 0 < _v <= 1:
+                    mc_tiers.append((_mc, _v))
+            mc_tiers.sort(key=lambda x: x[0])
         mc_executed = [False] * len(mc_tiers)
         #: Suelo armado por el trinquete. Solo sube, nunca baja.
         suelo_mc = 0.0
