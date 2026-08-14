@@ -579,12 +579,38 @@ class PlatformAwareSeller(Trader):
 
             if success:
                 logger.info(f"Sell transaction confirmed: {tx_signature}")
+                # LO QUE DE VERDAD ENTRO, no lo que la curva prometia. Sin esto
+                # se devolvia `token_price_sol`, que es el precio calculado
+                # ANTES de vender: el P&L del bot llego a decir +0,3233 SOL en
+                # una operacion que la cadena cifro en +0,0419, porque entre el
+                # calculo y la ejecucion el precio se habia movido y el
+                # deslizamiento se habia comido la diferencia.
+                precio_real = token_price_sol
+                try:
+                    lamports = await self.client.get_sell_transaction_details(
+                        str(tx_signature), self.wallet.pubkey
+                    )
+                    if lamports and token_balance_decimal > 0:
+                        precio_real = (lamports / LAMPORTS_PER_SOL) / token_balance_decimal
+                        if token_price_sol > 0:
+                            _desv = precio_real / token_price_sol - 1
+                            if abs(_desv) > 0.10:
+                                logger.warning(
+                                    "Venta de %s ejecutada a %.10f SOL/token, "
+                                    "un %+.0f%% de lo calculado (%.10f)",
+                                    token_info.symbol, precio_real, _desv * 100,
+                                    token_price_sol,
+                                )
+                except Exception:  # noqa: BLE001
+                    # Si no se puede leer, se sigue con la estimacion: es peor
+                    # devolver un cero y dar la operacion por ruinosa.
+                    logger.debug("no pude leer el cobro real de la venta")
                 return TradeResult(
                     success=True,
                     platform=token_info.platform,
                     tx_signature=tx_signature,
                     amount=token_balance_decimal,
-                    price=token_price_sol,
+                    price=precio_real,
                 )
             else:
                 return TradeResult(

@@ -365,6 +365,37 @@ class SolanaClient:
 
         return None
 
+    async def get_sell_transaction_details(
+        self, signature: str, wallet: Pubkey
+    ) -> int | None:
+        """SOL que de verdad entro en la cartera al vender, en lamports.
+
+        Existe porque la venta no tenia equivalente de
+        `get_buy_transaction_details`: devolvia el precio calculado de la curva
+        ANTES de vender, y con eso el P&L del bot llego a decir +0,3233 SOL en
+        una operacion que la cadena cifro en +0,0419.
+
+        Se mide como el aumento de saldo de la cartera MAS la comision, porque
+        la comision se paga de ese mismo saldo y no es parte de lo que dejo de
+        valer la moneda. Devuelve None si no se puede leer o si la transaccion
+        fallo: quien llama debe quedarse entonces con su estimacion, no con un
+        cero.
+        """
+        result = await self._get_transaction_result(signature)
+        if not result:
+            return None
+        meta = result.get("meta", {})
+        if meta.get("err"):
+            return None
+        try:
+            claves = result["transaction"]["message"]["accountKeys"]
+            claves = [k.get("pubkey", k) if isinstance(k, dict) else k for k in claves]
+            i = claves.index(str(wallet))
+            delta = meta["postBalances"][i] - meta["preBalances"][i]
+            return int(delta) + int(meta.get("fee", 0))
+        except (KeyError, ValueError, IndexError, TypeError):
+            return None
+
     async def get_buy_transaction_details(
         self, signature: str, mint: Pubkey, sol_destination: Pubkey
     ) -> tuple[int | None, int | None]:
