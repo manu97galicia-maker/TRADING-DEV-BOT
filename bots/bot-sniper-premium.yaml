@@ -65,7 +65,7 @@ trade:
   # CABEN: el bot reserva importe x 1,25 (deslizamiento) + 0,013 de comision de
   # prioridad, o sea 0,263 para una compra de 0,2, y libre solo hay 0,21.
   # SNOWKID cumplia todo a los 3,6 s y se quedo fuera por esto.
-  buy_amount: 0.15
+  buy_amount: 0.3
 
   # MAXIMO 3 POSICIONES A LA VEZ. Antes el tope estaba fijo en 20 dentro del
   # codigo, que era como no tenerlo: el freno lo ponia el saldo. Con la reserva
@@ -98,7 +98,7 @@ trade:
   #
   # La lista NO decide si se compra -- eso lo sigue haciendo el 10% migrado
   # calculado en vivo -- solo cuanto. Mas ficha donde hay mas informacion.
-  buy_amount_marcados: 0.15
+  buy_amount_marcados: 0.3
   # Creadores que se compran SIEMPRE: se saltan el auto-bloqueo por
   # rugs, la puerta de la tasa de migracion y el 'solo mayhem'.
   #
@@ -111,9 +111,9 @@ trade:
   devs_marcados: ["FdFV6tJPvkRq6YRwnsBSYLJX3uQ55F9UdfHWTWu6Kzyf"]
   # Las mayhem entran con menos: rinden el doble de mediana pero
   # tambien fallan mas, asi que van a media apuesta.
-  mayhem_buy_amount: 0.15
+  mayhem_buy_amount: 0.3
   # Techo absoluto: ninguna via puede gastar mas de esto.
-  tope_compra_sol: 0.15
+  tope_compra_sol: 0.3
   # Selector automatico: con 10 operaciones cerradas por estrategia,
   # deja viva solo la de mejor retorno real y apaga el resto.
   usar_selector: true
@@ -458,7 +458,9 @@ filters:
   # dia, no 50. Si no aparece ninguna, lo primero que hay que soltar es uno de
   # los dos numeros.
   max_token_age: 15
-  max_buy_age: 14
+  # 4 s de plazo. No es una espera: el bot mira cada 0,15 s y compra en la
+  # vuelta en que se cumple todo. Esto solo dice cuando se rinde.
+  max_buy_age: 4
 
   match_string: null
   bro_address: null
@@ -506,15 +508,13 @@ filters:
   # Subido de 29 a 45 solo por esta tanda: con 40 SOL de volumen exigidos, un
   # techo de 29 carteras chocaria con el suelo de volumen y no dispararia nunca.
   max_titulares: 0
-  min_buys: 30
-  # 30 CARTERAS DISTINTAS. Medido sobre 51.567 monedas: el 1,21% llega a 30
-  # --unas 120 al dia-- frente al 0,50% que llegaba a 50.
-  #
-  # Y lo importante: con 30 dejan de pelearse los dos numeros. A 30-49 carteras
-  # la mediana son 8 SEGUNDOS y 4.942 $ de market cap, asi que caben dentro del
-  # limite de 15 s de vida. Con 50 hacian falta 15,6 s de mediana y la mitad se
-  # quedaba fuera por vieja.
-  min_titulares: 30
+  min_buys: 2
+  # 2, no 30. "Comprar de primero" y "esperar a 30 carteras" son
+  # incompatibles: juntar 30 lleva 8 segundos de mediana, y para entonces ya no
+  # eres el primero. Dos carteras distintas es lo minimo que separa a la moneda
+  # en la que solo se ha comprado el dev a si mismo, que es la mediana de lo
+  # que hay en el primer segundo.
+  min_titulares: 2
   min_compras_por_cartera: 0
   max_compras_por_cartera: 0
   min_ops: 0
@@ -665,7 +665,8 @@ filters:
     # Lo que protege sin ella es la ESTRUCTURA: comprando a 2.750 como mucho,
     # el suelo de la curva (2.097) esta a un 24% y el stop del 20% corta antes.
     # SIN FILTRO DE CREADOR: "cualquier moneda" que llegue a 50 carteras.
-    enabled: false
+    # 30% DE MIGRACIONES DEL CREADOR: el filtro que decide ahora.
+    enabled: true
     # MAS DE UNA MIGRACION, y nada mas. Sin porcentaje: min_rate en 0 hace que
     # el codigo (`migs < min_migrations O rate < min_rate`) decida solo por el
     # numero.
@@ -689,7 +690,9 @@ filters:
     # 20% migrado minimo. Medido sobre el flujo real: 120 creadores lo cumplen,
     # 78,7 lanzamientos al dia entre todos, y cruzado con mayhem quedan ~10 al
     # dia. Con el 10% eran 27; con el 30%, 3,5.
-    min_rate: 0.20
+    # Medido: 46 creadores lo cumplen y suman 27,3 lanzamientos al dia.
+    # Sin exigir mayhem entran los dos tipos, asi que quedan esos ~27.
+    min_rate: 0.30
   # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
   # Son dos listas que el bot mantiene solo mientras opera:
   #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.
@@ -737,11 +740,9 @@ filters:
   # segundos, una moneda que ya esta en 40K ha explotado, no esta cara por
   # vieja.
   min_entry_mc: 0
-  # 10.000. A 30 carteras el market cap mediano es 4.942 $. El suelo de la
-  # curva sigue en 2.097, asi que comprando ahi la caida maxima estructural es
-  # del 58% y el stop del 60% queda justo por debajo: apenas llegara a saltar,
-  # y lo que cerrara las malas es la venta por muerta a los 2 minutos.
-  max_entry_mc: 10000
+  # 3.000: comprando de primero la moneda esta en el nacimiento (2.097 $), y
+  # ahi la caida maxima estructural es del 30%.
+  max_entry_mc: 3000
 
   # SEGUNDA PUERTA DE ENTRADA. La banda de arriba compra en el nacimiento, donde
   # no hay volumen que medir porque no ha dado tiempo a que lo haya. Esta deja
