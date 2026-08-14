@@ -880,15 +880,25 @@ filters:
   # donde 3.000 es un +43%.
   dev_elite:
     min_rate: 0.40
-    stop_loss_percentage: 0.69
-    take_profit_percentage: 0.50
+    # Stop del 70%: a quien ha migrado 4 de cada 10 se le aguanta una caida que
+    # a un desconocido no se le aguantaria.
+    stop_loss_percentage: 0.70
+    # x2 se vende la mitad, y de ahi cada escalon un 50% por encima del
+    # anterior: x2 -> x3 -> x4,5 -> x6,75.
+    take_profit_percentage: 1.00
     take_profit_sell_percentage: 0.50
-    mc_take_profit_tiers:
-      - {target_mc:  3000, sell: 0.10}
-      - {target_mc:  6000, sell: 0.10}
-      - {target_mc:  9000, sell: 0.10}
-      - {target_mc: 12000, sell: 0.10}
-      - {target_mc: 30000, sell: 0.10}
+    tp2_gain: 2.00
+    tp2_sell: 0.15
+    tp3_gain: 3.50
+    tp3_sell: 0.15
+    tp4_gain: 5.75
+    tp4_sell: 0.10
+    # Y todo fuera al tocar 25.000 $ de market cap, pase lo que pase con la
+    # escalera. Desde una entrada cerca del nacimiento (2.097 $) eso es un 12x;
+    # desde el techo de entrada (10.000) son 2,5x, asi que en una compra tardia
+    # este techo salta antes que los escalones de arriba. Es lo correcto: no
+    # tiene sentido pedirle x6,75 a una moneda que ya venia a 10K.
+    final_target_mc: 25000
 
   marry_mode: false
   yolo_mode: true

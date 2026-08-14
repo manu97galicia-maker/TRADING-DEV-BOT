@@ -3425,10 +3425,17 @@ class UniversalTrader:
             self.dev_elite.get("min_rate", 1.0)
         )
         if _elite:
-            _t = build_tiers([(
+            # Escalera completa, no solo el primer escalon: para un creador con
+            # historial se deja correr con pasos geometricos --cada uno un 50%
+            # por encima del anterior-- en vez de cerrar pronto.
+            _pares = [(
                 self.dev_elite.get("take_profit_percentage"),
                 self.dev_elite.get("take_profit_sell_percentage", 1.0),
-            )])
+            )]
+            for _n in (2, 3, 4):
+                _pares.append((self.dev_elite.get(f"tp{_n}_gain"),
+                               self.dev_elite.get(f"tp{_n}_sell")))
+            _t = build_tiers(_pares)
             if _t:
                 tiers = _t
             logger.info(
@@ -3445,9 +3452,13 @@ class UniversalTrader:
         )
         sl_price = entry_price * (1 - _sl_pct) if _sl_pct else None
         moonbag = moonbag_fraction(tiers)
+        _final_mc = (
+            float(self.dev_elite.get("final_target_mc") or 0) if _elite
+            else self.final_target_mc
+        )
         target_price = (
-            self.final_target_mc / (_PUMP_TOTAL_SUPPLY * _SOL_USD)
-            if self.final_target_mc > 0 else None
+            _final_mc / (_PUMP_TOTAL_SUPPLY * _SOL_USD)
+            if _final_mc > 0 else None
         )
         mc_tiers = self.mc_take_profit_tiers
         if _elite and self.dev_elite.get("mc_take_profit_tiers"):
