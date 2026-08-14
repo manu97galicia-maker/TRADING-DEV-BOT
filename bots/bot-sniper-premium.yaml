@@ -193,18 +193,21 @@ trade:
   # El 50% que queda, repartido en cuatro por market cap. Los escalones se
   # arman DESPUES del +40%, asi que primero se recupera y luego se estira.
   mc_take_profit_tiers:
-    - {target_mc:  9000, sell: 0.10}
-    - {target_mc: 14000, sell: 0.10}
-    - {target_mc: 24000, sell: 0.10}
-    - {target_mc: 28000, sell: 0.10}
-    - {target_mc: 30000, sell: 0.10}
+    - {target_mc:  9000, sell: 0.05}
+    - {target_mc: 14000, sell: 0.05}
+    - {target_mc: 24000, sell: 0.05}
+    - {target_mc: 30000, sell: 0.05}
 
   # +50% VENDE 60%. Ojo al numero: 0,60 x 1,5 = 0,90, o sea que devuelve el 90%
   # del capital, no el 100%. Para recuperarlo entero harian falta el 67%. Se
   # deja en 60 porque es lo que pidio Manu; lo que queda en riesgo hasta que el
   # stop suba a la entrada es 0,10 del capital.
   take_profit_percentage: 0.40
-  take_profit_sell_percentage: 0.50
+  # 80% y no 50%: medido sobre 588 monedas, vender el 50% y dejar el resto
+  # corriendo da media +0,16; vender el 80%, +0,23. El motivo es que TODO pasa
+  # en los primeros 30 segundos --maximo mediano 1,75x, y en toda la vida de la
+  # moneda solo 1,80x-- y luego acaban a 0,90x.
+  take_profit_sell_percentage: 0.80
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
   tp2_gain: 0
@@ -731,7 +734,12 @@ filters:
     # vez. Medido: 851 creadores lo cumplen, 1.163 lanzamientos al dia entre
     # todos, y cruzado con mayhem quedan ~151 al dia. Con el 30% eran 3,5, que
     # no daba ni para juntar muestra.
-    min_rate: 0.20
+    # SIN PORCENTAJE: basta con que el creador haya migrado una vez alguna vez.
+    # Con el 20% pasaban 1-2 monedas al dia y el selector necesita 10
+    # operaciones por estrategia para decidir: a ese ritmo son semanas. El
+    # filtro mas caro ahora no lo es en dinero, lo es en INFORMACION.
+    # Medido: con "1 migracion" son ~151 al dia cruzado con mayhem.
+    min_rate: 0
   # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
   # Son dos listas que el bot mantiene solo mientras opera:
   #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.
@@ -779,13 +787,12 @@ filters:
   # segundos, una moneda que ya esta en 40K ha explotado, no esta cara por
   # vieja.
   min_entry_mc: 0
-  # 10.000 y no "sin techo". El cuello lo hacia la banda estrecha de 2.300-2.600
-  # cruzada con el dev, y esa se quita. Pero un techo tiene que quedar: toda
-  # moneda nace a 2.097 $ y ese es el suelo al que vuelve si todos venden, asi
-  # que comprando a 8.580 la caida maxima es del 76%. El 13-ago se hicieron
-  # cuatro compras a 4-11K y las cuatro perdieron ~70%. Diez mil deja pasar casi
-  # todo sin abrir la puerta a eso.
-  max_entry_mc: 10000
+  # BAJADO DE 10.000 A 3.000. Toda moneda nace a 2.097 $ y ese es el suelo al
+  # que vuelve si todos venden. Comprando a 2.750 la caida maxima estructural
+  # es del 24%; comprando a 8.580, del 76%. Las cuatro perdidas del 70% del
+  # 13-ago fueron TODAS compras por encima de 4K. El techo alto no daba mas
+  # oportunidades buenas, daba peores entradas.
+  max_entry_mc: 3000
 
   # SEGUNDA PUERTA DE ENTRADA. La banda de arriba compra en el nacimiento, donde
   # no hay volumen que medir porque no ha dado tiempo a que lo haya. Esta deja
