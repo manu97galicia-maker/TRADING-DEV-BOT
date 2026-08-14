@@ -3038,6 +3038,7 @@ class UniversalTrader:
         logger.info(
             f"Successfully bought {token_info.symbol} on {token_info.platform.value}"
         )
+        self._compras_de_la_tanda += 1
         self._anota_firma(str(token_info.mint), buy_result.tx_signature)
         self._log_trade(
             "buy",
