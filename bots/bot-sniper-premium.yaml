@@ -65,7 +65,7 @@ trade:
   # CABEN: el bot reserva importe x 1,25 (deslizamiento) + 0,013 de comision de
   # prioridad, o sea 0,263 para una compra de 0,2, y libre solo hay 0,21.
   # SNOWKID cumplia todo a los 3,6 s y se quedo fuera por esto.
-  buy_amount: 0.12
+  buy_amount: 0.15
 
   # MAXIMO 3 POSICIONES A LA VEZ. Antes el tope estaba fijo en 20 dentro del
   # codigo, que era como no tenerlo: el freno lo ponia el saldo. Con la reserva
@@ -86,6 +86,10 @@ trade:
   # vuelo; con 1,38 libres no caben tres. Y con salida manual no se cierran
   # solas: son dos compras en total hasta que Manu venda algo.
   max_posiciones: 3
+  # TOPE DE PRUEBA: 3 compras EN TOTAL y para. No es "3 a la vez" -- cuando
+  # lleve tres compradas no vuelve a comprar aunque se cierren. Riesgo maximo
+  # 3 x 0,15 = 0,45 SOL sobre los 2,16 de la wallet.
+  max_real_buys: 3
   # 0,50 SOL si la moneda viene de uno de los devs MARCADOS, contra los 0,30
   # de cualquier otro que cumpla el 10%. La lista son los 31 de
   # top_devs_buenos.json, medidos por dos criterios distintos: que no dumpean
@@ -94,7 +98,7 @@ trade:
   #
   # La lista NO decide si se compra -- eso lo sigue haciendo el 10% migrado
   # calculado en vivo -- solo cuanto. Mas ficha donde hay mas informacion.
-  buy_amount_marcados: 0.12
+  buy_amount_marcados: 0.15
   # Creadores que se compran SIEMPRE: se saltan el auto-bloqueo por
   # rugs, la puerta de la tasa de migracion y el 'solo mayhem'.
   #
@@ -107,9 +111,9 @@ trade:
   devs_marcados: ["FdFV6tJPvkRq6YRwnsBSYLJX3uQ55F9UdfHWTWu6Kzyf"]
   # Las mayhem entran con menos: rinden el doble de mediana pero
   # tambien fallan mas, asi que van a media apuesta.
-  mayhem_buy_amount: 0.12
+  mayhem_buy_amount: 0.15
   # Techo absoluto: ninguna via puede gastar mas de esto.
-  tope_compra_sol: 0.12
+  tope_compra_sol: 0.15
   # Selector automatico: con 10 operaciones cerradas por estrategia,
   # deja viva solo la de mejor retorno real y apaga el resto.
   usar_selector: true
