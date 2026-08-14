@@ -65,7 +65,7 @@ trade:
   # CABEN: el bot reserva importe x 1,25 (deslizamiento) + 0,013 de comision de
   # prioridad, o sea 0,263 para una compra de 0,2, y libre solo hay 0,21.
   # SNOWKID cumplia todo a los 3,6 s y se quedo fuera por esto.
-  buy_amount: 0.05
+  buy_amount: 0.1
 
   # MAXIMO 3 POSICIONES A LA VEZ. Antes el tope estaba fijo en 20 dentro del
   # codigo, que era como no tenerlo: el freno lo ponia el saldo. Con la reserva
@@ -98,7 +98,7 @@ trade:
   #
   # La lista NO decide si se compra -- eso lo sigue haciendo el 10% migrado
   # calculado en vivo -- solo cuanto. Mas ficha donde hay mas informacion.
-  buy_amount_marcados: 0.05
+  buy_amount_marcados: 0.1
   # Creadores que se compran SIEMPRE: se saltan el auto-bloqueo por
   # rugs, la puerta de la tasa de migracion y el 'solo mayhem'.
   #
@@ -111,9 +111,9 @@ trade:
   devs_marcados: ["FdFV6tJPvkRq6YRwnsBSYLJX3uQ55F9UdfHWTWu6Kzyf"]
   # Las mayhem entran con menos: rinden el doble de mediana pero
   # tambien fallan mas, asi que van a media apuesta.
-  mayhem_buy_amount: 0.05
+  mayhem_buy_amount: 0.1
   # Techo absoluto: ninguna via puede gastar mas de esto.
-  tope_compra_sol: 0.05
+  tope_compra_sol: 0.1
   # Selector automatico: con 10 operaciones cerradas por estrategia,
   # deja viva solo la de mejor retorno real y apaga el resto.
   usar_selector: true
@@ -692,9 +692,10 @@ filters:
     # min_migrations en 1 porque un porcentaje sobre cero migraciones no dice
     # nada. El codigo bloquea con `migs < min_migrations O rate < min_rate`.
     min_migrations: 1
-    # 10% migrado minimo. Medido: 253 creadores lo cumplen, 208 lanzamientos al
-    # dia entre todos, ~27 al dia cruzado con mayhem. Con el 20% eran 10.
-    min_rate: 0.10
+    # 1% migrado: practicamente solo se exige que el creador haya migrado
+    # ALGUNA vez. Deja pasar casi todo lo que no sea un dev virgen o una granja
+    # de 70 lanzamientos con cero exitos.
+    min_rate: 0.01
   # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
   # Son dos listas que el bot mantiene solo mientras opera:
   #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.
