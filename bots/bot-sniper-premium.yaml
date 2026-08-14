@@ -450,10 +450,15 @@ filters:
   #
   # Entrar pronto NO garantiza nada (IBB entro a 3,0 s y perdio 0,128), pero
   # entrar tarde si ha garantizado perder.
-  max_token_age: 45
-  # 30 s. Juntar 50 carteras lleva 15,6 s de mediana; con la ventana en 6 no
-  # daba tiempo ni a la mitad. Sigue comprando en la vuelta en que se cumple.
-  max_buy_age: 30
+  # 15 s de vida maxima, como pide Manu.
+  #
+  # CHOCA CON LOS 50 TITULARES, y conviene saberlo: juntar 50 carteras lleva
+  # 15,6 segundos de MEDIANA, asi que exigir ambas cosas deja fuera a mas de la
+  # mitad de las que ya eran el 0,50% del flujo. Quedaria del orden de 20 al
+  # dia, no 50. Si no aparece ninguna, lo primero que hay que soltar es uno de
+  # los dos numeros.
+  max_token_age: 15
+  max_buy_age: 14
 
   match_string: null
   bro_address: null
@@ -501,11 +506,15 @@ filters:
   # Subido de 29 a 45 solo por esta tanda: con 40 SOL de volumen exigidos, un
   # techo de 29 carteras chocaria con el suelo de volumen y no dispararia nunca.
   max_titulares: 0
-  min_buys: 50
-  # 50 CARTERAS DISTINTAS, que es toda la estrategia. Medido sobre 51.567
-  # monedas: solo el 0,50% llega a 50 --unas 50 al dia--, tardan 15,6 segundos
-  # de mediana, y para entonces el market cap ronda los 6.554 $.
-  min_titulares: 50
+  min_buys: 30
+  # 30 CARTERAS DISTINTAS. Medido sobre 51.567 monedas: el 1,21% llega a 30
+  # --unas 120 al dia-- frente al 0,50% que llegaba a 50.
+  #
+  # Y lo importante: con 30 dejan de pelearse los dos numeros. A 30-49 carteras
+  # la mediana son 8 SEGUNDOS y 4.942 $ de market cap, asi que caben dentro del
+  # limite de 15 s de vida. Con 50 hacian falta 15,6 s de mediana y la mitad se
+  # quedaba fuera por vieja.
+  min_titulares: 30
   min_compras_por_cartera: 0
   max_compras_por_cartera: 0
   min_ops: 0
@@ -728,13 +737,11 @@ filters:
   # segundos, una moneda que ya esta en 40K ha explotado, no esta cara por
   # vieja.
   min_entry_mc: 0
-  # 15.000. A 50 carteras la moneda ya no esta en el nacimiento: la mediana es
-  # 6.554 $, asi que con el techo en 3.000 no habria entrado ninguna.
-  #
-  # AVISO, porque cambia el riesgo: el suelo de la curva sigue en 2.097, asi
-  # que comprando a 6.554 la caida maxima estructural es del 68%, no del 30%.
-  # Aqui el stop del 60% SI llega a dispararse, y hace falta que lo haga.
-  max_entry_mc: 15000
+  # 10.000. A 30 carteras el market cap mediano es 4.942 $. El suelo de la
+  # curva sigue en 2.097, asi que comprando ahi la caida maxima estructural es
+  # del 58% y el stop del 60% queda justo por debajo: apenas llegara a saltar,
+  # y lo que cerrara las malas es la venta por muerta a los 2 minutos.
+  max_entry_mc: 10000
 
   # SEGUNDA PUERTA DE ENTRADA. La banda de arriba compra en el nacimiento, donde
   # no hay volumen que medir porque no ha dado tiempo a que lo haya. Esta deja
@@ -772,8 +779,9 @@ filters:
 
   # Suelo absoluto de SOL en la curva, por si el ratio se colase.
   min_curve_sol: 0
-  # FUERA LAS MAYHEM: Manu las descarta expresamente en esta version.
-  allow_mayhem: false
+  # LAS DOS: pump.fun normal Y mayhem. `require_mayhem` en false deja pasar
+  # ambas; `allow_mayhem` en true es lo que evita que se descarten las mayhem.
+  allow_mayhem: true
 
   # COPIAR A LA MAQUINARIA. Hallazgo del 13-ago: de las tres monedas que Manu
   # señalo como "mega pump", una sola cartera aparece en LAS TRES --
