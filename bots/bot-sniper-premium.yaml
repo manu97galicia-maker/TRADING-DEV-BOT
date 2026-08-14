@@ -198,13 +198,12 @@ trade:
   # arman DESPUES del +40%, asi que primero se recupera y luego se estira.
   # Vacia: los cinco tramos de arriba ya venden el 100%.
   mc_take_profit_tiers: []
-
-  # +50% VENDE 60%. Ojo al numero: 0,60 x 1,5 = 0,90, o sea que devuelve el 90%
-  # del capital, no el 100%. Para recuperarlo entero harian falta el 67%. Se
-  # deja en 60 porque es lo que pidio Manu; lo que queda en riesgo hasta que el
-  # stop suba a la entrada es 0,10 del capital.
-  # x5 DE UNA VEZ: +400% y fuera el 100%. Sin tramos intermedios.
-  take_profit_percentage: 4.00
+  # x2 DE UNA VEZ: +100% y fuera el 100%.
+  #
+  # Medido sobre 588 monedas que entraron cerca del nacimiento: el 46% llega a
+  # x2, frente al 66% que toca el +40%. Bajar de x5 a x2 sube mucho el
+  # porcentaje de operaciones que cobran algo.
+  take_profit_percentage: 1.00
   take_profit_sell_percentage: 1.00
   # Sin mas escalones: la mitad que queda la gestiona SOLO el trailing, que
   # es lo unico que sabe seguir a una moneda hasta un techo de 60K.
