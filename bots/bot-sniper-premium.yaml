@@ -869,7 +869,10 @@ filters:
   # la zona Europe/Madrid, no con el reloj del servidor: el droplet va en UTC y
   # España cambia de UTC+2 a UTC+1 en invierno; usando la hora del servidor la
   # franja se correria sola una hora sin que nadie tocara nada.
-  horario: {inicio: 18, fin: 2}
+  # FRANJA QUITADA para empezar ya. Manu la habia puesto en 18:00-02:00 y son
+  # las 02:5x, asi que era lo unico que impedia arrancar. Para volver a ponerla:
+  #     horario: {inicio: 18, fin: 2}
+  horario: {}
 
   # TRATO APARTE PARA LOS CREADORES BUENOS (40%+ migrado). A quien ha migrado 4
   # de cada 10 se le aguanta una caida que a un desconocido no se le aguantaria:
