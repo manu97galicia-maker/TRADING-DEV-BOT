@@ -980,6 +980,11 @@ class UniversalTrader:
         self._sell_cmd_path = Path(f"sell_cmd{_sfx}.json")
         self._state_suffix = _sfx  # p.ej. "_bot-sniper-gemas" (lo usa el panel)
         self.max_real_buys = max(0, int(max_real_buys or 0))
+        #: Compras hechas DESDE QUE ARRANCO ESTE PROCESO. `bought_mints` no
+        #: sirve para el tope: se carga de traded_mints*.json y acumula todas
+        #: las monedas compradas en la vida del bot -- con 115 dentro, un tope
+        #: de 3 bloqueaba antes de empezar ("Limite alcanzado: 115/3").
+        self._compras_de_la_tanda: int = 0
         # Moonbags retenidos (no se auto-venden): el avisador manda un aviso a
         # Telegram cada 5 min mientras sigan en la wallet, para venderlos a mano.
         self._moonbags_path = Path(f"moonbags{_sfx}.json")
@@ -2798,10 +2803,12 @@ class UniversalTrader:
                         f"Evitado {token_info.symbol}: ya comprada (re-check en semáforo)"
                     )
                     return
-                if self.max_real_buys and len(self.bought_mints) >= self.max_real_buys:
+                if (self.max_real_buys
+                        and self._compras_de_la_tanda >= self.max_real_buys):
                     logger.warning(
-                        "Limite de prueba alcanzado: %s/%s compras reales; %s no se compra",
-                        len(self.bought_mints), self.max_real_buys, token_info.symbol,
+                        "Tanda completada: %s/%s compras; %s no se compra",
+                        self._compras_de_la_tanda, self.max_real_buys,
+                        token_info.symbol,
                     )
                     return
                 # The logs listener cannot reliably tell legacy SPL Token from
@@ -2891,13 +2898,14 @@ class UniversalTrader:
                 async with self._spend_lock:
                     if (
                         self.max_real_buys
-                        and len(self.bought_mints) + self._reserved_real_buy_slots
+                        and self._compras_de_la_tanda
+                        + self._reserved_real_buy_slots
                         >= self.max_real_buys
                     ):
                         logger.warning(
-                            "Limite de prueba reservado/alcanzado: %s completadas + "
-                            "%s en curso / %s; %s no se compra",
-                            len(self.bought_mints),
+                            "Tanda: %s completadas + %s en curso / %s; "
+                            "%s no se compra",
+                            self._compras_de_la_tanda,
                             self._reserved_real_buy_slots,
                             self.max_real_buys,
                             token_info.symbol,
