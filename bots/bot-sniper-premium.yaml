@@ -864,6 +864,32 @@ filters:
   # España cambia de UTC+2 a UTC+1 en invierno; usando la hora del servidor la
   # franja se correria sola una hora sin que nadie tocara nada.
   horario: {inicio: 18, fin: 2}
+
+  # TRATO APARTE PARA LOS CREADORES BUENOS (40%+ migrado). A quien ha migrado 4
+  # de cada 10 se le aguanta una caida que a un desconocido no se le aguantaria:
+  # el stop pasa del 35% al 69% y el objetivo sube del +40% al +50%.
+  #
+  # Se activa por la TASA y no por una lista de carteras: la lista caduca en
+  # dias --estos creadores aparecen y desaparecen-- y la tasa se calcula en vivo.
+  #
+  # AVISO SOBRE LOS ESCALONES BAJOS: 3.000 y 6.000 quedan por DEBAJO del techo
+  # de entrada (10.000). Si una moneda se compra a 8.000, esos dos se cumplen
+  # desde el primer momento y se cobran de golpe en cuanto salte el +50%. No
+  # rompe nada --se vende un 20% a buen precio-- pero no es lo que parece al
+  # leerlo. Tienen sentido para entradas cerca del nacimiento (2.097 $), que es
+  # donde 3.000 es un +43%.
+  dev_elite:
+    min_rate: 0.40
+    stop_loss_percentage: 0.69
+    take_profit_percentage: 0.50
+    take_profit_sell_percentage: 0.50
+    mc_take_profit_tiers:
+      - {target_mc:  3000, sell: 0.10}
+      - {target_mc:  6000, sell: 0.10}
+      - {target_mc:  9000, sell: 0.10}
+      - {target_mc: 12000, sell: 0.10}
+      - {target_mc: 30000, sell: 0.10}
+
   marry_mode: false
   yolo_mode: true
   paper_trade: false         # DINERO REAL
