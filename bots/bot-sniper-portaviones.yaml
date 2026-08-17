@@ -37,7 +37,7 @@
 # un 20%: es el valor que pidio Manu y en el codigo los dos usan el mismo
 # campo (`stop_loss_percentage`).
 
-name: "PORTAVIONES - dev con tasa de migracion 10%+"
+name: "PORTAVIONES - copia 9 wallets, entrada MC<4K"
 env_file: ".env"
 
 # SOLO AVISOS DE COMPRA. El bot mandaba tambien senales, moonbags cada 5
@@ -50,18 +50,18 @@ rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
-enabled: false
+enabled: true
 separate_process: true
 platform: "pump_fun"
 
 trade:
   # El nominal solicitado es 0,15, pero el tope total inferior lo recorta
   # antes de construir la instruccion para incluir el slippage.
-  buy_amount: 0.15
+  buy_amount: 0.07
   buy_slippage: 0.30
   # Tope del coste autorizado por la instruccion: nominal + slippage.
-  # Con 30%, el nominal se recorta a 0,115384615 SOL.
-  tope_compra_total_sol: 0.15
+  # Con 30%, el nominal se recorta a 0,053846154 SOL.
+  tope_compra_total_sol: 0.07
   # 0,35, no 0,90. Con el 90% el bot aceptaba cobrar hasta un 90% MENOS de lo
   # esperado y lo apuntaba como si hubiera cobrado entero: es la principal
   # sospecha de por que el P&L teorico decia +0,16 mientras la cartera perdia
@@ -76,13 +76,13 @@ trade:
   exit_strategy: "tp_sl"
   # ASEGURAR CAPITAL: 67% al +50% devuelve la inversion entera (0,67 x 1,5 = 1).
   # Lo que sigue dentro a partir de ese momento es dinero regalado.
-  take_profit_percentage: 0.50
-  take_profit_sell_percentage: 0.67
+  take_profit_percentage: 0.75
+  take_profit_sell_percentage: 0.50
   # Tras TP1, el 33% restante no puede volver a bajar del precio de TP1.
   stop_al_tp_tras_tp: true
   # Sin mas escalones a proposito: el 33% que queda lo gestiona el trailing.
-  tp2_gain: 0
-  tp2_sell: 0
+  tp2_gain: 2.00
+  tp2_sell: 0.50
   tp3_gain: 0
   tp3_sell: 0
   tp4_gain: 0
@@ -145,7 +145,7 @@ filters:
 
   # Compra en cuanto termina la consulta del historial del creador.
   max_token_age: 15
-  max_buy_age: 7
+  max_buy_age: 0
 
   match_string: null
   bro_address: null
@@ -197,7 +197,7 @@ filters:
   # cuatro: la mayoria de los creadores de pump.fun estan en CERO migraciones,
   # y esos se caen igual con el 2% que con el 10%.
   pumpfun_dev:
-    enabled: true
+    enabled: false
     min_migrations: 1
     min_rate: 0.10
   # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
@@ -209,15 +209,29 @@ filters:
   # desactivado porque bloqueaba sin mirar la tasa; aqui interesa que sume.
   ignorar_listas_de_devs: true
 
-  # Sin filtro de market cap: manda exclusivamente el historial del creador.
+  # Copia solo mientras la moneda siga por debajo de $4.000 de market cap.
   min_entry_mc: 0
-  max_entry_mc: 0
+  max_entry_mc: 4000
   min_curve_sol: 0
 
   allow_mayhem: false        # decision de Manu: solo pump.fun normal
   marry_mode: false
   yolo_mode: true
   paper_trade: false         # DINERO REAL
+  copy_wallets:
+    enabled: true
+    wallets:
+      - "6ujZxnphRxTqveaQtLAQHFoWz16xhLWZbTijcgZN4fRp"
+      - "rzyTyP3gNnAwmkutS1FY7Wv2RdSFzZi5BbzmU4Cw73t"
+      - "3bTYzG94soZcUPD3qX3JGv6AY5Vp1dhGi9GxorbbzH7s"
+      - "7cp6zxvhxbfS7QgYTB7ts2RqFf7zDYwtjfuHcEHhKLAz"
+      - "J1VotcMwChwGZhYsqd1BRE7hpD692asKj71CDgFWmvU"
+      - "8Bq1Uu6dFCZZj3LRb6sAJ9q4gtXWCqZAKpzFV2FbHpg"
+      - "34KFwXnPRU5FHdDwJmz4cqZv8gM6HC8KvVH8K62YuF3E"
+      - "5CEbueQng1Ym2uSSx2xXds3jQAqT1BDnkA59RZobSPAG"
+      - "J4iit8MmXd2P46DzQxk7dj3qjY3m9G3Ck5zrPkBV54JV"
+    poll_interval: 0.5
+    follow_funded: false
 
   # Anti-concentracion: si un solo titular tiene mas del 15%, ese es el que va
   # a vender encima. Aqui si se mira, porque se entra despues del reparto

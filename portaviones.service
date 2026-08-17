@@ -1,5 +1,5 @@
 [Unit]
-Description=VOLUMEN-2K - entra a los ~2.000$ de volumen con presion compradora
+Description=PORTAVIONES - copia 9 wallets, entrada MC menor de 4K
 After=network-online.target
 Wants=network-online.target
 # Igual que dev10: sin esto systemd se rinde tras 5 arranques en 10 s y deja el
@@ -12,7 +12,7 @@ User=root
 WorkingDirectory=/root/ai-bot
 Environment=PYTHONPATH=/root/ai-bot/src
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/root/ai-bot/.venv/bin/python -u run_volumen2k.py
+ExecStart=/root/ai-bot/.venv/bin/python -u run_portaviones.py
 Restart=always
 RestartSec=10
 
