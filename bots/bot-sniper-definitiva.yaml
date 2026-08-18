@@ -24,14 +24,14 @@ trade:
   #
   # `dev_elite` (que ya existia) NO servia para esto: cambia el TP y el stop,
   # no cuanto se pone. `buy_amount_dev_top` se anadio al motor el 16-ago.
-  buy_amount: 0.07
+  buy_amount: 0.06
   max_real_buys: 3
   # 0,50, no 0,30: con la base en 0,40, dejarlo en 0,30 seria apostar MENOS
   # por el creador bueno que por el normal. Si lo quieres en 0,30 igualmente,
   # es esta linea.
   buy_amount_dev_top: 0.50
   dev_top_min_rate: 0.20
-  mayhem_buy_amount: 0.07
+  mayhem_buy_amount: 0.06
 
   # Dos posiciones = 0,70 SOL de los 1,53 que hay. Sin esta linea el codigo usa
   # 20 por defecto, que serian 7 SOL.
@@ -50,8 +50,8 @@ trade:
   # El escalon de 9.800 va por MARKET CAP y solo se activa cuando los dos de
   # porcentaje ya se han cobrado (universal_trader.py:3667).
   # El 15% que queda no se vende nunca.
-  take_profit_percentage: 0.50
-  take_profit_sell_percentage: 0.30
+  take_profit_percentage: 1.00
+  take_profit_sell_percentage: 0.74
   tp2_gain: 0
   tp2_sell: 0
   tp3_gain: 0
@@ -60,14 +60,11 @@ trade:
   # escalones se arman DESPUES de la escalera por porcentaje.
   # El 70% que queda tras el +50%, por market cap. El ultimo escalon es 38K y
   # deja un 10% que no se vende nunca.
-  mc_take_profit_tiers:
-    - {target_mc:  7000, sell: 0.20}
-    - {target_mc: 12000, sell: 0.20}
-    - {target_mc: 38000, sell: 0.20}
+  mc_take_profit_tiers: []
 
   # SIN STOP LOSS, como pediste. El 0 significa "sin suelo" en la ruta de
   # dinero real (`sl_price = entry*(1-pct) if pct else None`).
-  stop_loss_percentage: 0.25
+  stop_loss_percentage: 0.80
   trailing_stop_percentage: 0
 
   # Pero el suelo SUBE segun cobra: al cobrar el +40% se pone en la entrada, y
@@ -161,7 +158,7 @@ filters:
   # EL CREADOR: 10%+ de sus lanzamientos migrados.
   pumpfun_dev:
     enabled: true
-    min_rate: 0.01
+    min_rate: 0.10
     # Un porcentaje sobre una sola moneda no es historial, es casualidad, y es
     # la firma del farmero que estrena wallet: 1 migracion de 1 lanzamiento da
     # 100%. Ese caso exacto (变狗) costo 0,29 SOL en un rug a los 4 segundos.
@@ -199,7 +196,7 @@ filters:
   # POR DEBAJO DE 3.700 $, el mismo techo para todos: el techo aparte para el
   # creador bueno (2.800) se queda desactivado porque ahora seria MAS BAJO que
   # el general.
-  max_entry_mc: 2700
+  max_entry_mc: 2900
   max_entry_mc_dev_top: 0
   min_curve_sol: 0
 

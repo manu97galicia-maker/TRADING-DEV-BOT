@@ -1,203 +1,234 @@
-# DEV10 — creadores que migran el 10% o mas, entrada en los 3 primeros segundos
+# =============================================================================
+#  VOL4K  ·  recien nacidas  ·  volumen  ·  dev que migra 10%+  ·  0,35 SOL
+#  Salida 55% al +40% · 20% al +100% · 10% al x3 · 15% moonbag · SIN STOP
+# =============================================================================
 #
-# La mas simple de todas: no mira volumen, ni transacciones, ni titulares, ni
-# redes. La unica pregunta es QUIEN LANZA. Si ese creador ha llevado el 10% o
-# mas de sus monedas hasta el final de la curva, se compra; si no, no.
-#
-# EMPEZO EN 30% Y NO COMPRABA NADA: medido en vivo sobre 164 lanzamientos
-# seguidos (5-ago), CERO traian un dev con esa tasa. El reparto real era:
-#
-#   72,0%  menos de 3 migraciones en toda su historia
-#   23,2%  la API no tiene historial de ese dev (wallet nueva)
-#    4,9%  3+ migraciones pero por debajo del 30%
-#    0,0%  <- lo que habria comprado
-#
-# Bajado al 10% por eso.
-#
-# El historial sale de la API de pump.fun (`?creator=<wallet>`), que devuelve
-# todas sus monedas con la marca `complete` de las que migraron. Se calcula en
-# vivo, no es una lista cerrada de wallets: la lista se queda vieja en dias y
-# la tasa se recalcula sola.
-#
-# min_migrations bajado de 3 a 1 el 9-ago a peticion de Manu: minimo un
-# proyecto migrado, y el resto lo decide la tasa del 10%.
-# Lo que tapaba era el falso positivo obvio: un dev con 1
-# lanzamiento y 1 migracion marca 100% y no significa nada.
-#
-# ─────────────────────────────────────────────────────────────────────────────
-# COMO CABE LA CONSULTA EN 3 SEGUNDOS
-# ─────────────────────────────────────────────────────────────────────────────
-# La comprobacion del dev vive despues del corte de edad, asi que si se pidiera
-# alli sumaria su tiempo a los 3 segundos y la moneda se caeria por vieja. Se
-# pide en cuanto aparece la moneda y se recoge al decidir, cuando ya esta en la
-# cache. Ademas se cachea 10 minutos por creador: estos devs relanzan sin parar,
-# asi que a partir de la segunda moneda del mismo dev la respuesta es inmediata.
-#
-# ─────────────────────────────────────────────────────────────────────────────
-# LO QUE HAY QUE ESPERAR
-# ─────────────────────────────────────────────────────────────────────────────
-# POCAS operaciones. Los creadores con esa tasa son una minoria pequena, asi
-# que puede pasar mucho rato sin una sola compra. Eso es lo que se ha pedido:
-# el filtro no es el mercado, es la persona.
+# Pedida por Manu el 15-ago como UNICA estrategia activa. Junta tres cosas que
+# hasta ahora iban por separado: que la moneda acabe de nacer, que ya se este
+# moviendo dinero de verdad en ella, y que el creador tenga historial.
 
-name: "DEV10 - dev migra 10%+, 0,30 SOL, entrada hasta 2,8K"
+name: "RAPIDA - 0-42 s de vida, MC hasta 3,5K, volumen 400-1.000 $, stop 80%"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
-enabled: false
+enabled: true
 separate_process: false
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.30
-  # 0,30 y no 0,15: comprando en los 3 primeros segundos el precio se mueve
-  # entre que se firma y se ejecuta, y un slippage corto no ahorra nada -- la
-  # transaccion revienta y se paga la comision igual, sin moneda. Es el mismo
-  # margen que llevan las otras estrategias en vivo.
-  buy_slippage: 0.30
-  sell_slippage: 0.90
-
-  # LAS MAYHEM, A PRUEBA. Vuelven a entrar (rinden el doble segun lo medido en
-  # julio, y la unica ganadora hasta ahora, ryok.net, era una) pero con una
-  # apuesta de 0,06 en vez de 0,30: una quinta parte. Y con fecha de caducidad:
-  # tres perdidas seguidas y se dejan de comprar hasta el siguiente arranque.
+  # 0,15 DE BASE, y 0,25 si el creador ha migrado el 50% o mas de lo que
+  # lanza. La tasa ya se calcula en el filtro del dev, asi que subir la apuesta
+  # no cuesta ninguna llamada extra.
   #
-  # Perder = salir con menos SOL de los que entraron, contando lo cobrado mas
-  # el moonbag menos el coste. Da igual que tocara un TP por el camino. Una
-  # ganadora pone el contador a cero: lo que se corta es una mala racha.
-  #
-  # Lo que NO hace: parar el bot. Las normales siguen a 0,30 SOL.
-  # Coste maximo del experimento: 3 x 0,06 = 0,18 SOL.
+  # `dev_elite` (que ya existia) NO servia para esto: cambia el TP y el stop,
+  # no cuanto se pone. `buy_amount_dev_top` se anadio al motor el 16-ago.
+  buy_amount: 0.06
+  max_real_buys: 3
+  # 0,50, no 0,30: con la base en 0,40, dejarlo en 0,30 seria apostar MENOS
+  # por el creador bueno que por el normal. Si lo quieres en 0,30 igualmente,
+  # es esta linea.
+  buy_amount_dev_top: 0.50
+  dev_top_min_rate: 0.20
   mayhem_buy_amount: 0.06
-  mayhem_max_perdidas: 3
+
+  # Dos posiciones = 0,70 SOL de los 1,53 que hay. Sin esta linea el codigo usa
+  # 20 por defecto, que serian 7 SOL.
+  max_posiciones: 1
+  mayhem_max_perdidas: 0
+
+  # Slippage alto en la compra: en una moneda que se esta moviendo, un margen
+  # corto hace que la transaccion REVIENTE y pagues la comision sin moneda.
+  buy_slippage: 0.12
+  sell_slippage: 0.12
 
   exit_strategy: "tp_sl"
-  # Escalera pedida por Manu: al +50% se recupera el 40% de la posicion, y el
-  # 60% que queda sale en tres tercios iguales (20% cada uno) en +115%, +170%
-  # y +300%. Los porcentajes de venta son sobre la posicion ORIGINAL, asi que
-  # 40 + 20 + 20 + 20 = 100%: no queda moonbag colgada.
-  take_profit_percentage: 0.50
-  take_profit_sell_percentage: 0.40
-  tp2_gain: 1.15
-  tp2_sell: 0.20
-  tp3_gain: 1.70
-  tp3_sell: 0.20
-  tp4_gain: 3.00
-  tp4_sell: 0.20
+  # 30% al +50% · 30% en x3 · 25% al tocar 9.800 $ de market cap · 15% moonbag.
+  #
+  # Los `gain` son ganancia, no multiplicador: 0.50 = +50%, 2.00 = x3.
+  # El escalon de 9.800 va por MARKET CAP y solo se activa cuando los dos de
+  # porcentaje ya se han cobrado (universal_trader.py:3667).
+  # El 15% que queda no se vende nunca.
+  take_profit_percentage: 1.00
+  take_profit_sell_percentage: 0.74
+  tp2_gain: 0
+  tp2_sell: 0
+  tp5_gain: 0
+  tp5_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  # El 40% que queda tras el +50% y el x3, repartido por market cap. Los
+  # escalones se arman DESPUES de la escalera por porcentaje.
+  # El 70% que queda tras el +50%, por market cap. El ultimo escalon es 38K y
+  # deja un 10% que no se vende nunca.
+  mc_take_profit_tiers: []
+  # dinero real (`sl_price = entry*(1-pct) if pct else None`).
+  stop_loss_percentage: 0
+  trailing_stop_percentage: 0
 
-  # ANTI-RUG: sale entera si en 4 s se vende el doble de lo que se compra. Es
-  # la unica proteccion que queda al no haber stop, y con estos devs hace falta
-  # -- migrar el 10% tambien significa no migrar el 90%.
+  # Pero el suelo SUBE segun cobra: al cobrar el +40% se pone en la entrada, y
+  # de ahi al escalon anterior. Asi el moonbag del 15% no puede acabar en
+  # perdida. No es un stop de los que te sacan por ruido.
+  stop_a_entrada_tras_tp: true
+  # El suelo sigue subiendo escalon a escalon: tras el 2o TP pasa al 1o.
+  stop_al_tp_tras_tp: true
+  stop_al_tp_anterior: true
+
   anti_rug_ratio: 2.0
   anti_rug_seg: 4
   anti_rug_min_sol: 3
 
-  # 0.95 = practicamente sin stop, igual que CUNA. No se pone 0 porque el bot
-  # lo leeria como "vender ya".
-  stop_loss_percentage: 0.95
-
-  # MONEDA MUERTA A LOS 2 MINUTOS. Se mira UNA vez, a los 120 s: si en ese
-  # momento no esta por encima de la entrada, se vende entera y se libera la
-  # posicion. Si va en verde se la deja correr y ya no se vuelve a preguntar:
-  # a partir de ahi mandan los take-profit.
+  # LAS DOS CONDICIONES DE SALIDA QUE PEDISTE, y son distintas:
   #
-  # No es lo mismo que `max_hold_time`, que espera al final por si arranca.
-  # Hacen falta los dos: el tope largo es para que un ganador tenga tiempo de
-  # llegar al +400%, y este corta a las que nacen planas para que no ocupen la
-  # posicion media hora.
+  # 1) PARADA POR DEBAJO DE LA COMPRA a los 2 minutos -> fuera. Mira el PRECIO,
+  #    una sola vez, al cumplirse el plazo.
   venta_muerta_seg: 120
   venta_muerta_gain: 0.0
+  # 2) SIN VOLUMEN 2 minutos seguidos -> fuera. Mira el VOLUMEN, de forma
+  #    continua. Da igual que el precio siga alto: si nadie negocia, ese precio
+  #    no lo va a pagar nadie. Es la leccion de las 63 monedas que quedaron
+  #    atrapadas con "valor" en pantalla y cero SOL detras.
+  #    (Opcion nueva, anadida al motor el 15-ago.)
+  venta_sin_volumen_seg: 120
 
-  # 30 minutos: el ultimo escalon (+300%) es donde vive la migracion, y
-  # completar una curva no pasa en diez minutos.
-  max_hold_time: 1800
+  max_hold_time: 3600
   price_check_interval: 1
   extreme_fast_mode: false
-  min_reserve_sol: 0.05
+  min_reserve_sol: 0.08
+
+  # UN SOLO RUG Y FUERA. Por defecto son 2; con 1, al creador que te la
+  # juega una vez no se le vuelve a comprar nunca (queda anotado en
+  # blocked_devs_bot-sniper-definitiva.json).
+  rugs_para_bloquear: 1
+
+# OBLIGATORIO: Token-2022 no cabe en las 59.700 unidades por defecto y la VENTA
+# falla con "Program failed to complete", dejando la posicion atrapada.
+compute_units:
+  buy: 140000
+  sell: 120000
 
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  # 50M = 0,00425 SOL, el 1,4% de una posicion de 0,30. Aqui si compensa pagar por
-  # llegar antes: como dispara poco, perder una entrada cuesta mas que la
-  # comision, y quien filtre por el mismo dev va a estar compitiendo.
-  fixed_amount: 50_000_000
+  # UN 5% POR ENCIMA DE LO QUE PAGAN ELLOS. En la captura de Manu la tarifa de
+  # prioridad es 0,085 $; un 5% mas son 0,08925 $, que a 75,18 $/SOL son
+  # 0,0011871 SOL. Con 140.000 unidades de computo eso sale a 8.480.000
+  # microlamports por unidad.
+  #
+  # OJO: esto es la parte de PRIORIDAD, la que se puja. La comision base de red
+  # (los 0,075 $ de la captura) no se elige, la pone la red.
+  #
+  # Si SOL cambia mucho de precio, este numero deja de valer 0,089 $ y hay que
+  # rehacerlo.
+  fixed_amount: 8_480_000
   extra_percentage: 0.0
-  hard_cap: 50_000_000
+  hard_cap: 8_480_000
 
 retries:
-  # El bot reintenta 10 veces si no se dice nada, y cada intento fallido paga
-  # comision igual aunque no compre nada. Con 2 basta: si a la segunda no ha
-  # entrado, la moneda ya no esta en el precio por el que se iba a comprar.
+  # DOS INTENTOS, no tres. Cada intento que aterriza y falla paga su comision;
+  # el tercero casi nunca salva la operacion y si suma coste.
   max_attempts: 2
   wait_after_creation: 0
   wait_after_buy: 0
 
 filters:
   listener_type: "logs"
-  max_token_age: 60
-  max_buy_age: 3              # "primeros tres segundos"
+  max_token_age: 3
+
+  # 30 SEGUNDOS DE VENTANA, no 3. Esto es lo que hace posible el filtro de
+  # volumen: el bot ve la moneda al nacer y se queda VIGILANDOLA hasta 30 s,
+  # comprando en el instante exacto en que el volumen cumple. Con la ventana en
+  # 3 s no daria tiempo a que se negociara nada y el filtro no dispararia
+  # nunca. No retrasa la compra: si cumple en el segundo 1, compra en el 1.
+  # 30 SEGUNDOS, no 3. Con filtros de volumen y de operaciones el bot NO
+  # espera a ciegas: se queda vigilando la moneda y compra en el instante
+  # exacto en que cumple las dos condiciones. Con la ventana en 3 s no daria
+  # tiempo a que se negociara nada y no compraria nunca.
+  max_buy_age: 3
 
   match_string: null
   bro_address: null
+  # BANEO AUTOMATICO ACTIVADO. En false, el bot mantiene su propia lista: al
+  # creador que te rugea `rugs_para_bloquear` veces no se le vuelve a comprar
+  # nunca (queda en blocked_devs_bot-sniper-definitiva.json). En true esa lista
+  # se ignoraba, que es como estaba heredado.
+  ignorar_listas_de_devs: false
 
-  # NINGUNA LISTA MANDA AQUI. Ni la blacklist manual (blacklist_devs.json, que
-  # comparten todos los bots) ni el auto-baneo por 2 rugs. Las dos bloqueaban a
-  # un creador sin mirar su tasa: en 3 minutos de log tumbaron 11 monedas. Manu
-  # lo quiere al reves -- da igual que el dev este fuera de toda lista o dentro
-  # de una de bloqueo: si ha migrado mas del 10%, se compra.
-  ignorar_listas_de_devs: true
-
-  # EL UNICO FILTRO QUE DECIDE.
+  # EL CREADOR: 10%+ de sus lanzamientos migrados.
   pumpfun_dev:
     enabled: true
-    min_rate: 0.10
-    # DE VUELTA A 3, y esta vez medido. Con el minimo en 1 el bot compro 变狗
-    # de un dev con 1 migracion de 1 lanzamiento (100%): le rugearon encima a
-    # los 4 segundos y costo 0,29 SOL. Un porcentaje alto sobre una sola moneda
-    # no es historial, es casualidad, y es la firma del farmero que estrena
-    # wallet.
-    #
-    # Sobre 85 creadores reales medidos el 9-ago, de los 7 que pasaban el 10%
-    # este minimo conserva 5 (73%, 14%, y tres al 10%, todos con 7+ migraciones)
-    # y descarta 2: uno de 1 de 2 y otro de 2 de 11. Cuesta ~29% de las
-    # oportunidades y corta justo el perfil que rugea.
-    #
-    # ryok.net, la unica ganadora hasta ahora, es 7 de 70: sigue pasando.
-    min_migrations: 3
+    min_rate: 0.01
+    # Un porcentaje sobre una sola moneda no es historial, es casualidad, y es
+    # la firma del farmero que estrena wallet: 1 migracion de 1 lanzamiento da
+    # 100%. Ese caso exacto (变狗) costo 0,29 SOL en un rug a los 4 segundos.
+    # DOS MIGRACIONES MINIMO. Con el listón en el 5%, sin esto entraria el
+    # farmero que estrena wallet: 1 migracion de 1 lanzamiento marca 100% y
+    # pasaria, ademas cobrando la apuesta grande. Exigiendo 2, el escalon de
+    # arriba (20%+) ya cumple solo lo de "minimo 2 migraciones".
+    min_migrations: 1
 
-  # Vuelven a entrar, pero con la correa corta: 0,06 SOL por operacion y cierre
-  # automatico a las 3 perdidas seguidas (ver mayhem_buy_amount arriba).
-  allow_mayhem: true
+  # VOLUMEN MINIMO 300 $ = 3,99 SOL (a 75,18 $/SOL).
+  min_volumen_sol: 2.7
+
+  # SIN FRANJA HORARIA: opera las 24 horas. El {inicio:18, fin:4} venia
+  # heredado de cuando esta estrategia se llamaba NOCHE, y estaba descartando
+  # todo fuera de esa banda sin que nadie lo hubiera pedido para esta version.
+  horario: {}
+
+  allow_mayhem: false
+  require_mayhem: false
   marry_mode: false
   yolo_mode: true
   paper_trade: false          # DINERO REAL
 
-  # SIN SUELO. Manu pidio "compra por debajo de 2,8K" y punto. Antes habia un
-  # suelo de 2000 con el comentario de que el minimo de pump.fun era $2.040;
-  # medido el 9-ago sobre 150 creaciones, es falso: monedas de devs con 10%+
-  # salian a $134, $614, $760, $1.511 y $1.766. El suelo las tiraba todas.
-  # De las 11 monedas de dev bueno de esa muestra, 7 estaban por debajo de
-  # 2,8K pero solo 2 caian dentro de la banda 2.000-2.800.
+  # TECHO DE COMPRA EN 2.800 $.
+  #
+  # AVISO IMPORTANTE, y prefiero decirtelo antes de que veas el log vacio:
+  # este techo y el filtro de volumen tiran el uno contra el otro. El volumen
+  # EMPUJA el market cap -- son la misma magnitud en la curva de pump.fun --,
+  # asi que una moneda que ya ha negociado 53 SOL dificilmente sigue por debajo
+  # de 2.800 $. Es una combinacion muy estrecha: espera pocas compras, o
+  # ninguna. Si a las pocas horas no ha disparado, el numero a soltar es este
+  # (o el volumen), no el filtro del dev.
   min_entry_mc: 0
-  max_entry_mc: 2800          # tope de compra 2,8K
+  # POR DEBAJO DE 2.600 $, que es practicamente el nacimiento (2.097).
+  # POR DEBAJO DE 3.700 $, el mismo techo para todos: el techo aparte para el
+  # creador bueno (2.800) se queda desactivado porque ahora seria MAS BAJO que
+  # el general.
+  max_entry_mc: 2500
+  max_entry_mc_dev_top: 0
   min_curve_sol: 0
 
-  # Todo lo demas apagado a proposito: la senal es el dev.
-  min_volumen_sol: 0
-  max_volumen_sol: 0
+  max_volumen_sol: 6.7
   min_vol_ventana_sol: 0
-  min_ops: 0
-  min_titulares: 0
+  # Sin minimo de compras: la condicion de arranque es el volumen. Estuvo en 4
+  # y era el mayor cuello del embudo -- de 38 monedas descartadas, solo 1 llego
+  # a tener 3 compradores en 30 s.
+  # 4 TRANSACCIONES PREVIAS antes de entrar. Cuenta operaciones de la moneda,
+  # compras y ventas, no compradores distintos: es "que haya pasado algo ya".
+  min_ops: 4
+  # MAS COMPRA QUE VENTA. El ratio mide cuanto SOL entra frente al que sale en
+  # los ultimos  segundos: 1.0 exige que entre mas del que sale.
+  # El volumen solo dice que hay movimiento; esto dice hacia donde va, y evita
+  # entrar justo cuando el dinero se esta yendo.
+  # Las 3 ultimas operaciones tienen que ser COMPRAS: nadie ha vendido aun.
+  ultimas_tx_compra: 3
+  min_presion_ratio: 1.0
+  presion_seg: 3.0
+  min_buys: 0
+  min_titulares: 4
   redes_originales: false
   min_holders_gmgn: 0
   senal_gmgn: []
 
-  # Estos devs relanzan la misma moneda una y otra vez; comprar tres clones
-  # seguidos es pagar tres veces por la misma apuesta.
-  no_repeat_name_min: 5
+  # DOS MINUTOS, no 24 horas. El bloqueo de un dia estaba tumbando el 64% de
+  # todo el flujo (461 de 721 monedas): con tickers comunes, un nombre bloquea
+  # al siguiente durante un dia entero. Dos minutos es lo que pediste y hace lo
+  # que hacia falta: cortar al que relanza la misma moneda seguida.
+  no_repeat_name_min: 2
   max_holder_pct: 0.0
   max_dev_hold_pct: 0.0
   min_holders: 0
@@ -227,4 +258,11 @@ cleanup:
   with_priority_fee: false
 
 node:
-  max_rps: 15
+  # 40 rps con el plan ampliado de Helius. Estuvo en 8 mientras el nodo
+  # devolvia 429; si vuelven a aparecer, es que el limite sigue por debajo de
+  # esto y hay que bajarlo otra vez -- o revisar que el endpoint del .env sea
+  # el del plan nuevo y no el viejo.
+  # 20, no 40. Con 40 el nodo devolvia 429 justo al ir a leer la curva para
+  # comprar -- paso con "Joe", que habia pasado TODOS los filtros. Mejor menos
+  # peticiones y que las que importan entren.
+  max_rps: 20
