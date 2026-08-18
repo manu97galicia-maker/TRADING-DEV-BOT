@@ -1,163 +1,177 @@
-# Las tres estrategias que están corriendo
+# Estrategia actual
 
-Droplet `root@159.89.19.12`, carpeta `/root/ai-bot`. Las tres comparten wallet y
-las tres arrancan solas si se reinicia el servidor (`enabled`).
-
-```
-A · DEFINITIVA   bots/bot-sniper-definitiva.yaml   servicio definitiva
-B · ELITE        bots/bot-sniper-premium.yaml      servicio premium
-C · RAPIDA       bots/bot-sniper-dev10.yaml        servicio dev10
-```
-
-Actualizado: 18 de agosto de 2026. SOL a 75,12 $.
+Estado a **19 de agosto de 2026**. Esto es lo que está corriendo en el servidor
+ahora mismo, no lo que se planea.
 
 ---
 
-## Qué compra cada una
+## Resumen en una tabla
+
+Tres bots en paralelo sobre **la misma wallet**. Lo único que los separa es
+**qué compran**: el tamaño y la salida son idénticos en los tres.
 
 ```
-              market cap    volumen      creador   ultimas   edad
-A DEFINITIVA    <= 2.900     849 $ +      >= 10%      2       90 s
-B ELITE         <= 2.900     849 $ +      >= 25%      3       90 s
-C RAPIDA        <= 2.500    203-503 $     >=  1%      3        3 s
+                MC entrada   volumen    creador   últimas   edad    stop
+DEFINITIVA      ≤ 2.800 $    ≥ 3 SOL     ≥10%        2      90 s    80%
+ELITE           ≤ 2.800 $    ≥ 3 SOL     ≥25%        3      90 s    80%
+RAPIDA          ≤ 2.800 $    ≥ 3 SOL     ≥ 1%        3       3 s    sin
 ```
 
-`ultimas` = cuántas de las últimas operaciones tienen que ser **compras**. No es
-lo mismo que la presión compradora: esa compara SOL comprado contra vendido y
-puede salir bien mientras alguien va saliendo por detrás. Esto exige que
-**nadie haya vendido** en las últimas operaciones.
-
-Las tres exigen además: **≥4 carteras distintas**, **≥4 transacciones previas**,
-que entre más SOL del que sale en los últimos 3 s, y **sin mayhem**.
-
-## Cómo vende — igual en las tres
-
-```
-x2 (+100%)   vende 74%   ->  el suelo pasa al PRECIO DE COMPRA
-             26% de moonbag que no se vende nunca
-
-stop         80% en DEFINITIVA y ELITE · SIN stop en RAPIDA
-muerta       a los 120 s si esta por debajo del precio de compra
-anti-rug     sale si en 4 s se vende el doble de lo que entra
-```
-
-**Trinquete escalón a escalón** (activo en las tres): al cobrar el primer
-take-profit el suelo pasa al precio de compra; al cobrar el segundo, al primero;
-y así. Con una sola escalera en x2 lo que hace es proteger el 26% de moonbag:
-en cuanto se cobra el x2, ese resto ya no puede acabar en pérdida.
-
-## Dinero
-
-```
-0,06 SOL por compra · 1 posicion a la vez · tanda de 3 compras y para
-reserva 0,08 SOL · deslizamiento 12% compra / 12% venta
-comision de prioridad ~3,7% de la posicion
-veta al creador al PRIMER rug
-```
+Común a los tres: **≥4 carteras distintas**, **≥4 operaciones previas**, sin
+mayhem, slippage 12%, `max_posiciones: 1` por bot, reserva 0,08 SOL.
 
 ---
 
-## Por qué están así estos números
-
-**El stop del 80% casi nunca saltará.** Toda moneda nace a 2.100 $ y ese es el
-suelo de la curva: comprando a 2.900 la caída máxima estructural es del **28%**,
-así que un stop del 80% queda muy por debajo. Lo que cierra las malas es la
-venta por muerta a los 120 s. No es un fallo — es la consecuencia de tener el
-techo de entrada bajo.
-
-**El deslizamiento al 12%** viene de haber medido que con el 30% una ida y
-vuelta podía dejarse el 46% de la posición sin que el precio se moviera. Con el
-12% el peor caso es el 21%. El precio: alguna compra falla por no confirmar.
-
-**RAPIDA entra a los 3 segundos** y es la única en la ventana buena. Medido
-sobre 92 monedas: entrar antes de 2 s casi duplica la probabilidad de x2 frente
-a la base (29% contra 17%); entre 5 y 15 s se hunde al 6%.
-
-**El x2 es alcanzable**: el 46% de las monedas llega a x2 desde donde entramos,
-y luego acaban a 0,90x. Objetivos más altos (x3, x5) los alcanzan muchas menos.
-
----
-
-## Historial
+## La compra
 
 ```
-tanda 1   volumen 1,9K · sin techo · desliz 30%     -0,0678 SOL   0/3
-tanda 2   volumen 1,7K · techo 3,2K · desliz 30%    -0,1074 SOL   0/3
+base                 0,15 SOL
+crece un 35%         por cada SOL ganado de VERDAD
 ```
 
-**Ninguna murió por el stop.** Casi todas entraron y salieron casi al mismo
-precio; se las comió el deslizamiento. Por eso se bajó al 12%: las tandas de
-ahora son las primeras que miden la estrategia y no las comisiones.
+El bote es **común a los tres bots** — comparten wallet, así que comparten
+caja — y solo cuenta P&L leído de la cadena.
+
+```
+   ganado        compra
+   +0 SOL        0,150
+   +1 SOL        0,203
+   +2 SOL        0,255
+   +5 SOL        0,413
+  +10 SOL        0,675
+```
+
+**En negativo no baja.** El multiplicador se queda en 1 y se sigue con el
+tamaño base. Reducir la apuesta tras una racha mala suena prudente, pero con la
+mitad de tamaño hacen falta el doble de aciertos para recuperar: convierte un
+bache en un agujero del que no se sale.
+
+**Por qué el P&L real y no el del bot.** El teórico ha llegado a equivocarse de
+signo — reportó **+229 SOL** en una operación que en la cadena dio **−0,02**.
+Un bote alimentado con ese número subiría el tamaño justo cuando se pierde.
 
 ---
 
-## Lo que NO hay que creerse
+## La salida
 
-**El P&L del log miente.** Ha llegado a decir `+11,86 SOL` y `+8,25 SOL` en
-operaciones que la cadena cifró en `-0,0097` y `-0,0160`. Mirar **solo** la
-línea `P&L REAL`, que se lee de los deltas de la wallet en cada firma.
+```
+TP1   al +50% de subida       vende el 50%   → el suelo sube al PRECIO DE COMPRA
+MC     6.800 $                vende el 35%
+MC    18.000 $                vende el 7,5%
+MC    34.000 $                vende el 3,75%
+      3,75% se queda dentro para siempre
+```
 
-**Nada medido contra `ath_market_cap`.** Ese campo sale del precio de la curva y
-con el pool seco se infla con calderilla: un creador enseñaba 89.950.686 $ de
-máximo con 1.387 $ de liquidez real y 5 $ de volumen diario.
+Las fracciones van sobre la **compra original**, no sobre lo que queda. Los
+escalones de market cap **solo se arman cuando ha saltado el TP1**, así que
+nunca se adelantan.
 
----
+**El trinquete es lo importante.** Al cobrar el TP1 el suelo sube al precio de
+compra y lo que queda dentro ya no puede acabar en pérdida. Funciona incluso en
+RAPIDA, que no lleva stop-loss configurado.
 
-## Fallos conocidos sin arreglar
+**Por qué +50% y no x2.** Al +40% llega el 79% de las monedas; a x2, el 57%.
+Las configuraciones anteriores pedían x2, x3 o x5 y por eso casi ninguna
+cobraba nada.
 
-1. **Token-2022.** El bot deriva la cuenta de tokens con el programa clásico,
-   pero muchas monedas son Token-2022. Cuando pasa lee 0 tokens, da la posición
-   por vendida **sin venderla** y abandona la bolsa. Llegaron a acumularse 24.
-   Es el arreglo pendiente más caro.
-
-2. **La venta por muerta se comprueba UNA sola vez** a los 120 s. Una moneda que
-   en ese instante esté a +0% se deja correr y ya solo la cierran el stop o el
-   objetivo. Pasó con CATECOIN (20 min), MORE, CVP y PUMPFUN.
-
-3. **`Custom 6024` al vender.** Cuando la curva se vacía no hay contrapartida a
-   ningún precio y la bolsa queda atrapada. Van seis casos: Parmesan, FARM,
-   CATECOIN, MORE, CVP y BABYANSEM.
-
-4. **Las tres no se coordinan.** Si ven la misma moneda entran las tres y
-   acabas con 0,18 SOL en una sola posición creyendo que son tres apuestas
-   distintas. Ya pasó con GAMBLE (dos bots, 0,27 SOL en la misma moneda).
+**Aviso sobre 18K y 34K.** Una moneda migra a los 30.867 $, así que el escalón
+de 34.000 $ cae **después de la migración**: ya no se vende por la curva sino
+por Jupiter. Las mayhem no se pueden vender por agregadores, y de las 308
+monedas del análisis del 14-ago, 63 se quedaron sin vender por pool migrado —
+el 58% de la pérdida. Ese escalón probablemente necesite rescate manual.
 
 ---
 
-## Operar
+## Lo que está medido (19-ago, 288.984 evaluaciones)
+
+### La latencia no es el problema
+
+```
+p25 0,3 s · mediana 1,6 s · p75 3,7 s
+MC al disparar: mediana 2.599 $
+```
+
+Dispara a 1,6 segundos y a 2.599 $. Eso ya está donde hay que estar.
+
+### El filtro del creador sí lo es
+
+```
+                cumplen   tumbadas por el dev   compras
+DEFINITIVA        1.127            850  (75%)       40
+ELITE               223            218  (98%)        3
+RAPIDA              178             63  (35%)       15
+```
+
+**ELITE está muerta.** El 85,2% de las monedas con arranque limpio las lanza
+alguien con **0 migraciones**; exigir historial deja fuera casi todo el flujo.
+
+La prueba: **WIW**, la única ganadora del 18-ago, cumplió a los 2,1 s con MC
+2.262 $ y 12 carteras distintas. Su creador llevaba 7% de migración. La
+bloquearon DEFINITIVA (7% < 10%) y ELITE (7% < 25%); solo la cogió RAPIDA, y
+cobró el +50%.
+
+**Recomendación pendiente de decisión**: bajar DEFINITIVA a ≥1% y ELITE a ≥5%.
+
+### El volumen y el market cap están acoplados
+
+La curva es aritmética exacta:
+
+```
+MC 2.400 $ → caben 2,09 SOL netos
+MC 2.800 $ → caben 4,67 SOL netos
+MC 3.500 $ → caben 8,76 SOL netos
+```
+
+Y el volumen cuenta compras **y** ventas. Así que exigir 900 $ (12 SOL) con el
+techo en 2.800 $ obligaba a que ya hubiera **3,67 SOL de ventas**: el filtro
+seleccionaba monedas donde la gente ya estaba soltando. Por eso está en 3 SOL.
+
+---
+
+## Bugs arreglados esta sesión
+
+**El programa de token** (18-ago). El 10% de las ventas — 37 de 373 — acababa
+en "no quedan tokens que vender" sin haber vendido nada. La dirección de la
+cuenta sale de wallet + mint + **programa**; con el programa equivocado no
+existe, el saldo se lee como cero y la posición se cierra en falso. Ahora se
+miran los dos programas y se **corrige el campo**, porque la venta construye
+sus cuentas con ese mismo campo.
+
+**El moonbag del stop-loss** (18-ago). Se calculaba solo con los escalones de
+porcentaje, así que con un único tramo daba un moonbag del 50%: al saltar el
+stop se dejaba media posición sin vender. Pasó con WIW: −0,0220 SOL cobrados y
+0,0720 colgando en una moneda que ya había dado la vuelta. Ahora descuenta
+también los escalones de market cap: 3,75% en vez de 50%.
+
+---
+
+## Lo que sigue roto
+
+- **El P&L teórico miente, y de signo.** Solo es cosmético (lo que decide sale
+  de los deltas de la wallet), pero no fiarse de lo que llegue por Telegram.
+- **`venta_muerta` se mira una sola vez a los 120 s.**
+- **Los tres bots no se coordinan** y pueden comprar la misma moneda.
+- **`Custom 6024`**: curva vacía, no hay contrapartida a ningún precio.
+- **El saldo no da para los tres.** Con 0,15 por posición hacen falta 0,53 SOL
+  (0,45 + reserva) y hay menos: solo dos bots pueden tener posición a la vez.
+
+---
+
+## Operación
 
 ```bash
-# comprobar SIEMPRE antes de reiniciar
-ls /root/ai-bot/open_position_*.json
-
-systemctl restart definitiva premium dev10     # solo si no hay ninguna
-bash desplegar.sh                              # sube y espera a que no haya
+bash desplegar.sh              # sube y reinicia esperando a que no haya posiciones
+bash desplegar.sh --solo-subir # sube sin reiniciar
+bash desplegar.sh --ya         # reinicia abandonando posiciones (avisa de cuáles)
 ```
 
-**Nunca reiniciar con una posición abierta**: el bot no las reanuda, avisa de
-"bolsa huérfana" y la deja sin vigilancia. Pasó con MOLE, Parmesan y wCAT.
+**Nunca reiniciar con una posición abierta.** El bot no las reanuda: detecta la
+marca, avisa de "bolsa huérfana" y la deja para vender a mano. Deja de
+vigilarse el take-profit, el stop y el anti-rug.
 
-Para sacar a mano una posición atascada:
+Los tres servicios van con `Restart=always`, `RestartSec=10`,
+`StartLimitIntervalSec=0` y `enabled`: arrancan solos al reiniciar el servidor
+y se levantan si se caen. **24/7 sin intervención.**
 
-```bash
-cd /root/ai-bot && .venv/bin/python rescatar_posicion.py <mint> <cantidad>
-```
-
-## Telegram
-
-```
-wagbo     configurado       @Wagbocooks     sesion tg_wagbo OK
-naomi     NO puede arrancar sesion tg_naomi sin autenticar
-legends   NO puede arrancar sesion tg_calls sin autenticar (ojo: NO tg_legends)
-```
-
-Autenticar hace falta una vez, a mano, en el droplet:
-
-```bash
-cd /root/ai-bot && .venv/bin/python -c "
-from telethon import TelegramClient
-import os; from dotenv import load_dotenv; load_dotenv('.env')
-TelegramClient('tg_naomi', int(os.getenv('TELEGRAM_API_ID')), os.getenv('TELEGRAM_API_HASH')).start()"
-```
-
-Se sabe que funcionó porque el `.session` pasa de 28 KB a ~150 KB.
+Servidor: `root@159.89.19.12`, clave en `~/.ssh/id_droplet_bot`. La clave
+privada no se copia en ningún documento.
