@@ -25,6 +25,10 @@ trade:
   # `dev_elite` (que ya existia) NO servia para esto: cambia el TP y el stop,
   # no cuanto se pone. `buy_amount_dev_top` se anadio al motor el 16-ago.
   buy_amount: 0.15
+  # La compra crece un 35% por cada SOL ganado de VERDAD. El bote es comun a
+  # los tres bots (comparten wallet) y solo cuenta P&L leido de la cadena.
+  #   +1 SOL ganado -> 0,203 por compra | +5 SOL -> 0,413
+  escala_por_sol_ganado: 0.35
   max_real_buys: 3
   # 0,50, no 0,30: con la base en 0,40, dejarlo en 0,30 seria apostar MENOS
   # por el creador bueno que por el normal. Si lo quieres en 0,30 igualmente,

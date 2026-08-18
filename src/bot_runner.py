@@ -261,6 +261,7 @@ async def start_bot(config_path: str):
             devs_marcados=cfg["trade"].get("devs_marcados"),
             buy_amount_marcados=cfg["trade"].get("buy_amount_marcados", 0),
             tope_compra_sol=cfg["trade"].get("tope_compra_sol", 0),
+            escala_por_sol_ganado=cfg["trade"].get("escala_por_sol_ganado", 0),
             # Estos dos se añadieron al trader pero se habian quedado sin
             # cablear aqui, asi que `usar_selector: true` en el YAML no llegaba
             # a ninguna parte y el selector nunca conto una sola operacion.

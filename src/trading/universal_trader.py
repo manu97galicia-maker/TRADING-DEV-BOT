@@ -34,6 +34,7 @@ from trading.base import TradeResult
 from trading.platform_aware import PlatformAwareBuyer, PlatformAwareSeller
 from trading.position import Position
 from trading.panic import panic_time
+from trading.ganancia import Ganancia
 from trading.tiered_exit import build_tiers, moonbag_fraction, tiers_due
 from utils.logger import get_logger
 
@@ -477,6 +478,7 @@ class UniversalTrader:
         # Techo absoluto de gasto por compra, en SOL, por encima de cualquier
         # otra via. Ver el comentario del TOPE DURO mas abajo.
         tope_compra_sol: float = 0.0,
+        escala_por_sol_ganado: float = 0.0,
         # FRANJA HORARIA en la que se opera, hora de España. Fuera de ella el
         # bot sigue mirando el flujo pero no compra. {inicio: 18, fin: 2} son
         # las seis de la tarde a las dos de la madrugada -- cruza medianoche, y
@@ -906,6 +908,10 @@ class UniversalTrader:
         # Maximo absoluto por compra, en SOL. 0 = sin tope. Se lee del YAML
         # como `tope_compra_sol`.
         self.tope_compra_sol = float(tope_compra_sol or 0)
+        #: Cuanto crece la compra por cada SOL ganado de verdad. Con 0.35 y una
+        #: base de 0,15 SOL: +1 SOL ganado -> 0,203 por compra; +5 -> 0,413.
+        self.escala_por_sol_ganado = float(escala_por_sol_ganado or 0)
+        self._bote = Ganancia() if self.escala_por_sol_ganado > 0 else None
         self.horario = horario or {}
         self.dev_elite = dev_elite or {}
         #: Tasa de migracion del creador de cada moneda, guardada al comprar
@@ -2879,6 +2885,22 @@ class UniversalTrader:
                 else:
                     _importe = self.buy_amount
 
+                # LA COMPRA CRECE CON LO GANADO. El bote es comun a los tres
+                # bots --comparten wallet-- y solo cuenta P&L REAL leido de la
+                # cadena. En negativo el multiplicador se queda en 1: no se
+                # reduce el tamano tras una racha mala, porque con la mitad de
+                # tamano hace falta el doble de aciertos para recuperar.
+                if self._bote is not None:
+                    _mult = self._bote.multiplicador(self.escala_por_sol_ganado)
+                    if _mult > 1.0:
+                        _antes = _importe
+                        _importe *= _mult
+                        logger.info(
+                            "BOTE: %+.4f SOL ganados -> la compra sube de %.4f a "
+                            "%.4f (x%.2f)",
+                            self._bote.acumulada(), _antes, _importe, _mult,
+                        )
+
                 if self._selector is not None and not self._selector.puede_operar(
                     self.nombre_estrategia
                 ):
@@ -4085,6 +4107,17 @@ class UniversalTrader:
                     )
                 except Exception:  # noqa: BLE001
                     logger.warning("selector: no se pudo apuntar la operacion")
+            # BOTE COMUN: mismo numero que alimenta al selector, que es el P&L
+            # real de la cadena mas el moonbag que sigue dentro.
+            if self._bote is not None:
+                try:
+                    _total = self._bote.suma(_para_racha)
+                    logger.info(
+                        "BOTE: %+.4f SOL en esta operacion, %+.4f acumulados",
+                        _para_racha, _total,
+                    )
+                except Exception:  # noqa: BLE001
+                    logger.warning("bote: no se pudo apuntar la operacion")
             if _para_racha < 0:
                 self._perdidas_seguidas += 1
                 logger.warning(
