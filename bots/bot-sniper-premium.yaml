@@ -132,15 +132,14 @@ trade:
   # el billete.
   tp_marcados: 1.00
   tp_sell_marcados: 0.50
-  # BAJADO DE 0,30 A 0,12. Esta era la causa de que todo perdiera hoy: con 30%
-  # de compra y 35% de venta, una ida y vuelta se dejaba hasta el 50% SIN QUE EL
-  # PRECIO SE MOVIERA. PHAVAN lo enseña limpio: compro a 2,85e-8, vendio a
-  # 3,0e-8 --mas caro-- y aun asi perdio el 43%.
+  # SUBIDO DE 0,12 A 0,20 para que no fallen compras. Con el 12% se perdio CAT
+  # ("Transaction failed to confirm") y esa moneda hizo 6,8x.
   #
-  # El riesgo del cambio es el contrario: con poco margen alguna compra fallara
-  # en monedas que se mueven rapido. Es mejor perder la operacion que pagar un
-  # 30% por entrar.
-  buy_slippage: 0.12
+  # No es gratis: el deslizamiento es lo que se acepta pagar de mas, asi que
+  # una compra puede costar hasta un 20% por encima del precio de referencia en
+  # vez de un 12%. Se acepta porque perder la entrada cuesta mas que la
+  # diferencia, que es justo lo que enseño CAT.
+  buy_slippage: 0.20
   # 0,35, no 0,90. Con el 90% el bot aceptaba cobrar hasta un 90% MENOS de lo
   # esperado y lo apuntaba como si hubiera cobrado entero: es la principal
   # sospecha de por que el P&L teorico decia +0,16 mientras la cartera perdia
@@ -317,19 +316,8 @@ trade:
   max_hold_time: 5400
   price_check_interval: 1
   extreme_fast_mode: false
-  # Reserva mas alta que DEV10: es la gasolina para poder firmar las VENTAS de
-  # las dos estrategias. Quedarse sin SOL con posiciones abiertas es perderlas.
-  # RESERVA DE GASOLINA: 0,03 SOL, bajada de 0,08 el 11-ago a peticion de Manu.
-  #
-  # Es lo que el bot nunca gasta para poder firmar SUS VENTAS. Quedarse sin SOL
-  # con posiciones abiertas es perderlas: no habria con que pagar la salida.
-  #
-  # 0,03 es holgado con lo medido: 40 transacciones reales de este bot costaron
-  # 0,0093 SOL en total (0,00023 de media), asi que 0,03 da para mas de cien
-  # firmas. Lo que si consume de verdad es la renta de cada cuenta de token
-  # (~0,002 SOL, que se recupera al cerrarla): con 0,03 caben unas quince
-  # posiciones abiertas a la vez, muy por encima de las que permite el saldo.
-  min_reserve_sol: 0.02
+  # 0,03 SOL que no se tocan nunca.
+  min_reserve_sol: 0.03
 
   # CORTA-CIRCUITOS: TRES perdidas seguidas y esta estrategia deja de COMPRAR.
   # Subido de 2 a 3 el 10-ago. Con 2 saltaba demasiado pronto: hoy corto dos
@@ -688,10 +676,9 @@ filters:
     # min_migrations en 1 porque un porcentaje sobre cero migraciones no dice
     # nada. El codigo bloquea con `migs < min_migrations O rate < min_rate`.
     min_migrations: 1
-    # 1% migrado: practicamente solo se exige que el creador haya migrado
-    # ALGUNA vez. Deja pasar casi todo lo que no sea un dev virgen o una granja
-    # de 70 lanzamientos con cero exitos.
-    min_rate: 0.01
+    # 20% migrado, con al menos 1 proyecto migrado. El codigo bloquea si
+    # `migs < min_migrations O rate < min_rate`, asi que se exigen las dos.
+    min_rate: 0.20
   # ACTIVADO el filtrado acumulativo de devs, que Manu pidio dejar trabajando.
   # Son dos listas que el bot mantiene solo mientras opera:
   #   - auto-baneo: al dev que rugea DOS veces no se le vuelve a comprar.
