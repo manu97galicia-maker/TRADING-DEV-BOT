@@ -148,6 +148,24 @@ def operaciones(mint: str) -> int:
     return len(_ops.get(mint) or ())
 
 
+def ultimas_son_compra(mint: str, cuantas: int) -> bool:
+    """True si las ultimas `cuantas` operaciones de la moneda son COMPRAS.
+
+    No es lo mismo que "hay mas compras que ventas": eso lo mide `presion`, y
+    puede dar bien mientras alguien esta saliendo por detras. Esto exige que
+    NADIE haya vendido en las ultimas operaciones, que es lo que de verdad
+    separo al medirlo -- las monedas con `tx/compras < 1,2` hacian x2 el 41% de
+    las veces frente al 17% de base.
+
+    Si todavia no hay `cuantas` operaciones registradas devuelve False: no se
+    puede afirmar algo de lo que no hay datos.
+    """
+    ops = _ops.get(mint)
+    if not ops or len(ops) < cuantas or cuantas <= 0:
+        return False
+    return all(es_compra for _, _, es_compra, _ in list(ops)[-cuantas:])
+
+
 def compras(mint: str) -> int:
     """Numero de compras vistas en esa moneda, sin contar ventas."""
     return sum(1 for _t, _s, es_compra, _w in (_ops.get(mint) or ()) if es_compra)

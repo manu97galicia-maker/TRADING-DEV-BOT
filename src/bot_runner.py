@@ -245,6 +245,7 @@ async def start_bot(config_path: str):
                 "ignorar_listas_de_devs", False
             ),
             min_presion_ratio=cfg.get("filters", {}).get("min_presion_ratio", 0),
+            ultimas_tx_compra=cfg.get("filters", {}).get("ultimas_tx_compra", 0),
             presion_seg=cfg.get("filters", {}).get("presion_seg", 3.0),
             max_mc_por_sol_curva=cfg.get("filters", {}).get(
                 "max_mc_por_sol_curva", 0

@@ -444,6 +444,16 @@ class UniversalTrader:
         # que se venden en los ultimos `presion_seg` segundos. 0 = no se mira.
         # El volumen solo dice que hay movimiento; esto dice hacia donde va, y
         # evita entrar justo cuando el dinero esta saliendo.
+        # LAS ULTIMAS N OPERACIONES TIENEN QUE SER COMPRAS. Distinto de
+        # `min_presion_ratio`, que compara SOL comprado contra vendido: la
+        # presion puede salir bien mientras alguien va saliendo por detras.
+        # Esto exige que NADIE haya vendido en las ultimas operaciones.
+        #
+        # Medido el 18-ago sobre 92 monedas: las que tenian `tx/compras < 1,2`
+        # --practicamente sin ventas-- hacian x2 el 41% de las veces, frente al
+        # 17% de base. Es el rasgo que mas separaba de todos los mirados.
+        # 0 = no se mira.
+        ultimas_tx_compra: int = 0,
         min_presion_ratio: float = 0.0,
         presion_seg: float = 3.0,
         # Maximo de market cap en dolares por cada SOL que hay DE VERDAD en
@@ -830,6 +840,7 @@ class UniversalTrader:
         self.min_vol_ventana_sol = float(min_vol_ventana_sol or 0)
         self.vol_ventana_seg = float(vol_ventana_seg or 3.0)
         self.min_presion_ratio = float(min_presion_ratio or 0)
+        self.ultimas_tx_compra = int(ultimas_tx_compra or 0)
         self.presion_seg = float(presion_seg or 3.0)
         #: EL FILTRO ANTI-HUMO. Un market cap enorme no significa nada si la
         #: curva esta seca: el precio se empuja con cuatro duros cuando el
@@ -2171,6 +2182,7 @@ class UniversalTrader:
                 from monitoring.volumen import operaciones as _n_ops
                 from monitoring.volumen import compras as _n_buys
                 from monitoring.volumen import compras_primer_bloque as _n_first_buys
+                from monitoring.volumen import ultimas_son_compra as _ult_compra
                 from monitoring.volumen import titulares as _n_tit
                 from monitoring.volumen import volumen_sol as _vol_sol
                 from monitoring.volumen import metricas_segunda_ola as _segunda_ola
@@ -2278,6 +2290,13 @@ class UniversalTrader:
                     # volumen hecho de una sola compra del creador cumple el
                     # filtro de dinero y no significa nada.
                     if self.min_ops > 0 and _o < self.min_ops:
+                        await asyncio.sleep(_paso)
+                        continue
+                    if self.ultimas_tx_compra > 0 and not _ult_compra(
+                        str(token_info.mint), self.ultimas_tx_compra
+                    ):
+                        # Se espera, no se descarta: basta con que lleguen unas
+                        # cuantas compras seguidas para que empiece a cumplir.
                         await asyncio.sleep(_paso)
                         continue
                     if self.min_titulares > 0 and _h < self.min_titulares:
@@ -3788,23 +3807,38 @@ class UniversalTrader:
                         # STOP A LA ENTRADA. En cuanto cobra el primer escalon,
                         # lo que sigue dentro deja de poder acabar en perdida:
                         # si el precio vuelve a lo que se pago, se cierra.
-                        if (
-                            self.stop_a_entrada_tras_tp
-                            and (sl_price is None or sl_price < entry_price)
-                        ):
-                            sl_price = entry_price
-                            logger.info(
-                                f"STOP MOVIDO A LA ENTRADA {token_info.symbol}: "
-                                f"cobrado {reason}, el resto ya no puede perder "
-                                f"(suelo {entry_price:.8f} SOL)"
+                        # TRINQUETE ESCALON A ESCALON. La regla de Manu: al
+                        # cobrar el PRIMER take-profit el suelo pasa al precio
+                        # de compra, y al cobrar el SEGUNDO pasa al primer
+                        # take-profit, y asi sucesivamente.
+                        #
+                        # Antes esto estaba mal de dos maneras: con solo
+                        # `stop_a_entrada_tras_tp` el suelo se quedaba en la
+                        # entrada para siempre --cobrabas el x3 y el suelo
+                        # seguia en el precio de compra--, y el flag
+                        # `stop_al_tp_tras_tp` usaba `tiers[i]`, el escalon que
+                        # ACABA de tocarse, con lo que el suelo quedaba pegado
+                        # al precio actual y cualquier respiro normal cerraba
+                        # la posicion.
+                        #
+                        # Lo correcto es el escalon ANTERIOR: deja sitio para
+                        # que la moneda respire entre objetivos y aun asi cada
+                        # cobro asegura lo ya ganado.
+                        if self.stop_a_entrada_tras_tp or self.stop_al_tp_tras_tp:
+                            _suelo = (
+                                entry_price if i == 0
+                                else entry_price * (1 + tiers[i - 1].gain)
                             )
-                        if self.stop_al_tp_tras_tp:
-                            _tp_price = entry_price * (1 + tiers[i].gain)
-                            if sl_price is None or sl_price < _tp_price:
-                                sl_price = _tp_price
+                            if sl_price is None or sl_price < _suelo:
+                                sl_price = _suelo
+                                _donde = (
+                                    "el PRECIO DE COMPRA" if i == 0
+                                    else f"TP{i} (+{tiers[i - 1].gain * 100:.0f}%)"
+                                )
                                 logger.info(
-                                    f"STOP MOVIDO A TP{i + 1} {token_info.symbol}: "
-                                    f"el resto no puede bajar de {sl_price:.8f} SOL"
+                                    f"STOP SUBIDO {token_info.symbol}: cobrado "
+                                    f"{reason}, el suelo pasa a {_donde} "
+                                    f"({_suelo:.8f} SOL)"
                                 )
 
                 if remaining <= 1e-9:
