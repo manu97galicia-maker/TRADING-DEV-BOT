@@ -323,3 +323,80 @@ encuentra los 163.232 y los 1.647.104 tokens.
 - **Los tres bots no se coordinan** y pueden comprar la misma moneda (GAMBLE
   costó 0,27 SOL entre dos).
 - **`Custom 6024`**: curva vacía, no hay contrapartida a ningún precio.
+
+---
+
+## 9. Medición del 19-ago-2026: el filtro del creador es el freno
+
+Sobre **288.984 evaluaciones** de los logs.
+
+### Cuándo dispara el bot
+
+```
+p25       0,3 s
+mediana   1,6 s
+p75       3,7 s
+p90       8,3 s
+```
+
+**La latencia no es el problema.** La mediana de 1,6 segundos está dentro de la
+ventana buena — el 50% de las monedas hace su máximo a los 10 s. Buscar
+milisegundos aquí no compra nada.
+
+Y el market cap al disparar confirma que se entra abajo:
+
+```
+mínimo 312 $ · p25 2.382 $ · mediana 2.599 $ · p75 3.682 $
+```
+
+### Lo que sí está frenando
+
+De cada bot: cuántas monedas pasaron todos los filtros, cuántas tumbó el filtro
+de creador, y cuántas se compraron de verdad.
+
+```
+                cumplen   tumbadas por el dev   compras
+DEFINITIVA        1.127            850  (75%)       40
+ELITE               223            218  (98%)        3
+RAPIDA              178             63  (35%)       15
+```
+
+**ELITE está muerta**: tumba el 98% de lo que llega y ha comprado 3 veces.
+
+El motivo está en la tasa de migración de los creadores rechazados:
+
+```
+   0%   85,2%   ← la inmensa mayoría
+   1%    6,0%
+   3%    3,1%
+  10%    0,2%
+```
+
+```
+exigir ≥ 1%   →  pasa el 14,8%
+exigir ≥ 5%   →  pasa el  3,8%
+exigir ≥10%   →  pasa el  1,3%
+exigir ≥25%   →  pasa casi nada
+```
+
+**El 85% de las monedas con arranque limpio las lanza alguien con 0
+migraciones.** No es que sean malas: es que un creador con historial de
+migraciones es rarísimo, y exigirlo deja fuera casi todo el flujo.
+
+### La prueba del 18-ago
+
+**WIW** cumplió a los 2,1 s con MC 2.262 $, 21,7 SOL en 12 compras y 12 carteras
+distintas. Su creador llevaba **5 migraciones de 70 lanzamientos (7%)**.
+
+- DEFINITIVA la **bloqueó** (7% < 10%)
+- ELITE la **bloqueó** (7% < 25%)
+- RAPIDA la compró — y **cobró el +50%**
+
+La única ganadora de la noche la dejaron pasar dos de los tres bots.
+
+### Recomendación (sin aplicar)
+
+Bajar DEFINITIVA a **≥1%** y ELITE a **≥5%**. Con eso DEFINITIVA multiplicaría
+por 4 sus oportunidades y ELITE dejaría de estar muda, sin abrir la puerta a
+los creadores de 0 migraciones. No lo toco porque los umbrales están puestos a
+mano y son decisión de Manu.
