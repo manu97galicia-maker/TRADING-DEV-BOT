@@ -3539,6 +3539,16 @@ class UniversalTrader:
                     mc_tiers.append((_mc, _v))
             mc_tiers.sort(key=lambda x: x[0])
         mc_executed = [False] * len(mc_tiers)
+        # EL MOONBAG TIENE QUE CONTAR LOS ESCALONES DE MARKET CAP. `moonbag_fraction`
+        # solo mira los escalones de porcentaje, asi que con una escalera de un solo
+        # tramo (+50% vende 50%) daba un moonbag del 50% aunque el resto estuviera
+        # asignado a escalones de MC. El 18-ago WIW salto el stop en el precio de
+        # entrada y dejo MEDIA POSICION sin vender: cobrado -0,0220 SOL y 0,0720
+        # colgando en una moneda que ya habia vuelto a la entrada. Lo que se guarda
+        # al saltar el stop debe ser lo que de verdad sobra despues de TODOS los
+        # escalones, no lo que sobra de los de porcentaje.
+        if mc_tiers:
+            moonbag = max(0.0, moonbag - sum(_frac for _mc, _frac in mc_tiers))
         #: Suelo armado por el trinquete. Solo sube, nunca baja.
         suelo_mc = 0.0
         had_tp = False  # ¿disparó algún TP? (para el auto-baneo de devs)

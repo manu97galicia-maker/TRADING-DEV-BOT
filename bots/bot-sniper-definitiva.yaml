@@ -56,12 +56,18 @@ trade:
   tp2_sell: 0
   tp3_gain: 0
   tp3_sell: 0
-  # Escalera de salida (18-ago): +50% vende la mitad y el suelo sube al precio
-  # de compra; el 35% siguiente sale a 6.800 $ de market cap; el 15% que queda
-  # es moonbag y no se vende nunca. Las fracciones de `sell` van sobre la
-  # compra ORIGINAL, no sobre lo que queda.
+  # Escalera de salida (18-ago). Las fracciones de `sell` van sobre la compra
+  # ORIGINAL, no sobre lo que queda. El +50% se cobra primero y sube el suelo
+  # al precio de compra; los escalones de market cap solo se arman despues.
+  #   +50%      vende 50%     -> lo que queda ya no puede acabar en perdida
+  #   6.800 $   vende 35%
+  #   18.000 $  vende 7,5%    (la mitad del moonbag)
+  #   34.000 $  vende 3,75%   (la mitad de lo que quedaba)
+  #   3,75% se queda dentro para siempre
   mc_take_profit_tiers:
     - {target_mc: 6800, sell: 0.35}
+    - {target_mc: 18000, sell: 0.075}
+    - {target_mc: 34000, sell: 0.0375}
 
   # SIN STOP LOSS, como pediste. El 0 significa "sin suelo" en la ruta de
   # dinero real (`sl_price = entry*(1-pct) if pct else None`).
