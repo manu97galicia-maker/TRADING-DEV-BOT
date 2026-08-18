@@ -3183,28 +3183,57 @@ class UniversalTrader:
         Devolver None (y no 0) cuando falla la lectura es deliberado: si el RPC
         no responde, se prefiere intentar la venta con la cantidad estimada
         antes que dar por cerrada una posicion que sigue abierta.
+
+        SE MIRAN LOS DOS PROGRAMAS DE TOKEN. La direccion de la cuenta donde
+        viven los tokens sale de mezclar wallet + mint + PROGRAMA. Si el
+        programa que traia `token_info` no es el bueno, la direccion calculada
+        no existe, el saldo se lee como cero y la posicion se da por cerrada
+        sin haber vendido nada -- 37 de 373 ventas acabaron asi. El 18-ago
+        quedaban 3 bolsas atrapadas (163k, 1,64M y 1,45M de tokens): las tres
+        estaban en Token-2022 y con el programa clasico no aparecian.
+
+        Cuando la bolsa se encuentra bajo el otro programa se CORRIGE
+        `token_info.token_program_id`, no solo se lee: la venta construye su
+        lista de cuentas con ese mismo campo (`address_provider`), asi que
+        arreglar la lectura sin arreglar el campo dejaria la venta apuntando
+        igualmente a una cuenta vacia.
         """
-        try:
-            ata = self.platform_implementations.address_provider.derive_user_token_account(
-                self.wallet.pubkey, token_info.mint, token_info.token_program_id
-            )
-            crudo = await self.solana_client.get_token_account_balance(ata)
-            if crudo is None:
+        prog = token_info.token_program_id or TOKEN_2022_PROGRAM
+        otro = TOKEN_PROGRAM if prog == TOKEN_2022_PROGRAM else TOKEN_2022_PROGRAM
+
+        async def _leer(programa: Pubkey) -> int | None:
+            """Saldo crudo en esa cuenta, o None si el RPC no supo contestar."""
+            try:
+                ata = self.platform_implementations.address_provider.derive_user_token_account(
+                    self.wallet.pubkey, token_info.mint, programa
+                )
+                return await self.solana_client.get_token_account_balance(ata)
+            except Exception:  # noqa: BLE001
                 return None
-            if crudo > 0:
-                return crudo / 10**TOKEN_DECIMALS
+
+        async def _ronda() -> tuple[int | None, Pubkey]:
+            crudo = await _leer(prog)
+            if crudo:
+                return crudo, prog
+            crudo_otro = await _leer(otro)
+            if crudo_otro:
+                return crudo_otro, otro
+            # Ninguno tiene nada: se devuelve lo que dijo el programa esperado,
+            # para no confundir "esta vacia" con "no se pudo leer".
+            return crudo, prog
+
+        crudo, encontrado = await _ronda()
+        if crudo is None:
+            return None
+        if crudo <= 0:
             # CERO NO ES CERO A LA PRIMERA. El 12-ago `degen` leyo 0 tokens
             # recien comprada --la cuenta todavia no se veia en ese nodo-- y el
             # bot dio la posicion por cerrada sin vender nada, apuntando ademas
             # que habia cobrado 0,1496 SOL. La cadena dice que se perdieron los
-            # 0,1687 enteros.
-            #
-            # Un cero puede ser "no queda nada" o "el RPC aun no lo ve", y las
-            # dos cosas no se parecen en nada: una cierra la posicion y la otra
-            # la abandona. Se vuelve a preguntar tras una pausa y solo se cree
-            # el cero si sale dos veces.
+            # 0,1687 enteros. Se pregunta otra vez y solo se cree el cero si
+            # sale dos veces.
             await asyncio.sleep(1.5)
-            crudo = await self.solana_client.get_token_account_balance(ata)
+            crudo, encontrado = await _ronda()
             if crudo is None:
                 return None
             if crudo > 0:
@@ -3213,10 +3242,17 @@ class UniversalTrader:
                     "tokens. Era retraso del RPC, no una posicion cerrada.",
                     token_info.symbol, crudo / 10**TOKEN_DECIMALS,
                 )
-            return crudo / 10**TOKEN_DECIMALS
-        except Exception as exc:  # noqa: BLE001
-            logger.debug(f"no pude leer el saldo de {token_info.symbol}: {exc}")
-            return None
+        if crudo > 0 and encontrado != token_info.token_program_id:
+            _nombre = lambda p: "Token-2022" if p == TOKEN_2022_PROGRAM else "Token clasico"  # noqa: E731
+            logger.warning(
+                "%s: los tokens estaban en %s, no en %s. Corrijo el programa: "
+                "sin esto la venta se construiria contra una cuenta vacia y la "
+                "bolsa se quedaria atrapada.",
+                token_info.symbol, _nombre(encontrado),
+                _nombre(token_info.token_program_id),
+            )
+            token_info.token_program_id = encontrado
+        return crudo / 10**TOKEN_DECIMALS
 
     def _dentro_del_horario(self) -> bool:
         """True si toca operar ahora, en hora de España.

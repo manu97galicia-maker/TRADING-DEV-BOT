@@ -249,3 +249,77 @@ Están aquí para no repetirlos.
 - **Parmesan y FARM quedaron invendibles** (`Custom 6024`): la curva se vacía y
   no hay contrapartida a ningún precio. Es el riesgo que el suelo estructural
   no cubre.
+
+---
+
+## 7. Configuración viva (18 de agosto de 2026)
+
+Las tres estrategias corren en paralelo sobre la misma wallet, con el mismo
+tamaño y la misma salida. Lo único que las separa es **qué compran**.
+
+```
+                MC entrada   volumen    creador   últimas   edad    stop
+DEFINITIVA      ≤ 2.800 $    ≥ 900 $     ≥10%        2      90 s    80%
+ELITE           ≤ 2.800 $    ≥ 900 $     ≥25%        3      90 s    80%
+RAPIDA          ≤ 2.800 $    ≥ 900 $     ≥ 1%        3       3 s    sin
+```
+
+Común a las tres: **0,12 SOL** por posición, ≥4 carteras distintas, ≥4
+operaciones previas, sin mayhem, slippage 12%.
+
+### Salida
+
+```
++35%  vende el 80%   →  el suelo sube al PRECIO DE COMPRA
+      moonbag 20% que no se vende nunca
+```
+
+**Por qué +35% y no x2.** Sobre lo medido, al +40% llega el 79% de las monedas
+y a x2 solo el 57%. Las configuraciones anteriores pedían x2, x3 o x5 y por eso
+casi ninguna llegaba a cobrar nada. Con el objetivo al +35% se cobra el 80% en
+la mayoría de las que se mueven algo, y en ese momento se ha recuperado 1,08
+veces lo invertido: **el 20% que queda corre gratis**.
+
+---
+
+## 8. El bug del programa de token (arreglado el 18-ago-2026)
+
+**37 de 373 ventas acabaron en "no quedan tokens que vender"** — el 10%. El bot
+daba la posición por cerrada sin haber vendido nada.
+
+La causa no era el RPC. La dirección de la cuenta donde viven los tokens sale
+de mezclar **wallet + mint + programa de token**. Si el programa que trae
+`token_info` no es el bueno, la dirección que se calcula **no existe**, el saldo
+se lee como cero, y la posición se cierra en falso.
+
+Y pump.fun usa **Token-2022**, no el clásico. En el listener de logs no se puede
+distinguir `create` de `create_v2`, así que el campo se rellena a ojo
+(`event_parser.py:361`) y a veces se rellena mal.
+
+Comprobado en la cadena el 18-ago con tres bolsas atrapadas:
+
+```
+3wDQXhTxD7C6...    163.232 tokens    calculado con el clásico: no existe
+GKsWvnezWr4C...  1.647.104 tokens    calculado con el clásico: no existe
+7kzFcxXPCYJ4...  1.452.754 tokens    calculado con el clásico: no existe
+```
+
+**El arreglo** (`_saldo_real_tokens`): se miran **los dos programas**, y cuando
+la bolsa aparece bajo el otro se **corrige `token_info.token_program_id`**, no
+solo se lee. Esto último es lo importante: la venta construye su lista de
+cuentas con ese mismo campo (`address_provider.py:345-369`), así que arreglar
+la lectura sin arreglar el campo dejaría la venta apuntando igualmente a una
+cuenta vacía.
+
+Probado contra las bolsas reales: donde el código viejo leía 0, el nuevo
+encuentra los 163.232 y los 1.647.104 tokens.
+
+### Lo que sigue sin arreglar
+
+- **El P&L teórico miente a lo bestia.** Ha reportado +64 y +98 SOL en
+  operaciones que en la cadena fueron +0,07 y −0,01. Solo es cosmético — lo que
+  se apunta de verdad sale de los deltas de la wallet — pero no fiarse de él.
+- **`venta_muerta` se mira una sola vez a los 120 s.**
+- **Los tres bots no se coordinan** y pueden comprar la misma moneda (GAMBLE
+  costó 0,27 SOL entre dos).
+- **`Custom 6024`**: curva vacía, no hay contrapartida a ningún precio.

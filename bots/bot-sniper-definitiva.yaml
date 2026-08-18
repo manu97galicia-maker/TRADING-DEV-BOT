@@ -24,7 +24,7 @@ trade:
   #
   # `dev_elite` (que ya existia) NO servia para esto: cambia el TP y el stop,
   # no cuanto se pone. `buy_amount_dev_top` se anadio al motor el 16-ago.
-  buy_amount: 0.06
+  buy_amount: 0.12
   max_real_buys: 3
   # 0,50, no 0,30: con la base en 0,40, dejarlo en 0,30 seria apostar MENOS
   # por el creador bueno que por el normal. Si lo quieres en 0,30 igualmente,
@@ -50,16 +50,13 @@ trade:
   # El escalon de 9.800 va por MARKET CAP y solo se activa cuando los dos de
   # porcentaje ya se han cobrado (universal_trader.py:3667).
   # El 15% que queda no se vende nunca.
-  take_profit_percentage: 1.00
-  take_profit_sell_percentage: 0.74
+  take_profit_percentage: 0.35
+  take_profit_sell_percentage: 0.80
   tp2_gain: 0
   tp2_sell: 0
   tp3_gain: 0
   tp3_sell: 0
-  # El 40% que queda tras el +50% y el x3, repartido por market cap. Los
-  # escalones se arman DESPUES de la escalera por porcentaje.
-  # El 70% que queda tras el +50%, por market cap. El ultimo escalon es 38K y
-  # deja un 10% que no se vende nunca.
+  # Sin escalones de market cap: el 20% que queda es moonbag.
   mc_take_profit_tiers: []
 
   # SIN STOP LOSS, como pediste. El 0 significa "sin suelo" en la ruta de
@@ -169,7 +166,7 @@ filters:
     min_migrations: 1
 
   # VOLUMEN MINIMO 300 $ = 3,99 SOL (a 75,18 $/SOL).
-  min_volumen_sol: 11.3
+  min_volumen_sol: 12.0
 
   # SIN FRANJA HORARIA: opera las 24 horas. El {inicio:18, fin:4} venia
   # heredado de cuando esta estrategia se llamaba NOCHE, y estaba descartando
@@ -196,7 +193,7 @@ filters:
   # POR DEBAJO DE 3.700 $, el mismo techo para todos: el techo aparte para el
   # creador bueno (2.800) se queda desactivado porque ahora seria MAS BAJO que
   # el general.
-  max_entry_mc: 2900
+  max_entry_mc: 2800
   max_entry_mc_dev_top: 0
   min_curve_sol: 0
 
