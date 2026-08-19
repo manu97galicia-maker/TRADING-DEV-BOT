@@ -25,7 +25,16 @@ trade:
   # `dev_elite` (que ya existia) NO servia para esto: cambia el TP y el stop,
   # no cuanto se pone. `buy_amount_dev_top` se anadio al motor el 16-ago.
   buy_amount: 0.06
-  max_real_buys: 3
+  # TOPE DURO. El motor lo respeta pase lo que pase: ninguna via
+  # --mayhem, marcados, o la que sea-- puede gastar mas de esto en una
+  # compra. Existe porque el 12-ago la cadena registro compras de 0,25 y
+  # 0,30 SOL con `buy_amount: 0.15` configurado y el log solo apunto dos
+  # de la docena que hubo. Estaba sin poner en los tres.
+  tope_compra_sol: 0.06
+  # UNA COMPRA Y PARA. Tanda de prueba: tres compras en total, una por
+  # estrategia. El contador es POR PROCESO, asi que con los tres
+  # encendidos y un 3 aqui saldrian nueve compras (0,54 SOL), no tres.
+  max_real_buys: 1
   # 0,50, no 0,30: con la base en 0,40, dejarlo en 0,30 seria apostar MENOS
   # por el creador bueno que por el normal. Si lo quieres en 0,30 igualmente,
   # es esta linea.
