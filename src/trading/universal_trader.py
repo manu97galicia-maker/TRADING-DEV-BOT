@@ -280,6 +280,21 @@ class UniversalTrader:
         # se vende entera. 0 = desactivado.
         venta_muerta_seg: float = 0.0,
         venta_muerta_gain: float = 0.0,
+        # CADA CUANTO SE VUELVE A PREGUNTAR. La comprobacion de muerta se hacia
+        # UNA sola vez: si al cumplirse el plazo la moneda iba por encima del
+        # umbral se la dejaba correr y ya no se volvia a mirar nunca. Una que a
+        # los 120 s estuviera a +1% se quedaba abierta indefinidamente, y en
+        # RAPIDA --que no lleva stop-- sin ninguna salida salvo el x2 o el
+        # anti-rug. Paso con CATECOIN (20 minutos), MORE, CVP y PUMPFUN.
+        #
+        # Con esto se vuelve a preguntar cada N segundos. 0 = comportamiento
+        # antiguo de una sola pasada.
+        venta_muerta_repetir_seg: float = 0.0,
+        # REPARTO ENTRE BOTS. Los tres comparten wallet; con esto la primera que
+        # reclama una moneda es la unica que entra. TTL en segundos por si un
+        # bot muere con el reclamo puesto.
+        coordinar_mints: bool = False,
+        coordinar_mints_ttl: float = 900.0,
         # Tiered take-profit ladder (tier 1 = take_profit_percentage +
         # take_profit_sell_percentage; tiers 2/3 below). gain is fraction
         # above entry (x2 = 1.0), sell is fraction of the original position.
@@ -420,6 +435,19 @@ class UniversalTrader:
         # 1,5. Los dos a 0 = desactivado.
         min_compras_por_cartera: float = 0.0,
         max_compras_por_cartera: float = 0.0,
+        # NADIE HA VENDIDO TODAVIA. `tx / compras` mide cuantas operaciones hay
+        # por cada compra: si vale 1 TODAS las transacciones son compras y no ha
+        # salido nadie; si vale 1,5 hay una venta por cada dos compras.
+        #
+        # Es el rasgo que mas separa de todo lo medido (18-ago, 92 monedas):
+        # por debajo de 1,2 el 41% hace x2 contra el 17% de base, +24 puntos.
+        # El siguiente tramo (1,2-1,6) se hunde al 7%.
+        #
+        # No es lo mismo que `min_presion_ratio`: ese compara SOL comprado
+        # contra vendido y puede salir bien mientras alguien va saliendo por
+        # detras con calderilla. Esto no mide dinero, mide si YA hay alguien
+        # saliendo. Sale gratis: los dos contadores ya estan en memoria.
+        max_tx_por_compra: float = 0.0,
         # Exigir que la moneda traiga redes sociales SUYAS: un enlace a una
         # cuenta (no al tuit de otro, que es lo que trae la mayoria) y que esa
         # cuenta no la haya usado ya otra moneda en las ultimas 6 horas.
@@ -648,6 +676,9 @@ class UniversalTrader:
         self.max_hold_time = max_hold_time
         self.venta_muerta_seg = float(venta_muerta_seg or 0)
         self.venta_muerta_gain = float(venta_muerta_gain or 0)
+        self.venta_muerta_repetir_seg = float(venta_muerta_repetir_seg or 0)
+        self.coordinar_mints = bool(coordinar_mints)
+        self.coordinar_mints_ttl = float(coordinar_mints_ttl or 900.0)
         self.price_check_interval = price_check_interval
         # Build the take-profit ladder. Tier 1 sells take_profit_sell_percentage
         # (default 100% for backward compatibility) at take_profit_percentage.
@@ -834,6 +865,7 @@ class UniversalTrader:
         self.max_titulares = int(max_titulares or 0)
         self.min_compras_por_cartera = float(min_compras_por_cartera or 0)
         self.max_compras_por_cartera = float(max_compras_por_cartera or 0)
+        self.max_tx_por_compra = float(max_tx_por_compra or 0)
         self.redes_originales = bool(redes_originales)
         self.redes_timeout = float(redes_timeout or 1.5)
         self.max_volumen_sol = float(max_volumen_sol or 0)
@@ -1582,6 +1614,71 @@ class UniversalTrader:
         except Exception:
             logger.exception(f"No pude persistir mint comprado {mint_str}")
 
+    def _reclamar_mint(self, mint: str) -> bool:
+        """Pide la moneda para ESTE bot. True si nos la quedamos nosotros.
+
+        Los tres bots comparten wallet y no se hablaban entre ellos: si los tres
+        veian la misma moneda entraban los tres, y acababas con 0,18 SOL en una
+        sola posicion creyendo que eran tres apuestas distintas. Paso con GAMBLE
+        (dos bots, 0,27 SOL en la misma moneda).
+
+        El fichero de reclamo lo comparten TODOS los bots (no lleva sufijo de
+        estrategia, al contrario que el resto del estado). Se crea con O_EXCL,
+        que es atomico: de tres procesos que lo intenten a la vez, exactamente
+        uno gana y los otros dos se van. No hace falta candado ni servidor.
+        """
+        if not getattr(self, "coordinar_mints", False):
+            return True
+        try:
+            import os
+            import time
+
+            path = self._mint_claim_path(mint)
+            try:
+                fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+            except FileExistsError:
+                # Ya la tiene otro. Salvo que el reclamo sea viejo: si un bot se
+                # murio con la moneda pedida, sin esto quedaria bloqueada para
+                # siempre. Pasado el plazo se considera abandonada.
+                try:
+                    edad = time.time() - path.stat().st_mtime
+                except OSError:
+                    return False
+                if edad < getattr(self, "coordinar_mints_ttl", 900.0):
+                    return False
+                logger.info(
+                    "Reclamo de %s caducado (%.0f s) -> se da por abandonado",
+                    mint, edad,
+                )
+                try:
+                    path.unlink(missing_ok=True)
+                    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+                except (FileExistsError, OSError):
+                    return False
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write(json.dumps({"bot": self._state_suffix, "ts": time.time()}))
+        except Exception:
+            # Si el reparto falla por lo que sea, NO se bloquea la compra: es una
+            # optimizacion de reparto, no un filtro de seguridad.
+            logger.exception("No pude reclamar %s; se sigue adelante", mint)
+            return True
+        else:
+            return True
+
+    def _soltar_mint(self, mint: str) -> None:
+        """Devuelve la moneda al bote cuando esta posicion se cierra."""
+        if not getattr(self, "coordinar_mints", False):
+            return
+        try:
+            self._mint_claim_path(mint).unlink(missing_ok=True)
+        except Exception:  # noqa: BLE001
+            logger.debug("No pude soltar el reclamo de %s", mint)
+
+    def _mint_claim_path(self, mint: str) -> Path:
+        """Ruta del reclamo. COMPARTIDA entre bots: sin sufijo de estrategia."""
+        safe_mint = "".join(c for c in str(mint) if c.isalnum())
+        return self._open_pos_path.parent / f"mint_claim__{safe_mint}.json"
+
     def _record_open_position(
         self, token_info: TokenInfo, buy_result: TradeResult
     ) -> None:
@@ -1627,6 +1724,11 @@ class UniversalTrader:
                 return
 
             self._open_position_path(mint).unlink(missing_ok=True)
+            # La posicion se cierra -> la moneda vuelve al bote para los demas
+            # bots. Solo en la rama de un mint concreto: el borrado masivo del
+            # arranque no debe tocar reclamos, que son COMPARTIDOS y pueden ser
+            # de otro bot que sigue vivo.
+            self._soltar_mint(mint)
             # Backward compatibility with the old shared marker. Only remove it
             # when it belongs to this mint, never when another position owns it.
             if self._open_pos_path.exists():
@@ -2196,6 +2298,9 @@ class UniversalTrader:
                 #: descarte: sin esto no se sabe si sobro el dinero o la
                 #: direccion del dinero.
                 _visto_presion = "no medida"
+                #: Mejor (menor) ratio tx/compra visto, para el mismo aviso: si
+                #: una moneda se descarta por esto conviene verlo en el log.
+                _visto_tx_compra = 0.0
                 # SIEMPRE 0,15 s. Antes se pasaba a 0,5 con ventanas de mas de
                 # 6 segundos, y eso costaba velocidad justo donde importa: con
                 # la ventana en 18 s se miraba 3 veces menos, asi que entre que
@@ -2292,6 +2397,22 @@ class UniversalTrader:
                     if self.min_ops > 0 and _o < self.min_ops:
                         await asyncio.sleep(_paso)
                         continue
+                    # NADIE HA VENDIDO TODAVIA (tx por compra). Se ESPERA, no se
+                    # descarta: cada compra nueva suma 1 a las dos cuentas, asi
+                    # que el ratio baja hacia 1 segun entra gente. Una moneda que
+                    # ahora esta en 1,4 puede cumplir en cuanto lleguen unas
+                    # cuantas compras seguidas -- y si no llegan, se le acaba la
+                    # ventana sola y no se compra.
+                    if self.max_tx_por_compra > 0 and _b > 0:
+                        _tx_compra = _o / _b
+                        if _tx_compra > self.max_tx_por_compra:
+                            _visto_tx_compra = (
+                                _tx_compra
+                                if _visto_tx_compra == 0
+                                else min(_visto_tx_compra, _tx_compra)
+                            )
+                            await asyncio.sleep(_paso)
+                            continue
                     if self.ultimas_tx_compra > 0 and not _ult_compra(
                         str(token_info.mint), self.ultimas_tx_compra
                     ):
@@ -2466,6 +2587,7 @@ class UniversalTrader:
                         f"{_visto_first_buys} en primer bloque, "
                         f"{_visto_ops} tx, "
                         f"{_visto_tit} titulares, "
+                        f"{_visto_tx_compra:.2f} tx por compra, "
                         f"presion: {_visto_presion})"
                     )
                     if _tarea_redes is not None:
@@ -2945,6 +3067,20 @@ class UniversalTrader:
                         return
                     self._reserved_lamports += need
                     self._reserved_real_buy_slots += 1
+                # REPARTO: ultimo paso antes de gastar. Va aqui y no antes para
+                # no reservar monedas que luego se descartan por saldo o por
+                # cualquiera de los filtros de arriba.
+                if not self._reclamar_mint(str(token_info.mint)):
+                    logger.info(
+                        "Evitado %s: ya la ha reclamado otro bot de la wallet",
+                        token_info.symbol,
+                    )
+                    async with self._spend_lock:
+                        self._reserved_lamports -= need
+                        self._reserved_real_buy_slots = max(
+                            0, self._reserved_real_buy_slots - 1
+                        )
+                    return
                 try:
                     # Buy token
                     logger.info(
@@ -3549,6 +3685,9 @@ class UniversalTrader:
         cost_sol = original_qty * entry_price
         last_price = entry_price
         _muerta_revisada = False
+        #: Momento (en segundos desde `start`) de la proxima comprobacion de
+        #: muerta. Se va corriendo hacia delante mientras la moneda siga viva.
+        _muerta_proximo = self.venta_muerta_seg
 
         while remaining > 1e-9:
             if (monotonic() - start) >= abandon_after:
@@ -3888,13 +4027,14 @@ class UniversalTrader:
                 # hace falta para que un ganador llegue al +400%) una moneda que
                 # nace plana se queda ocupando la posicion media hora.
                 #
-                # Se mira UNA sola vez, al cumplirse el plazo: si en ese momento
-                # va por encima del umbral se la deja correr y ya no se vuelve a
-                # preguntar, porque a partir de ahi mandan los take-profit.
+                # Se mira al cumplirse el plazo y, si `venta_muerta_repetir_seg`
+                # esta puesto, cada N segundos a partir de ahi. Con el repetidor
+                # a 0 vuelve al comportamiento antiguo: una sola pasada y a
+                # partir de ahi mandan los take-profit.
                 if (
                     self.venta_muerta_seg > 0
                     and not _muerta_revisada
-                    and (monotonic() - start) >= self.venta_muerta_seg
+                    and (monotonic() - start) >= _muerta_proximo
                 ):
                     _sube = (price / entry_price - 1) if entry_price else 0.0
                     if _sube < self.venta_muerta_gain:
@@ -3914,6 +4054,18 @@ class UniversalTrader:
                         logger.warning(
                             "Venta por muerta fallo en %s; lo reintenta el bucle",
                             token_info.symbol,
+                        )
+                    elif self.venta_muerta_repetir_seg > 0:
+                        # Sigue viva: se le da otra vuelta de reloj en vez de
+                        # dejarla suelta para siempre.
+                        _muerta_proximo = (
+                            monotonic() - start
+                        ) + self.venta_muerta_repetir_seg
+                        logger.info(
+                            f"VIVA {token_info.symbol}: {_sube * 100:+.0f}% a los "
+                            f"{monotonic() - start:.0f}s -> se deja correr, "
+                            f"se vuelve a mirar en "
+                            f"{self.venta_muerta_repetir_seg:.0f}s"
                         )
                     else:
                         _muerta_revisada = True

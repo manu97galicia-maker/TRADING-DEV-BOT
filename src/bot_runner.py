@@ -128,6 +128,11 @@ async def start_bot(config_path: str):
             max_hold_time=cfg["trade"].get("max_hold_time"),
             venta_muerta_seg=cfg["trade"].get("venta_muerta_seg", 0),
             venta_muerta_gain=cfg["trade"].get("venta_muerta_gain", 0),
+            venta_muerta_repetir_seg=cfg["trade"].get(
+                "venta_muerta_repetir_seg", 0
+            ),
+            coordinar_mints=cfg["trade"].get("coordinar_mints", False),
+            coordinar_mints_ttl=cfg["trade"].get("coordinar_mints_ttl", 900.0),
             # Tiered take-profit ladder (partial sells + moonbag)
             take_profit_sell_percentage=cfg["trade"].get("take_profit_sell_percentage"),
             tp2_gain=cfg["trade"].get("tp2_gain"),
@@ -230,6 +235,18 @@ async def start_bot(config_path: str):
             ),
             min_ops=cfg.get("filters", {}).get("min_ops", 0),
             min_titulares=cfg.get("filters", {}).get("min_titulares", 0),
+            # Estos tres miden la CALIDAD de las operaciones, no la cantidad, y
+            # son los dos rasgos que mas separan de todo lo medido el 18-ago.
+            # Los dos de `compras_por_cartera` llevaban implementados en el
+            # trader desde hace tiempo pero SIN CABLEAR aqui: ponerlos en el
+            # YAML no hacia absolutamente nada.
+            max_tx_por_compra=cfg.get("filters", {}).get("max_tx_por_compra", 0.0),
+            min_compras_por_cartera=cfg.get("filters", {}).get(
+                "min_compras_por_cartera", 0.0
+            ),
+            max_compras_por_cartera=cfg.get("filters", {}).get(
+                "max_compras_por_cartera", 0.0
+            ),
             redes_originales=cfg.get("filters", {}).get("redes_originales", False),
             redes_timeout=cfg.get("filters", {}).get("redes_timeout", 1.5),
             max_volumen_sol=cfg.get("filters", {}).get("max_volumen_sol", 0.0),

@@ -30,6 +30,17 @@ puede salir bien mientras alguien va saliendo por detrás. Esto exige que
 Las tres exigen además: **≥4 carteras distintas**, **≥4 transacciones previas**,
 que entre más SOL del que sale en los últimos 3 s, y **sin mayhem**.
 
+**NUEVO (19-ago) — `max_tx_por_compra: 1.2` en las tres.** Es el rasgo que más
+separa de todo lo medido y llevaba desde el 18-ago sin implementar: por debajo
+de 1,2 tx por compra el **41%** hace x2 contra el 17% de base (+24 puntos); el
+tramo siguiente (1,2-1,6) se hunde al 7%. Mide si **ya hay alguien saliendo**,
+que no es lo mismo que la presión compradora (esa compara SOL y puede salir
+bien mientras alguien se va por detrás con calderilla).
+
+Ojo al embudo: se suma al techo de market cap y al de volumen, que ya tiran el
+uno contra el otro. El aviso de descarte del log ahora dice cuántas "tx por
+compra" se llegaron a ver, para saber si es este filtro el que seca el flujo.
+
 ## Cómo vende — igual en las tres
 
 ```
@@ -110,17 +121,21 @@ máximo con 1.387 $ de liquidez real y 5 $ de volumen diario.
    por vendida **sin venderla** y abandona la bolsa. Llegaron a acumularse 24.
    Es el arreglo pendiente más caro.
 
-2. **La venta por muerta se comprueba UNA sola vez** a los 120 s. Una moneda que
-   en ese instante esté a +0% se deja correr y ya solo la cierran el stop o el
-   objetivo. Pasó con CATECOIN (20 min), MORE, CVP y PUMPFUN.
+2. ~~**La venta por muerta se comprueba UNA sola vez** a los 120 s.~~
+   **ARREGLADO (19-ago)**: `venta_muerta_repetir_seg: 120` en los tres. Ahora
+   se vuelve a preguntar cada 2 minutos en vez de una sola vez. Era lo que
+   dejó CATECOIN 20 minutos abierta, y en RAPIDA —que no lleva stop— una
+   posición así no tenía ninguna salida salvo el x2.
 
 3. **`Custom 6024` al vender.** Cuando la curva se vacía no hay contrapartida a
    ningún precio y la bolsa queda atrapada. Van seis casos: Parmesan, FARM,
    CATECOIN, MORE, CVP y BABYANSEM.
 
-4. **Las tres no se coordinan.** Si ven la misma moneda entran las tres y
-   acabas con 0,18 SOL en una sola posición creyendo que son tres apuestas
-   distintas. Ya pasó con GAMBLE (dos bots, 0,27 SOL en la misma moneda).
+4. ~~**Las tres no se coordinan.**~~ **ARREGLADO (19-ago)**:
+   `coordinar_mints: true` en los tres. La primera que reclama una moneda es la
+   única que entra; el reclamo se crea con `O_EXCL`, que es atómico, así que de
+   tres procesos que lo intenten a la vez gana exactamente uno. Un TTL de 900 s
+   libera la moneda si el bot que la pidió se muere con ella.
 
 ---
 
@@ -161,3 +176,44 @@ TelegramClient('tg_naomi', int(os.getenv('TELEGRAM_API_ID')), os.getenv('TELEGRA
 ```
 
 Se sabe que funcionó porque el `.session` pasa de 28 KB a ~150 KB.
+
+---
+
+## Pendiente de decidir (19-ago)
+
+Tres cosas que no se han tocado porque son decisiones de dinero, no de código.
+
+**1. El 17% y el 46% no pueden ser los dos ciertos.** Este documento dice que
+"el 46% de las monedas llega a x2 desde donde entramos" y tres párrafos antes
+dice que la base es el 17%, citando las mismas 92 monedas del mismo día.
+Importa porque decide si la estrategia gana o pierde:
+
+```
+ganadora   0,74 x 2,0  +  0,26 x 1,0 (el trinquete pone el suelo en la compra)
+           = +74% minimo
+
+necesitas acertar el 25% si la perdedora es -25%
+necesitas acertar el 17% si la perdedora es -15%
+```
+
+Con el 17% estás justo en el filo **antes de costes**; con el 46% ganas de
+sobra. La sospecha es que el 46% mide "llegó a TOCAR x2 en algún momento",
+que es la métrica de máximo que este mismo documento dice no creerse. Hay que
+mirar el script de la medición, que está en el droplet.
+
+**2. Se opera a 0,06 SOL, por debajo de la fila más pequeña de la tabla de
+costes.** Los 0,0023 SOL de ida y vuelta son el **3,8%** de una posición de
+0,06, no el 1,5% de la fila de 0,15 que se analizó. Sumado al ~3,7% de
+prioridad, los costes fijos se comen más del doble de lo previsto.
+
+**3. `min_migrations: 1` con un comentario que pide 2.** El comentario de los
+tres YAML argumenta "DOS MIGRACIONES MINIMO" y cita el caso 变狗 (0,29 SOL
+perdidos en un rug a los 4 segundos, wallet recién estrenada con 1 migración de
+1 lanzamiento = 100%). El valor puesto es 1, que es justo el caso que el
+comentario dice que hay que cortar.
+
+Y una contradicción de fondo sin resolver: `ESTRATEGIAS.md` (12-ago) dejó el
+filtro del creador **apagado**, con el motivo escrito —"los creadores cuyas
+monedas llegan al nacimiento con arranque limpio tienen 0 migraciones"— y el
+caso `App`, que cumplía el perfil entero y solo esa puerta impidió comprar.
+DEFINITIVA y ELITE lo llevan encendido al 10% y al 25%.

@@ -7,7 +7,7 @@
 # hasta ahora iban por separado: que la moneda acabe de nacer, que ya se este
 # moviendo dinero de verdad en ella, y que el creador tenga historial.
 
-name: "DEFINITIVA - dev 5%+, 4 compras y 400 $ de volumen, 0,25 SOL (0,30 si el dev migra 20%+)"
+name: "DEFINITIVA - MC <=2.900, vol 849 $+, dev 10%+, 2 ultimas compras, x2 vendiendo 74% y 26% de moonbag"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -75,6 +75,15 @@ trade:
   stop_al_tp_tras_tp: true
   stop_al_tp_anterior: true
 
+  # REPARTO ENTRE LOS TRES BOTS. Comparten wallet y no se hablaban:
+  # si los tres veian la misma moneda entraban los tres y acababas con
+  # 0,18 SOL en una sola posicion creyendo que eran tres apuestas
+  # distintas. Paso con GAMBLE (dos bots, 0,27 SOL). La primera que la
+  # reclama es la unica que entra; el TTL libera la moneda si el bot
+  # que la pidio se muere con ella.
+  coordinar_mints: true
+  coordinar_mints_ttl: 900
+
   anti_rug_ratio: 2.0
   anti_rug_seg: 4
   anti_rug_min_sol: 3
@@ -85,6 +94,12 @@ trade:
   #    una sola vez, al cumplirse el plazo.
   venta_muerta_seg: 120
   venta_muerta_gain: 0.0
+  # ...y se REPITE cada 2 minutos. Antes se miraba una sola vez: si al
+  # cumplirse el plazo la moneda iba por encima de la compra se la
+  # dejaba correr y no se volvia a preguntar nunca. CATECOIN se quedo
+  # 20 minutos abierta asi, y en RAPIDA --que no lleva stop-- una
+  # posicion en ese estado no tiene ninguna salida salvo el x2.
+  venta_muerta_repetir_seg: 120
   # 2) SIN VOLUMEN 2 minutos seguidos -> fuera. Mira el VOLUMEN, de forma
   #    continua. Da igual que el precio siga alto: si nadie negocia, ese precio
   #    no lo va a pagar nadie. Es la leccion de las 63 monedas que quedaron
@@ -168,7 +183,7 @@ filters:
     # arriba (20%+) ya cumple solo lo de "minimo 2 migraciones".
     min_migrations: 1
 
-  # VOLUMEN MINIMO 300 $ = 3,99 SOL (a 75,18 $/SOL).
+  # VOLUMEN MINIMO 849 $ = 11,3 SOL (a 75,12 $/SOL).
   min_volumen_sol: 11.3
 
   # SIN FRANJA HORARIA: opera las 24 horas. El {inicio:18, fin:4} venia
@@ -213,6 +228,16 @@ filters:
   # El volumen solo dice que hay movimiento; esto dice hacia donde va, y evita
   # entrar justo cuando el dinero se esta yendo.
   # Las 3 ultimas operaciones tienen que ser COMPRAS: nadie ha vendido aun.
+  # NADIE HA VENDIDO TODAVIA. Es el rasgo que MAS separa de todo lo
+  # medido el 18-ago sobre 92 monedas: con tx/compras por debajo de 1,2
+  # el 41% hace x2, contra el 17% de base (+24 puntos). El tramo
+  # siguiente (1,2-1,6) se hunde al 7%.
+  #
+  # OJO AL EMBUDO: este filtro se suma al techo de market cap y al de
+  # volumen, que ya tiran el uno contra el otro. Si el log se queda
+  # vacio, mira el aviso de descarte -- ahora dice cuantas 'tx por
+  # compra' se llegaron a ver -- antes de tocar nada.
+  max_tx_por_compra: 1.2
   ultimas_tx_compra: 2
   min_presion_ratio: 1.0
   presion_seg: 3.0
