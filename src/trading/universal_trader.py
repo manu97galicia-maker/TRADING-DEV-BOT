@@ -35,6 +35,7 @@ from trading.platform_aware import PlatformAwareBuyer, PlatformAwareSeller
 from trading.position import Position
 from trading.panic import panic_time
 from trading.ganancia import Ganancia
+from trading.reserva import reserva as _reserva_moneda, suelta as _suelta_moneda
 from trading.tiered_exit import build_tiers, moonbag_fraction, tiers_due
 from utils.logger import get_logger
 
@@ -2939,6 +2940,15 @@ class UniversalTrader:
                 need = int(
                     _importe * (1 + self.buy_slippage) * LAMPORTS_PER_SOL
                 ) + self._fee_headroom_lamports
+                # UN BOT POR MONEDA. Los tres procesos ven el mismo websocket
+                # y comparten wallet: sin esto, una moneda que cumple en varios
+                # se compra varias veces y tres apuestas se convierten en una
+                # del triple de tamano. La reserva es atomica (O_EXCL), asi que
+                # aunque lleguen en el mismo milisegundo solo gana uno.
+                _mint_str = str(token_info.mint)
+                if not _reserva_moneda(_mint_str, self.nombre_estrategia):
+                    return
+
                 async with self._spend_lock:
                     if (
                         self.max_real_buys
@@ -2978,6 +2988,10 @@ class UniversalTrader:
                         token_info, amount_sol=_importe
                     )
 
+                    if not buy_result.success:
+                        # La compra fallo: la moneda vuelve a estar libre para
+                        # que otro bot pueda intentarla.
+                        _suelta_moneda(_mint_str)
                     if buy_result.success:
                         buy_reason = self._build_buy_reason(token_info, dev_stats)
                         await self._handle_successful_buy(
