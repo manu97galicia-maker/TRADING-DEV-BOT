@@ -147,7 +147,7 @@ trade:
   max_hold_time: 3600
   price_check_interval: 1
   extreme_fast_mode: false
-  min_reserve_sol: 0.08
+  min_reserve_sol: 0.05
 
   # UN SOLO RUG Y FUERA. Por defecto son 2; con 1, al creador que te la
   # juega una vez no se le vuelve a comprar nunca (queda anotado en
@@ -207,18 +207,27 @@ filters:
   # se ignoraba, que es como estaba heredado.
   ignorar_listas_de_devs: false
 
-  # EL CREADOR: 10%+ de sus lanzamientos migrados.
+  # FILTRO DEL CREADOR: APAGADO, y a proposito.
+  #
+  # Era el unico de los filtros que no tenia una medida detras. Los otros tres
+  # --carteras, volumen, market cap-- salen de cruzar 1.016 monedas con su
+  # maximo real. Este venia de intuicion, y los datos dicen lo contrario:
+  #
+  #   el 85,2% de las monedas con arranque limpio las lanza alguien con CERO
+  #   migraciones, asi que exigir historial deja fuera casi todo el flujo
+  #
+  #   y los creadores que REPITEN rinden peor: 13,3% llegan a x1,75 frente al
+  #   16,4% de los que solo aparecen una vez
+  #
+  # El 20-ago a las 11:31 tumbo a TradeFi, que cumplia todo lo demas --6
+  # carteras, 9,2 SOL, MC 2.605 $-- solo porque era la primera moneda de su
+  # creador y por tanto no podia tener historial. Con ELITE al 25% llego a
+  # tumbar el 98% de lo que le llegaba: 3 compras en toda su vida.
+  #
+  # Lo que protege aqui es la ESTRUCTURA (el techo de entrada a 2.800 $, con el
+  # suelo estructural en 2.097), no la reputacion del que lanza.
   pumpfun_dev:
-    enabled: true
-    min_rate: 0.01
-    # Un porcentaje sobre una sola moneda no es historial, es casualidad, y es
-    # la firma del farmero que estrena wallet: 1 migracion de 1 lanzamiento da
-    # 100%. Ese caso exacto (变狗) costo 0,29 SOL en un rug a los 4 segundos.
-    # DOS MIGRACIONES MINIMO. Con el listón en el 5%, sin esto entraria el
-    # farmero que estrena wallet: 1 migracion de 1 lanzamiento marca 100% y
-    # pasaria, ademas cobrando la apuesta grande. Exigiendo 2, el escalon de
-    # arriba (20%+) ya cumple solo lo de "minimo 2 migraciones".
-    min_migrations: 1
+    enabled: false
 
   # VOLUMEN MINIMO 300 $ = 3,99 SOL (a 75,18 $/SOL).
   min_volumen_sol: 8.0
