@@ -260,8 +260,28 @@ filters:
   max_entry_mc: 2800
   max_entry_mc_dev_top: 0
   min_curve_sol: 0
-
-  max_volumen_sol: 15.0
+  # SIN TECHO DE VOLUMEN, y esto corrige una medida anterior.
+  #
+  # Se habia puesto un techo de 15 SOL porque sobre TODAS las monedas mas
+  # volumen rendia peor (9,1% frente a 10,8%): mucho SOL de golpe suele ser
+  # bundle. Pero esa medida no estaba condicionada.
+  #
+  # Cuando ya se exigen 6 carteras distintas Y market cap por debajo de 2.800,
+  # el volumen alto deja de ser bundle: 20 SOL repartidos entre seis
+  # compradores con el precio aun por debajo de 2.800 es demanda real que
+  # todavia no ha movido el market cap.
+  #
+  #   con techo de 15 ... 40 casos, 45,0% aciertan, rinde +0,2280, 1,94 ops/h
+  #   sin techo ......... 71 casos, 43,7% aciertan, rinde +0,2168, 3,20 ops/h
+  #   el tramo que se tiraba (>15 SOL): 31 casos y el 41,9% llegaba al +75%
+  #
+  # Se pierden 1,3 puntos de acierto y se gana un 65% de operaciones: el SOL
+  # por hora sube un 69%. Aguanta las dos mitades de la muestra (+0,186 y
+  # +0,247) y sale positivo el 100% de 1.000 remuestreos.
+  #
+  # OJO: bajar a 5 carteras SI diluye de verdad (34,7% de aciertos, +0,1411).
+  # El techo de volumen sobraba; el suelo de carteras no.
+  max_volumen_sol: 0
   min_vol_ventana_sol: 0
   # Sin minimo de compras: la condicion de arranque es el volumen. Estuvo en 4
   # y era el mayor cuello del embudo -- de 38 monedas descartadas, solo 1 llego

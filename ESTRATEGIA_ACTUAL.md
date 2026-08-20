@@ -13,7 +13,7 @@ RAPIDA) están paradas y deshabilitadas.
 ```
 ENTRADA
   market cap          ≤ 2.800 $
-  volumen             8 - 15 SOL
+  volumen             >= 8 SOL  (sin techo)
   carteras distintas  ≥ 6
   creador             sin filtro
   edad máxima         60 s
@@ -108,7 +108,7 @@ ser la primera moneda de su creador.
 ## Cuánto y a qué ritmo
 
 ```
-1,94 operaciones por hora   (55% de las horas no compra nada; rachas de hasta 12)
+3,20 operaciones por hora   (~77 al dia; rachas de hasta 12 y horas enteras sin nada)
 ```
 
 **El tamaño óptimo es 0,15 SOL, con meseta de 0,10 a 0,25.** Por debajo se lo
