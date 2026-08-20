@@ -1041,6 +1041,7 @@ class UniversalTrader:
         # Avisador de moonbags: cada 5 min notifica por Telegram los moonbags
         # retenidos para venderlos a mano (nunca los vende el bot).
         asyncio.create_task(self._moonbag_notifier_loop())  # noqa: RUF006
+        asyncio.create_task(self._reinicia_tanda_loop())  # noqa: RUF006
         if self.senal_gmgn:
             from monitoring.senales import refrescar
 
@@ -4101,37 +4102,42 @@ class UniversalTrader:
         # ha podido leer de la cadena, y solo si no, con el teorico: parar un
         # bot por una perdida que en realidad fue ganancia (o al reves) seria
         # exactamente el error que ya costo dinero el 9-ago.
+        # AL P&L REAL HAY QUE SUMARLE EL MOONBAG. `_real` mide el SOL que entra
+        # y sale de la cartera, y los tokens que siguen dentro no son SOL: una
+        # operacion que cobra su objetivo y deja el 20% corriendo aparecia como
+        # PERDIDA. Paso el 10-ago con Crocodile y Terry, que cobraron el +25% y
+        # aun asi sumaron dos strikes de la racha; con el tercero la estrategia
+        # se paro sola sin motivo real.
+        _para_racha = (_real + held_val) if _real is not None else net_sol
+
+        # BOTE COMUN, FUERA DEL CONTADOR DE RACHA. Estaba metido dentro del
+        # `if max_perdidas_seguidas > 0` y ninguno de los tres yaml define esa
+        # clave, asi que valia 0 y el bote NUNCA se alimentaba: el 19-ago se
+        # cerraron 12 operaciones y `ganancia_real.json` seguia sin existir.
+        # El tamano de la compra no puede depender de que este configurado un
+        # freno que no tiene nada que ver.
+        if self._bote is not None:
+            try:
+                _total = self._bote.suma(_para_racha)
+                logger.info(
+                    "BOTE: %+.4f SOL en esta operacion, %+.4f acumulados",
+                    _para_racha, _total,
+                )
+            except Exception:  # noqa: BLE001
+                logger.warning("bote: no se pudo apuntar la operacion")
+
+        # SELECTOR. Se le pasa este mismo numero y no el teorico: el teorico ha
+        # llegado a equivocarse de signo, y un selector alimentado con el
+        # elegiria la estrategia que peor va.
+        if self._selector is not None:
+            try:
+                self._selector.apunta(
+                    self.nombre_estrategia, _para_racha, self.buy_amount
+                )
+            except Exception:  # noqa: BLE001
+                logger.warning("selector: no se pudo apuntar la operacion")
+
         if self.max_perdidas_seguidas > 0 and not self._parado_por_perdidas:
-            # AL P&L REAL HAY QUE SUMARLE EL MOONBAG. `_real` mide el SOL que
-            # entra y sale de la cartera, y los tokens que siguen dentro no son
-            # SOL: una operacion que cobra su objetivo y deja el 20% corriendo
-            # aparecia como PERDIDA. Paso el 10-ago con Crocodile y Terry, que
-            # cobraron el +25% y aun asi sumaron dos strikes de la racha; con el
-            # tercero la estrategia se paro sola sin motivo real.
-            _para_racha = (
-                (_real + held_val) if _real is not None else net_sol
-            )
-            # SELECTOR. Se le pasa este mismo numero y no el teorico: el
-            # teorico ha llegado a equivocarse de signo, y un selector
-            # alimentado con el elegiria la estrategia que peor va.
-            if self._selector is not None:
-                try:
-                    self._selector.apunta(
-                        self.nombre_estrategia, _para_racha, self.buy_amount
-                    )
-                except Exception:  # noqa: BLE001
-                    logger.warning("selector: no se pudo apuntar la operacion")
-            # BOTE COMUN: mismo numero que alimenta al selector, que es el P&L
-            # real de la cadena mas el moonbag que sigue dentro.
-            if self._bote is not None:
-                try:
-                    _total = self._bote.suma(_para_racha)
-                    logger.info(
-                        "BOTE: %+.4f SOL en esta operacion, %+.4f acumulados",
-                        _para_racha, _total,
-                    )
-                except Exception:  # noqa: BLE001
-                    logger.warning("bote: no se pudo apuntar la operacion")
             if _para_racha < 0:
                 self._perdidas_seguidas += 1
                 logger.warning(
@@ -4510,6 +4516,42 @@ class UniversalTrader:
             logger.info(f"Moonbag {token_info.symbol} registrado (avisos Telegram cada 5 min)")
         except Exception:  # noqa: BLE001 - registrar el moonbag nunca debe romper
             logger.debug("no pude registrar moonbag", exc_info=True)
+
+    async def _reinicia_tanda_loop(self) -> None:
+        """Devuelve el contador de la tanda a cero cuando no queda nada abierto.
+
+        POR QUE HACE FALTA. `_compras_de_la_tanda` se creaba a 0 al arrancar y
+        solo subia: con `max_real_buys: 3` cada bot compraba tres veces y se
+        callaba PARA SIEMPRE. El 19-ago los tres hicieron sus 3 compras entre
+        las 05:00 y las 06:52 y estuvieron 23 HORAS sin comprar nada, con 4.435
+        monedas cumpliendo los filtros por delante. El servicio seguia
+        "active", asi que por fuera parecia que todo iba bien.
+
+        El limite se llama "tanda" en todo el codigo, y una tanda que no acaba
+        nunca no es un limite por tanda: es un apagado con retardo. Aqui se
+        cierra la tanda cuando el bot se queda sin posiciones abiertas, que es
+        el unico momento en el que "la tanda ha terminado" significa algo.
+
+        Se mira el disco y no un contador en memoria a proposito: las marcas
+        `open_position_*.json` son las mismas que consulta `desplegar.sh` para
+        no reiniciar encima de una posicion viva, y ya se ha visto que un
+        contador en memoria y la realidad se separan.
+        """
+        while True:
+            await asyncio.sleep(60)
+            try:
+                if not self._compras_de_la_tanda:
+                    continue
+                if list(Path(".").glob(f"open_position{self._state_suffix}_*.json")):
+                    continue
+                logger.info(
+                    "TANDA cerrada: %d compras hechas y ninguna posicion abierta. "
+                    "El contador vuelve a 0 y se puede seguir comprando.",
+                    self._compras_de_la_tanda,
+                )
+                self._compras_de_la_tanda = 0
+            except Exception:  # noqa: BLE001 - esto nunca debe romper el bot
+                logger.debug("reinicio de tanda", exc_info=True)
 
     async def _moonbag_notifier_loop(self) -> None:
         """Cada 5 min avisa por Telegram de los moonbags retenidos (venta manual)."""
