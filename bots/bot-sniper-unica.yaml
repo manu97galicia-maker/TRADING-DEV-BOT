@@ -52,7 +52,7 @@ trade:
   #
   # `dev_elite` (que ya existia) NO servia para esto: cambia el TP y el stop,
   # no cuanto se pone. `buy_amount_dev_top` se anadio al motor el 16-ago.
-  buy_amount: 0.15
+  buy_amount: 0.20
   nombre_estrategia: \"unica\"
   # La compra crece un 35% por cada SOL ganado de VERDAD. El bote es comun a
   # los tres bots (comparten wallet) y solo cuenta P&L leido de la cadena.

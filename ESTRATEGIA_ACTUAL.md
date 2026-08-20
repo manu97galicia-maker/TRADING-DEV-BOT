@@ -1,159 +1,155 @@
 # Estrategia actual
 
-Estado a **19 de agosto de 2026**. Esto es lo que está corriendo en el servidor
-ahora mismo, no lo que se planea.
+Estado a **20 de agosto de 2026**. Esto es lo que corre en el servidor, no lo
+que se planea.
+
+**Una sola estrategia viva: `unica`.** Las tres anteriores (DEFINITIVA, ELITE,
+RAPIDA) están paradas y deshabilitadas.
 
 ---
 
-## Resumen en una tabla
-
-Tres bots en paralelo sobre **la misma wallet**. Lo único que los separa es
-**qué compran**: el tamaño y la salida son idénticos en los tres.
+## La estrategia
 
 ```
-                MC entrada   volumen    creador   últimas   edad    stop
-DEFINITIVA      ≤ 2.800 $    ≥ 3 SOL     ≥10%        2      90 s    80%
-ELITE           ≤ 2.800 $    ≥ 3 SOL     ≥25%        3      90 s    80%
-RAPIDA          ≤ 2.800 $    ≥ 3 SOL     ≥ 1%        3       3 s    sin
+ENTRADA
+  market cap          ≤ 2.800 $
+  volumen             8 - 15 SOL
+  carteras distintas  ≥ 6
+  creador             sin filtro
+  edad máxima         60 s
+
+COMPRA
+  tamaño              0,20 SOL   (+35% por cada SOL ganado)
+  posiciones a la vez 2   ·  tope por tanda 6
+  slippage            12% compra / 25% venta  ·  1 reintento
+  reserva             0,05 SOL
+
+SALIDA
+  al +75%             vende el 100%
+  más de 60 s por debajo del precio de compra → vende entera
+  stop-loss 80%  ·  sin moonbag
 ```
 
-Común a los tres: **≥4 carteras distintas**, **≥4 operaciones previas**, sin
-mayhem, slippage 12%, `max_posiciones: 1` por bot, reserva 0,08 SOL.
+**Los tres filtros salen de la misma medida**: 1.016 monedas (la lectura del
+bot en los 5 primeros segundos) cruzadas con su máximo real según pump.fun. No
+queda ningún filtro puesto a ojo.
 
 ---
 
-## La compra
+## Por qué cada número
+
+### La entrada
 
 ```
-base                 0,15 SOL
-crece un 35%         por cada SOL ganado de VERDAD
+base de la muestra ................  8,1% llegan a 6K   3,1% a 12K
+6+ carteras, 8-15 SOL, MC ≤2.800 .. 20,0% llegan a 6K   7,5% a 12K
 ```
 
-El bote es **común a los tres bots** — comparten wallet, así que comparten
-caja — y solo cuenta P&L leído de la cadena.
+**Lo que separa es cuánta gente distinta compra, no cuánto dinero entra:**
 
 ```
-   ganado        compra
-   +0 SOL        0,150
-   +1 SOL        0,203
-   +2 SOL        0,255
-   +5 SOL        0,413
-  +10 SOL        0,675
+0-5 carteras     5,8% llegan a 6K
+5-8              8,3%
+8-12            12,2%
+12-20           15,0%
 ```
 
-**En negativo no baja.** El multiplicador se queda en 1 y se sigue con el
-tamaño base. Reducir la apuesta tras una racha mala suena prudente, pero con la
-mitad de tamaño hacen falta el doble de aciertos para recuperar: convierte un
-bache en un agujero del que no se sale.
+**Y más SOL no es mejor.** De 8 a 15 rinde un 10,8%; por encima de 15 baja al
+9,1% y solo el 1,8% llega a 12K. Eso ya no es demanda, es bundle. Por eso hay
+techo de volumen y no solo suelo.
 
-**Por qué el P&L real y no el del bot.** El teórico ha llegado a equivocarse de
-signo — reportó **+229 SOL** en una operación que en la cadena dio **−0,02**.
-Un bote alimentado con ese número subiría el tamaño justo cuando se pierde.
+**El 18% de la curva no era la señal**: pasarlo en 5 segundos da 9,3% frente al
+6,7% de no pasarlo. Existe, pero es ruido al lado de lo anterior.
+
+### La salida
+
+```
+vende todo a x1,50 ... +0,145 por cada 1 SOL
+vende todo a x1,75 ... +0,228   <- el mejor en tres muestras distintas
+vende todo a x2,00 ... +0,177
+la escalera anterior . +0,159
+```
+
+No es un pico de suerte: los vecinos (1,70 / 1,80 / 1,85) dan entre +0,196 y
++0,228, o sea una meseta. Remuestreando 1.000 veces sale positivo el **100%**
+de las veces, con el 90% de los casos entre +0,102 y +0,333.
+
+Se descartaron x3 y x4, que en la media salían mejor pero **pierden dinero en
+la primera mitad de la muestra**: todo su resultado venía de una sola moneda
+que hizo x14,4.
+
+**El moonbag restaba**: vender el 100% da +0,228, el 80% da +0,161 y el 50% da
++0,059. Lo que queda dentro casi nunca sigue subiendo — vuelve al precio de
+compra y sale por el suelo del trinquete.
+
+### El minuto por debajo de la compra
+
+El suelo estructural son 2.097 $ y se entra en 2.800. Una moneda que al minuto
+sigue por debajo de lo pagado no ha encontrado comprador, y lo único que le
+queda por delante es la caída a ese suelo. El stop del 80% está demasiado abajo
+para sacarla.
+
+### El filtro del creador, apagado
+
+Era el único sin una medida detrás, y los datos dicen lo contrario de la
+intuición:
+
+- el **85,2%** de las monedas con arranque limpio las lanza alguien con **cero
+  migraciones**, así que exigir historial deja fuera casi todo el flujo
+- los creadores que **repiten rinden peor**: 13,3% llegan a x1,75 frente al
+  16,4% de los que solo aparecen una vez
+
+Con ELITE al 25% llegó a tumbar el 98% de lo que le llegaba: **3 compras en
+toda su vida**. El 20-ago tumbó a TradeFi, que cumplía todo lo demás, solo por
+ser la primera moneda de su creador.
 
 ---
 
-## La salida
+## Cuánto y a qué ritmo
 
 ```
-TP1   al +50% de subida       vende el 50%   → el suelo sube al PRECIO DE COMPRA
-MC     6.800 $                vende el 35%
-MC    18.000 $                vende el 7,5%
-MC    34.000 $                vende el 3,75%
-      3,75% se queda dentro para siempre
+1,94 operaciones por hora   (55% de las horas no compra nada; rachas de hasta 12)
 ```
 
-Las fracciones van sobre la **compra original**, no sobre lo que queda. Los
-escalones de market cap **solo se arman cuando ha saltado el TP1**, así que
-nunca se adelantan.
+**El tamaño óptimo es 0,15 SOL, con meseta de 0,10 a 0,25.** Por debajo se lo
+comen las comisiones fijas; por encima, tu propia compra mueve la curva:
 
-**El trinquete es lo importante.** Al cobrar el TP1 el suelo sube al precio de
-compra y lo que queda dentro ya no puede acabar en pérdida. Funciona incluso en
-RAPIDA, que no lleva stop-loss configurado.
+```
+posición   tu compra mueve   coste fijo   total
+  0,03          0,36%          8,33%      8,69%
+  0,15          1,80%          1,67%      3,47%   <- el mínimo
+  1,00         12,15%          0,25%     12,40%
+```
 
-**Por qué +50% y no x2.** Al +40% llega el 79% de las monedas; a x2, el 57%.
-Las configuraciones anteriores pedían x2, x3 o x5 y por eso casi ninguna
-cobraba nada.
+**Capital necesario.** Con un 45% de aciertos ganando +75% y un 55% de fallos
+perdiendo 15%, Kelly da el 34% del saldo; con 40 datos de muestra lo prudente
+es Kelly/4 ≈ 8,5%:
 
-**Aviso sobre 18K y 34K.** Una moneda migra a los 30.867 $, así que el escalón
-de 34.000 $ cae **después de la migración**: ya no se vende por la curva sino
-por Jupiter. Las mayhem no se pueden vender por agregadores, y de las 308
-monedas del análisis del 14-ago, 63 se quedaron sin vender por pool migrado —
-el 58% de la pérdida. Ese escalón probablemente necesite rescate manual.
+```
+saldo    por operación
+  1,0        0,085
+  2,0        0,170
+  5,0        0,425
+```
+
+Para operar a 0,20 hacen falta ~2,5 SOL. Con menos, dos fallos seguidos —que
+con un 55% de fallos pasa constantemente— dejan la cuenta fuera de juego.
 
 ---
 
-## Lo que está medido (19-ago, 288.984 evaluaciones)
-
-### La latencia no es el problema
+## Primeras operaciones reales (20-ago, 12:00-12:25)
 
 ```
-p25 0,3 s · mediana 1,6 s · p75 3,7 s
-MC al disparar: mediana 2.599 $
+DAP        +75% cobrado          +0,1484 SOL
+Snezhana   bajo_entrada          -0,0469
+Dolly      bajo_entrada          -0,0496
 ```
 
-Dispara a 1,6 segundos y a 2.599 $. Eso ya está donde hay que estar.
-
-### El filtro del creador sí lo es
-
-```
-                cumplen   tumbadas por el dev   compras
-DEFINITIVA        1.127            850  (75%)       40
-ELITE               223            218  (98%)        3
-RAPIDA              178             63  (35%)       15
-```
-
-**ELITE está muerta.** El 85,2% de las monedas con arranque limpio las lanza
-alguien con **0 migraciones**; exigir historial deja fuera casi todo el flujo.
-
-La prueba: **WIW**, la única ganadora del 18-ago, cumplió a los 2,1 s con MC
-2.262 $ y 12 carteras distintas. Su creador llevaba 7% de migración. La
-bloquearon DEFINITIVA (7% < 10%) y ELITE (7% < 25%); solo la cogió RAPIDA, y
-cobró el +50%.
-
-**Recomendación pendiente de decisión**: bajar DEFINITIVA a ≥1% y ELITE a ≥5%.
-
-### El volumen y el market cap están acoplados
-
-La curva es aritmética exacta:
-
-```
-MC 2.400 $ → caben 2,09 SOL netos
-MC 2.800 $ → caben 4,67 SOL netos
-MC 3.500 $ → caben 8,76 SOL netos
-```
-
-Y el volumen cuenta compras **y** ventas. Así que exigir 900 $ (12 SOL) con el
-techo en 2.800 $ obligaba a que ya hubiera **3,67 SOL de ventas**: el filtro
-seleccionaba monedas donde la gente ya estaba soltando. Por eso está en 3 SOL.
-
----
-
-## Bugs arreglados esta sesión
-
-**El programa de token** (18-ago). El 10% de las ventas — 37 de 373 — acababa
-en "no quedan tokens que vender" sin haber vendido nada. La dirección de la
-cuenta sale de wallet + mint + **programa**; con el programa equivocado no
-existe, el saldo se lee como cero y la posición se cierra en falso. Ahora se
-miran los dos programas y se **corrige el campo**, porque la venta construye
-sus cuentas con ese mismo campo.
-
-**El moonbag del stop-loss** (18-ago). Se calculaba solo con los escalones de
-porcentaje, así que con un único tramo daba un moonbag del 50%: al saltar el
-stop se dejaba media posición sin vender. Pasó con WIW: −0,0220 SOL cobrados y
-0,0720 colgando en una moneda que ya había dado la vuelta. Ahora descuenta
-también los escalones de market cap: 3,75% en vez de 50%.
-
----
-
-## Lo que sigue roto
-
-- **El P&L teórico miente, y de signo.** Solo es cosmético (lo que decide sale
-  de los deltas de la wallet), pero no fiarse de lo que llegue por Telegram.
-- **`venta_muerta` se mira una sola vez a los 120 s.**
-- **Los tres bots no se coordinan** y pueden comprar la misma moneda.
-- **`Custom 6024`**: curva vacía, no hay contrapartida a ningún precio.
-- **El saldo no da para los tres.** Con 0,15 por posición hacen falta 0,53 SOL
-  (0,45 + reserva) y hay menos: solo dos bots pueden tener posición a la vez.
+Una ganadora paga tres perdedoras y sobra. Con esa asimetría basta con acertar
+una de cada cuatro, y lo medido es 45%. **Son 3 operaciones: no significan
+nada todavía**, pero las tres piezas nuevas se ven funcionando — el objetivo
+único cobró, la regla del minuto acotó las pérdidas y el bote subió la compra
+de 0,2000 a 0,2048.
 
 ---
 
@@ -165,13 +161,67 @@ bash desplegar.sh --solo-subir # sube sin reiniciar
 bash desplegar.sh --ya         # reinicia abandonando posiciones (avisa de cuáles)
 ```
 
-**Nunca reiniciar con una posición abierta.** El bot no las reanuda: detecta la
-marca, avisa de "bolsa huérfana" y la deja para vender a mano. Deja de
-vigilarse el take-profit, el stop y el anti-rug.
+**Nunca reiniciar con una posición abierta**: el bot no las reanuda, la deja
+como bolsa huérfana y deja de vigilarse el take-profit, el stop y el anti-rug.
 
-Los tres servicios van con `Restart=always`, `RestartSec=10`,
-`StartLimitIntervalSec=0` y `enabled`: arrancan solos al reiniciar el servidor
-y se levantan si se caen. **24/7 sin intervención.**
+Para dejar el droplet con una sola estrategia viva:
 
-Servidor: `root@159.89.19.12`, clave en `~/.ssh/id_droplet_bot`. La clave
-privada no se copia en ningún documento.
+```bash
+bash /root/ai-bot/solo-unica.sh
+```
+
+Para y **deshabilita** todo lo demás. Lo de deshabilitar importa tanto como lo
+de parar: un servicio `inactive` pero `enabled` vuelve solo en el siguiente
+reinicio del servidor, y entonces hay dos bots comprando con la misma wallet
+sin que nadie se entere.
+
+Servidor: `root@159.89.19.12` (`ubuntu-s-1vcpu-1gb-fra1`), clave en
+`~/.ssh/id_droplet_bot`. El segundo droplet (`sniper-bot`, 142.93.124.57) está
+vacío. La clave privada no se copia en ningún documento.
+
+El panel AGALAZ BANK vive en `https://159-89-19-12.sslip.io` (usuarios Manu y
+Ricardo). Solo lee: `PANEL_HOT_WALLET=false`.
+
+---
+
+## Bugs arreglados en esta sesión
+
+- **La tanda no se cerraba nunca.** `_compras_de_la_tanda` solo subía: con
+  `max_real_buys: 3` cada bot compraba tres veces y se callaba para siempre. El
+  19-ago estuvo **23 horas sin comprar** con 4.435 monedas cumpliendo delante, y
+  el servicio en `active` todo el rato.
+- **El programa de token equivocado.** El 10% de las ventas (37 de 373) cerraba
+  en falso sin vender nada: la dirección de la cuenta sale de wallet + mint +
+  **programa**, y con el programa mal la cuenta no existe y el saldo se lee como
+  cero. Ahora se miran los dos y se corrige el campo, porque la venta construye
+  sus cuentas con ese mismo campo.
+- **El moonbag del stop-loss.** Se calculaba solo con los escalones de
+  porcentaje: dejaba media posición tirada en vez del 3,75%.
+- **La curva migrada.** Al migrar, `calculate_price` lanza y el monitor daba
+  vueltas para siempre: 16.623 errores en hora y media con un bot bloqueado.
+  Ahora se pregunta el precio al DEX, y si tampoco hay, a las 40 lecturas se
+  suelta el hueco.
+- **El bote no se alimentaba.** Colgaba de `max_perdidas_seguidas`, una clave
+  que ningún YAML define.
+- **Dos bots compraban la misma moneda.** BECKY salió con tres `CUMPLE` en el
+  mismo segundo. Ahora se reserva con `O_EXCL` antes de comprar.
+
+---
+
+## Lo que sigue sin resolver
+
+- **El P&L teórico miente, y de signo.** Reportó +229 SOL en una operación que
+  dio −0,02, y +22,5 en una que perdió 0,05. Solo es cosmético (lo que decide
+  sale de los deltas de la wallet), pero no fiarse de lo que llegue por
+  Telegram.
+- **`venta_muerta` se mira una sola vez a los 120 s.**
+- **`Custom 6024`**: curva vacía, no hay contrapartida a ningún precio.
+- **Operaciones a mano en la misma wallet.** El 20-ago hubo compras y ventas de
+  0,009 a 0,094 SOL que no salen en ningún log del bot. Se descartó un segundo
+  bot (droplet limpio), el panel (no firma) y el resto de servicios (parados).
+  **Mientras la wallet se comparta, su saldo no sirve para medir la
+  estrategia.**
+- **Nada de esto está validado en real.** Los +0,228 salen de simular sobre el
+  máximo alcanzado, o sea suponiendo que se vende en cuanto el precio toca el
+  objetivo. Es un techo. Hacen falta ~3 días de operación real para saber
+  cuánto se lo come la ejecución.
