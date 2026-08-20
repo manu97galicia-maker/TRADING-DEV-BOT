@@ -42,7 +42,7 @@ queda ningún filtro puesto a ojo.
 
 ```
 base de la muestra ................  8,1% llegan a 6K   3,1% a 12K
-6+ carteras, 8-15 SOL, MC ≤2.800 .. 20,0% llegan a 6K   7,5% a 12K
+6+ carteras, >=8 SOL, MC <=2.800 .. 20,0% llegan a 6K   7,5% a 12K
 ```
 
 **Lo que separa es cuánta gente distinta compra, no cuánto dinero entra:**
@@ -54,9 +54,24 @@ base de la muestra ................  8,1% llegan a 6K   3,1% a 12K
 12-20           15,0%
 ```
 
-**Y más SOL no es mejor.** De 8 a 15 rinde un 10,8%; por encima de 15 baja al
-9,1% y solo el 1,8% llega a 12K. Eso ya no es demanda, es bundle. Por eso hay
-techo de volumen y no solo suelo.
+**El techo de volumen se quitó el 20-ago, y esto corrige una medida anterior.**
+Sobre *todas* las monedas, más de 15 SOL rinde peor (9,1% frente a 10,8%): SOL
+de golpe suele ser bundle. Pero esa medida no estaba condicionada.
+
+Exigiendo ya 6 carteras distintas **y** market cap bajo 2.800, el volumen alto
+deja de ser bundle — 20 SOL repartidos entre seis compradores con el precio aún
+por debajo de 2.800 es demanda real que todavía no ha movido el market cap:
+
+```
+con techo de 15 ... 40 casos, 45,0% aciertan, +0,2280, 1,94 ops/h
+sin techo ......... 71 casos, 43,7% aciertan, +0,2168, 3,20 ops/h
+```
+
+El tramo que se tiraba (>15 SOL) son 31 monedas de las que el **41,9%** llegaba
+al +75%. Se pierden 1,3 puntos de acierto y el SOL por hora sube un **69%**.
+
+**El suelo de carteras sí importa**: bajar de 6 a 5 hunde el acierto al 34,7%
+(+0,1411). Sobraba el techo de volumen, no el suelo de carteras.
 
 **El 18% de la curva no era la señal**: pasarlo en 5 segundos da 9,3% frente al
 6,7% de no pasarlo. Existe, pero es ruido al lado de lo anterior.
