@@ -83,24 +83,30 @@ trade:
   # El escalon de 9.800 va por MARKET CAP y solo se activa cuando los dos de
   # porcentaje ya se han cobrado (universal_trader.py:3667).
   # El 15% que queda no se vende nunca.
-  take_profit_percentage: 0.50
-  take_profit_sell_percentage: 0.50
-  tp2_gain: 0
-  tp2_sell: 0
-  tp3_gain: 0
-  tp3_sell: 0
-  # Escalera de salida (18-ago). Las fracciones de `sell` van sobre la compra
-  # ORIGINAL, no sobre lo que queda. El +50% se cobra primero y sube el suelo
-  # al precio de compra; los escalones de market cap solo se arman despues.
-  #   +50%      vende 50%     -> lo que queda ya no puede acabar en perdida
-  #   6.800 $   vende 35%
-  #   18.000 $  vende 7,5%    (la mitad del moonbag)
-  #   34.000 $  vende 3,75%   (la mitad de lo que quedaba)
-  #   3,75% se queda dentro para siempre
-  mc_take_profit_tiers:
-    - {target_mc: 6800, sell: 0.35}
-    - {target_mc: 18000, sell: 0.075}
-    - {target_mc: 34000, sell: 0.0375}
+  take_profit_percentage: 0.75
+  take_profit_sell_percentage: 1.0
+  # SALIDA: UN SOLO OBJETIVO, +75%, Y SE VENDE ENTERA.
+  #
+  # Medido sobre la muestra del 20-ago (40 monedas del grupo filtrado, y
+  # comprobado tambien en grupos de 156 y 283 con filtros mas flojos):
+  #
+  #     vende todo a x1,50 ... +0,145 por cada 1 SOL
+  #     vende todo a x1,75 ... +0,228     <- el mejor en las tres muestras
+  #     vende todo a x2,00 ... +0,177
+  #     la escalera anterior . +0,159
+  #
+  # NO ES UN PICO DE SUERTE. Los vecinos (1,70 / 1,80 / 1,85) dan entre +0,196
+  # y +0,228: es una meseta. Remuestreando 1.000 veces sale positivo el 100%
+  # de las veces, con el 90% de los casos entre +0,102 y +0,333.
+  #
+  # Se descartaron x3 y x4, que en la media salian mejor (+0,216 y +0,236) pero
+  # PIERDEN dinero en la primera mitad de la muestra: todo su resultado venia
+  # de una sola moneda que hizo x14,4.
+  #
+  # Y EL MOONBAG RESTABA: vender el 100% da +0,228, el 80% da +0,161 y el 50%
+  # da +0,059. Lo que queda dentro casi nunca sigue subiendo -- vuelve al
+  # precio de compra y sale por el suelo del trinquete.
+  mc_take_profit_tiers: []
 
   # SIN STOP LOSS, como pediste. El 0 significa "sin suelo" en la ruta de
   # dinero real (`sl_price = entry*(1-pct) if pct else None`).
