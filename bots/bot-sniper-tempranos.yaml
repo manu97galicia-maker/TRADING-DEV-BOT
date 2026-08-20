@@ -1,0 +1,113 @@
+# TEMPRANOS - copia a las carteras que entran primero en las monedas que se
+# disparan.
+#
+# La idea: de las monedas que llegan a 12.000 $ de market cap en menos de dos
+# minutos, mirar quien compro primero. Una cartera que aparece en UNA de esas
+# monedas tuvo suerte; la que aparece en varias distintas sabe algo. Esas son
+# las que van en `wallets`.
+#
+# La lista sale de /tmp/pipeline.py y se guarda en carteras_tempranas.json.
+# Solo entran las que se repiten: con una sola aparicion no se distingue del
+# azar (el 1,6% de las monedas llega a 12K, asi que acertar una vez es lo
+# normal).
+name: "TEMPRANOS - copia a las 6 primeras carteras de las que se disparan"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: true
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.06
+  mayhem_buy_amount: 0.06
+  nombre_estrategia: "tempranos"
+  max_posiciones: 2
+  max_perdidas_seguidas: 0
+  # El bote es comun a todos los bots: la compra sube un 35% por cada SOL
+  # ganado de verdad.
+  escala_por_sol_ganado: 0.35
+
+  buy_slippage: 0.12
+  sell_slippage: 0.25
+  exit_strategy: "tp_sl"
+
+  # SALIDA: 50% al +50%, y despues un quinto de la compra original en cada
+  # escalon, cada uno un 35% POR ENCIMA DEL ANTERIOR (no de la entrada):
+  #   +50%      1,500 x entrada   vende 50%
+  #   +102,5%   2,025 x entrada   vende 20%   (1,500 x 1,35)
+  #   +173,4%   2,734 x entrada   vende 20%   (2,025 x 1,35)
+  #   queda un 10% corriendo
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 0.50
+  tp2_gain: 1.025
+  tp2_sell: 0.20
+  tp3_gain: 1.734
+  tp3_sell: 0.20
+  mc_take_profit_tiers: []
+
+  # Al cobrar el primer escalon el suelo sube al precio de compra: lo que
+  # queda dentro ya no puede acabar en perdida.
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: true
+  stop_loss_percentage: 0.80
+  trailing_stop_percentage: 0
+
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+  venta_muerta_seg: 120
+  venta_muerta_gain: 0.0
+  venta_sin_volumen_seg: 180
+  max_hold_time: 3600
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.03
+  max_real_buys: 6
+
+compute_units:
+  buy: 140000
+  sell: 120000
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 20_000_000
+  extra_percentage: 0.0
+  hard_cap: 20_000_000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 120
+  max_buy_age: 3
+  match_string: null
+  ignorar_listas_de_devs: true
+
+  # EL TECHO DE ENTRADA ES LO QUE PROTEGE. Toda moneda nace en 2.097 $, asi que
+  # comprando por debajo de 3.400 la caida maxima si muere es del 38%. Copiar
+  # sin techo seria copiar tambien sus entradas malas.
+  max_entry_mc: 3400
+  min_entry_mc: 0
+
+  min_volumen_sol: 0
+  max_volumen_sol: 0
+  min_titulares: 0
+  min_presion_ratio: 0
+  presion_seg: 0
+
+  pumpfun_dev:
+    enabled: false
+
+  copy_wallets:
+    enabled: true
+    poll_interval: 2.0
+    # `follow_funded` compra tambien lo que compran las carteras que ESTAS
+    # financian. Apagado: aqui interesan estas carteras concretas, no su arbol.
+    follow_funded: false
+    wallets: []

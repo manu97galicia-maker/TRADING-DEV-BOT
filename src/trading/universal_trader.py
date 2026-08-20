@@ -287,6 +287,7 @@ class UniversalTrader:
         # MONEDA MUERTA: a los N segundos, si no sube al menos `venta_muerta_gain`,
         # se vende entera. 0 = desactivado.
         venta_muerta_seg: float = 0.0,
+        venta_bajo_entrada_seg: float = 0.0,
         venta_muerta_gain: float = 0.0,
         # Tiered take-profit ladder (tier 1 = take_profit_percentage +
         # take_profit_sell_percentage; tiers 2/3 below). gain is fraction
@@ -656,6 +657,9 @@ class UniversalTrader:
         self.stop_loss_percentage = stop_loss_percentage
         self.max_hold_time = max_hold_time
         self.venta_muerta_seg = float(venta_muerta_seg or 0)
+        #: Segundos seguidos por debajo del precio de compra tras los cuales
+        #: se vende la posicion ENTERA, moonbag incluido. 0 lo desactiva.
+        self.venta_bajo_entrada_seg = float(venta_bajo_entrada_seg or 0)
         self.venta_muerta_gain = float(venta_muerta_gain or 0)
         self.price_check_interval = price_check_interval
         # Build the take-profit ladder. Tier 1 sells take_profit_sell_percentage
@@ -3641,6 +3645,7 @@ class UniversalTrader:
         last_price = entry_price
         _muerta_revisada = False
         _sin_precio = 0  # lecturas seguidas sin precio (ver MAX_SIN_PRECIO)
+        _bajo_desde = None  # desde cuando esta por debajo de la compra
 
         while remaining > 1e-9:
             if (monotonic() - start) >= abandon_after:
@@ -3874,6 +3879,40 @@ class UniversalTrader:
                 # Stop loss: vende hasta el MOONBAG (deja el 20% para venta manual),
                 # priced at the LIVE price. El moonbag NUNCA se auto-vende, ni en
                 # stop-loss: se registra para avisar por Telegram y lo vende el usuario.
+                # MAS DE UN MINUTO POR DEBAJO DE LA COMPRA -> FUERA ENTERA.
+                # El suelo estructural son 2.097 $ y la entrada esta en 2.800:
+                # una moneda que al minuto sigue por debajo de lo que pagamos
+                # no ha encontrado comprador, y lo unico que queda por delante
+                # es la caida hasta ese suelo. El stop del 80% esta tan abajo
+                # que no la saca; esto si. Se lleva TAMBIEN el moonbag: dejar
+                # un resto corriendo en una moneda que nadie quiere es como se
+                # acumularon las bolsas huerfanas.
+                if self.venta_bajo_entrada_seg and remaining > 1e-9:
+                    if price < entry_price:
+                        if _bajo_desde is None:
+                            _bajo_desde = monotonic()
+                        elif (monotonic() - _bajo_desde) >= self.venta_bajo_entrada_seg:
+                            logger.warning(
+                                "%s: %ds seguidos por debajo del precio de compra "
+                                "(%.10f < %.10f). Se vende ENTERA, moonbag incluido.",
+                                token_info.symbol,
+                                int(self.venta_bajo_entrada_seg), price, entry_price,
+                            )
+                            if await self._sell_amount(
+                                token_info, remaining, price, "bajo_entrada"
+                            ):
+                                realized_sol += self._ultimo_cobro
+                                remaining = 0.0
+                                fully_exited = True
+                                break
+                            # Si no se pudo vender se reintenta a la vuelta
+                            # siguiente en vez de dar la posicion por cerrada.
+                            await asyncio.sleep(self.price_check_interval)
+                            continue
+                    else:
+                        # Vuelve a estar por encima: el contador se reinicia.
+                        _bajo_desde = None
+
                 if sl_price is not None and price <= sl_price:
                     hit_sl = True  # rug si no hubo TP antes
                     # Con `vender_todo_en_stop` el stop se lleva la posicion

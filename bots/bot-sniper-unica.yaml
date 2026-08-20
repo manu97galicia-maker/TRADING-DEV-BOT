@@ -1,3 +1,31 @@
+# UNICA - la unica estrategia viva.
+#
+# Sustituye a DEFINITIVA, ELITE y RAPIDA, que hacian lo mismo con umbrales de
+# creador distintos y se pisaban entre ellas comprando la misma moneda.
+#
+# LA ENTRADA SALE DE UNA MEDIDA, no de una corazonada. El 20-ago se cruzaron
+# 1.016 monedas (lectura del bot en los 5 primeros segundos) con su maximo
+# real segun pump.fun:
+#
+#   base de la muestra ................  8,1% llegan a 6K   3,1% a 12K
+#   6+ carteras, 8-15 SOL, MC <=2.800 .. 20,0% llegan a 6K   7,5% a 12K
+#
+#   Eso es 2,48 veces mejor que no filtrar.
+#
+# LO QUE SEPARA ES CUANTA GENTE DISTINTA COMPRA, no cuanto dinero entra:
+#
+#   0-5 carteras   5,8% llegan a 6K
+#   5-8            8,3%
+#   8-12          12,2%
+#   12-20         15,0%
+#
+# Y MAS SOL NO ES MEJOR. De 8 a 15 SOL en cinco segundos rinde un 10,8%; por
+# encima de 15 baja al 9,1% y solo el 1,8% llega a 12K. Eso ya no es demanda,
+# es bundle. Por eso hay techo de volumen y no solo suelo.
+#
+# EL 18% DE LA CURVA NO ERA LA SENAL: pasarlo en 5 segundos da 9,3% frente al
+# 6,7% de no pasarlo. Existe, pero es ruido al lado de lo de arriba.
+#
 # =============================================================================
 #  VOL4K  ·  recien nacidas  ·  volumen  ·  dev que migra 10%+  ·  0,35 SOL
 #  Salida 55% al +40% · 20% al +100% · 10% al x3 · 15% moonbag · SIN STOP
@@ -7,7 +35,7 @@
 # hasta ahora iban por separado: que la moneda acabe de nacer, que ya se este
 # moviendo dinero de verdad en ella, y que el creador tenga historial.
 
-name: "DEFINITIVA - dev 5%+, 4 compras y 400 $ de volumen, 0,25 SOL (0,30 si el dev migra 20%+)"
+name: "UNICA - 6+ carteras, 8-15 SOL, MC <=2.800; +50% vende la mitad"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -25,11 +53,12 @@ trade:
   # `dev_elite` (que ya existia) NO servia para esto: cambia el TP y el stop,
   # no cuanto se pone. `buy_amount_dev_top` se anadio al motor el 16-ago.
   buy_amount: 0.15
+  nombre_estrategia: \"unica\"
   # La compra crece un 35% por cada SOL ganado de VERDAD. El bote es comun a
   # los tres bots (comparten wallet) y solo cuenta P&L leido de la cadena.
   #   +1 SOL ganado -> 0,203 por compra | +5 SOL -> 0,413
   escala_por_sol_ganado: 0.35
-  max_real_buys: 3
+  max_real_buys: 6
   # 0,50, no 0,30: con la base en 0,40, dejarlo en 0,30 seria apostar MENOS
   # por el creador bueno que por el normal. Si lo quieres en 0,30 igualmente,
   # es esta linea.
@@ -39,7 +68,7 @@ trade:
 
   # Dos posiciones = 0,70 SOL de los 1,53 que hay. Sin esta linea el codigo usa
   # 20 por defecto, que serian 7 SOL.
-  max_posiciones: 1
+  max_posiciones: 2
   mayhem_max_perdidas: 0
 
   # Slippage alto en la compra: en una moneda que se esta moviendo, un margen
@@ -95,6 +124,12 @@ trade:
   # 1) PARADA POR DEBAJO DE LA COMPRA a los 2 minutos -> fuera. Mira el PRECIO,
   #    una sola vez, al cumplirse el plazo.
   venta_muerta_seg: 120
+  # MAS DE UN MINUTO POR DEBAJO DE LA COMPRA -> FUERA ENTERA, moonbag
+  # incluido. El suelo estructural son 2.097 $ y se entra en 2.800: una
+  # moneda que al minuto sigue por debajo de lo pagado no ha encontrado
+  # comprador, y lo unico que queda por delante es la caida al suelo. El
+  # stop del 80% esta demasiado abajo para sacarla; esto si.
+  venta_bajo_entrada_seg: 60
   venta_muerta_gain: 0.0
   # 2) SIN VOLUMEN 2 minutos seguidos -> fuera. Mira el VOLUMEN, de forma
   #    continua. Da igual que el precio siga alto: si nadie negocia, ese precio
@@ -139,7 +174,7 @@ priority_fees:
 retries:
   # DOS INTENTOS, no tres. Cada intento que aterriza y falla paga su comision;
   # el tercero casi nunca salva la operacion y si suma coste.
-  max_attempts: 2
+  max_attempts: 1
   wait_after_creation: 0
   wait_after_buy: 0
 
@@ -180,7 +215,7 @@ filters:
     min_migrations: 1
 
   # VOLUMEN MINIMO 300 $ = 3,99 SOL (a 75,18 $/SOL).
-  min_volumen_sol: 3.0
+  min_volumen_sol: 8.0
 
   # SIN FRANJA HORARIA: opera las 24 horas. El {inicio:18, fin:4} venia
   # heredado de cuando esta estrategia se llamaba NOCHE, y estaba descartando
@@ -211,7 +246,7 @@ filters:
   max_entry_mc_dev_top: 0
   min_curve_sol: 0
 
-  max_volumen_sol: 0
+  max_volumen_sol: 15.0
   min_vol_ventana_sol: 0
   # Sin minimo de compras: la condicion de arranque es el volumen. Estuvo en 4
   # y era el mayor cuello del embudo -- de 38 monedas descartadas, solo 1 llego
@@ -228,7 +263,7 @@ filters:
   min_presion_ratio: 1.0
   presion_seg: 3.0
   min_buys: 0
-  min_titulares: 4
+  min_titulares: 6
   redes_originales: false
   min_holders_gmgn: 0
   senal_gmgn: []
