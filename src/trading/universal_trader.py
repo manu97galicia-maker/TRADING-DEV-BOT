@@ -254,6 +254,12 @@ class UniversalTrader:
     #: bucle de vigilancia reintenta cada segundo. Si no sale en 3, no sale.
     MAX_FALLOS_VENTA = 3
 
+    #: Lecturas seguidas sin precio (ni de la curva ni del DEX) antes de
+    #: soltar la posicion. A un precio cada 3 s son unos 2 minutos. Con el
+    #: bucle infinito de antes, BECKY tuvo a RAPIDA hora y media sin poder
+    #: comprar nada porque solo admite una posicion a la vez.
+    MAX_SIN_PRECIO = 40
+
     def __init__(
         self,
         rpc_endpoint: str,
@@ -1006,6 +1012,8 @@ class UniversalTrader:
         #: las monedas compradas en la vida del bot -- con 115 dentro, un tope
         #: de 3 bloqueaba antes de empezar ("Limite alcanzado: 115/3").
         self._compras_de_la_tanda: int = 0
+        #: mint -> (momento, precio en SOL) del DEX. Ver `_precio_dex`.
+        self._precio_dex_cache: dict[str, tuple[float, float | None]] = {}
         # Moonbags retenidos (no se auto-venden): el avisador manda un aviso a
         # Telegram cada 5 min mientras sigan en la wallet, para venderlos a mano.
         self._moonbags_path = Path(f"moonbags{_sfx}.json")
@@ -3632,6 +3640,7 @@ class UniversalTrader:
         cost_sol = original_qty * entry_price
         last_price = entry_price
         _muerta_revisada = False
+        _sin_precio = 0  # lecturas seguidas sin precio (ver MAX_SIN_PRECIO)
 
         while remaining > 1e-9:
             if (monotonic() - start) >= abandon_after:
@@ -3652,7 +3661,41 @@ class UniversalTrader:
                     pass
                 break
             try:
-                price = await curve_manager.calculate_price(pool_address)
+                try:
+                    price = await curve_manager.calculate_price(pool_address)
+                    _sin_precio = 0
+                except Exception:
+                    # La curva ya no se puede leer: casi siempre porque la
+                    # moneda migro. Se pregunta al DEX antes de darse por
+                    # vencido, que es donde vive el precio a partir de ahi.
+                    price = await self._precio_dex(str(token_info.mint))
+                    if price is None:
+                        _sin_precio += 1
+                        if _sin_precio == 1 or _sin_precio % 20 == 0:
+                            logger.warning(
+                                "%s: sin precio ni en la curva ni en el DEX "
+                                "(%d seguidos)", token_info.symbol, _sin_precio,
+                            )
+                        if _sin_precio >= self.MAX_SIN_PRECIO:
+                            logger.error(
+                                "ABANDONO %s: %d lecturas seguidas sin precio. "
+                                "Se suelta el hueco para que el bot siga "
+                                "comprando; la bolsa queda en la wallet.",
+                                token_info.symbol, _sin_precio,
+                            )
+                            self._record_moonbag(
+                                token_info, remaining, entry_price, pool_address
+                            )
+                            break
+                        await asyncio.sleep(self.price_check_interval)
+                        continue
+                    if _sin_precio == 0:
+                        logger.info(
+                            "%s: la curva ya no sirve (migro); sigo con el "
+                            "precio del DEX: %.10f SOL",
+                            token_info.symbol, price,
+                        )
+                    _sin_precio = 0
 
                 # The final remainder has an absolute market-cap target.  It is
                 # only armed after every percentage TP has executed.
@@ -4516,6 +4559,57 @@ class UniversalTrader:
             logger.info(f"Moonbag {token_info.symbol} registrado (avisos Telegram cada 5 min)")
         except Exception:  # noqa: BLE001 - registrar el moonbag nunca debe romper
             logger.debug("no pude registrar moonbag", exc_info=True)
+
+    async def _precio_dex(self, mint: str) -> float | None:
+        """Precio en SOL segun el DEX. Para cuando la curva ya no sirve.
+
+        Cuando una moneda migra, la curva se vacia
+        (`virtual_token_reserves: 0`) y `calculate_price` empieza a lanzar. El
+        18-ago BECKY migro con el escalon de 34.000 $ sin cobrar: el monitor se
+        quedo dando vueltas, 16.623 errores en hora y media, sin cerrar la
+        posicion ni soltar el hueco. RAPIDA estuvo esa hora y media sin poder
+        comprar nada porque solo admite una posicion a la vez.
+
+        Migrar no es morir: BECKY tenia 11.427 $ de liquidez real en PumpSwap y
+        203.360 $ de volumen diario. El precio existe, solo que ya no esta en
+        la curva.
+
+        Se cachea unos segundos porque el monitor pregunta el precio cada pocos
+        segundos y DexScreener limita por ratio.
+        """
+        ahora = monotonic()
+        _cache = self._precio_dex_cache.get(mint)
+        if _cache and ahora - _cache[0] < 5.0:
+            return _cache[1]
+        precio = None
+        try:
+            import aiohttp
+
+            url = "https://api.dexscreener.com/latest/dex/tokens/%s" % mint
+            tiempo = aiohttp.ClientTimeout(total=6)
+            async with aiohttp.ClientSession(timeout=tiempo) as ses:
+                async with ses.get(url) as r:
+                    if r.status == 200:
+                        d = await r.json()
+                        mejor = 0.0
+                        for par in (d.get("pairs") or []):
+                            # Solo pares contra SOL: el precio del monitor esta
+                            # en SOL por token, no en dolares.
+                            if (par.get("quoteToken") or {}).get("symbol") != "SOL":
+                                continue
+                            liq = float((par.get("liquidity") or {}).get("usd") or 0)
+                            if liq <= mejor:
+                                continue
+                            try:
+                                p = float(par.get("priceNative") or 0)
+                            except (TypeError, ValueError):
+                                continue
+                            if p > 0:
+                                mejor, precio = liq, p
+        except Exception:  # noqa: BLE001 - sin precio del DEX se sigue sin el
+            precio = None
+        self._precio_dex_cache[mint] = (ahora, precio)
+        return precio
 
     async def _reinicia_tanda_loop(self) -> None:
         """Devuelve el contador de la tanda a cero cuando no queda nada abierto.

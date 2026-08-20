@@ -45,7 +45,7 @@ trade:
   # Slippage alto en la compra: en una moneda que se esta moviendo, un margen
   # corto hace que la transaccion REVIENTE y pagues la comision sin moneda.
   buy_slippage: 0.12
-  sell_slippage: 0.12
+  sell_slippage: 0.25
 
   exit_strategy: "tp_sl"
   # 30% al +50% · 30% en x3 · 25% al tocar 9.800 $ de market cap · 15% moonbag.
@@ -171,7 +171,7 @@ filters:
   # EL CREADOR: 10%+ de sus lanzamientos migrados.
   pumpfun_dev:
     enabled: true
-    min_rate: 0.25
+    min_rate: 0.05
     # Un porcentaje sobre una sola moneda no es historial, es casualidad, y es
     # la firma del farmero que estrena wallet: 1 migracion de 1 lanzamiento da
     # 100%. Ese caso exacto (变狗) costo 0,29 SOL en un rug a los 4 segundos.
