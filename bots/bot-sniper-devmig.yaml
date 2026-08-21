@@ -117,7 +117,12 @@ retries:
 filters:
   listener_type: "logs"
   max_token_age: 20
-  max_buy_age: 5
+  # TRES SEGUNDOS. Las tres unicas ganadoras del 21-ago cumplieron a los 2,3,
+  # 2,4 y 2,5 s. Las que tardan son las que no arrancan: 23 de 28 operaciones
+  # salieron por `bajo_entrada` perdiendo 0,0286 cada una, y el unico rug
+  # cumplio a los 3,8 s. Con el filtro anterior (60 s, config del 20-ago) los
+  # tres rugs de ese dia cumplieron a los 12, 19,5 y 26 s.
+  max_buy_age: 3
   # NO REPETIR NOMBRE EN 10 MINUTOS. El 21-ago se compro USD1 TRES veces y
   # RK-251 dos: mints distintos con el mismo nombre, alguien relanzando la
   # misma moneda. De las tres USD1 una gano y dos perdieron.
