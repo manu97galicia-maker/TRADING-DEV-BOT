@@ -12,29 +12,58 @@ demás (UNICA, RECIEN, PRUEBA3 y otras 30) están paradas y deshabilitadas.
 
 ```
 ENTRADA
-  market cap          ≤ 3.406 $        (se reescala solo con el precio de SOL)
-  volumen             ≥ 8 SOL
-  carteras distintas  ≥ 6
-  edad                ≤ 5 s
-  creador             sin filtro, pero un rug y bloqueado
+  creador             ha migrado el 20% o más de lo que ha lanzado (mín. 1)
+  market cap          ≤ 3.496 $        (se reescala solo con el precio de SOL)
+  volumen             sin exigencia    ← NO se espera confirmación
+  carteras distintas  sin exigencia    ← NO se espera confirmación
+  edad                ≤ 5 s            (sólo anti-rancia, ya no se espera)
   mayhem              no
   plataforma          solo pump.fun
 
 COMPRA
-  tamaño              0,20 SOL
+  tamaño              70% del saldo libre, calculado al comprar
+  suelo               0,03 SOL — por debajo NO compra
   posiciones          1 a la vez
-  reserva             0,05 SOL
-  comisión prioridad  0,02 $
+  reserva             0,02 SOL
+  comisión prioridad  0,07 $
   slippage            12% compra / 25% venta · 1 reintento
 
 SALIDA
-  al +75%             vende el 100%
+  al +35%             vende el 100%
   más de 60 s por debajo del precio de compra → vende entera
   stop-loss           65%
   moonbag             ninguno
 ```
 
----
+### Qué cambió el 21-ago por la noche y por qué
+
+**La decisión se toma al detectar la moneda, no al final.** Antes el historial
+del creador se miraba después de gastar 3 segundos vigilando volumen y
+carteras. Ahora se pregunta primero: lo que no cumple se cae antes de gastar
+una sola llamada RPC, y lo que cumple se compra sin esperar a nadie.
+
+**Se quitó la espera de confirmación** (8 SOL y 6 carteras). Eran entre 1 y 3
+segundos de espera. La apuesta pasa a ser quién lanza, no que el mercado lo
+confirme.
+
+Esto tiene un coste conocido y hay que decirlo: **las 6 carteras eran el
+filtro que más pesaba** — de 0-5 carteras el 5,8% llega a 6K, de 12-20 el
+15,0%, y bajarlo de 6 a 5 hundía el acierto del 43,7% al 34,7%. Se cambia ese
+filtro por el del creador. Si el ≥20% no compensa, esto es lo primero que hay
+que devolver a 8,0 / 6.
+
+**Exigir ≥20% deja pasar el 0,3% del flujo**: 13 monedas de 5.167 evaluaciones.
+Cuenta con horas entre operación y operación. Que no compre no significa que
+esté roto.
+
+**El tamaño sale del saldo**, no de un número fijo: 70% de lo libre, calculado
+en el instante de comprar y dentro del mismo cerrojo que lo reserva. Sube solo
+cuando sube la wallet.
+
+**Y hay un suelo de 0,03 SOL.** La renta de la cuenta de token son 0,00204 SOL
+y pump.fun cobra un 2,25% por lado: en una compra de 0,02 SOL eso pasa del 15%
+de ida y vuelta, así que la operación nace necesitando un +15% sólo para
+empatar.
 
 ## De dónde sale cada número
 

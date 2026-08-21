@@ -26,7 +26,7 @@
 # EL FILTRO DE CREADOR ESTA APAGADO a proposito: el 85,2% de las monedas con
 # arranque limpio las lanza alguien con CERO migraciones, y los que repiten
 # rinden peor (13,3% frente a 16,4%).
-name: "DEVMIG - 6+ carteras, >=8 SOL, MC <=2.800, +75%"
+name: "DEVMIG - dev >=20% migrado, compra inmediata, 70% del saldo"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -37,6 +37,20 @@ platform: "pump_fun"
 
 trade:
   buy_amount: 0.20
+  # EL 70% DEL SALDO LIBRE, NO UN NUMERO FIJO. Se calcula en el instante de
+  # comprar: si la wallet sube, la compra sube sola sin tocar el yaml. Con
+  # esto `buy_amount` solo se usa si `fraccion_saldo` esta a 0.
+  fraccion_saldo: 0.70
+  # SUELO. Los costes fijos no bajan con el tamano: la renta de la cuenta de
+  # token son 0,00204 SOL y las comisiones de pump.fun un 2,25% por lado. En
+  # una compra de 0,02 SOL eso es mas del 15% de ida y vuelta, asi que la
+  # operacion nace necesitando un +15% solo para empatar. Por debajo de 0,03
+  # el bot avisa y NO compra.
+  #
+  # ESTO ES LO QUE HA ESTADO MOLIENDO LA WALLET. La cadena tiene compras de
+  # 0,014 / 0,019 / 0,026 / 0,031 / 0,033 SOL que no salen en ningun log de
+  # este bot: 25 operaciones seguidas para dejarse 0,115 SOL.
+  compra_minima_sol: 0.03
   # UN RUG Y FUERA. Al creador que te deja una perdida grande no se le
   # vuelve a comprar. El bloqueo se guarda en disco y lo comparten todos
   # los bots, asi que sobrevive a los reinicios.
@@ -46,7 +60,7 @@ trade:
   # TRES A LA VEZ. Con una sola, el 21-ago cumplieron 44 monedas en tres horas
   # y solo se compraron 24: el 45% del flujo se perdia porque el bot estaba
   # ocupado. A 0,20 SOL, tres posiciones son 0,60 y caben en el saldo.
-  max_posiciones: 3
+  max_posiciones: 1
   max_real_buys: 6
   max_perdidas_seguidas: 0
   escala_por_sol_ganado: 0
@@ -96,7 +110,9 @@ trade:
   max_hold_time: 3600
   price_check_interval: 1
   extreme_fast_mode: false
-  min_reserve_sol: 0.05
+  # Con el tamano atado al saldo, la reserva solo tiene que cubrir la
+  # comision de las ventas pendientes, no otra compra entera.
+  min_reserve_sol: 0.02
 
 compute_units:
   buy: 140000
@@ -105,9 +121,9 @@ compute_units:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  fixed_amount: 1_904_761
+  fixed_amount: 5_714_283
   extra_percentage: 0.0
-  hard_cap: 1_904_761
+  hard_cap: 5_714_283
 
 retries:
   max_attempts: 1
@@ -122,7 +138,7 @@ filters:
   # salieron por `bajo_entrada` perdiendo 0,0286 cada una, y el unico rug
   # cumplio a los 3,8 s. Con el filtro anterior (60 s, config del 20-ago) los
   # tres rugs de ese dia cumplieron a los 12, 19,5 y 26 s.
-  max_buy_age: 3
+  max_buy_age: 5
   # NO REPETIR NOMBRE EN 10 MINUTOS. El 21-ago se compro USD1 TRES veces y
   # RK-251 dos: mints distintos con el mismo nombre, alguien relanzando la
   # misma moneda. De las tres USD1 una gano y dos perdieron.
@@ -145,13 +161,37 @@ filters:
 
   max_entry_mc: 3406
   min_entry_mc: 0
-  min_volumen_sol: 8.0
+  # A CERO A PROPOSITO: ESTO ES LA VELOCIDAD.
+  #
+  # Exigir 8 SOL y 6 carteras significa ESPERAR entre 1 y 3 segundos a que el
+  # mercado confirme. Comprando por historial del creador no se espera a
+  # nadie: para cuando seis carteras han entrado, el que compro de primero ya
+  # lleva la ventaja que se buscaba.
+  #
+  # LO QUE SE PIERDE, dicho claro: las 6 carteras eran el filtro que mas
+  # pesaba (de 0-5 carteras el 5,8% llega a 6K; de 12-20, el 15,0%), y
+  # bajarlo de 6 a 5 hundia el acierto del 43,7% al 34,7%. Aqui se cambia ese
+  # filtro por el del creador. Si el >=20% no compensa, esto es lo primero
+  # que hay que devolver a 8.0 / 6.
+  min_volumen_sol: 0
   max_volumen_sol: 0
-  min_titulares: 6
+  min_titulares: 0
   min_presion_ratio: 0
   presion_seg: 0
   min_holders: 0
   min_holders_gmgn: 0
 
   pumpfun_dev:
-    enabled: false
+    enabled: true
+    # SOLO CREADORES QUE HAN MIGRADO EL 20% O MAS de lo que han lanzado.
+    # Deja pasar el 0,3% del flujo (13 de 5.167 evaluaciones): cuenta con
+    # HORAS entre operacion y operacion, no es que este roto.
+    min_rate: 0.20
+    min_migrations: 1
+    # La decision se toma al detectar la moneda, no al final. Lo que no
+    # cumple se cae antes de gastar RPC; lo que cumple se compra sin esperar
+    # confirmacion de mercado.
+    compra_inmediata: true
+    # Si la API de pump.fun no contesta en 2 s, no se compra. Sin el dato del
+    # creador esta estrategia no tiene filtro ninguno.
+    timeout_seg: 2.0

@@ -490,6 +490,16 @@ class UniversalTrader:
         # Techo absoluto de gasto por compra, en SOL, por encima de cualquier
         # otra via. Ver el comentario del TOPE DURO mas abajo.
         tope_compra_sol: float = 0.0,
+        # TAMANO COMO FRACCION DEL SALDO en vez de un numero fijo. 0,70 = se
+        # compra con el 70% de lo que quede libre despues de la reserva. Se
+        # calcula en el momento de comprar y dentro del cerrojo de gasto, asi
+        # que sube solo cuando la wallet sube y no hay que reeditar el yaml.
+        fraccion_saldo: float = 0.0,
+        # Suelo por debajo del cual NO se compra. Las comisiones de pump.fun y
+        # la renta de la cuenta de token son fijas: en una compra de 0,02 SOL
+        # se llevan mas del 15% de ida y vuelta, asi que hace falta un +15%
+        # solo para no perder. Comprar por debajo de esto es moler el saldo.
+        compra_minima_sol: float = 0.0,
         escala_por_sol_ganado: float = 0.0,
         reiniciar_tanda: bool = True,
         # FRANJA HORARIA en la que se opera, hora de España. Fuera de ella el
@@ -924,6 +934,10 @@ class UniversalTrader:
         # Maximo absoluto por compra, en SOL. 0 = sin tope. Se lee del YAML
         # como `tope_compra_sol`.
         self.tope_compra_sol = float(tope_compra_sol or 0)
+        #: Fraccion del saldo libre con la que se compra. 0 = tamano fijo.
+        self.fraccion_saldo = max(0.0, min(1.0, float(fraccion_saldo or 0)))
+        #: Suelo de compra en SOL. Por debajo se avisa y no se compra.
+        self.compra_minima_sol = float(compra_minima_sol or 0)
         #: Cuanto crece la compra por cada SOL ganado de verdad. Con 0.35 y una
         #: base de 0,15 SOL: +1 SOL ganado -> 0,203 por compra; +5 -> 0,413.
         self.escala_por_sol_ganado = float(escala_por_sol_ganado or 0)
@@ -2184,13 +2198,26 @@ class UniversalTrader:
                     _redes.leer(token_info.uri, self.redes_timeout)
                 )
 
-            # El historial del creador, igual: se pide AQUI aunque no se mire
-            # hasta el final. La comprobacion vive mas abajo, despues de la
-            # edad maxima, asi que si se pidiera alli sumaria su tiempo a los 3
-            # segundos y la moneda se caeria por vieja. Pidiendola ahora, para
-            # cuando toca decidir ya esta en la cache y no cuesta nada. La
-            # respuesta se cachea 10 min por creador, asi que un dev que
-            # relanza no se vuelve a consultar.
+            # EL HISTORIAL DEL CREADOR, LO PRIMERO DE TODO.
+            #
+            # Con `compra_inmediata` la decision se toma AQUI, nada mas ver la
+            # moneda, y no al final. Dos motivos:
+            #
+            # 1. LO QUE NO PASA EL FILTRO SE CAE YA. Exigiendo >=20% se cae el
+            #    99,7% del flujo (13 de 5.167 evaluaciones). Antes ese 99,7%
+            #    se llevaba por delante 3 segundos de vigilancia y una lectura
+            #    de curva por RPC cada una. En un servidor de 1 vCPU ese
+            #    trabajo tirado es latencia real para la que SI cumple.
+            # 2. LA QUE PASA SE COMPRA SIN ESPERAR CONFIRMACION. La apuesta es
+            #    el historial de quien lanza, no que el mercado lo confirme:
+            #    cuando ya han entrado 6 carteras, el que compro primero lleva
+            #    ventaja. Quitar esa espera es el segundo entre comprar de
+            #    primero o de decimo -- y es gratis, no cuesta comision.
+            #
+            # El suelo de latencia es la llamada a la API de pump.fun: 200-400
+            # ms la primera vez por creador y 0 los siguientes 10 minutos. No
+            # se puede bajar sin renunciar a saber quien lanza.
+            _dev_ya = None
             if self.pumpfun_dev.get("enabled"):
                 _dev0 = getattr(token_info, "creator", None) or getattr(
                     token_info, "user", None
@@ -2198,7 +2225,46 @@ class UniversalTrader:
                 if _dev0:
                     from monitoring.pumpfun_dev import creator_migration_stats
 
-                    asyncio.ensure_future(creator_migration_stats(str(_dev0)))
+                    if self.pumpfun_dev.get("compra_inmediata") and not (
+                        self._es_marcado(token_info)
+                    ):
+                        _tope_api = float(
+                            self.pumpfun_dev.get("timeout_seg", 2.0) or 2.0
+                        )
+                        try:
+                            _l, _m, _r = await asyncio.wait_for(
+                                creator_migration_stats(str(_dev0)), timeout=_tope_api
+                            )
+                        except (TimeoutError, asyncio.TimeoutError):
+                            # Sin el dato NO se compra. Comprar a ciegas aqui
+                            # es comprar cualquier moneda, que es justo lo que
+                            # este filtro existe para evitar.
+                            logger.info(
+                                f"Evitado {token_info.symbol}: la API del creador "
+                                f"no contesto en {_tope_api:.1f}s"
+                            )
+                            return
+                        _min_m = int(self.pumpfun_dev.get("min_migrations", 2))
+                        _min_r = float(self.pumpfun_dev.get("min_rate", 0.24))
+                        if _m < _min_m or _r < _min_r:
+                            logger.info(
+                                f"DEV filtro BLOCK {token_info.symbol}: "
+                                f"{_m} migr / {_l} lanz ({_r * 100:.0f}%) "
+                                f"< {_min_m} y {int(_min_r * 100)}%"
+                            )
+                            return
+                        _dev_ya = (_m, _l, _r)
+                        self._tasa_dev[str(token_info.mint)] = _r
+                        logger.info(
+                            f"DEV OK {token_info.symbol}: {_m} migraciones de {_l} "
+                            f"lanzamientos ({_r * 100:.0f}%) -> compra inmediata, "
+                            f"sin esperar confirmacion del mercado"
+                        )
+                    else:
+                        # Sin compra inmediata basta con dejarla pedida: la
+                        # comprobacion de mas abajo se engancha a esta misma
+                        # llamada y no vuelve a pagar la latencia.
+                        asyncio.ensure_future(creator_migration_stats(str(_dev0)))
 
             if self.max_buy_age > 0 and (
                 self.min_volumen_sol > 0
@@ -2750,7 +2816,14 @@ class UniversalTrader:
                         return
                     from monitoring.pumpfun_dev import creator_migration_stats
 
-                    launches, migs, rate = await creator_migration_stats(str(creator))
+                    if _dev_ya is not None:
+                        # Ya se comprobo al detectarla y paso. Repetirlo aqui
+                        # solo anade un await mas al camino critico.
+                        migs, launches, rate = _dev_ya
+                    else:
+                        launches, migs, rate = await creator_migration_stats(
+                            str(creator)
+                        )
                     min_migs = int(self.pumpfun_dev.get("min_migrations", 2))
                     min_rate = float(self.pumpfun_dev.get("min_rate", 0.24))
                     if migs < min_migs or rate < min_rate:
@@ -2991,6 +3064,38 @@ class UniversalTrader:
                     bal = await self.solana_client.get_sol_balance(self.wallet.pubkey)
                     # Nunca gastar por debajo de la reserva mínima (min_reserve).
                     free = bal - self._reserved_lamports - self.min_reserve_lamports
+                    # EL TAMANO SALE DEL SALDO. Se calcula aqui dentro, con el
+                    # saldo recien leido y bajo el mismo cerrojo que lo reserva:
+                    # calculado fuera, dos compras a la vez pedirian cada una el
+                    # 70% del mismo saldo y sumarian el 140%.
+                    if self.fraccion_saldo > 0:
+                        _importe = max(
+                            0.0, free / LAMPORTS_PER_SOL * self.fraccion_saldo
+                        )
+                        if _tope > 0 and _importe > _tope:
+                            _importe = _tope
+                        need = int(
+                            _importe * (1 + self.buy_slippage) * LAMPORTS_PER_SOL
+                        ) + self._fee_headroom_lamports
+                        logger.info(
+                            "SALDO: %.4f SOL libres -> compra de %.4f (%.0f%%)",
+                            free / LAMPORTS_PER_SOL,
+                            _importe,
+                            self.fraccion_saldo * 100,
+                        )
+                    # SUELO DE COMPRA. Los costes fijos --renta de la cuenta de
+                    # token y comision de prioridad-- no bajan con el tamano:
+                    # por debajo de este suelo se van en comisiones y la
+                    # operacion nace perdiendo.
+                    if self.compra_minima_sol > 0 and _importe < self.compra_minima_sol:
+                        logger.warning(
+                            "Compra de %s omitida: saldrian %.4f SOL y el minimo "
+                            "que compensa es %.4f (por debajo mandan las "
+                            "comisiones fijas). Recarga la wallet.",
+                            token_info.symbol, _importe, self.compra_minima_sol,
+                        )
+                        _suelta_moneda(_mint_str)
+                        return
                     if free < need:
                         logger.warning(
                             f"Compra de {token_info.symbol} omitida: SOL insuficiente "

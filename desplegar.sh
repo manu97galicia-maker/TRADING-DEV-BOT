@@ -21,7 +21,7 @@ set -u
 SERVIDOR="root@159.89.19.12"
 CLAVE="$HOME/.ssh/id_droplet_bot"
 REMOTO="/root/ai-bot"
-SERVICIO="unica"
+SERVICIO="devmig"
 ESPERA_MAX=900   # 15 minutos
 
 cd "$(dirname "$0")" || exit 1
