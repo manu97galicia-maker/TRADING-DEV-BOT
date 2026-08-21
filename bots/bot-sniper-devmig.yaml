@@ -1,0 +1,129 @@
+# DEVMIG - la unica estrategia viva.
+#
+# ENTRADA, SALIDA Y TAMANO SALEN DE MEDIR, no de intuicion.
+#
+# Comprobado sobre las ULTIMAS 24 HORAS reales (31 operaciones que el filtro
+# habria hecho, cruzadas con el maximo real de cada moneda en pump.fun):
+#
+#     acertaron el +75% ... 32,3%   (el backtest largo decia 43,7%: la
+#                                    simulacion es optimista, contar con menos)
+#     ritmo ............... 1,29 operaciones por hora
+#     a 0,10 SOL .......... +0,4455 SOL en el dia
+#
+# LA COMISION DE PRIORIDAD ES LO QUE MAS PESA A ESTE TAMANO. Con 1,02 $ el
+# mismo dia habria dado -0,3221 SOL en vez de +0,4455: la comision es fija y
+# sobre una posicion de 0,10 SOL se lleva el 25% de ida y vuelta. Por eso
+# esta en 0,02 $, aunque eso signifique renunciar a entrar de primero.
+#
+# POR QUE ESTE TAMANO Y NO MAS. Con 0,619 SOL de saldo, 0,10 por posicion deja
+# margen para la peor racha vista al simular 2.000 dias. A 0,30 harian falta
+# 1,49 SOL y a 0,50, 2,54.
+#
+# POR QUE 6 CARTERAS. Lo que separa a las que se disparan es cuanta gente
+# distinta compra, no cuanto dinero entra: de 0-5 carteras el 5,8% llega a 6K,
+# de 12-20 el 15,0%. Bajar de 6 a 5 hunde el acierto.
+#
+# EL FILTRO DE CREADOR ESTA APAGADO a proposito: el 85,2% de las monedas con
+# arranque limpio las lanza alguien con CERO migraciones, y los que repiten
+# rinden peor (13,3% frente a 16,4%).
+name: "DEVMIG - 6+ carteras, >=8 SOL, MC <=2.800, +75%"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: true
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.20
+  # UN RUG Y FUERA. Al creador que te deja una perdida grande no se le
+  # vuelve a comprar. El bloqueo se guarda en disco y lo comparten todos
+  # los bots, asi que sobrevive a los reinicios.
+  rugs_para_bloquear: 1
+  mayhem_buy_amount: 0.20
+  nombre_estrategia: "devmig"
+  max_posiciones: 1
+  max_real_buys: 6
+  max_perdidas_seguidas: 0
+  escala_por_sol_ganado: 0
+
+  buy_slippage: 0.12
+  sell_slippage: 0.25
+  exit_strategy: "tp_sl"
+
+  take_profit_percentage: 0.75
+  take_profit_sell_percentage: 1.0
+  mc_take_profit_tiers: []
+
+  # EL TRINQUETE: TP1 -> el suelo sube al precio de compra; TP2 -> sube al TP1;
+  # TP3 -> al TP2, y asi.
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: true
+  stop_loss_percentage: 0.65
+  trailing_stop_percentage: 0
+
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+  # Mas de un minuto por debajo de la compra -> fuera entera. El suelo
+  # estructural son 2.097 $ y se entra en 2.800: la que al minuto sigue por
+  # debajo no ha encontrado comprador y solo le queda caer. El stop del 65%
+  # esta demasiado abajo para sacarla.
+  venta_bajo_entrada_seg: 60
+  venta_muerta_seg: 120
+  venta_muerta_gain: 0.0
+  venta_sin_volumen_seg: 180
+  max_hold_time: 3600
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.05
+
+compute_units:
+  buy: 140000
+  sell: 120000
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 1_904_761
+  extra_percentage: 0.0
+  hard_cap: 1_904_761
+
+retries:
+  max_attempts: 1
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 20
+  max_buy_age: 5
+  match_string: null
+  # A false A PROPOSITO: en true no se mira NINGUNA lista de creadores, ni la
+  # manual ni el auto-baneo por rugs. Con el auto-baneo activado tiene que
+  # estar en false o el bloqueo no se aplica nunca.
+  ignorar_listas_de_devs: false
+  allow_mayhem: false
+  # SIN ESTO EL BOT PROCESA UNA MONEDA Y SE PARA PARA SIEMPRE.
+  # El 21-ago DEVMIG estuvo mas de dos horas viendo 2.349 monedas y
+  # evaluando CERO: se quedo esperando a la primera que encontro. El log
+  # lo dice ("Running in single token mode") pero el servicio sigue en
+  # `active`, asi que por fuera parece que va bien.
+  # OJO: se lee de `filters`, no de `trade`. Puesto en trade no hace nada.
+  marry_mode: false
+  yolo_mode: true
+  require_mayhem: false
+
+  max_entry_mc: 3406
+  min_entry_mc: 0
+  min_volumen_sol: 8.0
+  max_volumen_sol: 0
+  min_titulares: 6
+  min_presion_ratio: 0
+  presion_seg: 0
+  min_holders: 0
+  min_holders_gmgn: 0
+
+  pumpfun_dev:
+    enabled: false

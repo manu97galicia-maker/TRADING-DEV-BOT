@@ -105,7 +105,11 @@ def _load_creator_file(path: str) -> set[str]:
 # que se calcularon los `median_peak` de las listas Dune). Da igual el precio
 # real de SOL: la comparación mediana_vs_MC_actual es un RATIO, así que la
 # constante se cancela mientras sea la misma a ambos lados.
-_SOL_USD = 75.0  # actualizado 9-ago; referencia indicada para MC y volumen
+_SOL_USD = 91.24  # actualizado 21-ago. OJO: cambiar esto mueve TODOS los
+#                   filtros de market cap, porque el MC se calcula como
+#                   precio x supply x _SOL_USD. Si se sube, hay que subir los
+#                   techos en la misma proporcion o el filtro se vuelve mas
+#                   estricto sin que nadie lo haya decidido.
 # Supply total estándar de un token pump.fun (1e9 tokens enteros).
 _PUMP_TOTAL_SUPPLY = 1_000_000_000
 
@@ -487,6 +491,7 @@ class UniversalTrader:
         # otra via. Ver el comentario del TOPE DURO mas abajo.
         tope_compra_sol: float = 0.0,
         escala_por_sol_ganado: float = 0.0,
+        reiniciar_tanda: bool = True,
         # FRANJA HORARIA en la que se opera, hora de España. Fuera de ella el
         # bot sigue mirando el flujo pero no compra. {inicio: 18, fin: 2} son
         # las seis de la tarde a las dos de la madrugada -- cruza medianoche, y
@@ -922,6 +927,10 @@ class UniversalTrader:
         #: Cuanto crece la compra por cada SOL ganado de verdad. Con 0.35 y una
         #: base de 0,15 SOL: +1 SOL ganado -> 0,203 por compra; +5 -> 0,413.
         self.escala_por_sol_ganado = float(escala_por_sol_ganado or 0)
+        #: Si la tanda se vuelve a abrir al quedarse sin posiciones. Con
+        #: False, `max_real_buys` es un tope de por vida: sirve para pruebas
+        #: acotadas ("haz N operaciones y para") sin tener que vigilarlas.
+        self.reiniciar_tanda = bool(reiniciar_tanda)
         self._bote = Ganancia() if self.escala_por_sol_ganado > 0 else None
         self.horario = horario or {}
         self.dev_elite = dev_elite or {}
@@ -1054,6 +1063,7 @@ class UniversalTrader:
         # retenidos para venderlos a mano (nunca los vende el bot).
         asyncio.create_task(self._moonbag_notifier_loop())  # noqa: RUF006
         asyncio.create_task(self._reinicia_tanda_loop())  # noqa: RUF006
+        asyncio.create_task(self._precio_sol_loop())  # noqa: RUF006
         if self.senal_gmgn:
             from monitoring.senales import refrescar
 
@@ -4650,6 +4660,68 @@ class UniversalTrader:
         self._precio_dex_cache[mint] = (ahora, precio)
         return precio
 
+    async def _precio_sol_loop(self) -> None:
+        """Refresca el precio de SOL cada hora y mueve los techos con el.
+
+        POR QUE HACE FALTA. El market cap se calcula como
+        `precio x supply x _SOL_USD`. Esa constante estuvo en 75 $ desde el
+        9-ago; el 21-ago SOL valia 91,24 y llevaba semanas sin tocarse, asi que
+        el bot creia comprar a 2.800 $ cuando en realidad compraba a 3.406.
+
+        POR QUE SE MUEVE TAMBIEN EL TECHO. Actualizar el precio a secas cambia
+        en silencio lo que compra el bot: con el mismo `max_entry_mc`, subir el
+        precio de SOL vuelve el filtro mas estricto sin que nadie lo haya
+        decidido. Aqui el techo se escala en la misma proporcion, asi que el
+        comportamiento se mantiene y lo unico que cambia es que los numeros en
+        pantalla dejan de mentir.
+
+        Si la consulta falla se deja el precio anterior: un valor viejo es malo,
+        pero un cero convertiria todos los market caps en cero y el bot
+        compraria cualquier cosa.
+        """
+        import trading.universal_trader as _mod
+
+        while True:
+            try:
+                import aiohttp
+
+                url = ("https://api.dexscreener.com/latest/dex/tokens/"
+                       "So11111111111111111111111111111111111111112")
+                nuevo = None
+                tiempo = aiohttp.ClientTimeout(total=15)
+                async with aiohttp.ClientSession(timeout=tiempo) as ses:
+                    async with ses.get(url) as r:
+                        if r.status == 200:
+                            d = await r.json()
+                            mejor = 0.0
+                            for par in (d.get("pairs") or []):
+                                liq = float((par.get("liquidity") or {}).get("usd") or 0)
+                                try:
+                                    p = float(par.get("priceUsd") or 0)
+                                except (TypeError, ValueError):
+                                    continue
+                                if p > 0 and liq > mejor:
+                                    mejor, nuevo = liq, p
+                # Un salto enorme es casi siempre un dato malo, no el mercado.
+                if nuevo and 20.0 < nuevo < 2000.0:
+                    viejo = float(_mod._SOL_USD)
+                    if abs(nuevo - viejo) / viejo > 0.005:
+                        razon = nuevo / viejo
+                        _mod._SOL_USD = nuevo
+                        if self.max_entry_mc:
+                            antes = self.max_entry_mc
+                            self.max_entry_mc = antes * razon
+                            logger.info(
+                                "SOL %.2f -> %.2f $. El techo de entrada pasa de "
+                                "%.0f a %.0f $ para que el filtro no se mueva.",
+                                viejo, nuevo, antes, self.max_entry_mc,
+                            )
+                        else:
+                            logger.info("SOL %.2f -> %.2f $", viejo, nuevo)
+            except Exception:  # noqa: BLE001 - esto nunca debe romper el bot
+                logger.debug("no pude refrescar el precio de SOL", exc_info=True)
+            await asyncio.sleep(3600)
+
     async def _reinicia_tanda_loop(self) -> None:
         """Devuelve el contador de la tanda a cero cuando no queda nada abierto.
 
@@ -4673,7 +4745,7 @@ class UniversalTrader:
         while True:
             await asyncio.sleep(60)
             try:
-                if not self._compras_de_la_tanda:
+                if not self.reiniciar_tanda or not self._compras_de_la_tanda:
                     continue
                 if list(Path(".").glob(f"open_position{self._state_suffix}_*.json")):
                     continue
