@@ -43,7 +43,10 @@ trade:
   rugs_para_bloquear: 1
   mayhem_buy_amount: 0.20
   nombre_estrategia: "devmig"
-  max_posiciones: 1
+  # TRES A LA VEZ. Con una sola, el 21-ago cumplieron 44 monedas en tres horas
+  # y solo se compraron 24: el 45% del flujo se perdia porque el bot estaba
+  # ocupado. A 0,20 SOL, tres posiciones son 0,60 y caben en el saldo.
+  max_posiciones: 3
   max_real_buys: 6
   max_perdidas_seguidas: 0
   escala_por_sol_ganado: 0
@@ -99,6 +102,10 @@ filters:
   listener_type: "logs"
   max_token_age: 20
   max_buy_age: 5
+  # NO REPETIR NOMBRE EN 10 MINUTOS. El 21-ago se compro USD1 TRES veces y
+  # RK-251 dos: mints distintos con el mismo nombre, alguien relanzando la
+  # misma moneda. De las tres USD1 una gano y dos perdieron.
+  no_repeat_name_min: 10
   match_string: null
   # A false A PROPOSITO: en true no se mira NINGUNA lista de creadores, ni la
   # manual ni el auto-baneo por rugs. Con el auto-baneo activado tiene que
