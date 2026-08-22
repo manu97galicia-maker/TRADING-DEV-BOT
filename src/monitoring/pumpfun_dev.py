@@ -26,6 +26,16 @@ _HEADERS = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
 _TTL = 600.0  # cache a creator's stats for 10 min
 _cache: dict[str, tuple[float, int, int, float]] = {}  # creator -> (ts, launches, migrations, rate)
 
+#: Picos de las monedas del creador que SI migraron, por creador.
+#:
+#: POR QUE SOLO LAS MIGRADAS. El campo ``ath_market_cap`` de pump.fun se infla
+#: solo: un creador llego a ensenar 89.950.686 $ de maximo con 1.387 $ de
+#: liquidez y 5 $ de volumen diario. Ordenar devs por ese numero premia a las
+#: granjas. Migrar, en cambio, exige que entren 85 SOL de verdad en la curva y
+#: eso no se puede fingir -- asi que aqui solo cuenta el pico de una moneda que
+#: ademas migro.
+_picos: dict[str, list[float]] = {}
+
 #: Consultas en vuelo, por creador. Sin esto, pedir las estadisticas nada mas
 #: ver la moneda y volver a pedirlas al ir a comprar lanza DOS llamadas a la
 #: API para el mismo dev: la primera aun no ha terminado, asi que la cache
@@ -74,5 +84,31 @@ async def _consultar(creator: str) -> tuple[int, int, float]:
     launches = len(coins)
     migrations = sum(1 for c in coins if c.get("complete") is True)
     rate = migrations / launches if launches else 0.0
+    picos = []
+    for c in coins:
+        if c.get("complete") is not True:
+            continue
+        for campo in ("ath_market_cap", "ath_market_cap_usd", "usd_market_cap"):
+            v = c.get(campo)
+            if isinstance(v, (int, float)) and v > 0:
+                picos.append(float(v))
+                break
+    _picos[creator] = sorted(picos, reverse=True)
     _cache[creator] = (now, launches, migrations, rate)
     return launches, migrations, rate
+
+
+def monedas_por_encima(creator: str, min_mc: float) -> int:
+    """Cuantas monedas MIGRADAS del creador superaron ``min_mc`` dolares.
+
+    Se lee de lo que dejo ``creator_migration_stats``; no hace red. Devuelve 0
+    si de ese creador no se ha consultado nada, que es el fallo correcto para
+    un filtro de reputacion: sin dato, no es elite.
+    """
+    return sum(1 for p in _picos.get(creator, ()) if p >= min_mc)
+
+
+def mejor_pico(creator: str) -> float:
+    """El pico mas alto de una moneda migrada del creador. 0 si no hay dato."""
+    picos = _picos.get(creator) or []
+    return picos[0] if picos else 0.0

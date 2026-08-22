@@ -26,7 +26,7 @@
 # EL FILTRO DE CREADOR ESTA APAGADO a proposito: el 85,2% de las monedas con
 # arranque limpio las lanza alguien con CERO migraciones, y los que repiten
 # rinden peor (13,3% frente a 16,4%).
-name: "DEVMIG - dev >=20% migrado, compra inmediata, 70% del saldo"
+name: "DEVMIG - dev >=20% migrado, compra inmediata, 0,08 SOL, recupera y corre"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -36,11 +36,26 @@ separate_process: false
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.20
-  # EL 70% DEL SALDO LIBRE, NO UN NUMERO FIJO. Se calcula en el instante de
-  # comprar: si la wallet sube, la compra sube sola sin tocar el yaml. Con
-  # esto `buy_amount` solo se usa si `fraccion_saldo` esta a 0.
-  fraccion_saldo: 0.70
+  buy_amount: 0.08
+  # A CERO: el tamano vuelve a ser fijo (0,15 SOL). Puesto a 0,70 el importe
+  # seria el 70% del saldo libre calculado al comprar. Se deja cableado por si
+  # se quiere volver a atar al saldo.
+  #
+  # LO QUE CUESTA BAJAR A 0,08. Los costes fijos no bajan contigo:
+  #
+  #     posicion   comision fija   pump.fun (2,25% x2)   total ida y vuelta
+  #       0,30         0,5%              4,5%                  5,0%
+  #       0,15         1,0%              4,5%                  5,5%
+  #       0,08         1,9%              4,5%                  6,4%
+  #       0,03         5,0%              4,5%                  9,5%
+  #
+  # A 0,08 sigue siendo asumible contra un objetivo del +35%, pero cada
+  # operacion nace debiendo un 6,4%. Por eso el suelo esta en 0,03: por debajo
+  # la comision se come el objetivo entero.
+  #
+  # Capital que hace falta: 3 posiciones x 0,08 + 0,02 de reserva = 0,26 SOL.
+  # Si entra una elite (0,30) hacen falta 0,48.
+  fraccion_saldo: 0
   # SUELO. Los costes fijos no bajan con el tamano: la renta de la cuenta de
   # token son 0,00204 SOL y las comisiones de pump.fun un 2,25% por lado. En
   # una compra de 0,02 SOL eso es mas del 15% de ida y vuelta, asi que la
@@ -55,12 +70,17 @@ trade:
   # vuelve a comprar. El bloqueo se guarda en disco y lo comparten todos
   # los bots, asi que sobrevive a los reinicios.
   rugs_para_bloquear: 1
-  mayhem_buy_amount: 0.20
+  mayhem_buy_amount: 0.08
   nombre_estrategia: "devmig"
   # TRES A LA VEZ. Con una sola, el 21-ago cumplieron 44 monedas en tres horas
   # y solo se compraron 24: el 45% del flujo se perdia porque el bot estaba
   # ocupado. A 0,20 SOL, tres posiciones son 0,60 y caben en el saldo.
-  max_posiciones: 1
+  # TRES A LA VEZ. Con una sola, el 21-ago cumplieron 44 monedas en tres horas
+  # y solo se compraron 24: el 45% del flujo se perdia por estar ocupado. Con
+  # el filtro del creador el flujo es mucho mas fino y las colisiones son
+  # raras, pero no cuesta nada tenerlas. Capital que hace falta para las tres:
+  # 3 x 0,15 + 0,02 de reserva = 0,47 SOL.
+  max_posiciones: 3
   max_real_buys: 6
   max_perdidas_seguidas: 0
   escala_por_sol_ganado: 0
@@ -85,8 +105,38 @@ trade:
   # las cuatro que hoy llegaron al +75% tardaron 4 y 13 minutos: tiempo que el
   # bot no aguanta. El +35% se cobra en segundos, y por eso el numero real se
   # parece al medido.
+  # PRIMERO SE RECUPERA LO PUESTO, LUEGO CORRE GRATIS.
+  #
+  # TP1 al +35% vende el 76%. La cuenta: para sacar los 0,15 puestos hay que
+  # vender 1 / (1,35 x 0,9775) = 75,8% -- el 0,9775 es la comision del 2,25%
+  # que cobra pump.fun en la venta. Con eso el dinero ya esta en la wallet y
+  # el 24% que queda no puede costar nada.
+  #
+  # Y el suelo sube al precio de compra en cuanto salta el TP1
+  # (`stop_a_entrada_tras_tp`), asi que a partir de ahi la operacion no puede
+  # cerrar en perdida.
+  #
+  # Los tramos siguientes son cada uno un +35% sobre el anterior:
+  #     1,35^2 = +82%   ·   1,35^3 = +146%   ·   1,35^4 = +232%
+  #
+  # POR QUE 8% Y NO "UN QUINTO" DEL RESTO: del 24% que queda, un quinto son
+  # 4,8% de la posicion = 0,0072 SOL. Eso no es una venta, es polvo que se
+  # come la comision fija. Tres tramos de 8% reparten el resto entero.
+  #
+  # LO QUE SE PAGA POR ESTO, dicho claro: vender el 100% al +35% rendia
+  # +0,228 SOL por cada 1 SOL en el remuestreo, y es el mejor numero medido.
+  # Guardarse un 24% solo gana si la moneda sigue subiendo, y de las 30 que se
+  # compraron de verdad el 21-ago solo 2 llegaron a x2. Esta escalera es la
+  # que pidio Manu, no la que mas rendia en la muestra.
+  # Y UN 7% QUE NO SE VENDE NUNCA (moonbag): los tramos suman 93, no 100.
   take_profit_percentage: 0.35
-  take_profit_sell_percentage: 1.0
+  take_profit_sell_percentage: 0.76
+  tp2_gain: 0.82
+  tp2_sell: 0.07
+  tp3_gain: 1.46
+  tp3_sell: 0.05
+  tp4_gain: 2.32
+  tp4_sell: 0.05
   mc_take_profit_tiers: []
 
   # EL TRINQUETE: TP1 -> el suelo sube al precio de compra; TP2 -> sube al TP1;
@@ -180,6 +230,31 @@ filters:
   presion_seg: 0
   min_holders: 0
   min_holders_gmgn: 0
+
+  # DEV QUE SUELE PUMPEAR POR ENCIMA DE 1 MILLON: mas dinero, comision alta
+  # para entrar de primero, y stop mas corto.
+  #
+  # "SUELE" SON DOS MONEDAS, NO UNA. Con una sola pasaria cualquiera que haya
+  # tenido un pelotazo entre veinte fracasos.
+  #
+  # SOLO CUENTAN LAS MONEDAS QUE MIGRARON. El `ath_market_cap` de pump.fun se
+  # infla solo con el pool seco -- un creador llego a ensenar 89.950.686 $ de
+  # maximo con 1.387 $ de liquidez. Migrar exige 85 SOL reales en la curva y
+  # eso no se finge. Filtrar por pico SIN exigir migracion seria coleccionar
+  # granjas.
+  #
+  # EL STOP DEL 55% ES MAS CORTO, NO MAS SUAVE: corta antes. Tiene sentido
+  # aqui porque con 0,30 SOL cada punto de caida cuesta el doble.
+  dev_elite:
+    min_pico_mc: 1000000
+    min_monedas_altas: 2
+    buy_amount: 0.30
+    stop_loss_percentage: 0.55
+    # 1,01 $ a SOL 93,64. Son 0,010786 SOL: 77.042.857 microlamports x 140.000
+    # unidades de computo. SOLO se paga en estas compras.
+    fixed_amount: 77_042_857
+    # Sin escalera propia -> usa la de arriba (76/7/5/5 y 7% de moonbag).
+    min_rate: 9.99
 
   pumpfun_dev:
     enabled: true

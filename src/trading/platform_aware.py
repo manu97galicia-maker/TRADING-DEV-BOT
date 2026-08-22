@@ -56,7 +56,10 @@ class PlatformAwareBuyer(Trader):
         self.compute_units = compute_units or {}
 
     async def execute(
-        self, token_info: TokenInfo, amount_sol: float | None = None
+        self,
+        token_info: TokenInfo,
+        amount_sol: float | None = None,
+        priority_fee_override: int | None = None,
     ) -> TradeResult:
         """Execute buy operation using platform-specific implementations.
 
@@ -68,6 +71,11 @@ class PlatformAwareBuyer(Trader):
                 tocar el resto. Se pasa por parametro y no cambiando
                 `self.amount` porque puede haber varias compras a la vez y una
                 le pisaria el importe a la otra.
+            priority_fee_override: comision de prioridad SOLO para esta compra,
+                en microlamports por unidad de computo. Se pasa por parametro
+                por el mismo motivo que el importe: el gestor de comisiones es
+                compartido, y cambiarlo en el para una compra se lo cambiaria a
+                las que corren a la vez. Una comision equivocada es dinero.
         """
         try:
             amount = float(amount_sol) if amount_sol else self.amount
@@ -262,8 +270,12 @@ class PlatformAwareBuyer(Trader):
                 self.wallet.keypair,
                 skip_preflight=False,
                 max_retries=self.max_retries,
-                priority_fee=await self.priority_fee_manager.calculate_priority_fee(
-                    priority_accounts
+                priority_fee=(
+                    priority_fee_override
+                    if priority_fee_override
+                    else await self.priority_fee_manager.calculate_priority_fee(
+                        priority_accounts
+                    )
                 ),
                 compute_unit_limit=instruction_builder.get_buy_compute_unit_limit(
                     self._get_cu_override("buy", token_info.platform)

@@ -951,6 +951,10 @@ class UniversalTrader:
         #: Tasa de migracion del creador de cada moneda, guardada al comprar
         #: para poder decidir la salida sin volver a preguntar a la API.
         self._tasa_dev: dict[str, float] = {}
+        #: Monedas cuyo creador suele pumpear alto. Se marca al detectarlas,
+        #: porque el tamano y la comision de prioridad se deciden al comprar y
+        #: el stop-loss al vigilar: las tres necesitan el mismo dato.
+        self._mints_elite: set[str] = set()
         #: SOL cobrado en la ultima venta. Cero si no se vendio nada.
         #: Es lo que se suma al total realizado, en vez del estimado:
         #: el 12-ago un cierre sin venta se apunto como +0,1496 SOL.
@@ -2260,6 +2264,33 @@ class UniversalTrader:
                             f"lanzamientos ({_r * 100:.0f}%) -> compra inmediata, "
                             f"sin esperar confirmacion del mercado"
                         )
+                        # DEV QUE SUELE PUMPEAR ALTO. Se decide AQUI, mientras
+                        # el dato del creador esta recien traido, porque hacen
+                        # falta las dos cosas antes de comprar: el tamano y la
+                        # comision de prioridad. Solo cuentan los picos de
+                        # monedas que MIGRARON -- ver el comentario de `_picos`
+                        # en monitoring/pumpfun_dev.py.
+                        if self.dev_elite.get("min_pico_mc"):
+                            from monitoring.pumpfun_dev import (
+                                mejor_pico,
+                                monedas_por_encima,
+                            )
+
+                            _minmc = float(self.dev_elite["min_pico_mc"])
+                            _n_altas = monedas_por_encima(str(_dev0), _minmc)
+                            if _n_altas >= int(
+                                self.dev_elite.get("min_monedas_altas", 2)
+                            ):
+                                if len(self._mints_elite) > 5000:
+                                    self._mints_elite.clear()
+                                self._mints_elite.add(str(token_info.mint))
+                                logger.info(
+                                    f"DEV QUE PUMPEA {token_info.symbol}: "
+                                    f"{_n_altas} monedas migradas por encima de "
+                                    f"${_minmc:,.0f} (mejor: "
+                                    f"${mejor_pico(str(_dev0)):,.0f}) -> "
+                                    f"trato elite"
+                                )
                     else:
                         # Sin compra inmediata basta con dejarla pedida: la
                         # comprobacion de mas abajo se engancha a esta misma
@@ -2982,6 +3013,25 @@ class UniversalTrader:
                 else:
                     _importe = self.buy_amount
 
+                # DEV QUE SUELE PUMPEAR ALTO: mas dinero y comision de
+                # prioridad alta para entrar de primero.
+                #
+                # LA COMISION SOLO SE PAGA AQUI, y por eso. Es FIJA: 1,01 $
+                # sobre una posicion de 0,15 SOL (14 $) es el 7,2% de ida y
+                # otro tanto de vuelta, o sea 13,4% que hay que ganar antes de
+                # empezar a ganar. Sobre 0,30 SOL son 6,7%. Pagarla en todas
+                # las compras fue lo que convirtio un dia de +0,4455 SOL en
+                # uno de -0,3221.
+                _elite_compra = str(token_info.mint) in self._mints_elite
+                _fee_override = None
+                if _elite_compra:
+                    _imp_elite = float(self.dev_elite.get("buy_amount") or 0)
+                    if _imp_elite > 0:
+                        _importe = _imp_elite
+                    _fee_elite = int(self.dev_elite.get("fixed_amount") or 0)
+                    if _fee_elite > 0:
+                        _fee_override = _fee_elite
+
                 # LA COMPRA CRECE CON LO GANADO. El bote es comun a los tres
                 # bots --comparten wallet-- y solo cuenta P&L REAL leido de la
                 # cadena. En negativo el multiplicador se queda en 1: no se
@@ -3113,7 +3163,9 @@ class UniversalTrader:
                         + (" [MAYHEM a prueba]" if _importe != self.buy_amount else "")
                     )
                     buy_result: TradeResult = await self.buyer.execute(
-                        token_info, amount_sol=_importe
+                        token_info,
+                        amount_sol=_importe,
+                        priority_fee_override=_fee_override,
                     )
 
                     if not buy_result.success:
@@ -3652,8 +3704,12 @@ class UniversalTrader:
         # hay prisa que valga -- si fallara la consulta se caeria al trato
         # general sin avisar, que es peor que no tenerlo.
         _tasa = self._tasa_dev.get(str(token_info.mint), 0.0)
-        _elite = bool(self.dev_elite) and _tasa >= float(
-            self.dev_elite.get("min_rate", 1.0)
+        # Dos formas de ser elite: por tasa de migracion o por soler pumpear
+        # alto. La segunda se marco al detectar la moneda (`_mints_elite`),
+        # con el historial del creador recien traido de la API.
+        _elite = bool(self.dev_elite) and (
+            _tasa >= float(self.dev_elite.get("min_rate", 1.0))
+            or str(token_info.mint) in self._mints_elite
         )
         if _elite:
             # Escalera completa, no solo el primer escalon: para un creador con
@@ -3677,10 +3733,10 @@ class UniversalTrader:
 
         executed = [False] * len(tiers)
         remaining = original_qty
-        _sl_pct = (
-            float(self.dev_elite.get("stop_loss_percentage", 0)) if _elite
-            else self.stop_loss_percentage
-        )
+        # Sin stop propio para los elite se cae al de siempre. Antes caia a 0,
+        # que NO es "sin cambios": es quedarse sin stop-loss ninguno.
+        _sl_elite = float(self.dev_elite.get("stop_loss_percentage", 0) or 0)
+        _sl_pct = _sl_elite if (_elite and _sl_elite > 0) else self.stop_loss_percentage
         sl_price = entry_price * (1 - _sl_pct) if _sl_pct else None
         moonbag = moonbag_fraction(tiers)
         _final_mc = (
