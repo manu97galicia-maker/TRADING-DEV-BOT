@@ -80,6 +80,9 @@ filters:
   listener_type: logs
   max_token_age: 60
   max_buy_age: 3
+  # Mismo motivo que en mayhemsimple: el suelo de 3.400 no cuenta si ya
+  # nacio ahi, solo si lo cruza despues del primer segundo.
+  min_buy_age: 1
   match_string: null
   bro_address: null
   ignorar_listas_de_devs: false

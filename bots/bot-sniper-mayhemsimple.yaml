@@ -82,6 +82,11 @@ filters:
   # EDAD: los dos numeros del screener, sin margen de mas.
   max_token_age: 5
   max_buy_age: 5
+  # NO CUENTA SI YA NACIO POR ENCIMA (pedido 26-ago): el suelo de 3.400 solo
+  # vale si lo cruza DESPUES del primer segundo, no si ya abre ahi. Nacer ya
+  # inflada es la senal de un dev-buy grande o un bundle, no de demanda real
+  # subiendo -- ver universal_trader.py, "EDAD MINIMA PARA CONTAR EL SUELO".
+  min_buy_age: 1
   match_string: null
   bro_address: null
   ignorar_listas_de_devs: false

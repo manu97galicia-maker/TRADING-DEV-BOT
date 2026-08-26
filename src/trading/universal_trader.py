@@ -563,6 +563,12 @@ class UniversalTrader:
         # la moneda de la cola, antes de la espera de estabilización, así que no
         # limita la edad real de entrada. 0 = desactivado.
         max_buy_age: float = 0.0,
+        # Edad MINIMA para que min_entry_mc cuente como cumplido. 0 =
+        # desactivado (se acepta desde el primer instante). Pedido 26-ago
+        # para mayhemsimple: una moneda que YA nace por encima del suelo (en
+        # vez de subir hasta el) es sospechosa de venir inflada de fabrica
+        # (dev-buy grande, bundle), no de tener demanda real construyendose.
+        min_buy_age: float = 0.0,
         # Reserva mínima de SOL que el bot nunca gasta (siempre deja esto).
         min_reserve_sol: float = 0.03,
         # Hard lifetime cap on successful real buys for a cautious live trial.
@@ -1023,6 +1029,7 @@ class UniversalTrader:
         # escrita a mano hace semanas.
         self.ignorar_listas_de_devs = bool(ignorar_listas_de_devs)
         self.max_buy_age = float(max_buy_age or 0)
+        self.min_buy_age = float(min_buy_age or 0)
         #: símbolo -> monotonic() de la última vez que se vio. Solo memoria del
         #: proceso: tras un reinicio la ventana empieza vacía.
         self._nombres_vistos: dict[str, float] = {}
@@ -2668,6 +2675,13 @@ class UniversalTrader:
                                 f"(MC ${_mc:,.0f} con {_v:.1f} SOL de volumen)"
                             )
                     if self.min_entry_mc > 0 and _mc < self.min_entry_mc:
+                        await asyncio.sleep(_paso)
+                        continue
+                    # EDAD MINIMA PARA CONTAR EL SUELO. Ya paso el suelo, pero
+                    # si lo hizo ANTES de min_buy_age no cuenta -- ya nacio
+                    # por encima, no subio hasta ahi, y eso huele a dev-buy
+                    # grande o bundle en vez de demanda real construyendose.
+                    if self.min_buy_age > 0 and monotonic() - _t0 < self.min_buy_age:
                         await asyncio.sleep(_paso)
                         continue
                     _acel = (

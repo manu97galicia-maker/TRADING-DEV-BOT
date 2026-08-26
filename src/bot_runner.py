@@ -285,6 +285,7 @@ async def start_bot(config_path: str):
             mayhem_buy_amount=cfg["trade"].get("mayhem_buy_amount", 0),
             mayhem_max_perdidas=cfg["trade"].get("mayhem_max_perdidas", 0),
             max_buy_age=cfg.get("filters", {}).get("max_buy_age", 0.0),
+            min_buy_age=cfg.get("filters", {}).get("min_buy_age", 0.0),
             min_reserve_sol=cfg.get("trade", {}).get("min_reserve_sol", 0.03),
             max_real_buys=cfg.get("trade", {}).get("max_real_buys", 0),
             pumpfun_dev=cfg.get("filters", {}).get("pumpfun_dev"),
