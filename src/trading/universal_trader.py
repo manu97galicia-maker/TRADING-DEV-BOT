@@ -3807,12 +3807,51 @@ class UniversalTrader:
                 f"y escalera propia"
             )
 
+        # ENTRO POR LA PUERTA DE MEDIANA: sin escalera propia se vendia con la
+        # de siempre (+35%), pensada para un dev que apenas roza el filtro
+        # normal. Aqui el dev YA ha demostrado una mediana de 20K+ en sus
+        # migradas -- vender casi todo al primer +35% es regalar el recorrido
+        # que precisamente esta puerta busca. Sin dato propio de ESTE grupo
+        # todavia (puerta nueva), se reusa +75% (x1,75): es el mejor numero
+        # medido en el backtest general de 1.016 monedas sin filtrar por dev,
+        # y este grupo se parece mas a esa poblacion general que al filtro de
+        # 25%/2 migraciones que SI necesito el +35% para compensar su bajo
+        # acierto. No manda sobre un creador elite: si las dos puertas
+        # coinciden, gana `dev_elite`.
+        _mediana = (
+            not _elite
+            and bool(self.dev_mediana.get("take_profit_percentage"))
+            and str(token_info.mint) in self._mints_mediana
+        )
+        if _mediana:
+            _pares = [(
+                self.dev_mediana.get("take_profit_percentage"),
+                self.dev_mediana.get("take_profit_sell_percentage", 1.0),
+            )]
+            for _n in (2, 3):
+                _pares.append((self.dev_mediana.get(f"tp{_n}_gain"),
+                               self.dev_mediana.get(f"tp{_n}_sell")))
+            _t = build_tiers(_pares)
+            if _t:
+                tiers = _t
+            logger.info(
+                f"{token_info.symbol}: ENTRADA POR MEDIANA -> stop "
+                f"{float(self.dev_mediana.get('stop_loss_percentage', 0)) * 100:.0f}% "
+                f"y escalera propia"
+            )
+
         executed = [False] * len(tiers)
         remaining = original_qty
         # Sin stop propio para los elite se cae al de siempre. Antes caia a 0,
         # que NO es "sin cambios": es quedarse sin stop-loss ninguno.
         _sl_elite = float(self.dev_elite.get("stop_loss_percentage", 0) or 0)
-        _sl_pct = _sl_elite if (_elite and _sl_elite > 0) else self.stop_loss_percentage
+        _sl_mediana = float(self.dev_mediana.get("stop_loss_percentage", 0) or 0)
+        if _elite and _sl_elite > 0:
+            _sl_pct = _sl_elite
+        elif _mediana and _sl_mediana > 0:
+            _sl_pct = _sl_mediana
+        else:
+            _sl_pct = self.stop_loss_percentage
         sl_price = entry_price * (1 - _sl_pct) if _sl_pct else None
         moonbag = moonbag_fraction(tiers)
         _final_mc = (

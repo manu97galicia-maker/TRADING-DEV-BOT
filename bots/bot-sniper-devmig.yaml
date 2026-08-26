@@ -105,38 +105,31 @@ trade:
   # las cuatro que hoy llegaron al +75% tardaron 4 y 13 minutos: tiempo que el
   # bot no aguanta. El +35% se cobra en segundos, y por eso el numero real se
   # parece al medido.
-  # PRIMERO SE RECUPERA LO PUESTO, LUEGO CORRE GRATIS.
+  # CAMBIADO 26-ago, PEDIDO ASI POR MANU: vende poco al primer tramo y
+  # reparte el grueso entre el segundo y el tercero.
   #
-  # TP1 al +35% vende el 76%. La cuenta: para sacar los 0,15 puestos hay que
-  # vender 1 / (1,35 x 0,9775) = 75,8% -- el 0,9775 es la comision del 2,25%
-  # que cobra pump.fun en la venta. Con eso el dinero ya esta en la wallet y
-  # el 24% que queda no puede costar nada.
+  # OJO, dicho claro: esto RENUNCIA a "primero se recupera lo puesto, luego
+  # corre gratis". Con el 20% de antes (76%), el TP1 por si solo ya sacaba de
+  # la wallet mas de lo puesto (1 / (1,35 x 0,9775) = 75,8% recuperaba el
+  # 100%). Con el 20% de ahora, el TP1 solo recupera ~26% de la posicion: si
+  # la moneda cae despues de tocar el TP1 pero antes del TP2, la operacion
+  # SI puede cerrar en perdida -- antes no podia, porque `stop_a_entrada_
+  # tras_tp` sube el suelo al precio de compra en cuanto salta el TP1, pero
+  # eso protege el precio, no protege que ya se haya sacado el dinero.
   #
-  # Y el suelo sube al precio de compra en cuanto salta el TP1
-  # (`stop_a_entrada_tras_tp`), asi que a partir de ahi la operacion no puede
-  # cerrar en perdida.
+  # Los tramos siguen siendo cada uno un +35% sobre el anterior:
+  #     1,35^2 = +82%   ·   1,35^3 = +146%
   #
-  # Los tramos siguientes son cada uno un +35% sobre el anterior:
-  #     1,35^2 = +82%   ·   1,35^3 = +146%   ·   1,35^4 = +232%
-  #
-  # POR QUE 8% Y NO "UN QUINTO" DEL RESTO: del 24% que queda, un quinto son
-  # 4,8% de la posicion = 0,0072 SOL. Eso no es una venta, es polvo que se
-  # come la comision fija. Tres tramos de 8% reparten el resto entero.
-  #
-  # LO QUE SE PAGA POR ESTO, dicho claro: vender el 100% al +35% rendia
-  # +0,228 SOL por cada 1 SOL en el remuestreo, y es el mejor numero medido.
-  # Guardarse un 24% solo gana si la moneda sigue subiendo, y de las 30 que se
-  # compraron de verdad el 21-ago solo 2 llegaron a x2. Esta escalera es la
-  # que pidio Manu, no la que mas rendia en la muestra.
-  # Y UN 7% QUE NO SE VENDE NUNCA (moonbag): los tramos suman 93, no 100.
+  # Sin moonbag: 20 + 40 + 40 = 100, no queda un resto que se guarde para
+  # siempre. Sin dato propio de ESTA proporcion (0 operaciones con ella
+  # todavia) -- lo unico medido es que vender el 100% al +35% SIN escalera
+  # rendia +0,228 SOL/SOL, el mejor numero del backtest general.
   take_profit_percentage: 0.35
-  take_profit_sell_percentage: 0.76
+  take_profit_sell_percentage: 0.20
   tp2_gain: 0.82
-  tp2_sell: 0.07
+  tp2_sell: 0.40
   tp3_gain: 1.46
-  tp3_sell: 0.05
-  tp4_gain: 2.32
-  tp4_sell: 0.05
+  tp3_sell: 0.40
   mc_take_profit_tiers: []
 
   # EL TRINQUETE: TP1 -> el suelo sube al precio de compra; TP2 -> sube al TP1;
@@ -275,13 +268,34 @@ filters:
   # minimas como pumpfun_dev de arriba: exige que la MEDIANA de sus monedas
   # MIGRADAS ya valga 20K+, con al menos 2 migradas para que sea mediana y no
   # suerte de una sola. A cambio, deja entrar hasta 4.500 $ de market cap en
-  # vez del techo general (max_entry_mc mas arriba) -- mismo tamano y stop
-  # que el resto, el trato es solo el techo de entrada.
+  # vez del techo general (max_entry_mc mas arriba) -- mismo tamano que el
+  # resto, el trato es el techo de entrada Y la escalera de salida.
   #
   # "QUE NUNCA HAGAN RUG" ya esta cubierto sin nada nuevo: ignorar_listas_de_
   # devs esta en false, asi que el auto-baneo de blacklist_devs.json (1 rug y
   # fuera) se aplica a esta puerta exactamente igual que a la normal.
+  #
+  # ESCALERA PROPIA, SIN DATO TODAVIA (puerta nueva, 0 operaciones reales).
+  # Sin esto heredaba la del +35% de mas arriba, que se eligio PORQUE ese
+  # filtro (25%/2 migraciones) apenas acierta a los +75% (13,3% de 30). Este
+  # grupo es distinto: el dev ya ha probado una mediana de 20K+, mas cerca de
+  # la poblacion general que del filtro raspado -- ahi el mejor numero medido
+  # (1.016 monedas, tres remuestreos) fue vender TODO a +75% (x1,75):
+  # +0,228 SOL por SOL apostado. Aqui no se vende todo: se recupera lo puesto
+  # a +75% (60% vendido, con margen sobre el 58,5% de equilibrio tras la
+  # comision del 2,25%) y se deja correr un tramo mas largo que el filtro
+  # normal, porque la entrada (3,4-4,5K) y la mediana del dev (20K+) dejan
+  # mucho mas hueco de por medio que en el filtro de base.
   dev_mediana:
     min_mediana_mc: 20000
     min_monedas: 2
     max_entry_mc: 4500
+    take_profit_percentage: 0.75
+    take_profit_sell_percentage: 0.60
+    tp2_gain: 1.50
+    tp2_sell: 0.15
+    tp3_gain: 3.00
+    tp3_sell: 0.15
+    # 10% moonbag: mas que el 7% de la escalera normal, porque aqui el techo
+    # historico del dev (mediana 20K+) SI deja hueco para que valga la pena
+    # dejar algo corriendo sin vender.
