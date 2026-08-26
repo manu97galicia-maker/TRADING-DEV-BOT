@@ -96,8 +96,11 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: false
-  min_entry_mc: 0
-  max_entry_mc: 3000
+  # ENTRA SOLO SI YA SUPERA 3,4K (pedido 26-ago). El techo de 3.000 que
+  # habia antes es INCOMPATIBLE con un suelo de 3.400 (min > max = nunca
+  # compra nada), asi que se quita el techo -- igual que en mayhemsimple.
+  min_entry_mc: 3400
+  max_entry_mc: 0
   min_curve_sol: 0
   min_volumen_sol: 0
   max_volumen_sol: 0
