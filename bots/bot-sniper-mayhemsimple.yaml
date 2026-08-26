@@ -1,0 +1,132 @@
+# MAYHEMSIMPLE - pedida 26-ago, a partir de una captura de un screener con
+# dos campos rellenos: Edad max 0,08 min (~4,8 s) y MKT Cap min 3,4K. Todo lo
+# demas (liquidez, volumen, compra neta, TXs, dev...) vacio a proposito.
+#
+# SIN FILTRO DE CREADOR NINGUNO -- ni pumpfun_dev, ni dev_elite, ni
+# dev_mediana, ni dev_buy. Las otras tres estrategias (devmig, mayhem,
+# devbuy) apuestan por QUIEN lanza; esta apuesta solo por que la moneda YA
+# ha llegado a 3.400 $ con menos de 5 s de vida -- si arranco tan rapido,
+# alguien la esta comprando fuerte AHORA MISMO, sin que importe quien la
+# creo. Es la mas simple de las cuatro, y tambien la menos informada: no
+# distingue un pump real de un bundle que se infla solo entre carteras del
+# mismo dueño.
+#
+# NUMEROS SIN VALIDAR: 0 operaciones reales con este filtro.
+name: "MAYHEMSIMPLE - edad<5s y MC>=3,4K, sin filtro de creador, solo mayhem, 0,03 SOL"
+env_file: .env
+rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
+wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
+private_key: ${SOLANA_PRIVATE_KEY}
+enabled: true
+separate_process: false
+platform: pump_fun
+trade:
+  buy_amount: 0.03
+  mayhem_buy_amount: 0.03
+  max_posiciones: 3
+  max_perdidas_seguidas: 2
+  mayhem_max_perdidas: 0
+  rugs_para_bloquear: 1
+  buy_slippage: 0.3
+  sell_slippage: 0.9
+  exit_strategy: tp_sl
+  # Misma escalera y mismo stop (ninguno) que la otra estrategia de mayhem:
+  # esto es el comportamiento de una posicion mayhem, no del filtro de
+  # entrada que la eligio.
+  take_profit_percentage: 1.0
+  take_profit_sell_percentage: 0.5
+  tp2_gain: 2.0
+  tp2_sell: 0.125
+  tp3_gain: 5.0
+  tp3_sell: 0.125
+  tp4_gain: 6.0
+  tp4_sell: 0.125
+  tp5_gain: 9.0
+  tp5_sell: 0.095
+  # SIN STOP hasta el primer TP (mayhem no se puede vender por panico contra
+  # un agregador, solo por curva -- un stop ahi no protege, fuerza una venta
+  # mala). Pero en cuanto salta el TP1, el trinquete SI se activa: el suelo
+  # sube al precio de compra, y con cada TP siguiente al TP anterior. Antes
+  # de esto, ganar el TP1 y perderlo todo despues era posible; ahora no.
+  stop_loss_percentage: 0
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: true
+  trailing_stop_percentage: 0
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+  venta_muerta_seg: 120
+  venta_muerta_gain: 0.0
+  max_hold_time: 28
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.03
+compute_units:
+  buy: 140000
+  sell: 120000
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 20000000
+  extra_percentage: 0.0
+  hard_cap: 20000000
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+filters:
+  listener_type: logs
+  # EDAD: los dos numeros del screener, sin margen de mas.
+  max_token_age: 5
+  max_buy_age: 5
+  match_string: null
+  bro_address: null
+  ignorar_listas_de_devs: false
+  pumpfun_dev:
+    enabled: false
+  allow_mayhem: true
+  require_mayhem: true
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false
+  # MKT CAP: el otro numero del screener. Sin techo -- el campo Max del
+  # screener estaba vacio.
+  min_entry_mc: 3400
+  max_entry_mc: 0
+  min_curve_sol: 0
+  min_volumen_sol: 0
+  max_volumen_sol: 0
+  min_vol_ventana_sol: 0
+  min_ops: 0
+  min_titulares: 0
+  redes_originales: false
+  min_holders_gmgn: 0
+  senal_gmgn: []
+  no_repeat_name_min: 5
+  max_holder_pct: 0.0
+  max_dev_hold_pct: 0.0
+  min_holders: 0
+  holder_bypass_ratio: 0
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: solana
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+cleanup:
+  mode: post_session
+  force_close_with_burn: false
+  with_priority_fee: false
+node:
+  max_rps: 15

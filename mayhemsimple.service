@@ -1,0 +1,18 @@
+[Unit]
+Description=MAYHEMSIMPLE - edad<5s y MC>=3,4K, sin filtro de creador, 0,03 SOL
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/ai-bot
+Environment=PYTHONPATH=/root/ai-bot/src
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/root/ai-bot/.venv/bin/python -u run_mayhemsimple.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

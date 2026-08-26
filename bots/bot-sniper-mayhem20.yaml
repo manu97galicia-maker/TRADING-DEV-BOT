@@ -7,8 +7,8 @@ enabled: true
 separate_process: false
 platform: pump_fun
 trade:
-  buy_amount: 0.035
-  mayhem_buy_amount: 0.035
+  buy_amount: 0.03
+  mayhem_buy_amount: 0.03
   max_posiciones: 3
   # DOS PERDIDAS SEGUIDAS Y SE PARA (pedido 26-ago, igual que devmig). Como
   # esta estrategia es 100% mayhem, con esto sobra -- no hace falta ademas
@@ -36,14 +36,25 @@ trade:
   # tramo (x10), no del primero: el TP1 sigue siendo el que recupera lo
   # puesto.
   tp5_sell: 0.095
+  # TRINQUETE (pedido 26-ago, igual que devmig): sin stop hasta el TP1, pero
+  # en cuanto salta, el suelo sube al precio de compra; con el TP2 sube al
+  # TP1, con el TP3 al TP2, y asi. Antes de esto no habia stop NUNCA -- se
+  # podia ganar el TP1 y perderlo todo despues.
   stop_loss_percentage: 0
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: true
   trailing_stop_percentage: 0
   anti_rug_ratio: 2.0
   anti_rug_seg: 4
   anti_rug_min_sol: 3
   venta_muerta_seg: 120
   venta_muerta_gain: 0.0
-  max_hold_time: 5400
+  # MAXIMO 28 SEGUNDOS ABIERTA (pedido 26-ago, antes 5400 = 90 min). Al
+  # cumplirse se vende lo que quede, toque o no algun TP. Con la escalera
+  # llegando hasta x10, los tramos altos (x6/x7/x10) van a quedar casi
+  # siempre fuera de alcance en 28 s -- es la contrapartida de no quedarse
+  # colgado en una mayhem que no se puede vender por panico.
+  max_hold_time: 28
   price_check_interval: 1
   extreme_fast_mode: false
   min_reserve_sol: 0.03
