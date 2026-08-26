@@ -31,8 +31,8 @@ separate_process: false
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.01
-  mayhem_buy_amount: 0.01
+  buy_amount: 0.1
+  mayhem_buy_amount: 0.1
   rugs_para_bloquear: 1
   nombre_estrategia: "dip"
   max_posiciones: 2
@@ -111,13 +111,15 @@ filters:
   # que no pasa por este suelo.
   min_entry_mc: 999999999
 
-  # EL FILTRO DE ESTA ESTRATEGIA: pico entre 5K y 6K, valor actual entre 1K
-  # y 1,4K (el "1,2" pedido, con un poco de margen a cada lado), dentro de
-  # los primeros 5 minutos de vida de la moneda.
+  # EL FILTRO DE ESTA ESTRATEGIA (pedido 26-ago, ajustado): pico de 4K en
+  # adelante, SIN techo (pico_max_mc a un numero enorme -- el codigo exige
+  # que sea mayor que cero para activarse, así que 0 no vale como "sin
+  # techo"), valor actual entre 1K y 1,3K, dentro de los primeros 5 minutos
+  # de vida de la moneda.
   dip:
-    pico_min_mc: 5000
-    pico_max_mc: 6000
+    pico_min_mc: 4000
+    pico_max_mc: 999999999
     actual_min_mc: 1000
-    actual_max_mc: 1400
+    actual_max_mc: 1300
     ventana_seg: 300
-    buy_amount: 0.01
+    buy_amount: 0.1
