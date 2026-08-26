@@ -11,7 +11,7 @@ trade:
   mayhem_buy_amount: 0.03
   # UNA SOLA A LA VEZ (pedido 26-ago, para empezar con cuidado). Sube a 3
   # cuando se vea como se comporta.
-  max_posiciones: 1
+  max_posiciones: 2
   # TOPE DE POR VIDA (pedido 26-ago, al mandar fondos): 3 compras y para.
   max_real_buys: 3
   reiniciar_tanda: false
