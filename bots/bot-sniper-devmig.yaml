@@ -26,17 +26,17 @@
 # EL FILTRO DE CREADOR ESTA APAGADO a proposito: el 85,2% de las monedas con
 # arranque limpio las lanza alguien con CERO migraciones, y los que repiten
 # rinden peor (13,3% frente a 16,4%).
-name: "DEVMIG - dev >=20% migrado, compra inmediata, 0,08 SOL, recupera y corre"
+name: "DEVMIG - dev >=20% migrado, compra inmediata, 0,12 SOL, solo pump.fun (no mayhem)"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
-enabled: false
+enabled: true
 separate_process: false
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.08
+  buy_amount: 0.12
   # A CERO: el tamano vuelve a ser fijo (0,15 SOL). Puesto a 0,70 el importe
   # seria el 70% del saldo libre calculado al comprar. Se deja cableado por si
   # se quiere volver a atar al saldo.
@@ -70,7 +70,7 @@ trade:
   # vuelve a comprar. El bloqueo se guarda en disco y lo comparten todos
   # los bots, asi que sobrevive a los reinicios.
   rugs_para_bloquear: 1
-  mayhem_buy_amount: 0.08
+  mayhem_buy_amount: 0.12
   nombre_estrategia: "devmig"
   # TRES A LA VEZ. Con una sola, el 21-ago cumplieron 44 monedas en tres horas
   # y solo se compraron 24: el 45% del flujo se perdia porque el bot estaba
