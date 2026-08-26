@@ -77,7 +77,10 @@ priority_fees:
   hard_cap: 20000000
 retries:
   max_attempts: 2
-  wait_after_creation: 0
+  # ESPERA 15s ANTES DE COMPRAR, PARA EVITAR RUGS (pedido 26-ago). Con
+  # max_buy_age en 30 (edad contada desde que nace la moneda) quedan ~15s
+  # reales de ventana tras la espera para cruzar los 3.450$.
+  wait_after_creation: 15
   wait_after_buy: 0
 filters:
   listener_type: logs

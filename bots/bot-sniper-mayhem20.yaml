@@ -76,12 +76,19 @@ priority_fees:
   hard_cap: 20000000
 retries:
   max_attempts: 2
-  wait_after_creation: 0
+  # ESPERA 15s ANTES DE COMPRAR, PARA EVITAR RUGS (pedido 26-ago). Da tiempo
+  # a que un rug se note antes de meter dinero.
+  wait_after_creation: 15
   wait_after_buy: 0
 filters:
   listener_type: logs
   max_token_age: 60
-  max_buy_age: 3
+  # SUBIDO de 3 a 30 (obligado por el wait_after_creation de arriba): la
+  # edad se cuenta desde que nace la moneda, no desde que empieza a
+  # vigilarse, asi que con la espera de 15s puesta, un max_buy_age de 3
+  # habria hecho que TODA moneda llegara ya "caducada" a la vigilancia y no
+  # se comprara nunca nada. Con 30, quedan ~15s reales de ventana.
+  max_buy_age: 30
   # Mismo motivo que en mayhemsimple: el suelo de 3.400 no cuenta si ya
   # nacio ahi, solo si lo cruza despues del primer segundo.
   min_buy_age: 1
