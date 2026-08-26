@@ -67,7 +67,12 @@ trade:
   max_hold_time: 600
   price_check_interval: 1
   extreme_fast_mode: false
-  min_reserve_sol: 0.03
+  # SOLO EL GAS DE UNA COMPRA + UNA VENTA (pedido 26-ago), no un colchon
+  # aparte. Con la comision de prioridad fija de mas abajo (20.000.000
+  # microlamports): compra 140.000 CU = 0,0028 SOL, venta 120.000 CU =
+  # 0,0024 SOL -- 0,0052 SOL de ida y vuelta. Puesto en 0,006 con margen
+  # minimo.
+  min_reserve_sol: 0.006
 
 compute_units:
   buy: 140000
