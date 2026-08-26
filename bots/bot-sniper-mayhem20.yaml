@@ -57,8 +57,12 @@ filters:
   ignorar_listas_de_devs: false
   pumpfun_dev:
     enabled: true
-    min_rate: 0.2
-    min_migrations: 3
+    min_rate: 0.25
+    min_migrations: 2
+    # compra sin esperar confirmacion del mercado (6 carteras) -- entra de
+    # primero en vez de decimo. Ver universal_trader.py:2205-2219.
+    compra_inmediata: true
+    timeout_seg: 2.0
   allow_mayhem: true
   require_mayhem: true
   marry_mode: false

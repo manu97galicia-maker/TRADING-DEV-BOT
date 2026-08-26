@@ -261,8 +261,8 @@ filters:
     # SOLO CREADORES QUE HAN MIGRADO EL 20% O MAS de lo que han lanzado.
     # Deja pasar el 0,3% del flujo (13 de 5.167 evaluaciones): cuenta con
     # HORAS entre operacion y operacion, no es que este roto.
-    min_rate: 0.20
-    min_migrations: 1
+    min_rate: 0.25
+    min_migrations: 2
     # La decision se toma al detectar la moneda, no al final. Lo que no
     # cumple se cae antes de gastar RPC; lo que cumple se compra sin esperar
     # confirmacion de mercado.
