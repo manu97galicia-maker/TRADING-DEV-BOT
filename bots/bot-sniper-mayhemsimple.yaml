@@ -23,7 +23,7 @@ platform: pump_fun
 trade:
   buy_amount: 0.03
   mayhem_buy_amount: 0.03
-  max_posiciones: 3
+  max_posiciones: 1
   max_perdidas_seguidas: 2
   mayhem_max_perdidas: 0
   rugs_para_bloquear: 1

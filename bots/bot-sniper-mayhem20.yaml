@@ -9,7 +9,9 @@ platform: pump_fun
 trade:
   buy_amount: 0.03
   mayhem_buy_amount: 0.03
-  max_posiciones: 3
+  # UNA SOLA A LA VEZ (pedido 26-ago, para empezar con cuidado). Sube a 3
+  # cuando se vea como se comporta.
+  max_posiciones: 1
   # DOS PERDIDAS SEGUIDAS Y SE PARA (pedido 26-ago, igual que devmig). Como
   # esta estrategia es 100% mayhem, con esto sobra -- no hace falta ademas
   # mayhem_max_perdidas, que es el freno especifico para un bot que mezcla
