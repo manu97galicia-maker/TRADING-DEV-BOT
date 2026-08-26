@@ -64,7 +64,13 @@ trade:
   # mas abajo), asi que darle menos tiempo a la salida que a la entrada no
   # tendria sentido.
   venta_muerta_seg: 0
-  max_hold_time: 600
+  # SIN TOPE DE TIEMPO (pedido 26-ago, quitado el de 10 min): aguanta hasta
+  # que toque el x2, por mucho que tarde. No hay stop ni escalera aparte --
+  # el unico final posible ahora es el x2 o dejarla abierta para siempre si
+  # nunca lo toca. El motor solo se niega a vigilar si NO hay ni TP, ni
+  # stop, ni tope de tiempo a la vez; aqui SI hay TP (el x2), asi que
+  # arranca sin avisos.
+  max_hold_time: 0
   price_check_interval: 1
   extreme_fast_mode: false
   # SOLO EL GAS DE UNA COMPRA + UNA VENTA (pedido 26-ago), no un colchon
