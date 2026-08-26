@@ -45,9 +45,10 @@ trade:
   # en cuanto salta, el suelo sube al precio de compra; con el TP2 sube al
   # TP1, con el TP3 al TP2, y asi. Antes de esto no habia stop NUNCA -- se
   # podia ganar el TP1 y perderlo todo despues.
+  # SIN STOP DE NINGUN TIPO (pedido 26-ago, quita el trinquete de antes).
   stop_loss_percentage: 0
-  stop_a_entrada_tras_tp: true
-  stop_al_tp_tras_tp: true
+  stop_a_entrada_tras_tp: false
+  stop_al_tp_tras_tp: false
   trailing_stop_percentage: 0
   anti_rug_ratio: 2.0
   anti_rug_seg: 4
@@ -102,7 +103,7 @@ filters:
   # ENTRA SOLO SI YA SUPERA 3,4K (pedido 26-ago). El techo de 3.000 que
   # habia antes es INCOMPATIBLE con un suelo de 3.400 (min > max = nunca
   # compra nada), asi que se quita el techo -- igual que en mayhemsimple.
-  min_entry_mc: 3400
+  min_entry_mc: 3450
   max_entry_mc: 0
   min_curve_sol: 0
   min_volumen_sol: 0
