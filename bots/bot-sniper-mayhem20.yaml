@@ -7,8 +7,8 @@ enabled: true
 separate_process: false
 platform: pump_fun
 trade:
-  buy_amount: 0.05
-  mayhem_buy_amount: 0.05
+  buy_amount: 0.035
+  mayhem_buy_amount: 0.035
   max_posiciones: 3
   # DOS PERDIDAS SEGUIDAS Y SE PARA (pedido 26-ago, igual que devmig). Como
   # esta estrategia es 100% mayhem, con esto sobra -- no hace falta ademas
@@ -46,7 +46,7 @@ trade:
   max_hold_time: 5400
   price_check_interval: 1
   extreme_fast_mode: false
-  min_reserve_sol: 0.05
+  min_reserve_sol: 0.03
 compute_units:
   buy: 140000
   sell: 120000

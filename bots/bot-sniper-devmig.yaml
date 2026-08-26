@@ -36,7 +36,7 @@ separate_process: false
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.12
+  buy_amount: 0.075
   # A CERO: el tamano vuelve a ser fijo (0,15 SOL). Puesto a 0,70 el importe
   # seria el 70% del saldo libre calculado al comprar. Se deja cableado por si
   # se quiere volver a atar al saldo.
@@ -70,7 +70,7 @@ trade:
   # vuelve a comprar. El bloqueo se guarda en disco y lo comparten todos
   # los bots, asi que sobrevive a los reinicios.
   rugs_para_bloquear: 1
-  mayhem_buy_amount: 0.12
+  mayhem_buy_amount: 0.075
   nombre_estrategia: "devmig"
   # TRES A LA VEZ. Con una sola, el 21-ago cumplieron 44 monedas en tres horas
   # y solo se compraron 24: el 45% del flujo se perdia porque el bot estaba
@@ -160,7 +160,7 @@ trade:
   extreme_fast_mode: false
   # Con el tamano atado al saldo, la reserva solo tiene que cubrir la
   # comision de las ventas pendientes, no otra compra entera.
-  min_reserve_sol: 0.02
+  min_reserve_sol: 0.03
 
 compute_units:
   buy: 140000
