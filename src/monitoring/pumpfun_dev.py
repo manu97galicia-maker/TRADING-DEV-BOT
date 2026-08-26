@@ -112,3 +112,21 @@ def mejor_pico(creator: str) -> float:
     """El pico mas alto de una moneda migrada del creador. 0 si no hay dato."""
     picos = _picos.get(creator) or []
     return picos[0] if picos else 0.0
+
+
+def mediana_pico(creator: str, min_monedas: int = 2) -> float:
+    """Mediana de picos de las monedas MIGRADAS del creador.
+
+    0 si hay menos de ``min_monedas`` migradas: con una sola no es mediana,
+    es la suerte de esa moneda. Igual que en ``mejor_pico``, solo cuentan las
+    migradas -- el resto se filtra ya en ``_consultar``.
+    """
+    picos = _picos.get(creator) or []
+    if len(picos) < max(1, min_monedas):
+        return 0.0
+    picos_ordenados = sorted(picos)
+    n = len(picos_ordenados)
+    mitad = n // 2
+    if n % 2:
+        return picos_ordenados[mitad]
+    return (picos_ordenados[mitad - 1] + picos_ordenados[mitad]) / 2

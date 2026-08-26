@@ -516,6 +516,12 @@ class UniversalTrader:
         # vez de con los generales: si alguien ha migrado 4 de cada 10, se le
         # aguanta una caida que a un desconocido no se le aguantaria.
         dev_elite: dict | None = None,
+        # SEGUNDA PUERTA POR MEDIANA. dev_elite exige 2+ monedas por encima de
+        # un pico fijo (pensado para picos de 1M+). Esto es distinto: exige
+        # que la MEDIANA de sus migradas ya supere `min_mediana_mc`, y a
+        # cambio deja entrar hasta `max_entry_mc` (mas alto que el techo
+        # general) sin tocar tamano ni stop -- el trato es solo el techo.
+        dev_mediana: dict | None = None,
         # Techo del max_sol_cost de la compra, incluido el slippage.
         tope_compra_total_sol: float = 0.0,
         # Selector automatico: con 10 operaciones cerradas por estrategia deja
@@ -948,6 +954,7 @@ class UniversalTrader:
         self._bote = Ganancia() if self.escala_por_sol_ganado > 0 else None
         self.horario = horario or {}
         self.dev_elite = dev_elite or {}
+        self.dev_mediana = dev_mediana or {}
         #: Tasa de migracion del creador de cada moneda, guardada al comprar
         #: para poder decidir la salida sin volver a preguntar a la API.
         self._tasa_dev: dict[str, float] = {}
@@ -955,6 +962,11 @@ class UniversalTrader:
         #: porque el tamano y la comision de prioridad se deciden al comprar y
         #: el stop-loss al vigilar: las tres necesitan el mismo dato.
         self._mints_elite: set[str] = set()
+        #: Monedas que entraron por la puerta de la mediana (dev_mediana):
+        #: se consulta en el techo de entrada para dejarlas pasar con un MC
+        #: mas alto que el general. Mismo motivo de marcar-al-detectar que
+        #: `_mints_elite`.
+        self._mints_mediana: set[str] = set()
         #: SOL cobrado en la ultima venta. Cero si no se vendio nada.
         #: Es lo que se suma al total realizado, en vez del estimado:
         #: el 12-ago un cierre sin venta se apunto como +0,1496 SOL.
@@ -2250,20 +2262,48 @@ class UniversalTrader:
                             return
                         _min_m = int(self.pumpfun_dev.get("min_migrations", 2))
                         _min_r = float(self.pumpfun_dev.get("min_rate", 0.24))
+                        _por_mediana = False
                         if _m < _min_m or _r < _min_r:
-                            logger.info(
-                                f"DEV filtro BLOCK {token_info.symbol}: "
-                                f"{_m} migr / {_l} lanz ({_r * 100:.0f}%) "
-                                f"< {_min_m} y {int(_min_r * 100)}%"
+                            # SEGUNDA PUERTA POR MEDIANA. No llega al filtro
+                            # normal, pero si la mediana de sus migradas ya
+                            # supera min_mediana_mc, se compra igual -- luego,
+                            # en el techo de entrada, este mint usa el max_mc
+                            # de dev_mediana en vez del general.
+                            _min_med = float(
+                                self.dev_mediana.get("min_mediana_mc") or 0
                             )
-                            return
+                            if _min_med > 0:
+                                from monitoring.pumpfun_dev import mediana_pico
+
+                                _med = mediana_pico(
+                                    str(_dev0),
+                                    int(self.dev_mediana.get("min_monedas", 2)),
+                                )
+                                _por_mediana = _med >= _min_med
+                            if not _por_mediana:
+                                logger.info(
+                                    f"DEV filtro BLOCK {token_info.symbol}: "
+                                    f"{_m} migr / {_l} lanz ({_r * 100:.0f}%) "
+                                    f"< {_min_m} y {int(_min_r * 100)}%"
+                                )
+                                return
+                            if len(self._mints_mediana) > 5000:
+                                self._mints_mediana.clear()
+                            self._mints_mediana.add(str(token_info.mint))
+                            logger.info(
+                                f"DEV OK {token_info.symbol} por MEDIANA: "
+                                f"${_med:,.0f} (no llega al filtro normal: "
+                                f"{_m} migr/{_l} lanz, {_r * 100:.0f}%) -> "
+                                f"compra inmediata"
+                            )
                         _dev_ya = (_m, _l, _r)
                         self._tasa_dev[str(token_info.mint)] = _r
-                        logger.info(
-                            f"DEV OK {token_info.symbol}: {_m} migraciones de {_l} "
-                            f"lanzamientos ({_r * 100:.0f}%) -> compra inmediata, "
-                            f"sin esperar confirmacion del mercado"
-                        )
+                        if not _por_mediana:
+                            logger.info(
+                                f"DEV OK {token_info.symbol}: {_m} migraciones de "
+                                f"{_l} lanzamientos ({_r * 100:.0f}%) -> compra "
+                                f"inmediata, sin esperar confirmacion del mercado"
+                            )
                         # DEV QUE SUELE PUMPEAR ALTO. Se decide AQUI, mientras
                         # el dato del creador esta recien traido, porque hacen
                         # falta las dos cosas antes de comprar: el tamano y la
@@ -2547,7 +2587,18 @@ class UniversalTrader:
                             and _mc <= self.entrada_alt_max_mc
                             and _v >= self.entrada_alt_min_vol
                         )
-                        if not _alt_ok:
+                        # TERCERA PUERTA: dev_mediana. Este mint ya se marco
+                        # como "entra por mediana" en el filtro de creador; si
+                        # su MC sigue por debajo del techo propio de esa
+                        # puerta (mas alto que el general a proposito), se
+                        # compra igual.
+                        _mediana_max = float(self.dev_mediana.get("max_entry_mc") or 0)
+                        _mediana_ok = (
+                            _mediana_max > 0
+                            and str(token_info.mint) in self._mints_mediana
+                            and _mc <= _mediana_max
+                        )
+                        if not _alt_ok and not _mediana_ok:
                             _porque = ""
                             if self.entrada_alt_max_mc > 0:
                                 _porque = (
@@ -2556,16 +2607,27 @@ class UniversalTrader:
                                     f"{self.entrada_alt_min_vol:.0f} SOL y hay "
                                     f"{_v:.1f}"
                                 )
+                            if _mediana_max > 0:
+                                _porque += (
+                                    f" · la puerta de mediana pide MC<="
+                                    f"${_mediana_max:,.0f}"
+                                )
                             logger.info(
                                 f"Evitado {token_info.symbol}: se paso de la banda "
                                 f"(MC ${_mc:,.0f} > ${self.max_entry_mc:,.0f})"
                                 f"{_porque}"
                             )
                             return
-                        logger.info(
-                            f"{token_info.symbol}: entra por la SEGUNDA PUERTA "
-                            f"(MC ${_mc:,.0f} con {_v:.1f} SOL de volumen)"
-                        )
+                        if _mediana_ok:
+                            logger.info(
+                                f"{token_info.symbol}: entra por la PUERTA DE "
+                                f"MEDIANA (MC ${_mc:,.0f} <= ${_mediana_max:,.0f})"
+                            )
+                        else:
+                            logger.info(
+                                f"{token_info.symbol}: entra por la SEGUNDA PUERTA "
+                                f"(MC ${_mc:,.0f} con {_v:.1f} SOL de volumen)"
+                            )
                     if self.min_entry_mc > 0 and _mc < self.min_entry_mc:
                         await asyncio.sleep(_paso)
                         continue
@@ -2731,12 +2793,26 @@ class UniversalTrader:
             if self.max_entry_mc > 0 and entry_price > 0:
                 entry_mc = entry_price * _PUMP_TOTAL_SUPPLY * _SOL_USD
                 if entry_mc > self.max_entry_mc:
-                    logger.info(
-                        f"MC filtro BLOCK {token_info.symbol}: MC entrada "
-                        f"${entry_mc:,.0f} > máx ${self.max_entry_mc:,.0f} "
-                        f"(ya pumpeada, no entro en el techo)"
-                    )
-                    return
+                    # PUERTA DE MEDIANA: este mint ya paso el filtro de creador
+                    # por mediana (no por tasa/migraciones), y esa puerta trae
+                    # su propio techo, mas alto que el general a proposito.
+                    _mediana_max = float(self.dev_mediana.get("max_entry_mc") or 0)
+                    if (
+                        _mediana_max > 0
+                        and str(token_info.mint) in self._mints_mediana
+                        and entry_mc <= _mediana_max
+                    ):
+                        logger.info(
+                            f"{token_info.symbol}: entra por la PUERTA DE MEDIANA "
+                            f"(MC ${entry_mc:,.0f} <= ${_mediana_max:,.0f})"
+                        )
+                    else:
+                        logger.info(
+                            f"MC filtro BLOCK {token_info.symbol}: MC entrada "
+                            f"${entry_mc:,.0f} > máx ${self.max_entry_mc:,.0f} "
+                            f"(ya pumpeada, no entro en el techo)"
+                        )
+                        return
 
             # SUELO DE ENTRADA: simétrico al tope. Exige que la moneda YA haya
             # despegado un mínimo antes de entrar. Una moneda recién creada sale

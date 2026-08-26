@@ -270,3 +270,18 @@ filters:
     # Si la API de pump.fun no contesta en 2 s, no se compra. Sin el dato del
     # creador esta estrategia no tiene filtro ninguno.
     timeout_seg: 2.0
+
+  # SEGUNDA PUERTA POR MEDIANA (pedida 26-ago). No exige tasa/migraciones
+  # minimas como pumpfun_dev de arriba: exige que la MEDIANA de sus monedas
+  # MIGRADAS ya valga 20K+, con al menos 2 migradas para que sea mediana y no
+  # suerte de una sola. A cambio, deja entrar hasta 4.500 $ de market cap en
+  # vez del techo general (max_entry_mc mas arriba) -- mismo tamano y stop
+  # que el resto, el trato es solo el techo de entrada.
+  #
+  # "QUE NUNCA HAGAN RUG" ya esta cubierto sin nada nuevo: ignorar_listas_de_
+  # devs esta en false, asi que el auto-baneo de blacklist_devs.json (1 rug y
+  # fuera) se aplica a esta puerta exactamente igual que a la normal.
+  dev_mediana:
+    min_mediana_mc: 20000
+    min_monedas: 2
+    max_entry_mc: 4500
