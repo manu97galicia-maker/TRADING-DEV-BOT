@@ -81,7 +81,12 @@ trade:
   # raras, pero no cuesta nada tenerlas. Capital que hace falta para las tres:
   # 3 x 0,15 + 0,02 de reserva = 0,47 SOL.
   max_posiciones: 3
-  max_real_buys: 6
+  # TOPE DE POR VIDA, NO POR TANDA (pedido 26-ago, al mandar fondos nuevos):
+  # 3 compras reales y para para siempre, hasta el proximo reinicio manual.
+  # Sin `reiniciar_tanda: false` el contador vuelve a 0 solo en cuanto se
+  # queda sin posiciones abiertas, y 3 dejarian de ser 3.
+  max_real_buys: 3
+  reiniciar_tanda: false
   # DOS PERDIDAS SEGUIDAS Y LA ESTRATEGIA SE PARA (pedido 26-ago): deja de
   # comprar hasta el proximo reinicio del servicio; lo que ya este abierto
   # se sigue vigilando y vendiendo. Se cuenta con el P&L real de la wallet

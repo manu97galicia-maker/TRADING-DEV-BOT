@@ -24,6 +24,9 @@ trade:
   buy_amount: 0.03
   mayhem_buy_amount: 0.03
   max_posiciones: 1
+  # TOPE DE POR VIDA (pedido 26-ago, al mandar fondos): 3 compras y para.
+  max_real_buys: 3
+  reiniciar_tanda: false
   max_perdidas_seguidas: 2
   mayhem_max_perdidas: 0
   rugs_para_bloquear: 1
