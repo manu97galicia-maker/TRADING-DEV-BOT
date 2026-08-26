@@ -31,8 +31,8 @@ separate_process: false
 platform: "pump_fun"
 
 trade:
-  buy_amount: 0.1
-  mayhem_buy_amount: 0.1
+  buy_amount: 0.01
+  mayhem_buy_amount: 0.01
   rugs_para_bloquear: 1
   nombre_estrategia: "dip"
   max_posiciones: 2
@@ -133,4 +133,4 @@ filters:
     actual_min_mc: 1000
     actual_max_mc: 1300
     ventana_seg: 300
-    buy_amount: 0.1
+    buy_amount: 0.01
