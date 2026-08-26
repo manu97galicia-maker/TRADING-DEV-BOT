@@ -51,10 +51,11 @@ trade:
   # mala). Pero en cuanto salta el TP1, el trinquete SI se activa: el suelo
   # sube al precio de compra, y con cada TP siguiente al TP anterior. Antes
   # de esto, ganar el TP1 y perderlo todo despues era posible; ahora no.
-  # SIN STOP DE NINGUN TIPO (pedido 26-ago, quita el trinquete de antes).
+  # SIN STOP hasta el TP1; el trinquete tras cada TP SI se queda (pedido
+  # 26-ago: se deshizo por error un momento antes).
   stop_loss_percentage: 0
-  stop_a_entrada_tras_tp: false
-  stop_al_tp_tras_tp: false
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: true
   trailing_stop_percentage: 0
   anti_rug_ratio: 2.0
   anti_rug_seg: 4

@@ -45,10 +45,11 @@ trade:
   # en cuanto salta, el suelo sube al precio de compra; con el TP2 sube al
   # TP1, con el TP3 al TP2, y asi. Antes de esto no habia stop NUNCA -- se
   # podia ganar el TP1 y perderlo todo despues.
-  # SIN STOP DE NINGUN TIPO (pedido 26-ago, quita el trinquete de antes).
+  # SIN STOP hasta el TP1; el trinquete tras cada TP SI se queda (pedido
+  # 26-ago: se deshizo por error un momento antes).
   stop_loss_percentage: 0
-  stop_a_entrada_tras_tp: false
-  stop_al_tp_tras_tp: false
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: true
   trailing_stop_percentage: 0
   anti_rug_ratio: 2.0
   anti_rug_seg: 4
