@@ -2762,6 +2762,7 @@ class UniversalTrader:
                 or self.paper_trade
                 or self.paper_engine.enabled
                 or self.max_entry_mc > 0
+                or self.min_entry_mc > 0
             ):
                 try:
                     # commitment="processed" OBLIGATORIO. El cliente se crea sin
