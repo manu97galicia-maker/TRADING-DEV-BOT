@@ -1,0 +1,18 @@
+[Unit]
+Description=DIP - compra el retroceso (pico 5-6K, ahora 1-1,4K), vende al x2
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/ai-bot
+Environment=PYTHONPATH=/root/ai-bot/src
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/root/ai-bot/.venv/bin/python -u run_dip.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

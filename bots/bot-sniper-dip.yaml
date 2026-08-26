@@ -1,0 +1,123 @@
+# DIP - "compra solo las que han subido a 5-6K y ahora estan en 1,2K,
+# vende al x2" (pedido 26-ago, a raiz del analisis de GOG: llego a subir
+# x27,5 pero la vendimos con perdida a los 28s porque el max_hold_time no
+# le dio tiempo). Esta es la otra cara: en vez de comprar al nacer y
+# aguantar poco, deja pasar el pico y compra el RETROCESO -- apostando a
+# que una moneda que YA demostro poder llegar a 5-6K puede volver a subir,
+# sin pagar el precio del pico.
+#
+# NO ES UN FILTRO DE NACIMIENTO. Los otros 4 bots deciden en los primeros
+# segundos con la moneda recien creada. Este vigila monedas que ya lleva
+# vistas hasta 5 minutos, comprobando su curva cada 2s, y compra en cuanto
+# el pico y el valor actual caen dentro de las dos bandas a la vez. Motor
+# nuevo (`_dip_scanner_loop` / `dip:` en universal_trader.py) -- 0
+# operaciones reales, 0 dato, es de hoy.
+#
+# SIN FILTRO DE CREADOR, a proposito: no se pidio ninguno, la apuesta es
+# puramente el patron de precio (ya llego arriba, volvio a caer).
+#
+# SIN STOP Y SIN ESCALERA, a proposito: "vende al x2" es un solo objetivo,
+# el 100% de la posicion. Si la caida continua en vez de rebotar, no hay
+# nada que corte antes del tope de tiempo de mas abajo (max_hold_time) --
+# eso es jugarsela a que rebote, no una decision de gestion de riesgo. Si
+# lo quieres con stop, dimelo.
+name: "DIP - compra el retroceso (pico 5-6K, ahora 1-1,4K), vende al x2, 0,03 SOL"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: true
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.01
+  mayhem_buy_amount: 0.01
+  rugs_para_bloquear: 1
+  nombre_estrategia: "dip"
+  max_posiciones: 2
+  max_perdidas_seguidas: 2
+  # TOPE DE POR VIDA, igual que las otras 4: probar con cuidado.
+  max_real_buys: 3
+  reiniciar_tanda: false
+
+  buy_slippage: 0.3
+  sell_slippage: 0.9
+  exit_strategy: "tp_sl"
+
+  # VENDE AL x2, TODO DE UNA VEZ. take_profit_percentage=1.0 es +100% (el
+  # precio se dobla) sobre el precio de ESTA compra, no sobre el pico
+  # anterior -- comprando ya en el retroceso, doblar desde ahi es mucho mas
+  # alcanzable que doblar desde el pico original.
+  take_profit_percentage: 1.0
+  take_profit_sell_percentage: 1.0
+  mc_take_profit_tiers: []
+  stop_loss_percentage: 0
+  trailing_stop_percentage: 0
+
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+  # BACKSTOP DE TIEMPO, no pedido explicitamente -- sin esto, una moneda
+  # que nunca rebota se queda abierta para siempre. 10 minutos: la ventana
+  # del scanner para ENCONTRAR el patron ya es de 5 min (ver filters.dip
+  # mas abajo), asi que darle menos tiempo a la salida que a la entrada no
+  # tendria sentido.
+  venta_muerta_seg: 0
+  max_hold_time: 600
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.03
+
+compute_units:
+  buy: 140000
+  sell: 120000
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 20000000
+  extra_percentage: 0.0
+  hard_cap: 20000000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  # Campo obligatorio del validador de config; no hace nada util aqui --
+  # ver el aviso de min_entry_mc mas abajo sobre por que.
+  max_token_age: 5
+  max_buy_age: 5
+  # SOLO MAYHEM, a juego con el resto de la sesion de hoy -- si tambien lo
+  # quieres para pump.fun normal, dimelo y quito require_mayhem.
+  allow_mayhem: true
+  require_mayhem: true
+  marry_mode: false
+  yolo_mode: true
+  ignorar_listas_de_devs: false
+  no_repeat_name_min: 10
+  match_string: null
+  pumpfun_dev:
+    enabled: false
+  # BLOQUEA EL CAMINO NORMAL DE COMPRA A PROPOSITO. Este bot recibe TODAS
+  # las monedas nuevas como cualquier otro (mismo listener), y sin esto
+  # compraria cualquier mayhem al nacer por el camino de siempre, ademas de
+  # las del scanner de dip -- que es justo lo que NO se pidio. Un suelo de
+  # entrada imposible de cruzar cierra ese camino sin tocar el motor; el
+  # scanner de dip (filters.dip, mas abajo) es un camino de compra aparte
+  # que no pasa por este suelo.
+  min_entry_mc: 999999999
+
+  # EL FILTRO DE ESTA ESTRATEGIA: pico entre 5K y 6K, valor actual entre 1K
+  # y 1,4K (el "1,2" pedido, con un poco de margen a cada lado), dentro de
+  # los primeros 5 minutos de vida de la moneda.
+  dip:
+    pico_min_mc: 5000
+    pico_max_mc: 6000
+    actual_min_mc: 1000
+    actual_max_mc: 1400
+    ventana_seg: 300
+    buy_amount: 0.01

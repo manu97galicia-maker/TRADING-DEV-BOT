@@ -527,6 +527,14 @@ class UniversalTrader:
         # en ESTE lanzamiento por su creador. Ver el comentario en el punto
         # donde se usa (busca "dev-buy").
         dev_buy: dict | None = None,
+        # COMPRAR EL RETROCESO: {pico_min_mc, pico_max_mc, actual_min_mc,
+        # actual_max_mc, ventana_seg}. No mira el nacimiento -- vigila
+        # monedas ya vistas hasta `ventana_seg` despues de nacer, y compra
+        # si llegaron a tener un pico dentro de la banda alta y AHORA estan
+        # dentro de la banda baja (ya recogieron beneficios y volvieron a
+        # bajar). Pedido 26-ago: "las que subieron a 5-6K y ahora estan en
+        # 1,2K". Vende siempre al x2 desde ESTA compra, no desde el pico.
+        dip: dict | None = None,
         # Techo del max_sol_cost de la compra, incluido el slippage.
         tope_compra_total_sol: float = 0.0,
         # Selector automatico: con 10 operaciones cerradas por estrategia deja
@@ -967,6 +975,16 @@ class UniversalTrader:
         self.dev_elite = dev_elite or {}
         self.dev_mediana = dev_mediana or {}
         self.dev_buy = dev_buy or {}
+        self.dip = dip or {}
+        #: mint -> TokenInfo, solo si dip esta configurado. Lo necesita el
+        #: scanner para poder comprar un mint visto hace minutos, cuando ya
+        #: no esta en la cola normal (esa es de un solo paso).
+        self._token_info_cache: dict[str, TokenInfo] = {}
+        #: mint -> pico de market cap visto hasta ahora (solo mientras dip
+        #: este configurado y el mint siga dentro de la ventana).
+        self._dip_pico: dict[str, float] = {}
+        #: mints por los que el scanner ya intento comprar, para no repetir.
+        self._dip_intentado: set[str] = set()
         #: Tasa de migracion del creador de cada moneda, guardada al comprar
         #: para poder decidir la salida sin volver a preguntar a la API.
         self._tasa_dev: dict[str, float] = {}
@@ -1107,6 +1125,8 @@ class UniversalTrader:
         asyncio.create_task(self._moonbag_notifier_loop())  # noqa: RUF006
         asyncio.create_task(self._reinicia_tanda_loop())  # noqa: RUF006
         asyncio.create_task(self._precio_sol_loop())  # noqa: RUF006
+        if self.dip.get("pico_min_mc"):
+            asyncio.create_task(self._dip_scanner_loop())  # noqa: RUF006
         if self.senal_gmgn:
             from monitoring.senales import refrescar
 
@@ -1299,6 +1319,17 @@ class UniversalTrader:
 
         # Record timestamp when token was discovered
         self.token_timestamps[token_key] = monotonic()
+        if self.dip.get("pico_min_mc"):
+            self._token_info_cache[token_key] = token_info
+            if len(self._token_info_cache) > 4000:
+                # Se tira lo mas viejo; el scanner de dip no mira mas alla
+                # de dip.ventana_seg de todas formas.
+                _viejo = min(
+                    self._token_info_cache,
+                    key=lambda m: self.token_timestamps.get(m, 0.0),
+                )
+                self._token_info_cache.pop(_viejo, None)
+                self._dip_pico.pop(_viejo, None)
 
         await self.token_queue.put(token_info)
         logger.info(
@@ -5087,6 +5118,116 @@ class UniversalTrader:
                 self._compras_de_la_tanda = 0
             except Exception:  # noqa: BLE001 - esto nunca debe romper el bot
                 logger.debug("reinicio de tanda", exc_info=True)
+
+    async def _dip_scanner_loop(self) -> None:
+        """COMPRAR EL RETROCESO. No mira monedas al nacer -- vigila las que
+        ya se vieron nacer (hasta `dip.ventana_seg` de vida) buscando que
+        hayan tenido un pico dentro de la banda alta y que AHORA esten
+        dentro de la banda baja: subieron, alguien recogio beneficios, y
+        volvieron a caer. Compra ahi, no en el pico.
+
+        Separado a proposito del filtro de nacimiento (`_handle_token`): ese
+        decide en los primeros segundos con la moneda en la cola; esto
+        decide minutos despues con la moneda ya fuera de la cola, así que
+        necesita su propia copia del TokenInfo (`_token_info_cache`) para
+        poder comprar.
+        """
+        _pico_min = float(self.dip.get("pico_min_mc") or 0)
+        _pico_max = float(self.dip.get("pico_max_mc") or 0)
+        _act_min = float(self.dip.get("actual_min_mc") or 0)
+        _act_max = float(self.dip.get("actual_max_mc") or 0)
+        _ventana = float(self.dip.get("ventana_seg") or 300)
+        if not (_pico_min and _pico_max and _act_min and _act_max):
+            return
+        logger.info(
+            "DIP scanner activo: pico $%.0f-$%.0f, ahora $%.0f-$%.0f, "
+            "ventana %.0fs",
+            _pico_min, _pico_max, _act_min, _act_max, _ventana,
+        )
+        while True:
+            await asyncio.sleep(2.0)
+            try:
+                ahora = monotonic()
+                for mint, token_info in list(self._token_info_cache.items()):
+                    if mint in self._dip_intentado or mint in self.bought_mints:
+                        continue
+                    nacida = self.token_timestamps.get(mint)
+                    if nacida is None:
+                        continue
+                    edad = ahora - nacida
+                    if edad > _ventana:
+                        self._token_info_cache.pop(mint, None)
+                        self._dip_pico.pop(mint, None)
+                        continue
+                    try:
+                        st = await (
+                            self.platform_implementations.curve_manager
+                            .get_pool_state(
+                                token_info.bonding_curve, commitment="processed"
+                            )
+                        )
+                        precio = float(st.get("price_per_token") or 0)
+                    except Exception:  # noqa: BLE001
+                        continue
+                    if precio <= 0:
+                        continue
+                    mc = precio * _PUMP_TOTAL_SUPPLY * _SOL_USD
+                    pico = max(self._dip_pico.get(mint, 0.0), mc)
+                    self._dip_pico[mint] = pico
+                    if not (_pico_min <= pico <= _pico_max):
+                        continue
+                    if not (_act_min <= mc <= _act_max):
+                        continue
+                    self._dip_intentado.add(mint)
+                    logger.info(
+                        f"DIP {token_info.symbol}: pico ${pico:,.0f} "
+                        f"(dentro de ${_pico_min:,.0f}-${_pico_max:,.0f}), "
+                        f"ahora ${mc:,.0f} (dentro de ${_act_min:,.0f}-"
+                        f"${_act_max:,.0f}) a los {edad:.0f}s -> compra"
+                    )
+                    asyncio.create_task(self._comprar_dip(token_info))  # noqa: RUF006
+            except Exception:  # noqa: BLE001 - un fallo aqui no tumba el scanner
+                logger.debug("dip scanner", exc_info=True)
+
+    async def _comprar_dip(self, token_info: TokenInfo) -> None:
+        """Compra fuera de la cola normal, con el mismo cerrojo de saldo y
+        el mismo tope de posiciones que cualquier otra compra -- lo unico
+        que cambia es que la decision no viene de `_handle_token`."""
+        importe = float(self.dip.get("buy_amount") or self.buy_amount)
+        need = int(
+            importe * (1 + self.buy_slippage) * LAMPORTS_PER_SOL
+        ) + self._fee_headroom_lamports
+        if self._position_semaphore.locked():
+            logger.info(
+                f"DIP {token_info.symbol}: max posiciones abiertas, no compra"
+            )
+            return
+        async with self._position_semaphore:
+            async with self._spend_lock:
+                bal = await self.solana_client.get_sol_balance(self.wallet.pubkey)
+                free = bal - self._reserved_lamports - self.min_reserve_lamports
+                if free < need:
+                    logger.warning(
+                        f"DIP {token_info.symbol}: SOL insuficiente "
+                        f"(libre={free / LAMPORTS_PER_SOL:.4f}, "
+                        f"necesita={need / LAMPORTS_PER_SOL:.4f})"
+                    )
+                    return
+                self._reserved_lamports += need
+            try:
+                buy_result: TradeResult = await self.buyer.execute(
+                    token_info, amount_sol=importe,
+                )
+                if not buy_result.success:
+                    await self._handle_failed_buy(token_info, buy_result)
+                    return
+                _pico = self._dip_pico.get(str(token_info.mint), 0.0)
+                await self._handle_successful_buy(
+                    token_info, buy_result, f"DIP: pico ${_pico:,.0f}"
+                )
+            finally:
+                async with self._spend_lock:
+                    self._reserved_lamports -= need
 
     async def _moonbag_notifier_loop(self) -> None:
         """Cada 5 min avisa por Telegram de los moonbags retenidos (venta manual)."""
