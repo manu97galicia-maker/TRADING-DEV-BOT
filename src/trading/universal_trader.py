@@ -522,6 +522,11 @@ class UniversalTrader:
         # cambio deja entrar hasta `max_entry_mc` (mas alto que el techo
         # general) sin tocar tamano ni stop -- el trato es solo el techo.
         dev_mediana: dict | None = None,
+        # COMPRA GRANDE DEL PROPIO CREADOR: {min_sol}. Independiente de
+        # pumpfun_dev -- no mira historial, mira el dinero de verdad puesto
+        # en ESTE lanzamiento por su creador. Ver el comentario en el punto
+        # donde se usa (busca "dev-buy").
+        dev_buy: dict | None = None,
         # Techo del max_sol_cost de la compra, incluido el slippage.
         tope_compra_total_sol: float = 0.0,
         # Selector automatico: con 10 operaciones cerradas por estrategia deja
@@ -955,6 +960,7 @@ class UniversalTrader:
         self.horario = horario or {}
         self.dev_elite = dev_elite or {}
         self.dev_mediana = dev_mediana or {}
+        self.dev_buy = dev_buy or {}
         #: Tasa de migracion del creador de cada moneda, guardada al comprar
         #: para poder decidir la salida sin volver a preguntar a la API.
         self._tasa_dev: dict[str, float] = {}
@@ -2212,6 +2218,39 @@ class UniversalTrader:
 
                 _tarea_redes = asyncio.create_task(
                     _redes.leer(token_info.uri, self.redes_timeout)
+                )
+
+            # COMPRA GRANDE DEL PROPIO CREADOR (dev-buy). Independiente del
+            # historial de `pumpfun_dev` de mas abajo -- esto no mira cuantas
+            # veces ha migrado, mira si SE HA JUGADO dinero de verdad en ESTE
+            # lanzamiento. Pedido 26-ago tras ver Frug: el creador metio 6,01
+            # SOL en la misma transaccion de creacion, y en ese mismo segundo
+            # entraron ya 4 compradores reales mas.
+            #
+            # SALE GRATIS, SIN LLAMADA NINGUNA. Si la creacion vino con un
+            # buy en la misma transaccion, `registrar_logs` ya lo conto en
+            # `volumen._ops` ANTES de que el parser devolviera este
+            # TokenInfo -- las dos funciones leen los MISMOS logs de la MISMA
+            # notificacion del websocket (universal_logs_listener.py:214-231).
+            if self.dev_buy.get("min_sol"):
+                from monitoring.volumen import compra_creador_sol
+
+                _creador_db = str(
+                    getattr(token_info, "creator", None)
+                    or getattr(token_info, "user", None)
+                    or ""
+                )
+                _compra_dev = compra_creador_sol(str(token_info.mint), _creador_db)
+                _min_dev_buy = float(self.dev_buy["min_sol"])
+                if _compra_dev < _min_dev_buy:
+                    logger.info(
+                        f"Evitado {token_info.symbol}: dev-buy de "
+                        f"{_compra_dev:.3f} SOL < minimo {_min_dev_buy:.2f}"
+                    )
+                    return
+                logger.info(
+                    f"{token_info.symbol}: DEV-BUY DE {_compra_dev:.3f} SOL "
+                    f"-> compra inmediata, sin esperar confirmacion"
                 )
 
             # EL HISTORIAL DEL CREADOR, LO PRIMERO DE TODO.

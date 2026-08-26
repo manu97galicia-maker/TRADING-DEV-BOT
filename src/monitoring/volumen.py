@@ -176,6 +176,22 @@ def compras_primer_bloque(mint: str) -> int:
     return int(_first_slot_buys.get(mint, 0))
 
 
+def compra_creador_sol(mint: str, creador: str) -> float:
+    """SOL que el propio creador se ha gastado comprando su moneda.
+
+    Suma TODAS sus compras vistas, no solo la del bloque de creacion -- en la
+    practica es casi siempre la misma, porque el dev-buy de creacion es
+    la unica compra del creador que hay antes de que el bot decida. Cuesta
+    cero: es el mismo stream de ``TradeEvent`` que ya se lee para el volumen.
+    """
+    if not creador:
+        return 0.0
+    return sum(
+        s for _t, s, es_compra, w in (_ops.get(mint) or ())
+        if es_compra and w == creador
+    )
+
+
 def titulares(mint: str) -> int:
     """Wallets distintas que han comprado y todavia no han soltado.
 

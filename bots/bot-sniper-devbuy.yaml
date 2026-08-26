@@ -1,0 +1,129 @@
+# DEVBUY - "otra estrategia" pedida 26-ago, a partir de Frug
+# (FzJ1Cm4kwEjiPmfna8WXWwjC7i41KnB9oi9wz3nHpump).
+#
+# EL PATRON: en su segundo 0 (el de creacion), el propio creador se jugo
+# 6,01 SOL comprando su moneda en la MISMA transaccion de creacion, y en ese
+# mismo segundo entraron ya 4 compradores reales mas (~0,57 SOL entre los
+# cuatro). Se le pregunto a Manu que parte de eso importaba -- la compra
+# grande del creador o los compradores rapidos -- y eligio la del creador.
+#
+# QUE ES DISTINTO DE pumpfun_dev (devmig/mayhem): eso mira el HISTORIAL del
+# creador (cuanto ha migrado antes). Esto no mira historial ninguno -- mira
+# si se ha jugado dinero de verdad en ESTE lanzamiento concreto. Un creador
+# sin una sola moneda previa puede pasar este filtro; uno con 50% de tasa
+# pero que abre con 0,1 SOL, no.
+#
+# SALE GRATIS, SIN LLAMADA NINGUNA: el dev-buy va en la MISMA transaccion
+# que la creacion, y `volumen.registrar_logs` ya lo cuenta de los mismos
+# logs del websocket antes de que el parser devuelva la moneda. Cero
+# latencia añadida -- ver universal_trader.py, bloque "COMPRA GRANDE DEL
+# PROPIO CREADOR".
+#
+# NUMEROS SIN VALIDAR, dicho claro: esto es de HOY, 0 operaciones reales.
+# El umbral (2 SOL) y el tamaño (0,05) son un punto de partida razonado, no
+# una medida como el 25%/2-migraciones de devmig. Ajustalos con lo que veas
+# en trades/ o en Telegram.
+name: "DEVBUY - creador se juega 2+ SOL en su propia creacion, 0,05 SOL, solo pump.fun"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: true
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.05
+  fraccion_saldo: 0
+  compra_minima_sol: 0.03
+  rugs_para_bloquear: 1
+  mayhem_buy_amount: 0.05
+  nombre_estrategia: "devbuy"
+  max_posiciones: 3
+  max_real_buys: 6
+  max_perdidas_seguidas: 2
+  escala_por_sol_ganado: 0
+
+  buy_slippage: 0.12
+  sell_slippage: 0.25
+  exit_strategy: "tp_sl"
+
+  # Misma escalera que devmig ahora mismo (20/40/40, sin moonbag): sin dato
+  # propio de ESTE filtro, se reusa la que ya esta corriendo en vez de
+  # inventar una tercera.
+  take_profit_percentage: 0.35
+  take_profit_sell_percentage: 0.20
+  tp2_gain: 0.82
+  tp2_sell: 0.40
+  tp3_gain: 1.46
+  tp3_sell: 0.40
+  mc_take_profit_tiers: []
+
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: true
+  stop_loss_percentage: 0.65
+  trailing_stop_percentage: 0
+
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+  venta_bajo_entrada_seg: 60
+  venta_muerta_seg: 120
+  venta_muerta_gain: 0.0
+  venta_sin_volumen_seg: 180
+  max_hold_time: 3600
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.03
+
+compute_units:
+  buy: 140000
+  sell: 120000
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 5_714_283
+  extra_percentage: 0.0
+  hard_cap: 5_714_283
+
+retries:
+  max_attempts: 1
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 20
+  max_buy_age: 5
+  no_repeat_name_min: 10
+  match_string: null
+  ignorar_listas_de_devs: false
+  allow_mayhem: false
+  marry_mode: false
+  yolo_mode: true
+  require_mayhem: false
+
+  # Mismo techo de entrada que devmig ahora mismo: el dev-buy no compra un
+  # techo mas alto por si mismo, a diferencia de dev_mediana (que si lo
+  # gana, porque ahi hay un historial de picos detras).
+  max_entry_mc: 3406
+  min_entry_mc: 0
+  min_volumen_sol: 0
+  max_volumen_sol: 0
+  min_titulares: 0
+  min_presion_ratio: 0
+  presion_seg: 0
+  min_holders: 0
+  min_holders_gmgn: 0
+
+  # EL FILTRO DE ESTA ESTRATEGIA. min_sol: SOL minimo que el creador se
+  # tiene que haber gastado comprando su propia moneda para que se compre.
+  # Frug abrio con 6,01 -- el umbral se puso mas bajo a proposito para no
+  # exigir calcar ese numero exacto (una estrategia que solo compra "6 SOL o
+  # mas" tendria flujo casi nulo).
+  dev_buy:
+    min_sol: 2.0
+
+  pumpfun_dev:
+    enabled: false
