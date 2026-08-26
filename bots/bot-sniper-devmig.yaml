@@ -82,7 +82,12 @@ trade:
   # 3 x 0,15 + 0,02 de reserva = 0,47 SOL.
   max_posiciones: 3
   max_real_buys: 6
-  max_perdidas_seguidas: 0
+  # DOS PERDIDAS SEGUIDAS Y LA ESTRATEGIA SE PARA (pedido 26-ago): deja de
+  # comprar hasta el proximo reinicio del servicio; lo que ya este abierto
+  # se sigue vigilando y vendiendo. Se cuenta con el P&L real de la wallet
+  # (delta neto), no con si toco un TP -- una que cobra TP1 y luego se hunde
+  # tambien cuenta como perdida si cierra en negativo.
+  max_perdidas_seguidas: 2
   escala_por_sol_ganado: 0
 
   buy_slippage: 0.12

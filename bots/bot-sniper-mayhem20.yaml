@@ -10,7 +10,15 @@ trade:
   buy_amount: 0.05
   mayhem_buy_amount: 0.05
   max_posiciones: 3
+  # DOS PERDIDAS SEGUIDAS Y SE PARA (pedido 26-ago, igual que devmig). Como
+  # esta estrategia es 100% mayhem, con esto sobra -- no hace falta ademas
+  # mayhem_max_perdidas, que es el freno especifico para un bot que mezcla
+  # mayhem y normales.
+  max_perdidas_seguidas: 2
   mayhem_max_perdidas: 0
+  # UN RUG Y BLOQUEADO PARA SIEMPRE (iba al valor por defecto del motor, 2;
+  # ahora explicito e igual que devmig).
+  rugs_para_bloquear: 1
   buy_slippage: 0.3
   sell_slippage: 0.9
   exit_strategy: tp_sl
