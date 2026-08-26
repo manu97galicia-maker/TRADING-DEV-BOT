@@ -81,10 +81,11 @@ filters:
   listener_type: logs
   # EDAD: los dos numeros del screener, sin margen de mas.
   max_token_age: 5
-  # VENTANA ESTRECHADA A 1-2s (pedido 26-ago, antes 1-5s): solo cuenta si
-  # cruza 3.400$ en el primer o segundo segundo de vida, ni antes ni
-  # despues.
-  max_buy_age: 2
+  # VENTANA 1-30s (pedido 26-ago, ampliada desde 1-2s): compra en el
+  # instante exacto en que cruce 3.400$ en cualquier punto de los primeros
+  # 30s -- la comprobacion es cada 0,15s y compra nada mas cumplir, no
+  # espera a que acabe la ventana.
+  max_buy_age: 30
   # NO CUENTA SI YA NACIO POR ENCIMA: el suelo de 3.400 solo vale si lo
   # cruza DESPUES del primer segundo, no si ya abre ahi. Nacer ya inflada es
   # la senal de un dev-buy grande o un bundle, no de demanda real subiendo
