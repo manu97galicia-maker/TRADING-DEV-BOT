@@ -23,7 +23,11 @@ trade:
   tp4_gain: 6.0
   tp4_sell: 0.125
   tp5_gain: 9.0
-  tp5_sell: 0.125
+  # 12,5 baja a 9,5 para dejar un 3% de moonbag (pedido 26-ago): 50+12,5+12,5+
+  # 12,5+9,5 = 97, el 3% que falta no se vende nunca. Se recorta del ultimo
+  # tramo (x10), no del primero: el TP1 sigue siendo el que recupera lo
+  # puesto.
+  tp5_sell: 0.095
   stop_loss_percentage: 0
   trailing_stop_percentage: 0
   anti_rug_ratio: 2.0
