@@ -1,4 +1,4 @@
-name: MAYHEM - dev >=20% migrado (sin techo), solo mayhem, 0,05 SOL, escalera x2/x3/x6/x7/x10 sin stop
+name: MAYHEM - dev >=25% migrado (min 2, sin techo), solo mayhem, 0,03 SOL, escalera x2/x3/x6/x7/x10, max 28s
 env_file: .env
 rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
 wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
