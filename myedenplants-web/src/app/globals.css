@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
+
+  --color-eden-50: #f3f7f1;
+  --color-eden-100: #e2ecdd;
+  --color-eden-200: #c6d9be;
+  --color-eden-300: #a0be93;
+  --color-eden-400: #78a067;
+  --color-eden-500: #598348;
+  --color-eden-600: #426837;
+  --color-eden-700: #35532e;
+  --color-eden-800: #2b4326;
+  --color-eden-900: #1f3220;
+  --color-eden-950: #101c11;
+
+  --color-clay-100: #f7ece2;
+  --color-clay-300: #e3bfa0;
+  --color-clay-500: #c2794a;
+  --color-clay-700: #8c5230;
+
+  --color-sand-50: #fbf9f4;
+  --color-sand-100: #f4efe4;
+  --color-sand-200: #e8e0cf;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-sand-50);
+    color: var(--color-eden-950);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@utility container-eden {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 76rem;
+  padding-inline: 1.25rem;
+}
