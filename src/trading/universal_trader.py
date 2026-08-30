@@ -549,6 +549,7 @@ class UniversalTrader:
         mayhem_max_perdidas: int = 0,
         # How long (seconds) a paper candidate's price is followed
         paper_watch_secs: int = 300,
+        paper_watch_paso: float = 5.0,
         # Suffix for per-bot state files so two bots on the same wallet don't
         # clobber each other's dedup / open-position recovery.
         state_suffix: str = "",
@@ -971,6 +972,12 @@ class UniversalTrader:
         # Reserva mínima de SOL que nunca se gasta (para fees / no quedarse a 0).
         self.min_reserve_lamports = int(float(min_reserve_sol or 0.03) * LAMPORTS_PER_SOL)
         self.paper_watch_secs = int(paper_watch_secs or 300)
+        #: Cada cuanto se mira el precio en la simulacion. Cinco segundos valen
+        #: para una estrategia que respira en minutos, pero una moneda que hace
+        #: su pico en un segundo pasa entera entre dos lecturas y la simulacion
+        #: apunta un maximo que no es el suyo. Se deja configurable para poder
+        #: medir esas: cuesta una llamada por segundo y moneda vigilada.
+        self.paper_watch_paso = max(0.2, float(paper_watch_paso or 5.0))
         from paper_trading import PaperTradingEngine
 
         self.paper_engine = PaperTradingEngine(paper_trading_config)
@@ -1393,7 +1400,7 @@ class UniversalTrader:
         try:
             async with self._watch_semaphore:
                 while time.time() - start < self.paper_watch_secs:
-                    await asyncio.sleep(5)
+                    await asyncio.sleep(self.paper_watch_paso)
                     try:
                         st = await self.platform_implementations.curve_manager.get_pool_state(
                             token_info.bonding_curve, commitment="processed"
