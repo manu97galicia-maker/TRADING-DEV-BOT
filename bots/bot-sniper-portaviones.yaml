@@ -37,7 +37,7 @@
 # un 20%: es el valor que pidio Manu y en el codigo los dos usan el mismo
 # campo (`stop_loss_percentage`).
 
-name: "PORTAVIONES - copia 9 wallets, entrada MC<4K"
+name: "PORTAVIONES - copia 8 wallets, entrada MC<4K"
 env_file: ".env"
 
 # SOLO AVISOS DE COMPRA. El bot mandaba tambien senales, moonbags cada 5
@@ -229,7 +229,6 @@ filters:
       - "8Bq1Uu6dFCZZj3LRb6sAJ9q4gtXWCqZAKpzFV2FbHpg"
       - "34KFwXnPRU5FHdDwJmz4cqZv8gM6HC8KvVH8K62YuF3E"
       - "5CEbueQng1Ym2uSSx2xXds3jQAqT1BDnkA59RZobSPAG"
-      - "J4iit8MmXd2P46DzQxk7dj3qjY3m9G3Ck5zrPkBV54JV"
     poll_interval: 0.5
     follow_funded: false
 

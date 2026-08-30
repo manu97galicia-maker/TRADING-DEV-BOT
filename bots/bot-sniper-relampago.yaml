@@ -1,0 +1,297 @@
+# RELAMPAGO — copia UNA sola wallet y sale en segundos.
+#
+# Pedida por Manu: copiar a J4iit8MmXd2P46DzQxk7dj3qjY3m9G3Ck5zrPkBV54JV,
+# comprar SIEMPRE por debajo de 4K de market cap, empezar con 0,025 SOL y
+# vender rapidisimo, porque lo que compra esa wallet suele hacer +200-500%
+# en cuestion de un segundo.
+#
+# Esa wallet ya estaba dentro de PORTAVIONES junto a otras ocho. Se ha sacado
+# de alli al crear esta: con las dos activas, cada compra suya disparaba DOS
+# compras nuestras (0,07 de PORTAVIONES + 0,025 de aqui) sobre la misma moneda
+# y con salidas distintas. Si algun dia se quiere volver atras, es una linea en
+# bot-sniper-portaviones.yaml.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# LO QUE HAY QUE SABER ANTES DE ENCENDERLA
+# ─────────────────────────────────────────────────────────────────────────────
+# 1) LA COPIA VA CON RETRASO, y no es poco. El bot no tiene un feed privado de
+#    esa wallet: pregunta al RPC por sus firmas nuevas (getSignaturesForAddress
+#    + getTransaction). Con `poll_interval: 0.2` y una sola wallet el ciclo sale
+#    a ~0,5 s, y a eso hay que sumarle leer la curva y que la compra aterrice.
+#    En la practica se entra entre 1 y 3 segundos DESPUES que ella.
+#
+#    En una moneda que hace su x3-x6 en un segundo, ese retraso significa que
+#    muchas veces llegaremos con el market cap YA por encima de 4K. Cuando pasa,
+#    esta estrategia NO compra -- es exactamente la regla que pidio Manu
+#    ("compra siempre debajo de 4k mcap"), y es la que impide comprarle el techo
+#    a nadie. Consecuencia honesta: habra bastantes senales de la wallet que se
+#    queden en el log como "MC filtro BLOCK" y no se conviertan en compra. Si se
+#    quiere entrar mas veces, el numero que hay que tocar es `max_entry_mc`,
+#    no el resto.
+#
+# 2) EN MODO COPIA NO HAY LISTENER DE LOGS. El bot se salta el flujo de monedas
+#    nuevas y va directo a la moneda que ella compro, asi que los contadores en
+#    memoria (volumen, compras, titulares, presion) estan VACIOS. Por eso aqui
+#    van todos a 0: puestos a cualquier otra cosa no filtrarian, bloquearian
+#    todas las compras. El ANTI-RUG bebe de esos mismos contadores, asi que
+#    tampoco dispara: aqui la red de seguridad es de PRECIO (stop, trailing,
+#    venta muerta), no de presion vendedora.
+#
+# 3) CON 0,025 SOL LAS COMISIONES PESAN. Cada transaccion paga la comision de
+#    prioridad, y esa no baja porque la posicion sea pequena. Por eso la tarifa
+#    esta en 5M (0,0007 SOL en la compra, 0,0006 en la venta: ~5% de ida y
+#    vuelta sobre 0,025) y no en los 20M de PORTAVIONES, que sobre esta ficha
+#    serian el 22%. Al subir el tamano de la posicion, subir tambien la tarifa.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# LA SALIDA: DOS TRAMOS Y FUERA
+# ─────────────────────────────────────────────────────────────────────────────
+# "Vender rapidisimo" con una escalera de cuatro escalones es una contradiccion:
+# cada escalon es una transaccion mas y, con 0,025 SOL, tramos del 10% son polvo
+# que cuesta mas vender que lo que vale. Asi que son dos, y el segundo cierra:
+#
+#   +80%  -> vende el 70%  (0,70 x 1,8 = 1,26: el capital vuelve y sobra)
+#   +250% -> vende el 30% restante (se sale entera, sin moonbag que vigilar)
+#
+# Los precios se leen cada 0,5 s y los escalones se cobran AL PRECIO VIVO: si la
+# moneda pega el salto entre dos lecturas y aparece en +400%, los dos escalones
+# se disparan en la misma vuelta y se vende ahi, no al +80% teorico.
+#
+# Y si se da la vuelta antes de llegar: el trailing del 25% (armado en cuanto
+# sube un 20%) vende todo desde el maximo, el stop del 35% corta la que se
+# hunde, y a los 20 s la que no ha hecho nada se cierra sola.
+
+name: "RELAMPAGO - copia J4iit8, MC<4K, 0,025 SOL, salida en segundos"
+env_file: ".env"
+
+# SOLO AVISOS DE COMPRA, como en las demas: el aviso que no hay que ignorar es
+# el de "acabo de gastar tu dinero". Quitar esta clave devuelve todos.
+avisos_telegram: ["compra"]
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+# Proceso aparte: comparte wallet con PORTAVIONES, pero no puede compartir
+# bucle. El vigilante de posiciones de esta mira precios cada 0,5 s y no se
+# puede quedar esperando a otra estrategia.
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  # 0,025 SOL, el tamano de arranque que pidio Manu.
+  buy_amount: 0.025
+  # Margen ancho a proposito: se entra en una moneda que ya se esta moviendo, y
+  # con margen corto la transaccion REVIENTA y se paga comision sin moneda.
+  buy_slippage: 0.30
+  # Techo duro de lo que puede salir de la wallet por compra, slippage incluido:
+  # 0,025 x 1,30 = 0,0325. Si algun dia se toca `buy_amount` de mas por error,
+  # este numero es el que impide que la compra crezca sin querer.
+  tope_compra_total_sol: 0.0325
+  # 0,35 y no mas alto: con margenes del 90% el bot aceptaba cobrar un 90% menos
+  # de lo esperado y lo apuntaba como si hubiera cobrado entero.
+  sell_slippage: 0.35
+
+  exit_strategy: "tp_sl"
+  # TRAMO 1: al +80% se vende el 70%. Devuelve el capital con margen (1,26x).
+  take_profit_percentage: 0.80
+  take_profit_sell_percentage: 0.70
+  # TRAMO 2: al +250% se vende el 30% que queda. Suma 1,00, o sea que no queda
+  # moonbag: se sale entera y no hay bolsa suelta que vigilar.
+  tp2_gain: 2.50
+  tp2_sell: 0.30
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+
+  # El suelo sube en cuanto cobra el primer tramo: lo que siga dentro ya no
+  # puede acabar en perdida.
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: true
+
+  # STOP DE ENTRADA: 35%. Mas corto que en las estrategias de moneda recien
+  # nacida (50%), y a proposito: alli el 50% aguanta el zarandeo del nacimiento,
+  # pero aqui no se compra un nacimiento, se copia a alguien que ya ha entrado.
+  # Si desde nuestra compra cae un 35%, no es ruido: es que llegamos tarde.
+  stop_loss_percentage: 0.35
+  # TRAILING del 25%, se arma cuando la moneda sube un 20% y sigue al maximo.
+  # Corto porque el patron de esta wallet es subida vertical y vuelta: devolver
+  # medio pico esperando al +250% es justo lo que hay que evitar.
+  trailing_stop_percentage: 0.25
+  # El stop se lleva la posicion entera, no deja media bolsa en una moneda que
+  # se hunde.
+  vender_todo_en_stop: true
+
+  # ANTI-RUG: se deja escrito, pero OJO -- en modo copia no hay listener y sus
+  # contadores estan vacios, asi que no llega a dispararse (ver punto 2 de la
+  # cabecera). Queda puesto para que siga valiendo si algun dia esta estrategia
+  # deja de ir por copia.
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+
+  # MONEDA MUERTA A LOS 20 SEGUNDOS. Es el corazon del "rapidisimo": si la
+  # moneda que ella compro no esta por encima de nuestra entrada a los 20 s, el
+  # movimiento de un segundo no se ha dado y no se va a dar. Fuera, y la ficha
+  # queda libre para la siguiente.
+  venta_muerta_seg: 20
+  venta_muerta_gain: 0.0
+
+  # 3 minutos de tope absoluto. Solo esta por si el precio se congela y ni el
+  # trailing ni los tramos llegan a dispararse nunca.
+  max_hold_time: 180
+  # MEDIO SEGUNDO entre lecturas de precio, no uno. En una moneda que se mueve
+  # entera en un segundo, mirar cada segundo es mirar la mitad de las veces que
+  # hace falta. Cuesta 2 llamadas por segundo y posicion; con `max_rps: 20` cabe
+  # de sobra.
+  price_check_interval: 0.5
+  # Se lee la curva antes de comprar (hace falta para saber el market cap y
+  # poder exigir <4K), asi que el modo extremo no aplica aqui.
+  extreme_fast_mode: false
+  # Gasolina para poder FIRMAR las ventas. Quedarse sin SOL con una posicion
+  # abierta es perderla.
+  min_reserve_sol: 0.05
+
+  # Dos posiciones a la vez como mucho: 0,05 SOL expuestos en el peor caso.
+  max_posiciones: 2
+
+  # CORTA-CIRCUITOS: tres perdidas seguidas y deja de COMPRAR (lo abierto se
+  # sigue vigilando y vendiendo). Una ganadora pone el contador a cero. Para
+  # reactivarla, reiniciar el servicio.
+  max_perdidas_seguidas: 3
+
+  # Al creador que rugea una vez no se le vuelve a comprar.
+  rugs_para_bloquear: 1
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  # 5M microlamports por unidad de computo. Con 140.000 unidades son 700.000
+  # lamports = 0,0007 SOL en la compra (2,8% de la ficha) y 0,0006 en la venta.
+  # Ver el punto 3 de la cabecera antes de subirlo.
+  fixed_amount: 5_000_000
+  extra_percentage: 0.0
+  hard_cap: 5_000_000
+
+retries:
+  # Cada intento que aterriza y falla paga su comision. Con fichas de 0,025 el
+  # tercero no compensa.
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  # Obligatorio por el validador, pero en modo copia NO se usa: el bot arranca
+  # la fuente de copia y no llega a montar el listener de monedas nuevas.
+  listener_type: "logs"
+
+  # ── A QUIEN SE COPIA ────────────────────────────────────────────────────
+  copy_wallets:
+    enabled: true
+    wallets:
+      - "J4iit8MmXd2P46DzQxk7dj3qjY3m9G3Ck5zrPkBV54JV"
+    # 0,2 s. Con una sola wallet el ciclo real sale a ~0,5 s (hay una pausa
+    # interna de 0,3 s por wallet). Bajarlo mas no acelera nada y solo gasta
+    # llamadas.
+    poll_interval: 0.2
+    # APAGADO. Encendido, el bot va anadiendo a la lista las wallets a las que
+    # esta manda SOL, y se acabaria copiando a gente que Manu no ha elegido.
+    # Aqui se copia a UNA.
+    follow_funded: false
+
+  # ── LA REGLA DE ENTRADA: POR DEBAJO DE 4K ───────────────────────────────
+  # Se mide leyendo la curva en el instante de ir a comprar, no cuando compro
+  # ella. Es lo que evita pagar el techo del salto (ver punto 1).
+  min_entry_mc: 0
+  max_entry_mc: 4000
+  min_curve_sol: 0
+  max_mc_por_sol_curva: 0
+
+  # ── FILTROS DE FLUJO: TODOS A CERO, Y ES OBLIGATORIO ────────────────────
+  # En modo copia no hay listener, asi que estos contadores nunca se llenan.
+  # Cualquier valor distinto de 0 aqui no filtraria: bloquearia TODAS las
+  # compras. La seleccion la hace la wallet a la que se copia, mas el techo de
+  # 4K de arriba.
+  min_volumen_sol: 0
+  max_volumen_sol: 0
+  min_presion_ratio: 0
+  presion_seg: 10.0
+  min_buys: 0
+  min_titulares: 0
+  min_ops: 0
+  min_first_block_buys: 0
+  min_vol_ventana_sol: 0
+  ultimas_tx_compra: 0
+  max_holder_pct: 0
+  max_dev_hold_pct: 0
+  min_holders: 0
+  holder_bypass_ratio: 0
+  min_holders_gmgn: 0
+  senal_gmgn: []
+  redes_originales: false
+
+  # La edad no acota nada en modo copia (se comprueba al sacar de la cola del
+  # listener, que aqui no existe), pero el validador exige la clave.
+  max_token_age: 60
+  max_buy_age: 0
+
+  match_string: null
+  bro_address: null
+
+  # Sin veto por nombre repetido: si ella entra dos veces en el mismo ticker,
+  # es que le ve algo, y el que decide es el techo de 4K.
+  no_repeat_name_min: 0
+
+  # SE RESPETAN LAS LISTAS DE DEVS. A diferencia de PORTAVIONES, aqui no se
+  # ignoran: si un creador esta en la blacklist manual o ya ha rugeado, no se
+  # le compra aunque ella entre. Cuesta una consulta en memoria, cero red.
+  ignorar_listas_de_devs: false
+
+  # El historial del creador se salta a proposito: es una llamada a la API de
+  # pump.fun y aqui cada decima cuenta. Quien selecciona es la wallet copiada.
+  pumpfun_dev:
+    enabled: false
+    min_migrations: 1
+    min_rate: 0.02
+
+  allow_mayhem: false
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false          # DINERO REAL
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  # 20: la fuente de copia pregunta ~2 veces por segundo y el vigilante de
+  # precios otras 2 por posicion. Sobra margen para que las llamadas que
+  # importan (leer la curva, vender) entren sin toparse con un 429.
+  max_rps: 20
+
+compute_units:
+  # OBLIGATORIO: sin esto la VENTA de un Token-2022 revienta con
+  # "Computational budget exceeded" y hay que salir por Jupiter, mas lento y a
+  # peor precio.
+  buy: 140000
+  sell: 120000
