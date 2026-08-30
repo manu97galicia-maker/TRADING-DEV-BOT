@@ -14,24 +14,27 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # LO QUE HAY QUE SABER ANTES DE ENCENDERLA
 # ─────────────────────────────────────────────────────────────────────────────
-# 1) LA COPIA VA CON RETRASO, y no es poco. El bot no tiene un feed privado de
-#    esa wallet: pregunta al RPC por sus firmas nuevas (getSignaturesForAddress
-#    + getTransaction). Con `poll_interval: 0.2` y una sola wallet el ciclo sale
-#    a ~0,5 s, y a eso hay que sumarle leer la curva y que la compra aterrice.
-#    En la practica se entra entre 1 y 3 segundos DESPUES que ella.
+# 1) LA COPIA ENTRA POR EL WEBSOCKET DE HELIUS, YA NO SONDEANDO. El bot se
+#    suscribe con `logsSubscribe` a las transacciones que mencionan a esa wallet
+#    (`mentions`, commitment `processed`) y lee la compra del propio TradeEvent
+#    que viene en los logs: se entera en cuanto el nodo procesa la transaccion,
+#    sin pedir nada por HTTP. Antes era un sondeo de getSignaturesForAddress +
+#    getTransaction que llegaba entre 1 y 3 segundos tarde; ese sondeo sigue
+#    puesto, pero solo como red de seguridad de las reconexiones.
 #
-#    En una moneda que hace su x3-x6 en un segundo, ese retraso significa que
-#    muchas veces llegaremos con el market cap YA por encima de 4K. Cuando pasa,
-#    esta estrategia NO compra -- es exactamente la regla que pidio Manu
-#    ("compra siempre debajo de 4k mcap"), y es la que impide comprarle el techo
-#    a nadie. Consecuencia honesta: habra bastantes senales de la wallet que se
-#    queden en el log como "MC filtro BLOCK" y no se conviertan en compra. Si se
-#    quiere entrar mas veces, el numero que hay que tocar es `max_entry_mc`,
-#    no el resto.
+#    Lo que queda de retraso, y queda: reconstruir la moneda y leer la curva (un
+#    par de llamadas al RPC de pago) y que nuestra compra aterrice. En una
+#    moneda que hace su x3-x6 en un segundo habra veces que lleguemos con el
+#    market cap YA por encima de 4K. Cuando pasa, esta estrategia NO compra --
+#    es exactamente la regla que pidio Manu ("compra siempre debajo de 4k
+#    mcap"), y es la que impide comprarle el techo a nadie. Se vera en el log
+#    como "MC filtro BLOCK". Si se quiere entrar mas veces, el numero que hay
+#    que tocar es `max_entry_mc`, no el resto.
 #
-# 2) EN MODO COPIA NO HAY LISTENER DE LOGS. El bot se salta el flujo de monedas
-#    nuevas y va directo a la moneda que ella compro, asi que los contadores en
-#    memoria (volumen, compras, titulares, presion) estan VACIOS. Por eso aqui
+# 2) NO HAY LISTENER DE MONEDAS NUEVAS. La suscripcion del punto 1 es a la
+#    WALLET, no al programa entero, asi que los contadores en memoria (volumen,
+#    compras, titulares, presion) de la moneda estan VACIOS: de esa moneda solo
+#    se ven las transacciones donde aparece ella. Por eso aqui
 #    van todos a 0: puestos a cualquier otra cosa no filtrarian, bloquearian
 #    todas las compras. El ANTI-RUG bebe de esos mismos contadores, asi que
 #    tampoco dispara: aqui la red de seguridad es de PRECIO (stop, trailing,
@@ -191,10 +194,11 @@ filters:
     enabled: true
     wallets:
       - "J4iit8MmXd2P46DzQxk7dj3qjY3m9G3Ck5zrPkBV54JV"
-    # 0,2 s. Con una sola wallet el ciclo real sale a ~0,5 s (hay una pausa
-    # interna de 0,3 s por wallet). Bajarlo mas no acelera nada y solo gasta
-    # llamadas.
-    poll_interval: 0.2
+    # Cadencia del SONDEO DE RESPALDO, no de la deteccion: quien avisa es el
+    # websocket, y el sondeo solo cubre los segundos de una reconexion (y las
+    # transferencias de SOL, que el websocket no trae). Por debajo de 2 s el
+    # codigo lo sube a 2 igualmente cuando hay websocket.
+    poll_interval: 2.0
     # APAGADO. Encendido, el bot va anadiendo a la lista las wallets a las que
     # esta manda SOL, y se acabaria copiando a gente que Manu no ha elegido.
     # Aqui se copia a UNA.
@@ -284,10 +288,11 @@ cleanup:
   with_priority_fee: false
 
 node:
-  # 20: la fuente de copia pregunta ~2 veces por segundo y el vigilante de
-  # precios otras 2 por posicion. Sobra margen para que las llamadas que
-  # importan (leer la curva, vender) entren sin toparse con un 429.
-  max_rps: 20
+  # 40, el mismo limite con el que trabajan PREMIUM y DEFINITIVA en el plan de
+  # pago de Helius. Con la deteccion ya fuera del HTTP (va por websocket), casi
+  # todo este presupuesto queda para lo que importa: leer la curva antes de
+  # comprar y firmar las ventas. Si volvieran los 429, bajar a 20.
+  max_rps: 40
 
 compute_units:
   # OBLIGATORIO: sin esto la VENTA de un Token-2022 revienta con

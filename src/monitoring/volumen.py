@@ -89,14 +89,17 @@ def registrar_bloque_inicial(mint: str, slot: int | None) -> None:
         _first_slot_buys[mint] = 0
 
 
-def registrar_logs(logs: list[str], slot: int | None = None) -> None:
-    """Apunta las operaciones que aparezcan en estos logs. No lanza nunca.
+def eventos_en_logs(logs: list[str]) -> list[tuple[str, float, bool, str]]:
+    """Decodifica los TradeEvent que vengan en estas lineas de log. No lanza.
 
-    Se llama para CADA notificacion del websocket, incluidas las que no son
-    creaciones, asi que tiene que ser barata y silenciosa: un fallo aqui no
-    puede tumbar la deteccion de monedas nuevas.
+    Devuelve una tupla por operacion: ``(mint, sol, es_compra, wallet)``.
+
+    Se saco de ``registrar_logs`` para poder leer los mismos eventos desde otro
+    sitio sin duplicar el formato binario: la copia de wallets (WalletCopySource)
+    se entera de que la wallet vigilada ha comprado leyendo EXACTAMENTE este
+    evento en su propia suscripcion de logs, sin pedir la transaccion por HTTP.
     """
-    ahora = time.time()
+    salida: list[tuple[str, float, bool, str]] = []
     for linea in logs:
         if "Program data:" not in linea:
             continue
@@ -108,23 +111,37 @@ def registrar_logs(logs: list[str], slot: int | None = None) -> None:
             continue
         try:
             cuerpo = crudo[8:]
-            mint = _b58(cuerpo[:32])
-            sol_lamports = struct.unpack_from("<Q", cuerpo, 32)[0]
             # Layout de TradeEvent:
             #   mint(32) sol_amount(8) token_amount(8) is_buy(1) user(32) ...
-            es_compra = cuerpo[48] == 1
-            wallet = _b58(cuerpo[49:81]) if len(cuerpo) >= 81 else ""
-            _ops[mint].append((ahora, sol_lamports / 1e9, es_compra, wallet))
-            if slot is not None:
-                bloque = int(slot)
-                primero = _first_slot.get(mint)
-                if primero is None or bloque < primero:
-                    _first_slot[mint] = bloque
-                    _first_slot_buys[mint] = 1 if es_compra else 0
-                elif bloque == primero and es_compra:
-                    _first_slot_buys[mint] += 1
+            salida.append((
+                _b58(cuerpo[:32]),
+                struct.unpack_from("<Q", cuerpo, 32)[0] / 1e9,
+                cuerpo[48] == 1,
+                _b58(cuerpo[49:81]) if len(cuerpo) >= 81 else "",
+            ))
         except Exception:  # noqa: BLE001
             continue
+    return salida
+
+
+def registrar_logs(logs: list[str], slot: int | None = None) -> None:
+    """Apunta las operaciones que aparezcan en estos logs. No lanza nunca.
+
+    Se llama para CADA notificacion del websocket, incluidas las que no son
+    creaciones, asi que tiene que ser barata y silenciosa: un fallo aqui no
+    puede tumbar la deteccion de monedas nuevas.
+    """
+    ahora = time.time()
+    for mint, sol, es_compra, wallet in eventos_en_logs(logs):
+        _ops[mint].append((ahora, sol, es_compra, wallet))
+        if slot is not None:
+            bloque = int(slot)
+            primero = _first_slot.get(mint)
+            if primero is None or bloque < primero:
+                _first_slot[mint] = bloque
+                _first_slot_buys[mint] = 1 if es_compra else 0
+            elif bloque == primero and es_compra:
+                _first_slot_buys[mint] += 1
     _limpiar()
 
 

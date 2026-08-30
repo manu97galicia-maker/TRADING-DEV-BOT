@@ -622,6 +622,10 @@ class UniversalTrader:
             compute_units=self.compute_units,
         )
 
+        # Se guarda porque la copia de wallets lo necesita: escucha por
+        # `logsSubscribe` en vez de sondear firmas por HTTP, que llegaba tarde.
+        self.wss_endpoint = wss_endpoint
+
         # Initialize the appropriate listener with platform filtering
         self.token_listener = ListenerFactory.create_listener(
             listener_type=listener_type,
@@ -1284,6 +1288,7 @@ class UniversalTrader:
             self.platform_implementations,
             self.solana_client,
             rpc_endpoint=self.solana_client.rpc_endpoint,
+            wss_endpoint=self.wss_endpoint,
             poll_interval=float(self.copy_wallets.get("poll_interval", 2.0)),
             follow_funded=bool(self.copy_wallets.get("follow_funded", True)),
             min_funding_sol=float(self.copy_wallets.get("min_funding_sol", 0.05)),
