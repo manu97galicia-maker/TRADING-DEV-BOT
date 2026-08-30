@@ -75,10 +75,17 @@ trade:
   # TRAMO 1: al +80% se vende el 70%. Devuelve el capital con margen (1,26x).
   take_profit_percentage: 0.80
   take_profit_sell_percentage: 0.70
-  # TRAMO 2: al +250% se vende el 30% que queda. Suma 1,00, o sea que no queda
-  # moonbag: se sale entera y no hay bolsa suelta que vigilar.
+  # TRAMO 2: al +250% se vende un 25% mas. 70 + 25 = 95, asi que queda un
+  # MOONBAG DEL 5% sin objetivo, que es lo que pidio Manu.
+  #
+  # Ese 5% no se queda solo: mientras el vigilante siga vivo lo lleva el
+  # trailing del 25% y el suelo que sube escalon a escalon, asi que una que se
+  # da la vuelta lo vende y una que sigue subiendo se lo queda. Solo se suelta
+  # de verdad al llegar a `max_hold_time`: ahi el bot vende todo menos el
+  # moonbag y lo deja corriendo libre (aviso por Telegram cada 5 min), para
+  # venderlo a mano o desde el panel.
   tp2_gain: 2.50
-  tp2_sell: 0.30
+  tp2_sell: 0.25
   tp3_gain: 0
   tp3_sell: 0
   tp4_gain: 0
