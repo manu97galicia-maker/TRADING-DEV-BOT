@@ -23,7 +23,8 @@ if __name__ == "__main__":
     notify(
         "RELAMPAGO ACTIVO\n"
         "Dinero real: 0,025 SOL por compra (tope total 0,0325)\n"
-        "Copia 3 wallets (J4iit8, 9YzsAD, vv4FfL) si la moneda sigue bajo $4.000\n"        "Maximo DOS operaciones abiertas a la vez\n"
+        "Copia 3 wallets (J4iit8, 9YzsAD, vv4FfL) si la moneda sigue bajo $4.000\n"
+        "Maximo DOS operaciones abiertas a la vez\n"
         "Salida: 70% al +80%, 25% al +250%, moonbag del 5%\n"
         "Trailing 25%, stop 35%, cierre a los 20 s si no se mueve"
     )
