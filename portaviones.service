@@ -1,5 +1,5 @@
 [Unit]
-Description=PORTAVIONES - copia 9 wallets, entrada MC menor de 4K
+Description=PORTAVIONES - copia 8 wallets, entrada MC menor de 4K
 After=network-online.target
 Wants=network-online.target
 # Igual que dev10: sin esto systemd se rinde tras 5 arranques en 10 s y deja el
