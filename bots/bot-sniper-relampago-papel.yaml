@@ -1,10 +1,10 @@
 # RELAMPAGO-PAPEL — el gemelo de RELAMPAGO que NO gasta dinero.
 #
-# Misma wallet copiada, mismo techo de 4K, misma escalera de salida. La unica
+# Mismas wallets copiadas, mismo techo de 4K, misma escalera de salida. La unica
 # diferencia es `paper_trade: true`: cuando una moneda pasa TODOS los filtros,
 # en vez de comprar la apunta y se queda mirando el precio. Sirve para
 # contestar, con datos y sin arriesgar nada, la pregunta que quedo abierta:
-# ¿cuantas de las compras de esa wallet siguen por debajo de 4K cuando
+# ¿cuantas de las compras de esas wallets siguen por debajo de 4K cuando
 # llegamos nosotros, y que habrian hecho?
 #
 # ─────────────────────────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@
 # (los ficheros llevan el nombre del config) y no firma nada. Lo unico que
 # comparte es el RPC.
 
-name: "RELAMPAGO-PAPEL - mide el criterio MC<4K sin gastar un duro"
+name: "RELAMPAGO-PAPEL - 3 wallets, mide el criterio MC<4K sin gastar"
 env_file: ".env"
 
 # TELEGRAM CALLADO. El aviso de "snipe en papel" sale con tipo "otro", asi que
@@ -139,7 +139,10 @@ trade:
   # abierta es perderla.
   min_reserve_sol: 0.05
 
-  # Dos posiciones a la vez como mucho: 0,05 SOL expuestos en el peor caso.
+  # DOS OPERACIONES A LA VEZ COMO MUCHO, las pidio Manu asi. Es un tope
+  # compartido por las tres wallets: si dos ya estan abiertas y entra una senal
+  # de la tercera, se descarta con "Max posiciones abiertas" en el log en vez de
+  # abrir una tercera. En el peor caso son 0,05 SOL expuestos.
   max_posiciones: 2
 
   # CORTA-CIRCUITOS: tres perdidas seguidas y deja de COMPRAR (lo abierto se
@@ -173,10 +176,16 @@ filters:
   listener_type: "logs"
 
   # ── A QUIEN SE COPIA ────────────────────────────────────────────────────
+  # TRES wallets, el mismo trato para las tres: se copia su compra y se entra
+  # solo si la moneda sigue por debajo de 4K. Van juntas en UNA estrategia, no
+  # en tres, porque el tope de dos operaciones a la vez que pidio Manu es un
+  # tope COMPARTIDO: tres bots separados tendrian dos posiciones cada uno.
   copy_wallets:
     enabled: true
     wallets:
       - "J4iit8MmXd2P46DzQxk7dj3qjY3m9G3Ck5zrPkBV54JV"
+      - "9YzsADihJcvGx4cgnZfHxQ1jM13dgLNV8CB21iiby9yo"
+      - "vv4FfLXETqKSrezvc2ygQoWZANyygW4T5xE9bqNfEJQ"
     # Cadencia del SONDEO DE RESPALDO, no de la deteccion: quien avisa es el
     # websocket, y el sondeo solo cubre los segundos de una reconexion (y las
     # transferencias de SOL, que el websocket no trae). Por debajo de 2 s el

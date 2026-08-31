@@ -1,9 +1,13 @@
-# RELAMPAGO — copia UNA sola wallet y sale en segundos.
+# RELAMPAGO — copia tres wallets y sale en segundos.
 #
-# Pedida por Manu: copiar a J4iit8MmXd2P46DzQxk7dj3qjY3m9G3Ck5zrPkBV54JV,
-# comprar SIEMPRE por debajo de 4K de market cap, empezar con 0,025 SOL y
-# vender rapidisimo, porque lo que compra esa wallet suele hacer +200-500%
-# en cuestion de un segundo.
+# Pedida por Manu: copiar a estas tres, comprar SIEMPRE por debajo de 4K de
+# market cap, empezar con 0,025 SOL, vender rapidisimo (lo que compran suele
+# hacer +200-500% en cuestion de un segundo) y no tener nunca mas de DOS
+# operaciones abiertas a la vez.
+#
+#   J4iit8MmXd2P46DzQxk7dj3qjY3m9G3Ck5zrPkBV54JV
+#   9YzsADihJcvGx4cgnZfHxQ1jM13dgLNV8CB21iiby9yo
+#   vv4FfLXETqKSrezvc2ygQoWZANyygW4T5xE9bqNfEJQ
 #
 # Esa wallet ya estaba dentro de PORTAVIONES junto a otras ocho. Se ha sacado
 # de alli al crear esta: con las dos activas, cada compra suya disparaba DOS
@@ -65,7 +69,7 @@
 # sube un 20%) vende todo desde el maximo, el stop del 35% corta la que se
 # hunde, y a los 20 s la que no ha hecho nada se cierra sola.
 
-name: "RELAMPAGO - copia J4iit8, MC<4K, 0,025 SOL, salida en segundos"
+name: "RELAMPAGO - copia 3 wallets, MC<4K, 0,025 SOL, max 2 abiertas"
 env_file: ".env"
 
 # SOLO AVISOS DE COMPRA, como en las demas: el aviso que no hay que ignorar es
@@ -164,7 +168,10 @@ trade:
   # abierta es perderla.
   min_reserve_sol: 0.05
 
-  # Dos posiciones a la vez como mucho: 0,05 SOL expuestos en el peor caso.
+  # DOS OPERACIONES A LA VEZ COMO MUCHO, las pidio Manu asi. Es un tope
+  # compartido por las tres wallets: si dos ya estan abiertas y entra una senal
+  # de la tercera, se descarta con "Max posiciones abiertas" en el log en vez de
+  # abrir una tercera. En el peor caso son 0,05 SOL expuestos.
   max_posiciones: 2
 
   # CORTA-CIRCUITOS: tres perdidas seguidas y deja de COMPRAR (lo abierto se
@@ -198,10 +205,16 @@ filters:
   listener_type: "logs"
 
   # ── A QUIEN SE COPIA ────────────────────────────────────────────────────
+  # TRES wallets, el mismo trato para las tres: se copia su compra y se entra
+  # solo si la moneda sigue por debajo de 4K. Van juntas en UNA estrategia, no
+  # en tres, porque el tope de dos operaciones a la vez que pidio Manu es un
+  # tope COMPARTIDO: tres bots separados tendrian dos posiciones cada uno.
   copy_wallets:
     enabled: true
     wallets:
       - "J4iit8MmXd2P46DzQxk7dj3qjY3m9G3Ck5zrPkBV54JV"
+      - "9YzsADihJcvGx4cgnZfHxQ1jM13dgLNV8CB21iiby9yo"
+      - "vv4FfLXETqKSrezvc2ygQoWZANyygW4T5xE9bqNfEJQ"
     # Cadencia del SONDEO DE RESPALDO, no de la deteccion: quien avisa es el
     # websocket, y el sondeo solo cubre los segundos de una reconexion (y las
     # transferencias de SOL, que el websocket no trae). Por debajo de 2 s el

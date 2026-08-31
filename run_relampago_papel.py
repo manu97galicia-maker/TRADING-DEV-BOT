@@ -22,7 +22,7 @@ CONFIG = "bots/bot-sniper-relampago-papel.yaml"
 if __name__ == "__main__":
     notify(
         "RELAMPAGO-PAPEL ACTIVO (NO gasta dinero)\n"
-        "Mide cuantas compras de J4iit8...54JV siguen bajo $4.000 al llegar\n"
+        "Mide cuantas compras de las 3 wallets siguen bajo $4.000 al llegar\n"
         "Resultados en paper_trades/entries.jsonl y results.jsonl"
     )
     asyncio.run(start_bot(CONFIG))

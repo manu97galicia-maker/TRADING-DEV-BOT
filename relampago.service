@@ -1,5 +1,5 @@
 [Unit]
-Description=RELAMPAGO - copia J4iit8, entrada MC menor de 4K, salida en segundos
+Description=RELAMPAGO - copia 3 wallets, MC menor de 4K, max 2 operaciones
 After=network-online.target
 Wants=network-online.target
 # Igual que las demas: sin esto systemd se rinde tras 5 arranques en 10 s y deja
