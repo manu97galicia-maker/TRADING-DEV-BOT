@@ -1,0 +1,106 @@
+# REBOTE. La moneda nace, sube a 3,3-10K y se desploma. Cuando vuelve a
+# 800-1.400 y alguien empieza a recomprar (2 compras seguidas), entramos de
+# cuartos. NO compra en el pico ni en plena caida.
+#
+# La entrada normal (la de nacimiento) esta desactivada a proposito con
+# min_entry_mc imposible: aqui solo se entra por la puerta del scanner de dip.
+name: "REBOTE - pico 3,3-10K, vuelta a 800-1,4K, 2 compras seguidas, 0.012 SOL"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: true
+separate_process: false
+platform: pump_fun
+
+trade:
+  buy_amount: 0.012
+  mayhem_buy_amount: 0.012
+  rugs_para_bloquear: 1
+  nombre_estrategia: rebote
+  max_posiciones: 2
+  max_perdidas_seguidas: 999
+  max_real_buys: 999
+  reiniciar_tanda: false
+
+  buy_slippage: 0.10
+  sell_slippage: 0.9
+  exit_strategy: tp_sl
+
+  # TP1: x2 (+100%), vende 50%
+  take_profit_percentage: 1.0
+  take_profit_sell_percentage: 0.5
+  # TP2: x3 (+200%), vende el 100% restante
+  tp2_gain: 2.0
+  tp2_sell: 1.0
+  mc_take_profit_tiers: []
+
+  # SL -75%; tras TP1 el suelo sube a la entrada (trinquete)
+  stop_loss_percentage: 0.75
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: false
+  trailing_stop_percentage: 0
+
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+  venta_muerta_seg: 20
+  venta_muerta_gain: 0
+  max_hold_time: 0
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.02
+
+compute_units:
+  buy: 140000
+  sell: 120000
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 5000000
+  extra_percentage: 0.0
+  hard_cap: 5000000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: logs
+  # La entrada de nacimiento no puede disparar (min_entry_mc imposible),
+  # asi que se sueltan rapido: el rebote lo decide el scanner aparte,
+  # que vigila hasta dip.ventana_seg.
+  max_token_age: 5
+  max_buy_age: 5
+  allow_mayhem: true
+  require_mayhem: true
+  marry_mode: false
+  yolo_mode: true
+  ignorar_listas_de_devs: true
+  no_repeat_name_min: 5
+  match_string: null
+
+  # Entrada de nacimiento DESACTIVADA: imposible de cumplir a proposito.
+  min_entry_mc: 999999999
+
+  # Las 2 compras seguidas. El scanner de rebote las exige igual que la
+  # entrada normal antes de comprar.
+  min_buys: 2
+  ultimas_tx_compra: 2
+  min_titulares: 0
+
+  dip:
+    pico_min_mc: 3300
+    pico_max_mc: 10000
+    actual_min_mc: 800
+    actual_max_mc: 1400
+    ventana_seg: 300
+    buy_amount: 0.012
+
+  pumpfun_dev:
+    enabled: false
+
+  dev_buy:
+    min_sol: 0

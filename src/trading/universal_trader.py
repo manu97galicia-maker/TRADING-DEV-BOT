@@ -5230,6 +5230,24 @@ class UniversalTrader:
         _ventana = float(self.dip.get("ventana_seg") or 300)
         if not (_pico_min and _pico_max and _act_min and _act_max):
             return
+        from monitoring.volumen import compras as _dip_compras
+        from monitoring.volumen import ultimas_son_compra as _dip_ultimas
+
+        _LOTE = 20  # consultas simultaneas por tanda
+        _fallos: dict[str, int] = {}
+
+        async def _precio_de(ti: TokenInfo) -> float | None:
+            """Precio de una moneda; None si la curva no se puede leer."""
+            try:
+                st = await (
+                    self.platform_implementations.curve_manager.get_pool_state(
+                        ti.bonding_curve, commitment="processed"
+                    )
+                )
+                return float(st.get("price_per_token") or 0)
+            except Exception:  # noqa: BLE001
+                return None
+
         logger.info(
             "DIP scanner activo: pico $%.0f-$%.0f, ahora $%.0f-$%.0f, "
             "ventana %.0fs",
@@ -5239,6 +5257,7 @@ class UniversalTrader:
             await asyncio.sleep(2.0)
             try:
                 ahora = monotonic()
+                _pend: list[tuple[str, TokenInfo]] = []
                 for mint, token_info in list(self._token_info_cache.items()):
                     if mint in self._dip_intentado or mint in self.bought_mints:
                         continue
@@ -5249,19 +5268,37 @@ class UniversalTrader:
                     if edad > _ventana:
                         self._token_info_cache.pop(mint, None)
                         self._dip_pico.pop(mint, None)
+                        _fallos.pop(mint, None)
                         continue
-                    try:
-                        st = await (
-                            self.platform_implementations.curve_manager
-                            .get_pool_state(
-                                token_info.bonding_curve, commitment="processed"
-                            )
+                    _pend.append((mint, token_info))
+                # EN PARALELO, no en fila. En serie, una pasada sobre ~100
+                # monedas tardaba 7-17s: cada moneda se miraba una vez cada
+                # 10s y los retrocesos cortos se perdian entre muestras --
+                # tanto la entrada a la banda como el propio pico.
+                _res: list = []
+                for _i in range(0, len(_pend), _LOTE):
+                    _tanda = _pend[_i:_i + _LOTE]
+                    _res.extend(
+                        zip(
+                            _tanda,
+                            await asyncio.gather(
+                                *(_precio_de(_ti) for _, _ti in _tanda)
+                            ),
                         )
-                        precio = float(st.get("price_per_token") or 0)
-                    except Exception:  # noqa: BLE001
+                    )
+                for (mint, token_info), precio in _res:
+                    edad = ahora - self.token_timestamps.get(mint, ahora)
+                    if not precio or precio <= 0:
+                        # Curva ilegible (migrada o de otro tipo). Tras 3
+                        # intentos se deja de preguntar: eran cientos de
+                        # llamadas tiradas a la basura cada pocos minutos.
+                        _fallos[mint] = _fallos.get(mint, 0) + 1
+                        if _fallos[mint] >= 3:
+                            self._token_info_cache.pop(mint, None)
+                            self._dip_pico.pop(mint, None)
+                            _fallos.pop(mint, None)
                         continue
-                    if precio <= 0:
-                        continue
+                    _fallos.pop(mint, None)
                     mc = precio * _PUMP_TOTAL_SUPPLY * _SOL_USD
                     pico = max(self._dip_pico.get(mint, 0.0), mc)
                     self._dip_pico[mint] = pico
@@ -5269,12 +5306,28 @@ class UniversalTrader:
                         continue
                     if not (_act_min <= mc <= _act_max):
                         continue
+                    # COMPRAS SEGUIDAS. El pico y la banda dicen que la moneda
+                    # retrocedio; esto dice que alguien ya esta recomprando
+                    # abajo. Sin esto se entra a cuchillo en plena caida.
+                    #
+                    # OJO: no se marca como intentada si falla -- se vuelve a
+                    # mirar en la siguiente pasada (2s) mientras siga dentro
+                    # de la banda. Marcarla aqui la quemaria para siempre por
+                    # no cumplir en el primer vistazo.
+                    _nc = _dip_compras(mint)
+                    if self.min_buys > 0 and _nc < self.min_buys:
+                        continue
+                    if self.ultimas_tx_compra > 0 and not _dip_ultimas(
+                        mint, self.ultimas_tx_compra
+                    ):
+                        continue
                     self._dip_intentado.add(mint)
                     logger.info(
                         f"DIP {token_info.symbol}: pico ${pico:,.0f} "
                         f"(dentro de ${_pico_min:,.0f}-${_pico_max:,.0f}), "
                         f"ahora ${mc:,.0f} (dentro de ${_act_min:,.0f}-"
-                        f"${_act_max:,.0f}) a los {edad:.0f}s -> compra"
+                        f"${_act_max:,.0f}) a los {edad:.0f}s, "
+                        f"{_nc} compras -> compra"
                     )
                     asyncio.create_task(self._comprar_dip(token_info))  # noqa: RUF006
             except Exception:  # noqa: BLE001 - un fallo aqui no tumba el scanner

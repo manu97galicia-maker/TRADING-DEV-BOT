@@ -3,7 +3,7 @@ env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
-enabled: true
+enabled: false
 separate_process: false
 platform: pump_fun
 
@@ -38,7 +38,8 @@ trade:
   anti_rug_ratio: 2.0
   anti_rug_seg: 4
   anti_rug_min_sol: 3
-  venta_muerta_seg: 5
+  venta_muerta_seg: 20
+  venta_muerta_gain: 0
   max_hold_time: 0
   price_check_interval: 1
   extreme_fast_mode: false
@@ -63,7 +64,7 @@ retries:
 filters:
   listener_type: logs
   max_token_age: 60
-  max_buy_age: 30
+  max_buy_age: 60
   allow_mayhem: true
   require_mayhem: true
   marry_mode: false
@@ -73,6 +74,21 @@ filters:
   match_string: null
   min_entry_mc: 800
   max_entry_mc: 2200
+
+  # Ventana de compra 5-60s: no entrar antes del segundo 5.
+  # Se usa second_wave SOLO por su min_age_seconds; el resto de sus
+  # condiciones van a 0 porque todas comparan con < y un 0 las deja pasar.
+  second_wave:
+    enabled: true
+    window_seconds: 1.5
+    min_age_seconds: 5
+    min_net_buy_sol: 0
+    min_buys: 0
+    min_buyers: 0
+    min_wave_buy_sol: 0
+    min_wave_net_sol: 0
+    min_wave_buyers: 0
+    min_largest_buy_sol: 0
 
   pumpfun_dev:
     enabled: false
