@@ -21,7 +21,7 @@ trade:
   nombre_estrategia: devhold11k
   max_posiciones: 3
   max_perdidas_seguidas: 999
-  max_real_buys: 999
+  max_real_buys: 2
   reiniciar_tanda: false
 
   buy_slippage: 0.12
