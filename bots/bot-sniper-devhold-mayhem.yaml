@@ -34,7 +34,7 @@ trade:
   #
   # POR QUE EL PRIMER ESCALON VA POR PORCENTAJE Y EL RESTO POR MC: un tramo
   # por MC absoluto dispara donde diga el MC, sin mirar a cuanto compraste.
-  # Con max_entry_mc en 5.000 (ver filtros) toda entrada queda por debajo del
+  # Con max_entry_mc en 4.700 (ver filtros) toda entrada queda por debajo del
   # primer tramo de MC, asi que ninguno puede saltar en perdida. El escalon
   # por porcentaje cubre el pop temprano que no llega a 6K.
   #
@@ -69,14 +69,18 @@ trade:
   stop_loss_percentage: 0.50
   # Fuera si el market cap cae a $900 (manda el que salte antes)
   mc_stop_loss: 900
-  trailing_stop_percentage: 0
+  # OJO: un 0 aqui NO desactiva el trailing -- el codigo hace
+  # `trailing_stop_percentage or stop_loss_percentage`, asi que un 0 hereda el
+  # stop loss en silencio. Por eso va escrito explicito.
+  # Mayhem: cortar PRONTO. Un 40% desde el pico y fuera.
+  trailing_stop_percentage: 0.40
 
   # SUELOS QUE SUBEN Y NO BAJAN. Al tocar `alcanza` queda armado un suelo en
   # `suelo`; si luego el MC lo rompe, se vende TODO lo que quede. El suelo no
   # retrocede aunque la moneda se desplome.
   #
   # Cada suelo se pone en el escalon anterior de la escalera, y el primero
-  # queda por encima de max_entry_mc (4.200): en cuanto toca 6K, la operacion ya no
+  # queda por encima de max_entry_mc (4.700): en cuanto toca 6K, la operacion ya no
   # puede acabar por debajo de lo que pagaste, entraras donde entraras.
   suelos_por_mc:
     - {alcanza: 6000,  suelo: 5000}
@@ -129,14 +133,14 @@ filters:
   # TECHO DE ENTRADA. Sin esto, entrar tarde (max_buy_age deja hasta 15 s)
   # podria dejarnos comprando por encima del primer tramo de MC, que
   # saltaria al instante y venderia a precio de compra pagando comision.
-  max_entry_mc: 4200
+  max_entry_mc: 4700
   min_dev_hold_pct: 0.10
 
   # Y tiene historial: 2 monedas migradas como minimo.
   pumpfun_dev:
     enabled: true
     min_migrations: 2
-    min_rate: 0
+    min_rate: 0.10
     compra_inmediata: true
     timeout_seg: 2.0
 

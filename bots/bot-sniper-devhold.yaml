@@ -28,23 +28,34 @@ trade:
   sell_slippage: 0.9
   exit_strategy: tp_sl
 
-  # ESCALERA. Los `sell` son fraccion de la posicion ORIGINAL, no del resto.
-  # 0,30 + 0,25 + 0,20 + 0,12 + 0,10 = 0,97 -> queda un 3% corriendo.
-  take_profit_percentage: 0.50      # +50%  -> suelta 30%
-  take_profit_sell_percentage: 0.30
-  tp2_gain: 0.70                    # +70%  -> suelta 25%
-  tp2_sell: 0.25
-  tp3_gain: 1.20                    # +120% -> suelta 20%
-  tp3_sell: 0.20
-  tp4_gain: 2.00                    # x3    -> suelta 12%
-  tp4_sell: 0.12
-  tp5_gain: 4.00                    # x5    -> suelta 10%
-  tp5_sell: 0.10
+  # ESCALERA POR MARKET CAP. Se expresa en MC y no en porcentaje para que el
+  # "80% liquidado antes de 25K" se cumpla ENTRARAS DONDE ENTRARAS: un tramo
+  # por porcentaje cae en un MC distinto segun a cuanto compraste, y con el
+  # techo de entrada en 4.700 eso movia el ultimo escalon miles de dolares.
+  #
+  # El primer escalon si va por porcentaje: cubre el pop temprano que no llega
+  # a 10K. Con entrada <= 4.700, +50% es como mucho 7.050, muy por debajo del
+  # primer tramo de MC, asi que ninguno puede saltar en perdida.
+  take_profit_percentage: 0.50      # +50%  -> suelta 20%
+  take_profit_sell_percentage: 0.20
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+  tp5_gain: 0
+  tp5_sell: 0
 
-  # Del 3% que queda, en 78K se suelta un 2% -> sobrevive un 1%.
   mc_take_profit_tiers:
-    - {target_mc: 78000, sell: 0.02}
-  # Y ese 1% solo se vende en 800K.
+    - {target_mc: 10000,  sell: 0.20}
+    - {target_mc: 14000,  sell: 0.20}
+    - {target_mc: 20000,  sell: 0.20}   # <- aqui ya van 0,80 fuera, antes de 25K
+    - {target_mc: 40000,  sell: 0.08}
+    - {target_mc: 78000,  sell: 0.07}
+    - {target_mc: 200000, sell: 0.03}
+  # 0,20+0,20+0,20+0,20 = 0,80 liquidado en 20K. Luego 0,08+0,07+0,03 = 0,98
+  # total, y el 2% que sobrevive solo se suelta en 800K.
   final_target_mc: 800000
 
   # EL TRINQUETE: cada TP sube el suelo al TP anterior. Cobrado el primer
@@ -53,16 +64,24 @@ trade:
   stop_al_tp_tras_tp: true
   stop_al_tp_anterior: true
   stop_loss_percentage: 0.50
-  trailing_stop_percentage: 0
+  # OJO: un 0 aqui NO desactiva el trailing -- el codigo hace
+  # `trailing_stop_percentage or stop_loss_percentage`, asi que un 0 hereda el
+  # stop loss en silencio. Por eso va escrito explicito.
+  # Normal: dejar correr. Aguanta correcciones del 75% desde el pico,
+  # que en la practica solo corta un desplome. Aqui mandan los suelos_por_mc.
+  trailing_stop_percentage: 0.75
 
   # SUELOS QUE SUBEN Y NO BAJAN. El trinquete de los TP ya protege mientras
   # quedan escalones, pero la cola (3% hasta 78K y 1% hasta 800K) iba a pelo:
   # podia subir a 200K y volver a cero sin vender nada. Esto le pone red.
   suelos_por_mc:
-    - {alcanza: 20000,  suelo: 12000}
-    - {alcanza: 50000,  suelo: 30000}
+    - {alcanza: 7000,   suelo: 5000}
+    - {alcanza: 10000,  suelo: 7000}
+    - {alcanza: 14000,  suelo: 10000}
+    - {alcanza: 20000,  suelo: 14000}
+    - {alcanza: 40000,  suelo: 25000}
     - {alcanza: 78000,  suelo: 50000}
-    - {alcanza: 150000, suelo: 100000}
+    - {alcanza: 200000, suelo: 120000}
     - {alcanza: 400000, suelo: 250000}
 
   anti_rug_ratio: 2.0
@@ -105,15 +124,15 @@ filters:
   match_string: null
 
   # El dev se queda con al menos el 10% del supply.
-  # TECHO DE ENTRADA: no comprar por encima de 4.200 de market cap.
-  max_entry_mc: 4200
+  # TECHO DE ENTRADA: no comprar por encima de 4.700 de market cap.
+  max_entry_mc: 4700
   min_dev_hold_pct: 0.10
 
   # Y tiene historial: 2 monedas migradas como minimo.
   pumpfun_dev:
     enabled: true
     min_migrations: 2
-    min_rate: 0
+    min_rate: 0.10
     compra_inmediata: true
     timeout_seg: 2.0
 
