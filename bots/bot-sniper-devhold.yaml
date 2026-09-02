@@ -1,0 +1,121 @@
+# DEV CON PIEL EN EL JUEGO. Modo normal (compra al nacer), NO mayhem.
+# Dos condiciones sobre el creador: que haya migrado 2+ monedas antes y que
+# se quede con >= 10% del supply. La tesis es que un dev con historial y con
+# su propio dinero dentro no tira la moneda a los dos minutos.
+#
+# Salida en escalera: se cobra pronto y se deja correr una cola cada vez mas
+# pequena, hasta un 1% que solo se suelta en 800K.
+name: "DEVHOLD - dev 2+ migraciones y >=10% supply, escalera 50/70/120/x3/x5"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: true
+separate_process: false
+platform: pump_fun
+
+trade:
+  buy_amount: 0.09
+  mayhem_buy_amount: 0.09
+  rugs_para_bloquear: 1
+  nombre_estrategia: devhold
+  max_posiciones: 3
+  max_perdidas_seguidas: 999
+  max_real_buys: 999
+  reiniciar_tanda: false
+
+  buy_slippage: 0.12
+  sell_slippage: 0.9
+  exit_strategy: tp_sl
+
+  # ESCALERA. Los `sell` son fraccion de la posicion ORIGINAL, no del resto.
+  # 0,30 + 0,25 + 0,20 + 0,12 + 0,10 = 0,97 -> queda un 3% corriendo.
+  take_profit_percentage: 0.50      # +50%  -> suelta 30%
+  take_profit_sell_percentage: 0.30
+  tp2_gain: 0.70                    # +70%  -> suelta 25%
+  tp2_sell: 0.25
+  tp3_gain: 1.20                    # +120% -> suelta 20%
+  tp3_sell: 0.20
+  tp4_gain: 2.00                    # x3    -> suelta 12%
+  tp4_sell: 0.12
+  tp5_gain: 4.00                    # x5    -> suelta 10%
+  tp5_sell: 0.10
+
+  # Del 3% que queda, en 78K se suelta un 2% -> sobrevive un 1%.
+  mc_take_profit_tiers:
+    - {target_mc: 78000, sell: 0.02}
+  # Y ese 1% solo se vende en 800K.
+  final_target_mc: 800000
+
+  # EL TRINQUETE: cada TP sube el suelo al TP anterior. Cobrado el primer
+  # escalon, la operacion ya no puede acabar en perdida.
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: true
+  stop_al_tp_anterior: true
+  stop_loss_percentage: 0.50
+  trailing_stop_percentage: 0
+
+  # SUELOS QUE SUBEN Y NO BAJAN. El trinquete de los TP ya protege mientras
+  # quedan escalones, pero la cola (3% hasta 78K y 1% hasta 800K) iba a pelo:
+  # podia subir a 200K y volver a cero sin vender nada. Esto le pone red.
+  suelos_por_mc:
+    - {alcanza: 20000,  suelo: 12000}
+    - {alcanza: 50000,  suelo: 30000}
+    - {alcanza: 78000,  suelo: 50000}
+    - {alcanza: 150000, suelo: 100000}
+    - {alcanza: 400000, suelo: 250000}
+
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+  venta_muerta_seg: 120
+  venta_muerta_gain: 0.0
+  max_hold_time: 0
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.02
+
+compute_units:
+  buy: 140000
+  sell: 120000
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 5000000
+  extra_percentage: 0.0
+  hard_cap: 5000000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: logs
+  max_token_age: 30
+  max_buy_age: 15
+  # MODO NORMAL, sin mayhem.
+  allow_mayhem: false
+  require_mayhem: false
+  marry_mode: false
+  yolo_mode: true
+  ignorar_listas_de_devs: false
+  no_repeat_name_min: 5
+  match_string: null
+
+  # El dev se queda con al menos el 10% del supply.
+  # TECHO DE ENTRADA: no comprar por encima de 4.200 de market cap.
+  max_entry_mc: 4200
+  min_dev_hold_pct: 0.10
+
+  # Y tiene historial: 2 monedas migradas como minimo.
+  pumpfun_dev:
+    enabled: true
+    min_migrations: 2
+    min_rate: 0
+    compra_inmediata: true
+    timeout_seg: 2.0
+
+  dev_buy:
+    min_sol: 0

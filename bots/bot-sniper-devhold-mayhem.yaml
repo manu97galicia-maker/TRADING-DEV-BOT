@@ -1,0 +1,144 @@
+# DEV CON PIEL EN EL JUEGO -- VERSION MAYHEM. Identica a bot-sniper-devhold
+# salvo el tamano (0,02 en vez de 0,1) y el stop por market cap en $900.
+# Dos condiciones sobre el creador: que haya migrado 2+ monedas antes y que
+# se quede con >= 10% del supply. La tesis es que un dev con historial y con
+# su propio dinero dentro no tira la moneda a los dos minutos.
+#
+# Salida en escalera: se cobra pronto y se deja correr una cola cada vez mas
+# pequena, hasta un 1% que solo se suelta en 800K.
+name: "DEVHOLD MAYHEM - dev 2+ migraciones y >=10% supply, 0.025 SOL, stop MC 900"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: true
+separate_process: false
+platform: pump_fun
+
+trade:
+  buy_amount: 0.025
+  mayhem_buy_amount: 0.025
+  rugs_para_bloquear: 1
+  nombre_estrategia: devhold_mayhem
+  max_posiciones: 3
+  max_perdidas_seguidas: 999
+  max_real_buys: 999
+  reiniciar_tanda: false
+
+  buy_slippage: 0.12
+  sell_slippage: 0.9
+  exit_strategy: tp_sl
+
+  # ESCALERA POR MARKET CAP. Sale ENTERA antes de 17K y la suma da 1,00
+  # exacto -> sin cola, sin moonbag.
+  #
+  # POR QUE EL PRIMER ESCALON VA POR PORCENTAJE Y EL RESTO POR MC: un tramo
+  # por MC absoluto dispara donde diga el MC, sin mirar a cuanto compraste.
+  # Con max_entry_mc en 5.000 (ver filtros) toda entrada queda por debajo del
+  # primer tramo de MC, asi que ninguno puede saltar en perdida. El escalon
+  # por porcentaje cubre el pop temprano que no llega a 6K.
+  #
+  # POR QUE VA CARGADO ABAJO: de las 11 operaciones cerradas medidas, solo 4
+  # se pusieron en verde y las muertes fueron a los 5-20 s. Peso donde hay
+  # supervivencia, no donde estaria bien llegar.
+  take_profit_percentage: 0.30      # +30%   -> suelta 25%
+  take_profit_sell_percentage: 0.25
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+  tp5_gain: 0
+  tp5_sell: 0
+
+  mc_take_profit_tiers:
+    - {target_mc: 6000,  sell: 0.20}
+    - {target_mc: 7500,  sell: 0.15}
+    - {target_mc: 9500,  sell: 0.15}
+    - {target_mc: 12000, sell: 0.15}
+    - {target_mc: 15500, sell: 0.10}
+  # 0,25+0,20+0,15+0,15+0,15+0,10 = 1,00. Ultimo tramo en 15.500, antes de 17K.
+  final_target_mc: 0
+
+  # EL TRINQUETE: cada TP sube el suelo al TP anterior. Cobrado el primer
+  # escalon, la operacion ya no puede acabar en perdida.
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: true
+  stop_al_tp_anterior: true
+  stop_loss_percentage: 0.50
+  # Fuera si el market cap cae a $900 (manda el que salte antes)
+  mc_stop_loss: 900
+  trailing_stop_percentage: 0
+
+  # SUELOS QUE SUBEN Y NO BAJAN. Al tocar `alcanza` queda armado un suelo en
+  # `suelo`; si luego el MC lo rompe, se vende TODO lo que quede. El suelo no
+  # retrocede aunque la moneda se desplome.
+  #
+  # Cada suelo se pone en el escalon anterior de la escalera, y el primero
+  # queda por encima de max_entry_mc (4.200): en cuanto toca 6K, la operacion ya no
+  # puede acabar por debajo de lo que pagaste, entraras donde entraras.
+  suelos_por_mc:
+    - {alcanza: 6000,  suelo: 5000}
+    - {alcanza: 7500,  suelo: 6000}
+    - {alcanza: 9500,  suelo: 7500}
+    - {alcanza: 12000, suelo: 9500}
+    - {alcanza: 15500, suelo: 12000}
+
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+  venta_muerta_seg: 120
+  venta_muerta_gain: 0.0
+  max_hold_time: 0
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.02
+
+compute_units:
+  buy: 140000
+  sell: 120000
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 5000000
+  extra_percentage: 0.0
+  hard_cap: 5000000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: logs
+  max_token_age: 30
+  max_buy_age: 15
+  # SOLO mayhem: la version normal corre en bot-sniper-devhold.yaml y
+  # lleva allow_mayhem false, asi que no se pisan.
+  allow_mayhem: true
+  require_mayhem: true
+  marry_mode: false
+  yolo_mode: true
+  ignorar_listas_de_devs: false
+  no_repeat_name_min: 5
+  match_string: null
+
+  # El dev se queda con al menos el 10% del supply.
+  # TECHO DE ENTRADA. Sin esto, entrar tarde (max_buy_age deja hasta 15 s)
+  # podria dejarnos comprando por encima del primer tramo de MC, que
+  # saltaria al instante y venderia a precio de compra pagando comision.
+  max_entry_mc: 4200
+  min_dev_hold_pct: 0.10
+
+  # Y tiene historial: 2 monedas migradas como minimo.
+  pumpfun_dev:
+    enabled: true
+    min_migrations: 2
+    min_rate: 0
+    compra_inmediata: true
+    timeout_seg: 2.0
+
+  dev_buy:
+    min_sol: 0

@@ -316,6 +316,9 @@ class UniversalTrader:
         tp5_gain: float | None = None,
         tp5_sell: float | None = None,
         final_target_mc: float = 0.0,
+        # STOP POR MARKET CAP absoluto: vender si el MC cae a este
+        # valor, independientemente de a que precio se entro. 0 = off.
+        mc_stop_loss: float = 0.0,
         mc_take_profit_tiers: list | None = None,
         # SUELOS QUE SUBEN CON LA MONEDA: [{alcanza, suelo}, ...] en dolares
         # de market cap. Al tocar `alcanza`, se arma un suelo en `suelo`.
@@ -380,6 +383,10 @@ class UniversalTrader:
         # CREADOR en el momento de comprar. Los otros filtros miran holders
         # anónimos; éste mira al único que sabe cuándo va a vender. 0 = off.
         max_dev_hold_pct: float = 0.0,
+        # Al reves que el anterior: fraccion MINIMA del supply que tiene
+        # que tener EL CREADOR para comprar. La tesis es que un dev con
+        # piel en el juego no tira la moneda a los dos minutos. 0 = off.
+        min_dev_hold_pct: float = 0.0,
         # Filtro orgánico: mínimo de poseedores distintos para comprar (menos =
         # bundle/dev-spam sin compras reales). 0 = desactivado.
         min_holders: int = 0,
@@ -735,6 +742,7 @@ class UniversalTrader:
             ]
         )
         self.final_target_mc = float(final_target_mc or 0)
+        self.mc_stop_loss = float(mc_stop_loss or 0)
         self.mc_take_profit_tiers: list[tuple[float, float]] = []
         for item in mc_take_profit_tiers or []:
             if not isinstance(item, dict):
@@ -893,6 +901,7 @@ class UniversalTrader:
         self.max_holder_pct = float(max_holder_pct or 0)
         self.max_bundle_pct = float(max_bundle_pct or 0)
         self.max_dev_hold_pct = float(max_dev_hold_pct or 0)
+        self.min_dev_hold_pct = float(min_dev_hold_pct or 0)
         self.holder_bypass_ratio = float(holder_bypass_ratio or 0)
         self.min_holders_gmgn = int(min_holders_gmgn or 0)
         self.min_volumen_sol = float(min_volumen_sol or 0)
@@ -1923,11 +1932,16 @@ class UniversalTrader:
         crítico de la compra y bloquearlo todo por un timeout convertiría una
         red intermitente en "el bot no compra nada".
         """
-        if self.max_dev_hold_pct <= 0:
+        if self.max_dev_hold_pct <= 0 and self.min_dev_hold_pct <= 0:
             return False
+        # El MINIMO falla CERRADO, al reves que el maximo. El maximo protege de
+        # un dump y ante la duda dejar pasar solo te expone; el minimo ES la
+        # tesis de entrada ("solo devs con piel en el juego"), y dejar pasar sin
+        # el dato equivale a comprar sin filtro ninguno.
+        _fallo_min = self.min_dev_hold_pct > 0
         creator = getattr(token_info, "creator", None)
         if not creator:
-            return False
+            return _fallo_min
         try:
             import aiohttp  # noqa: PLC0415 - perezoso, igual que en _top_holder_exceeds
 
@@ -1957,9 +1971,16 @@ class UniversalTrader:
 
             supply = float(getattr(token_info, "token_total_supply", 0) or 0)
             if supply <= 0:
-                return False
+                return _fallo_min
             share = held / supply
-            if share > self.max_dev_hold_pct:
+            if self.min_dev_hold_pct > 0 and share < self.min_dev_hold_pct:
+                logger.info(
+                    f"{token_info.symbol}: el DEV solo tiene {share * 100:.1f}% "
+                    f"(< {self.min_dev_hold_pct * 100:.0f}%) -> sin piel en el "
+                    f"juego, se omite"
+                )
+                return True
+            if self.max_dev_hold_pct > 0 and share > self.max_dev_hold_pct:
                 logger.info(
                     f"{token_info.symbol}: el DEV tiene {share * 100:.1f}% del supply "
                     f"(> {self.max_dev_hold_pct * 100:.0f}%) -> riesgo de dump, se omite"
@@ -1968,6 +1989,7 @@ class UniversalTrader:
             logger.info(f"DEV HOLD OK {token_info.symbol}: el creador tiene {share * 100:.1f}%")
         except Exception as exc:  # noqa: BLE001 - fail-open, ver docstring
             logger.debug(f"No pude mirar lo que tiene el dev de {token_info.symbol}: {exc}")
+            return _fallo_min
         return False
 
     async def _top_holder_exceeds(self, token_info: TokenInfo) -> bool:
@@ -2739,6 +2761,15 @@ class UniversalTrader:
                                 f"Evitado {token_info.symbol}: se paso de la banda "
                                 f"(MC ${_mc:,.0f} > ${self.max_entry_mc:,.0f})"
                                 f"{_porque}"
+                                # Marca los que SOLO fallaron por market cap:
+                                # el dev ya habia pasado su filtro. Son los
+                                # candidatos que perdemos por llegar tarde, no
+                                # por ser malos -- si salen muchos, el techo
+                                # esta demasiado bajo o entramos con retraso.
+                                + (
+                                    " · DEV OK, solo fallo el MC"
+                                    if _dev_ya else ""
+                                )
                             )
                             return
                         if _mediana_ok:
@@ -4022,6 +4053,17 @@ class UniversalTrader:
         else:
             _sl_pct = self.stop_loss_percentage
         sl_price = entry_price * (1 - _sl_pct) if _sl_pct else None
+        # STOP POR MC. El porcentual mide desde TU entrada; este mide en
+        # absoluto ("si baja de $X, fuera"), que es como esta pensada la
+        # estrategia de rebote -- todo en market cap. Con los dos puestos
+        # manda el que salte antes: cayendo el precio, el mas alto.
+        _mc_sl = float(self.mc_stop_loss or 0)
+        if _mc_sl > 0:
+            _mc_sl_price = _mc_sl / (_PUMP_TOTAL_SUPPLY * _SOL_USD)
+            sl_price = (
+                _mc_sl_price if sl_price is None
+                else max(sl_price, _mc_sl_price)
+            )
         moonbag = moonbag_fraction(tiers)
         _final_mc = (
             float(self.dev_elite.get("final_target_mc") or 0) if _elite

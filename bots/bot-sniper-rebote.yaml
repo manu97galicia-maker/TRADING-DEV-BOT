@@ -4,21 +4,21 @@
 #
 # La entrada normal (la de nacimiento) esta desactivada a proposito con
 # min_entry_mc imposible: aqui solo se entra por la puerta del scanner de dip.
-name: "REBOTE - pico 3,3-10K, vuelta a 800-1,4K, 2 compras seguidas, 0.012 SOL"
+name: "REBOTE - pico 3,3-10K, vuelta a 800-1,4K, 2 compras seguidas, 0.05 SOL"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
-enabled: true
+enabled: false
 separate_process: false
 platform: pump_fun
 
 trade:
-  buy_amount: 0.012
-  mayhem_buy_amount: 0.012
+  buy_amount: 0.05
+  mayhem_buy_amount: 0.05
   rugs_para_bloquear: 1
   nombre_estrategia: rebote
-  max_posiciones: 2
+  max_posiciones: 3
   max_perdidas_seguidas: 999
   max_real_buys: 999
   reiniciar_tanda: false
@@ -28,15 +28,17 @@ trade:
   exit_strategy: tp_sl
 
   # TP1: x2 (+100%), vende 50%
-  take_profit_percentage: 1.0
-  take_profit_sell_percentage: 0.5
+  take_profit_percentage: 2.0
+  take_profit_sell_percentage: 1.0
   # TP2: x3 (+200%), vende el 100% restante
-  tp2_gain: 2.0
-  tp2_sell: 1.0
+  tp2_gain: 0
+  tp2_sell: 0
   mc_take_profit_tiers: []
 
   # SL -75%; tras TP1 el suelo sube a la entrada (trinquete)
   stop_loss_percentage: 0.75
+  # Fuera si el market cap cae a $400 (manda el que salte antes)
+  mc_stop_loss: 400
   stop_a_entrada_tras_tp: true
   stop_al_tp_tras_tp: false
   trailing_stop_percentage: 0
@@ -49,7 +51,7 @@ trade:
   max_hold_time: 0
   price_check_interval: 1
   extreme_fast_mode: false
-  min_reserve_sol: 0.02
+  min_reserve_sol: 0.006
 
 compute_units:
   buy: 140000
@@ -97,7 +99,7 @@ filters:
     actual_min_mc: 800
     actual_max_mc: 1400
     ventana_seg: 300
-    buy_amount: 0.012
+    buy_amount: 0.05
 
   pumpfun_dev:
     enabled: false

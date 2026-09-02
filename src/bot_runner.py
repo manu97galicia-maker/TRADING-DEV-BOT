@@ -177,6 +177,7 @@ async def start_bot(config_path: str):
             tp5_gain=cfg["trade"].get("tp5_gain"),
             tp5_sell=cfg["trade"].get("tp5_sell"),
             final_target_mc=cfg["trade"].get("final_target_mc", 0),
+            mc_stop_loss=cfg["trade"].get("mc_stop_loss", 0),
             mc_take_profit_tiers=cfg["trade"].get("mc_take_profit_tiers"),
             suelos_por_mc=cfg["trade"].get("suelos_por_mc"),
             rugs_para_bloquear=cfg["trade"].get("rugs_para_bloquear", 2),
@@ -255,6 +256,7 @@ async def start_bot(config_path: str):
             max_holder_pct=cfg.get("filters", {}).get("max_holder_pct", 0.0),
             max_bundle_pct=cfg.get("filters", {}).get("max_bundle_pct", 0.0),
             max_dev_hold_pct=cfg.get("filters", {}).get("max_dev_hold_pct", 0.0),
+            min_dev_hold_pct=cfg.get("filters", {}).get("min_dev_hold_pct", 0.0),
             min_holders=cfg.get("filters", {}).get("min_holders", 0),
             require_zero_initial_holders=cfg.get("filters", {}).get(
                 "require_zero_initial_holders", False
