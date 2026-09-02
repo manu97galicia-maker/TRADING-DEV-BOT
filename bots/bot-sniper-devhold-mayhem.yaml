@@ -6,7 +6,7 @@
 #
 # Salida en escalera: se cobra pronto y se deja correr una cola cada vez mas
 # pequena, hasta un 1% que solo se suelta en 800K.
-name: "DEVHOLD MAYHEM - dev 2+ migraciones y >=10% supply, 0.025 SOL, stop MC 900"
+name: "DEVHOLD MAYHEM - dev 2+ migraciones y >=10% supply, 0.02 SOL, stop MC 900"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -16,8 +16,8 @@ separate_process: false
 platform: pump_fun
 
 trade:
-  buy_amount: 0.025
-  mayhem_buy_amount: 0.025
+  buy_amount: 0.02
+  mayhem_buy_amount: 0.02
   rugs_para_bloquear: 1
   nombre_estrategia: devhold_mayhem
   max_posiciones: 3
@@ -140,7 +140,7 @@ filters:
   pumpfun_dev:
     enabled: true
     min_migrations: 2
-    min_rate: 0.10
+    min_rate: 0.25
     compra_inmediata: true
     timeout_seg: 2.0
 

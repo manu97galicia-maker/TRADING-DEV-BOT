@@ -1,0 +1,141 @@
+# DEV CON PIEL EN EL JUEGO. Modo normal (compra al nacer), NO mayhem.
+# Dos condiciones sobre el creador: que haya migrado 2+ monedas antes y que
+# se quede con >= 10% del supply. La tesis es que un dev con historial y con
+# su propio dinero dentro no tira la moneda a los dos minutos.
+#
+# Salida en escalera: se cobra pronto y se deja correr una cola cada vez mas
+# pequena, hasta un 1% que solo se suelta en 800K.
+name: "DEVHOLD 11K - entrada 4,7-11K de MC, 0.07 SOL, escalera escalada x2,34"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: true
+separate_process: false
+platform: pump_fun
+
+trade:
+  buy_amount: 0.07
+  mayhem_buy_amount: 0.07
+  rugs_para_bloquear: 1
+  nombre_estrategia: devhold11k
+  max_posiciones: 3
+  max_perdidas_seguidas: 999
+  max_real_buys: 999
+  reiniciar_tanda: false
+
+  buy_slippage: 0.12
+  sell_slippage: 0.9
+  exit_strategy: tp_sl
+
+  # ESCALERA POR MARKET CAP. Se expresa en MC y no en porcentaje para que el
+  # "80% liquidado antes de 25K" se cumpla ENTRARAS DONDE ENTRARAS: un tramo
+  # por porcentaje cae en un MC distinto segun a cuanto compraste, y con el
+  # techo de entrada en 4.700 eso movia el ultimo escalon miles de dolares.
+  #
+  # El primer escalon si va por porcentaje: cubre el pop temprano que no llega
+  # a 10K. Con entrada <= 4.700, +50% es como mucho 7.050, muy por debajo del
+  # primer tramo de MC, asi que ninguno puede saltar en perdida.
+  take_profit_percentage: 0.50      # +50%  -> suelta 20%
+  take_profit_sell_percentage: 0.20
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+  tp5_gain: 0
+  tp5_sell: 0
+
+  mc_take_profit_tiers:
+    - {target_mc: 23000,   sell: 0.20}
+    - {target_mc: 33000,   sell: 0.20}
+    - {target_mc: 47000,   sell: 0.20}   # <- 0,80 fuera, el equivalente a los 20K del otro
+    - {target_mc: 94000,   sell: 0.08}
+    - {target_mc: 180000,  sell: 0.07}
+    - {target_mc: 470000,  sell: 0.03}
+  final_target_mc: 1900000
+
+  # EL TRINQUETE: cada TP sube el suelo al TP anterior. Cobrado el primer
+  # escalon, la operacion ya no puede acabar en perdida.
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: true
+  stop_al_tp_anterior: true
+  stop_loss_percentage: 0.50
+  # OJO: un 0 aqui NO desactiva el trailing -- el codigo hace
+  # `trailing_stop_percentage or stop_loss_percentage`, asi que un 0 hereda el
+  # stop loss en silencio. Por eso va escrito explicito.
+  # Normal: dejar correr. Aguanta correcciones del 75% desde el pico,
+  # que en la practica solo corta un desplome. Aqui mandan los suelos_por_mc.
+  trailing_stop_percentage: 0.75
+
+  # SUELOS QUE SUBEN Y NO BAJAN. El trinquete de los TP ya protege mientras
+  # quedan escalones, pero la cola (3% hasta 78K y 1% hasta 800K) iba a pelo:
+  # podia subir a 200K y volver a cero sin vender nada. Esto le pone red.
+  suelos_por_mc:
+    - {alcanza: 16000,  suelo: 12000}
+    - {alcanza: 23000,  suelo: 16000}
+    - {alcanza: 33000,  suelo: 23000}
+    - {alcanza: 47000,  suelo: 33000}
+    - {alcanza: 94000,  suelo: 60000}
+    - {alcanza: 180000, suelo: 120000}
+    - {alcanza: 470000, suelo: 300000}
+    - {alcanza: 900000, suelo: 600000}
+
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+  venta_muerta_seg: 120
+  venta_muerta_gain: 0.0
+  max_hold_time: 0
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.02
+
+compute_units:
+  buy: 140000
+  sell: 120000
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 5000000
+  extra_percentage: 0.0
+  hard_cap: 5000000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: logs
+  max_token_age: 30
+  max_buy_age: 15
+  # MODO NORMAL, sin mayhem.
+  allow_mayhem: false
+  require_mayhem: false
+  marry_mode: false
+  yolo_mode: true
+  ignorar_listas_de_devs: false
+  no_repeat_name_min: 5
+  match_string: null
+
+  # El dev se queda con al menos el 10% del supply.
+  # FRANJA DE ENTRADA 4.700-11.000. El suelo evita pisarse con
+  # bot-sniper-devhold.yaml, que cubre de 0 a 4.700: sin el, una moneda
+  # barata la compraban los dos y doblabas exposicion en el mismo token.
+  min_entry_mc: 4700
+  max_entry_mc: 11000
+  min_dev_hold_pct: 0.10
+
+  # Y tiene historial: 2 monedas migradas como minimo.
+  pumpfun_dev:
+    enabled: true
+    min_migrations: 2
+    min_rate: 0.10
+    compra_inmediata: true
+    timeout_seg: 2.0
+
+  dev_buy:
+    min_sol: 0

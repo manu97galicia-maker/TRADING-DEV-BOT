@@ -15,8 +15,8 @@ separate_process: false
 platform: pump_fun
 
 trade:
-  buy_amount: 0.09
-  mayhem_buy_amount: 0.09
+  buy_amount: 0.15
+  mayhem_buy_amount: 0.15
   rugs_para_bloquear: 1
   nombre_estrategia: devhold
   max_posiciones: 3
