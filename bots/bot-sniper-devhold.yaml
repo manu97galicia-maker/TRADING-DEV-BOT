@@ -120,7 +120,7 @@ filters:
   marry_mode: false
   yolo_mode: true
   ignorar_listas_de_devs: false
-  no_repeat_name_min: 5
+  no_repeat_name_min: 2
   match_string: null
 
   # El dev se queda con al menos el 10% del supply.

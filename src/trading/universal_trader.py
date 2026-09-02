@@ -1941,6 +1941,11 @@ class UniversalTrader:
         _fallo_min = self.min_dev_hold_pct > 0
         creator = getattr(token_info, "creator", None)
         if not creator:
+            if _fallo_min:
+                logger.info(
+                    f"{token_info.symbol}: sin creador en el evento, no puedo "
+                    f"medir lo que tiene el dev -> se omite"
+                )
             return _fallo_min
         try:
             import aiohttp  # noqa: PLC0415 - perezoso, igual que en _top_holder_exceeds
@@ -1971,7 +1976,16 @@ class UniversalTrader:
 
             supply = float(getattr(token_info, "token_total_supply", 0) or 0)
             if supply <= 0:
-                return _fallo_min
+                # El evento no siempre trae el supply, pero en pump.fun es
+                # SIEMPRE 1.000.000.000 -- la misma constante que se usa para
+                # calcular el market cap en todo el fichero. Sin esta reserva,
+                # el filtro descartaba monedas por no poder medirlas, que no es
+                # lo mismo que medirlas y que no cumplan.
+                supply = float(_PUMP_TOTAL_SUPPLY)
+                logger.debug(
+                    "%s: sin supply en el evento, uso el de pump.fun (%s)",
+                    token_info.symbol, supply,
+                )
             share = held / supply
             if self.min_dev_hold_pct > 0 and share < self.min_dev_hold_pct:
                 logger.info(
@@ -1989,6 +2003,11 @@ class UniversalTrader:
             logger.info(f"DEV HOLD OK {token_info.symbol}: el creador tiene {share * 100:.1f}%")
         except Exception as exc:  # noqa: BLE001 - fail-open, ver docstring
             logger.debug(f"No pude mirar lo que tiene el dev de {token_info.symbol}: {exc}")
+            if _fallo_min:
+                logger.info(
+                    f"{token_info.symbol}: fallo al consultar lo que tiene el "
+                    f"dev ({exc}) -> se omite"
+                )
             return _fallo_min
         return False
 
