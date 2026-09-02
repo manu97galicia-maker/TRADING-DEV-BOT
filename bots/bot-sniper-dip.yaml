@@ -26,7 +26,7 @@ env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
-enabled: true
+enabled: false
 separate_process: false
 platform: "pump_fun"
 

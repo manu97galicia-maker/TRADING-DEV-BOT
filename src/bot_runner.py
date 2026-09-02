@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import math
 import multiprocessing
 import re
 import sys
@@ -61,6 +62,42 @@ def setup_logging(bot_name: str):
     setup_file_logging(str(log_filename))
 
 
+async def _auto_scale(trader, interval: int = 60) -> None:
+    """Each time wallet balance doubles from start, grow buy_amount by +30%."""
+    _LAMPORTS = 1_000_000_000
+    try:
+        start = await trader.solana_client.get_sol_balance(trader.wallet.pubkey)
+    except Exception:
+        logging.warning("ESCALA: no se pudo leer el saldo inicial, escalado desactivado")
+        return
+    if start <= 0:
+        return
+    base_buy = trader.buy_amount
+    base_mayhem = trader.mayhem_buy_amount
+    n = 0
+    while True:
+        await asyncio.sleep(interval)
+        try:
+            cur = await trader.solana_client.get_sol_balance(trader.wallet.pubkey)
+        except Exception:
+            continue
+        if cur <= 0:
+            continue
+        doublings = int(math.log2(cur / start)) if cur >= start else 0
+        doublings = max(0, doublings)
+        if doublings > n:
+            n = doublings
+            new_buy = round(base_buy * (1.30 ** n), 6)
+            new_mayhem = round(base_mayhem * (1.30 ** n), 6)
+            trader.buy_amount = new_buy
+            trader.mayhem_buy_amount = new_mayhem
+            logging.info(
+                "ESCALA x%d: saldo %.4f SOL (inicio %.4f) -> "
+                "buy=%.4f SOL mayhem=%.4f SOL",
+                n, cur / _LAMPORTS, start / _LAMPORTS, new_buy, new_mayhem,
+            )
+
+
 async def start_bot(config_path: str):
     """Start a trading bot with the configuration from the specified path."""
     cfg = load_bot_config(config_path)
@@ -112,6 +149,7 @@ async def start_bot(config_path: str):
             rpc_endpoint=cfg["rpc_endpoint"],
             wss_endpoint=cfg["wss_endpoint"],
             private_key=cfg["private_key"],
+            wallets_json=cfg.get("wallets_json"),
             # Platform configuration - pass platform enum directly
             platform=platform,
             # Trade parameters
@@ -251,6 +289,7 @@ async def start_bot(config_path: str):
                 "max_mc_por_sol_curva", 0
             ),
             max_perdidas_seguidas=cfg["trade"].get("max_perdidas_seguidas", 0),
+            buy_amount_tras_sl=cfg["trade"].get("buy_amount_tras_sl", 0),
             min_supply_en_manos=cfg.get("filters", {}).get(
                 "min_supply_en_manos", 0
             ),
@@ -303,7 +342,18 @@ async def start_bot(config_path: str):
             max_rps=cfg.get("node", {}).get("max_rps", 25),
         )
 
-        await trader.start()
+        # Escalar posicion un 30% cada vez que el saldo de la wallet se doble
+        # respecto al momento de arranque. El check es cada 60 s y es una
+        # tarea de fondo: no bloquea el trading en ningún caso.
+        _scale_task = asyncio.create_task(_auto_scale(trader))
+        try:
+            await trader.start()
+        finally:
+            _scale_task.cancel()
+            try:
+                await _scale_task
+            except asyncio.CancelledError:
+                pass
 
     except Exception as e:
         logging.exception(f"Failed to initialize or start trader: {e}")

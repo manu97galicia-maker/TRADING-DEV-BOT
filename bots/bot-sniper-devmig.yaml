@@ -231,6 +231,7 @@ filters:
   min_titulares: 0
   min_presion_ratio: 0
   presion_seg: 0
+  max_holder_pct: 0.05
   min_holders: 0
   min_holders_gmgn: 0
 

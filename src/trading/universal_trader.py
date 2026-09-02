@@ -6,6 +6,7 @@ Cleaned up to remove all platform-specific hardcoding.
 import asyncio
 import json
 import sys
+from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
 from time import monotonic
@@ -26,6 +27,7 @@ from core.pubkeys import (
     TOKEN_PROGRAM,
 )
 from core.wallet import Wallet
+from core.wallet_pool import WalletPool
 from dexscreener import DexScreenerFilter
 from interfaces.core import Platform, TokenInfo
 from monitoring.listener_factory import ListenerFactory
@@ -55,6 +57,12 @@ except ImportError:
     pass
 
 logger = get_logger(__name__)
+
+# Por-posición: la wallet y el seller elegidos del pool para ESTA compra.
+# Cada tarea asyncio hereda su propio contexto, así que dos posiciones
+# simultáneas nunca se pisan entre sí.
+_ctx_wallet: ContextVar[Wallet | None] = ContextVar("_ctx_wallet", default=None)
+_ctx_seller: ContextVar[object | None] = ContextVar("_ctx_seller", default=None)
 
 
 def _load_creator_file(path: str) -> set[str]:
@@ -475,6 +483,9 @@ class UniversalTrader:
         # Perdidas seguidas antes de que la estrategia deje de comprar.
         # 0 = nunca para.
         max_perdidas_seguidas: int = 0,
+        # Importe reducido para la compra inmediatamente despues de un SL.
+        # 0 = usar siempre el importe normal.
+        buy_amount_tras_sl: float = 0.0,
         # Porcentaje MINIMO del supply que tiene que estar ya en manos de
         # compradores, es decir, fuera de la curva. 0 = no se mira.
         min_supply_en_manos: float = 0.0,
@@ -606,11 +617,16 @@ class UniversalTrader:
         compute_units: dict | None = None,
         # Node provider configuration
         max_rps: float = 25.0,
+        # Multi-wallet pool: path to wallets_generadas.json (None = wallet única)
+        wallets_json: str | None = None,
     ):
         """Initialize the universal trader."""
         # Core components
         self.solana_client = SolanaClient(rpc_endpoint, max_rps=max_rps)
         self.wallet = Wallet(private_key)
+        self.wallet_pool: WalletPool | None = (
+            WalletPool(wallets_json) if wallets_json else None
+        )
         self.priority_fee_manager = PriorityFeeManager(
             client=self.solana_client,
             enable_dynamic_fee=enable_dynamic_priority_fee,
@@ -1024,6 +1040,8 @@ class UniversalTrader:
         self.max_perdidas_seguidas = int(max_perdidas_seguidas or 0)
         self._perdidas_seguidas = 0
         self._parado_por_perdidas = False
+        self.buy_amount_tras_sl = float(buy_amount_tras_sl or 0)
+        self._ultimo_cierre_fue_sl = False
         # El stop de ENTRADA y el TRAILING eran el mismo numero, y no pueden
         # serlo: el de entrada tiene que aguantar el zarandeo del nacimiento
         # (medido el 10-ago: Kermit se hundio un 44% antes de hacer 13x) y el
@@ -1114,6 +1132,34 @@ class UniversalTrader:
         self.processing: bool = False
         self.processed_tokens: set[str] = set()
         self.token_timestamps: dict[str, float] = {}
+
+    def _make_seller(self, wallet: Wallet) -> PlatformAwareSeller:
+        """Crea un seller para la wallet de esta posición (modo pool)."""
+        return PlatformAwareSeller(
+            self.solana_client,
+            wallet,
+            self.priority_fee_manager,
+            self.sell_slippage,
+            self.max_retries,
+            compute_units=self.compute_units,
+        )
+
+    def _make_buyer(self, wallet: Wallet) -> PlatformAwareBuyer:
+        """Crea un buyer para la wallet de esta posición (modo pool)."""
+        return PlatformAwareBuyer(
+            self.solana_client,
+            wallet,
+            self.priority_fee_manager,
+            self.buy_amount,
+            self.buy_slippage,
+            self.max_retries,
+            self.extreme_fast_token_amount,
+            self.extreme_fast_mode,
+            compute_units=self.compute_units,
+            allow_mayhem=self.buyer.allow_mayhem,
+            require_mayhem=self.buyer.require_mayhem,
+            devs_marcados=self.buyer._devs_marcados,
+        )
 
     async def start(self) -> None:
         """Start the trading bot and listen for new tokens."""
@@ -3174,6 +3220,16 @@ class UniversalTrader:
                 else:
                     _importe = self.buy_amount
 
+                # TRAS UN SL: la siguiente compra va con importe reducido.
+                # Se consume una sola vez y vuelve al tamaño normal.
+                if self._ultimo_cierre_fue_sl and self.buy_amount_tras_sl > 0:
+                    logger.info(
+                        "TRAS SL: compra reducida %.4f SOL (normal %.4f)",
+                        self.buy_amount_tras_sl, _importe,
+                    )
+                    _importe = self.buy_amount_tras_sl
+                self._ultimo_cierre_fue_sl = False
+
                 # DEV QUE SUELE PUMPEAR ALTO: mas dinero y comision de
                 # prioridad alta para entrar de primero.
                 #
@@ -3316,14 +3372,39 @@ class UniversalTrader:
                         return
                     self._reserved_lamports += need
                     self._reserved_real_buy_slots += 1
+                _pool_idx: int | None = None
                 try:
+                    # Modo multi-wallet: elegir wallet del pool y fijar el
+                    # contexto de esta posición. Las demás posiciones concurrentes
+                    # tienen su propio Task → su propio contexto → no se pisan.
+                    if self.wallet_pool is not None:
+                        _picked_w, _pool_idx = await self.wallet_pool.pick(
+                            need, self.solana_client
+                        )
+                        if _picked_w is None:
+                            logger.warning(
+                                "Pool sin saldo suficiente para %s (need %.4f SOL)",
+                                token_info.symbol, need / LAMPORTS_PER_SOL,
+                            )
+                            _suelta_moneda(_mint_str)
+                            return
+                        _ctx_wallet.set(_picked_w)
+                        _ctx_seller.set(self._make_seller(_picked_w))
+                        _active_buyer = self._make_buyer(_picked_w)
+                        logger.info(
+                            "Pool: usando wallet %s para %s",
+                            str(_picked_w.pubkey)[:8], token_info.symbol,
+                        )
+                    else:
+                        _active_buyer = self.buyer
+
                     # Buy token
                     logger.info(
                         f"Buying {_importe:.6f} SOL worth of {token_info.symbol} "
                         f"on {token_info.platform.value}..."
                         + (" [MAYHEM a prueba]" if _importe != self.buy_amount else "")
                     )
-                    buy_result: TradeResult = await self.buyer.execute(
+                    buy_result: TradeResult = await _active_buyer.execute(
                         token_info,
                         amount_sol=_importe,
                         priority_fee_override=_fee_override,
@@ -3346,6 +3427,8 @@ class UniversalTrader:
                         self._reserved_real_buy_slots = max(
                             0, self._reserved_real_buy_slots - 1
                         )
+                    if _pool_idx is not None and self.wallet_pool is not None:
+                        self.wallet_pool.release(_pool_idx, need)
 
             # Only wait for next token in yolo mode
             if self.yolo_mode:
@@ -3539,7 +3622,7 @@ class UniversalTrader:
         # Close ATA if enabled
         await handle_cleanup_after_failure(
             self.solana_client,
-            self.wallet,
+            _ctx_wallet.get() or self.wallet,
             token_info.mint,
             token_info.token_program_id,
             self.priority_fee_manager,
@@ -3582,7 +3665,7 @@ class UniversalTrader:
             """Saldo crudo en esa cuenta, o None si el RPC no supo contestar."""
             try:
                 ata = self.platform_implementations.address_provider.derive_user_token_account(
-                    self.wallet.pubkey, token_info.mint, programa
+                    (_ctx_wallet.get() or self.wallet).pubkey, token_info.mint, programa
                 )
                 return await self.solana_client.get_token_account_balance(ata)
             except Exception:  # noqa: BLE001
@@ -3687,7 +3770,7 @@ class UniversalTrader:
         sigs = self._sigs_operacion.pop(str(mint), [])
         if not sigs:
             return None
-        yo = str(self.wallet.pubkey)
+        yo = str((_ctx_wallet.get() or self.wallet).pubkey)
         neto = 0.0
         for sig in sigs:
             try:
@@ -3760,7 +3843,8 @@ class UniversalTrader:
                 )
                 amount = real
 
-        sell_result = await self.seller.execute(
+        _seller = _ctx_seller.get() or self.seller
+        sell_result = await _seller.execute(
             token_info, token_amount=amount, token_price=ref_price
         )
         if sell_result.success:
@@ -4077,9 +4161,8 @@ class UniversalTrader:
                 # only armed after every percentage TP has executed.
                 if (
                     target_price is not None
-                    and tiers
-                    and all(executed)
                     and price >= target_price
+                    and remaining > 1e-9
                 ):
                     if await self._sell_amount(token_info, remaining, price, "final_target_mc"):
                         realized_sol += self._ultimo_cobro
@@ -4361,14 +4444,18 @@ class UniversalTrader:
                         # que la moneda respire entre objetivos y aun asi cada
                         # cobro asegura lo ya ganado.
                         if self.stop_a_entrada_tras_tp or self.stop_al_tp_tras_tp:
-                            _suelo = (
-                                entry_price if i == 0
-                                else entry_price * (1 + tiers[i - 1].gain)
-                            )
+                            if i == 0 and self.stop_al_tp_tras_tp:
+                                # SL sube al precio del propio TP1 (no a entrada)
+                                _suelo = entry_price * (1 + tiers[0].gain)
+                            elif i == 0:
+                                _suelo = entry_price
+                            else:
+                                _suelo = entry_price * (1 + tiers[i - 1].gain)
                             if sl_price is None or sl_price < _suelo:
                                 sl_price = _suelo
                                 _donde = (
-                                    "el PRECIO DE COMPRA" if i == 0
+                                    f"TP1 (+{tiers[0].gain * 100:.0f}%)" if i == 0 and self.stop_al_tp_tras_tp
+                                    else "el PRECIO DE COMPRA" if i == 0
                                     else f"TP{i} (+{tiers[i - 1].gain * 100:.0f}%)"
                                 )
                                 logger.info(
@@ -4498,6 +4585,10 @@ class UniversalTrader:
             except Exception:
                 logger.exception("Error in tiered exit monitor")
                 await asyncio.sleep(self.price_check_interval)
+
+        # Marca para la proxima compra: si cerro por SL, la siguiente va reducida.
+        if hit_sl and self.buy_amount_tras_sl > 0:
+            self._ultimo_cierre_fue_sl = True
 
         # Auto-baneo de devs por P&L NETO real (no por "tocó un TP"): SOL cobrado
         # + valor del moonbag aún en la wallet, menos el coste de entrada. Así el
@@ -4689,7 +4780,7 @@ class UniversalTrader:
             try:
                 await handle_cleanup_after_sell(
                     self.solana_client,
-                    self.wallet,
+                    _ctx_wallet.get() or self.wallet,
                     token_info.mint,
                     token_info.token_program_id,
                     self.priority_fee_manager,
@@ -4714,7 +4805,7 @@ class UniversalTrader:
 
         logger.info(f"Selling {token_info.symbol}...")
         # Pass token amount and price from buy result to avoid RPC delays
-        sell_result: TradeResult = await self.seller.execute(
+        sell_result: TradeResult = await (_ctx_seller.get() or self.seller).execute(
             token_info, token_amount=buy_result.amount, token_price=buy_result.price
         )
 
@@ -4730,7 +4821,7 @@ class UniversalTrader:
             # Close ATA if enabled
             await handle_cleanup_after_sell(
                 self.solana_client,
-                self.wallet,
+                _ctx_wallet.get() or self.wallet,
                 token_info.mint,
                 token_info.token_program_id,
                 self.priority_fee_manager,
@@ -4774,7 +4865,7 @@ class UniversalTrader:
                     )
 
                     # Execute sell with position quantity and entry price to avoid RPC delays
-                    sell_result = await self.seller.execute(
+                    sell_result = await (_ctx_seller.get() or self.seller).execute(
                         token_info,
                         token_amount=position.quantity,
                         token_price=position.entry_price,
@@ -4804,7 +4895,7 @@ class UniversalTrader:
                         # Close ATA if enabled
                         await handle_cleanup_after_sell(
                             self.solana_client,
-                            self.wallet,
+                            _ctx_wallet.get() or self.wallet,
                             token_info.mint,
                             token_info.token_program_id,
                             self.priority_fee_manager,

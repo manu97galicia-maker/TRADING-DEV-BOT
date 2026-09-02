@@ -1,0 +1,110 @@
+name: "DISCORD - calls del canal, pump.fun, SL35%, TP1 60%@+30%, TP2 37%@+150%, moonbag 3%"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: false
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.12
+  fraccion_saldo: 0
+  compra_minima_sol: 0.03
+  rugs_para_bloquear: 1
+  mayhem_buy_amount: 0.12
+  nombre_estrategia: "discord"
+  max_posiciones: 3
+  max_real_buys: 0
+  reiniciar_tanda: true
+  max_perdidas_seguidas: 0
+  escala_por_sol_ganado: 0
+
+  buy_slippage: 0.12
+  sell_slippage: 0.25
+  exit_strategy: "tp_sl"
+
+  # ESCALERA DE SALIDA
+  # TP1: vende el 60% cuando sube un 30%
+  # TP2: vende el 37% cuando sube un 150%
+  # Moonbag: 3% que no se vende nunca
+  take_profit_percentage: 0.30
+  take_profit_sell_percentage: 0.60
+  tp2_gain: 1.50
+  tp2_sell: 0.37
+  tp3_gain: 0
+  tp3_sell: 0
+  mc_take_profit_tiers: []
+  moonbag_percentage: 0.03
+
+  # Trinquete: tras TP1 el suelo sube al precio de compra
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: false
+  stop_loss_percentage: 0.35
+  trailing_stop_percentage: 0
+
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+  venta_bajo_entrada_seg: 0
+  venta_muerta_seg: 0
+  venta_muerta_gain: 0.0
+  venta_sin_volumen_seg: 0
+  max_hold_time: 7200
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.03
+
+compute_units:
+  buy: 140000
+  sell: 120000
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 5_714_283
+  extra_percentage: 0.0
+  hard_cap: 5_714_283
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  # Modo Discord: compra lo que se postee en el canal configurado.
+  # DISCORD_TOKEN tiene que estar en el .env (token de usuario o de bot).
+  discord_calls:
+    enabled: true
+    # ID del canal: https://discord.com/channels/818351761005346826/1466342730061058099
+    channels:
+      - "1466342730061058099"
+    poll_seconds: 2.0
+    is_bot_token: false
+    suffixes:
+      - "pump"
+      - "bonk"
+      - "moon"
+      - "bags"
+
+  listener_type: "logs"
+  yolo_mode: true
+  marry_mode: false
+  ignorar_listas_de_devs: false
+  allow_mayhem: true
+  require_mayhem: false
+
+  max_token_age: 120
+  max_buy_age: 0
+  no_repeat_name_min: 0
+  match_string: null
+  max_entry_mc: 0
+  min_entry_mc: 0
+  min_volumen_sol: 0
+  max_volumen_sol: 0
+  min_titulares: 0
+  min_presion_ratio: 0
+  presion_seg: 0
+  max_holder_pct: 0.05
+  min_holders: 0
+  min_holders_gmgn: 0

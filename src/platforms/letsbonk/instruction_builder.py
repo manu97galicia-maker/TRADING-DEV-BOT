@@ -12,7 +12,30 @@ import time
 from solders.instruction import AccountMeta, Instruction
 from solders.pubkey import Pubkey
 from solders.system_program import CreateAccountWithSeedParams, create_account_with_seed
-from spl.token.instructions import create_idempotent_associated_token_account
+from spl.token.instructions import ASSOCIATED_TOKEN_PROGRAM_ID, SYS_PROGRAM_ID
+from solders.instruction import AccountMeta as _AccountMeta, Instruction as _Instruction
+from solders.pubkey import Pubkey as _Pubkey
+
+
+def create_idempotent_associated_token_account(
+    payer: _Pubkey, owner: _Pubkey, mint: _Pubkey, token_program: _Pubkey
+) -> _Instruction:
+    ata, _ = _Pubkey.find_program_address(
+        [bytes(owner), bytes(token_program), bytes(mint)],
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+    )
+    return _Instruction(
+        accounts=[
+            _AccountMeta(pubkey=payer, is_signer=True, is_writable=True),
+            _AccountMeta(pubkey=ata, is_signer=False, is_writable=True),
+            _AccountMeta(pubkey=owner, is_signer=False, is_writable=False),
+            _AccountMeta(pubkey=mint, is_signer=False, is_writable=False),
+            _AccountMeta(pubkey=SYS_PROGRAM_ID, is_signer=False, is_writable=False),
+            _AccountMeta(pubkey=token_program, is_signer=False, is_writable=False),
+        ],
+        program_id=ASSOCIATED_TOKEN_PROGRAM_ID,
+        data=bytes([1]),
+    )
 
 from core.pubkeys import (
     TOKEN_ACCOUNT_RENT_EXEMPT_RESERVE,

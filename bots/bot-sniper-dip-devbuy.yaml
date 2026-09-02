@@ -1,0 +1,109 @@
+# DIP + DEVBUY - compra el retroceso (pico 4-48K, ahora 1-1.4K) solo cuando
+# el dev se jugo minimo 0.2 SOL al crear Y hay 3 txs de compra seguidas tras
+# la caida. Vende todo al +60%. Stop si MC cae de 900 (~25% bajo la entrada
+# media de 1.200 -- NOTA: el motor usa stop por %, no por MC absoluto; 0.25
+# es una aproximacion; si se quiere stop exacto a 900 MC hay que añadir
+# stop_mc al motor de dip).
+#
+# Derivado de bot-sniper-dip.yaml (26-ago). Dos diferencias clave:
+#   1. dev_buy.min_sol: 0.2 -- filtra devs que no se jugaron nada.
+#   2. dip.min_buys_seguidas: 3 -- PENDIENTE MOTOR: parametro nuevo, el motor
+#      tiene que confirmar 3 txs de compra CONSECUTIVAS antes de ejecutar la
+#      compra del dip. Sin eso, el bot compra en cuanto el MC entra en rango,
+#      igual que el DIP original.
+name: "DIP+DEVBUY - pico 4-48K, retroceso 1-1.4K, dev 0.2 SOL+, 3 compras seguidas, vende todo +60%"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: true
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.015
+  mayhem_buy_amount: 0.015
+  rugs_para_bloquear: 1
+  nombre_estrategia: "dip_devbuy"
+  max_posiciones: 2
+  max_perdidas_seguidas: 2
+  max_real_buys: 3
+  reiniciar_tanda: false
+
+  buy_slippage: 0.3
+  sell_slippage: 0.9
+  exit_strategy: "tp_sl"
+
+  # VENDE TODO AL +60%
+  take_profit_percentage: 0.6
+  take_profit_sell_percentage: 1.0
+  mc_take_profit_tiers: []
+
+  # STOP si MC < ~900: aproximado al 25% bajo una entrada media de 1.200.
+  # Si la entrada es a 1.400 el stop real sera a 1.050 (no a 900) -- para
+  # un stop exacto a 900 MC el motor necesita stop_mc en dip.
+  stop_loss_percentage: 0.25
+  trailing_stop_percentage: 0
+
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+  venta_muerta_seg: 0
+  max_hold_time: 0
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.007
+
+compute_units:
+  buy: 140000
+  sell: 120000
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 20000000
+  extra_percentage: 0.0
+  hard_cap: 20000000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 5
+  max_buy_age: 5
+  allow_mayhem: true
+  require_mayhem: true
+  marry_mode: false
+  yolo_mode: true
+  ignorar_listas_de_devs: false
+  no_repeat_name_min: 10
+  match_string: null
+
+  # Cierra el camino de compra normal (igual que en dip original).
+  min_entry_mc: 999999999
+
+  pumpfun_dev:
+    enabled: false
+
+  # EL FILTRO DE DEV: 0.2 SOL minimo comprados por el creador en la tx de
+  # creacion. Sin esto, cualquier mayhem con el patron de precio se compraria.
+  dev_buy:
+    min_sol: 0.2
+
+  # EL FILTRO DE PRECIO (dip scanner, motor _dip_scanner_loop):
+  # - pico entre 4K y 48K (moneda que YA demostro fuerza)
+  # - valor actual entre 1K y 1.4K (retroceso a la zona de entrada)
+  # - ventana de 5 minutos desde el nacimiento
+  # - PENDIENTE MOTOR: min_buys_seguidas=3 (3 txs de compra CONSECUTIVAS
+  #   tras entrar en rango antes de disparar la compra)
+  dip:
+    pico_min_mc: 4000
+    pico_max_mc: 48000
+    actual_min_mc: 1000
+    actual_max_mc: 1400
+    ventana_seg: 300
+    buy_amount: 0.015
+    min_buys_seguidas: 3

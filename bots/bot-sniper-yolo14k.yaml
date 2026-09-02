@@ -1,0 +1,80 @@
+name: "YOLO14K - cualquier moneda, 0.015 SOL, sin SL, +100% vende 70%, resto a 14k MC"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: true
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.015
+  mayhem_buy_amount: 0.015
+  rugs_para_bloquear: 1
+  nombre_estrategia: "yolo14k"
+  max_posiciones: 5
+  max_perdidas_seguidas: 3
+  max_real_buys: 999
+  reiniciar_tanda: false
+
+  buy_slippage: 0.3
+  sell_slippage: 0.9
+  exit_strategy: "tp_sl"
+
+  # TP1: +100%, vende el 70%
+  take_profit_percentage: 1.0
+  take_profit_sell_percentage: 0.7
+
+  # TP2: cuando el MC llega a 14k, vende el 30% restante (todo lo que quede)
+  mc_take_profit_tiers:
+    - target_mc: 14000
+      sell: 1.0
+
+  # Sin stop loss hasta el TP1; tras el TP1 el suelo sube a la entrada
+  stop_loss_percentage: 0
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: false
+  trailing_stop_percentage: 0
+
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+  venta_muerta_seg: 0
+  max_hold_time: 0
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.007
+
+compute_units:
+  buy: 140000
+  sell: 120000
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 20000000
+  extra_percentage: 0.0
+  hard_cap: 20000000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 10
+  max_buy_age: 5
+  allow_mayhem: true
+  require_mayhem: false
+  marry_mode: false
+  yolo_mode: true
+  ignorar_listas_de_devs: true
+  no_repeat_name_min: 5
+  match_string: null
+  min_entry_mc: 0
+  max_entry_mc: 0
+  pumpfun_dev:
+    enabled: false
+  dev_buy:
+    min_sol: 0

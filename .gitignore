@@ -191,3 +191,6 @@ paper_1s_resultado.json
 
 # Claves de las wallets generadas: ESTO ES DINERO, nunca al repo
 wallets_generadas.json
+
+# Estado de ejecucion del bot (ficheros de claim por token)
+reservas/

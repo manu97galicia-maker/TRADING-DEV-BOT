@@ -1,0 +1,123 @@
+name: "NOMAYHEM - dev>=30%, 0,04 SOL, TP40/80/150/400/650+50kMC, SL30%"
+env_file: .env
+rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
+wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
+private_key: ${SOLANA_PRIVATE_KEY}
+enabled: false
+separate_process: false
+platform: pump_fun
+trade:
+  buy_amount: 0.04
+  mayhem_buy_amount: 0.04
+  max_posiciones: 3
+  max_real_buys: 0
+  reiniciar_tanda: false
+  max_perdidas_seguidas: 22
+  buy_amount_tras_sl: 0.04
+  mayhem_max_perdidas: 0
+  rugs_para_bloquear: 2
+  buy_slippage: 0.3
+  sell_slippage: 0.9
+  exit_strategy: tp_sl
+  # TP1 +40% 20% | TP2 +80% 29% | TP3 +150% 20% (~$10k MC)
+  # TP4 +400% 14% (~$20k MC) | TP5 +650% 14% (~$30k MC) | moonbag 3% en $50k MC
+  take_profit_percentage: 0.40
+  take_profit_sell_percentage: 0.20
+  tp2_gain: 0.80
+  tp2_sell: 0.29
+  tp3_gain: 1.50
+  tp3_sell: 0.20
+  tp4_gain: 4.00
+  tp4_sell: 0.14
+  tp5_gain: 6.50
+  tp5_sell: 0.14
+  # SL -30%; trinquete: tras TP1 sube a entrada, tras TP2 al nivel de TP1, etc.
+  stop_loss_percentage: 0.30
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: false
+  trailing_stop_percentage: 0
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+  venta_muerta_seg: 120
+  venta_muerta_gain: 0.0
+  max_hold_time: 20
+  final_target_mc: 50000
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.02
+compute_units:
+  buy: 140000
+  sell: 120000
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 20000000
+  extra_percentage: 0.0
+  hard_cap: 20000000
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+filters:
+  listener_type: logs
+  max_token_age: 5
+  max_buy_age: 36
+  min_buy_age: 0
+  match_string: null
+  bro_address: null
+  ignorar_listas_de_devs: false
+  pumpfun_dev:
+    enabled: true
+    min_rate: 0.30
+    min_migrations: 2
+  allow_mayhem: false
+  require_mayhem: false
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false
+  min_entry_mc: 3200
+  max_entry_mc: 4500
+  min_curve_sol: 0.3
+  min_volumen_sol: 0
+  max_volumen_sol: 0
+  min_vol_ventana_sol: 0
+  min_presion_ratio: 2.0
+  presion_seg: 3.0
+  min_buys: 2
+  ultimas_tx_compra: 3
+  min_ops: 8
+  min_titulares: 4
+  redes_originales: false
+  min_holders_gmgn: 0
+  senal_gmgn: []
+  no_repeat_name_min: 5
+  max_holder_pct: 0.05
+  max_dev_hold_pct: 0.0
+  min_holders: 0
+  holder_bypass_ratio: 0
+  dev_buy:
+    min_sol: 0
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: solana
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+cleanup:
+  mode: post_session
+  force_close_with_burn: false
+  with_priority_fee: false
+node:
+  max_rps: 15

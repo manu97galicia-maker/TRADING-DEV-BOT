@@ -12,7 +12,7 @@
 # mismo dueño.
 #
 # NUMEROS SIN VALIDAR: 0 operaciones reales con este filtro.
-name: "MAYHEMSIMPLE - edad<5s y MC>=3,4K, sin filtro de creador, solo mayhem, 0,03 SOL"
+name: "MAYHEMSIMPLE - mayhem+dev>=30%, 0,025 SOL, TP40/80/150/400/650+50kMC, SL30%"
 env_file: .env
 rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
 wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
@@ -21,39 +21,32 @@ enabled: true
 separate_process: false
 platform: pump_fun
 trade:
-  buy_amount: 0.02
-  mayhem_buy_amount: 0.02
-  max_posiciones: 2
-  # TOPE DE POR VIDA (pedido 26-ago, al mandar fondos): 3 compras y para.
-  max_real_buys: 3
+  buy_amount: 0.035
+  mayhem_buy_amount: 0.035
+  max_posiciones: 1
+  max_real_buys: 0
   reiniciar_tanda: false
-  max_perdidas_seguidas: 2
+  max_perdidas_seguidas: 22
+  buy_amount_tras_sl: 0.025
   mayhem_max_perdidas: 0
-  rugs_para_bloquear: 1
+  rugs_para_bloquear: 2
   buy_slippage: 0.3
   sell_slippage: 0.9
   exit_strategy: tp_sl
-  # Misma escalera y mismo stop (ninguno) que la otra estrategia de mayhem:
-  # esto es el comportamiento de una posicion mayhem, no del filtro de
-  # entrada que la eligio.
-  take_profit_percentage: 1.0
-  take_profit_sell_percentage: 0.5
-  tp2_gain: 2.0
-  tp2_sell: 0.125
-  tp3_gain: 5.0
-  tp3_sell: 0.125
-  tp4_gain: 6.0
-  tp4_sell: 0.125
-  tp5_gain: 9.0
-  tp5_sell: 0.095
-  # SIN STOP hasta el primer TP (mayhem no se puede vender por panico contra
-  # un agregador, solo por curva -- un stop ahi no protege, fuerza una venta
-  # mala). Pero en cuanto salta el TP1, el trinquete SI se activa: el suelo
-  # sube al precio de compra, y con cada TP siguiente al TP anterior. Antes
-  # de esto, ganar el TP1 y perderlo todo despues era posible; ahora no.
-  # SIN STOP hasta el TP1; el trinquete tras cada TP SI se queda (pedido
-  # 26-ago: se deshizo por error un momento antes).
-  stop_loss_percentage: 0
+  # TP1 +50% 20% | TP2 +100% 29% | TP3 +175% 20% (~$10k MC)
+  # TP4 +400% 14% (~$20k MC) | TP5 +650% 14% (~$30k MC) | moonbag 3% en $50k MC
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 0.20
+  tp2_gain: 1.00
+  tp2_sell: 0.29
+  tp3_gain: 1.75
+  tp3_sell: 0.20
+  tp4_gain: 4.00
+  tp4_sell: 0.14
+  tp5_gain: 6.50
+  tp5_sell: 0.14
+  # SL -30%; trinquete: TP1 -> SL sube a precio de compra; TP2+ -> SL sube al TP anterior
+  stop_loss_percentage: 0.85
   stop_a_entrada_tras_tp: true
   stop_al_tp_tras_tp: true
   trailing_stop_percentage: 0
@@ -62,10 +55,11 @@ trade:
   anti_rug_min_sol: 3
   venta_muerta_seg: 120
   venta_muerta_gain: 0.0
-  max_hold_time: 28
+  max_hold_time: 20
+  final_target_mc: 50000
   price_check_interval: 1
   extreme_fast_mode: false
-  min_reserve_sol: 0.03
+  min_reserve_sol: 0.01
 compute_units:
   buy: 140000
   sell: 120000
@@ -80,7 +74,7 @@ retries:
   # ESPERA 15s ANTES DE COMPRAR, PARA EVITAR RUGS (pedido 26-ago). Con
   # max_buy_age en 30 (edad contada desde que nace la moneda) quedan ~15s
   # reales de ventana tras la espera para cruzar los 3.450$.
-  wait_after_creation: 15
+  wait_after_creation: 0
   wait_after_buy: 0
 filters:
   listener_type: logs
@@ -90,17 +84,19 @@ filters:
   # instante exacto en que cruce 3.400$ en cualquier punto de los primeros
   # 30s -- la comprobacion es cada 0,15s y compra nada mas cumplir, no
   # espera a que acabe la ventana.
-  max_buy_age: 30
+  max_buy_age: 36
   # NO CUENTA SI YA NACIO POR ENCIMA: el suelo de 3.400 solo vale si lo
   # cruza DESPUES del primer segundo, no si ya abre ahi. Nacer ya inflada es
   # la senal de un dev-buy grande o un bundle, no de demanda real subiendo
   # -- ver universal_trader.py, "EDAD MINIMA PARA CONTAR EL SUELO".
-  min_buy_age: 1
+  min_buy_age: 0
   match_string: null
   bro_address: null
   ignorar_listas_de_devs: false
   pumpfun_dev:
-    enabled: false
+    enabled: true
+    min_rate: 0.30
+    min_migrations: 1
   allow_mayhem: true
   require_mayhem: true
   marry_mode: false
@@ -108,22 +104,28 @@ filters:
   paper_trade: false
   # MKT CAP: el otro numero del screener. Sin techo -- el campo Max del
   # screener estaba vacio.
-  min_entry_mc: 3450
-  max_entry_mc: 0
-  min_curve_sol: 0
+  min_entry_mc: 3200
+  max_entry_mc: 4500
+  min_curve_sol: 0.3
   min_volumen_sol: 0
   max_volumen_sol: 0
   min_vol_ventana_sol: 0
-  min_ops: 0
-  min_titulares: 0
+  min_presion_ratio: 2.0
+  presion_seg: 3.0
+  min_buys: 2
+  ultimas_tx_compra: 3
+  min_ops: 8
+  min_titulares: 4
   redes_originales: false
   min_holders_gmgn: 0
   senal_gmgn: []
   no_repeat_name_min: 5
-  max_holder_pct: 0.0
+  max_holder_pct: 0.05
   max_dev_hold_pct: 0.0
   min_holders: 0
   holder_bypass_ratio: 0
+  dev_buy:
+    min_sol: 0
   buy_on_dex_paid:
     enabled: false
   dexscreener:

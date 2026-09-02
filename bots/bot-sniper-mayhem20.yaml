@@ -3,12 +3,14 @@ env_file: .env
 rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
 wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
 private_key: ${SOLANA_PRIVATE_KEY}
-enabled: true
+# Multi-wallet: descomenta para repartir compras entre las 100 wallets
+# wallets_json: wallets_generadas.json
+enabled: false
 separate_process: false
 platform: pump_fun
 trade:
-  buy_amount: 0.03
-  mayhem_buy_amount: 0.03
+  buy_amount: 0.025
+  mayhem_buy_amount: 0.025
   # UNA SOLA A LA VEZ (pedido 26-ago, para empezar con cuidado). Sube a 3
   # cuando se vea como se comporta.
   max_posiciones: 2
@@ -30,24 +32,20 @@ trade:
   take_profit_percentage: 1.0
   take_profit_sell_percentage: 0.5
   tp2_gain: 2.0
-  tp2_sell: 0.125
-  tp3_gain: 5.0
-  tp3_sell: 0.125
-  tp4_gain: 6.0
-  tp4_sell: 0.125
-  tp5_gain: 9.0
-  # 12,5 baja a 9,5 para dejar un 3% de moonbag (pedido 26-ago): 50+12,5+12,5+
-  # 12,5+9,5 = 97, el 3% que falta no se vende nunca. Se recorta del ultimo
-  # tramo (x10), no del primero: el TP1 sigue siendo el que recupera lo
-  # puesto.
-  tp5_sell: 0.095
+  tp2_sell: 0.25
+  tp3_gain: 3.0
+  tp3_sell: 0.25
+  tp4_gain: 0
+  tp4_sell: 0
+  tp5_gain: 0
+  tp5_sell: 0
   # TRINQUETE (pedido 26-ago, igual que devmig): sin stop hasta el TP1, pero
   # en cuanto salta, el suelo sube al precio de compra; con el TP2 sube al
   # TP1, con el TP3 al TP2, y asi. Antes de esto no habia stop NUNCA -- se
   # podia ganar el TP1 y perderlo todo despues.
   # SIN STOP hasta el TP1; el trinquete tras cada TP SI se queda (pedido
   # 26-ago: se deshizo por error un momento antes).
-  stop_loss_percentage: 0
+  stop_loss_percentage: 0.80
   stop_a_entrada_tras_tp: true
   stop_al_tp_tras_tp: true
   trailing_stop_percentage: 0
@@ -61,10 +59,10 @@ trade:
   # llegando hasta x10, los tramos altos (x6/x7/x10) van a quedar casi
   # siempre fuera de alcance en 28 s -- es la contrapartida de no quedarse
   # colgado en una mayhem que no se puede vender por panico.
-  max_hold_time: 28
+  max_hold_time: 16
   price_check_interval: 1
   extreme_fast_mode: false
-  min_reserve_sol: 0.03
+  min_reserve_sol: 0.02
 compute_units:
   buy: 140000
   sell: 120000
@@ -112,18 +110,21 @@ filters:
   # habia antes es INCOMPATIBLE con un suelo de 3.400 (min > max = nunca
   # compra nada), asi que se quita el techo -- igual que en mayhemsimple.
   min_entry_mc: 3450
-  max_entry_mc: 0
+  max_entry_mc: 3700
   min_curve_sol: 0
   min_volumen_sol: 0
   max_volumen_sol: 0
   min_vol_ventana_sol: 0
+  min_presion_ratio: 3.0
+  presion_seg: 3.0
+  min_buys: 2
   min_ops: 0
   min_titulares: 0
   redes_originales: false
   min_holders_gmgn: 0
   senal_gmgn: []
   no_repeat_name_min: 5
-  max_holder_pct: 0.0
+  max_holder_pct: 0.05
   max_dev_hold_pct: 0.0
   min_holders: 0
   holder_bypass_ratio: 0

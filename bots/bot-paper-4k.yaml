@@ -1,0 +1,121 @@
+# PAPER TRADE: compra todo lo que rompa 4.000$ en los primeros 36s
+# Sin require_mayhem, sin filtros de creador, SOLO papel (paper_trade: true).
+# Objetivo: medir cuantas monedas suben, cuanto suben, y cuanto tiempo tarda el pico.
+name: "PAPER 4K - todo lo que rompe 4K, sin mayhem, papel"
+env_file: .env
+rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
+wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
+private_key: ${SOLANA_PRIVATE_KEY}
+enabled: false
+separate_process: false
+platform: pump_fun
+trade:
+  buy_amount: 0.05
+  mayhem_buy_amount: 0.05
+  max_posiciones: 10
+  max_real_buys: 0
+  reiniciar_tanda: false
+  max_perdidas_seguidas: 999
+  buy_amount_tras_sl: 0.05
+  mayhem_max_perdidas: 0
+  rugs_para_bloquear: 999
+  buy_slippage: 0.3
+  sell_slippage: 0.9
+  exit_strategy: tp_sl
+  take_profit_percentage: 1.1
+  take_profit_sell_percentage: 0.50
+  tp2_gain: 1.9
+  tp2_sell: 0.25
+  tp3_gain: 2.9
+  tp3_sell: 0.25
+  tp4_gain: 4.0
+  tp4_sell: 0
+  tp5_gain: 5.5
+  tp5_sell: 0
+  stop_loss_percentage: 0.55
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: true
+  trailing_stop_percentage: 0
+  anti_rug_ratio: 0
+  anti_rug_seg: 0
+  anti_rug_min_sol: 0
+  venta_muerta_seg: 120
+  venta_muerta_gain: 0.0
+  max_hold_time: 20
+  final_target_mc: 0
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.0
+compute_units:
+  buy: 140000
+  sell: 120000
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 20000000
+  extra_percentage: 0.0
+  hard_cap: 20000000
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+filters:
+  listener_type: logs
+  max_token_age: 36
+  max_buy_age: 36
+  min_buy_age: 0
+  match_string: null
+  bro_address: null
+  ignorar_listas_de_devs: false
+  pumpfun_dev:
+    enabled: false
+  allow_mayhem: true
+  require_mayhem: true
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: true
+  min_entry_mc: 4000
+  max_entry_mc: 0
+  min_curve_sol: 0
+  min_volumen_sol: 0
+  max_volumen_sol: 0
+  min_vol_ventana_sol: 0
+  min_presion_ratio: 0
+  presion_seg: 3.0
+  min_buys: 0
+  ultimas_tx_compra: 0
+  min_ops: 0
+  min_titulares: 0
+  redes_originales: false
+  min_holders_gmgn: 0
+  senal_gmgn: []
+  no_repeat_name_min: 0
+  max_holder_pct: 0
+  max_dev_hold_pct: 0.0
+  min_holders: 0
+  holder_bypass_ratio: 0
+  dev_buy:
+    min_sol: 0
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: solana
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+cleanup:
+  mode: post_session
+  force_close_with_burn: false
+  with_priority_fee: false
+node:
+  max_rps: 15

@@ -170,7 +170,7 @@ filters:
 
   # EL CREADOR: 10%+ de sus lanzamientos migrados.
   pumpfun_dev:
-    enabled: true
+    enabled: false
     min_rate: 0.01
     # Un porcentaje sobre una sola moneda no es historial, es casualidad, y es
     # la firma del farmero que estrena wallet: 1 migracion de 1 lanzamiento da

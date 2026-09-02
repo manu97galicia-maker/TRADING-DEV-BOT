@@ -280,7 +280,7 @@ filters:
   # Anti-concentracion: si un solo titular tiene mas del 15%, ese es el que va
   # a vender encima. Aqui si se mira, porque se entra despues del reparto
   # inicial y el dato ya es fiable.
-  max_holder_pct: 0.15
+  max_holder_pct: 0.05
   max_dev_hold_pct: 0.05
   min_holders: 0
   holder_bypass_ratio: 0
