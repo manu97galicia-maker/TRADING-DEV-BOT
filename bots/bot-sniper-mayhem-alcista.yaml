@@ -1,0 +1,262 @@
+# MAYHEM-ALCISTA — solo monedas mayhem, solo de devs cuyas mayhem se disparan,
+# 0,02 SOL por entrada y salida pensada para asegurar el capital cuanto antes.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# LO PRIMERO, PORQUE MANDA SOBRE TODO LO DEMAS: EL COSTE
+# ─────────────────────────────────────────────────────────────────────────────
+# A 0,02 SOL la comision NO es un detalle, es el rival principal. Medido con las
+# cifras del repo (0,00033 SOL de red por tx, consumo real ~110-140K unidades):
+#
+#   fixed_amount   coste ida y vuelta   % de una posicion de 0,02
+#     20.000.000        0,00506 SOL              25,3%   <- el de PORTAVIONES
+#     10.000.000        0,00286 SOL              14,3%
+#      3.000.000        0,00144 SOL               7,2%   <- el de aqui
+#      1.000.000        0,00088 SOL               4,4%
+#
+# Con la comision de PORTAVIONES (20M), esta estrategia necesitaria un +25%
+# SOLO PARA EMPATAR. Seria perder dinero por diseno. Por eso aqui la comision
+# baja a 3M.
+#
+# LO QUE CUESTA, y hay que decirlo: 3M es una comision baja para pelear por
+# entrar en el bloque de creacion. Se compensa no peleando ese bloque -- se
+# entra unos segundos despues (`max_buy_age`) en vez de competir por ser el
+# primero. Si se sube la comision para ganar velocidad, el coste se come la
+# estrategia. Es una eleccion, no un ajuste: a 0,02 SOL se puede ser barato o
+# rapido, no las dos cosas.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# LA ENTRADA
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. SOLO MAYHEM (`require_mayhem: true`). Las mayhem pumpean mas fuerte y
+#    dumpean mas fuerte: mas varianza. Es justo lo que se busca aqui, porque una
+#    posicion de 0,02 SOL necesita movimientos grandes para que el +40% llegue
+#    antes de que se lo coma la comision.
+#
+# 2. SOLO DEVS ALCISTAS (`bro_address: top_devs_mayhem.json`). Son 93 wallets
+#    sacadas de Dune, y no es una lista cualquiera: 91 de las 93 tienen mas del
+#    50% de sus mayhem pasando de 30.000 $, y la mediana de su pico es de
+#    111.776 $. Ese es el "dev alcista" -- medido, no supuesto.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# LA SALIDA: ASEGURAR EL CAPITAL, QUE ES LO QUE SE PIDIO
+# ─────────────────────────────────────────────────────────────────────────────
+# Al +40% se vende el 80%. La cuenta, ya descontada la comision del 7,2%:
+#
+#     0,80 x 1,40 = 1,12  ->  menos 0,072 de comision  =  1,05
+#
+# Devuelve el capital ENTERO y un 5% encima. A partir de ese momento la
+# operacion no puede perder dinero. El 20% que queda no tiene objetivo: lo lleva
+# el trailing del 35% desde el maximo, que es donde estan los 10x de las mayhem.
+#
+# Se eligio +40%/80% y no +50%/75% (que tambien asegura, 1,06) porque el +40%
+# se toca antes: en una moneda que dumpea fuerte, el objetivo que llega tarde no
+# llega. Asegurar pronto es el encargo.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# SOBRE "VARIAS OPERACIONES POR MINUTO" — LEER ESTO
+# ─────────────────────────────────────────────────────────────────────────────
+# El bot puede llevar VARIAS posiciones a la vez (`max_posiciones: 8`), asi que
+# por ese lado no hay tope. Pero la frecuencia no la decide el bot: la decide
+# cuantas mayhem lanzan esos 93 devs. Con la lista puesta saldran POCAS -- desde
+# luego no varias por minuto.
+#
+# Si la frecuencia importa mas que la calidad del dev, la palanca es UNA linea:
+# comentar `bro_address` y dejar que entren las mayhem de cualquier dev que pase
+# el filtro de `pumpfun_dev`. Eso multiplica las operaciones y baja la calidad
+# media. No se hace por defecto porque el encargo decia "dev alcista".
+
+name: "MAYHEM-ALCISTA - solo mayhem de devs que se disparan, 0,02 SOL"
+env_file: ".env"
+
+avisos_telegram: ["compra"]
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+enabled: true
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  # 0,02 SOL por entrada, como se pidio.
+  buy_amount: 0.02
+  # Tope duro al mismo importe. Limita el NOMINAL; el gasto real en cadena puede
+  # llegar a 0,02 x 1,30 = 0,026 SOL por el max_sol_cost (ver PORTAVIONES).
+  tope_compra_sol: 0.02
+  nombre_estrategia: mayhem-alcista
+  usar_selector: false
+
+  # 0,30: las mayhem se mueven muy rapido y una compra sin margen no entra.
+  buy_slippage: 0.30
+  sell_slippage: 0.35
+
+  exit_strategy: "tp_sl"
+  # ASEGURAR EL CAPITAL: 80% al +40% devuelve 1,05 veces la inversion ya
+  # descontada la comision. Ver la cuenta en la cabecera.
+  take_profit_percentage: 0.40
+  take_profit_sell_percentage: 0.80
+  # Sin mas escalones: el 20% que queda lo gestiona el trailing.
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+
+  # Stop de entrada al 50%: las mayhem se hunden rapido y un stop corto salta
+  # con el ruido normal de estas monedas antes de que la subida llegue.
+  stop_loss_percentage: 0.50
+  # Trailing al 35% desde el maximo, una vez la moneda ha subido. Mas ancho que
+  # el 33% de PORTAVIONES a proposito: aqui la varianza es mayor y un trailing
+  # apretado corta el 10x en el primer respiro.
+  trailing_stop_percentage: 0.35
+
+  # El stop se lo lleva todo: sin esto un stop vende una parte y abandona el
+  # resto en una moneda hundiendose.
+  vender_todo_en_stop: true
+
+  # ANTI-RUG, mismos numeros que las demas estrategias. En mayhem importa aun
+  # mas: el vuelco puede ser instantaneo.
+  anti_rug_ratio: 2.0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+
+  # 2 min plana y fuera. Mas corto que en PORTAVIONES (3 min) porque aqui el
+  # objetivo es RECICLAR el capital deprisa: una posicion parada es una entrada
+  # que no se hace, y con 0,02 SOL se vive de hacer muchas.
+  venta_muerta_seg: 120
+  venta_muerta_gain: 0.0
+
+  # 20 min de tope. Las mayhem resuelven pronto, para arriba o para abajo.
+  max_hold_time: 1200
+  price_check_interval: 1
+
+  # FALSE, Y ES OBLIGATORIO. `extreme_fast_mode` se salta la lectura de la curva,
+  # y la bandera `is_mayhem_mode` solo es fiable una vez leida la curva
+  # (platform_aware.py:191). Con extreme_fast_mode activo, `require_mayhem`
+  # filtraria con un dato que puede venir a False y no compraria nada.
+  extreme_fast_mode: false
+
+  # VARIAS A LA VEZ: hasta 8 posiciones abiertas. 8 x 0,026 (gasto real maximo)
+  # = 0,21 SOL comprometidos como mucho.
+  max_posiciones: 8
+
+  # Reserva para poder firmar las VENTAS de las 8. Quedarse sin SOL con
+  # posiciones abiertas es perderlas.
+  min_reserve_sol: 0.08
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  # 3M, NO 20M. Ver la tabla de la cabecera: con 20M la comision se come el
+  # 25,3% de una posicion de 0,02 SOL y la estrategia no puede ganar.
+  fixed_amount: 3_000_000
+  extra_percentage: 0.0
+  hard_cap: 3_000_000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  # OBLIGATORIO `logs` (Helius). El feed gratis de PumpPortal NO trae la bandera
+  # `is_mayhem_mode`: con pumpportal esta estrategia no veria ni una mayhem.
+  # Documentado en LEE_ESTO_BRO_MINA.md y en alerta_mayhem.py.
+  listener_type: "logs"
+
+  # ── SOLO MAYHEM ─────────────────────────────────────────────────────────
+  # require_mayhem implica allow_mayhem en el codigo (universal_trader.py:770),
+  # pero se deja explicito para que se lea de un vistazo.
+  require_mayhem: true
+  allow_mayhem: true
+
+  # ── SOLO DEVS ALCISTAS ──────────────────────────────────────────────────
+  # 93 wallets de Dune: 91 con >50% de sus mayhem pasando 30K, mediana de pico
+  # 111.776 $. El campo acepta la ruta del .json directamente.
+  bro_address: "top_devs_mayhem.json"
+
+  # No se entra en el bloque de creacion (la comision es baja a proposito): se
+  # deja margen para entrar en los primeros 20 s.
+  max_token_age: 60
+  max_buy_age: 20
+
+  match_string: null
+
+  # Sin puerta de volumen ni de presion: el filtro fuerte aqui es QUIEN lanza,
+  # no como arranca el mercado. Anadir ademas un umbral de volumen dejaria la
+  # estrategia sin operaciones.
+  min_volumen_sol: 0
+  min_presion_ratio: 0
+  min_buys: 0
+  min_titulares: 0
+  min_ops: 0
+  min_first_block_buys: 0
+  min_vol_ventana_sol: 0
+
+  # Se entra pronto y barato. El techo evita pagar una mayhem ya disparada.
+  min_entry_mc: 0
+  max_entry_mc: 15000
+  min_curve_sol: 0
+
+  # El dev ya viene filtrado por la lista de Dune, que es mucho mas exigente que
+  # cualquier tasa de migracion. Encender esto ademas dejaria fuera a devs
+  # buenos de mayhem que no migran (una mayhem puede hacer 100K y no migrar).
+  pumpfun_dev:
+    enabled: false
+    min_migrations: 0
+    min_rate: 0
+  # La blacklist manual y el auto-baneo del que rugea dos veces SI mandan.
+  ignorar_listas_de_devs: false
+
+  # El mismo dev puede lanzar varias: no se bloquea por nombre repetido, que
+  # aqui cortaria operaciones legitimas de la lista.
+  no_repeat_name_min: 0
+
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: false         # DINERO REAL
+
+  # Sin filtro de concentracion: se entra en los primeros segundos, cuando el
+  # reparto todavia no dice nada fiable.
+  max_holder_pct: 0
+  max_dev_hold_pct: 0
+  min_holders: 0
+  holder_bypass_ratio: 0
+  redes_originales: false
+  min_holders_gmgn: 0
+  senal_gmgn: []
+
+  buy_on_dex_paid:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  # Mas alto que en PORTAVIONES: con 8 posiciones vivas hay 8 monitores pidiendo
+  # precio a la vez, y quedarse sin cuota es no poder vender.
+  max_rps: 15
+
+compute_units:
+  # Sin esto la VENTA revienta con "Computational budget exceeded" en tokens
+  # Token-2022.
+  buy: 140000
+  sell: 120000
