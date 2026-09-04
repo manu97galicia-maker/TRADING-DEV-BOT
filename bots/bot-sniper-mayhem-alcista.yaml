@@ -148,11 +148,18 @@ trade:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  # 3M, NO 20M. Ver la tabla de la cabecera: con 20M la comision se come el
-  # 25,3% de una posicion de 0,02 SOL y la estrategia no puede ganar.
-  fixed_amount: 3_000_000
+  # 1M, NO 20M. Ver la tabla de la cabecera: con 20M la comision se come el
+  # 25,3% de una posicion de 0,02 SOL y la estrategia no puede ganar. Con 1M se
+  # queda en el 4,6%, y eso baja el acierto necesario del 72% al 68%.
+  #
+  # Se puede permitir ser tan barata PORQUE no pelea el bloque de creacion: se
+  # entra en los primeros 20 s (`max_buy_age`), no compitiendo por ser la
+  # primera. El riesgo de una comision baja es que la transaccion tarde en
+  # entrar o no entre en un momento de congestion; eso cuesta una entrada
+  # perdida, no dinero.
+  fixed_amount: 1_000_000
   extra_percentage: 0.0
-  hard_cap: 3_000_000
+  hard_cap: 1_000_000
 
 retries:
   max_attempts: 2
