@@ -32,7 +32,9 @@ rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
-enabled: true
+# DESACTIVADA a peticion de Manu: se arranca SOLO MAYHEM-ALCISTA (la de 0,02).
+# Para volver a encenderla, esta linea a true y reiniciar el runner.
+enabled: false
 separate_process: true
 platform: "pump_fun"
 
