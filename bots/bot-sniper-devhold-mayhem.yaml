@@ -6,7 +6,7 @@
 #
 # Salida en escalera: se cobra pronto y se deja correr una cola cada vez mas
 # pequena, hasta un 1% que solo se suelta en 800K.
-name: "DEVHOLD MAYHEM - dev 2+ migraciones y >=10% supply, 0.02 SOL, stop MC 900"
+name: "DEVHOLD MAYHEM - dev 2+ migraciones y >=10% supply, 3 compras antes, 0.02 SOL, stop MC 900"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -128,6 +128,24 @@ filters:
   ignorar_listas_de_devs: false
   no_repeat_name_min: 2
   match_string: null
+
+  # QUE COMPREN TRES ANTES QUE YO. No se entra en la primera vela: el bot se
+  # queda mirando la moneda y compra en el instante en que ya se han hecho 3
+  # compras. Asi no se paga por ser el primero en una moneda que igual no
+  # arranca -- que otros pongan el dinero delante.
+  #
+  # Se apoya en `max_buy_age: 15`: la vigilancia solo se activa si hay ventana
+  # (universal_trader.py:2504), y con 15 s hay margen de sobra. No retrasa nada
+  # si la moneda arranca deprisa: si la tercera compra cae en el segundo 2, se
+  # entra en el segundo 2.
+  #
+  # LO QUE CUESTA: se compraran BASTANTES menos monedas, y en las que arranquen
+  # se entrara algo mas arriba que antes. Es el precio de no ser el primero.
+  #
+  # Ojo con `pumpfun_dev.compra_inmediata: true` de mas abajo: adelanta la
+  # consulta del historial del dev, pero NO se salta este filtro. Con las dos
+  # cosas puestas, la compra sigue esperando a las 3.
+  min_buys: 3
 
   # El dev se queda con al menos el 10% del supply.
   # TECHO DE ENTRADA. Sin esto, entrar tarde (max_buy_age deja hasta 15 s)
