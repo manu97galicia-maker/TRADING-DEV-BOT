@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 
 import aiohttp
 
@@ -36,8 +37,20 @@ class WalletCopySource:
         follow_funded: bool = True,
         min_funding_sol: float = 0.05,
         max_discovered: int = 40,
+        wallets_file: str | None = None,
     ) -> None:
-        self._watched: set[str] = {w.strip() for w in wallets if w and w.strip()}
+        configured = {w.strip() for w in wallets if w and w.strip()}
+        if wallets_file:
+            path = Path(wallets_file)
+            if path.exists():
+                configured.update(
+                    line.strip()
+                    for line in path.read_text(encoding="utf-8").splitlines()
+                    if line.strip() and not line.lstrip().startswith("#")
+                )
+            else:
+                logger.warning("Copy source: no existe wallets_file=%s", path)
+        self._watched: set[str] = configured
         self._seed_wallets = set(self._watched)
         self._impls = platform_impls
         self._client = client

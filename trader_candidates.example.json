@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "min_median_roi_pct_7d": 150.0,
+    "min_calls_7d": 5,
+    "min_win_rate_pct_7d": 60.0,
+    "max_x_followers": 15000,
+    "preferred_x_followers": 3000
+  },
+  "candidates": []
+}

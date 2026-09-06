@@ -1447,6 +1447,7 @@ class UniversalTrader:
             follow_funded=bool(self.copy_wallets.get("follow_funded", True)),
             min_funding_sol=float(self.copy_wallets.get("min_funding_sol", 0.05)),
             max_discovered=int(self.copy_wallets.get("max_discovered", 40)),
+            wallets_file=self.copy_wallets.get("wallets_file"),
         )
         try:
             await source.run(self._on_dexpaid_token)
