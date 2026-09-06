@@ -24,10 +24,10 @@ viaja a ningún sitio y este módulo no la escribe en disco ni en el log.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import hmac
 import json
-import os
 import stat
 import sys
 import unicodedata
@@ -149,7 +149,7 @@ def _balances(addresses: list[str]) -> dict[str, float | None]:
         payload = json.dumps(
             {"jsonrpc": "2.0", "id": 1, "method": "getBalance", "params": [address]}
         ).encode()
-        request = urllib.request.Request(
+        request = urllib.request.Request(  # noqa: S310 - HTTPS RPC comes from trusted config
             config.RPC_ENDPOINT, data=payload, headers={"Content-Type": "application/json"}
         )
         try:
@@ -188,10 +188,8 @@ def _set_env_value(path: Path, key: str, value: str, *, backup: bool = False) ->
 
 def _lock_down(path: Path) -> None:
     """Permisos 600. En Windows es simbólico, pero en el droplet importa."""
-    try:
+    with contextlib.suppress(OSError):
         path.chmod(stat.S_IRUSR | stat.S_IWUSR)
-    except OSError:
-        pass
 
 
 def _ask(question: str) -> bool:
