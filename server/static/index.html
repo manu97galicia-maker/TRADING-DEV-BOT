@@ -461,7 +461,7 @@
         <div class="mayhem-facts">
           <div class="mayhem-fact"><b>0,03 SOL</b><span>por entrada simulada</span></div>
           <div class="mayhem-fact"><b>1 posición</b><span>sin acumular exposición</span></div>
-          <div class="mayhem-fact"><b>12 compradores</b><span>demanda distinta mínima</span></div>
+          <div class="mayhem-fact"><b>5 compradores</b><span>más señales · más riesgo</span></div>
           <div class="mayhem-fact"><b>$2,6K–$3,4K</b><span>banda de entrada</span></div>
           <div class="mayhem-fact"><b>−22%</b><span>stop teórico inicial</span></div>
           <div class="mayhem-fact"><b>60 s</b><span>tiempo máximo</span></div>
@@ -472,7 +472,7 @@
           <div class="ratchet-step"><b>+40%</b>asegura beneficio</div>
           <div class="ratchet-step"><b>Pico</b>trailing 12%</div>
         </div>
-        <div class="empty" style="padding:0 4px 12px;white-space:normal">Evidencia disponible: 12–20 compradores fue la banda con mayor llegada a 6K observada. Más frecuencia exige relajar filtros y aumenta el riesgo.</div>
+        <div class="empty" style="padding:0 4px 12px;white-space:normal">Compromiso de frecuencia: 5 compradores permite entrar mucho antes. En los datos, la banda 0–5 llegó a 6K un 5,8%, frente al 15% con 12–20; por eso se mantienen tres compras consecutivas, presión compradora y salida rápida.</div>
         <div class="mayhem-actions">
           <button class="btn" id="prepareMayhem03" type="button">Preparar simulación</button>
         </div>
@@ -1188,7 +1188,7 @@ document.querySelectorAll("#tab-srv .hints button").forEach(b => {
 /* Chat del simulador: mismo agente; al terminar refresca la lista. */
 const paperBox = $("#paperMsg");
 $("#prepareMayhem03").onclick = () => {
-  paperBox.value = "Simula Mayhem con 0,03 SOL: una posición, entrada entre 2600 y 3400 USD, mínimo 12 compradores distintos, TP 40%, SL 22%, trailing 12% y máximo 60 segundos.";
+  paperBox.value = "Simula Mayhem con 0,03 SOL: una posición, entrada entre 2600 y 3400 USD, mínimo 5 compradores distintos, 3 compras consecutivas, presión compradora 1,6, TP 40%, SL 22%, trailing 12% y máximo 60 segundos.";
   paperBox.focus();
   paperBox.style.height = "auto";
   paperBox.style.height = paperBox.scrollHeight + "px";

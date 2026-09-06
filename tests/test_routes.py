@@ -22,6 +22,8 @@ class RouteTests(unittest.TestCase):
         html = Path("server/static/index.html").read_text(encoding="utf-8")
         self.assertIn('id="mayhemTitle"', html)
         self.assertIn("0,03 SOL", html)
+        self.assertIn("5 compradores", html)
+        self.assertIn("3 compras consecutivas", html)
         self.assertIn("Solo PAPER", html)
         self.assertIn('id="prepareMayhem03"', html)
         self.assertIn("Casi sin riesgo", html)
