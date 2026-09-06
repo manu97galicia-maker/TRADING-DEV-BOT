@@ -192,6 +192,9 @@ def wallet_secret() -> str:
 #: Topes de seguridad para una compra manual desde la web. Una web con un botón
 #: que gasta SOL real necesita un límite duro por si un dedo resbala.
 MAX_BUY_SOL = float(os.getenv("PANEL_MAX_BUY_SOL", "1.0"))
+MAX_SECONDARY_WALLETS = int(os.getenv("PANEL_MAX_SECONDARY_WALLETS", "20"))
+MAX_SPREAD_SOL = float(os.getenv("PANEL_MAX_SPREAD_SOL", "5.0"))
+SECONDARY_FEE_RESERVE_SOL = float(os.getenv("PANEL_SECONDARY_FEE_RESERVE_SOL", "0.005"))
 DEFAULT_BUY_SLIPPAGE_BPS = int(os.getenv("PANEL_BUY_SLIPPAGE_BPS", "1500"))   # 15%
 DEFAULT_SELL_SLIPPAGE_BPS = int(os.getenv("PANEL_SELL_SLIPPAGE_BPS", "2500"))  # 25%
 #: Fee de prioridad (lamports) que Jupiter añade para que la tx entre rápido.
@@ -236,4 +239,5 @@ def public_config() -> dict[str, Any]:
         "rpc_configured": RPC_ENDPOINT != FALLBACK_RPC,
         "hot_wallet": HOT_WALLET,
         "max_buy_sol": MAX_BUY_SOL,
+        "max_secondary_wallets": MAX_SECONDARY_WALLETS,
     }

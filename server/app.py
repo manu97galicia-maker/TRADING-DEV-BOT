@@ -26,6 +26,7 @@ from . import (
     config,
     lists,
     market,
+    multiwallet,
     notify,
     ops,
     paper,
@@ -441,6 +442,53 @@ async def handle_send_sol(request: web.Request) -> web.Response:
 
 
 # --------------------------------------------------------------------------- #
+# Wallets secundarias (todas requieren wallet caliente)                       #
+# --------------------------------------------------------------------------- #
+
+
+async def handle_mw_list(request: web.Request) -> web.Response:
+    return web.json_response({"ok": True, "wallets": await multiwallet.list_wallets()})
+
+
+async def handle_mw_create(request: web.Request) -> web.Response:
+    body = await request.json()
+    return web.json_response(
+        {"ok": True, "wallets": await multiwallet.create_wallets(body.get("cuantas", 3))}
+    )
+
+
+async def handle_mw_spread(request: web.Request) -> web.Response:
+    body = await request.json()
+    result = await multiwallet.spread(float(body["sol"]), body.get("cuantas", 1))
+    logger.warning("Reparto multiwallet: %s ok, %s fallos", result["ok"], result["fallos"])
+    return web.json_response({"ok": True, "resultado": result})
+
+
+async def handle_mw_collect(request: web.Request) -> web.Response:
+    result = await multiwallet.collect()
+    logger.warning("Recogida multiwallet: %s ok, %s fallos", result["ok"], result["fallos"])
+    return web.json_response({"ok": True, "resultado": result})
+
+
+async def handle_mw_buy(request: web.Request) -> web.Response:
+    body = await request.json()
+    result = await multiwallet.buy(
+        str(body["mint"]), float(body["sol"]), body.get("cuantas", 1)
+    )
+    logger.warning("Compra multiwallet: %s ok, %s fallos", result["ok"], result["fallos"])
+    return web.json_response({"ok": True, "resultado": result})
+
+
+async def handle_mw_sell(request: web.Request) -> web.Response:
+    body = await request.json()
+    result = await multiwallet.sell(
+        str(body["mint"]), float(body["percent"]), body.get("cuantas", 1)
+    )
+    logger.warning("Venta multiwallet: %s ok, %s fallos", result["ok"], result["fallos"])
+    return web.json_response({"ok": True, "resultado": result})
+
+
+# --------------------------------------------------------------------------- #
 # Notificaciones (Telegram)                                                    #
 # --------------------------------------------------------------------------- #
 
@@ -685,6 +733,14 @@ def create_app() -> web.Application:
     app.router.add_post("/api/wallet/buy", handle_buy)
     app.router.add_post("/api/wallet/sell", handle_sell_signed)
     app.router.add_post("/api/wallet/send", handle_send_sol)
+
+    # Wallets secundarias
+    app.router.add_get("/api/mw/list", handle_mw_list)
+    app.router.add_post("/api/mw/create", handle_mw_create)
+    app.router.add_post("/api/mw/spread", handle_mw_spread)
+    app.router.add_post("/api/mw/collect", handle_mw_collect)
+    app.router.add_post("/api/mw/buy", handle_mw_buy)
+    app.router.add_post("/api/mw/sell", handle_mw_sell)
 
     # Listas de wallets
     app.router.add_get("/api/lists", handle_lists)

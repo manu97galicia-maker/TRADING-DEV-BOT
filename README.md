@@ -124,6 +124,7 @@ server/
   botlink.py        puente con los ficheros del bot (posiciones, P&L, configs, listas)
   chain.py          lectura on-chain del wallet (saldo + tokens, valorado con Jupiter)
   wallet.py         FIRMA: comprar/vender (Jupiter) + enviar SOL      [wallet caliente]
+  multiwallet.py    crea y opera wallets secundarias sin exponer sus claves
   market.py         info de token (DexScreener + RugCheck)
   lists.py          CRUD de las listas de wallets del bot
   profits.py        reparto de ganancias por % (manual / automático)
@@ -153,8 +154,8 @@ systemctl restart sniper-deck
 
 ### Que se vea online
 
-- **Vercel** (ya hay `vercel.json`): sirve el frontend y **proxya `/api/*` al
-  droplet**. Conecta el repo en Vercel y cada push redespliega. La app se ve en
+- **Vercel** (ya hay `vercel.json`): sirve el frontend y **proxya `/api/*` por
+  HTTPS a Caddy en el droplet**. Conecta el repo en Vercel y cada push redespliega. La app se ve en
   `web-app-datos-franc.vercel.app`; para que funcione el login, el droplet tiene
   que estar vivo y accesible (`PANEL_HOST=0.0.0.0` + puerto 8080 abierto).
 - **Dominio propio (recomendado antes de operar):** `deploy/Caddyfile` pone
@@ -178,6 +179,5 @@ El chat necesita `ANTHROPIC_API_KEY`; sin ella, el resto funciona. `solders` y
 Face ID. Las operaciones de systemd/`ps` no existen en Windows y devuelven un
 error claro; el resto del panel funciona igual.
 
-> **El repo es privado.** No lleva secretos (`.gitignore` excluye `.env` y
-> `state/`), pero un panel de control de tu wallet no tiene por qué ser un mapa
-> público de tu infraestructura.
+El repositorio no lleva secretos (`.gitignore` excluye `.env` y `state/`). Aun
+así, por tratarse de un panel de control financiero, conviene mantenerlo privado.

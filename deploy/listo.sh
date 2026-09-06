@@ -38,8 +38,8 @@ step "2/7  Dependencias"
 # --------------------------------------------------------------------------- #
 [ -d .venv ] || python3 -m venv .venv
 ./.venv/bin/pip install --quiet --upgrade pip
-if ./.venv/bin/pip install --quiet aiohttp PyYAML anthropic solders; then
-  ok "paquetes instalados (incluido solders para firmar)"
+if ./.venv/bin/pip install --quiet -e .; then
+  ok "paquetes del proyecto instalados (firma y WebAuthn incluidos)"
 else
   bad "fallo instalando dependencias"; FAILED=1
 fi

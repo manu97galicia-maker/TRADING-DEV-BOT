@@ -17,26 +17,25 @@ ssh root@159.89.19.12
   || git clone https://github.com/manu97galicia-maker/Agalaz-Bank.git /root/sniper-deck
 cd /root/sniper-deck
 bash deploy/install.sh
-./.venv/bin/pip install solders          # wallet caliente
+./.venv/bin/pip install -e .             # todas las dependencias declaradas
 
 # credenciales
-./.venv/bin/python -m server.hashpw          # -> PANEL_PASSWORD_HASH  (tu @Otito123)
-./.venv/bin/python -m server.hashpw --pin     # -> PANEL_PIN_HASH        (tu 1357)
+./.venv/bin/python -m server.hashpw          # -> PANEL_PASSWORD_HASH
+./.venv/bin/python -m server.hashpw --pin     # -> PANEL_PIN_HASH
 nano .env
 #   pega los dos hashes
 #   PANEL_USER=manu
-#   PANEL_HOST=0.0.0.0        <- para que Vercel pueda llegar (ver Paso 2)
+#   PANEL_HOST=127.0.0.1      <- Caddy es la única puerta de entrada
 #   PANEL_COOKIE_SECURE=true  <- el navegador entra por HTTPS (Vercel)
 #   PANEL_HOT_WALLET=false    <- déjalo OFF hasta tener HTTPS de punta a punta
 
 systemctl restart sniper-deck
 systemctl status sniper-deck --no-pager
 
-# abrir el puerto para que Vercel lo alcance
-ufw allow 8080/tcp || true       # y/o el firewall de DigitalOcean en el panel web
+# El puerto 8080 debe permanecer cerrado; Vercel llega por HTTPS a Caddy.
 ```
 
-Comprueba desde tu PC: `http://159.89.19.12:8080/api/ping` debe devolver
+Comprueba desde tu PC: `https://159-89-19-12.sslip.io/api/ping` debe devolver
 `{"ok": true}`.
 
 ---
@@ -46,7 +45,7 @@ Comprueba desde tu PC: `http://159.89.19.12:8080/api/ping` debe devolver
 Ya está el `vercel.json` en el repo:
 
 ```json
-{ "rewrites": [{ "source": "/(.*)", "destination": "http://159.89.19.12:8080/$1" }] }
+{ "rewrites": [{ "source": "/api/(.*)", "destination": "https://159-89-19-12.sslip.io/api/$1" }] }
 ```
 
 El proyecto `web-app-datos-franc` está conectado a este repo, así que **cada push
@@ -54,9 +53,9 @@ lo redespliega**. En `https://web-app-datos-franc.vercel.app/` el navegador habl
 HTTPS con Vercel y Vercel reenvía al droplet. Entra con tu usuario y
 contraseña, o con el PIN que hayas puesto en `PANEL_PIN_HASH`.
 
-> El tramo Vercel→droplet va por HTTP plano. Para el MVP (viendo datos, wallet
-> caliente OFF) vale. **Antes de encender `PANEL_HOT_WALLET=true`**, monta el
-> Paso 3 para tener HTTPS de punta a punta.
+El tramo Vercel→droplet usa HTTPS y el puerto 8080 permanece cerrado. Antes de
+encender `PANEL_HOT_WALLET=true`, confirma que ese endpoint responde y que Caddy
+sigue activo.
 
 ---
 

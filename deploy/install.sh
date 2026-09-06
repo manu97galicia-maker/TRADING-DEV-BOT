@@ -21,10 +21,9 @@ apt-get install -y -qq python3-venv python3-pip
 echo "==> Entorno virtual"
 [ -d .venv ] || python3 -m venv .venv
 ./.venv/bin/pip install --quiet --upgrade pip
-# solders = firma de la wallet caliente; webauthn = login por cara/huella.
-# Ambos son import perezoso: si una rueda falla en este Ubuntu, el resto del
-# panel sigue funcionando (solo se cae esa función concreta).
-./.venv/bin/pip install --quiet aiohttp PyYAML anthropic solders webauthn
+# Instala exactamente lo declarado por el proyecto. El empaquetado limita el
+# descubrimiento a server/* para no confundir deploy/ y research/ con paquetes.
+./.venv/bin/pip install --quiet -e .
 
 if [ ! -f .env ]; then
   echo "==> Creando .env desde la plantilla"

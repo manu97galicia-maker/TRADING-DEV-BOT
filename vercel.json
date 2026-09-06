@@ -4,6 +4,6 @@
   "buildCommand": null,
   "outputDirectory": "server/static",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "http://159.89.19.12:8080/api/$1" }
+    { "source": "/api/(.*)", "destination": "https://159-89-19-12.sslip.io/api/$1" }
   ]
 }

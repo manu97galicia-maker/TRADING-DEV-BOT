@@ -46,9 +46,12 @@ def _require_hot() -> None:
 # --------------------------------------------------------------------------- #
 
 
-def _keypair() -> Any:
-    """Carga el keypair que firma. Import perezoso de solders: el resto del
-    panel funciona aunque solders no esté instalado; sólo la firma lo exige."""
+def keypair_from_secret(raw: str) -> Any:
+    """Construye un keypair desde base58 o un array JSON, sin exponerlo.
+
+    El import de solders es perezoso: el resto del panel funciona sin la
+    dependencia; sólo las funciones que firman la necesitan.
+    """
     try:
         from solders.keypair import Keypair  # noqa: PLC0415
     except ImportError as exc:  # pragma: no cover
@@ -56,7 +59,7 @@ def _keypair() -> Any:
             "Falta 'solders' para firmar. Instálalo: pip install solders"
         ) from exc
 
-    raw = config.wallet_secret().strip()
+    raw = raw.strip()
     if not raw:
         raise WalletError(
             "No hay clave para firmar: define SOLANA_PRIVATE_KEY (bot) o "
@@ -70,6 +73,11 @@ def _keypair() -> Any:
         return Keypair.from_base58_string(raw)
     except (ValueError, TypeError) as exc:
         raise WalletError(f"No pude leer la clave privada: {exc}") from exc
+
+
+def primary_keypair() -> Any:
+    """Carga la clave principal del bot/panel únicamente cuando hace falta firmar."""
+    return keypair_from_secret(config.wallet_secret())
 
 
 # --------------------------------------------------------------------------- #
@@ -175,9 +183,17 @@ async def _jup_swap_tx(
     return tx
 
 
-async def buy(mint: str, sol_amount: float, slippage_bps: int | None = None) -> dict[str, Any]:
-    """Compra ``mint`` gastando ``sol_amount`` SOL. Firma y envía de verdad."""
-    _require_hot()
+async def sol_balance(keypair: Any) -> float:
+    """Saldo SOL confirmado de un keypair, sin devolver nunca su secreto."""
+    async with aiohttp.ClientSession() as session:
+        result = await _rpc(session, "getBalance", [str(keypair.pubkey()), {"commitment": "confirmed"}])
+    return int((result or {}).get("value", 0)) / LAMPORTS_PER_SOL
+
+
+async def buy_with_keypair(
+    keypair: Any, mint: str, sol_amount: float, slippage_bps: int | None = None
+) -> dict[str, Any]:
+    """Compra con un keypair ya cargado. Uso interno para la principal y secundarias."""
     if sol_amount <= 0:
         raise WalletError("La cantidad de SOL debe ser mayor que 0.")
     if sol_amount > config.MAX_BUY_SOL:
@@ -187,7 +203,6 @@ async def buy(mint: str, sol_amount: float, slippage_bps: int | None = None) -> 
             f"PANEL_MAX_BUY_SOL si de verdad quieres más."
         )
     slippage = slippage_bps or config.DEFAULT_BUY_SLIPPAGE_BPS
-    keypair = _keypair()
     pubkey = str(keypair.pubkey())
     lamports = int(round(sol_amount * LAMPORTS_PER_SOL))
 
@@ -206,13 +221,19 @@ async def buy(mint: str, sol_amount: float, slippage_bps: int | None = None) -> 
     }
 
 
-async def sell(mint: str, percent: float, slippage_bps: int | None = None) -> dict[str, Any]:
-    """Vende ``percent`` % (1-100) de lo que la wallet tenga de ``mint`` por SOL."""
+async def buy(mint: str, sol_amount: float, slippage_bps: int | None = None) -> dict[str, Any]:
+    """Compra ``mint`` gastando ``sol_amount`` SOL. Firma y envía de verdad."""
     _require_hot()
+    return await buy_with_keypair(primary_keypair(), mint, sol_amount, slippage_bps)
+
+
+async def sell_with_keypair(
+    keypair: Any, mint: str, percent: float, slippage_bps: int | None = None
+) -> dict[str, Any]:
+    """Vende con un keypair ya cargado. Uso interno para la principal y secundarias."""
     if not 0 < percent <= 100:
         raise WalletError("El porcentaje debe estar entre 0 y 100.")
     slippage = slippage_bps or config.DEFAULT_SELL_SLIPPAGE_BPS
-    keypair = _keypair()
     pubkey = str(keypair.pubkey())
 
     async with aiohttp.ClientSession() as session:
@@ -236,14 +257,19 @@ async def sell(mint: str, percent: float, slippage_bps: int | None = None) -> di
     }
 
 
+async def sell(mint: str, percent: float, slippage_bps: int | None = None) -> dict[str, Any]:
+    """Vende ``percent`` % (1-100) de lo que la wallet tenga de ``mint`` por SOL."""
+    _require_hot()
+    return await sell_with_keypair(primary_keypair(), mint, percent, slippage_bps)
+
+
 # --------------------------------------------------------------------------- #
 # Enviar SOL nativo a otra wallet (reparto de ganancias)                        #
 # --------------------------------------------------------------------------- #
 
 
-async def send_sol(destination: str, sol_amount: float) -> dict[str, Any]:
-    """Transfiere ``sol_amount`` SOL nativo a ``destination``. Firma y envía."""
-    _require_hot()
+async def send_sol_with_keypair(keypair: Any, destination: str, sol_amount: float) -> dict[str, Any]:
+    """Transfiere SOL con un keypair ya cargado, validando saldo y destino."""
     if sol_amount <= 0:
         raise WalletError("La cantidad debe ser mayor que 0.")
     from solders.hash import Hash  # noqa: PLC0415
@@ -252,7 +278,6 @@ async def send_sol(destination: str, sol_amount: float) -> dict[str, Any]:
     from solders.system_program import TransferParams, transfer  # noqa: PLC0415
     from solders.transaction import VersionedTransaction  # noqa: PLC0415
 
-    keypair = _keypair()
     try:
         dest = Pubkey.from_string(destination.strip())
     except (ValueError, TypeError) as exc:
@@ -289,6 +314,12 @@ async def send_sol(destination: str, sol_amount: float) -> dict[str, Any]:
         "signature": signature,
         "solscan": f"https://solscan.io/tx/{signature}",
     }
+
+
+async def send_sol(destination: str, sol_amount: float) -> dict[str, Any]:
+    """Transfiere ``sol_amount`` SOL nativo a ``destination``. Firma y envía."""
+    _require_hot()
+    return await send_sol_with_keypair(primary_keypair(), destination, sol_amount)
 
 
 # --------------------------------------------------------------------------- #

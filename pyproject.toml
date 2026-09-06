@@ -17,6 +17,13 @@ dependencies = [
     "webauthn>=2.0",
 ]
 
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["server*"]
+
 [tool.ruff]
 # 110 rather than the usual 88/100: the tool descriptions the agent reads are
 # Spanish prose, and wrapping them makes them harder to review, not easier.
