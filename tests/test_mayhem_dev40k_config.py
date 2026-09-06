@@ -1,5 +1,6 @@
 """Safety and strategy assertions for the Mayhem DEV40K paper config."""
 
+import json
 import unittest
 from pathlib import Path
 
@@ -19,13 +20,16 @@ class MayhemDev40KConfigTests(unittest.TestCase):
         self.assertEqual(self.config["trade"]["buy_amount"], 0.03)
         self.assertEqual(self.config["trade"]["mayhem_buy_amount"], 0.04)
 
-    def test_requires_frequent_40k_median_mayhem_devs(self) -> None:
+    def test_requires_dataset_derived_40k_mayhem_devs(self) -> None:
         filters = self.config["filters"]
-        median = filters["dev_mediana"]
         self.assertTrue(filters["require_mayhem"])
-        self.assertEqual(median["min_mediana_mc"], 40_000)
-        self.assertGreaterEqual(median["min_monedas"], 3)
-        self.assertGreaterEqual(median["min_lanzamientos"], 5)
+        self.assertEqual(filters["bro_address"], "top_devs_mayhem40k.json")
+        data = json.loads(Path(filters["bro_address"]).read_text(encoding="utf-8"))
+        wallets = data["wallets"]
+        self.assertEqual(len(wallets), 20)
+        self.assertEqual(len({row["wallet"] for row in wallets}), 20)
+        self.assertTrue(all(row["median_peak"] >= 40_000 for row in wallets))
+        self.assertTrue(all(row["mayhem_launches"] >= 3 for row in wallets))
 
     def test_profit_ladder_raises_stop_and_keeps_trailing(self) -> None:
         trade = self.config["trade"]

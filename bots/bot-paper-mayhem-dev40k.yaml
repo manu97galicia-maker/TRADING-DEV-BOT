@@ -94,26 +94,11 @@ filters:
   max_holder_pct: 0.05
   ignorar_listas_de_devs: false
 
-  # Se fuerza la puerta de mediana: 5+ lanzamientos historicos y mediana de
-  # picos de monedas migradas >= $40K. Si la API no responde, no entra.
+  # Lista cerrada derivada del dataset Mayhem completo: 20 wallets unicas con
+  # 3+ lanzamientos Mayhem y mediana de pico >= $40K.
+  bro_address: "top_devs_mayhem40k.json"
   pumpfun_dev:
-    enabled: true
-    min_migrations: 999999
-    min_rate: 1.0
-    compra_inmediata: true
-    timeout_seg: 2.0
-  dev_mediana:
-    min_mediana_mc: 40000
-    min_monedas: 3
-    min_lanzamientos: 5
-    max_entry_mc: 4200
-    take_profit_percentage: 0.30
-    take_profit_sell_percentage: 0.20
-    tp2_gain: 0.60
-    tp2_sell: 0.20
-    tp3_gain: 1.00
-    tp3_sell: 0.20
-    stop_loss_percentage: 0.25
+    enabled: false
 
 cleanup:
   mode: "post_session"

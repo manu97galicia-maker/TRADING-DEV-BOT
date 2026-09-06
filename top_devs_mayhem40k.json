@@ -1,0 +1,27 @@
+{
+  "_README": "20 wallets unicas derivadas de mayhem_v2_raw.csv: 3+ lanzamientos Mayhem y mediana de pico >= $40K. Snapshot historico; uso exclusivo en paper hasta validacion fuera de muestra.",
+  "_source": "mayhem_v2_raw.csv",
+  "_count": 20,
+  "wallets": [
+    {"wallet":"B7jDgX4GHRZbmykWqvNaNmqbGU4F9ebWKzFaaDyRiKuC","mayhem_launches":4,"median_peak":191675,"pct_pump_30k":50.0},
+    {"wallet":"8gsx257NbfXFve14fzWT2jTG6TXB6AukAEjUXTANMjk","mayhem_launches":3,"median_peak":95691,"pct_pump_30k":66.7},
+    {"wallet":"DzFtDS8N5shdCt7mVtByEJgP1LfSkBFkS9TZzuxYJyqc","mayhem_launches":4,"median_peak":94252,"pct_pump_30k":50.0},
+    {"wallet":"3GR8PBj4jgBDJYD4Rw7PZt7PMKogezvXeDCPUJd62zpD","mayhem_launches":4,"median_peak":67852,"pct_pump_30k":50.0},
+    {"wallet":"7FvWw8AsiQtXMm8fv1pVTbzZypmruUb7U7jW9xQoDymB","mayhem_launches":4,"median_peak":67479,"pct_pump_30k":50.0},
+    {"wallet":"8PAuKgUtE11cTcojeoHs8xd8WcJ8epqWnWfzZkTi8xZ1","mayhem_launches":3,"median_peak":64800,"pct_pump_30k":66.7},
+    {"wallet":"EhFRXUdTnJrdRgR9pEq9zx8562oETUKosoQhSPodRe5N","mayhem_launches":3,"median_peak":62737,"pct_pump_30k":66.7},
+    {"wallet":"9NT2EX7gQGRBWCh4NVsj5UEhB8LiRYQ3ZfzdTEvRUp9n","mayhem_launches":4,"median_peak":55697,"pct_pump_30k":50.0},
+    {"wallet":"66onmcvu5jpN4dJoe9sYQYCnMbB5oWXHNAtoQfG2peki","mayhem_launches":3,"median_peak":54981,"pct_pump_30k":100.0},
+    {"wallet":"CwdLMpzzi4o92JWMe7KNm7SKW6s6W7zv6VsZHR9D7huF","mayhem_launches":4,"median_peak":54161,"pct_pump_30k":50.0},
+    {"wallet":"FakkpbrUA3Nz3EdHfWVmJPAokSrfud4T27JTxorkVfkN","mayhem_launches":4,"median_peak":52722,"pct_pump_30k":50.0},
+    {"wallet":"AwkDaC2n9YfdmUru8J8sFCjsDmqqj7LrpLFo3SjB9DZ4","mayhem_launches":3,"median_peak":51193,"pct_pump_30k":66.7},
+    {"wallet":"ARaPhgNjEgbPyX7fHJjK1ibuq8ciW38nC6GvaRPZPM5N","mayhem_launches":4,"median_peak":50203,"pct_pump_30k":50.0},
+    {"wallet":"1325y5zBuVAwToFo8WqZdYLvUyzxom5bu6wDiMGTy2X7","mayhem_launches":6,"median_peak":47524,"pct_pump_30k":50.0},
+    {"wallet":"HRqGhVwiv2kxVedrHieRCQP4m7AeJVzyAABQy2FP74Lu","mayhem_launches":4,"median_peak":44150,"pct_pump_30k":50.0},
+    {"wallet":"irb33boGE2xYPaFLPYxPcniLqFASD9gLvmm1Jyk7Rr6","mayhem_launches":6,"median_peak":43373,"pct_pump_30k":50.0},
+    {"wallet":"8LnVaugnRXtTgr3uNrpkbwFygC5KiyTZwbiXSm4J97NZ","mayhem_launches":3,"median_peak":41654,"pct_pump_30k":66.7},
+    {"wallet":"61p1fUje2qmvK7NBJCybpH3RQHDwuttcsf4qUgdeWp77","mayhem_launches":4,"median_peak":40952,"pct_pump_30k":50.0},
+    {"wallet":"HfNAjoBTHfFzSwv7itJECPwmYWn89nBVGNe4Ek2MPRKB","mayhem_launches":5,"median_peak":40283,"pct_pump_30k":60.0},
+    {"wallet":"9ZDfN3PtQVfEoNM5uA5hor2VrEjBfLWZH5QQKNNz6jB4","mayhem_launches":3,"median_peak":40274,"pct_pump_30k":66.7}
+  ]
+}
