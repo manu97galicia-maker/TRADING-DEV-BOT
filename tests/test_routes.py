@@ -18,7 +18,7 @@ class RouteTests(unittest.TestCase):
         }
         self.assertTrue(expected.issubset(routes))
 
-    def test_mayhem_strategy_card_is_paper_only(self) -> None:
+    def test_mayhem_strategy_card_keeps_paper_separate_from_manual_real_trade(self) -> None:
         html = Path("server/static/index.html").read_text(encoding="utf-8")
         self.assertIn('id="mayhemTitle"', html)
         self.assertIn("0,03 SOL", html)
@@ -26,6 +26,9 @@ class RouteTests(unittest.TestCase):
         self.assertIn("3 compras consecutivas", html)
         self.assertIn("Solo PAPER", html)
         self.assertIn('id="prepareMayhem03"', html)
+        self.assertIn('id="prepareMayhemReal03"', html)
+        self.assertIn('$("#buySol").value = "0.03"', html)
+        self.assertIn("solo prepara el formulario", html)
         self.assertIn("Casi sin riesgo", html)
 
 

@@ -475,6 +475,10 @@
         <div class="empty" style="padding:0 4px 12px;white-space:normal">Compromiso de frecuencia: 5 compradores permite entrar mucho antes. En los datos, la banda 0–5 llegó a 6K un 5,8%, frente al 15% con 12–20; por eso se mantienen tres compras consecutivas, presión compradora y salida rápida.</div>
         <div class="mayhem-actions">
           <button class="btn" id="prepareMayhem03" type="button">Preparar simulación</button>
+          <button class="pill" id="prepareMayhemReal03" type="button">Ir a compra real · 0,03 SOL</button>
+        </div>
+        <div class="sub warn" style="padding:10px 4px 0;white-space:normal">
+          La opción real solo prepara el formulario. Debes pegar y revisar el contrato, comprobar el riesgo y confirmar personalmente la firma irreversible.
         </div>
       </article>
 
@@ -1192,6 +1196,14 @@ $("#prepareMayhem03").onclick = () => {
   paperBox.focus();
   paperBox.style.height = "auto";
   paperBox.style.height = paperBox.scrollHeight + "px";
+};
+$("#prepareMayhemReal03").onclick = () => {
+  $("#buySol").value = "0.03";
+  const tradeTab = document.querySelector('nav button[data-tab="trade"]');
+  tradeTab.click();
+  $("#tMint").focus();
+  $("#fracHint").textContent = "Mayhem preparado con 0,03 SOL. Pega el contrato y revísalo antes de confirmar.";
+  window.scrollTo({ top: 0, behavior: "smooth" });
 };
 const askPaper = () => {
   const text = paperBox.value.trim();
