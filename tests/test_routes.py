@@ -33,6 +33,12 @@ class RouteTests(unittest.TestCase):
         self.assertIn("solo prepara el formulario", html)
         self.assertIn("Casi sin riesgo", html)
 
+    def test_chat_makes_pending_real_actions_explicit(self) -> None:
+        html = Path("server/static/index.html").read_text(encoding="utf-8")
+        self.assertIn("Todavía no ejecutado", html)
+        self.assertIn("Confirmar y ejecutar", html)
+        self.assertIn('$("#pending").scrollIntoView', html)
+
 
 if __name__ == "__main__":
     unittest.main()

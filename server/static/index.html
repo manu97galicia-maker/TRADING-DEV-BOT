@@ -148,6 +148,7 @@
   .toast.bad{border-color:var(--down);color:#ffd9d9}
 
   /* ---------- pending confirmations ---------- */
+  #pending{position:sticky;top:8px;z-index:45}
   #pending:empty{display:none}
   .conf{background:#1d1508;border:1px solid var(--warn);border-radius:var(--radius);
     padding:13px;margin-bottom:10px}
@@ -1120,10 +1121,11 @@ function renderPending(actions) {
   box.innerHTML = "";
   for (const a of actions || []) {
     const card = el("div", "conf");
-    card.appendChild(el("div", "who", "Confirmación pendiente · " + a.kind));
+    card.setAttribute("role", "alert");
+    card.appendChild(el("div", "who", "Todavía no ejecutado · " + a.kind));
     card.appendChild(el("p", null, a.summary));
     const acts = el("div", "acts");
-    const go = el("button", "go", "Confirmar");
+    const go = el("button", "go", a.kind === "paper" ? "Confirmar simulación" : "Confirmar y ejecutar");
     go.onclick = async () => {
       go.disabled = true;
       try {
@@ -1305,7 +1307,11 @@ async function ask(text, opts) {
   try {
     const out = await api("/api/agent/chat", { method: "POST", body: JSON.stringify({ message: text }) });
     thinking.textContent = out.reply;
-    if (out.pending?.length) { renderPending(out.pending); window.scrollTo({ top: 0, behavior: "smooth" }); }
+    if (out.pending?.length) {
+      renderPending(out.pending);
+      thinking.textContent += "\n\nTodavía no se ha ejecutado. Revisa la tarjeta de confirmación y pulsa “Confirmar y ejecutar”.";
+      $("#pending").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
     if (o.after) o.after();
   } catch (err) {
     thinking.textContent = err.message;

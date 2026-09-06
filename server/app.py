@@ -664,8 +664,15 @@ async def handle_chat(request: web.Request) -> web.Response:
             status=429,
         )
     async with lock:
-        result = await agent.chat(session["history"], message)
+        chat_user = request.app["auth"].token_user(_request_token(request)) or "desconocido"
+        logger.info("Chat recibido: usuario=%s caracteres=%s", chat_user, len(message))
+        try:
+            result = await agent.chat(session["history"], message)
+        except Exception:
+            logger.exception("El agente no pudo procesar el mensaje del chat")
+            raise
     session["history"] = result["history"]
+    logger.info("Chat completado: propuestas_nuevas=%s", len(result["pending"]))
     return web.json_response(
         {"ok": True, "reply": result["reply"], "pending": result["pending"]}
     )
@@ -678,7 +685,12 @@ async def handle_pending(request: web.Request) -> web.Response:
 async def handle_confirm(request: web.Request) -> web.Response:
     body = await request.json()
     action_id = str(body["id"])
-    result = await agent.confirm_action(action_id)
+    logger.warning("Confirmacion solicitada: accion=%s", action_id)
+    try:
+        result = await agent.confirm_action(action_id)
+    except Exception:
+        logger.exception("Fallo al ejecutar la accion confirmada: accion=%s", action_id)
+        raise
     logger.warning("Accion confirmada: %s", result["summary"])
     return web.json_response({"ok": True, **result})
 
