@@ -2444,7 +2444,12 @@ class UniversalTrader:
                                     str(_dev0),
                                     int(self.dev_mediana.get("min_monedas", 2)),
                                 )
-                                _por_mediana = _med >= _min_med
+                                _min_lanz = int(
+                                    self.dev_mediana.get("min_lanzamientos", 0) or 0
+                                )
+                                _por_mediana = (
+                                    _med >= _min_med and _l >= _min_lanz
+                                )
                             if not _por_mediana:
                                 logger.info(
                                     f"DEV filtro BLOCK {token_info.symbol}: "
@@ -2457,7 +2462,8 @@ class UniversalTrader:
                             self._mints_mediana.add(str(token_info.mint))
                             logger.info(
                                 f"DEV OK {token_info.symbol} por MEDIANA: "
-                                f"${_med:,.0f} (no llega al filtro normal: "
+                                f"${_med:,.0f}, {_l} lanzamientos "
+                                f"(no llega al filtro normal: "
                                 f"{_m} migr/{_l} lanz, {_r * 100:.0f}%) -> "
                                 f"compra inmediata"
                             )
@@ -4048,7 +4054,7 @@ class UniversalTrader:
                 self.dev_mediana.get("take_profit_percentage"),
                 self.dev_mediana.get("take_profit_sell_percentage", 1.0),
             )]
-            for _n in (2, 3):
+            for _n in (2, 3, 4, 5):
                 _pares.append((self.dev_mediana.get(f"tp{_n}_gain"),
                                self.dev_mediana.get(f"tp{_n}_sell")))
             _t = build_tiers(_pares)

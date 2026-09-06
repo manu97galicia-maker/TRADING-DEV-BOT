@@ -1,0 +1,124 @@
+# Mayhem de creadores frecuentes con mediana historica alta.
+# SOLO PAPEL: 0,03 SOL base y 0,04 SOL nocionales para tokens Mayhem.
+name: "PAPER MAYHEM DEV40K - 0.04 SOL"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: true
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.03
+  mayhem_buy_amount: 0.04
+  nombre_estrategia: "paper-mayhem-dev40k"
+  max_posiciones: 1
+  max_real_buys: 0
+  reiniciar_tanda: false
+  escala_por_sol_ganado: 0
+  buy_slippage: 0.12
+  sell_slippage: 0.25
+  exit_strategy: "tp_sl"
+
+  # Recoge beneficios por tramos y conserva 20% para el trailing.
+  take_profit_percentage: 0.30
+  take_profit_sell_percentage: 0.20
+  tp2_gain: 0.60
+  tp2_sell: 0.20
+  tp3_gain: 1.00
+  tp3_sell: 0.20
+  tp4_gain: 1.80
+  tp4_sell: 0.20
+  tp5_gain: 0
+  tp5_sell: 0
+  final_target_mc: 0
+
+  # El stop empieza en -25%. Tras TP1 sube a entrada; despues sube al TP
+  # anterior. El trailing del 25% protege el remanente desde el pico.
+  stop_loss_percentage: 0.25
+  trailing_stop_percentage: 0.25
+  stop_a_entrada_tras_tp: true
+  stop_al_tp_tras_tp: false
+  vender_todo_en_stop: true
+  anti_rug_ratio: 1.6
+  anti_rug_seg: 3
+  anti_rug_min_sol: 1.0
+  venta_bajo_entrada_seg: 25
+  venta_muerta_seg: 60
+  venta_muerta_gain: 0.0
+  venta_sin_volumen_seg: 45
+  max_hold_time: 180
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.05
+
+compute_units:
+  buy: 140000
+  sell: 120000
+
+priority_fees:
+  enable_dynamic: true
+  enable_fixed: false
+  fixed_amount: 0
+  extra_percentage: 0.0
+  hard_cap: 5000000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 12
+  max_buy_age: 15
+  min_buy_age: 1
+  allow_mayhem: true
+  require_mayhem: true
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: true
+  min_entry_mc: 2600
+  max_entry_mc: 4200
+  min_buys: 8
+  min_titulares: 8
+  max_compras_por_cartera: 1.5
+  ultimas_tx_compra: 3
+  min_presion_ratio: 1.4
+  presion_seg: 4
+  min_ops: 8
+  min_curve_sol: 0.5
+  no_repeat_name_min: 5
+  max_first_block_pct: 0.55
+  max_holder_pct: 0.05
+  ignorar_listas_de_devs: false
+
+  # Se fuerza la puerta de mediana: 5+ lanzamientos historicos y mediana de
+  # picos de monedas migradas >= $40K. Si la API no responde, no entra.
+  pumpfun_dev:
+    enabled: true
+    min_migrations: 999999
+    min_rate: 1.0
+    compra_inmediata: true
+    timeout_seg: 2.0
+  dev_mediana:
+    min_mediana_mc: 40000
+    min_monedas: 3
+    min_lanzamientos: 5
+    max_entry_mc: 4200
+    take_profit_percentage: 0.30
+    take_profit_sell_percentage: 0.20
+    tp2_gain: 0.60
+    tp2_sell: 0.20
+    tp3_gain: 1.00
+    tp3_sell: 0.20
+    stop_loss_percentage: 0.25
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 12
