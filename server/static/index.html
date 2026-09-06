@@ -114,6 +114,29 @@
     font-size:12px;font-weight:600}
   .pill:active{background:var(--line)}
   .empty{color:var(--dim);font-size:14px;padding:6px 0}
+  .mayhem-card{position:relative;overflow:hidden;border-color:#7c4a22;background:#17110c}
+  .mayhem-card::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--warn)}
+  .mayhem-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;padding-left:4px}
+  .mayhem-head h2{margin:0 0 3px;text-transform:none;letter-spacing:-.01em;font-size:18px}
+  .paper-state{margin-left:auto;flex:none;padding:5px 8px;border:1px solid var(--warn);border-radius:999px;
+    color:#ffd889;font-size:11px;font-weight:750}
+  .risk-strip{margin:0 0 14px 4px;padding:9px 11px;border-radius:9px;background:#29140f;
+    color:#ffc9bb;font-size:12px;line-height:1.4}
+  .mayhem-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin:0 0 15px 4px;
+    overflow:hidden;border:1px solid var(--line);border-radius:10px;background:var(--line)}
+  .mayhem-fact{padding:10px;background:var(--panel);min-width:0}
+  .mayhem-fact b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+  .mayhem-fact span{display:block;color:var(--dim);font-size:10px;line-height:1.25}
+  .ratchet{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:0 0 14px 4px;align-items:end}
+  .ratchet-step{padding:8px 4px;border:1px solid var(--line);border-radius:8px 8px 4px 4px;
+    background:var(--panel);text-align:center;font-size:11px;color:var(--dim)}
+  .ratchet-step:nth-child(2){transform:translateY(-3px)}
+  .ratchet-step:nth-child(3){transform:translateY(-6px)}
+  .ratchet-step:nth-child(4){transform:translateY(-9px)}
+  .ratchet-step b{display:block;color:var(--up);font-size:13px}
+  .mayhem-actions{display:flex;gap:8px;margin-left:4px}
+  .mayhem-actions .btn{width:auto;flex:1;padding:11px}
+  @media(max-width:430px){.mayhem-facts{grid-template-columns:1fr 1fr}.mayhem-fact:last-child{grid-column:1/-1}}
   pre{margin:0;padding:11px;background:#05070a;border:1px solid var(--line);border-radius:10px;
     font-size:11.5px;line-height:1.5;overflow-x:auto;white-space:pre;max-height:60vh}
   .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;
@@ -426,6 +449,35 @@
     </section>
 
     <section id="tab-paper">
+      <article class="tile mayhem-card" aria-labelledby="mayhemTitle">
+        <div class="mayhem-head">
+          <div>
+            <h2 id="mayhemTitle">Mayhem · frecuencia controlada</h2>
+            <div class="sub" style="white-space:normal">Propuesta de 0,03 SOL para medir primero, no una promesa de rentabilidad.</div>
+          </div>
+          <span class="paper-state">Solo PAPER</span>
+        </div>
+        <div class="risk-strip"><b>Riesgo extremo.</b> Un token puede caer a cero o quedar sin compradores. “Casi sin riesgo” no existe en Mayhem.</div>
+        <div class="mayhem-facts">
+          <div class="mayhem-fact"><b>0,03 SOL</b><span>por entrada simulada</span></div>
+          <div class="mayhem-fact"><b>1 posición</b><span>sin acumular exposición</span></div>
+          <div class="mayhem-fact"><b>12 compradores</b><span>demanda distinta mínima</span></div>
+          <div class="mayhem-fact"><b>$2,6K–$3,4K</b><span>banda de entrada</span></div>
+          <div class="mayhem-fact"><b>−22%</b><span>stop teórico inicial</span></div>
+          <div class="mayhem-fact"><b>60 s</b><span>tiempo máximo</span></div>
+        </div>
+        <div class="ratchet" aria-label="Trinquete de beneficios">
+          <div class="ratchet-step"><b>Entrada</b>stop −22%</div>
+          <div class="ratchet-step"><b>+20%</b>stop a entrada</div>
+          <div class="ratchet-step"><b>+40%</b>asegura beneficio</div>
+          <div class="ratchet-step"><b>Pico</b>trailing 12%</div>
+        </div>
+        <div class="empty" style="padding:0 4px 12px;white-space:normal">Evidencia disponible: 12–20 compradores fue la banda con mayor llegada a 6K observada. Más frecuencia exige relajar filtros y aumenta el riesgo.</div>
+        <div class="mayhem-actions">
+          <button class="btn" id="prepareMayhem03" type="button">Preparar simulación</button>
+        </div>
+      </article>
+
       <div class="tile">
         <h2>Lo que cuesta cada operación</h2>
         <div class="row" style="border:none;padding-top:0">
@@ -1135,6 +1187,12 @@ document.querySelectorAll("#tab-srv .hints button").forEach(b => {
 
 /* Chat del simulador: mismo agente; al terminar refresca la lista. */
 const paperBox = $("#paperMsg");
+$("#prepareMayhem03").onclick = () => {
+  paperBox.value = "Simula Mayhem con 0,03 SOL: una posición, entrada entre 2600 y 3400 USD, mínimo 12 compradores distintos, TP 40%, SL 22%, trailing 12% y máximo 60 segundos.";
+  paperBox.focus();
+  paperBox.style.height = "auto";
+  paperBox.style.height = paperBox.scrollHeight + "px";
+};
 const askPaper = () => {
   const text = paperBox.value.trim();
   if (!text) return;
