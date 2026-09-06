@@ -139,6 +139,13 @@
   .real-ready{flex:1;border:1px solid #49d98a!important;background:#123c2a!important;color:#baffd8!important;
     box-shadow:inset 0 0 0 1px rgba(186,255,216,.08);font-weight:800}
   .real-ready:focus-visible{outline:3px solid rgba(73,217,138,.4);outline-offset:2px}
+  .strategy-editor{display:none;margin:14px 4px 0;padding:13px;border:1px solid #2e7550;border-radius:12px;background:#0c1b14}
+  .strategy-editor.on{display:block}
+  .strategy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}
+  .strategy-field{display:flex;flex-direction:column;gap:5px;color:var(--dim);font-size:11px}
+  .strategy-field input,.strategy-field select{width:100%;padding:9px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--txt)}
+  .strategy-status{padding:9px;border-radius:8px;background:#15191d;font-size:12px;line-height:1.4}
+  @media(max-width:430px){.strategy-grid{grid-template-columns:1fr}.mayhem-actions{flex-direction:column}}
   @media(max-width:430px){.mayhem-facts{grid-template-columns:1fr 1fr}.mayhem-fact:last-child{grid-column:1/-1}}
   pre{margin:0;padding:11px;background:#05070a;border:1px solid var(--line);border-radius:10px;
     font-size:11.5px;line-height:1.5;overflow-x:auto;white-space:pre;max-height:60vh}
@@ -479,10 +486,26 @@
         <div class="empty" style="padding:0 4px 12px;white-space:normal">Compromiso de frecuencia: 5 compradores permite entrar mucho antes. En los datos, la banda 0–5 llegó a 6K un 5,8%, frente al 15% con 12–20; por eso se mantienen tres compras consecutivas, presión compradora y salida rápida.</div>
         <div class="mayhem-actions">
           <button class="btn" id="prepareMayhem03" type="button">Preparar simulación</button>
-          <button class="pill real-ready" id="prepareMayhemReal03" type="button">Preparar compra real · 0,03 SOL</button>
+          <button class="pill real-ready" id="prepareMayhemReal03" type="button">Configurar estrategia</button>
         </div>
         <div class="sub warn" style="padding:10px 4px 0;white-space:normal">
           La opción real solo prepara el formulario. Debes pegar y revisar el contrato, comprobar el riesgo y confirmar personalmente la firma irreversible.
+        </div>
+        <div class="strategy-editor" id="mayhemEditor">
+          <div class="strategy-status" id="mayhemWalletState">Comprobando si las operaciones reales están disponibles…</div>
+          <div class="strategy-grid">
+            <label class="strategy-field">Modo<select id="mayhemMode"><option value="paper">PAPER · sin fondos</option><option value="real">REAL · confirmación obligatoria</option></select></label>
+            <label class="strategy-field">Máximo de operaciones<input id="mayhemTrades" type="number" min="1" max="100" value="5"></label>
+            <label class="strategy-field">SOL por operación<input id="mayhemSize" type="number" min="0.01" max="0.03" step="0.01" value="0.03"></label>
+            <label class="strategy-field">Compradores mínimos<input id="mayhemBuyers" type="number" min="1" value="5"></label>
+            <label class="strategy-field">Compras consecutivas<input id="mayhemConsecutive" type="number" min="1" value="3"></label>
+            <label class="strategy-field">Presión compradora<input id="mayhemPressure" type="number" min="1" step="0.1" value="1.6"></label>
+            <label class="strategy-field">Take profit %<input id="mayhemTp" type="number" min="1" value="40"></label>
+            <label class="strategy-field">Stop loss %<input id="mayhemSl" type="number" min="1" value="22"></label>
+            <label class="strategy-field">Trailing %<input id="mayhemTrailing" type="number" min="1" value="12"></label>
+            <label class="strategy-field">Tiempo máximo (s)<input id="mayhemSeconds" type="number" min="10" value="60"></label>
+          </div>
+          <button class="btn" id="submitMayhemStrategy" type="button" style="margin-top:12px">Preparar estrategia</button>
         </div>
       </article>
 
@@ -1203,12 +1226,29 @@ $("#prepareMayhem03").onclick = () => {
   paperBox.style.height = paperBox.scrollHeight + "px";
 };
 $("#prepareMayhemReal03").onclick = () => {
-  $("#buySol").value = "0.03";
-  const tradeTab = document.querySelector('nav button[data-tab="trade"]');
-  tradeTab.click();
-  $("#tMint").focus();
-  $("#fracHint").textContent = "Mayhem preparado con 0,03 SOL. Pega el contrato y revísalo antes de confirmar.";
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  $("#mayhemEditor").classList.toggle("on");
+  const hot = Boolean(state && state.config && state.config.hot_wallet);
+  $("#mayhemWalletState").textContent = hot
+    ? "Operaciones reales disponibles. Cada orden exige Confirmar y ejecutar."
+    : "Operaciones reales apagadas en el servidor. Puedes editar y probar en PAPER; REAL no se presentará como activo.";
+};
+$("#submitMayhemStrategy").onclick = () => {
+  const mode = $("#mayhemMode").value;
+  const num = id => Number($(id).value);
+  const size = Math.min(0.03, Math.max(0.01, num("#mayhemSize") || 0.03));
+  const trades = Math.min(100, Math.max(1, Math.floor(num("#mayhemTrades") || 1)));
+  if (mode === "real" && !(state && state.config && state.config.hot_wallet)) {
+    toast("REAL está apagado en el servidor. Usa PAPER hasta habilitar la wallet caliente.", true);
+    return;
+  }
+  const prompt = `${mode === "real" ? "Prepara en REAL" : "Simula en PAPER"} la estrategia Mayhem con ${size} SOL por operación, máximo ${trades} operaciones, mínimo ${num("#mayhemBuyers")} compradores distintos, ${num("#mayhemConsecutive")} compras consecutivas, presión compradora ${num("#mayhemPressure")}, TP ${num("#mayhemTp") }%, SL ${num("#mayhemSl")}%, trailing ${num("#mayhemTrailing")}% y máximo ${num("#mayhemSeconds")} segundos. ${mode === "real" ? "No ejecutes fondos sin mostrar una propuesta y exigir Confirmar y ejecutar." : "No muevas fondos reales."}`;
+  if (mode === "paper") {
+    paperBox.value = prompt;
+    paperBox.focus();
+  } else {
+    document.querySelector('nav button[data-tab="chat"]').click();
+    ask(prompt);
+  }
 };
 const askPaper = () => {
   const text = paperBox.value.trim();
