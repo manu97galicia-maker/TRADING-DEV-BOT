@@ -27,6 +27,8 @@ class RouteTests(unittest.TestCase):
         self.assertIn("Solo PAPER", html)
         self.assertIn('id="prepareMayhem03"', html)
         self.assertIn('id="prepareMayhemReal03"', html)
+        self.assertIn("Preparar compra real · 0,03 SOL", html)
+        self.assertIn("real-ready", html)
         self.assertIn('$("#buySol").value = "0.03"', html)
         self.assertIn("solo prepara el formulario", html)
         self.assertIn("Casi sin riesgo", html)

@@ -136,6 +136,9 @@
   .ratchet-step b{display:block;color:var(--up);font-size:13px}
   .mayhem-actions{display:flex;gap:8px;margin-left:4px}
   .mayhem-actions .btn{width:auto;flex:1;padding:11px}
+  .real-ready{flex:1;border:1px solid #49d98a!important;background:#123c2a!important;color:#baffd8!important;
+    box-shadow:inset 0 0 0 1px rgba(186,255,216,.08);font-weight:800}
+  .real-ready:focus-visible{outline:3px solid rgba(73,217,138,.4);outline-offset:2px}
   @media(max-width:430px){.mayhem-facts{grid-template-columns:1fr 1fr}.mayhem-fact:last-child{grid-column:1/-1}}
   pre{margin:0;padding:11px;background:#05070a;border:1px solid var(--line);border-radius:10px;
     font-size:11.5px;line-height:1.5;overflow-x:auto;white-space:pre;max-height:60vh}
@@ -475,7 +478,7 @@
         <div class="empty" style="padding:0 4px 12px;white-space:normal">Compromiso de frecuencia: 5 compradores permite entrar mucho antes. En los datos, la banda 0–5 llegó a 6K un 5,8%, frente al 15% con 12–20; por eso se mantienen tres compras consecutivas, presión compradora y salida rápida.</div>
         <div class="mayhem-actions">
           <button class="btn" id="prepareMayhem03" type="button">Preparar simulación</button>
-          <button class="pill" id="prepareMayhemReal03" type="button">Ir a compra real · 0,03 SOL</button>
+          <button class="pill real-ready" id="prepareMayhemReal03" type="button">Preparar compra real · 0,03 SOL</button>
         </div>
         <div class="sub warn" style="padding:10px 4px 0;white-space:normal">
           La opción real solo prepara el formulario. Debes pegar y revisar el contrato, comprobar el riesgo y confirmar personalmente la firma irreversible.
