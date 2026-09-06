@@ -30,20 +30,56 @@ class TraderQualityTests(unittest.TestCase):
             rank_candidates([self.candidate(win_rate_pct_7d=59.99)], rules), []
         )
         self.assertEqual(
-            rank_candidates([self.candidate(x_followers=15_001)], rules), []
+            rank_candidates([self.candidate(x_followers=10_000)], rules), []
         )
 
     def test_missing_source_fails_closed(self) -> None:
         self.assertEqual(rank_candidates([self.candidate(source="")]), [])
 
+    def test_missing_x_handle_fails_closed(self) -> None:
+        self.assertEqual(rank_candidates([self.candidate(x_handle="")]), [])
+
     def test_under_3k_is_ranked_first(self) -> None:
-        quiet = self.candidate(wallet="quiet", x_followers=2_999, median_roi_pct_7d=160)
-        loud = self.candidate(wallet="loud", x_followers=8_000, median_roi_pct_7d=900)
+        quiet = self.candidate(
+            wallet="quiet",
+            x_handle="quiet",
+            x_followers=2_999,
+            median_roi_pct_7d=160,
+        )
+        loud = self.candidate(
+            wallet="loud",
+            x_handle="loud",
+            x_followers=8_000,
+            median_roi_pct_7d=900,
+        )
         self.assertEqual(rank_candidates([loud, quiet]), [quiet, loud])
 
     def test_missing_metric_is_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "missing verified fields"):
             TraderCandidate.from_dict({"wallet": "unknown"})
+
+    def test_returns_at_most_20_unique_traders(self) -> None:
+        candidates = [
+            self.candidate(
+                wallet=f"wallet-{index}",
+                x_handle=f"trader-{index}",
+                median_roi_pct_7d=200 + index,
+            )
+            for index in range(25)
+        ]
+        ranked = rank_candidates(candidates)
+        self.assertEqual(len(ranked), 20)
+        self.assertEqual(len({item.wallet for item in ranked}), 20)
+
+    def test_deduplicates_x_handle_and_wallet(self) -> None:
+        best = self.candidate(wallet="best", x_handle="same", median_roi_pct_7d=300)
+        same_handle = self.candidate(
+            wallet="other", x_handle="@same", median_roi_pct_7d=200
+        )
+        same_wallet = self.candidate(
+            wallet="BEST", x_handle="another", median_roi_pct_7d=190
+        )
+        self.assertEqual(rank_candidates([same_handle, same_wallet, best]), [best])
 
 
 if __name__ == "__main__":

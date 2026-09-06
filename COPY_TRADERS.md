@@ -9,9 +9,11 @@ lista antigua. Primero debe existir una exportación auditable de siete días.
 - Mediana de ROI de las calls cerradas en 7 días: **150 % o más**.
 - Actividad: **5 calls o más** en 7 días.
 - Porcentaje de calls ganadoras: **60 % o más**.
-- Seguidores en X: máximo **15.000**; las cuentas con menos de **3.000** se
+- Seguidores en X: siempre **menos de 10.000**; las cuentas con menos de **3.000** se
   ordenan primero.
-- `source` es obligatorio en cada fila. Si falta una métrica, la cartera queda
+- El ranking conserva como máximo los **20 mejores** y elimina wallets o perfiles
+  de X duplicados.
+- `x_handle` y `source` son obligatorios en cada fila. Si falta una métrica, la cartera queda
   rechazada; el sistema nunca rellena datos inventados.
 
 ## Flujo

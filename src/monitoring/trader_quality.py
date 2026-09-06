@@ -61,14 +61,16 @@ class QualityRules:
     min_median_roi_pct_7d: float = 150.0
     min_calls_7d: int = 5
     min_win_rate_pct_7d: float = 60.0
-    max_x_followers: int = 15_000
+    max_x_followers: int = 9_999
     preferred_x_followers: int = 3_000
+    max_ranked_candidates: int = 20
 
 
 def qualifies(candidate: TraderCandidate, rules: QualityRules) -> bool:
     """Return whether every mandatory weekly and social rule is satisfied."""
     return bool(
         candidate.wallet
+        and candidate.x_handle
         and candidate.source
         and candidate.median_roi_pct_7d >= rules.min_median_roi_pct_7d
         and candidate.calls_7d >= rules.min_calls_7d
@@ -85,7 +87,7 @@ def rank_candidates(
     approved = [
         candidate for candidate in candidates if qualifies(candidate, active_rules)
     ]
-    return sorted(
+    ranked = sorted(
         approved,
         key=lambda candidate: (
             candidate.x_followers > active_rules.preferred_x_followers,
@@ -95,3 +97,17 @@ def rank_candidates(
             candidate.x_followers,
         ),
     )
+    unique: list[TraderCandidate] = []
+    seen_wallets: set[str] = set()
+    seen_handles: set[str] = set()
+    for candidate in ranked:
+        wallet_key = candidate.wallet.casefold()
+        handle_key = candidate.x_handle.lstrip("@").casefold()
+        if wallet_key in seen_wallets or handle_key in seen_handles:
+            continue
+        seen_wallets.add(wallet_key)
+        seen_handles.add(handle_key)
+        unique.append(candidate)
+        if len(unique) >= active_rules.max_ranked_candidates:
+            break
+    return unique
