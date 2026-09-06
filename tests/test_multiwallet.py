@@ -50,6 +50,12 @@ class MultiWalletTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(all(row.get("secret") for row in stored))
         self.assertTrue(all("secret" not in row for row in response))
 
+    def test_supports_requested_wallet_fleet_size(self) -> None:
+        with patch("server.multiwallet.config.MAX_SECONDARY_WALLETS", 123):
+            self.assertEqual(multiwallet._count(123), 123)
+            with self.assertRaises(multiwallet.MultiWalletError):
+                multiwallet._count(124)
+
     async def test_spread_enforces_total_limit(self) -> None:
         self.write_wallets()
         with (

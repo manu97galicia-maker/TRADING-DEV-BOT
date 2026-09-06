@@ -124,7 +124,7 @@ server/
   botlink.py        puente con los ficheros del bot (posiciones, P&L, configs, listas)
   chain.py          lectura on-chain del wallet (saldo + tokens, valorado con Jupiter)
   wallet.py         FIRMA: comprar/vender (Jupiter) + enviar SOL      [wallet caliente]
-  multiwallet.py    crea y opera wallets secundarias sin exponer sus claves
+  multiwallet.py    crea y opera hasta 123 wallets secundarias sin exponer sus claves
   market.py         info de token (DexScreener + RugCheck)
   lists.py          CRUD de las listas de wallets del bot
   profits.py        reparto de ganancias por % (manual / automático)

@@ -192,7 +192,7 @@ def wallet_secret() -> str:
 #: Topes de seguridad para una compra manual desde la web. Una web con un botón
 #: que gasta SOL real necesita un límite duro por si un dedo resbala.
 MAX_BUY_SOL = float(os.getenv("PANEL_MAX_BUY_SOL", "1.0"))
-MAX_SECONDARY_WALLETS = int(os.getenv("PANEL_MAX_SECONDARY_WALLETS", "20"))
+MAX_SECONDARY_WALLETS = int(os.getenv("PANEL_MAX_SECONDARY_WALLETS", "123"))
 MAX_SPREAD_SOL = float(os.getenv("PANEL_MAX_SPREAD_SOL", "5.0"))
 SECONDARY_FEE_RESERVE_SOL = float(os.getenv("PANEL_SECONDARY_FEE_RESERVE_SOL", "0.005"))
 DEFAULT_BUY_SLIPPAGE_BPS = int(os.getenv("PANEL_BUY_SLIPPAGE_BPS", "1500"))   # 15%
