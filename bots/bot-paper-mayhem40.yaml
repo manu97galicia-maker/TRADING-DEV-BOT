@@ -1,0 +1,114 @@
+# Estrategia MAYHEM basada en los datos medidos del proyecto.
+# SOLO PAPEL: 0,025 SOL nocionales, sin firma ni envío de transacciones.
+name: "PAPER MAYHEM40 - 0.025 SOL"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: true
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.025
+  mayhem_buy_amount: 0.025
+  nombre_estrategia: "paper-mayhem40-0025"
+  max_posiciones: 1
+  max_real_buys: 0
+  reiniciar_tanda: false
+  escala_por_sol_ganado: 0
+  buy_slippage: 0.12
+  sell_slippage: 0.25
+  exit_strategy: "tp_sl"
+  # Objetivo pedido: al +40%, vende el 100%; no deja moonbag.
+  take_profit_percentage: 0.40
+  take_profit_sell_percentage: 1.0
+  tp2_gain: 0
+  tp2_sell: 0
+  tp3_gain: 0
+  tp3_sell: 0
+  tp4_gain: 0
+  tp4_sell: 0
+  tp5_gain: 0
+  tp5_sell: 0
+  final_target_mc: 0
+  # Corta una caída real del 22%. No convierte mayhem en bajo riesgo: solo
+  # acota la pérdida teórica cuando todavía existe contrapartida para vender.
+  stop_loss_percentage: 0.22
+  trailing_stop_percentage: 0.12
+  vender_todo_en_stop: true
+  anti_rug_ratio: 1.6
+  anti_rug_seg: 3
+  anti_rug_min_sol: 1.0
+  venta_bajo_entrada_seg: 20
+  venta_muerta_seg: 35
+  venta_muerta_gain: 0.0
+  venta_sin_volumen_seg: 30
+  max_hold_time: 60
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.03
+
+compute_units:
+  buy: 140000
+  sell: 120000
+
+priority_fees:
+  enable_dynamic: true
+  enable_fixed: false
+  fixed_amount: 0
+  extra_percentage: 0.0
+  hard_cap: 5000000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 8
+  max_buy_age: 12
+  min_buy_age: 1
+  allow_mayhem: true
+  require_mayhem: true
+  marry_mode: false
+  yolo_mode: true
+  paper_trade: true
+  # El backtest del proyecto identifica compradores distintos como la señal
+  # más fuerte. Exigimos la banda de mayor acierto observada (12–20).
+  min_buys: 12
+  min_titulares: 12
+  max_compras_por_cartera: 1.5
+  ultimas_tx_compra: 3
+  min_presion_ratio: 1.6
+  presion_seg: 4
+  min_ops: 12
+  # Toda pump.fun nace cerca de $2.097. Este rango evita perseguir monedas ya
+  # disparadas y limita la distancia al suelo estructural.
+  min_entry_mc: 2600
+  max_entry_mc: 3400
+  min_curve_sol: 0.5
+  min_volumen_sol: 0
+  max_volumen_sol: 0
+  no_repeat_name_min: 5
+  max_first_block_pct: 0.55
+  max_holder_pct: 0.05
+  max_dev_hold_pct: 0
+  min_holders: 0
+  holder_bypass_ratio: 0
+  ignorar_listas_de_devs: false
+  # Los datos mostraron que los creadores repetidores rindieron peor.
+  pumpfun_dev:
+    enabled: false
+  dexscreener:
+    enabled: false
+    enforce: false
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 12
