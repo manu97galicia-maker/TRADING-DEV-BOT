@@ -13,7 +13,8 @@ it only reads the channels/groups your account is already in.
 from __future__ import annotations
 
 import re
-from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 import base58
 
@@ -21,23 +22,30 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
 DEFAULT_SUFFIXES = ("pump", "bonk", "moon", "bags")
 
 # Base58 alphabet (no 0, O, I, l). Solana addresses are ~32-44 chars.
 _BASE58 = r"[1-9A-HJ-NP-Za-km-z]{32,44}"
 _CA_RE = re.compile(_BASE58)
+_SOLANA_PUBLIC_KEY_BYTES = 32
 
 
 def is_solana_address(token: str) -> bool:
     """True if ``token`` decodes to a 32-byte Solana public key (Solana-only)."""
     try:
-        return len(base58.b58decode(token)) == 32
+        return len(base58.b58decode(token)) == _SOLANA_PUBLIC_KEY_BYTES
     except Exception:  # noqa: BLE001 -- any decode failure -> not a Solana pubkey
         return False
 
 
 def extract_contract_addresses(
-    text: str, suffixes: tuple[str, ...] = DEFAULT_SUFFIXES
+    text: str,
+    suffixes: tuple[str, ...] = DEFAULT_SUFFIXES,
+    *,
+    accept_all_solana: bool = False,
 ) -> list[str]:
     """Return unique base58 addresses in ``text`` ending in any suffix.
 
@@ -57,8 +65,8 @@ def extract_contract_addresses(
     for token in _CA_RE.findall(text):
         if token in seen:
             continue
-        # Must end in a launchpad suffix AND be a valid 32-byte Solana pubkey.
-        if any(token.endswith(sfx) for sfx in suffixes) and is_solana_address(token):
+        has_known_suffix = any(token.endswith(sfx) for sfx in suffixes)
+        if (accept_all_solana or has_known_suffix) and is_solana_address(token):
             seen.append(token)
     return seen
 
@@ -87,42 +95,47 @@ class TelegramWatcher:
             to; None = every chat your account receives.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 -- explicit connection/filter options
         self,
         api_id: int,
         api_hash: str,
+        *,
         session_name: str = "tg_watcher",
         suffixes: tuple[str, ...] = DEFAULT_SUFFIXES,
         channels: list[str | int] | None = None,
+        accept_all_solana: bool = False,
     ) -> None:
         self.api_id = api_id
         self.api_hash = api_hash
         self.session_name = session_name
         self.suffixes = tuple(suffixes)
         self.channels = channels
+        self.accept_all_solana = accept_all_solana
         self._seen: set[str] = set()
 
-    async def run(
-        self, on_call: Callable[[dict], Awaitable[None]]
-    ) -> None:
+    async def run(self, on_call: Callable[[dict], Awaitable[None]]) -> None:
         """Connect and stream token calls to ``on_call``.
 
         ``on_call`` receives ``{address, platform, chat, text}`` per new,
         not-yet-seen contract address.
         """
         try:
-            from telethon import TelegramClient, events
+            from telethon import TelegramClient, events  # noqa: PLC0415
         except ImportError as exc:  # pragma: no cover - optional dep
-            raise RuntimeError(
+            raise RuntimeError(  # noqa: TRY003
                 "Telethon not installed. Add 'telethon' and run `uv sync`."
             ) from exc
 
         client = TelegramClient(self.session_name, self.api_id, self.api_hash)
 
         @client.on(events.NewMessage(chats=self.channels))
-        async def _handler(event: object) -> None:  # noqa: ANN001
+        async def _handler(event: object) -> None:
             text = getattr(event, "raw_text", "") or ""
-            for address in extract_contract_addresses(text, self.suffixes):
+            for address in extract_contract_addresses(
+                text,
+                self.suffixes,
+                accept_all_solana=self.accept_all_solana,
+            ):
                 if address in self._seen:
                     continue
                 self._seen.add(address)
@@ -134,13 +147,17 @@ class TelegramWatcher:
                         "platform": platform_for_suffix(address),
                         "chat": chat,
                         "text": text[:280],
+                        "message_date": (
+                            getattr(event, "date", None) or datetime.now(UTC)
+                        ).isoformat(),
                     }
                 )
 
         logger.info(
-            "Telegram watcher connecting (suffixes=%s, channels=%s)",
+            "Telegram watcher connecting (suffixes=%s, channels=%s, all_solana=%s)",
             self.suffixes,
             self.channels or "all",
+            self.accept_all_solana,
         )
         await client.start()
         await client.run_until_disconnected()

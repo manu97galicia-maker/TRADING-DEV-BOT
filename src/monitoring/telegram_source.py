@@ -15,9 +15,10 @@ tiny buy_amount.
 from __future__ import annotations
 
 import json
-from collections.abc import Awaitable, Callable
-from datetime import datetime
+import os
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from interfaces.core import Platform, TokenInfo
 from monitoring.telegram_watcher import TelegramWatcher
@@ -26,10 +27,13 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
 CALLS_LOG = Path("trades") / "telegram_calls.log"
 
 
-def _log_call(call: dict, bought: bool) -> None:
+def _log_call(call: dict, *, bought: bool) -> None:
     """Append a detected call to the dashboard-readable log."""
     try:
         CALLS_LOG.parent.mkdir(exist_ok=True)
@@ -62,12 +66,8 @@ class TelegramSource:
         self._client = client
         self._platform = platform
 
-    async def run(
-        self, token_callback: Callable[[TokenInfo], Awaitable[None]]
-    ) -> None:
+    async def run(self, token_callback: Callable[[TokenInfo], Awaitable[None]]) -> None:
         """Connect to Telegram and route calls to alerts + buys."""
-        import os
-
         # Prefer config, fall back to environment (.env). Env is the safer
         # place for these credentials.
         api_id = self._config.get("api_id") or os.getenv("TELEGRAM_API_ID")
@@ -78,18 +78,45 @@ class TelegramSource:
             )
             return
 
-        suffixes = tuple(self._config.get("suffixes") or ("pump", "bonk", "moon", "bags"))
+        suffixes = tuple(
+            self._config.get("suffixes") or ("pump", "bonk", "moon", "bags")
+        )
         watcher = TelegramWatcher(
             api_id=int(api_id),
             api_hash=str(api_hash),
             session_name=self._config.get("session_name", "tg_watcher"),
             suffixes=suffixes,
             channels=self._config.get("channels"),
+            accept_all_solana=bool(self._config.get("accept_all_solana", False)),
         )
 
         async def on_call(call: dict) -> None:
-            # Only buy calls that match THIS bot's platform; others alert only.
-            buyable = call.get("platform") == self._platform.value
+            max_age = float(self._config.get("max_message_age_seconds") or 0)
+            if max_age > 0:
+                try:
+                    posted = datetime.fromisoformat(call["message_date"])
+                    if posted.tzinfo is None:
+                        posted = posted.replace(tzinfo=UTC)
+                    age = (datetime.now(UTC) - posted).total_seconds()
+                except (KeyError, TypeError, ValueError):
+                    logger.warning(
+                        "Telegram call without a valid message date; skipping"
+                    )
+                    _log_call(call, bought=False)
+                    return
+                if age < 0 or age > max_age:
+                    logger.info(
+                        "Telegram call skipped: message age %.3fs outside 0..%.3fs",
+                        age,
+                        max_age,
+                    )
+                    _log_call(call, bought=False)
+                    return
+
+            # A vanity suffix is only a hint. For suffix-less addresses, the
+            # Pump.fun curve lookup below is the authoritative origin check.
+            platform_hint = call.get("platform")
+            buyable = platform_hint in (None, self._platform.value)
             token_info = None
             if buyable and self._platform == Platform.PUMP_FUN:
                 token_info = await build_pumpfun_token_info(

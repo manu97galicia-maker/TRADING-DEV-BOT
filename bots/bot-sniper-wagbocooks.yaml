@@ -1,0 +1,71 @@
+name: "WAGBOCOOKS - Telegram instantáneo"
+env_file: ".env"
+avisos_telegram: ["compra"]
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+# Se despliega apagada. Activarla exige validar primero la sesión de Telethon
+# y una compra/venta mínima controlada.
+enabled: false
+separate_process: true
+platform: "pump_fun"
+
+trade:
+  buy_amount: 0.10
+  buy_slippage: 0.30
+  sell_slippage: 0.35
+  exit_strategy: "tp_sl"
+  take_profit_percentage: 0.35
+  take_profit_sell_percentage: 0.50
+  tp2_gain: 0.70
+  tp2_sell: 0.25
+  tp3_gain: 1.20
+  tp3_sell: 0.25
+  stop_loss_percentage: 0.25
+  vender_todo_en_stop: true
+  max_hold_time: 5400
+  price_check_interval: 1
+  min_reserve_sol: 0.05
+  max_perdidas_seguidas: 3
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  # Con 140K CU, 2M microlamports/CU son 0,00028 SOL de prioridad.
+  # Se mantiene por debajo de unos $0,03 con SOL cerca de $100.
+  fixed_amount: 2_000_000
+  extra_percentage: 0.0
+  hard_cap: 2_000_000
+
+retries:
+  max_attempts: 1
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 30
+  max_buy_age: 5
+  paper_trade: true
+  allow_mayhem: false
+  min_curve_sol: 0
+  telegram_calls:
+    enabled: true
+    channels: ["Wagbocooks"]
+    suffixes: ["pump"]
+    accept_all_solana: true
+    max_message_age_seconds: 5
+    session_name: "tg_wagbocooks"
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 8
+
+compute_units:
+  buy: 140000
+  sell: 120000
