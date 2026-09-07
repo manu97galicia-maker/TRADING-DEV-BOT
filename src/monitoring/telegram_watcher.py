@@ -13,7 +13,7 @@ it only reads the channels/groups your account is already in.
 from __future__ import annotations
 
 import re
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 import base58
@@ -148,7 +148,7 @@ class TelegramWatcher:
                         "chat": chat,
                         "text": text[:280],
                         "message_date": (
-                            getattr(event, "date", None) or datetime.now(UTC)
+                            getattr(event, "date", None) or datetime.now(timezone.utc)  # noqa: UP017 -- Python 3.10
                         ).isoformat(),
                     }
                 )

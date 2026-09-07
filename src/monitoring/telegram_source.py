@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -96,8 +96,12 @@ class TelegramSource:
                 try:
                     posted = datetime.fromisoformat(call["message_date"])
                     if posted.tzinfo is None:
-                        posted = posted.replace(tzinfo=UTC)
-                    age = (datetime.now(UTC) - posted).total_seconds()
+                        posted = posted.replace(
+                            tzinfo=timezone.utc  # noqa: UP017 -- Python 3.10
+                        )
+                    age = (
+                        datetime.now(timezone.utc) - posted  # noqa: UP017 -- Python 3.10
+                    ).total_seconds()
                 except (KeyError, TypeError, ValueError):
                     logger.warning(
                         "Telegram call without a valid message date; skipping"
