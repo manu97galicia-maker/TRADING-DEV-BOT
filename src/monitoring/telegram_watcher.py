@@ -143,5 +143,16 @@ class TelegramWatcher:
             self.suffixes,
             self.channels or "all",
         )
-        await client.start()
-        await client.run_until_disconnected()
+        try:
+            await client.start()
+        except EOFError:
+            logger.warning(
+                "Telegram session is not authorized and no interactive input is "
+                "available; other acquisition sources will keep running"
+            )
+            await client.disconnect()
+            return
+        try:
+            await client.run_until_disconnected()
+        finally:
+            await client.disconnect()
