@@ -119,6 +119,13 @@ filters:
     suffixes:
       - pump
 
+  # Explicitly excluded acquisition modes. This bot only consumes the
+  # DexScreener paid/boost feed and the approved MoonTok/DEXTools channels.
+  discord_calls:
+    enabled: false
+  gmgn_signals:
+    enabled: false
+
   dexscreener:
     enabled: true
     enforce: true
