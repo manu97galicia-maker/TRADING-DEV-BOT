@@ -39,7 +39,12 @@ from trading.position import Position
 from trading.panic import panic_time
 from trading.ganancia import Ganancia
 from trading.reserva import reserva as _reserva_moneda, suelta as _suelta_moneda
-from trading.tiered_exit import build_tiers, moonbag_fraction, tiers_due
+from trading.tiered_exit import (
+    build_tiers,
+    moonbag_fraction,
+    stepped_stop_price,
+    tiers_due,
+)
 from utils.logger import get_logger
 
 # Try to use uvloop on Unix or winloop on Windows for better performance
@@ -1556,11 +1561,13 @@ class UniversalTrader:
         # pareciendo que simplemente "aun no habia terminado".
         _g1 = float(self.tp_tiers[0].gain) if self.tp_tiers else 0.5
         _g2 = float(self.tp_tiers[1].gain) if len(self.tp_tiers) > 1 else None
-        tp1 = entry_price * (1 + _g1)
-        tp2 = entry_price * (1 + _g2) if _g2 else entry_price * 999
         sl = entry_price * (1 - float(self.stop_loss_percentage or 0.3))
         peak = trough = entry_price
         hit = {"tp1": False, "tp2": False, "sl": False}
+        paper_executed = [False] * len(self.tp_tiers)
+        paper_floor = sl
+        stop_exit_return: float | None = None
+        strategy_closed = False
         first_hit = None
         start = time.time()
         try:
@@ -1577,15 +1584,39 @@ class UniversalTrader:
                     if p <= 0:
                         continue
                     peak, trough = max(peak, p), min(trough, p)
-                    if p >= tp2 and not hit["tp2"]:
-                        hit["tp2"] = True
-                        first_hit = first_hit or "tp2"
-                    if p >= tp1 and not hit["tp1"]:
-                        hit["tp1"] = True
-                        first_hit = first_hit or "tp1"
-                    if p <= sl and not hit["sl"]:
+                    if strategy_closed:
+                        continue
+                    if p <= paper_floor:
                         hit["sl"] = True
+                        stop_exit_return = paper_floor / entry_price - 1
                         first_hit = first_hit or "sl"
+                        strategy_closed = True
+                        continue
+                    for i in tiers_due(
+                        entry_price, p, self.tp_tiers, paper_executed
+                    ):
+                        paper_executed[i] = True
+                        first_hit = first_hit or f"tp{i + 1}"
+                        if i == 0:
+                            hit["tp1"] = True
+                        elif i == 1:
+                            hit["tp2"] = True
+                        if self.stop_a_entrada_tras_tp or self.stop_al_tp_tras_tp:
+                            if i == 0 and self.stop_al_tp_tras_tp:
+                                new_floor = entry_price * (1 + self.tp_tiers[0].gain)
+                            else:
+                                new_floor = stepped_stop_price(
+                                    entry_price, self.tp_tiers, i
+                                )
+                            if new_floor is not None:
+                                paper_floor = max(paper_floor, new_floor)
+                    sold_fraction = sum(
+                        tier.sell
+                        for i, tier in enumerate(self.tp_tiers)
+                        if paper_executed[i]
+                    )
+                    if sold_fraction >= 1.0:
+                        strategy_closed = True
                     # NOTE: deliberately do NOT stop early. We must observe the
                     # full path to learn the real peak distribution (fat tail);
                     # stopping at +140% would hide the 10x/100x runners and make
@@ -1616,6 +1647,11 @@ class UniversalTrader:
                 "tp1": hit["tp1"],
                 "tp2": hit["tp2"],
                 "sl": hit["sl"],
+                "stop_exit_pct": (
+                    round(stop_exit_return * 100, 1)
+                    if stop_exit_return is not None
+                    else None
+                ),
                 "tp1_gain": round(_g1, 2),
                 "tp2_gain": round(_g2 or 0.0, 2),
                 "sl_pct": round(float(self.stop_loss_percentage or 0), 2),
@@ -1638,18 +1674,14 @@ class UniversalTrader:
 
                 mint = rec["mint"]
                 slp = float(self.stop_loss_percentage or 0.3)
-                peak_frac = rec["peak_pct"] / 100.0
-                if first_hit == "sl":
-                    roi = -slp
-                else:
-                    roi = 0.0
-                    pos = 1.0
-                    for t in self.tp_tiers:  # vende por tramos segun el pico alcanzado
-                        if peak_frac >= t.gain and pos > 0:
-                            roi += t.sell * t.gain
-                            pos -= t.sell
-                    if hit["sl"]:  # el moonbag restante cayo al stop
-                        roi += pos * (-slp)
+                roi = 0.0
+                pos = 1.0
+                for i, t in enumerate(self.tp_tiers):
+                    if paper_executed[i] and pos > 0:
+                        roi += t.sell * t.gain
+                        pos -= t.sell
+                if stop_exit_return is not None:
+                    roi += pos * stop_exit_return
                 value = paper_amount * (1 + roi)
                 pnl = value - paper_amount
                 win = str(first_hit).startswith("tp")
@@ -1659,12 +1691,17 @@ class UniversalTrader:
                 # aviso daba un ROI sin decir de donde salia.
                 marcas = []
                 for i, t in enumerate(self.tp_tiers, 1):
-                    ok = peak_frac >= t.gain
+                    ok = paper_executed[i - 1]
                     marcas.append(
                         f"{'✅' if ok else '⬜'} TP{i} +{t.gain * 100:.0f}% "
                         f"(vende {t.sell * 100:.0f}%)"
                     )
-                marcas.append(f"{'🛑' if hit['sl'] else '⬜'} SL −{slp * 100:.0f}%")
+                if stop_exit_return is not None:
+                    marcas.append(
+                        f"🛑 Stop protegido ejecutado {stop_exit_return * 100:+.0f}%"
+                    )
+                else:
+                    marcas.append(f"⬜ SL -{slp * 100:.0f}%")
                 # La curva avisa de la liquidez: el 3-ago tres monedas con
                 # "ganancia" en pantalla resultaron invendibles tras media hora
                 # de intentos. Por debajo de ~7 SOL ese ROI puede no cobrarse.
@@ -4606,10 +4643,10 @@ class UniversalTrader:
                             if i == 0 and self.stop_al_tp_tras_tp:
                                 # SL sube al precio del propio TP1 (no a entrada)
                                 _suelo = entry_price * (1 + tiers[0].gain)
-                            elif i == 0:
-                                _suelo = entry_price
                             else:
-                                _suelo = entry_price * (1 + tiers[i - 1].gain)
+                                _suelo = stepped_stop_price(entry_price, tiers, i)
+                                if _suelo is None:
+                                    continue
                             if sl_price is None or sl_price < _suelo:
                                 sl_price = _suelo
                                 _donde = (

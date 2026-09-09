@@ -22,6 +22,23 @@ class Tier:
     sell: float  # fraction of the ORIGINAL quantity to sell
 
 
+def stepped_stop_price(
+    entry_price: float, tiers: list[Tier], completed_tier: int
+) -> float | None:
+    """Return the protected stop one rung below a completed TP.
+
+    TP1 protects the entry price, TP2 protects TP1, TP3 protects TP2, and so
+    on. ``completed_tier`` is zero-based.
+    """
+    if entry_price <= 0 or not tiers or completed_tier < 0:
+        return None
+    previous_tier = completed_tier - 1
+    if previous_tier < 0:
+        return entry_price
+    previous_tier = min(previous_tier, len(tiers) - 1)
+    return entry_price * (1 + tiers[previous_tier].gain)
+
+
 def build_tiers(pairs: list[tuple[float | None, float | None]]) -> list[Tier]:
     """Build a validated, ascending list of tiers from (gain, sell) pairs.
 
