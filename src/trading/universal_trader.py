@@ -1591,10 +1591,24 @@ class UniversalTrader:
                     # stopping at +140% would hide the 10x/100x runners and make
                     # any take-profit choice unmeasurable.
         finally:
+            signal_data = token_info.additional_data or {}
+            paper_amount = float(
+                signal_data.get("signal_buy_amount") or self.buy_amount
+            )
             rec = {
                 "src": "bundle" if self.min_curve_sol > 0 else "dexpaid",
                 "mint": str(token_info.mint),
                 "symbol": (token_info.symbol or "").strip(),
+                "acquisition_source": str(
+                    signal_data.get("acquisition_source") or "deteccion directa"
+                ),
+                "dexscreener_boosts": float(
+                    signal_data.get("dexscreener_boosts") or 0
+                ),
+                "dextools_nitro_score": float(
+                    signal_data.get("dextools_nitro_score") or 0
+                ),
+                "amount_sol": paper_amount,
                 "curve_sol": round(curve_sol, 3),
                 "entry": entry_price,
                 "peak_pct": round((peak / entry_price - 1) * 100, 1),
@@ -1620,7 +1634,7 @@ class UniversalTrader:
                 f"minimo {rec['trough_pct']:+.1f}% first={first_hit}"
             )
             try:
-                from monitoring.notifier import notify
+                from monitoring.notifier import notify, purchase_reason_label
 
                 mint = rec["mint"]
                 slp = float(self.stop_loss_percentage or 0.3)
@@ -1636,8 +1650,8 @@ class UniversalTrader:
                             pos -= t.sell
                     if hit["sl"]:  # el moonbag restante cayo al stop
                         roi += pos * (-slp)
-                value = self.buy_amount * (1 + roi)
-                pnl = value - self.buy_amount
+                value = paper_amount * (1 + roi)
+                pnl = value - paper_amount
                 win = str(first_hit).startswith("tp")
                 head = "✅ GANADOR" if win else ("🛑 STOP" if first_hit == "sl" else "⏹️ CIERRE")
                 tot = self._bump_paper_total(pnl, win)  # acumulado total simulacion
@@ -1647,7 +1661,8 @@ class UniversalTrader:
                 for i, t in enumerate(self.tp_tiers, 1):
                     ok = peak_frac >= t.gain
                     marcas.append(
-                        f"{'✅' if ok else '⬜'} TP{i} +{t.gain * 100:.0f}%"
+                        f"{'✅' if ok else '⬜'} TP{i} +{t.gain * 100:.0f}% "
+                        f"(vende {t.sell * 100:.0f}%)"
                     )
                 marcas.append(f"{'🛑' if hit['sl'] else '⬜'} SL −{slp * 100:.0f}%")
                 # La curva avisa de la liquidez: el 3-ago tres monedas con
@@ -1655,16 +1670,20 @@ class UniversalTrader:
                 # de intentos. Por debajo de ~7 SOL ese ROI puede no cobrarse.
                 liq = float(rec.get("curve_sol") or 0.0)
                 aviso_liq = "" if liq >= 7 else "  ⚠️ puede no ser vendible"
+                reason = purchase_reason_label(signal_data)
                 notify(
                     f"{head} · <b>{rec['symbol']}</b> (paper)\n"
+                    f"🔎 Motivo de entrada: <b>{reason}</b>\n"
+                    f"🏷️ Precio entrada: <code>{entry_price:.12f} SOL/token</code>\n"
                     f"{' · '.join(marcas)}\n"
                     f"📊 ROI <b>{roi * 100:+.0f}%</b> · pico {rec['peak_pct']:+.0f}% · mín {rec['trough_pct']:+.0f}%\n"
                     f"💧 curva {liq:.1f} SOL{aviso_liq}\n"
-                    f"💰 {self.buy_amount} SOL → <b>{value:.4f} SOL</b> ({pnl:+.4f})\n"
+                    f"💰 {paper_amount:.3f} SOL → <b>{value:.4f} SOL</b> ({pnl:+.4f})\n"
                     f"━━━━━━━━━━━━\n"
                     f"📈 <b>TOTAL: {tot['pnl']:+.4f} SOL</b> · {tot['n']} trades · "
                     f"{tot['wins']}✅/{tot['losses']}❌ ({tot['winrate']:.0f}% acierto)\n"
-                    f'📊 <a href="https://gmgn.ai/sol/token/{mint}">GMGN</a> · '
+                    f'📊 <a href="https://dexscreener.com/solana/{mint}">DexScreener</a> · '
+                    f'<a href="https://gmgn.ai/sol/token/{mint}">GMGN</a> · '
                     f'🤖 <a href="https://t.me/MaestroSniperBot?start={mint}">Maestro</a>'
                 )
             except Exception:  # noqa: BLE001 - notificar nunca rompe el trading
@@ -1700,10 +1719,22 @@ class UniversalTrader:
         import time
         from pathlib import Path
 
+        signal_data = token_info.additional_data or {}
+        paper_amount = float(signal_data.get("signal_buy_amount") or self.buy_amount)
         rec = {
             "t": time.time(),
             "mint": str(token_info.mint),
             "symbol": (token_info.symbol or "").strip(),
+            "acquisition_source": str(
+                signal_data.get("acquisition_source") or "deteccion directa"
+            ),
+            "dexscreener_boosts": float(
+                signal_data.get("dexscreener_boosts") or 0
+            ),
+            "dextools_nitro_score": float(
+                signal_data.get("dextools_nitro_score") or 0
+            ),
+            "amount_sol": paper_amount,
             "curve_sol": round(curve_sol, 3),
             "entry": entry,
         }
@@ -1716,19 +1747,26 @@ class UniversalTrader:
             logger.exception("paper record failed")
         logger.info(f"PAPER PASS registrado: {rec['symbol']} ({rec['mint']})")
         try:
-            from monitoring.notifier import notify
+            from monitoring.notifier import build_paper_entry_notification, notify
 
             mint = rec["mint"]
-            mc_sol = (rec.get("entry") or 0) * 1e9  # MC aprox en SOL
+            market_cap_usd = entry * _PUMP_TOTAL_SUPPLY * _SOL_USD
+            strategy = " · ".join(
+                f"+{tier.gain * 100:.0f}%/{tier.sell * 100:.0f}%"
+                for tier in self.tp_tiers
+            )
             notify(
-                f"🎯 <b>SNIPE</b> · <b>{rec['symbol']}</b> (paper)\n"
-                f"💰 Compra: {self.buy_amount} SOL\n"
-                f"📈 MC entrada: ~{mc_sol:.0f} SOL (~${mc_sol * 75:,.0f})\n"
-                f"💧 Curva: {rec['curve_sol']} SOL\n"
-                f'📊 <a href="https://gmgn.ai/sol/token/{mint}">GMGN</a> · '
-                f'🤖 <a href="https://t.me/MaestroSniperBot?start={mint}">Maestro</a> · '
-                f'🚀 <a href="https://pump.fun/{mint}">pump.fun</a>\n'
-                f"<code>{mint}</code>"
+                build_paper_entry_notification(
+                    symbol=rec["symbol"],
+                    mint=mint,
+                    amount_sol=paper_amount,
+                    source_data=signal_data,
+                    entry_price_sol=entry,
+                    market_cap_usd=market_cap_usd,
+                    curve_sol=rec["curve_sol"],
+                    strategy=strategy,
+                    stop_loss_pct=self.stop_loss_percentage * 100,
+                )
             )
         except Exception:  # noqa: BLE001 - notificar nunca rompe el trading
             pass
@@ -3706,6 +3744,7 @@ class UniversalTrader:
                     strategy=_tr,
                     stop_loss_pct=self.stop_loss_percentage * 100,
                     extra_lines=_lineas,
+                    entry_price_sol=buy_result.price or 0.0,
                 ),
                 tipo="compra",
             )

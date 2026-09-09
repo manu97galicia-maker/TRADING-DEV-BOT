@@ -30,7 +30,7 @@ _TIPOS_PERMITIDOS: set[str] = set()
 _EXPENSIVE_PROMOTION_THRESHOLD = 500
 
 
-def _purchase_reason(source_data: dict | None) -> str:
+def purchase_reason_label(source_data: dict | None) -> str:
     """Return a readable acquisition reason from signal metadata."""
     data = source_data or {}
     source = str(data.get("acquisition_source") or "deteccion directa")
@@ -45,14 +45,14 @@ def _purchase_reason(source_data: dict | None) -> str:
     elif source_key == "dextnewpairsbot":
         reason = "DEXTools nuevo listing"
     elif source_key == "dextools_nitro":
-        level = f" ({nitro:g})" if nitro else ""
-        expensive = " caro" if nitro >= _EXPENSIVE_PROMOTION_THRESHOLD else ""
-        reason = f"DEXTools NITRO{expensive}{level}"
+        level = f" {nitro:g}" if nitro else ""
+        expensive = " (caro)" if nitro >= _EXPENSIVE_PROMOTION_THRESHOLD else ""
+        reason = f"DEXTools NITRO{level}{expensive}"
     elif source_key == "dexscreener":
         if boosts >= _EXPENSIVE_PROMOTION_THRESHOLD:
-            reason = f"DexScreener boost caro ({boosts:g})"
+            reason = f"DexScreener boost {boosts:g} (caro)"
         elif boosts > 0:
-            reason = f"DexScreener boost ({boosts:g})"
+            reason = f"DexScreener boost {boosts:g}"
         else:
             reason = "DexScreener listing/paid"
     return reason
@@ -67,24 +67,68 @@ def build_purchase_notification(  # noqa: PLR0913, PLR0917
     strategy: str,
     stop_loss_pct: float,
     extra_lines: list[str] | None = None,
+    *,
+    entry_price_sol: float = 0.0,
 ) -> str:
     """Build the Telegram message sent after a confirmed purchase."""
     safe_symbol = escape(symbol or "SIN SIMBOLO")
     safe_mint = escape(mint)
     lines = [
         f"🟢 <b>COMPRA CONFIRMADA</b> · {safe_symbol}",
-        f"🔎 Motivo: <b>{_purchase_reason(source_data)}</b>",
+        f"🔎 Motivo: <b>{purchase_reason_label(source_data)}</b>",
     ]
     lines.extend(extra_lines or [])
     entry = f"💵 Compra: <b>{amount_sol:.3f} SOL</b>"
     if market_cap_usd > 0:
         entry += f" · MC entrada ~${market_cap_usd:,.0f}"
+    price_line = []
+    if entry_price_sol > 0:
+        price_line.append(
+            f"🏷️ Precio entrada: <code>{entry_price_sol:.12f} SOL/token</code>"
+        )
     lines.extend(
         [
             entry,
+            *price_line,
             f"🎯 {strategy} · SL -{stop_loss_pct:.0f}%",
             f'<a href="https://dexscreener.com/solana/{safe_mint}">DexScreener</a> · '
             f'<a href="https://gmgn.ai/sol/token/{safe_mint}">GMGN</a>',
+            f"CA: <code>{safe_mint}</code>",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def build_paper_entry_notification(  # noqa: PLR0913, PLR0917
+    symbol: str,
+    mint: str,
+    amount_sol: float,
+    source_data: dict | None,
+    entry_price_sol: float,
+    market_cap_usd: float,
+    curve_sol: float,
+    strategy: str,
+    stop_loss_pct: float,
+) -> str:
+    """Build a paper-entry alert without implying that real funds were spent."""
+    safe_symbol = escape(symbol or "SIN SIMBOLO")
+    safe_mint = escape(mint)
+    lines = [
+        f"🧪 <b>ENTRADA PAPER</b> · {safe_symbol}",
+        f"🔎 Motivo: <b>{purchase_reason_label(source_data)}</b>",
+        f"💵 Simulación: <b>{amount_sol:.3f} SOL</b>",
+    ]
+    if entry_price_sol > 0:
+        lines.append(f"🏷️ Precio entrada: <code>{entry_price_sol:.12f} SOL/token</code>")
+    if market_cap_usd > 0:
+        lines.append(f"📈 MC entrada: ~${market_cap_usd:,.0f}")
+    lines.extend(
+        [
+            f"💧 Curva: {curve_sol:.1f} SOL",
+            f"🎯 {strategy} · SL -{stop_loss_pct:.0f}%",
+            f'<a href="https://dexscreener.com/solana/{safe_mint}">DexScreener</a> · '
+            f'<a href="https://gmgn.ai/sol/token/{safe_mint}">GMGN</a> · '
+            f'<a href="https://pump.fun/{safe_mint}">pump.fun</a>',
             f"CA: <code>{safe_mint}</code>",
         ]
     )
