@@ -21,9 +21,7 @@ class PaperTradingTests(unittest.TestCase):
 
     def test_capital_defaults_match_requested_simulation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            engine = PaperTradingEngine(
-                {"database": str(Path(directory) / "paper.db")}
-            )
+            engine = PaperTradingEngine({"database": str(Path(directory) / "paper.db")})
             self.assertEqual(engine.starting_capital, 2.0)
             self.assertEqual(engine.trade_size, 0.25)
 
@@ -36,6 +34,7 @@ class PaperTradingTests(unittest.TestCase):
                 }
             )
             with patch("paper_trading.engine.notify") as mocked_notify:
+
                 async def exercise() -> None:
                     engine.start()
                     self.assertIsNotNone(engine._report_task)
@@ -136,6 +135,48 @@ class PaperTradingTests(unittest.TestCase):
             for value in (0.2, -0.5, 0.1)
         ]
         self.assertAlmostEqual(summarize(rows)["max_drawdown"], 0.5)
+
+    def test_result_message_includes_prices_winrate_and_gmgn(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            engine = PaperTradingEngine({"database": str(Path(directory) / "paper.db")})
+            candidate = Candidate(100, "ResultMint", "RESULT", "dev", 3_000)
+            row = {
+                "mint": candidate.mint,
+                "signal_ts": candidate.signal_ts,
+                "symbol": candidate.symbol,
+                "dev": candidate.dev,
+                "entry_mc": candidate.market_cap,
+                "dev_mean_mc": 13_000,
+                "dev_launches": 5,
+                "best_peak_mc": 20_000,
+                "best_symbol": "BEST",
+                "features": {},
+            }
+            result = {
+                "checkpoints": {"60": 0.25},
+                "mfe": 0.3,
+                "mae": -0.05,
+                "strategies": {
+                    "primary": {
+                        "tp": 0.25,
+                        "sl": 0.15,
+                        "exit": "tp",
+                        "return": 0.25,
+                        "time": 60,
+                    }
+                },
+                "pnl_sol": 0.0625,
+                "capital_sol": 2.0625,
+            }
+            self.assertTrue(engine.store.create(row))
+            engine.store.close(candidate.mint, 160, result)
+
+            message = engine._result_message(candidate, result)
+
+            self.assertIn("compra $3,000", message)
+            self.assertIn("venta $3,750", message)
+            self.assertIn("Win rate acumulado 100.0%", message)
+            self.assertIn("https://gmgn.ai/sol/token/ResultMint", message)
 
 
 if __name__ == "__main__":

@@ -58,7 +58,10 @@ class PaperTradingEngine:
         self._report_task: asyncio.Task | None = None
         self.starting_capital = float(cfg.get("starting_capital_sol", 2.0))
         self.trade_size = float(cfg.get("trade_size_sol", 0.25))
-        if self.starting_capital <= 0 or not 0 < self.trade_size <= self.starting_capital:
+        if (
+            self.starting_capital <= 0
+            or not 0 < self.trade_size <= self.starting_capital
+        ):
             message = "paper capital and trade size must be positive and coherent"
             raise ValueError(message)
         self._capital_lock = asyncio.Lock()
@@ -195,13 +198,16 @@ class PaperTradingEngine:
             f"${dev.mean_peak_mc:,.0f} · {dev.launches} lanzamientos\n"
             f"Mejor: {html.escape(dev.best_symbol) or '—'} ${dev.best_peak_mc:,.0f}\n"
             f"Entrada: {self.trade_size:.2f} SOL · banca inicial {self.starting_capital:.2f} SOL\n"
+            f'<a href="https://dexscreener.com/solana/{mint}">DexScreener</a> · '
             f'<a href="https://gmgn.ai/sol/token/{mint}">GMGN</a> · '
             f'<a href="https://pump.fun/{mint}">Pump.fun</a>\nCA: <code>{mint}</code>'
         )
 
-    @staticmethod
-    def _result_message(candidate: Candidate, result: dict[str, Any]) -> str:
+    def _result_message(self, candidate: Candidate, result: dict[str, Any]) -> str:
         primary = result["strategies"]["primary"]
+        stats = summarize(self.store.rows())
+        exit_market_cap = candidate.market_cap * (1 + primary["return"])
+        mint = html.escape(candidate.mint)
         points = " · ".join(
             f"{int(seconds) // 60}m {value:+.1%}"
             if value is not None
@@ -213,7 +219,13 @@ class PaperTradingEngine:
             f"{points}\nMFE {result['mfe']:+.1%} · MAE {result['mae']:+.1%}\n"
             f"TP {primary['tp']:.0%}/SL {primary['sl']:.0%}: "
             f"{primary['exit']} {primary['return']:+.1%} en {primary['time']:.0f}s\n"
-            f"PnL {result['pnl_sol']:+.4f} SOL · banca {result['capital_sol']:.4f} SOL"
+            f"Precio/MC compra ${candidate.market_cap:,.0f} → "
+            f"venta ${exit_market_cap:,.0f}\n"
+            f"PnL {result['pnl_sol']:+.4f} SOL · banca {result['capital_sol']:.4f} SOL\n"
+            f"Win rate acumulado {stats['win_rate']:.1%} · {stats['closed']} cierres\n"
+            f'<a href="https://dexscreener.com/solana/{mint}">DexScreener</a> · '
+            f'<a href="https://gmgn.ai/sol/token/{mint}">GMGN</a> · '
+            f'<a href="https://pump.fun/{mint}">Pump.fun</a>\nCA: <code>{mint}</code>'
         )
 
     def _summary_message(self, label: str, rows: list[dict[str, Any]]) -> str:

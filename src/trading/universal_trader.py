@@ -1543,8 +1543,8 @@ class UniversalTrader:
     ) -> None:
         """Follow a detected bundle's price to see what the ladder would have done.
 
-        Records max gain / max drawdown and whether TP1 (+50%), TP2 (+140%) or
-        the -17% stop would have triggered. Pure observation: never trades.
+        Records max gain, max drawdown, each simulated sale price, the effective
+        exit price and the configured stop ratchet. Pure observation: never trades.
         """
         import json
         import time
@@ -1565,10 +1565,12 @@ class UniversalTrader:
         peak = trough = entry_price
         hit = {"tp1": False, "tp2": False, "sl": False}
         paper_executed = [False] * len(self.tp_tiers)
+        tier_sale_prices: list[float | None] = [None] * len(self.tp_tiers)
         paper_floor = sl
         stop_exit_return: float | None = None
         strategy_closed = False
         first_hit = None
+        last_price = entry_price
         start = time.time()
         try:
             async with self._watch_semaphore:
@@ -1583,6 +1585,7 @@ class UniversalTrader:
                         continue
                     if p <= 0:
                         continue
+                    last_price = p
                     peak, trough = max(peak, p), min(trough, p)
                     if strategy_closed:
                         continue
@@ -1596,6 +1599,9 @@ class UniversalTrader:
                         entry_price, p, self.tp_tiers, paper_executed
                     ):
                         paper_executed[i] = True
+                        tier_sale_prices[i] = entry_price * (
+                            1 + self.tp_tiers[i].gain
+                        )
                         first_hit = first_hit or f"tp{i + 1}"
                         if i == 0:
                             hit["tp1"] = True
@@ -1626,6 +1632,58 @@ class UniversalTrader:
             paper_amount = float(
                 signal_data.get("signal_buy_amount") or self.buy_amount
             )
+            roi = 0.0
+            remaining = 1.0
+            sales: list[dict[str, float | str]] = []
+            for i, tier in enumerate(self.tp_tiers):
+                if not paper_executed[i] or remaining <= 0:
+                    continue
+                sold = min(float(tier.sell), remaining)
+                sale_price = float(
+                    tier_sale_prices[i] or entry_price * (1 + tier.gain)
+                )
+                roi += sold * (sale_price / entry_price - 1)
+                remaining -= sold
+                sales.append(
+                    {
+                        "reason": f"TP{i + 1}",
+                        "position_pct": round(sold * 100, 4),
+                        "price_sol": sale_price,
+                    }
+                )
+            if stop_exit_return is not None and remaining > 0:
+                stop_price = entry_price * (1 + stop_exit_return)
+                roi += remaining * stop_exit_return
+                sales.append(
+                    {
+                        "reason": "STOP",
+                        "position_pct": round(remaining * 100, 4),
+                        "price_sol": stop_price,
+                    }
+                )
+                remaining = 0.0
+            sold_fraction = max(0.0, 1.0 - remaining)
+            average_sale_price = (
+                sum(
+                    float(sale["price_sol"])
+                    * (float(sale["position_pct"]) / 100)
+                    for sale in sales
+                )
+                / sold_fraction
+                if sold_fraction > 0
+                else None
+            )
+            value = paper_amount * (1 + roi)
+            pnl = value - paper_amount
+            win = pnl > 0
+            if stop_exit_return is not None:
+                exit_reason = "stop"
+            elif remaining <= 1e-9:
+                exit_reason = "take_profit"
+            elif sales:
+                exit_reason = "partial_take_profit"
+            else:
+                exit_reason = "open"
             rec = {
                 "src": "bundle" if self.min_curve_sol > 0 else "dexpaid",
                 "mint": str(token_info.mint),
@@ -1642,6 +1700,8 @@ class UniversalTrader:
                 "amount_sol": paper_amount,
                 "curve_sol": round(curve_sol, 3),
                 "entry": entry_price,
+                "entry_price_sol": entry_price,
+                "last_price_sol": last_price,
                 "peak_pct": round((peak / entry_price - 1) * 100, 1),
                 "trough_pct": round((trough / entry_price - 1) * 100, 1),
                 "tp1": hit["tp1"],
@@ -1655,6 +1715,32 @@ class UniversalTrader:
                 "tp1_gain": round(_g1, 2),
                 "tp2_gain": round(_g2 or 0.0, 2),
                 "sl_pct": round(float(self.stop_loss_percentage or 0), 2),
+                "initial_stop_price_sol": sl,
+                "final_stop_price_sol": paper_floor,
+                "take_profit_tiers": [
+                    {
+                        "reason": f"TP{i + 1}",
+                        "gain_pct": round(tier.gain * 100, 4),
+                        "sell_pct": round(tier.sell * 100, 4),
+                        "price_sol": entry_price * (1 + tier.gain),
+                        "hit": paper_executed[i],
+                    }
+                    for i, tier in enumerate(self.tp_tiers)
+                ],
+                "sales": sales,
+                "average_sale_price_sol": average_sale_price,
+                "exit_price_sol": (
+                    average_sale_price if remaining <= 1e-9 else None
+                ),
+                "exit_reason": exit_reason,
+                "strategy_closed": remaining <= 1e-9,
+                "position_sold_pct": round(sold_fraction * 100, 4),
+                "position_remaining_pct": round(remaining * 100, 4),
+                "tp_hits": sum(paper_executed),
+                "roi_pct": round(roi * 100, 4),
+                "value_sol": value,
+                "pnl_sol": pnl,
+                "win": win,
                 "first": first_hit,
                 "secs": round(time.time() - start),
             }
@@ -1670,59 +1756,13 @@ class UniversalTrader:
                 f"minimo {rec['trough_pct']:+.1f}% first={first_hit}"
             )
             try:
-                from monitoring.notifier import notify, purchase_reason_label
-
-                mint = rec["mint"]
-                slp = float(self.stop_loss_percentage or 0.3)
-                roi = 0.0
-                pos = 1.0
-                for i, t in enumerate(self.tp_tiers):
-                    if paper_executed[i] and pos > 0:
-                        roi += t.sell * t.gain
-                        pos -= t.sell
-                if stop_exit_return is not None:
-                    roi += pos * stop_exit_return
-                value = paper_amount * (1 + roi)
-                pnl = value - paper_amount
-                win = str(first_hit).startswith("tp")
-                head = "✅ GANADOR" if win else ("🛑 STOP" if first_hit == "sl" else "⏹️ CIERRE")
-                tot = self._bump_paper_total(pnl, win)  # acumulado total simulacion
-                # Escalera EXPLICITA: que objetivo salto y cual no. Antes el
-                # aviso daba un ROI sin decir de donde salia.
-                marcas = []
-                for i, t in enumerate(self.tp_tiers, 1):
-                    ok = paper_executed[i - 1]
-                    marcas.append(
-                        f"{'✅' if ok else '⬜'} TP{i} +{t.gain * 100:.0f}% "
-                        f"(vende {t.sell * 100:.0f}%)"
-                    )
-                if stop_exit_return is not None:
-                    marcas.append(
-                        f"🛑 Stop protegido ejecutado {stop_exit_return * 100:+.0f}%"
-                    )
-                else:
-                    marcas.append(f"⬜ SL -{slp * 100:.0f}%")
-                # La curva avisa de la liquidez: el 3-ago tres monedas con
-                # "ganancia" en pantalla resultaron invendibles tras media hora
-                # de intentos. Por debajo de ~7 SOL ese ROI puede no cobrarse.
-                liq = float(rec.get("curve_sol") or 0.0)
-                aviso_liq = "" if liq >= 7 else "  ⚠️ puede no ser vendible"
-                reason = purchase_reason_label(signal_data)
-                notify(
-                    f"{head} · <b>{rec['symbol']}</b> (paper)\n"
-                    f"🔎 Motivo de entrada: <b>{reason}</b>\n"
-                    f"🏷️ Precio entrada: <code>{entry_price:.12f} SOL/token</code>\n"
-                    f"{' · '.join(marcas)}\n"
-                    f"📊 ROI <b>{roi * 100:+.0f}%</b> · pico {rec['peak_pct']:+.0f}% · mín {rec['trough_pct']:+.0f}%\n"
-                    f"💧 curva {liq:.1f} SOL{aviso_liq}\n"
-                    f"💰 {paper_amount:.3f} SOL → <b>{value:.4f} SOL</b> ({pnl:+.4f})\n"
-                    f"━━━━━━━━━━━━\n"
-                    f"📈 <b>TOTAL: {tot['pnl']:+.4f} SOL</b> · {tot['n']} trades · "
-                    f"{tot['wins']}✅/{tot['losses']}❌ ({tot['winrate']:.0f}% acierto)\n"
-                    f'📊 <a href="https://dexscreener.com/solana/{mint}">DexScreener</a> · '
-                    f'<a href="https://gmgn.ai/sol/token/{mint}">GMGN</a> · '
-                    f'🤖 <a href="https://t.me/MaestroSniperBot?start={mint}">Maestro</a>'
+                from monitoring.notifier import (
+                    build_paper_result_notification,
+                    notify,
                 )
+
+                totals = self._bump_paper_total(pnl, win)
+                notify(build_paper_result_notification(rec, signal_data, totals))
             except Exception:  # noqa: BLE001 - notificar nunca rompe el trading
                 pass
 
@@ -1803,6 +1843,9 @@ class UniversalTrader:
                     curve_sol=rec["curve_sol"],
                     strategy=strategy,
                     stop_loss_pct=self.stop_loss_percentage * 100,
+                    take_profit_tiers=[
+                        (tier.gain, tier.sell) for tier in self.tp_tiers
+                    ],
                 )
             )
         except Exception:  # noqa: BLE001 - notificar nunca rompe el trading
@@ -3782,6 +3825,9 @@ class UniversalTrader:
                     stop_loss_pct=self.stop_loss_percentage * 100,
                     extra_lines=_lineas,
                     entry_price_sol=buy_result.price or 0.0,
+                    take_profit_tiers=[
+                        (tier.gain, tier.sell) for tier in self.tp_tiers
+                    ],
                 ),
                 tipo="compra",
             )
@@ -5692,6 +5738,7 @@ class UniversalTrader:
                 (price or 0) * (amount or 0),
                 str(token_info.mint),
                 reason,
+                price_sol=price or 0.0,
             )
         except Exception:  # noqa: BLE001 - alerts must never crash trading
             logger.debug("trade alert failed", exc_info=True)

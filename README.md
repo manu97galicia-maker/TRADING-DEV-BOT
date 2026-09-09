@@ -100,7 +100,8 @@ Los avisos de entrada incluyen:
 - Enlaces directos a DexScreener, GMGN y pump.fun.
 
 Los avisos de cierre añaden los take-profits alcanzados, porcentaje vendido,
-stop protegido ejecutado, ROI y P&L de la simulación.
+precio exacto de cada venta simulada, precio medio vendido, último precio
+observado, SL inicial/final, porcentaje restante, ROI, P&L y win rate acumulado.
 
 Hay dos conexiones distintas con Telegram:
 
@@ -112,6 +113,30 @@ Hay dos conexiones distintas con Telegram:
 Nunca pegues tokens, códigos de acceso, frases semilla ni claves privadas en un
 issue, commit, chat o captura de pantalla. Si una credencial se comparte por
 error, hay que revocarla y crear otra.
+
+### Datos para ajustar TP y SL
+
+Cada observación terminada se guarda en `paper_trades/results.jsonl` con:
+
+- Precio de compra, último precio y precio medio efectivo de venta.
+- Ventas individuales por TP/stop, con precio y porcentaje de posición.
+- SL inicial, SL protegido final y precio ejecutado por stop.
+- Número de TPs alcanzados, porcentaje vendido y porcentaje restante.
+- Pico favorable, caída máxima, ROI, P&L y resultado win/loss.
+- Fuente exacta de la señal y nivel de boost/Nitro.
+
+Estos datos permiten ajustar después los objetivos con medianas reales de la
+muestra, sin cambiar la estrategia por una sola moneda. El resumen se obtiene
+sin acceder a la wallet:
+
+```bash
+uv run learning-examples/summarize_signal_results.py
+```
+
+El informe calcula win rate, tasa de stops, mediana de ROI, mediana del pico
+(referencia para TP), mediana de la caída (referencia para SL), mediana de la
+salida por stop y mediana de escalones TP alcanzados. Conviene esperar una
+muestra suficiente y separar por fuente antes de modificar los niveles.
 
 ## Callouts y redes sociales
 
@@ -249,6 +274,11 @@ Después de cada cambio:
 No se incluyen IP, claves SSH ni credenciales del droplet en este documento.
 
 ## Checklist antes de plantear operación real
+
+**Activación real pendiente:** se está creando una wallet nueva. La wallet cuya
+clave se compartió anteriormente se considera comprometida y no debe utilizarse
+para operar. Hasta introducir la nueva clave únicamente en el `.env` privado
+del servidor y completar este checklist, el servicio seguirá en paper trading.
 
 - [ ] Nueva wallet dedicada y financiada solo con el límite aceptado.
 - [ ] Clave privada nunca compartida y fuera de Git.
