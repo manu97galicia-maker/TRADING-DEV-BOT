@@ -17,7 +17,7 @@ trade:
   reiniciar_tanda: false
   max_perdidas_seguidas: 0
   buy_amount_tras_sl: 0.15
-  rugs_para_bloquear: 2
+  rugs_para_bloquear: 1
   buy_slippage: 0.20
   sell_slippage: 0.25
   exit_strategy: tp_sl
@@ -74,7 +74,7 @@ filters:
   marry_mode: false
   yolo_mode: true
   paper_trade: true
-  ignorar_listas_de_devs: true
+  ignorar_listas_de_devs: false
   max_holder_pct: 0.05
   min_holders: 0
   min_curve_sol: 0

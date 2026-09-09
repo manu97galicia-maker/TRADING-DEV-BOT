@@ -58,7 +58,9 @@ async def build_pumpfun_token_info(
     # Reject migrated tokens (bonding curve complete -> now on PumpSwap).
     try:
         if await curve_manager.is_curve_complete(bonding_curve):
-            logger.info("Skip %s (%s): bonding curve complete (migrated)", symbol, mint_str)
+            logger.info(
+                "Skip %s (%s): bonding curve complete (migrated)", symbol, mint_str
+            )
             return None
     except Exception:  # noqa: BLE001 -- unreadable curve => can't safely buy
         logger.warning("Could not read curve for %s; skipping", mint_str)
@@ -105,6 +107,7 @@ async def build_pumpfun_token_info(
         mint=mint,
         platform=Platform.PUMP_FUN,
         bonding_curve=bonding_curve,
+        user=creator,
         creator=creator,
         token_program_id=token_program_id,
         is_mayhem_mode=bool(state.get("is_mayhem_mode", False)),

@@ -30,6 +30,7 @@ from core.wallet import Wallet
 from core.wallet_pool import WalletPool
 from dexscreener import DexScreenerFilter
 from interfaces.core import Platform, TokenInfo
+from monitoring.dev_blocklist import any_dev_blocked
 from monitoring.listener_factory import ListenerFactory
 from platforms import get_platform_implementations
 from trading.base import TradeResult
@@ -1121,8 +1122,8 @@ class UniversalTrader:
         # Moonbags retenidos (no se auto-venden): el avisador manda un aviso a
         # Telegram cada 5 min mientras sigan en la wallet, para venderlos a mano.
         self._moonbags_path = Path(f"moonbags{_sfx}.json")
-        # Auto-baneo: {dev: rugs_acumulados}. Con 2 rugs totales el dev queda
-        # bloqueado; una ganadora intermedia no borra sus antecedentes.
+        # Auto-baneo: {dev: rugs_acumulados}. Al alcanzar el umbral configurado
+        # queda bloqueado; una ganadora intermedia no borra sus antecedentes.
         self._blocked_devs_path = Path(f"blocked_devs{_sfx}.json")
         # Blacklist DURA manual (blacklist_devs.json): devs que NUNCA se compran,
         # bloqueo permanente compartido por todos los bots (no depende del auto-baneo).
@@ -2260,7 +2261,7 @@ class UniversalTrader:
                     )
                     return
 
-                # Auto-baneo: dev que ha rugeado 2 veces seguidas -> no se compra.
+                # Auto-baneo: dev que alcanzo el umbral configurado -> no se compra.
                 # Los marcados se lo saltan: si Manu pide expresamente snipear a
                 # uno, esa decision manda sobre el contador automatico. La
                 # BLACKLIST MANUAL de arriba NO se salta -- esa es una decision
@@ -2270,7 +2271,8 @@ class UniversalTrader:
                 ):
                     logger.info(
                         f"Evitado {token_info.symbol}: dev "
-                        f"{_dev_user[:8]} BLOQUEADO (2 rugs acumulados)"
+                        f"{_dev_user[:8]} BLOQUEADO "
+                        f"({self.rugs_para_bloquear} rug(s) acumulados)"
                     )
                     return
 
@@ -4714,8 +4716,8 @@ class UniversalTrader:
         # y 2 pérdidas acumuladas del mismo dev -> se le bloquea.
         held_val = remaining * last_price  # moonbag que sigue en la wallet
         net_sol = realized_sol + held_val - cost_sol
-        # Una perdida >=50% cuenta como rug grave, pero también requiere dos
-        # rugs acumulados para bloquear al dev.
+        # Una perdida >=50% cuenta como rug grave y aplica el mismo umbral
+        # configurado para bloquear al dev.
         _big_loss = cost_sol > 0 and net_sol <= -0.50 * cost_sol
         if _big_loss:
             _outcome = "hardrug"
@@ -5097,7 +5099,7 @@ class UniversalTrader:
             logger.exception("Failed to save token information")
 
     def _load_blocked_devs(self) -> dict:
-        """{dev: rugs_acumulados}. >=2 => bloqueado."""
+        """Load the persisted ``{developer: accumulated_rugs}`` mapping."""
         try:
             if self._blocked_devs_path.is_file():
                 return json.loads(self._blocked_devs_path.read_text(encoding="utf-8"))
@@ -5106,14 +5108,14 @@ class UniversalTrader:
         return {}
 
     def _is_dev_blocked(self, *devs: str) -> bool:
-        """True si ALGUNA de las identidades dadas lleva 2+ rugs acumulados.
+        """True si alguna identidad alcanzo el umbral de rugs configurado.
 
         Se aceptan varias porque un lanzamiento tiene dos: `user` (quien firma)
         y `creator` (a quien apunta la curva). Normalmente coinciden, pero
         cuando no, mirar solo una dejaba entrar al mismo dev por la otra puerta.
         """
         data = self._load_blocked_devs()
-        return any(d and int(data.get(d, 0)) >= 2 for d in devs)
+        return any_dev_blocked(data, devs, self.rugs_para_bloquear)
 
     def _bump_dev_rug(self, dev: str, outcome: str) -> None:
         """Actualiza el contador de rugs del dev.
@@ -5137,7 +5139,7 @@ class UniversalTrader:
 
                     notify(
                         f"⛔ <b>DEV BLOQUEADO</b>\n"
-                        f"Dos rugs detectados. No se volverá a comprar.\n"
+                        f"{data[dev]} rug(s) detectados. No se volverá a comprar.\n"
                         f"<code>{dev}</code>"
                     )
                 except Exception:  # noqa: BLE001
