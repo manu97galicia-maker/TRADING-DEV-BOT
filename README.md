@@ -1,133 +1,299 @@
-# Definitivo bot — sniper de pump.fun
+# Definitivo Bot — señales tempranas de pump.fun en Solana
 
-Bot de trading automático sobre [pump.fun](https://pump.fun) (Solana). Detecta
-lanzamientos nuevos, decide en segundos si comprar y gestiona la salida por
-escalones de take-profit, trailing stop y varias salidas de emergencia.
+Sistema de detección y gestión automática de oportunidades de **pump.fun**. La
+estrategia principal de señales combina eventos recientes de DexScreener con
+canales seleccionados de Telegram (MoonTok, DEXTools y Legends Alpha), registra
+el motivo exacto de cada entrada y simula una salida escalonada con protección
+progresiva del capital.
 
-Corre **24/7 con dinero real** en un droplet de DigitalOcean.
+> **Estado seguro actual:** la estrategia `bot-paper-ai-entry` está configurada
+> exclusivamente en paper trading. `paper_trade: true`, `max_real_buys: 0` y
+> `enabled: false` impiden que esta configuración compre con SOL real. No se
+> debe habilitar dinero real hasta completar pruebas, rotar todas las
+> credenciales que hayan podido quedar expuestas y revisar el despliegue.
 
-> **Aviso.** Esto opera con fondos reales sobre memecoins. La inmensa mayoría de
-> los lanzamientos de pump.fun van a cero. Todo lo que hay aquí está calibrado
-> con operaciones medidas, y aun así el resultado acumulado del 10-ago-2026 era
-> **negativo**. Lee [ESTILOS_DE_RUG.md](ESTILOS_DE_RUG.md) antes de tocar nada.
+## Qué hace la estrategia principal
 
----
+La configuración de referencia está en
+[`bots/bot-paper-ai-entry.yaml`](bots/bot-paper-ai-entry.yaml) y se inicia con
+[`run_paper_ai_entry.py`](run_paper_ai_entry.py).
 
-## Cómo está montado
+Flujo de una señal:
 
+1. Detecta un pago, listado o boost reciente en DexScreener, o recibe una señal
+   de uno de los canales de Telegram permitidos.
+2. Descarta señales antiguas y crea una referencia inicial al arrancar para no
+   confundir eventos históricos con eventos nuevos.
+3. Acepta únicamente tokens de **pump.fun en Solana**.
+4. Rechaza tokens `mayhem` y no usa LetsBonk para esta estrategia.
+5. Asigna el importe según el motivo exacto de la señal.
+6. En paper trading, simula la entrada, sigue el precio y ejecuta la escalera de
+   take-profit y stop-loss.
+7. Envía a Telegram el motivo, importe, precio, contrato, objetivos y enlaces
+   directos a DexScreener, GMGN y pump.fun.
+8. Si el resultado identifica un rug del desarrollador, lo añade al bloqueo
+   tras el primer caso configurado.
+
+### Fuentes autorizadas
+
+| Fuente | Tipo de evento | Estado en la estrategia |
+|---|---|---|
+| DexScreener | paid/listing y boosts | Activada por API pública |
+| MoonTok / `CryptoListings` | listado o promoción | Configurada por Telegram |
+| DEXTools / `dextools_nitro` | Nitro | Configurada por Telegram |
+| `DEXTNewPairsBot` | nuevo par | Configurada por Telegram |
+| `LegendsAlphas` | call publicado | Configurada por Telegram |
+| GMGN | enlace informativo en avisos | Las señales de compra GMGN están desactivadas |
+| Birdeye y API DEXTools | datos de mercado auxiliares | Opcionales, no disparan esta estrategia |
+| Discord u otras estrategias | señales adicionales | Desactivadas |
+
+El lector de Telegram necesita una sesión Telethon autorizada. Configurar los
+canales no garantiza que se reciban mensajes si falta completar el inicio de
+sesión de Telegram en el servidor.
+
+## Tamaño de entrada
+
+| Motivo detectado | Importe configurado |
+|---|---:|
+| Listing/paid normal de DexScreener o MoonTok | 0,15 SOL |
+| Boost pequeño o DEXTools Nitro pequeño | 0,17 SOL |
+| Boost/Nitro de 500 o superior | 0,20 SOL |
+
+Controles adicionales:
+
+- Tope absoluto por compra: **0,20 SOL**.
+- Reserva mínima que no se debe gastar: **0,03 SOL**.
+- Máximo de posiciones simultáneas: **3**.
+- Slippage de compra: **20 %**; slippage de venta: **25 %**.
+- Fee de prioridad fijo: `700000`, con `140000` compute units para compra y
+  `120000` para venta. El coste final en USD depende del precio de SOL y de la
+  transacción; no se debe presentar como una cifra fija en dólares.
+
+Los importes son tamaños de estrategia, no una promesa de ejecución ni de
+rentabilidad. En modo paper no sale SOL de la cartera.
+
+## Salida, take-profit y protección del stop
+
+La posición se divide en cuatro tramos:
+
+| Escalón | Precio objetivo | Porcentaje vendido | Nuevo stop protegido |
+|---|---:|---:|---:|
+| Inicial | — | — | -18 % desde la entrada |
+| TP1 | +25 % | 70 % | Precio de entrada (break-even) |
+| TP2 | +50 % | 10 % | Nivel de TP1 (+25 %) |
+| TP3 | +75 % | 10 % | Nivel de TP2 (+50 %) |
+| TP4 | x3 (+200 %) | 10 % restante | Cierre total |
+
+El stop queda siempre un peldaño por detrás del último take-profit alcanzado.
+El cálculo está aislado en `src/trading/tiered_exit.py` y cubierto por pruebas
+de regresión en `tests/test_tiered_stop.py`.
+
+## Avisos de Telegram
+
+Los avisos de entrada incluyen:
+
+- Nombre y símbolo del token.
+- Contract address (mint).
+- Motivo exacto: listing, paid, boost, Nitro o canal de origen.
+- Cantidad de SOL asignada y precio de entrada.
+- Escalera completa de TP/SL.
+- Enlaces directos a DexScreener, GMGN y pump.fun.
+
+Los avisos de cierre añaden los take-profits alcanzados, porcentaje vendido,
+stop protegido ejecutado, ROI y P&L de la simulación.
+
+Hay dos conexiones distintas con Telegram:
+
+- `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`: envío de notificaciones.
+- `TELEGRAM_API_ID` + `TELEGRAM_API_HASH`: lectura de canales mediante
+  Telethon; requiere autorizar una sesión con el número de teléfono y el código
+  que envía Telegram.
+
+Nunca pegues tokens, códigos de acceso, frases semilla ni claves privadas en un
+issue, commit, chat o captura de pantalla. Si una credencial se comparte por
+error, hay que revocarla y crear otra.
+
+## Callouts y redes sociales
+
+La configuración genera el texto:
+
+```text
+AI entry detected: <nombre de la moneda> — <contract address>
 ```
+
+Actualmente `callouts.publish` está en `false`: el mensaje se guarda en
+`trades/pumpfun_callout_outbox.jsonl`, pero **no se publica automáticamente** en
+pump.fun. Tampoco hay publicación automática en X/Twitter ni una cuenta de X
+conectada al bot. Estas funciones requieren una integración autenticada,
+protección contra duplicados y una revisión separada antes de activarse.
+
+## Frescura y deduplicación
+
+Para evitar compras motivadas por volumen viejo:
+
+- DexScreener se consulta cada 30 segundos.
+- Un evento paid/boost puede tener como máximo 10 minutos.
+- El token puede tener como máximo 30 minutos para esta fuente.
+- Al arrancar se toma una línea base y no se emiten como nuevas las señales ya
+  existentes.
+- Se envía un heartbeat de monitorización cada 5 minutos.
+
+## Arquitectura
+
+```text
+bots/
+  bot-paper-ai-entry.yaml      estrategia y límites de seguridad
 src/
-  bot_runner.py              arranque: lee el yaml y construye el trader
-  trading/universal_trader.py  el cerebro: filtros de entrada y gestión de salida
-  trading/platform_aware.py    ejecución de compra/venta contra la curva
-  monitoring/volumen.py        contadores en memoria desde los logs del websocket
-  monitoring/pumpfun_dev.py    historial de migraciones de un creador
-  monitoring/notifier.py       avisos a Telegram
-bots/*.yaml                  una estrategia por fichero
-run_*.py + *.service         un lanzador y un servicio systemd por estrategia
+  bot_runner.py                carga YAML y construye el trader
+  monitoring/dexpaid_source.py eventos paid/boost de DexScreener
+  monitoring/telegram_source.py lectura de MoonTok/DEXTools/Legends
+  monitoring/notifier.py       mensajes de entrada, TP y SL
+  monitoring/callout_outbox.py cola local de callouts
+  dexscreener/                 cliente y filtros de DexScreener/RugCheck
+  trading/universal_trader.py  filtros, entrada y gestión de posición
+  trading/tiered_exit.py       escalera de TP y stop progresivo
+  paper_trading/               simulación y persistencia paper
+  dashboard/                   panel y utilidades de wallet
+learning-examples/             pruebas manuales y ejemplos sin producción
+tests/                         pruebas automáticas
+paper-ai-entry.service         servicio systemd del modo paper
 ```
 
-Cada estrategia es **un yaml y un proceso**. Comparten la misma wallet, así que
-cada una reserva su propia gasolina (`min_reserve_sol`) para poder firmar sus
-ventas aunque las otras estén comprando.
+El repositorio conserva estrategias históricas en otros YAML y servicios.
+No forman parte de `bot-paper-ai-entry` y no deben arrancarse a la vez por
+accidente, especialmente si comparten wallet.
 
-## La estrategia viva
+## Instalación local
 
-`bots/bot-sniper-premium.yaml`. La entrada son tres condiciones:
+Requisitos:
 
-| | |
-|---|---|
-| market cap | $4.000 – $5.500 |
-| volumen | ≥40 SOL (~$3.000) |
-| tiempo | dentro de los primeros 30 s |
-
-Y once protecciones que no son señal de entrada sino seguro, cada una nacida de
-una pérdida concreta — están documentadas una a una en
-[ESTILOS_DE_RUG.md](ESTILOS_DE_RUG.md).
-
-Salida:
-
-```
-80% al +25%     devuelve el capital entero (0,80 × 1,25 = 1,00)
-20% restante    trailing del 33% desde el máximo
-stop            25%
-```
-
-Simétrico a propósito. La versión anterior arriesgaba un 45% para ganar un 6%,
-lo que exigía acertar el 91% de las veces.
-
-## Lo que hay que saber antes de tocar el código
-
-**El P&L que calcula el bot no es el que entra en la cartera.** Durante días
-reportó ganancias mientras la wallet perdía: calculaba `tokens × precio
-observado`, sin descontar comisión de pump.fun, impacto de la venta ni
-slippage. En una operación llegó a equivocarse de **signo**.
-
-Desde entonces se guarda la firma de la compra y de cada venta, y al cerrar se
-suma el delta real de la wallet leído de `preBalances`/`postBalances`. Los logs
-llevan las dos cifras y la diferencia:
-
-```
-S'MORE: P&L REAL -0.0099 SOL (cadena) | el teorico decia +0.0906 -> se equivocaba en -0.1005
-```
-
-**Cualquier decisión se toma con el número de la cadena.** El otro sirve para
-vigilar cuánto se desvía.
-
-## Herramientas de análisis
-
-| | |
-|---|---|
-| `estudiar_operaciones.py` | cruza condiciones de entrada con el P&L real y compara ganadoras contra perdedoras |
-| `automatizar_estudio.sh` | lanza el estudio cuando hay 8 operaciones nuevas y manda el resumen por Telegram (cron cada 15 min) |
-| `simular_salidas.py` | prueba escaleras de salida vela a vela sobre monedas reales |
-| `descubrir_devs_cadencia.py` | busca creadores buenos **que además lancen a menudo** |
-| `descubrir_devs_200k.py` | creadores con monedas por encima de $200K, sin granjas |
-| `construir_devs_premium.py` | filtra la lista orgánica por no-spam y pico mediano |
-| `fusionar_devs_buenos.py` | une las listas y quita a los auto-baneados |
-| `medir_mc_inicial.py` | market cap de arranque de las monedas de cada dev |
-
-## Puesta en marcha
+- Python 3.10 o superior.
+- [`uv`](https://docs.astral.sh/uv/).
+- Un endpoint RPC/WSS de Solana.
+- Credenciales propias para las integraciones opcionales.
 
 ```bash
 uv sync
-cp .env.example .env      # rellenar claves; .env NUNCA se commitea
-uv run src/bot_runner.py  # o el run_*.py de la estrategia
+cp .env.example .env
 ```
 
-`.env` necesita como mínimo `SOLANA_PRIVATE_KEY`, `SOLANA_NODE_RPC_ENDPOINT` y
-`SOLANA_NODE_WSS_ENDPOINT`. Los avisos de Telegram son opcionales
-(`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`).
+Variables principales de `.env`:
 
-## Despliegue
+```dotenv
+SOLANA_NODE_RPC_ENDPOINT=https://...
+SOLANA_NODE_WSS_ENDPOINT=wss://...
+SOLANA_PRIVATE_KEY=...
 
-El servidor **no puede hacer `git pull`**: el repositorio es privado y el
-droplet no tiene credenciales de GitHub. El tarball público también da 404. Se
-sube por SSH:
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_CHAT_ID=...
+TELEGRAM_API_ID=...
+TELEGRAM_API_HASH=...
+
+BIRDEYE_API_KEY=...
+DEXTOOLS_API_KEY=...
+DEXTOOLS_API_TIER=trial
+```
+
+`.env` está ignorado por Git. La clave de la wallet debe guardarse únicamente
+en el servidor o gestor de secretos que ejecuta el bot, con permisos mínimos.
+
+## Verificación segura
+
+Las normas del proyecto exigen validar primero los ejemplos de aprendizaje y
+paper trading; una sesión de desarrollo no debe operar fondos reales.
 
 ```bash
-tar czf - bots/ src/ | ssh -i ~/.ssh/id_droplet_bot root@<IP> \
-  "cd /root/ai-bot && tar xzf -"
-ssh -i ~/.ssh/id_droplet_bot root@<IP> "systemctl restart premium"
+uv run learning-examples/fetch_price.py
+uv run learning-examples/check_market_data_apis.py
+uv run learning-examples/preview_purchase_notification.py
+uv run pytest
+uv run ruff format --check .
+uv run ruff check .
 ```
 
-Los servicios llevan `Restart=always` y `StartLimitIntervalSec=0` — sin esto
-último systemd se rinde tras cinco arranques en diez segundos y deja el
-servicio en `failed` para siempre, que es lo contrario de lo que quieres en un
-bot 24/7. Va en la sección `[Unit]`: puesto en `[Service]` se ignora en
-silencio.
+Arranque local de la estrategia paper:
 
-**El bot no reanuda posiciones al reiniciar.** Avisa de "bolsa huérfana" y la
-deja para vender a mano. Conviene agrupar los cambios en un solo reinicio y
-comprobar antes que no hay posiciones abiertas.
+```bash
+uv run run_paper_ai_entry.py
+```
 
-## Notas del protocolo
+Antes de interpretar que Telegram “falla”, comprobar por separado el envío del
+bot y la autorización de la sesión lectora:
 
-Las trampas de pump.fun (número de cuentas por instrucción, PDAs no
-documentadas en el IDL, Token-2022, modo mayhem, cashback) están en
-[CLAUDE.md](CLAUDE.md). El IDL incluido está **incompleto**: contrastar siempre
-contra una transacción reciente que haya funcionado.
+```bash
+uv run learning-examples/check_telegram_session.py
+```
+
+## Despliegue en un droplet
+
+El servicio incluido asume `/root/ai-bot` como directorio de trabajo y una
+virtualenv en `/root/ai-bot/.venv`.
+
+```bash
+sudo cp paper-ai-entry.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now paper-ai-entry
+sudo systemctl status paper-ai-entry --no-pager
+sudo journalctl -u paper-ai-entry -f
+```
+
+Después de cada cambio:
+
+1. Subir únicamente los archivos revisados.
+2. Sincronizar dependencias si cambió `pyproject.toml` o `uv.lock`.
+3. Verificar que la configuración sigue en paper.
+4. Reiniciar `paper-ai-entry`.
+5. Confirmar en logs que no hay otro servicio de trading activo.
+6. Revisar que Telegram envía heartbeat y avisos nuevos, no señales antiguas.
+
+No se incluyen IP, claves SSH ni credenciales del droplet en este documento.
+
+## Checklist antes de plantear operación real
+
+- [ ] Nueva wallet dedicada y financiada solo con el límite aceptado.
+- [ ] Clave privada nunca compartida y fuera de Git.
+- [ ] Token de BotFather, API hash de Telegram y token RPC rotados si alguna vez
+      fueron expuestos.
+- [ ] Sesión lectora de Telegram autorizada en el droplet.
+- [ ] Varias sesiones paper revisadas con precios y resultados verificables.
+- [ ] Señales antiguas y duplicadas descartadas correctamente.
+- [ ] Reserva de 0,03 SOL y tope de 0,20 SOL probados.
+- [ ] Stop escalonado probado para TP1, TP2, TP3 y TP4.
+- [ ] Un solo servicio de estrategia habilitado.
+- [ ] Callouts y redes sociales revisados por separado.
+- [ ] Activación real mediante un cambio explícito, pequeño y reversible.
+
+## Seguridad del repositorio
+
+- El repositorio debe mantenerse privado.
+- No se deben versionar `.env`, sesiones de Telegram, logs, bases de datos paper
+  con datos sensibles, claves SSH, frases semilla ni archivos de wallet.
+- Las invitaciones de colaboradores conceden acceso al código privado: revisar
+  periódicamente colaboradores, invitaciones pendientes y deploy keys.
+- Activar alertas de dependencias y actualizaciones de seguridad en GitHub.
+- Ante una filtración, borrar el secreto del historial no basta: hay que
+  revocarlo o mover los fondos a una wallet nueva.
+
+## Limitaciones importantes
+
+- Paper trading no reproduce con exactitud slippage, congestión, prioridad ni
+  fallos de transacción reales.
+- Un paid listing o un boost es una señal de marketing, no una garantía de
+  legitimidad ni de subida.
+- El bloqueo por desarrollador reduce repetición de rugs conocidos, pero no
+  identifica por sí solo wallets nuevas del mismo actor.
+- DexScreener, Telegram, GMGN y los RPC pueden sufrir retrasos o caídas.
+- No existe una forma de garantizar que una estrategia de memecoins no pierda
+  dinero.
+
+## Documentación adicional
+
+- [`AGENTS.md`](AGENTS.md): normas obligatorias de desarrollo seguro.
+- [`ESTILOS_DE_RUG.md`](ESTILOS_DE_RUG.md): patrones de rug observados.
+- [`PAPER_TRADING.md`](PAPER_TRADING.md): sistema de simulación.
+- [`GUIA_BOTS.md`](GUIA_BOTS.md): estructura de bots y servicios.
+- [`CLAUDE.md`](CLAUDE.md): notas técnicas del protocolo y del repositorio.
 
 ## Licencia
 
-Ver [LICENSE](LICENSE).
+Consulta [`LICENSE`](LICENSE).
