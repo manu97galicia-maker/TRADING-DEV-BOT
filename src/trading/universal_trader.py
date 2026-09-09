@@ -3643,7 +3643,7 @@ class UniversalTrader:
         # en el log: desde Telegram se veia que habia entrado pero no que la
         # habia hecho entrar, asi que era imposible juzgar la señal despues.
         try:
-            from monitoring.notifier import notify
+            from monitoring.notifier import build_purchase_notification, notify
             from monitoring.pumpfun_dev import creator_migration_stats
             from monitoring.senales import tiene_senal
             from monitoring.volumen import operaciones, volumen_sol
@@ -3679,17 +3679,22 @@ class UniversalTrader:
                 )
 
             _mc = (buy_result.price or 0) * _PUMP_TOTAL_SUPPLY * _SOL_USD
-            _bot = self._state_suffix.lstrip("_").replace("bot-sniper-", "").upper()
             _tr = " · ".join(
                 f"+{t.gain * 100:.0f}%/{t.sell * 100:.0f}%" for t in self.tp_tiers
             )
+            _signal_data = token_info.additional_data or {}
+            _amount = float(_signal_data.get("signal_buy_amount") or self.buy_amount)
             notify(
-                f"🟢 <b>COMPRA</b> · {token_info.symbol} ({_bot})\n"
-                + ("\n".join(_lineas) + "\n" if _lineas else "")
-                + f"💵 {self.buy_amount} SOL · MC entrada ~${_mc:,.0f}\n"
-                + f"🎯 {_tr} · SL -{self.stop_loss_percentage * 100:.0f}%\n"
-                + f'📊 <a href="https://gmgn.ai/sol/token/{mint_str}">GMGN</a>\n'
-                + f"CA: <code>{mint_str}</code>",
+                build_purchase_notification(
+                    symbol=token_info.symbol,
+                    mint=mint_str,
+                    amount_sol=_amount,
+                    source_data=_signal_data,
+                    market_cap_usd=_mc,
+                    strategy=_tr,
+                    stop_loss_pct=self.stop_loss_percentage * 100,
+                    extra_lines=_lineas,
+                ),
                 tipo="compra",
             )
         except Exception:  # noqa: BLE001

@@ -11,11 +11,11 @@ Env vars:
 
 from __future__ import annotations
 
-import json
 import os
 import threading
 import urllib.parse
 import urllib.request
+from html import escape
 
 from utils.logger import get_logger
 
@@ -27,6 +27,66 @@ logger = get_logger(__name__)
 #: arranques, y eso convierte el canal en ruido que se acaba ignorando --
 #: justo el que no hay que ignorar es el de "acabo de gastar tu dinero".
 _TIPOS_PERMITIDOS: set[str] = set()
+_EXPENSIVE_PROMOTION_THRESHOLD = 500
+
+
+def _purchase_reason(source_data: dict | None) -> str:
+    """Return a readable acquisition reason from signal metadata."""
+    data = source_data or {}
+    source = str(data.get("acquisition_source") or "deteccion directa")
+    source_key = source.lower().lstrip("@").replace(" ", "")
+    boosts = float(data.get("dexscreener_boosts") or 0)
+    nitro = float(data.get("dextools_nitro_score") or 0)
+    reason = escape(source)
+    if source_key == "cryptolistings":
+        reason = "MoonTok listing"
+    elif source_key == "dextnewpairsbot":
+        reason = "DEXTools nuevo listing"
+    elif source_key == "dextools_nitro":
+        level = f" ({nitro:g})" if nitro else ""
+        expensive = " caro" if nitro >= _EXPENSIVE_PROMOTION_THRESHOLD else ""
+        reason = f"DEXTools NITRO{expensive}{level}"
+    elif source_key == "dexscreener":
+        if boosts >= _EXPENSIVE_PROMOTION_THRESHOLD:
+            reason = f"DexScreener boost caro ({boosts:g})"
+        elif boosts > 0:
+            reason = f"DexScreener boost ({boosts:g})"
+        else:
+            reason = "DexScreener listing/paid"
+    return reason
+
+
+def build_purchase_notification(  # noqa: PLR0913, PLR0917
+    symbol: str,
+    mint: str,
+    amount_sol: float,
+    source_data: dict | None,
+    market_cap_usd: float,
+    strategy: str,
+    stop_loss_pct: float,
+    extra_lines: list[str] | None = None,
+) -> str:
+    """Build the Telegram message sent after a confirmed purchase."""
+    safe_symbol = escape(symbol or "SIN SIMBOLO")
+    safe_mint = escape(mint)
+    lines = [
+        f"🟢 <b>COMPRA CONFIRMADA</b> · {safe_symbol}",
+        f"🔎 Motivo: <b>{_purchase_reason(source_data)}</b>",
+    ]
+    lines.extend(extra_lines or [])
+    entry = f"💵 Compra: <b>{amount_sol:.3f} SOL</b>"
+    if market_cap_usd > 0:
+        entry += f" · MC entrada ~${market_cap_usd:,.0f}"
+    lines.extend(
+        [
+            entry,
+            f"🎯 {strategy} · SL -{stop_loss_pct:.0f}%",
+            f'<a href="https://dexscreener.com/solana/{safe_mint}">DexScreener</a> · '
+            f'<a href="https://gmgn.ai/sol/token/{safe_mint}">GMGN</a>',
+            f"CA: <code>{safe_mint}</code>",
+        ]
+    )
+    return "\n".join(lines)
 
 
 def configurar_avisos(solo: list[str] | None) -> None:
