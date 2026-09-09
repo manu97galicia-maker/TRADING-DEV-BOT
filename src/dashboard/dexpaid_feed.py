@@ -47,8 +47,29 @@ async def get_candidates(
     out: list[dict[str, Any]] = []
 
     async with DexScreenerClient(chain=chain) as dex:
-        boosts = await dex.get_latest_boosts()
-        toks = [b for b in boosts if b.get("chainId") == chain][: limit * 3]
+        boosts, profiles = await asyncio.gather(
+            dex.get_latest_boosts(), dex.get_latest_token_profiles()
+        )
+        combined = [
+            entry
+            for entry in [*boosts, *profiles]
+            if entry.get("chainId") == chain
+        ]
+        by_mint: dict[str, dict[str, Any]] = {}
+        for entry in combined:
+            mint = entry.get("tokenAddress")
+            if not mint:
+                continue
+            current = by_mint.get(mint, {})
+            by_mint[mint] = {
+                **current,
+                **entry,
+                "totalAmount": max(
+                    float(current.get("totalAmount") or current.get("amount") or 0),
+                    float(entry.get("totalAmount") or entry.get("amount") or 0),
+                ),
+            }
+        toks = list(by_mint.values())[: limit * 3]
 
         async def build(entry: dict[str, Any]) -> dict[str, Any] | None:
             mint = entry.get("tokenAddress")

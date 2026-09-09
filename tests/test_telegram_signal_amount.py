@@ -1,0 +1,32 @@
+"""Tests for Telegram acquisition sizing."""
+
+# ruff: noqa: PLR2004, S101
+
+from monitoring.telegram_source import _telegram_signal_amount
+
+CONFIG = {
+    "normal_buy_amount": 0.15,
+    "promoted_buy_amount": 0.20,
+    "promotion_threshold": 500,
+}
+
+
+def test_normal_listing_uses_normal_amount() -> None:
+    amount, score = _telegram_signal_amount("New Solana listing", CONFIG)
+
+    assert amount == 0.15
+    assert score == 0
+
+
+def test_nitro_500_uses_promoted_amount() -> None:
+    amount, score = _telegram_signal_amount("NITRO score: 500", CONFIG)
+
+    assert amount == 0.20
+    assert score == 500
+
+
+def test_nitro_200_stays_normal() -> None:
+    amount, score = _telegram_signal_amount("NITRO 200", CONFIG)
+
+    assert amount == 0.15
+    assert score == 200

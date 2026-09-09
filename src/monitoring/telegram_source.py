@@ -15,6 +15,7 @@ tiny buy_amount.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from pathlib import Path
@@ -27,6 +28,17 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 CALLS_LOG = Path("trades") / "telegram_calls.log"
+_NITRO_RE = re.compile(r"\bnitro(?:\s+score)?\D{0,12}(\d{3,5})\b", re.IGNORECASE)
+
+
+def _telegram_signal_amount(text: str, config: dict) -> tuple[float, float]:
+    """Return (buy amount, detected NITRO score) for a listing message."""
+    normal = float(config.get("normal_buy_amount", 0) or 0)
+    promoted = float(config.get("promoted_buy_amount", normal) or normal)
+    threshold = float(config.get("promotion_threshold", 500) or 500)
+    scores = [float(match) for match in _NITRO_RE.findall(text or "")]
+    score = max(scores, default=0.0)
+    return (promoted if score >= threshold else normal, score)
 
 
 def _log_call(call: dict, bought: bool) -> None:
@@ -95,6 +107,16 @@ class TelegramSource:
                 token_info = await build_pumpfun_token_info(
                     call["address"], self._impls, self._client
                 )
+            if token_info is not None:
+                signal_amount, nitro_score = _telegram_signal_amount(
+                    call.get("text", ""), self._config
+                )
+                token_info.additional_data = {
+                    **(token_info.additional_data or {}),
+                    "acquisition_source": call.get("chat") or "telegram",
+                    "dextools_nitro_score": nitro_score,
+                    "signal_buy_amount": signal_amount,
+                }
             _log_call(call, bought=token_info is not None)
             if token_info is not None:
                 logger.info(

@@ -32,11 +32,17 @@ class DexPaidSource:
         client: object,
         poll_interval: float = 30.0,
         max_age_minutes: float = 180.0,
+        normal_buy_amount: float = 0.15,
+        boost_threshold: float = 500.0,
+        boost_buy_amount: float = 0.20,
     ) -> None:
         self._impls = platform_impls
         self._client = client
         self.poll_interval = poll_interval
         self.max_age_minutes = max_age_minutes
+        self.normal_buy_amount = normal_buy_amount
+        self.boost_threshold = boost_threshold
+        self.boost_buy_amount = boost_buy_amount
         self._seen: set[str] = set()
 
     async def run(self, token_callback: Callable[[TokenInfo], Awaitable[None]]) -> None:
@@ -63,6 +69,18 @@ class DexPaidSource:
                         mint, self._impls, self._client, symbol=c.get("symbol", "")
                     )
                     if token_info is not None:
+                        boosts = float(c.get("boosts") or 0)
+                        signal_amount = (
+                            self.boost_buy_amount
+                            if boosts >= self.boost_threshold
+                            else self.normal_buy_amount
+                        )
+                        token_info.additional_data = {
+                            **(token_info.additional_data or {}),
+                            "acquisition_source": "dexscreener",
+                            "dexscreener_boosts": boosts,
+                            "signal_buy_amount": signal_amount,
+                        }
                         self._seen.add(mint)
                         logger.info(
                             "DexPaid candidate -> %s (%s), paid %s min ago",

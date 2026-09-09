@@ -1,0 +1,18 @@
+[Unit]
+Description=PAPER AI ENTRY - MoonTok and Dex Paid
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/ai-bot
+Environment=PYTHONPATH=/root/ai-bot/src
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/root/ai-bot/.venv/bin/python -u run_paper_ai_entry.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

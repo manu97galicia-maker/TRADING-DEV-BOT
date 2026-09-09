@@ -244,6 +244,7 @@ async def start_bot(config_path: str):
             discord_calls=cfg.get("filters", {}).get("discord_calls"),
             # GMGN smart-money/KOL signals (disabled unless present + enabled)
             gmgn_signals=cfg.get("filters", {}).get("gmgn_signals"),
+            callouts=cfg.get("callouts"),
             # Paper-trade mode: filter + record, never buy (for ROI tracking)
             paper_trade=cfg.get("filters", {}).get("paper_trade", False),
             # Safe point-in-time simulator. When enabled it owns the candidate

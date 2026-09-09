@@ -365,6 +365,8 @@ class UniversalTrader:
         discord_calls: dict | None = None,
         # GMGN smart-money/KOL signals (disabled unless configured)
         gmgn_signals: dict | None = None,
+        # Queue a Pump.fun callout after a confirmed buy.
+        callouts: dict | None = None,
         # Paper-trade mode: filter + record, never buy
         paper_trade: bool = False,
         # New safe simulator configuration; disabled unless explicitly enabled.
@@ -1094,6 +1096,7 @@ class UniversalTrader:
         self.discord_calls = discord_calls or {}
         # GMGN signals acquisition mode config (off unless enabled)
         self.gmgn_signals = gmgn_signals or {}
+        self.callouts = callouts or {}
 
         # Persistent "already bought" blocklist: never buy the same coin twice,
         # even across restarts (in-memory processed_tokens resets on restart).
@@ -1224,24 +1227,21 @@ class UniversalTrader:
             await self._run_copy_mode()
             return
 
+        acquisition_tasks: list[asyncio.Task] = []
         if self.buy_on_dex_paid.get("enabled"):
-            logger.info("Buy-on-dex-paid mode ENABLED (bypasses new-token listener)")
-            await self._run_dexpaid_mode()
-            return
-
+            logger.info("Buy-on-dex-paid acquisition ENABLED")
+            acquisition_tasks.append(asyncio.create_task(self._run_dexpaid_mode()))
         if self.telegram_calls.get("enabled"):
-            logger.info("Telegram-calls mode ENABLED (bypasses new-token listener)")
-            await self._run_telegram_mode()
-            return
-
+            logger.info("Telegram-calls acquisition ENABLED")
+            acquisition_tasks.append(asyncio.create_task(self._run_telegram_mode()))
         if self.discord_calls.get("enabled"):
-            logger.info("Discord-calls mode ENABLED (bypasses new-token listener)")
-            await self._run_discord_mode()
-            return
-
+            logger.info("Discord-calls acquisition ENABLED")
+            acquisition_tasks.append(asyncio.create_task(self._run_discord_mode()))
         if self.gmgn_signals.get("enabled"):
-            logger.info("GMGN signals mode ENABLED (copy smart money / KOLs)")
-            await self._run_gmgn_mode()
+            logger.info("GMGN signals acquisition ENABLED")
+            acquisition_tasks.append(asyncio.create_task(self._run_gmgn_mode()))
+        if acquisition_tasks:
+            await asyncio.gather(*acquisition_tasks)
             return
 
         try:
@@ -1463,6 +1463,13 @@ class UniversalTrader:
             self.solana_client,
             poll_interval=float(self.buy_on_dex_paid.get("poll_interval", 30)),
             max_age_minutes=float(self.buy_on_dex_paid.get("max_age_minutes", 180)),
+            normal_buy_amount=float(
+                self.buy_on_dex_paid.get("normal_buy_amount", self.buy_amount)
+            ),
+            boost_threshold=float(self.buy_on_dex_paid.get("boost_threshold", 500)),
+            boost_buy_amount=float(
+                self.buy_on_dex_paid.get("boost_buy_amount", self.buy_amount)
+            ),
         )
         try:
             await source.run(self._on_dexpaid_token)
@@ -3277,6 +3284,16 @@ class UniversalTrader:
                 else:
                     _importe = self.buy_amount
 
+                signal_data = token_info.additional_data or {}
+                signal_amount = float(signal_data.get("signal_buy_amount") or 0)
+                if signal_amount > 0:
+                    _importe = signal_amount
+                    logger.info(
+                        "Signal %s selected buy amount %.4f SOL",
+                        signal_data.get("acquisition_source", "external"),
+                        _importe,
+                    )
+
                 # TRAS UN SL: la siguiente compra va con importe reducido.
                 # Se consume una sola vez y vuelve al tamaño normal.
                 if self._ultimo_cierre_fue_sl and self.buy_amount_tras_sl > 0:
@@ -3601,6 +3618,24 @@ class UniversalTrader:
         # Persist to the "already bought" blocklist so we never re-buy this coin.
         self.bought_mints.add(mint_str)
         self._persist_bought_mint(mint_str)
+        if self.callouts.get("enabled"):
+            try:
+                from monitoring.callout_outbox import enqueue_callout
+
+                callout_message = enqueue_callout(
+                    token_info.name or token_info.symbol,
+                    mint_str,
+                    buy_result.tx_signature,
+                    Path(
+                        self.callouts.get("outbox")
+                        or "trades/pumpfun_callout_outbox.jsonl"
+                    ),
+                )
+                from monitoring.notifier import notify
+
+                notify(f"📣 <b>CALLOUT PREPARADO</b>\n{callout_message}")
+            except Exception:  # noqa: BLE001 -- must not orphan a position
+                logger.exception("Failed to enqueue post-buy callout for %s", mint_str)
         if token_info.token_program_id:
             self.traded_token_programs[mint_str] = token_info.token_program_id
 
