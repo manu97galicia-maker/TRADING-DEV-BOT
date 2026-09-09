@@ -23,16 +23,32 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
+def _dexpaid_signal_amount(
+    boosts: float,
+    normal_amount: float,
+    small_boost_amount: float,
+    expensive_threshold: float,
+    expensive_amount: float,
+) -> float:
+    """Choose the configured buy size for a paid listing or boost tier."""
+    if boosts >= expensive_threshold:
+        return expensive_amount
+    if boosts > 0:
+        return small_boost_amount
+    return normal_amount
+
+
 class DexPaidSource:
     """Polls dex-paid tokens and emits TokenInfos for buying."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         platform_impls: object,
         client: object,
         poll_interval: float = 30.0,
         max_age_minutes: float = 180.0,
         normal_buy_amount: float = 0.15,
+        small_boost_buy_amount: float = 0.17,
         boost_threshold: float = 500.0,
         boost_buy_amount: float = 0.20,
     ) -> None:
@@ -41,6 +57,7 @@ class DexPaidSource:
         self.poll_interval = poll_interval
         self.max_age_minutes = max_age_minutes
         self.normal_buy_amount = normal_buy_amount
+        self.small_boost_buy_amount = small_boost_buy_amount
         self.boost_threshold = boost_threshold
         self.boost_buy_amount = boost_buy_amount
         self._seen: set[str] = set()
@@ -70,10 +87,12 @@ class DexPaidSource:
                     )
                     if token_info is not None:
                         boosts = float(c.get("boosts") or 0)
-                        signal_amount = (
-                            self.boost_buy_amount
-                            if boosts >= self.boost_threshold
-                            else self.normal_buy_amount
+                        signal_amount = _dexpaid_signal_amount(
+                            boosts,
+                            self.normal_buy_amount,
+                            self.small_boost_buy_amount,
+                            self.boost_threshold,
+                            self.boost_buy_amount,
                         )
                         token_info.additional_data = {
                             **(token_info.additional_data or {}),

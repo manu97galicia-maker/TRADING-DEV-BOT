@@ -103,6 +103,7 @@ filters:
     poll_interval: 30
     max_age_minutes: 180
     normal_buy_amount: 0.15
+    small_boost_buy_amount: 0.17
     boost_threshold: 500
     boost_buy_amount: 0.20
 
@@ -110,6 +111,7 @@ filters:
     enabled: true
     session_name: moontok_watcher
     normal_buy_amount: 0.15
+    nitro_buy_amount: 0.17
     promoted_buy_amount: 0.20
     promotion_threshold: 500
     channels:

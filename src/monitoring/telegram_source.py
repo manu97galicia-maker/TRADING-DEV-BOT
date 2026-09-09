@@ -31,14 +31,24 @@ CALLS_LOG = Path("trades") / "telegram_calls.log"
 _NITRO_RE = re.compile(r"\bnitro(?:\s+score)?\D{0,12}(\d{3,5})\b", re.IGNORECASE)
 
 
-def _telegram_signal_amount(text: str, config: dict) -> tuple[float, float]:
+def _telegram_signal_amount(
+    text: str, config: dict, source: str = ""
+) -> tuple[float, float]:
     """Return (buy amount, detected NITRO score) for a listing message."""
     normal = float(config.get("normal_buy_amount", 0) or 0)
+    nitro_amount = float(config.get("nitro_buy_amount", normal) or normal)
     promoted = float(config.get("promoted_buy_amount", normal) or normal)
     threshold = float(config.get("promotion_threshold", 500) or 500)
     scores = [float(match) for match in _NITRO_RE.findall(text or "")]
     score = max(scores, default=0.0)
-    return (promoted if score >= threshold else normal, score)
+    source_key = source.lower().lstrip("@").replace(" ", "")
+    if score >= threshold:
+        amount = promoted
+    elif score > 0 or source_key == "dextools_nitro":
+        amount = nitro_amount
+    else:
+        amount = normal
+    return amount, score
 
 
 def _log_call(call: dict, bought: bool) -> None:
@@ -108,14 +118,13 @@ class TelegramSource:
                     call["address"], self._impls, self._client
                 )
             if token_info is not None:
+                source = call.get("chat_username") or call.get("chat") or "telegram"
                 signal_amount, nitro_score = _telegram_signal_amount(
-                    call.get("text", ""), self._config
+                    call.get("text", ""), self._config, source=source
                 )
                 token_info.additional_data = {
                     **(token_info.additional_data or {}),
-                    "acquisition_source": (
-                        call.get("chat_username") or call.get("chat") or "telegram"
-                    ),
+                    "acquisition_source": source,
                     "dextools_nitro_score": nitro_score,
                     "signal_buy_amount": signal_amount,
                 }
