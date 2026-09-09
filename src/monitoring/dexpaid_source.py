@@ -15,12 +15,33 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
+from time import monotonic
 
 from interfaces.core import TokenInfo
 from trading.token_builder import build_pumpfun_token_info
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+def build_monitor_heartbeat(
+    poll_interval: float,
+    fresh_signals: int,
+    max_payment_age_minutes: float,
+    max_token_age_minutes: float,
+    *,
+    paper_mode: bool,
+) -> str:
+    """Build the periodic Telegram health message for the API monitor."""
+    mode = "PAPER" if paper_mode else "REAL"
+    return (
+        "🛰 <b>MONITOR ACTIVO</b>\n"
+        f"DexScreener: última revisión correcta · cada {poll_interval:g}s\n"
+        f"Señales frescas desde el último aviso: <b>{fresh_signals}</b>\n"
+        f"Filtros: pago ≤{max_payment_age_minutes:g}m · "
+        f"moneda ≤{max_token_age_minutes:g}m\n"
+        f"Modo: <b>{mode}</b>"
+    )
 
 
 def _dexpaid_signal_amount(
@@ -88,6 +109,9 @@ class DexPaidSource:
         small_boost_buy_amount: float = 0.17,
         boost_threshold: float = 500.0,
         boost_buy_amount: float = 0.20,
+        *,
+        heartbeat_interval: float = 300.0,
+        paper_mode: bool = True,
     ) -> None:
         self._impls = platform_impls
         self._client = client
@@ -98,9 +122,37 @@ class DexPaidSource:
         self.small_boost_buy_amount = small_boost_buy_amount
         self.boost_threshold = boost_threshold
         self.boost_buy_amount = boost_buy_amount
+        self.heartbeat_interval = heartbeat_interval
+        self.paper_mode = paper_mode
         self._seen: set[str] = set()
         self._freshness = DexPaidFreshnessTracker()
         self._primed = False
+        self._last_heartbeat = 0.0
+        self._fresh_signals = 0
+
+    def _send_heartbeat_if_due(self) -> None:
+        """Send one best-effort status message at the configured interval."""
+        now = monotonic()
+        if self.heartbeat_interval <= 0:
+            return
+        if (
+            self._last_heartbeat
+            and now - self._last_heartbeat < self.heartbeat_interval
+        ):
+            return
+        from monitoring.notifier import notify
+
+        notify(
+            build_monitor_heartbeat(
+                self.poll_interval,
+                self._fresh_signals,
+                self.max_age_minutes,
+                self.max_token_age_minutes,
+                paper_mode=self.paper_mode,
+            )
+        )
+        self._last_heartbeat = now
+        self._fresh_signals = 0
 
     async def run(self, token_callback: Callable[[TokenInfo], Awaitable[None]]) -> None:
         """Continuously poll and emit new, non-migrated dex-paid candidates."""
@@ -126,6 +178,7 @@ class DexPaidSource:
                         "DexPaid startup baseline recorded (%d entries, no buys)",
                         len(candidates),
                     )
+                    self._send_heartbeat_if_due()
                     await asyncio.sleep(self.poll_interval)
                     continue
                 for c in candidates:
@@ -155,6 +208,7 @@ class DexPaidSource:
                             "signal_buy_amount": signal_amount,
                         }
                         self._seen.add(mint)
+                        self._fresh_signals += 1
                         logger.info(
                             "Fresh DexPaid %s -> %s (%s), token age %s min",
                             c.get("signal_type"),
@@ -163,6 +217,7 @@ class DexPaidSource:
                             c.get("token_age_min"),
                         )
                         await token_callback(token_info)
+                self._send_heartbeat_if_due()
             except asyncio.CancelledError:
                 logger.info("DexPaid source cancelled")
                 break

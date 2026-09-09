@@ -1476,6 +1476,10 @@ class UniversalTrader:
             boost_buy_amount=float(
                 self.buy_on_dex_paid.get("boost_buy_amount", self.buy_amount)
             ),
+            heartbeat_interval=float(
+                self.buy_on_dex_paid.get("heartbeat_interval", 300)
+            ),
+            paper_mode=self.paper_trade or self.paper_engine.enabled,
         )
         try:
             await source.run(self._on_dexpaid_token)

@@ -101,6 +101,7 @@ filters:
   buy_on_dex_paid:
     enabled: true
     poll_interval: 30
+    heartbeat_interval: 300
     max_age_minutes: 10
     max_token_age_minutes: 30
     normal_buy_amount: 0.15
