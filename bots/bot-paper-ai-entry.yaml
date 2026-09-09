@@ -116,6 +116,7 @@ filters:
       - CryptoListings
       - dextools_nitro
       - DEXTNewPairsBot
+      - LegendsAlphas
     suffixes:
       - pump
 

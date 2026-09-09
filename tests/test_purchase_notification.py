@@ -45,3 +45,16 @@ def test_dextools_nitro_level_is_included() -> None:
     )
     assert "DEXTools NITRO caro" in message
     assert "1000" in message
+
+
+def test_legends_alpha_signal_is_identified() -> None:
+    message = build_purchase_notification(
+        "ALPHA",
+        "AlphaMint",
+        0.15,
+        {"acquisition_source": "LegendsAlphas"},
+        0,
+        "+25%/70%",
+        18,
+    )
+    assert "Legends Alpha signal" in message

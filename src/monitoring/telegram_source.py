@@ -74,9 +74,7 @@ class TelegramSource:
         self._client = client
         self._platform = platform
 
-    async def run(
-        self, token_callback: Callable[[TokenInfo], Awaitable[None]]
-    ) -> None:
+    async def run(self, token_callback: Callable[[TokenInfo], Awaitable[None]]) -> None:
         """Connect to Telegram and route calls to alerts + buys."""
         import os
 
@@ -90,7 +88,9 @@ class TelegramSource:
             )
             return
 
-        suffixes = tuple(self._config.get("suffixes") or ("pump", "bonk", "moon", "bags"))
+        suffixes = tuple(
+            self._config.get("suffixes") or ("pump", "bonk", "moon", "bags")
+        )
         watcher = TelegramWatcher(
             api_id=int(api_id),
             api_hash=str(api_hash),
@@ -113,7 +113,9 @@ class TelegramSource:
                 )
                 token_info.additional_data = {
                     **(token_info.additional_data or {}),
-                    "acquisition_source": call.get("chat") or "telegram",
+                    "acquisition_source": (
+                        call.get("chat_username") or call.get("chat") or "telegram"
+                    ),
                     "dextools_nitro_score": nitro_score,
                     "signal_buy_amount": signal_amount,
                 }

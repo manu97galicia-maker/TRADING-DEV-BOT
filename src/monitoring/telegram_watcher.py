@@ -102,9 +102,7 @@ class TelegramWatcher:
         self.channels = channels
         self._seen: set[str] = set()
 
-    async def run(
-        self, on_call: Callable[[dict], Awaitable[None]]
-    ) -> None:
+    async def run(self, on_call: Callable[[dict], Awaitable[None]]) -> None:
         """Connect and stream token calls to ``on_call``.
 
         ``on_call`` receives ``{address, platform, chat, text}`` per new,
@@ -120,19 +118,22 @@ class TelegramWatcher:
         client = TelegramClient(self.session_name, self.api_id, self.api_hash)
 
         @client.on(events.NewMessage(chats=self.channels))
-        async def _handler(event: object) -> None:  # noqa: ANN001
+        async def _handler(event: object) -> None:
             text = getattr(event, "raw_text", "") or ""
             for address in extract_contract_addresses(text, self.suffixes):
                 if address in self._seen:
                     continue
                 self._seen.add(address)
-                chat = getattr(getattr(event, "chat", None), "title", None) or "?"
+                event_chat = getattr(event, "chat", None)
+                chat = getattr(event_chat, "title", None) or "?"
+                chat_username = getattr(event_chat, "username", None)
                 logger.info("Telegram call: %s from %s", address, chat)
                 await on_call(
                     {
                         "address": address,
                         "platform": platform_for_suffix(address),
                         "chat": chat,
+                        "chat_username": chat_username,
                         "text": text[:280],
                     }
                 )

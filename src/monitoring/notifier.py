@@ -40,6 +40,8 @@ def _purchase_reason(source_data: dict | None) -> str:
     reason = escape(source)
     if source_key == "cryptolistings":
         reason = "MoonTok listing"
+    elif source_key == "legendsalphas":
+        reason = "Legends Alpha signal"
     elif source_key == "dextnewpairsbot":
         reason = "DEXTools nuevo listing"
     elif source_key == "dextools_nitro":
