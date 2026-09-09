@@ -131,6 +131,7 @@ celerybeat.pid
 .env
 .env.*
 *.env
+.env
 .env.bak*
 *.bak
 # secretos / claves y datos de trading locales
