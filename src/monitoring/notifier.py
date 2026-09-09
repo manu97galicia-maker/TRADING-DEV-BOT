@@ -159,7 +159,8 @@ def _send_blocking(text: str) -> None:
             }
         ).encode()
         req = urllib.request.Request(url, data=data)
-        with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310
+        # The URL is a fixed Telegram HTTPS endpoint, never caller-controlled.
+        with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310  # nosec B310
             resp.read()
     except Exception as exc:  # noqa: BLE001 - notifications must never crash trading
         logger.debug(f"Telegram notify failed: {exc}")
