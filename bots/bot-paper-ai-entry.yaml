@@ -101,7 +101,8 @@ filters:
   buy_on_dex_paid:
     enabled: true
     poll_interval: 30
-    max_age_minutes: 180
+    max_age_minutes: 10
+    max_token_age_minutes: 30
     normal_buy_amount: 0.15
     small_boost_buy_amount: 0.17
     boost_threshold: 500

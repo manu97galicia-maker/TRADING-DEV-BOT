@@ -26,6 +26,7 @@ logger = get_logger(__name__)
 async def get_candidates(
     limit: int = 10,
     max_age_minutes: float = 120.0,
+    max_token_age_minutes: float = 0.0,
     chain: str = "solana",
     check_locked: bool = True,
 ) -> list[dict[str, Any]]:
@@ -35,6 +36,7 @@ async def get_candidates(
         limit: Max tokens to return (kept small for rate limits).
         max_age_minutes: Only include tokens whose newest approved paid order
             is younger than this.
+        max_token_age_minutes: Reject pairs older than this; zero disables it.
         chain: Chain slug.
         check_locked: Also query RugCheck for locked-liquidity % (slower).
 
@@ -44,15 +46,18 @@ async def get_candidates(
         migrated flag, and (if check_locked) lp_locked_pct.
     """
     now_ms = time.time() * 1000.0
-    out: list[dict[str, Any]] = []
 
     async with DexScreenerClient(chain=chain) as dex:
         boosts, profiles = await asyncio.gather(
             dex.get_latest_boosts(), dex.get_latest_token_profiles()
         )
         combined = [
-            entry
-            for entry in [*boosts, *profiles]
+            {**entry, "_from_boosts": True}
+            for entry in boosts
+            if entry.get("chainId") == chain
+        ] + [
+            {**entry, "_from_profiles": True}
+            for entry in profiles
             if entry.get("chainId") == chain
         ]
         by_mint: dict[str, dict[str, Any]] = {}
@@ -68,6 +73,12 @@ async def get_candidates(
                     float(current.get("totalAmount") or current.get("amount") or 0),
                     float(entry.get("totalAmount") or entry.get("amount") or 0),
                 ),
+                "_from_boosts": bool(
+                    current.get("_from_boosts") or entry.get("_from_boosts")
+                ),
+                "_from_profiles": bool(
+                    current.get("_from_profiles") or entry.get("_from_profiles")
+                ),
             }
         toks = list(by_mint.values())[: limit * 3]
 
@@ -81,20 +92,35 @@ async def get_candidates(
                 for o in orders
                 if o.get("status") == "approved" and o.get("paymentTimestamp")
             ]
-            if not paid_ts:
+            is_boost = bool(entry.get("_from_boosts"))
+            if not paid_ts and not is_boost:
                 return None
-            age_min = (now_ms - max(paid_ts)) / 60000.0
-            if age_min > max_age_minutes:
+            age_min = (now_ms - max(paid_ts)) / 60000.0 if paid_ts else None
+            if not is_boost and (age_min is None or age_min > max_age_minutes):
                 return None
             market = await dex.get_market_data(mint, chain)
+            pair_created_at = market.pair_created_at if market else None
+            token_age_min = (
+                (now_ms - float(pair_created_at)) / 60000.0 if pair_created_at else None
+            )
+            if max_token_age_minutes > 0 and (
+                token_age_min is None or token_age_min > max_token_age_minutes
+            ):
+                return None
             dex_id = market.dex_id if market else None
             migrated = dex_id in ("pumpswap", "raydium") if dex_id else None
             return {
                 "mint": mint,
-                "symbol": (market.raw.get("baseToken", {}).get("symbol") if market else None)
+                "symbol": (
+                    market.raw.get("baseToken", {}).get("symbol") if market else None
+                )
                 or "?",
                 "boosts": entry.get("totalAmount") or entry.get("amount") or 0,
-                "payment_age_min": round(age_min, 1),
+                "payment_age_min": round(age_min, 1) if age_min is not None else None,
+                "token_age_min": (
+                    round(token_age_min, 1) if token_age_min is not None else None
+                ),
+                "signal_type": "boost" if is_boost else "paid",
                 "price_usd": market.price_usd if market else None,
                 "liquidity_usd": market.liquidity_usd if market else None,
                 "dex_id": dex_id,
@@ -109,9 +135,14 @@ async def get_candidates(
                 reports = await asyncio.gather(
                     *[rc.get_report(r["mint"]) for r in rows]
                 )
-                for r, rep in zip(rows, reports):
+                for r, rep in zip(rows, reports):  # noqa: B905 - Python 3.9
                     r["lp_locked_pct"] = rep.lp_locked_pct if rep.found else None
                     r["rugged"] = rep.rugged if rep.found else None
 
-    rows.sort(key=lambda r: r["payment_age_min"])
+    rows.sort(
+        key=lambda r: (
+            r["signal_type"] != "boost",
+            r["payment_age_min"] if r["payment_age_min"] is not None else 0,
+        )
+    )
     return rows

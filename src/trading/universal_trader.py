@@ -1463,6 +1463,9 @@ class UniversalTrader:
             self.solana_client,
             poll_interval=float(self.buy_on_dex_paid.get("poll_interval", 30)),
             max_age_minutes=float(self.buy_on_dex_paid.get("max_age_minutes", 180)),
+            max_token_age_minutes=float(
+                self.buy_on_dex_paid.get("max_token_age_minutes", 30)
+            ),
             normal_buy_amount=float(
                 self.buy_on_dex_paid.get("normal_buy_amount", self.buy_amount)
             ),

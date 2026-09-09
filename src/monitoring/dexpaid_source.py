@@ -38,6 +38,42 @@ def _dexpaid_signal_amount(
     return normal_amount
 
 
+class DexPaidFreshnessTracker:
+    """Accept only events appearing after startup or a real boost increase."""
+
+    def __init__(self) -> None:
+        self._boost_totals: dict[str, float] = {}
+        self._paid_mints: set[str] = set()
+
+    def prime(self, candidates: list[dict]) -> None:
+        """Record the startup snapshot without treating it as a signal."""
+        for candidate in candidates:
+            self._remember(candidate)
+
+    def accept(self, candidate: dict) -> bool:
+        """Return true once for a new paid mint or increased/new boost."""
+        mint = str(candidate.get("mint") or "")
+        if not mint:
+            return False
+        if candidate.get("signal_type") == "boost":
+            total = float(candidate.get("boosts") or 0)
+            previous = self._boost_totals.get(mint)
+            self._boost_totals[mint] = max(total, previous or 0)
+            return previous is None or total > previous
+        is_new = mint not in self._paid_mints
+        self._paid_mints.add(mint)
+        return is_new
+
+    def _remember(self, candidate: dict) -> None:
+        mint = str(candidate.get("mint") or "")
+        if not mint:
+            return
+        if candidate.get("signal_type") == "boost":
+            self._boost_totals[mint] = float(candidate.get("boosts") or 0)
+        else:
+            self._paid_mints.add(mint)
+
+
 class DexPaidSource:
     """Polls dex-paid tokens and emits TokenInfos for buying."""
 
@@ -47,6 +83,7 @@ class DexPaidSource:
         client: object,
         poll_interval: float = 30.0,
         max_age_minutes: float = 180.0,
+        max_token_age_minutes: float = 30.0,
         normal_buy_amount: float = 0.15,
         small_boost_buy_amount: float = 0.17,
         boost_threshold: float = 500.0,
@@ -56,11 +93,14 @@ class DexPaidSource:
         self._client = client
         self.poll_interval = poll_interval
         self.max_age_minutes = max_age_minutes
+        self.max_token_age_minutes = max_token_age_minutes
         self.normal_buy_amount = normal_buy_amount
         self.small_boost_buy_amount = small_boost_buy_amount
         self.boost_threshold = boost_threshold
         self.boost_buy_amount = boost_buy_amount
         self._seen: set[str] = set()
+        self._freshness = DexPaidFreshnessTracker()
+        self._primed = False
 
     async def run(self, token_callback: Callable[[TokenInfo], Awaitable[None]]) -> None:
         """Continuously poll and emit new, non-migrated dex-paid candidates."""
@@ -74,11 +114,25 @@ class DexPaidSource:
         while True:
             try:
                 candidates = await get_candidates(
-                    limit=10, max_age_minutes=self.max_age_minutes, check_locked=False
+                    limit=10,
+                    max_age_minutes=self.max_age_minutes,
+                    max_token_age_minutes=self.max_token_age_minutes,
+                    check_locked=False,
                 )
+                if not self._primed:
+                    self._freshness.prime(candidates)
+                    self._primed = True
+                    logger.info(
+                        "DexPaid startup baseline recorded (%d entries, no buys)",
+                        len(candidates),
+                    )
+                    await asyncio.sleep(self.poll_interval)
+                    continue
                 for c in candidates:
                     mint = c.get("mint")
                     if not mint or mint in self._seen:
+                        continue
+                    if not self._freshness.accept(c):
                         continue
                     if c.get("migrated"):
                         continue  # only bonding-curve buys
@@ -102,10 +156,11 @@ class DexPaidSource:
                         }
                         self._seen.add(mint)
                         logger.info(
-                            "DexPaid candidate -> %s (%s), paid %s min ago",
+                            "Fresh DexPaid %s -> %s (%s), token age %s min",
+                            c.get("signal_type"),
                             token_info.symbol,
                             mint,
-                            c.get("payment_age_min"),
+                            c.get("token_age_min"),
                         )
                         await token_callback(token_info)
             except asyncio.CancelledError:
