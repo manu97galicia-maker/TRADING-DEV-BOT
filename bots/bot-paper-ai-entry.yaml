@@ -54,9 +54,12 @@ compute_units:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  fixed_amount: 700000
+  # Coste = fixed_amount / 1e10 SOL. 1_000_000 -> 0.0001 SOL.
+  # A 200 $/SOL son ~0.02 $. Si SOL cambia mucho, recalcula:
+  #   fixed_amount = (0.02 / precio_sol_usd) * 1e10
+  fixed_amount: 1000000
   extra_percentage: 0.0
-  hard_cap: 700000
+  hard_cap: 1000000
 
 retries:
   max_attempts: 2
@@ -66,7 +69,9 @@ retries:
 
 filters:
   listener_type: logs
-  max_token_age: 10800
+  # Antiguedad EN LA COLA interna, no de la moneda. Con compra instantanea
+  # una senal que lleva parada mas de 2 min ya no vale la pena.
+  max_token_age: 120
   max_buy_age: 0
   min_buy_age: 0
   allow_mayhem: false
@@ -100,10 +105,13 @@ filters:
 
   buy_on_dex_paid:
     enabled: true
-    poll_interval: 30
+    poll_interval: 5
     heartbeat_interval: 300
     max_age_minutes: 10
-    max_token_age_minutes: 30
+    # 0 = la edad de la moneda no filtra. Una moneda vieja que acaba de
+    # recibir un pago o un boost sigue trayendo volumen, y esa es la senal.
+    # El pago SI debe ser reciente: eso lo sigue midiendo max_age_minutes.
+    max_token_age_minutes: 0
     normal_buy_amount: 0.15
     small_boost_buy_amount: 0.17
     boost_threshold: 500

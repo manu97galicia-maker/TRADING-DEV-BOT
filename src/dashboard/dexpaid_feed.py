@@ -23,6 +23,25 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
+async def _paid_age_minutes(
+    dex: DexScreenerClient, mint: str, chain: str, now_ms: float
+) -> float | None:
+    """Return minutes since the newest approved paid order, or None.
+
+    Runs on the 60 rpm limiter, so it is the slowest step of a cycle and is
+    only called for the paid path (a boost is its own proof of payment).
+    """
+    orders = await dex.get_orders(mint, chain)
+    paid_ts = [
+        order.get("paymentTimestamp")
+        for order in orders
+        if order.get("status") == "approved" and order.get("paymentTimestamp")
+    ]
+    if not paid_ts:
+        return None
+    return (now_ms - max(paid_ts)) / 60000.0
+
+
 async def get_candidates(
     limit: int = 10,
     max_age_minutes: float = 120.0,
@@ -86,18 +105,14 @@ async def get_candidates(
             mint = entry.get("tokenAddress")
             if not mint:
                 return None
-            orders = await dex.get_orders(mint, chain)
-            paid_ts = [
-                o.get("paymentTimestamp")
-                for o in orders
-                if o.get("status") == "approved" and o.get("paymentTimestamp")
-            ]
+            # A boost is its own proof of payment, so the orders lookup is
+            # skipped for it: that is what keeps detection near-instant.
             is_boost = bool(entry.get("_from_boosts"))
-            if not paid_ts and not is_boost:
-                return None
-            age_min = (now_ms - max(paid_ts)) / 60000.0 if paid_ts else None
-            if not is_boost and (age_min is None or age_min > max_age_minutes):
-                return None
+            age_min: float | None = None
+            if not is_boost:
+                age_min = await _paid_age_minutes(dex, mint, chain, now_ms)
+                if age_min is None or age_min > max_age_minutes:
+                    return None
             market = await dex.get_market_data(mint, chain)
             pair_created_at = market.pair_created_at if market else None
             token_age_min = (
