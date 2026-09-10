@@ -50,15 +50,19 @@ Flujo de una señal:
 | `DEXTNewPairsBot` | nuevo par | Configurada por Telegram |
 | `LegendsAlphas` | call publicado | Configurada por Telegram |
 | GMGN | enlace informativo en avisos | Las señales de compra GMGN están desactivadas |
-| Birdeye | entrada en la lista de tendencias | Activada; necesita `BIRDEYE_API_KEY` |
+| Birdeye | entrada en la lista de tendencias | Implementada pero **desactivada**: es atención, no pago |
 | API DEXTools | datos de mercado auxiliares | Opcional, no dispara esta estrategia |
 | Discord u otras estrategias | señales adicionales | Desactivadas |
 
-La fuente de Birdeye dispara cuando una moneda **entra** en la lista, no por
-estar en ella: la foto del arranque se registra sin comprar. La mayoría de las
-tendencias ya migraron fuera de la curva y se descartan solas, así que el
+La fuente de Birdeye está escrita y probada pero viene **desactivada**. Dispara
+cuando una moneda **entra** en la lista de tendencias, que es una señal de
+atención, no de que nadie haya pagado por promocionarse. Birdeye sí cobra por
+marketing (Token Info Update Service, 200–300 $), pero esa verificación tarda
+2–7 días hábiles y no expone ningún endpoint de "quién acaba de pagar", así
+que no sirve como equivalente del paid de DexScreener. Además la mayoría de
+las tendencias ya migraron fuera de la curva y se descartan solas; el
 heartbeat separa "entradas nuevas" de "comprables en curva" para que se vea
-cuántas sobreviven de verdad.
+cuántas sobreviven. Se activa con `enabled: true` en el YAML.
 
 El lector de Telegram necesita una sesión Telethon autorizada. Configurar los
 canales no garantiza que se reciban mensajes si falta completar el inicio de

@@ -121,10 +121,17 @@ filters:
   # (no por estar en ella). La foto del arranque se registra sin comprar.
   # Necesita BIRDEYE_API_KEY en el .env; sin clave la fuente no arranca y
   # el heartbeat lo avisa.
-  # Nota: la mayoria de las tendencias ya migraron fuera de la curva y se
-  # descartan solas. El heartbeat dice cuantas entradas eran comprables.
+  #
+  # DESACTIVADA a proposito. Tendencia es senal de ATENCION, no de que
+  # nadie haya pagado: no es el equivalente al paid de DexScreener ni al
+  # Nitro de DEXTools. Lo que Birdeye cobra es su Token Info Update
+  # Service (200-300 $, verificacion en 2-7 dias habiles), que no tiene
+  # endpoint de "quien acaba de pagar" y ademas llega dias tarde: inutil
+  # para una moneda de pump.fun. Encima la mayoria de las tendencias ya
+  # migraron fuera de la curva y se descartan solas.
+  # Para probarla igualmente: enabled: true. El codigo esta listo.
   birdeye_trending:
-    enabled: true
+    enabled: false
     poll_interval: 30
     heartbeat_interval: 300
     limit: 20
