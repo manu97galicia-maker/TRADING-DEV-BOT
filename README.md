@@ -263,6 +263,7 @@ paper trading; una sesión de desarrollo no debe operar fondos reales.
 uv run learning-examples/fetch_price.py
 uv run learning-examples/check_market_data_apis.py
 uv run learning-examples/preview_purchase_notification.py
+uv run learning-examples/simular_avisos_telegram.py
 uv run pytest
 uv run ruff format --check .
 uv run ruff check .
@@ -272,6 +273,16 @@ Arranque local de la estrategia paper:
 
 ```bash
 uv run run_paper_ai_entry.py
+```
+
+Para ver cómo quedan los avisos sin esperar a una señal real,
+`simular_avisos_telegram.py` recorre dos posiciones completas —una que cobra
+tres peldaños y sale por el stop protegido, y otra que se va directa al stop—
+usando las mismas funciones que el bot y leyendo la escalera del YAML. Sin
+argumentos solo imprime; con `--enviar` los manda al Telegram configurado:
+
+```bash
+uv run learning-examples/simular_avisos_telegram.py --enviar
 ```
 
 Antes de interpretar que Telegram “falla”, comprobar por separado el envío del
