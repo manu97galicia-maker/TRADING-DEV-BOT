@@ -110,12 +110,25 @@ de regresión en `tests/test_tiered_stop.py`.
 
 Los avisos de entrada incluyen:
 
-- Nombre y símbolo del token.
+- Nombre y símbolo del token (el nombre real sale del feed de DexScreener).
 - Contract address (mint).
 - Motivo exacto: listing, paid, boost, Nitro o canal de origen.
 - Cantidad de SOL asignada y precio de entrada.
 - Escalera completa de TP/SL.
 - Enlaces directos a DexScreener, GMGN y pump.fun.
+
+Además, **en el momento exacto en que salta cada peldaño** llega un aviso
+propio (no hay que esperar al informe final):
+
+- Nombre y ticker de la moneda.
+- Qué saltó: `TP1`…`TPn` o `STOP`.
+- El motivo por el que se compró (listing, paid, boost, Nitro o canal).
+- Precio del disparo y movimiento desde la entrada.
+- Porcentaje que vende ese peldaño y cuánto queda abierto.
+- **P&L de la posición en ese instante**, en SOL y en porcentaje, contando lo
+  ya cobrado en peldaños anteriores más lo que vale el resto.
+- Adónde sube el SL protegido (en los TP).
+- Enlaces a DexScreener, GMGN y pump.fun, y el contract address.
 
 Los avisos de cierre añaden los take-profits alcanzados, porcentaje vendido,
 precio exacto de cada venta simulada, precio medio vendido, último precio

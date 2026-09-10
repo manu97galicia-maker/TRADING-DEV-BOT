@@ -130,6 +130,10 @@ async def get_candidates(
                     market.raw.get("baseToken", {}).get("symbol") if market else None
                 )
                 or "?",
+                "name": (
+                    market.raw.get("baseToken", {}).get("name") if market else None
+                )
+                or "",
                 "boosts": entry.get("totalAmount") or entry.get("amount") or 0,
                 "payment_age_min": round(age_min, 1) if age_min is not None else None,
                 "token_age_min": (

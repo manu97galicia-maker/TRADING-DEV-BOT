@@ -1620,6 +1620,14 @@ class UniversalTrader:
                         stop_exit_return = paper_floor / entry_price - 1
                         first_hit = first_hit or "sl"
                         strategy_closed = True
+                        self._avisa_peldano(
+                            "STOP",
+                            token_info,
+                            entry_price,
+                            paper_floor,
+                            paper_executed,
+                            tier_sale_prices,
+                        )
                         continue
                     for i in tiers_due(
                         entry_price, p, self.tp_tiers, paper_executed
@@ -1642,6 +1650,15 @@ class UniversalTrader:
                                 )
                             if new_floor is not None:
                                 paper_floor = max(paper_floor, new_floor)
+                        self._avisa_peldano(
+                            f"TP{i + 1}",
+                            token_info,
+                            entry_price,
+                            tier_sale_prices[i] or p,
+                            paper_executed,
+                            tier_sale_prices,
+                            nuevo_sl=paper_floor,
+                        )
                     sold_fraction = sum(
                         tier.sell
                         for i, tier in enumerate(self.tp_tiers)
@@ -1714,6 +1731,7 @@ class UniversalTrader:
                 "src": "bundle" if self.min_curve_sol > 0 else "dexpaid",
                 "mint": str(token_info.mint),
                 "symbol": (token_info.symbol or "").strip(),
+                "name": (token_info.name or "").strip(),
                 "acquisition_source": str(
                     signal_data.get("acquisition_source") or "deteccion directa"
                 ),
@@ -1792,6 +1810,57 @@ class UniversalTrader:
             except Exception:  # noqa: BLE001 - notificar nunca rompe el trading
                 pass
 
+    def _avisa_peldano(  # noqa: PLR0913
+        self,
+        evento: str,
+        token_info: TokenInfo,
+        entry_price: float,
+        price: float,
+        executed: list[bool],
+        sale_prices: list[float | None],
+        nuevo_sl: float | None = None,
+    ) -> None:
+        """Avisa por Telegram en el momento en que salta un TP o el stop.
+
+        El informe final sigue saliendo al terminar la observacion; esto es lo
+        que faltaba: enterarse CUANDO ocurre, con el motivo de compra y el P&L
+        que lleva la posicion, no media hora despues.
+        """
+        try:
+            from monitoring.notifier import build_ladder_event_notification, notify
+            from trading.tiered_exit import ladder_progress
+
+            signal_data = token_info.additional_data or {}
+            amount = float(signal_data.get("signal_buy_amount") or self.buy_amount)
+            vendido, _realizado, total = ladder_progress(
+                entry_price, price, self.tp_tiers, executed, sale_prices
+            )
+            indice = int(evento[2:]) - 1 if evento.upper().startswith("TP") else -1
+            este_peldano = (
+                float(self.tp_tiers[indice].sell) * 100
+                if 0 <= indice < len(self.tp_tiers)
+                else 0.0
+            )
+            notify(
+                build_ladder_event_notification(
+                    evento,
+                    token_info.name,
+                    token_info.symbol,
+                    str(token_info.mint),
+                    signal_data,
+                    price,
+                    entry_price,
+                    amount,
+                    este_peldano,
+                    max(0.0, 100.0 - vendido * 100),
+                    total,
+                    paper=True,
+                    new_stop_price_sol=nuevo_sl,
+                )
+            )
+        except Exception:  # noqa: BLE001 - notificar nunca rompe el trading
+            logger.debug("aviso de peldano fallido", exc_info=True)
+
     def _bump_paper_total(self, pnl: float, win: bool) -> dict:
         """Acumula el P&L total de la simulacion paper y lo persiste (para el
         resumen que sale en cada aviso de Telegram)."""
@@ -1862,6 +1931,7 @@ class UniversalTrader:
                 build_paper_entry_notification(
                     symbol=rec["symbol"],
                     mint=mint,
+                    name=rec.get("name"),
                     amount_sol=paper_amount,
                     source_data=signal_data,
                     entry_price_sol=entry,

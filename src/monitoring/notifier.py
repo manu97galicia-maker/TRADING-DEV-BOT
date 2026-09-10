@@ -31,6 +31,23 @@ _EXPENSIVE_PROMOTION_THRESHOLD = 500
 _MIN_LIQUID_CURVE_SOL = 7
 
 
+def token_label(name: str | None, symbol: str | None) -> str:
+    """Return ``Nombre ($TICKER)``, or just one of them when the other is
+    missing or is a copy of it.
+
+    The dex feeds often carry only a symbol, and ``build_pumpfun_token_info``
+    falls back to the symbol (or the mint) for the name, so the two are equal
+    more often than not. Printing both in that case is noise.
+    """
+    safe_name = escape((name or "").strip())
+    safe_symbol = escape((symbol or "").strip())
+    if safe_symbol and safe_name and safe_name.lower() != safe_symbol.lower():
+        return f"{safe_name} (${safe_symbol})"
+    if safe_symbol:
+        return f"${safe_symbol}"
+    return safe_name or "SIN SIMBOLO"
+
+
 def purchase_reason_label(source_data: dict | None) -> str:
     """Return a readable acquisition reason from signal metadata."""
     data = source_data or {}
@@ -69,14 +86,14 @@ def build_purchase_notification(  # noqa: PLR0913, PLR0917
     stop_loss_pct: float,
     extra_lines: list[str] | None = None,
     *,
+    name: str | None = None,
     entry_price_sol: float = 0.0,
     take_profit_tiers: list[tuple[float, float]] | None = None,
 ) -> str:
     """Build the Telegram message sent after a confirmed purchase."""
-    safe_symbol = escape(symbol or "SIN SIMBOLO")
     safe_mint = escape(mint)
     lines = [
-        f"🟢 <b>COMPRA CONFIRMADA</b> · {safe_symbol}",
+        f"🟢 <b>COMPRA CONFIRMADA</b> · {token_label(name, symbol)}",
         f"🔎 Motivo: <b>{purchase_reason_label(source_data)}</b>",
     ]
     lines.extend(extra_lines or [])
@@ -121,13 +138,13 @@ def build_paper_entry_notification(  # noqa: PLR0913, PLR0917
     strategy: str,
     stop_loss_pct: float,
     *,
+    name: str | None = None,
     take_profit_tiers: list[tuple[float, float]] | None = None,
 ) -> str:
     """Build a paper-entry alert without implying that real funds were spent."""
-    safe_symbol = escape(symbol or "SIN SIMBOLO")
     safe_mint = escape(mint)
     lines = [
-        f"🧪 <b>ENTRADA PAPER</b> · {safe_symbol}",
+        f"🧪 <b>ENTRADA PAPER</b> · {token_label(name, symbol)}",
         f"🔎 Motivo: <b>{purchase_reason_label(source_data)}</b>",
         f"💵 Simulación: <b>{amount_sol:.3f} SOL</b>",
     ]
@@ -163,7 +180,9 @@ def build_paper_result_notification(
     stats: dict,
 ) -> str:
     """Build a complete paper exit report from the persisted result record."""
-    safe_symbol = escape(str(record.get("symbol") or "SIN SIMBOLO"))
+    label = token_label(
+        str(record.get("name") or ""), str(record.get("symbol") or "")
+    )
     safe_mint = escape(str(record.get("mint") or ""))
     exit_reason = str(record.get("exit_reason") or "open")
     if exit_reason == "stop":
@@ -174,7 +193,7 @@ def build_paper_result_notification(
         heading = "⏳ OBSERVACIÓN PAPER TERMINADA"
 
     lines = [
-        f"{heading} · <b>{safe_symbol}</b>",
+        f"{heading} · <b>{label}</b>",
         f"🔎 Motivo de entrada: <b>{purchase_reason_label(source_data)}</b>",
         f"🏷️ Compra: <code>{float(record.get('entry_price_sol') or 0):.12f} "
         "SOL/token</code>",
@@ -232,6 +251,77 @@ def build_paper_result_notification(
             f'<a href="https://gmgn.ai/sol/token/{safe_mint}">GMGN</a> · '
             f'<a href="https://pump.fun/{safe_mint}">pump.fun</a> · '
             f'<a href="https://t.me/MaestroSniperBot?start={safe_mint}">Maestro</a>',
+            f"CA: <code>{safe_mint}</code>",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def build_ladder_event_notification(  # noqa: PLR0913
+    event: str,
+    name: str | None,
+    symbol: str | None,
+    mint: str,
+    source_data: dict | None,
+    price_sol: float,
+    entry_price_sol: float,
+    amount_sol: float,
+    sold_pct: float,
+    remaining_pct: float,
+    total_roi: float,
+    *,
+    paper: bool = True,
+    new_stop_price_sol: float | None = None,
+) -> str:
+    """Build the alert sent the moment a take-profit or the stop triggers.
+
+    Args:
+        event: ``TP1``..``TPn`` or ``STOP``.
+        name: Token name, when the feed carried one.
+        symbol: Token ticker.
+        mint: Token mint (contract address).
+        source_data: Signal metadata, for the buy reason.
+        price_sol: Price the rung triggered at.
+        entry_price_sol: Entry price, to show the move from entry.
+        amount_sol: Size of the original position, to turn ROI into SOL.
+        sold_pct: Percent of the original position this rung sells.
+        remaining_pct: Percent still held after it.
+        total_roi: Running ROI of the whole position, as a fraction.
+        paper: Whether this is a simulation.
+        new_stop_price_sol: Where the stop moves to after a take-profit.
+
+    Returns:
+        The Telegram HTML message.
+    """
+    safe_mint = escape(mint)
+    is_stop = event.upper() == "STOP"
+    tag = "PAPER" if paper else "REAL"
+    heading = (
+        f"🛑 <b>STOP {tag}</b>" if is_stop else f"🎯 <b>{escape(event)} {tag}</b>"
+    )
+    move = (price_sol / entry_price_sol - 1) * 100 if entry_price_sol > 0 else 0.0
+    pnl_sol = amount_sol * total_roi
+    lines = [
+        f"{heading} · {token_label(name, symbol)}",
+        f"🔎 Motivo de compra: <b>{purchase_reason_label(source_data)}</b>",
+        f"🏷️ Precio: <code>{price_sol:.12f} SOL/token</code> ({move:+.1f}%)",
+    ]
+    if is_stop:
+        lines.append(f"📦 Cierra el {remaining_pct:.0f}% que quedaba")
+    else:
+        lines.append(f"📦 Vende {sold_pct:.0f}% · queda {remaining_pct:.0f}%")
+    lines.append(
+        f"💰 P&L: <b>{pnl_sol:+.4f} SOL ({total_roi * 100:+.1f}%)</b>"
+    )
+    if not is_stop and new_stop_price_sol:
+        lines.append(
+            f"🛡️ SL protegido sube a: <code>{new_stop_price_sol:.12f}</code>"
+        )
+    lines.extend(
+        [
+            f'<a href="https://dexscreener.com/solana/{safe_mint}">DexScreener</a> · '
+            f'<a href="https://gmgn.ai/sol/token/{safe_mint}">GMGN</a> · '
+            f'<a href="https://pump.fun/{safe_mint}">pump.fun</a>',
             f"CA: <code>{safe_mint}</code>",
         ]
     )

@@ -190,7 +190,11 @@ class DexPaidSource:
                     if c.get("migrated"):
                         continue  # only bonding-curve buys
                     token_info = await build_pumpfun_token_info(
-                        mint, self._impls, self._client, symbol=c.get("symbol", "")
+                        mint,
+                        self._impls,
+                        self._client,
+                        symbol=c.get("symbol", ""),
+                        name=c.get("name", ""),
                     )
                     if token_info is not None:
                         boosts = float(c.get("boosts") or 0)

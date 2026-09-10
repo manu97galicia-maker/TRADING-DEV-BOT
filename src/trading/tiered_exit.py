@@ -89,6 +89,49 @@ def tiers_due(
     return due
 
 
+def ladder_progress(
+    entry_price: float,
+    current_price: float,
+    tiers: list[Tier],
+    executed: list[bool],
+    sale_prices: list[float | None],
+) -> tuple[float, float, float]:
+    """Return ``(sold_fraction, realized_roi, total_roi)`` right now.
+
+    ``realized_roi`` counts only the rungs already sold; ``total_roi`` adds
+    what the unsold remainder is worth at ``current_price``. Both are
+    fractions of the ORIGINAL position, so they can be shown as the running
+    profit of the whole trade while it is still open.
+
+    Args:
+        entry_price: Position entry price (SOL per token).
+        current_price: Current price (SOL per token).
+        tiers: Tiers from :func:`build_tiers`.
+        executed: Parallel list; True where a tier already sold.
+        sale_prices: Parallel list of the price each executed tier sold at;
+            ``None`` falls back to that tier's target price.
+
+    Returns:
+        ``(sold_fraction, realized_roi, total_roi)``.
+    """
+    if entry_price <= 0:
+        return 0.0, 0.0, 0.0
+    remaining = 1.0
+    realized = 0.0
+    for i, tier in enumerate(tiers):
+        if not executed[i] or remaining <= 0:
+            continue
+        sold = min(float(tier.sell), remaining)
+        price = sale_prices[i]
+        sale_price = (
+            float(price) if price is not None else entry_price * (1 + tier.gain)
+        )
+        realized += sold * (sale_price / entry_price - 1)
+        remaining -= sold
+    open_roi = remaining * (current_price / entry_price - 1)
+    return max(0.0, 1.0 - remaining), realized, realized + open_roi
+
+
 def moonbag_fraction(tiers: list[Tier]) -> float:
     """Fraction of the original position left held after all tiers fire."""
     return max(0.0, 1.0 - sum(t.sell for t in tiers))
