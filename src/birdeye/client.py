@@ -34,6 +34,18 @@ class BirdeyeTokenOverview:
     raw: dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass(slots=True)
+class BirdeyeTrendingToken:
+    """One entry of Birdeye's trending list."""
+
+    address: str
+    name: str | None = None
+    symbol: str | None = None
+    liquidity_usd: float | None = None
+    volume_h24: float | None = None
+    rank: int | None = None
+
+
 class BirdeyeClient:
     """Async Birdeye client whose key defaults to ``BIRDEYE_API_KEY``."""
 
@@ -115,6 +127,64 @@ class BirdeyeClient:
         if not isinstance(data, dict):
             return None
         return _parse_token_overview(data)
+
+    async def get_trending_tokens(
+        self,
+        limit: int = 20,
+        offset: int = 0,
+        sort_by: str = "rank",
+        sort_type: str = "asc",
+    ) -> list[BirdeyeTrendingToken]:
+        """Fetch the current trending list, best-ranked first by default.
+
+        Args:
+            limit: How many entries to ask for.
+            offset: Pagination offset.
+            sort_by: ``rank``, ``liquidity`` or ``volume24hUSD``.
+            sort_type: ``asc`` or ``desc``.
+
+        Returns:
+            Parsed entries, or an empty list when the key is missing or the
+            request fails.
+        """
+        payload = await self._get(
+            "/defi/token_trending",
+            {
+                "sort_by": sort_by,
+                "sort_type": sort_type,
+                "offset": str(offset),
+                "limit": str(limit),
+            },
+        )
+        if not isinstance(payload, dict) or payload.get("success") is False:
+            return []
+        data = payload.get("data")
+        if not isinstance(data, dict):
+            return []
+        tokens = data.get("tokens")
+        if not isinstance(tokens, list):
+            return []
+        return [
+            parsed
+            for entry in tokens
+            if isinstance(entry, dict) and (parsed := _parse_trending(entry))
+        ]
+
+
+def _parse_trending(data: dict[str, Any]) -> BirdeyeTrendingToken | None:
+    """Normalize one trending entry, or None when it carries no mint."""
+    address = data.get("address")
+    if not address:
+        return None
+    rank = data.get("rank")
+    return BirdeyeTrendingToken(
+        address=str(address),
+        name=data.get("name"),
+        symbol=data.get("symbol"),
+        liquidity_usd=_num(data.get("liquidity")),
+        volume_h24=_num(data.get("volume24hUSD") or data.get("v24hUSD")),
+        rank=int(rank) if isinstance(rank, (int, float)) else None,
+    )
 
 
 def _parse_token_overview(data: dict[str, Any]) -> BirdeyeTokenOverview:

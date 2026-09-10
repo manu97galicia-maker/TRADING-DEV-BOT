@@ -366,6 +366,7 @@ class UniversalTrader:
         dexscreener_config: dict | None = None,
         # Buy-on-dex-paid acquisition mode (disabled unless configured)
         buy_on_dex_paid: dict | None = None,
+        birdeye_trending: dict | None = None,
         # Telegram-calls acquisition mode (disabled unless configured)
         telegram_calls: dict | None = None,
         discord_calls: dict | None = None,
@@ -1097,6 +1098,7 @@ class UniversalTrader:
         self.dex_filter = DexScreenerFilter(dexscreener_config)
         # Buy-on-dex-paid acquisition mode config (off unless enabled)
         self.buy_on_dex_paid = buy_on_dex_paid or {}
+        self.birdeye_trending = birdeye_trending or {}
         # Telegram-calls acquisition mode config (off unless enabled)
         self.telegram_calls = telegram_calls or {}
         self.discord_calls = discord_calls or {}
@@ -1237,6 +1239,9 @@ class UniversalTrader:
         if self.buy_on_dex_paid.get("enabled"):
             logger.info("Buy-on-dex-paid acquisition ENABLED")
             acquisition_tasks.append(asyncio.create_task(self._run_dexpaid_mode()))
+        if self.birdeye_trending.get("enabled"):
+            logger.info("Birdeye-trending acquisition ENABLED")
+            acquisition_tasks.append(asyncio.create_task(self._run_birdeye_mode()))
         if self.telegram_calls.get("enabled"):
             logger.info("Telegram-calls acquisition ENABLED")
             acquisition_tasks.append(asyncio.create_task(self._run_telegram_mode()))
@@ -1491,6 +1496,27 @@ class UniversalTrader:
             await source.run(self._on_dexpaid_token)
         except asyncio.CancelledError:
             logger.info("Buy-on-dex-paid mode stopped")
+
+    async def _run_birdeye_mode(self) -> None:
+        """Run the Birdeye-trending acquisition loop until interrupted."""
+        from monitoring.birdeye_source import BirdeyeTrendingSource
+
+        cfg = self.birdeye_trending
+        source = BirdeyeTrendingSource(
+            self.platform_implementations,
+            self.solana_client,
+            poll_interval=float(cfg.get("poll_interval", 30)),
+            limit=int(cfg.get("limit", 20)),
+            buy_amount=float(cfg.get("buy_amount", self.buy_amount)),
+            min_liquidity_usd=float(cfg.get("min_liquidity_usd", 0)),
+            min_volume_h24=float(cfg.get("min_volume_h24", 0)),
+            heartbeat_interval=float(cfg.get("heartbeat_interval", 300)),
+            paper_mode=self.paper_trade or self.paper_engine.enabled,
+        )
+        try:
+            await source.run(self._on_dexpaid_token)
+        except asyncio.CancelledError:
+            logger.info("Birdeye-trending mode stopped")
 
     async def _run_telegram_mode(self) -> None:
         """Run the Telegram-calls acquisition loop until interrupted."""

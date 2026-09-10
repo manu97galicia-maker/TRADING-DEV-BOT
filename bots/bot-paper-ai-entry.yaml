@@ -117,6 +117,24 @@ filters:
     boost_threshold: 500
     boost_buy_amount: 0.20
 
+  # Birdeye: dispara cuando una moneda ENTRA en la lista de tendencias
+  # (no por estar en ella). La foto del arranque se registra sin comprar.
+  # Necesita BIRDEYE_API_KEY en el .env; sin clave la fuente no arranca y
+  # el heartbeat lo avisa.
+  # Nota: la mayoria de las tendencias ya migraron fuera de la curva y se
+  # descartan solas. El heartbeat dice cuantas entradas eran comprables.
+  birdeye_trending:
+    enabled: true
+    poll_interval: 30
+    heartbeat_interval: 300
+    limit: 20
+    buy_amount: 0.15
+    # Suelos a 0 para la primera muestra: en papel interesa medirlo todo y
+    # filtrar despues con los datos. Subelos cuando results.jsonl tenga
+    # muestra suficiente.
+    min_liquidity_usd: 0
+    min_volume_h24: 0
+
   telegram_calls:
     enabled: true
     session_name: moontok_watcher

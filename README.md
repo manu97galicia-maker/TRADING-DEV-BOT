@@ -25,8 +25,9 @@ La configuración de referencia está en
 
 Flujo de una señal:
 
-1. Detecta un pago, listado o boost reciente en DexScreener, o recibe una señal
-   de uno de los canales de Telegram permitidos.
+1. Detecta un pago, listado o boost reciente en DexScreener, ve una moneda
+   **entrar** en la lista de tendencias de Birdeye, o recibe una señal de uno
+   de los canales de Telegram permitidos.
 2. Descarta señales antiguas y crea una referencia inicial al arrancar para no
    confundir eventos históricos con eventos nuevos.
 3. Acepta únicamente tokens de **pump.fun en Solana**.
@@ -49,8 +50,15 @@ Flujo de una señal:
 | `DEXTNewPairsBot` | nuevo par | Configurada por Telegram |
 | `LegendsAlphas` | call publicado | Configurada por Telegram |
 | GMGN | enlace informativo en avisos | Las señales de compra GMGN están desactivadas |
-| Birdeye y API DEXTools | datos de mercado auxiliares | Opcionales, no disparan esta estrategia |
+| Birdeye | entrada en la lista de tendencias | Activada; necesita `BIRDEYE_API_KEY` |
+| API DEXTools | datos de mercado auxiliares | Opcional, no dispara esta estrategia |
 | Discord u otras estrategias | señales adicionales | Desactivadas |
+
+La fuente de Birdeye dispara cuando una moneda **entra** en la lista, no por
+estar en ella: la foto del arranque se registra sin comprar. La mayoría de las
+tendencias ya migraron fuera de la curva y se descartan solas, así que el
+heartbeat separa "entradas nuevas" de "comprables en curva" para que se vea
+cuántas sobreviven de verdad.
 
 El lector de Telegram necesita una sesión Telethon autorizada. Configurar los
 canales no garantiza que se reciban mensajes si falta completar el inicio de
@@ -63,6 +71,7 @@ sesión de Telegram en el servidor.
 | Listing/paid normal de DexScreener o MoonTok | 0,15 SOL |
 | Boost pequeño o DEXTools Nitro pequeño | 0,17 SOL |
 | Boost/Nitro de 500 o superior | 0,20 SOL |
+| Entrada en tendencias de Birdeye | 0,15 SOL |
 
 Controles adicionales:
 
@@ -176,6 +185,7 @@ bots/
 src/
   bot_runner.py                carga YAML y construye el trader
   monitoring/dexpaid_source.py eventos paid/boost de DexScreener
+  monitoring/birdeye_source.py  entradas nuevas en tendencias de Birdeye
   monitoring/telegram_source.py lectura de MoonTok/DEXTools/Legends
   monitoring/notifier.py       mensajes de entrada, TP y SL
   monitoring/callout_outbox.py cola local de callouts

@@ -239,6 +239,8 @@ async def start_bot(config_path: str):
             dexscreener_config=cfg.get("filters", {}).get("dexscreener"),
             # Buy-on-dex-paid acquisition mode (disabled unless present + enabled)
             buy_on_dex_paid=cfg.get("filters", {}).get("buy_on_dex_paid"),
+            # Birdeye trending acquisition (disabled unless present + enabled)
+            birdeye_trending=cfg.get("filters", {}).get("birdeye_trending"),
             # Telegram-calls acquisition mode (disabled unless present + enabled)
             telegram_calls=cfg.get("filters", {}).get("telegram_calls"),
             discord_calls=cfg.get("filters", {}).get("discord_calls"),
