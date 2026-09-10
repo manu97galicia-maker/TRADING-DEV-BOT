@@ -254,12 +254,26 @@ DEXTOOLS_API_TIER=trial
 `.env` está ignorado por Git. La clave de la wallet debe guardarse únicamente
 en el servidor o gestor de secretos que ejecuta el bot, con permisos mínimos.
 
+No se configura una dirección: se configura la **clave**, y la dirección se
+deriva de ella. Para confirmar con qué wallet va a operar el bot antes de que
+gaste nada —sin exponer la clave, que este script nunca imprime—:
+
+```bash
+uv run learning-examples/comprobar_wallet.py
+uv run learning-examples/comprobar_wallet.py --esperada <direccion>
+```
+
+Con `--esperada` compara la dirección derivada con la que se espera y avisa si
+no coinciden. También muestra el saldo y cuánto queda disponible descontando
+`min_reserve_sol`.
+
 ## Verificación segura
 
 Las normas del proyecto exigen validar primero los ejemplos de aprendizaje y
 paper trading; una sesión de desarrollo no debe operar fondos reales.
 
 ```bash
+uv run learning-examples/comprobar_wallet.py
 uv run learning-examples/fetch_price.py
 uv run learning-examples/check_market_data_apis.py
 uv run learning-examples/preview_purchase_notification.py
