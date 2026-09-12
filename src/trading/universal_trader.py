@@ -3708,11 +3708,18 @@ class UniversalTrader:
                         f"on {token_info.platform.value}..."
                         + (" [MAYHEM a prueba]" if _importe != self.buy_amount else "")
                     )
-                    buy_result: TradeResult = await _active_buyer.execute(
-                        token_info,
-                        amount_sol=_importe,
-                        priority_fee_override=_fee_override,
-                    )
+                    # Una moneda migrada no tiene curva que comprar: su
+                    # liquidez esta en un pool y hay que rutar por Jupiter.
+                    if (token_info.additional_data or {}).get("migrated"):
+                        buy_result: TradeResult = await self._comprar_migrada(
+                            token_info, _importe
+                        )
+                    else:
+                        buy_result = await _active_buyer.execute(
+                            token_info,
+                            amount_sol=_importe,
+                            priority_fee_override=_fee_override,
+                        )
 
                     if not buy_result.success:
                         # La compra fallo: la moneda vuelve a estar libre para
@@ -3944,6 +3951,56 @@ class UniversalTrader:
                 logger.info("Manual exit strategy - position will remain open")
         else:
             logger.info("Marry mode enabled. Skipping sell operation.")
+
+    async def _comprar_migrada(
+        self, token_info: TokenInfo, amount_sol: float
+    ) -> TradeResult:
+        """Compra por el pool (via Jupiter) una moneda que ya salio de la curva.
+
+        El comprador normal construye la instruccion CONTRA la curva de
+        pump.fun. En una moneda migrada esa curva esta vacia, asi que esa
+        compra sencillamente no existe: la liquidez vive en PumpSwap o Raydium
+        y Jupiter es quien sabe llegar hasta ahi.
+
+        Args:
+            token_info: La moneda, ya marcada como migrada.
+            amount_sol: SOL a gastar.
+
+        Returns:
+            Un TradeResult equivalente al del comprador de curva, para que el
+            resto del flujo (monitor de salida, avisos, registro) no tenga que
+            saber por donde se entro.
+        """
+        from trading.jupiter_seller import jupiter_buy
+
+        wallet = _ctx_wallet.get() or self.wallet
+        logger.info(
+            "%s ya migro: comprando %.6f SOL por el pool (Jupiter)",
+            token_info.symbol,
+            amount_sol,
+        )
+        ok, firma, error, tokens = await jupiter_buy(
+            wallet.keypair,
+            str(token_info.mint),
+            amount_sol,
+            slippage_bps=int(self.buy_slippage * 10000),
+        )
+        if not ok or tokens <= 0:
+            return TradeResult(
+                success=False,
+                platform=token_info.platform,
+                error_message=error or "Jupiter no devolvio tokens",
+            )
+        # El precio de entrada sale de lo gastado entre lo recibido: es el
+        # precio REAL pagado, con su slippage dentro, y es el que la escalera
+        # de TP/SL tiene que usar como referencia.
+        return TradeResult(
+            success=True,
+            platform=token_info.platform,
+            tx_signature=firma,
+            amount=tokens,
+            price=amount_sol / tokens,
+        )
 
     async def _handle_failed_buy(
         self, token_info: TokenInfo, buy_result: TradeResult
