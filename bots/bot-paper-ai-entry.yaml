@@ -228,7 +228,13 @@ filters:
   dexscreener:
     enabled: true
     enforce: true
-    block_on_error: true
+    # false: una consulta lenta o fallida NO bloquea la compra. Con todos los
+    # criterios de abajo a cero este filtro no comprueba nada, asi que en true
+    # era una puerta sin condiciones que solo podia cerrarse -- y con 30
+    # candidatos por vuelta tirando de la misma API, pasarse de los 6s de
+    # timeout es facil. Si algun dia se le pone un criterio real (liquidez
+    # minima, market cap), volver a ponerlo en true.
+    block_on_error: false
     chain: solana
     require_listed: false
     require_dex_paid: false
