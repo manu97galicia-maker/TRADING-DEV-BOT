@@ -39,7 +39,11 @@ class PumpFunCurveManager(CurveManager):
         return Platform.PUMP_FUN
 
     async def get_pool_state(
-        self, pool_address: Pubkey, commitment: str | None = None
+        self,
+        pool_address: Pubkey,
+        commitment: str | None = None,
+        *,
+        exigir_precio: bool = True,
     ) -> dict[str, Any]:
         """Get the current state of a pump.fun bonding curve.
 
@@ -48,6 +52,12 @@ class PumpFunCurveManager(CurveManager):
             commitment: Optional commitment override. Pass "processed" right
                 after a geyser/logs event so the BC is readable in the same
                 slot it was created (default: confirmed, ~1-2 slot lag).
+            exigir_precio: Si es False, unas reservas a cero dejan de ser un
+                error y el precio simplemente no se calcula. Una curva MIGRADA
+                tiene las reservas vacias: decodifica bien y su campo
+                ``complete`` es legible, pero el precio ya no vive ahi. Con
+                esto en True (lo normal) quien pida el estado para operar en
+                la curva sigue recibiendo el error de siempre.
 
         Returns:
             Dictionary containing bonding curve state data
@@ -60,7 +70,9 @@ class PumpFunCurveManager(CurveManager):
                 raise ValueError(f"No data in bonding curve account {pool_address}")
 
             # Decode bonding curve state using injected IDL parser
-            curve_state_data = self._decode_curve_state_with_idl(account.data)
+            curve_state_data = self._decode_curve_state_with_idl(
+                account.data, exigir_precio=exigir_precio
+            )
 
             return curve_state_data
 
@@ -170,11 +182,16 @@ class PumpFunCurveManager(CurveManager):
             pool_state["virtual_sol_reserves"],
         )
 
-    def _decode_curve_state_with_idl(self, data: bytes) -> dict[str, Any]:
+    def _decode_curve_state_with_idl(
+        self, data: bytes, *, exigir_precio: bool = True
+    ) -> dict[str, Any]:
         """Decode bonding curve state data using injected IDL parser.
 
         Args:
             data: Raw account data
+            exigir_precio: Ver :meth:`get_pool_state`. Con False, unas reservas
+                vacias (curva migrada) devuelven el estado sin precio en vez de
+                lanzar.
 
         Returns:
             Dictionary with decoded bonding curve state
@@ -208,6 +225,15 @@ class PumpFunCurveManager(CurveManager):
 
         # Calculate additional metrics
         # Validate reserves are positive before calculating price
+        _sin_reservas = (
+            curve_data["virtual_token_reserves"] <= 0
+            or curve_data["virtual_sol_reserves"] <= 0
+        )
+        if _sin_reservas and not exigir_precio:
+            # Migrada: el resto del estado (complete, creator, flags) es
+            # valido y es justo lo que necesita quien va a comprar por el pool.
+            curve_data["price_per_token"] = 0.0
+            return curve_data
         if curve_data["virtual_token_reserves"] <= 0:
             raise ValueError(
                 f"Invalid virtual_token_reserves: {curve_data['virtual_token_reserves']} - cannot calculate price"
@@ -285,8 +311,11 @@ class PumpFunCurveManager(CurveManager):
         Returns:
             True if curve is complete, False otherwise
         """
-        pool_state = await self.get_pool_state(pool_address)
-        return pool_state.get("complete", False)
+        # Sin exigir precio: una curva completa tiene las reservas a cero y
+        # preguntar "esta completa?" no puede fallar justamente en el caso que
+        # se esta preguntando.
+        pool_state = await self.get_pool_state(pool_address, exigir_precio=False)
+        return bool(pool_state.get("complete", False))
 
     async def get_curve_progress(self, pool_address: Pubkey) -> dict[str, Any]:
         """Get bonding curve completion progress information.
