@@ -1,5 +1,15 @@
-"""DEXTools market-data API integration."""
+"""DEXTools API v2 client."""
 
-from dextools.client import DextoolsClient, DextoolsTokenData
+from dextools.client import (
+    DextoolsClient,
+    DextoolsHotPool,
+    DextoolsTokenData,
+    DextoolsTokenSafety,
+)
 
-__all__ = ["DextoolsClient", "DextoolsTokenData"]
+__all__ = [
+    "DextoolsClient",
+    "DextoolsHotPool",
+    "DextoolsTokenData",
+    "DextoolsTokenSafety",
+]

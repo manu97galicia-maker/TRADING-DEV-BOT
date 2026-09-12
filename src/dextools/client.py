@@ -1,4 +1,15 @@
-"""Small async client for DEXTools API v2 token data."""
+"""Small async client for DEXTools API v2.
+
+Cubre tres cosas: los datos de un token, el ranking de hotpools y los
+endpoints de bloqueo/auditoria.
+
+Sobre el ranking: la API v2 NO tiene endpoint de "quien acaba de pagar
+NITRO" -- sus endpoints son blockchain/exchange/pool/token/rankings y
+ninguno expone la compra de promocion. Lo que si se puede leer es su
+efecto: un pack NITRO compra posicion en el DEXTboard, y el DEXTboard es
+``/ranking/{chain}/hotpools``. No es el recibo, es la consecuencia, con la
+ventaja de llegar ya validada por el mercado.
+"""
 
 from __future__ import annotations
 
@@ -33,6 +44,33 @@ class DextoolsTokenData:
     market_cap: float | None = None
     fdv: float | None = None
     dext_score: float | None = None
+    raw: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class DextoolsHotPool:
+    """Una entrada del ranking de hotpools (el DEXTboard)."""
+
+    mint: str
+    pool: str | None = None
+    name: str | None = None
+    symbol: str | None = None
+    rank: int | None = None
+    raw: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class DextoolsTokenSafety:
+    """Bloqueo de liquidez y autoridades de un token.
+
+    ``lp_locked_pct`` a None significa "no se ha podido saber", que NO es lo
+    mismo que cero: quien decide descarta ante la duda, no este parseo.
+    """
+
+    lp_locked_pct: float | None = None
+    is_honeypot: bool | None = None
+    mint_authority_active: bool | None = None
+    freeze_authority_active: bool | None = None
     raw: dict[str, Any] = field(default_factory=dict)
 
 
@@ -93,13 +131,27 @@ class DextoolsClient:
                     self._owns_session = True
         return self._session
 
-    async def _get(self, suffix: str) -> object:
+    @property
+    def tier(self) -> str:
+        """Plan contra el que se construyen las URLs."""
+        return self._tier
+
+    async def _get_token(self, suffix: str) -> object:
+        """GET bajo ``/token/{chain}/``, que es donde vive casi todo."""
+        return await self._get(f"/token/{self._chain}/{suffix}")
+
+    async def _get(self, ruta: str) -> object:
+        """GET a cualquier ruta de la v2, ya con plan, clave y limitador.
+
+        El prefijo ``/token/`` estaba antes metido aqui dentro, lo que dejaba
+        ``/ranking/`` fuera de alcance; ahora lo pone quien llama.
+        """
         if not self.configured:
             logger.warning("DEXTools skipped: DEXTOOLS_API_KEY is not configured")
             return None
         await self._limiter.acquire()
         session = await self._get_session()
-        path = f"/{self._tier}/v2/token/{self._chain}/{suffix}"
+        path = f"/{self._tier}/v2{ruta}"
         try:
             async with session.get(
                 f"{BASE_URL}{path}",
@@ -118,9 +170,9 @@ class DextoolsClient:
     async def get_token(self, token_address: str) -> DextoolsTokenData | None:
         """Fetch and combine the token, price, and score v2 endpoints."""
         responses = await asyncio.gather(
-            self._get(token_address),
-            self._get(f"{token_address}/price"),
-            self._get(f"{token_address}/score"),
+            self._get_token(token_address),
+            self._get_token(f"{token_address}/price"),
+            self._get_token(f"{token_address}/score"),
         )
         data = [_unwrap(response) for response in responses]
         if not any(data):
@@ -129,6 +181,30 @@ class DextoolsClient:
         for item in data:
             merged.update(item)
         return _parse_token_data(merged)
+
+    async def get_hotpools(self, limit: int = 0) -> list[DextoolsHotPool]:
+        """Ranking de hotpools de la cadena: el DEXTboard que compra NITRO."""
+        payload = await self._get(f"/ranking/{self._chain}/hotpools")
+        return _parse_hotpools(payload, limit=limit)
+
+    async def get_gainers(self, limit: int = 0) -> list[DextoolsHotPool]:
+        """Ranking de mayores subidas, con la misma forma que hotpools."""
+        payload = await self._get(f"/ranking/{self._chain}/gainers")
+        return _parse_hotpools(payload, limit=limit)
+
+    async def get_token_safety(self, token_address: str) -> DextoolsTokenSafety | None:
+        """Bloqueo de liquidez y auditoria de un token.
+
+        Devuelve None si la API no contesta nada, para que quien llama pueda
+        distinguir "no lo se" de "lo se y esta mal".
+        """
+        locks, audit = await asyncio.gather(
+            self._get_token(f"{token_address}/locks"),
+            self._get_token(f"{token_address}/audit"),
+        )
+        if locks is None and audit is None:
+            return None
+        return _parse_token_safety(locks, audit)
 
 
 def _unwrap(payload: object) -> dict[str, Any]:
@@ -165,3 +241,97 @@ def _num(value: object) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def _first(data: dict[str, Any], *keys: str) -> object:
+    """Devuelve el primer valor no nulo de entre varias claves posibles."""
+    for key in keys:
+        value = data.get(key)
+        if value is not None:
+            return value
+    return None
+
+
+def _flag(value: object) -> bool | None:
+    """Interpreta los si/no de la auditoria, que llegan de tres formas.
+
+    Unas veces son booleanos, otras las cadenas "yes"/"no" y otras
+    "unknown". "unknown" tiene que seguir siendo None: es el caso que debe
+    hacer que se descarte la moneda, y convertirlo en False lo volveria un
+    aprobado.
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if text in {"yes", "true", "1"}:
+            return True
+        if text in {"no", "false", "0"}:
+            return False
+    return None
+
+
+def _parse_hotpools(payload: object, limit: int = 0) -> list[DextoolsHotPool]:
+    """Normaliza la respuesta del ranking a una lista manejable.
+
+    Llega a veces como ``{"data": [...]}`` y a veces como lista pelada, y el
+    token principal del par unas veces es ``mainToken`` y otras ``token``. Se
+    aceptan ambas: es mas barato que quedarse sin senal el dia que cambien
+    el nombre.
+    """
+    if isinstance(payload, dict):
+        entries = payload.get("data", payload.get("results", []))
+    else:
+        entries = payload
+    if not isinstance(entries, list):
+        return []
+    pools: list[DextoolsHotPool] = []
+    for position, entry in enumerate(entries, start=1):
+        if not isinstance(entry, dict):
+            continue
+        main = _first(entry, "mainToken", "token", "baseToken")
+        if not isinstance(main, dict):
+            continue
+        mint = _first(main, "address", "tokenAddress", "id")
+        if not mint:
+            continue
+        rank = _num(_first(entry, "rank", "position"))
+        pool = _first(entry, "address", "pairAddress")
+        pools.append(
+            DextoolsHotPool(
+                mint=str(mint),
+                pool=str(pool) if pool is not None else None,
+                name=main.get("name"),
+                symbol=main.get("symbol"),
+                rank=int(rank) if rank is not None else position,
+                raw=entry,
+            )
+        )
+        if limit > 0 and len(pools) >= limit:
+            break
+    return pools
+
+
+def _parse_token_safety(locks: object, audit: object) -> DextoolsTokenSafety:
+    """Junta los dos endpoints de seguridad en una sola respuesta."""
+    lock_data = _unwrap(locks)
+    audit_data = _unwrap(audit)
+    pct = _num(
+        _first(
+            lock_data,
+            "lockedPercentage",
+            "percentageLocked",
+            "lockedLiquidityPercentage",
+        )
+    )
+    return DextoolsTokenSafety(
+        lp_locked_pct=pct,
+        is_honeypot=_flag(_first(audit_data, "isHoneypot", "honeypot")),
+        mint_authority_active=_flag(
+            _first(audit_data, "isMintable", "mintable", "mintAuthority")
+        ),
+        freeze_authority_active=_flag(
+            _first(audit_data, "isBlacklisted", "freezeAuthority", "isFreezable")
+        ),
+        raw={"locks": lock_data, "audit": audit_data},
+    )

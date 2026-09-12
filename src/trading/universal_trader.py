@@ -367,6 +367,7 @@ class UniversalTrader:
         # Buy-on-dex-paid acquisition mode (disabled unless configured)
         buy_on_dex_paid: dict | None = None,
         birdeye_trending: dict | None = None,
+        dextools_hotpools: dict | None = None,
         # Telegram-calls acquisition mode (disabled unless configured)
         telegram_calls: dict | None = None,
         discord_calls: dict | None = None,
@@ -1099,6 +1100,7 @@ class UniversalTrader:
         # Buy-on-dex-paid acquisition mode config (off unless enabled)
         self.buy_on_dex_paid = buy_on_dex_paid or {}
         self.birdeye_trending = birdeye_trending or {}
+        self.dextools_hotpools = dextools_hotpools or {}
         # Telegram-calls acquisition mode config (off unless enabled)
         self.telegram_calls = telegram_calls or {}
         self.discord_calls = discord_calls or {}
@@ -1246,6 +1248,9 @@ class UniversalTrader:
         if self.birdeye_trending.get("enabled"):
             logger.info("Birdeye-trending acquisition ENABLED")
             acquisition_tasks.append(asyncio.create_task(self._run_birdeye_mode()))
+        if self.dextools_hotpools.get("enabled"):
+            logger.info("DEXTools-hotpools acquisition ENABLED")
+            acquisition_tasks.append(asyncio.create_task(self._run_dextools_mode()))
         if self.telegram_calls.get("enabled"):
             logger.info("Telegram-calls acquisition ENABLED")
             acquisition_tasks.append(asyncio.create_task(self._run_telegram_mode()))
@@ -1533,6 +1538,32 @@ class UniversalTrader:
             await source.run(self._on_dexpaid_token)
         except asyncio.CancelledError:
             logger.info("Birdeye-trending mode stopped")
+
+    async def _run_dextools_mode(self) -> None:
+        """Run the DEXTools DEXTboard acquisition loop until interrupted."""
+        from monitoring.dextools_source import DextoolsHotPoolsSource
+
+        cfg = self.dextools_hotpools
+        source = DextoolsHotPoolsSource(
+            self.platform_implementations,
+            self.solana_client,
+            poll_interval=float(cfg.get("poll_interval", 15)),
+            limit=int(cfg.get("limit", 30)),
+            normal_buy_amount=float(cfg.get("normal_buy_amount", self.buy_amount)),
+            promoted_rank=int(cfg.get("promoted_rank", 10)),
+            promoted_buy_amount=float(
+                cfg.get("promoted_buy_amount", cfg.get("normal_buy_amount", 0.2))
+            ),
+            heartbeat_interval=float(cfg.get("heartbeat_interval", 300)),
+            paper_mode=self.paper_trade or self.paper_engine.enabled,
+            incluir_migradas=bool(cfg.get("incluir_migradas", True)),
+            incluir_cualquier_origen=bool(cfg.get("incluir_cualquier_origen", False)),
+            min_lp_locked_pct=float(cfg.get("min_lp_locked_pct", 50)),
+        )
+        try:
+            await source.run(self._on_dexpaid_token)
+        except asyncio.CancelledError:
+            logger.info("DEXTools-hotpools mode stopped")
 
     async def _run_telegram_mode(self) -> None:
         """Run the Telegram-calls acquisition loop until interrupted."""

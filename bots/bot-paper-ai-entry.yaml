@@ -177,6 +177,35 @@ filters:
     boost_threshold: 500
     boost_buy_amount: 0.20
 
+  # DEXTools DEXTboard. La API v2 NO tiene endpoint de "quien pago NITRO":
+  # sus 19 endpoints son blockchain/exchange/pool/token/rankings. Lo que si
+  # se puede leer es el EFECTO del pago -- un pack NITRO (200 pts/199 $ hasta
+  # 5000 pts/3.999 $, boost de 24 h) compra posicion en el DEXTboard, y el
+  # DEXTboard es /ranking/solana/hotpools.
+  #
+  # Dispara al ENTRAR en el ranking, no por estar en el: estar dentro es un
+  # estado que dura horas, entrar es un suceso. La foto del arranque se
+  # registra sin comprar.
+  #
+  # Necesita DEXTOOLS_API_KEY y DEXTOOLS_API_TIER en el .env. El plan va DENTRO
+  # de la URL (/trial/v2, /standard/v2...), asi que una clave puesta contra
+  # el plan equivocado devuelve 401 y la fuente se queda muda.
+  dextools_hotpools:
+    enabled: true
+    poll_interval: 15
+    heartbeat_interval: 300
+    limit: 30
+    # El puesto es lo mas parecido a "cuanto se han gastado" que esta API
+    # deja leer: subir mas alto cuesta mas NITRO.
+    promoted_rank: 10
+    normal_buy_amount: 0.15
+    promoted_buy_amount: 0.20
+    incluir_migradas: true
+    # A diferencia de la fuente de DexScreener, aqui el bloqueo de liquidez
+    # lo comprueba la propia API de DEXTools (/locks y /audit), no RugCheck.
+    incluir_cualquier_origen: false
+    min_lp_locked_pct: 50
+
   # Birdeye: dispara cuando una moneda ENTRA en la lista de tendencias
   # (no por estar en ella). La foto del arranque se registra sin comprar.
   # Necesita BIRDEYE_API_KEY en el .env; sin clave la fuente no arranca y
