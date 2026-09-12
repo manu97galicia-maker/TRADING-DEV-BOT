@@ -71,8 +71,18 @@ async def build_pumpfun_token_info(  # noqa: PLR0913
         logger.info("Skip %s (%s): bonding curve complete (migrated)", symbol, mint_str)
         return None
 
+    # A una migrada NO se le puede pedir precio: la curva sigue existiendo
+    # pero vacia, y calcularlo lanza. El arreglo anterior (a6692eb) tapo esto
+    # en is_curve_complete pero no aqui, dos lineas mas abajo, asi que la
+    # moneda pasaba el "¿migro?" y moria en el "ahora leela": en los logs
+    # salia como "Could not read curve state for ...pump; skipping".
+    #
+    # De este estado solo se usan creator y las banderas mayhem/cashback, que
+    # son validos igualmente. El precio de una migrada sale del pool.
     try:
-        state = await curve_manager.get_pool_state(bonding_curve)
+        state = await curve_manager.get_pool_state(
+            bonding_curve, exigir_precio=not migrada
+        )
     except Exception:  # noqa: BLE001
         logger.warning("Could not read curve state for %s; skipping", mint_str)
         return None

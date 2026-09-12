@@ -8,6 +8,7 @@ import pytest
 
 from monitoring.dexpaid_source import DexPaidSource
 from trading.base import TradeResult
+from trading.token_builder import build_pumpfun_token_info
 from trading.universal_trader import UniversalTrader
 
 
@@ -126,3 +127,72 @@ def test_rugcheck_solo_se_pide_si_se_abre_a_cualquier_origen() -> None:
     """La consulta es lenta; en pump.fun aporta poco y se salta."""
     assert _fuente_abierta(abierto=False).incluir_cualquier_origen is False
     assert _fuente_abierta(abierto=True).incluir_cualquier_origen is True
+
+
+class _CurvaMigrada:
+    """Curva de una moneda ya migrada: existe pero con las reservas a cero.
+
+    Reproduce lo que devolvio el bot en produccion el 12-sep a las 20:02:45,
+    donde una moneda acabada en 'pump' y ya migrada salia del log como
+    "Could not read curve state for ...; skipping".
+    """
+
+    def __init__(self) -> None:
+        self.exigio_precio: list[bool] = []
+
+    async def is_curve_complete(self, _pool: object) -> bool:
+        return True
+
+    async def get_pool_state(
+        self, _pool: object, *, exigir_precio: bool = True
+    ) -> dict:
+        self.exigio_precio.append(exigir_precio)
+        if exigir_precio:
+            msg = "Invalid virtual_token_reserves: 0 - cannot calculate price"
+            raise ValueError(msg)
+        return {
+            "creator": "11111111111111111111111111111111",
+            "is_mayhem_mode": False,
+            "is_cashback_coin": False,
+            "price_per_token": 0.0,
+        }
+
+
+def test_a_una_migrada_no_se_le_pide_precio() -> None:
+    """El fallo real: pasaba el "¿migro?" y moria en el "ahora leela".
+
+    a6692eb tapo is_curve_complete pero no la llamada de dos lineas mas
+    abajo, asi que con incluir_migradas encendido la moneda se tiraba igual.
+    """
+    curva = _CurvaMigrada()
+
+    async def _comprobar() -> None:
+        # Sin estado real de Solana el constructor acabara devolviendo None,
+        # pero lo que se comprueba es que la curva se consulta SIN exigir
+        # precio: ese era el paso que mataba la compra.
+        class _Impls:
+            address_provider = type(
+                "AP",
+                (),
+                {
+                    "derive_pool_address": staticmethod(lambda _m: object()),
+                    "get_additional_accounts": staticmethod(lambda _t: {}),
+                },
+            )()
+            curve_manager = curva
+
+        class _Cliente:
+            async def get_account_info(self, _m: object) -> None:
+                return None
+
+        await build_pumpfun_token_info(
+            "DBDqhnAi5MjaHsk1JyUonAtUUrmRBJPjJi3GdiBLpump",
+            _Impls(),
+            _Cliente(),
+            permitir_migradas=True,
+        )
+
+    asyncio.run(_comprobar())
+    assert curva.exigio_precio == [False], (
+        f"debia consultarse sin exigir precio, se hizo con {curva.exigio_precio}"
+    )
