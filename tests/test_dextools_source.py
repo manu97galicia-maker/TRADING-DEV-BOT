@@ -1,6 +1,6 @@
 """Tests de la fuente DEXTools (DEXTboard) y del parseo de su API."""
 
-# ruff: noqa: S101
+# ruff: noqa: S101, PLR2004
 
 import pytest
 
@@ -56,6 +56,33 @@ def test_sin_puesto_conocido_se_compra_lo_normal() -> None:
     """No saber cuanto pagaron no es motivo para apostar mas."""
     assert importe_por_rango(None, 0.15, 10, 0.20) == 0.15
     assert importe_por_rango(3, 0.15, 0, 0.20) == 0.15
+
+
+def test_el_puesto_intermedio_compra_el_importe_medio() -> None:
+    """Esta fuente nacio con dos escalones y saltaba de golpe al grande.
+
+    Las otras dos (boosts de DexScreener, Nitro de Telegram) siempre
+    tuvieron tres.
+    """
+    assert importe_por_rango(15, 0.21, 10, 0.28, 20, 0.238) == 0.238
+    assert importe_por_rango(20, 0.21, 10, 0.28, 20, 0.238) == 0.238
+
+
+def test_los_tres_escalones_en_orden() -> None:
+    def _importe(puesto: int) -> float:
+        return importe_por_rango(puesto, 0.21, 10, 0.28, 20, 0.238)
+
+    assert _importe(1) == 0.28
+    assert _importe(10) == 0.28
+    assert _importe(11) == 0.238
+    assert _importe(20) == 0.238
+    assert _importe(21) == 0.21
+    assert _importe(30) == 0.21
+
+
+def test_sin_escalon_medio_se_comporta_como_antes() -> None:
+    """Quien no configure medium_rank no cambia de comportamiento."""
+    assert importe_por_rango(15, 0.21, 10, 0.28) == 0.21
 
 
 def test_hotpools_acepta_las_dos_formas_de_la_api() -> None:

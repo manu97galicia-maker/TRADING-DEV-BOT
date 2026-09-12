@@ -70,21 +70,31 @@ def build_dextools_heartbeat(  # noqa: PLR0913
     return "\n".join(lineas)
 
 
-def importe_por_rango(
+def importe_por_rango(  # noqa: PLR0913
     rank: int | None,
     normal: float,
     rango_promocionado: int,
     promocionado: float,
+    rango_medio: int = 0,
+    medio: float = 0.0,
 ) -> float:
     """Devuelve cuanto comprar segun lo alto que haya entrado en el ranking.
 
     Subir en el DEXTboard cuesta NITRO, asi que la posicion es el unico
-    indicador de gasto que la API deja leer. Sin rango se usa el importe
-    normal: no saber cuanto pagaron no es motivo para apostar mas.
+    indicador de gasto que la API deja leer. Tres escalones, como en las
+    otras dos fuentes: esta se quedo en dos y saltaba de golpe del importe
+    normal al grande sin paso intermedio.
+
+    Sin rango se usa el importe normal: no saber cuanto pagaron no es
+    motivo para apostar mas.
     """
-    if rank is None or rango_promocionado <= 0:
+    if rank is None:
         return normal
-    return promocionado if rank <= rango_promocionado else normal
+    if rango_promocionado > 0 and rank <= rango_promocionado:
+        return promocionado
+    if rango_medio > 0 and medio > 0 and rank <= rango_medio:
+        return medio
+    return normal
 
 
 class DexBoardEntrantTracker:
@@ -119,6 +129,8 @@ class DextoolsHotPoolsSource:
         normal_buy_amount: float = 0.15,
         promoted_rank: int = 10,
         promoted_buy_amount: float = 0.20,
+        medium_rank: int = 0,
+        medium_buy_amount: float = 0.0,
         heartbeat_interval: float = 300.0,
         paper_mode: bool = True,
         incluir_migradas: bool = True,
@@ -134,6 +146,8 @@ class DextoolsHotPoolsSource:
         self.normal_buy_amount = normal_buy_amount
         self.promoted_rank = promoted_rank
         self.promoted_buy_amount = promoted_buy_amount
+        self.medium_rank = medium_rank
+        self.medium_buy_amount = medium_buy_amount
         self.heartbeat_interval = heartbeat_interval
         self.paper_mode = paper_mode
         self.incluir_migradas = incluir_migradas
@@ -218,6 +232,8 @@ class DextoolsHotPoolsSource:
             self.normal_buy_amount,
             self.promoted_rank,
             self.promoted_buy_amount,
+            self.medium_rank,
+            self.medium_buy_amount,
         )
         token_info.additional_data = {
             **(token_info.additional_data or {}),

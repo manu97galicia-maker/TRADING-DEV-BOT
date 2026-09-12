@@ -210,9 +210,16 @@ filters:
     heartbeat_interval: 300
     limit: 30
     # El puesto es lo mas parecido a "cuanto se han gastado" que esta API
-    # deja leer: subir mas alto cuesta mas NITRO.
+    # deja leer: subir mas alto cuesta mas NITRO. Tres escalones, igual que
+    # DexScreener (por boosts) y Telegram (por Nitro); esta fuente nacio con
+    # dos y saltaba de golpe de 0,21 a 0,28 sin paso intermedio.
+    #   puesto 1-10  -> promocionado
+    #   puesto 11-20 -> medio
+    #   puesto 21-30 -> normal
     promoted_rank: 10
+    medium_rank: 20
     normal_buy_amount: 0.21
+    medium_buy_amount: 0.238
     promoted_buy_amount: 0.28
     incluir_migradas: true
     # A diferencia de la fuente de DexScreener, aqui el bloqueo de liquidez

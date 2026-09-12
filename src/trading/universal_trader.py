@@ -1554,6 +1554,8 @@ class UniversalTrader:
             promoted_buy_amount=float(
                 cfg.get("promoted_buy_amount", cfg.get("normal_buy_amount", 0.2))
             ),
+            medium_rank=int(cfg.get("medium_rank", 0)),
+            medium_buy_amount=float(cfg.get("medium_buy_amount", 0)),
             heartbeat_interval=float(cfg.get("heartbeat_interval", 300)),
             paper_mode=self.paper_trade or self.paper_engine.enabled,
             incluir_migradas=bool(cfg.get("incluir_migradas", True)),
