@@ -12,12 +12,19 @@ platform: pump_fun
 trade:
   buy_amount: 0.15
   mayhem_buy_amount: 0
-  max_posiciones: 3
+  # Posiciones abiertas A LA VEZ. Es el limite de verdad: un semaforo que no
+  # deja abrir la tercera hasta que se cierre una. Exposicion maxima en todo
+  # momento = max_posiciones x tope_compra_sol.
+  max_posiciones: 2
   # Tope de por vida de compras reales. Empieza en 1 a proposito: el camino
   # de compra de mints EXISTENTES nunca se ha ejecutado contra una compra de
   # verdad (hay avisos en token_builder.py y en las tres fuentes). Con 1 se ve
   # si la transaccion entra antes de repetir el mismo fallo tres veces.
-  max_real_buys: 2
+  # 0 = sin tope de compras. Este contador es POR TANDA y la tanda solo
+  # cierra cuando no queda NINGUNA posicion abierta: con un numero aqui, si
+  # una cierra y la otra sigue viva, no se compra la que falta. Quien limita
+  # cuantas hay a la vez es max_posiciones, no esto.
+  max_real_buys: 0
   # Cierra la tanda y pone el contador a 0 cuando no queda ninguna posicion
   # abierta, para que el bot pueda seguir comprando. En false, max_real_buys
   # deja de ser un tope POR TANDA y se convierte en un apagado con retardo:
