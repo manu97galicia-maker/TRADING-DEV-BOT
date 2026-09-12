@@ -27,24 +27,45 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-def build_monitor_heartbeat(
+def build_monitor_heartbeat(  # noqa: PLR0913
     poll_interval: float,
     fresh_signals: int,
     max_payment_age_minutes: float,
     max_token_age_minutes: float,
     *,
     paper_mode: bool,
+    embudo: dict[str, int] | None = None,
 ) -> str:
-    """Build the periodic Telegram health message for the API monitor."""
+    """Build the periodic Telegram health message for the API monitor.
+
+    Muestra el EMBUDO, no solo lo que sale por abajo: "0 comprables" puede
+    significar que no llega nada, o que llega mucho y se cae todo por el
+    camino, y son problemas opuestos con arreglos opuestos.
+    """
     mode = "PAPER" if paper_mode else "REAL"
-    return (
-        "🛰 <b>MONITOR ACTIVO</b>\n"
-        f"DexScreener: última revisión correcta · cada {poll_interval:g}s\n"
-        f"Señales frescas desde el último aviso: <b>{fresh_signals}</b>\n"
-        f"Filtros: pago ≤{max_payment_age_minutes:g}m · "
-        f"moneda ≤{max_token_age_minutes:g}m\n"
-        f"Modo: <b>{mode}</b>"
+    lineas = [
+        "🛰 <b>MONITOR ACTIVO</b>",
+        f"DexScreener: última revisión correcta · cada {poll_interval:g}s",
+    ]
+    if embudo:
+        lineas.extend(
+            [
+                f"👀 Candidatas vistas: <b>{embudo.get('vistas', 0)}</b>",
+                f"  ↳ ya vistas antes: {embudo.get('repetidas', 0)}",
+                f"  ↳ sin señal nueva: {embudo.get('no_frescas', 0)}",
+                f"  ↳ migradas descartadas: {embudo.get('migradas', 0)}",
+                f"  ↳ no se pudo construir: {embudo.get('sin_construir', 0)}",
+            ]
+        )
+    lineas.extend(
+        [
+            f"✅ Comprables: <b>{fresh_signals}</b>",
+            f"Filtros: pago ≤{max_payment_age_minutes:g}m · "
+            f"moneda ≤{max_token_age_minutes:g}m",
+            f"Modo: <b>{mode}</b>",
+        ]
     )
+    return "\n".join(lineas)
 
 
 def _dexpaid_signal_amount(
@@ -143,6 +164,63 @@ class DexPaidSource:
         self._primed = False
         self._last_heartbeat = 0.0
         self._fresh_signals = 0
+        # El embudo entero, no solo lo que sale por abajo. Contando solo las
+        # comprables era imposible distinguir "no llega nada" de "llega mucho
+        # y se cae todo por el camino", que son problemas opuestos.
+        self._vistas = 0
+        self._repetidas = 0
+        self._no_frescas = 0
+        self._migradas = 0
+        self._sin_construir = 0
+
+    async def _evaluar(self, c: dict) -> TokenInfo | None:
+        """Pasa un candidato por el embudo y lo devuelve si es comprable.
+
+        Cada descarte suma en su contador: sin eso, "0 comprables" no
+        distingue entre que no llegue nada y que llegue todo y se caiga por
+        el camino.
+        """
+        mint = c.get("mint")
+        if not mint or mint in self._seen:
+            self._repetidas += 1
+            return None
+        if not self._freshness.accept(c):
+            self._no_frescas += 1
+            return None
+        # Quien paga DexScreener suele hacerlo cuando la moneda ya tiene
+        # traccion, y para entonces muchas han salido de la curva.
+        # Descartarlas siempre tira buena parte de la senal; con
+        # incluir_migradas se compran por el pool.
+        if c.get("migrated") and not self.incluir_migradas:
+            self._migradas += 1
+            return None
+        token_info = await self._construir(c)
+        if token_info is None:
+            self._sin_construir += 1
+            return None
+        boosts = float(c.get("boosts") or 0)
+        token_info.additional_data = {
+            **(token_info.additional_data or {}),
+            "acquisition_source": "dexscreener",
+            "dexscreener_boosts": boosts,
+            "signal_buy_amount": _dexpaid_signal_amount(
+                boosts,
+                self.normal_buy_amount,
+                self.small_boost_buy_amount,
+                self.boost_threshold,
+                self.boost_buy_amount,
+            ),
+        }
+        self._seen.add(mint)
+        self._fresh_signals += 1
+        logger.info(
+            "Fresh DexPaid %s -> %s (%s), token age %s min",
+            c.get("signal_type"),
+            token_info.symbol,
+            mint,
+            c.get("token_age_min"),
+        )
+        return token_info
 
     async def _construir(self, candidato: dict) -> TokenInfo | None:
         """Decide si un candidato es comprable y lo convierte en TokenInfo.
@@ -222,10 +300,22 @@ class DexPaidSource:
                 self.max_age_minutes,
                 self.max_token_age_minutes,
                 paper_mode=self.paper_mode,
+                embudo={
+                    "vistas": self._vistas,
+                    "repetidas": self._repetidas,
+                    "no_frescas": self._no_frescas,
+                    "migradas": self._migradas,
+                    "sin_construir": self._sin_construir,
+                },
             )
         )
         self._last_heartbeat = now
         self._fresh_signals = 0
+        self._vistas = 0
+        self._repetidas = 0
+        self._no_frescas = 0
+        self._migradas = 0
+        self._sin_construir = 0
 
     async def run(self, token_callback: Callable[[TokenInfo], Awaitable[None]]) -> None:
         """Continuously poll and emit new, non-migrated dex-paid candidates."""
@@ -257,43 +347,10 @@ class DexPaidSource:
                     self._send_heartbeat_if_due()
                     await asyncio.sleep(self.poll_interval)
                     continue
+                self._vistas += len(candidates)
                 for c in candidates:
-                    mint = c.get("mint")
-                    if not mint or mint in self._seen:
-                        continue
-                    if not self._freshness.accept(c):
-                        continue
-                    # Quien paga DexScreener suele hacerlo cuando la moneda
-                    # ya tiene traccion, y para entonces muchas han salido de
-                    # la curva. Descartarlas siempre tira buena parte de la
-                    # senal; con incluir_migradas se compran por el pool.
-                    if c.get("migrated") and not self.incluir_migradas:
-                        continue
-                    token_info = await self._construir(c)
+                    token_info = await self._evaluar(c)
                     if token_info is not None:
-                        boosts = float(c.get("boosts") or 0)
-                        signal_amount = _dexpaid_signal_amount(
-                            boosts,
-                            self.normal_buy_amount,
-                            self.small_boost_buy_amount,
-                            self.boost_threshold,
-                            self.boost_buy_amount,
-                        )
-                        token_info.additional_data = {
-                            **(token_info.additional_data or {}),
-                            "acquisition_source": "dexscreener",
-                            "dexscreener_boosts": boosts,
-                            "signal_buy_amount": signal_amount,
-                        }
-                        self._seen.add(mint)
-                        self._fresh_signals += 1
-                        logger.info(
-                            "Fresh DexPaid %s -> %s (%s), token age %s min",
-                            c.get("signal_type"),
-                            token_info.symbol,
-                            mint,
-                            c.get("token_age_min"),
-                        )
                         await token_callback(token_info)
                 self._send_heartbeat_if_due()
             except asyncio.CancelledError:
