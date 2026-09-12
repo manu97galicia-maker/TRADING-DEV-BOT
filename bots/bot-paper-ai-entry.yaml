@@ -17,7 +17,7 @@ trade:
   # de compra de mints EXISTENTES nunca se ha ejecutado contra una compra de
   # verdad (hay avisos en token_builder.py y en las tres fuentes). Con 1 se ve
   # si la transaccion entra antes de repetir el mismo fallo tres veces.
-  max_real_buys: 1
+  max_real_buys: 2
   reiniciar_tanda: false
   max_perdidas_seguidas: 0
   buy_amount_tras_sl: 0.15
