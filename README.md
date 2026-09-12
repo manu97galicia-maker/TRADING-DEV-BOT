@@ -45,10 +45,10 @@ Flujo de una señal:
 | Fuente | Tipo de evento | Estado en la estrategia |
 |---|---|---|
 | DexScreener | paid/listing y boosts | Activada por API pública |
-| MoonTok / `CryptoListings` | listado o promoción | Configurada por Telegram |
+| MoonTok / `CryptoListings` | listado o promoción | **Desactivada** (fuera de la lista de canales) |
 | DEXTools / `dextools_nitro` | Nitro | Configurada por Telegram |
-| `DEXTNewPairsBot` | nuevo par | Configurada por Telegram |
-| `LegendsAlphas` | call publicado | Configurada por Telegram |
+| `DEXTNewPairsBot` | nuevo par | **Desactivada** (fuera de la lista de canales) |
+| `LegendsAlphas` | call publicado | **Desactivada** (fuera de la lista de canales) |
 | GMGN | enlace informativo en avisos | Las señales de compra GMGN están desactivadas |
 | Birdeye | entrada en la lista de tendencias | Implementada pero **desactivada**: es atención, no pago |
 | API DEXTools | datos de mercado auxiliares | Opcional, no dispara esta estrategia |
