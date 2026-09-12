@@ -13,7 +13,11 @@ trade:
   buy_amount: 0.15
   mayhem_buy_amount: 0
   max_posiciones: 3
-  max_real_buys: 0
+  # Tope de por vida de compras reales. Empieza en 1 a proposito: el camino
+  # de compra de mints EXISTENTES nunca se ha ejecutado contra una compra de
+  # verdad (hay avisos en token_builder.py y en las tres fuentes). Con 1 se ve
+  # si la transaccion entra antes de repetir el mismo fallo tres veces.
+  max_real_buys: 1
   reiniciar_tanda: false
   max_perdidas_seguidas: 0
   buy_amount_tras_sl: 0.15
@@ -78,7 +82,7 @@ filters:
   require_mayhem: false
   marry_mode: false
   yolo_mode: true
-  paper_trade: true
+  paper_trade: false
   ignorar_listas_de_devs: false
   max_holder_pct: 0.05
   min_holders: 0

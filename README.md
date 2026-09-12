@@ -6,16 +6,18 @@ canales seleccionados de Telegram (MoonTok, DEXTools y Legends Alpha), registra
 el motivo exacto de cada entrada y simula una salida escalonada con protección
 progresiva del capital.
 
-> **Estado seguro actual:** `bot-paper-ai-entry` es la **única** estrategia con
-> `enabled: true`; el resto de los YAML de `bots/` están desactivados. El
-> runner carga todo `bots/*.yaml`, así que reactivar cualquier otro lo pone a
-> operar en paralelo y compartiendo wallet.
+> **DINERO REAL ACTIVADO.** `paper_trade: false` y `max_real_buys: 1`: la
+> estrategia compra con SOL de verdad, **una sola vez**, por un máximo de
+> 0,20 SOL. El tope está en 1 a propósito — el camino de compra de mints
+> existentes nunca se había ejecutado contra una compra real.
 >
-> Esta estrategia corre en paper trading. `paper_trade: true` y
-> `max_real_buys: 0` impiden que compre con SOL real; `enabled: true` solo
-> hace que la simulación se ejecute y acumule muestra. No se debe habilitar
-> dinero real hasta completar pruebas, rotar todas las credenciales que hayan
-> podido quedar expuestas y revisar el despliegue.
+> Para volver a papel: `bash volver_a_papel.sh`. Para parar del todo:
+> `systemctl stop paper-ai-entry`.
+>
+> `bot-paper-ai-entry` es la **única** estrategia con `enabled: true`; el resto
+> de los YAML de `bots/` están desactivados. El runner carga todo
+> `bots/*.yaml`, así que reactivar cualquier otro lo pone a operar en paralelo
+> y compartiendo wallet.
 
 ## Qué hace la estrategia principal
 
