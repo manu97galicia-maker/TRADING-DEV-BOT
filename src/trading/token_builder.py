@@ -24,12 +24,14 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-async def build_pumpfun_token_info(
+async def build_pumpfun_token_info(  # noqa: PLR0913
     mint_str: str,
     platform_impls: object,
     client: object,
     symbol: str = "",
     name: str = "",
+    *,
+    permitir_migradas: bool = False,
 ) -> TokenInfo | None:
     """Reconstruct a pump.fun TokenInfo for an existing mint.
 
@@ -55,15 +57,18 @@ async def build_pumpfun_token_info(
     curve_manager = platform_impls.curve_manager
     bonding_curve = address_provider.derive_pool_address(mint)
 
-    # Reject migrated tokens (bonding curve complete -> now on PumpSwap).
+    # Una curva completa significa que la moneda migro a PumpSwap. Por
+    # defecto se rechaza, porque el comprador normal entra POR la curva y ahi
+    # ya no hay nada que comprar. Con `permitir_migradas` se deja pasar y se
+    # marca, para que quien compre enrute por el pool en vez de por la curva.
+    migrada = False
     try:
-        if await curve_manager.is_curve_complete(bonding_curve):
-            logger.info(
-                "Skip %s (%s): bonding curve complete (migrated)", symbol, mint_str
-            )
-            return None
+        migrada = await curve_manager.is_curve_complete(bonding_curve)
     except Exception:  # noqa: BLE001 -- unreadable curve => can't safely buy
         logger.warning("Could not read curve for %s; skipping", mint_str)
+        return None
+    if migrada and not permitir_migradas:
+        logger.info("Skip %s (%s): bonding curve complete (migrated)", symbol, mint_str)
         return None
 
     try:
@@ -113,6 +118,15 @@ async def build_pumpfun_token_info(
         is_mayhem_mode=bool(state.get("is_mayhem_mode", False)),
         is_cashback_coin=bool(state.get("is_cashback_coin", False)),
     )
+
+    if migrada:
+        # El comprador y el monitor de precio consultan esta marca: la curva
+        # sigue existiendo pero esta vacia, asi que calcular precio con ella
+        # lanza y hay que ir al DEX.
+        token_info.additional_data = {
+            **(token_info.additional_data or {}),
+            "migrated": True,
+        }
 
     # Derive associated bonding curve + creator vault.
     extra = address_provider.get_additional_accounts(token_info)
