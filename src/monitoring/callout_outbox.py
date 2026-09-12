@@ -8,8 +8,12 @@ without coupling authentication or browser cookies to the trading loop.
 
 from __future__ import annotations
 
+# OJO al importar fechas: `datetime.UTC` es de Python 3.11, pero este
+# proyecto declara requires-python = ">=3.10" y el droplet corre 3.10. Alli
+# ese import reventaba y se perdia el callout de CADA compra.
+# `timezone.utc` es lo mismo y existe desde siempre.
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from utils.logger import get_logger
@@ -40,7 +44,7 @@ def enqueue_callout(
     """Append one confirmed-buy callout to the durable JSONL outbox."""
     message = build_callout(name, mint)
     entry = {
-        "created_at": datetime.now(UTC).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "mint": mint,
         "name": name,
         "buy_signature": tx_signature,
@@ -107,7 +111,7 @@ def elegir_para_publicar(
     entradas = _leer(outbox)
     if not entradas:
         return None
-    ahora = ahora or datetime.now(UTC)
+    ahora = ahora or datetime.now(timezone.utc)
     limite = ahora - timedelta(hours=ventana_horas)
 
     for entrada in entradas:
