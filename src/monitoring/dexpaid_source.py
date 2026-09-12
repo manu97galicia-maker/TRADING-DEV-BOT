@@ -112,6 +112,7 @@ class DexPaidSource:
         *,
         heartbeat_interval: float = 300.0,
         paper_mode: bool = True,
+        incluir_migradas: bool = False,
     ) -> None:
         self._impls = platform_impls
         self._client = client
@@ -124,6 +125,7 @@ class DexPaidSource:
         self.boost_buy_amount = boost_buy_amount
         self.heartbeat_interval = heartbeat_interval
         self.paper_mode = paper_mode
+        self.incluir_migradas = incluir_migradas
         self._seen: set[str] = set()
         self._freshness = DexPaidFreshnessTracker()
         self._primed = False
@@ -187,14 +189,19 @@ class DexPaidSource:
                         continue
                     if not self._freshness.accept(c):
                         continue
-                    if c.get("migrated"):
-                        continue  # only bonding-curve buys
+                    # Quien paga DexScreener suele hacerlo cuando la moneda
+                    # ya tiene traccion, y para entonces muchas han salido de
+                    # la curva. Descartarlas siempre tira buena parte de la
+                    # senal; con incluir_migradas se compran por el pool.
+                    if c.get("migrated") and not self.incluir_migradas:
+                        continue
                     token_info = await build_pumpfun_token_info(
                         mint,
                         self._impls,
                         self._client,
                         symbol=c.get("symbol", ""),
                         name=c.get("name", ""),
+                        permitir_migradas=self.incluir_migradas,
                     )
                     if token_info is not None:
                         boosts = float(c.get("boosts") or 0)

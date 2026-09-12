@@ -1495,6 +1495,9 @@ class UniversalTrader:
                 self.buy_on_dex_paid.get("heartbeat_interval", 300)
             ),
             paper_mode=self.paper_trade or self.paper_engine.enabled,
+            incluir_migradas=bool(
+                self.buy_on_dex_paid.get("incluir_migradas", False)
+            ),
         )
         try:
             await source.run(self._on_dexpaid_token)

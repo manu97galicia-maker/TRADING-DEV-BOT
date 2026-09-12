@@ -116,6 +116,14 @@ filters:
     # recibir un pago o un boost sigue trayendo volumen, y esa es la senal.
     # El pago SI debe ser reciente: eso lo sigue midiendo max_age_minutes.
     max_token_age_minutes: 0
+    # Comprar tambien las que YA MIGRARON de la curva a PumpSwap. Quien paga
+    # DexScreener suele hacerlo cuando la moneda ya tiene traccion, y para
+    # entonces muchas han salido de la curva: descartarlas tira buena parte
+    # de la senal. Estas se compran y se venden por el pool (via Jupiter).
+    #
+    # OJO: en una migrada NO hay curva, asi que el anti-rug en vivo y
+    # min_curve_sol no la protegen. Solo queda el stop y el max_hold_time.
+    incluir_migradas: false
     normal_buy_amount: 0.15
     small_boost_buy_amount: 0.17
     boost_threshold: 500
