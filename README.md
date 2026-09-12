@@ -115,6 +115,17 @@ La posición se divide en cuatro tramos:
 | TP3 | +75 % | 10 % | Nivel de TP2 (+50 %) |
 | TP4 | x3 (+200 %) | 10 % restante | Cierre total |
 
+Además hay dos salidas por falta de recorrido, ambas a los **3 minutos**:
+
+- **Sin movimiento** (`venta_muerta_seg: 180`, `venta_muerta_gain: 0.02`): a los
+  3 minutos se mira una sola vez; si no ha hecho al menos un +2 %, se vende
+  entera. Una moneda con volumen de verdad se mueve. Si a esa altura va por
+  encima, se la deja correr y a partir de ahí mandan los take-profit.
+- **Por debajo de la compra** (`venta_bajo_entrada_seg: 180`): 3 minutos
+  seguidos por debajo del precio de entrada y sale entera, moonbag incluido.
+  El contador se reinicia en cuanto recupera la entrada, así que exige 180
+  segundos sin levantar cabeza, no 180 sueltos.
+
 El stop queda siempre un peldaño por detrás del último take-profit alcanzado.
 El cálculo está aislado en `src/trading/tiered_exit.py` y cubierto por pruebas
 de regresión en `tests/test_tiered_stop.py`.

@@ -42,8 +42,15 @@ trade:
   anti_rug_ratio: 2.0
   anti_rug_seg: 4
   anti_rug_min_sol: 3
-  venta_muerta_seg: 0
-  venta_muerta_gain: 0
+  # SIN MOVIMIENTO: a los 3 minutos se mira UNA vez. Si no ha hecho al menos
+  # un +2%, la moneda esta muerta (una con volumen de verdad se mueve) y se
+  # vende entera. Si a esa altura va por encima, se la deja y ya mandan los TP.
+  venta_muerta_seg: 180
+  venta_muerta_gain: 0.02
+  # POR DEBAJO DE LA COMPRA 3 MINUTOS SEGUIDOS: fuera, moonbag incluido. El
+  # contador se reinicia en cuanto recupera el precio de entrada, asi que
+  # exige 180 segundos SIN levantar cabeza, no 180 sueltos.
+  venta_bajo_entrada_seg: 180
   max_hold_time: 7200
   final_target_mc: 0
   price_check_interval: 1
