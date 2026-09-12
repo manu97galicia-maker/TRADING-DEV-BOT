@@ -12,10 +12,24 @@ platform: pump_fun
 trade:
   buy_amount: 0.15
   mayhem_buy_amount: 0
-  # Posiciones abiertas A LA VEZ. Es el limite de verdad: un semaforo que no
-  # deja abrir la tercera hasta que se cierre una. Exposicion maxima en todo
-  # momento = max_posiciones x tope_compra_sol.
-  max_posiciones: 2
+  # Posiciones abiertas A LA VEZ. 0 = sin tope fijo: manda el SALDO, que es
+  # lo que se pidio. Antes de abrir cada posicion el bot mira el saldo real y
+  # solo entra si queda hueco para:
+  #     saldo - min_reserve_sol - lo ya comprometido >= compra + 0,003
+  # Ese 0,003 por posicion cubre sus propias comisiones y la renta de la
+  # cuenta de token, asi que la reserva global de abajo NO se va en rentas.
+  #
+  # En la practica: con 0,20 por compra caben unas (saldo - 0,03) / 0,203.
+  # Con 1 SOL son 4 posiciones; con 2 SOL, 9.
+  #
+  # OJO, hay un techo duro de 20 dentro del codigo. No lo vas a tocar sin
+  # tener ~4 SOL, pero antes de llegar ahi manda otra cosa: cada posicion
+  # abierta consulta su precio CADA SEGUNDO (price_check_interval: 1) y el
+  # nodo esta limitado a 15 por segundo (node.max_rps). Pasadas ~12-13
+  # posiciones las consultas se encolan y el stop loss empieza a reaccionar
+  # tarde, que es justo cuando mas duele. Si algun dia llegas ahi, sube
+  # price_check_interval antes que el numero de posiciones.
+  max_posiciones: 0
   # Tope de por vida de compras reales. Empieza en 1 a proposito: el camino
   # de compra de mints EXISTENTES nunca se ha ejecutado contra una compra de
   # verdad (hay avisos en token_builder.py y en las tres fuentes). Con 1 se ve
