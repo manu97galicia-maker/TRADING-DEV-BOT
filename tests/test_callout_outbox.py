@@ -11,7 +11,7 @@ from monitoring.callout_outbox import build_callout, enqueue_callout
 def test_build_callout_contains_identity_and_disclosure() -> None:
     message = build_callout("Test Coin", "MintAddress")
 
-    assert "AI entry detected: Test Coin" in message
+    assert "AI opportunity detected: Test Coin" in message
     assert "Contract address: MintAddress" in message
     assert "holds a position" in message
 

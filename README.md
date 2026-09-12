@@ -198,14 +198,28 @@ muestra suficiente y separar por fuente antes de modificar los niveles.
 La configuración genera el texto:
 
 ```text
-AI entry detected: <nombre de la moneda> — <contract address>
+AI opportunity detected: <nombre de la moneda>
+Contract address: <mint>
+Disclosure: this automated account holds a position in this token.
+Not financial advice.
 ```
 
 Actualmente `callouts.publish` está en `false`: el mensaje se guarda en
 `trades/pumpfun_callout_outbox.jsonl`, pero **no se publica automáticamente** en
 pump.fun. Tampoco hay publicación automática en X/Twitter ni una cuenta de X
-conectada al bot. Estas funciones requieren una integración autenticada,
-protección contra duplicados y una revisión separada antes de activarse.
+conectada al bot.
+
+**Pump.fun admite un callout cada 6 horas por cuenta** (cuatro al día) y desde
+agosto reparte las recompensas primando calidad sobre cantidad, así que vaciar
+la cola no serviría: de cada ventana solo cabe uno.
+`callout_outbox.elegir_para_publicar()` resuelve esa parte — devuelve el
+candidato de mayor señal entre los pendientes, o `None` si la ventana sigue
+ocupada.
+
+Lo que falta es el envío en sí. Pump.fun no documenta una API pública de
+escritura para callouts (es una función de la app móvil), así que publicar
+requiere una credencial que no vive en este repositorio, protección contra
+duplicados y revisar los términos de Callout Rewards.
 
 ## Frescura y deduplicación
 

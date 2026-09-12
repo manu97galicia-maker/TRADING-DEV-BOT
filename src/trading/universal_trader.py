@@ -3871,6 +3871,7 @@ class UniversalTrader:
             try:
                 from monitoring.callout_outbox import enqueue_callout
 
+                _senal = token_info.additional_data or {}
                 callout_message = enqueue_callout(
                     token_info.name or token_info.symbol,
                     mint_str,
@@ -3878,6 +3879,10 @@ class UniversalTrader:
                     Path(
                         self.callouts.get("outbox")
                         or "trades/pumpfun_callout_outbox.jsonl"
+                    ),
+                    signal_strength=max(
+                        float(_senal.get("dexscreener_boosts") or 0),
+                        float(_senal.get("dextools_nitro_score") or 0),
                     ),
                 )
                 from monitoring.notifier import notify
