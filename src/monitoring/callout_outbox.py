@@ -13,7 +13,7 @@ from __future__ import annotations
 # ese import reventaba y se perdia el callout de CADA compra.
 # `timezone.utc` es lo mismo y existe desde siempre.
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 
 from utils.logger import get_logger
@@ -66,7 +66,16 @@ def enqueue_callout(
     return message
 
 
-VENTANA_HORAS = 6
+# Sin tope de cantidad. Aqui habia una ventana de 6 horas que me invente:
+# el FAQ oficial dice "There is no limit to callouts or your earnings". Lo
+# que SI cambio pump.fun en agosto es como reparte, primando "Quality >>>
+# Quantity", asi que el freno correcto no es el reloj sino la calidad.
+#
+# 0 = publicar cualquier cosa pendiente. Subelo para exigir que alguien
+# haya pagado de verdad por la moneda antes de gastar un callout en ella:
+# la senal es el boost de DexScreener o el Nitro de DEXTools, y 500 es el
+# escalon que la propia estrategia considera promocion cara.
+SENAL_MINIMA = 0.0
 
 
 def _leer(outbox: Path) -> list[dict]:
@@ -86,49 +95,44 @@ def _leer(outbox: Path) -> list[dict]:
 
 def elegir_para_publicar(
     outbox: Path = DEFAULT_OUTBOX,
-    ahora: datetime | None = None,
-    ventana_horas: float = VENTANA_HORAS,
+    senal_minima: float = SENAL_MINIMA,
 ) -> dict | None:
-    """Devuelve el callout que toca publicar, o None si no toca.
+    """Devuelve el mejor callout pendiente, o None si no hay ninguno digno.
 
-    Pump.fun solo admite UNA llamada cada 6 horas por cuenta, y desde agosto
-    reparte las recompensas primando calidad sobre cantidad. Con esas dos
-    reglas, vaciar la cola es justo lo que no hay que hacer: de cada ventana
-    solo cabe una, asi que hay que ELEGIR.
+    Pump.fun no limita cuantos callouts puedes hacer, pero reparte el bote
+    pro-rata entre los callers segun el volumen que genere cada uno, y desde
+    agosto pesa mas la calidad que la cantidad. Con esas reglas, publicar
+    todo lo que cae es tan malo como no publicar: cada callout flojo baja tu
+    media sin traer volumen.
 
-    Se elige la de mayor senal (el boost o el Nitro que la disparo) entre las
-    que no se han publicado, y a igualdad la mas reciente. Si en la ventana ya
-    se publico algo, no toca y se devuelve None.
+    Asi que se elige la de mayor senal -- lo que alguien pago por promocionar
+    la moneda, que es el unico indicador objetivo de traccion que tenemos --
+    y se descarta lo que no llegue al suelo pedido.
+
+    Una moneda ya llamada no se repite: el segundo callout de lo mismo no
+    trae seguidores nuevos y gasta turno.
 
     Args:
         outbox: Fichero JSONL de la cola.
-        ahora: Momento de referencia, para poder probarlo.
-        ventana_horas: Horas entre llamadas que permite pump.fun.
+        senal_minima: Suelo de senal para que merezca la pena publicar.
 
     Returns:
-        La entrada elegida, o None.
+        La entrada elegida, o None si no hay nada que cumpla.
     """
     entradas = _leer(outbox)
     if not entradas:
         return None
-    ahora = ahora or datetime.now(timezone.utc)
-    limite = ahora - timedelta(hours=ventana_horas)
-
-    for entrada in entradas:
-        publicado = entrada.get("published_at")
-        if not publicado:
-            continue
-        try:
-            cuando = datetime.fromisoformat(str(publicado))
-        except ValueError:
-            continue
-        if cuando > limite:
-            return None  # la ventana sigue ocupada
-
-    pendientes = [e for e in entradas if not e.get("published_at")]
-    if not pendientes:
+    ya_llamadas = {str(e.get("mint")) for e in entradas if e.get("published_at")}
+    candidatas = [
+        e
+        for e in entradas
+        if not e.get("published_at")
+        and str(e.get("mint")) not in ya_llamadas
+        and float(e.get("signal_strength") or 0) >= senal_minima
+    ]
+    if not candidatas:
         return None
     return max(
-        pendientes,
+        candidatas,
         key=lambda e: (float(e.get("signal_strength") or 0), str(e.get("created_at"))),
     )
