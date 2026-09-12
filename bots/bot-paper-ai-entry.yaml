@@ -10,7 +10,7 @@ separate_process: false
 platform: pump_fun
 
 trade:
-  buy_amount: 0.15
+  buy_amount: 0.21
   mayhem_buy_amount: 0
   # Posiciones abiertas A LA VEZ. 0 = sin tope fijo: manda el SALDO, que es
   # lo que se pidio. Antes de abrir cada posicion el bot mira el saldo real y
@@ -47,7 +47,7 @@ trade:
   # monedas cumpliendo los filtros por delante.
   reiniciar_tanda: true
   max_perdidas_seguidas: 0
-  buy_amount_tras_sl: 0.15
+  buy_amount_tras_sl: 0.21
   rugs_para_bloquear: 1
   buy_slippage: 0.10
   sell_slippage: 0.10
@@ -83,7 +83,7 @@ trade:
   price_check_interval: 1
   extreme_fast_mode: false
   min_reserve_sol: 0.03
-  tope_compra_sol: 0.20
+  tope_compra_sol: 0.28
 
 compute_units:
   buy: 140000
@@ -186,10 +186,10 @@ filters:
     # Sin informe de RugCheck, la moneda se descarta.
     incluir_cualquier_origen: false
     min_lp_locked_pct: 50
-    normal_buy_amount: 0.15
-    small_boost_buy_amount: 0.17
+    normal_buy_amount: 0.21
+    small_boost_buy_amount: 0.238
     boost_threshold: 500
-    boost_buy_amount: 0.20
+    boost_buy_amount: 0.28
 
   # DEXTools DEXTboard. La API v2 NO tiene endpoint de "quien pago NITRO":
   # sus 19 endpoints son blockchain/exchange/pool/token/rankings. Lo que si
@@ -212,8 +212,8 @@ filters:
     # El puesto es lo mas parecido a "cuanto se han gastado" que esta API
     # deja leer: subir mas alto cuesta mas NITRO.
     promoted_rank: 10
-    normal_buy_amount: 0.15
-    promoted_buy_amount: 0.20
+    normal_buy_amount: 0.21
+    promoted_buy_amount: 0.28
     incluir_migradas: true
     # A diferencia de la fuente de DexScreener, aqui el bloqueo de liquidez
     # lo comprueba la propia API de DEXTools (/locks y /audit), no RugCheck.
@@ -238,7 +238,7 @@ filters:
     poll_interval: 30
     heartbeat_interval: 300
     limit: 20
-    buy_amount: 0.15
+    buy_amount: 0.21
     # Suelos a 0 para la primera muestra: en papel interesa medirlo todo y
     # filtrar despues con los datos. Subelos cuando results.jsonl tenga
     # muestra suficiente.
@@ -248,9 +248,9 @@ filters:
   telegram_calls:
     enabled: true
     session_name: moontok_watcher
-    normal_buy_amount: 0.15
-    nitro_buy_amount: 0.17
-    promoted_buy_amount: 0.20
+    normal_buy_amount: 0.21
+    nitro_buy_amount: 0.238
+    promoted_buy_amount: 0.28
     promotion_threshold: 500
     # Nitro de DEXTools + MoonTok (CryptoListings), que publica listings de
     # pago. DEXTNewPairsBot y LegendsAlphas siguen fuera: son calls de canal

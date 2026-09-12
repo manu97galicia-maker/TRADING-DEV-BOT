@@ -46,11 +46,15 @@ def test_la_reserva_sigue_siendo_la_pedida() -> None:
 
 
 def test_un_saldo_mayor_abre_mas_posiciones() -> None:
+    """Numeros a pelo a proposito: si alguien cambia tope_compra_sol, este
+    test se pone rojo y le obliga a mirar cuantas posiciones pierde. Subir
+    la apuesta un 40% (0,20 -> 0,28) bajo estas de 2/4/9 a 1/3/6.
+    """
     cfg = _trade()
     reserva, compra = cfg["min_reserve_sol"], cfg["tope_compra_sol"]
-    assert caben(0.5, reserva, compra) == 2
-    assert caben(1.0, reserva, compra) == 4
-    assert caben(2.0, reserva, compra) == 9
+    assert caben(0.5, reserva, compra) == 1
+    assert caben(1.0, reserva, compra) == 3
+    assert caben(2.0, reserva, compra) == 6
 
 
 def test_la_reserva_nunca_se_toca() -> None:
