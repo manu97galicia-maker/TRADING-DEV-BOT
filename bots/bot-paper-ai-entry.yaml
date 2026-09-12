@@ -123,7 +123,20 @@ filters:
     #
     # OJO: en una migrada NO hay curva, asi que el anti-rug en vivo y
     # min_curve_sol no la protegen. Solo queda el stop y el max_hold_time.
-    incluir_migradas: false
+    incluir_migradas: true
+    # Comprar tambien monedas que NUNCA fueron de pump.fun (Raydium, otros
+    # lanzadores). Se entra y se sale por Jupiter igual que con las migradas.
+    #
+    # OJO, aqui se pierde MAS que con una migrada de pump.fun: no hay creador
+    # ni historial de dev que mirar, el supply no es el fijo de pump.fun (asi
+    # que max_holder_pct puede dar numeros raros), y aparecen cosas que en
+    # pump.fun no pueden pasar: autoridad de congelacion (te bloquean la
+    # venta), comision por transferencia, supply mintable.
+    #
+    # Por eso al encenderlo se activa RugCheck y se exige liquidez bloqueada.
+    # Sin informe de RugCheck, la moneda se descarta.
+    incluir_cualquier_origen: false
+    min_lp_locked_pct: 50
     normal_buy_amount: 0.15
     small_boost_buy_amount: 0.17
     boost_threshold: 500

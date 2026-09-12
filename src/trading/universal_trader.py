@@ -1498,6 +1498,12 @@ class UniversalTrader:
             incluir_migradas=bool(
                 self.buy_on_dex_paid.get("incluir_migradas", False)
             ),
+            incluir_cualquier_origen=bool(
+                self.buy_on_dex_paid.get("incluir_cualquier_origen", False)
+            ),
+            min_lp_locked_pct=float(
+                self.buy_on_dex_paid.get("min_lp_locked_pct", 50)
+            ),
         )
         try:
             await source.run(self._on_dexpaid_token)

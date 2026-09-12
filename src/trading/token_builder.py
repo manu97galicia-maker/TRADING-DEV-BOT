@@ -139,3 +139,61 @@ async def build_pumpfun_token_info(  # noqa: PLR0913
         )
         return None
     return token_info
+
+
+async def build_generic_token_info(
+    mint_str: str,
+    client: object,
+    symbol: str = "",
+    name: str = "",
+) -> TokenInfo | None:
+    """TokenInfo minimo para una moneda que NO nacio en pump.fun.
+
+    El constructor de arriba deriva la curva de pump.fun a partir del mint;
+    una moneda de otro origen no tiene esa cuenta y ahi se acaba. Para entrar
+    y salir por Jupiter no hace falta curva: basta el mint y saber con que
+    programa de token se creo, que es lo que decide la ATA.
+
+    Se marca ``migrated`` para que el comprador ruteee por el pool, y
+    ``origen_externo`` para poder distinguirla despues: en una moneda asi no
+    hay creador de pump.fun, asi que el historial del dev y el anti-rug de la
+    curva no dicen nada de ella.
+
+    Args:
+        mint_str: Direccion del token.
+        client: SolanaClient, para leer el dueno de la cuenta del mint.
+        symbol: Ticker, si el feed lo trajo.
+        name: Nombre, si el feed lo trajo.
+
+    Returns:
+        El TokenInfo, o None si el mint no es valido o no se puede saber su
+        programa (adivinarlo deriva la ATA equivocada y la compra falla fijo).
+    """
+    try:
+        mint = Pubkey.from_string(mint_str)
+    except (ValueError, TypeError):
+        logger.warning("Mint invalido para compra por pool: %s", mint_str)
+        return None
+
+    token_program_id = None
+    try:
+        mint_acct = await client.get_account_info(mint)
+        if mint_acct and getattr(mint_acct, "owner", None):
+            token_program_id = mint_acct.owner
+    except Exception:  # noqa: BLE001 -- sin programa no se puede comprar
+        token_program_id = None
+    if token_program_id is None:
+        logger.warning(
+            "No pude leer el programa de %s; lo salto (no se adivina)", mint_str
+        )
+        return None
+
+    return TokenInfo(
+        name=name or symbol or mint_str,
+        symbol=symbol or "?",
+        uri="",
+        mint=mint,
+        platform=Platform.PUMP_FUN,
+        token_program_id=token_program_id,
+        additional_data={"migrated": True, "origen_externo": True},
+    )

@@ -32,11 +32,18 @@ Flujo de una señal:
    de los canales de Telegram permitidos.
 2. Descarta señales antiguas y crea una referencia inicial al arrancar para no
    confundir eventos históricos con eventos nuevos.
-3. Acepta únicamente tokens de **pump.fun en Solana**. Por defecto solo los
-   que siguen en la curva de bonding; con `incluir_migradas: true` compra
-   también los que ya pasaron a PumpSwap, entrando y saliendo por el pool.
-   En esos **no hay curva**, así que el anti-rug en vivo y `min_curve_sol` no
-   los protegen: queda el stop y el cierre por tiempo.
+3. Filtra por origen en tres niveles:
+   - **Solo curva de pump.fun** (lo más estrecho).
+   - `incluir_migradas: true` — añade las de pump.fun que ya pasaron a
+     PumpSwap o Raydium; se entra y se sale por el pool. En esas **no hay
+     curva**, así que el anti-rug en vivo y `min_curve_sol` no las protegen:
+     queda el stop y el cierre por tiempo.
+   - `incluir_cualquier_origen: true` — añade monedas que **nunca** fueron de
+     pump.fun. Ahí tampoco hay creador ni historial de dev, el supply no es el
+     fijo de pump.fun, y aparecen riesgos que en pump.fun no existen (autoridad
+     de congelación, comisión por transferencia, supply mintable). Por eso al
+     activarlo se consulta **RugCheck** y se exige `min_lp_locked_pct` de
+     liquidez bloqueada; sin informe, la moneda se descarta.
 4. Rechaza tokens `mayhem` y no usa LetsBonk para esta estrategia.
 5. Asigna el importe según el motivo exacto de la señal.
 6. En paper trading, simula la entrada, sigue el precio y ejecuta la escalera de

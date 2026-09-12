@@ -1,6 +1,6 @@
 """Tests del interruptor que permite comprar monedas ya migradas a PumpSwap."""
 
-# ruff: noqa: S101
+# ruff: noqa: S101, SLF001, PLR2004
 
 import asyncio
 
@@ -26,7 +26,7 @@ def test_el_interruptor_se_guarda() -> None:
 def _candidatos_emitidos(*, incluir: bool) -> list[str]:
     """Recorre un ciclo con un candidato migrado y otro en curva."""
     fuente = _fuente(incluir=incluir)
-    fuente._primed = True  # noqa: SLF001 -- saltamos la foto de arranque
+    fuente._primed = True  # saltamos la foto de arranque
     emitidos: list[str] = []
 
     candidatos = [
@@ -34,7 +34,7 @@ def _candidatos_emitidos(*, incluir: bool) -> list[str]:
         {"mint": "Migrada", "signal_type": "boost", "boosts": 10, "migrated": True},
     ]
     for c in candidatos:
-        if not fuente._freshness.accept(c):  # noqa: SLF001
+        if not fuente._freshness.accept(c):
             continue
         if c.get("migrated") and not fuente.incluir_migradas:
             continue
@@ -69,3 +69,60 @@ def test_una_compra_por_pool_sin_tokens_es_un_fallo() -> None:
 
 def test_asyncio_disponible_para_la_fuente() -> None:
     assert asyncio.iscoroutinefunction(DexPaidSource.run)
+
+
+# --- Monedas que nunca fueron de pump.fun ---
+
+
+def _fuente_abierta(*, abierto: bool, minimo: float = 50.0) -> DexPaidSource:
+    return DexPaidSource(
+        object(),
+        object(),
+        incluir_migradas=True,
+        incluir_cualquier_origen=abierto,
+        min_lp_locked_pct=minimo,
+    )
+
+
+def test_cualquier_origen_apagado_por_defecto() -> None:
+    fuente = DexPaidSource(object(), object())
+
+    assert not fuente.incluir_cualquier_origen
+    assert fuente.min_lp_locked_pct == 50.0
+
+
+def test_rugcheck_rechaza_lo_marcado_como_rugged() -> None:
+    fuente = _fuente_abierta(abierto=True)
+
+    assert not fuente._pasa_rugcheck({"mint": "X", "rugged": True, "lp_locked_pct": 99})
+
+
+def test_sin_informe_de_rugcheck_se_descarta() -> None:
+    """Ante la duda, fuera: no hay motivo para asumir lo mejor."""
+    fuente = _fuente_abierta(abierto=True)
+
+    assert not fuente._pasa_rugcheck({"mint": "X"})
+
+
+def test_poca_liquidez_bloqueada_se_descarta() -> None:
+    fuente = _fuente_abierta(abierto=True, minimo=50)
+
+    assert not fuente._pasa_rugcheck({"mint": "X", "lp_locked_pct": 20})
+
+
+def test_liquidez_bloqueada_suficiente_pasa() -> None:
+    fuente = _fuente_abierta(abierto=True, minimo=50)
+
+    assert fuente._pasa_rugcheck({"mint": "X", "lp_locked_pct": 80, "rugged": False})
+
+
+def test_justo_en_el_minimo_pasa() -> None:
+    fuente = _fuente_abierta(abierto=True, minimo=50)
+
+    assert fuente._pasa_rugcheck({"mint": "X", "lp_locked_pct": 50})
+
+
+def test_rugcheck_solo_se_pide_si_se_abre_a_cualquier_origen() -> None:
+    """La consulta es lenta; en pump.fun aporta poco y se salta."""
+    assert _fuente_abierta(abierto=False).incluir_cualquier_origen is False
+    assert _fuente_abierta(abierto=True).incluir_cualquier_origen is True
