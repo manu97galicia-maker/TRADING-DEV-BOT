@@ -306,6 +306,18 @@ bot y la autorización de la sesión lectora:
 uv run learning-examples/check_telegram_session.py
 ```
 
+Si responde `False`, la sesión lectora no está autorizada y los canales no
+entran aunque estén configurados. Se autoriza una sola vez, desde la raíz del
+proyecto (ahí es donde el bot busca el fichero de sesión):
+
+```bash
+uv run learning-examples/autorizar_telegram.py
+```
+
+Pide el número con prefijo internacional y el código que envía Telegram. Son
+credenciales de `my.telegram.org` (`TELEGRAM_API_ID` / `TELEGRAM_API_HASH`),
+distintas del token de BotFather que sirve para enviar avisos.
+
 ## Despliegue en un droplet
 
 El servicio incluido asume `/root/ai-bot` como directorio de trabajo y una
