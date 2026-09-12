@@ -111,7 +111,14 @@ filters:
     enabled: true
     poll_interval: 5
     heartbeat_interval: 300
-    max_age_minutes: 10
+    # Antiguedad maxima del pago o el boost. 0 = no filtra: el feed que se
+    # consulta ya es el de "ultimos", asi que la frescura la garantizan el
+    # propio feed y el registro de lo ya visto.
+    max_age_minutes: 0
+    # Entradas del feed que se miran en cada vuelta. Estaba fijo en 10 y se
+    # veia 1 senal cada 2 horas: en una ventana tan estrecha una moneda entra
+    # y sale entre dos sondeos sin llegar a verse.
+    candidatos_por_vuelta: 30
     # 0 = la edad de la moneda no filtra. Una moneda vieja que acaba de
     # recibir un pago o un boost sigue trayendo volumen, y esa es la senal.
     # El pago SI debe ser reciente: eso lo sigue midiendo max_age_minutes.

@@ -23,6 +23,26 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
+def edad_de_pago_aceptable(age_min: float | None, tope_minutos: float) -> bool:
+    """Decide si un pago sirve como senal por su antiguedad.
+
+    Que EXISTA una orden de pago aprobada no es negociable: sin ella no hay
+    senal. Su antiguedad si lo es -- con ``tope_minutos`` a cero deja de
+    filtrar, porque el feed que se consulta ya es el de "ultimos" y la
+    frescura la garantizan el propio feed y el registro de lo ya visto.
+
+    Args:
+        age_min: Minutos desde el pago, o None si no hay orden aprobada.
+        tope_minutos: Tope en minutos; cero o menos desactiva el filtro.
+
+    Returns:
+        True si el candidato pasa.
+    """
+    if age_min is None:
+        return False
+    return not (tope_minutos > 0 and age_min > tope_minutos)
+
+
 async def _paid_age_minutes(
     dex: DexScreenerClient, mint: str, chain: str, now_ms: float
 ) -> float | None:
@@ -54,7 +74,8 @@ async def get_candidates(
     Args:
         limit: Max tokens to return (kept small for rate limits).
         max_age_minutes: Only include tokens whose newest approved paid order
-            is younger than this.
+            is younger than this; zero disables the age check (an approved
+            order is still required).
         max_token_age_minutes: Reject pairs older than this; zero disables it.
         chain: Chain slug.
         check_locked: Also query RugCheck for locked-liquidity % (slower).
@@ -111,7 +132,7 @@ async def get_candidates(
             age_min: float | None = None
             if not is_boost:
                 age_min = await _paid_age_minutes(dex, mint, chain, now_ms)
-                if age_min is None or age_min > max_age_minutes:
+                if not edad_de_pago_aceptable(age_min, max_age_minutes):
                     return None
             market = await dex.get_market_data(mint, chain)
             pair_created_at = market.pair_created_at if market else None

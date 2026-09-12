@@ -118,6 +118,7 @@ class DexPaidSource:
         incluir_migradas: bool = False,
         incluir_cualquier_origen: bool = False,
         min_lp_locked_pct: float = 50.0,
+        candidatos_por_vuelta: int = 30,
     ) -> None:
         self._impls = platform_impls
         self._client = client
@@ -133,6 +134,10 @@ class DexPaidSource:
         self.incluir_migradas = incluir_migradas
         self.incluir_cualquier_origen = incluir_cualquier_origen
         self.min_lp_locked_pct = min_lp_locked_pct
+        # Cuantas entradas del feed se miran por vuelta. Estaba fijo en 10: en
+        # una ventana tan estrecha una moneda entra y sale entre dos sondeos y
+        # no llega a verse nunca.
+        self.candidatos_por_vuelta = candidatos_por_vuelta
         self._seen: set[str] = set()
         self._freshness = DexPaidFreshnessTracker()
         self._primed = False
@@ -234,7 +239,7 @@ class DexPaidSource:
         while True:
             try:
                 candidates = await get_candidates(
-                    limit=10,
+                    limit=self.candidatos_por_vuelta,
                     max_age_minutes=self.max_age_minutes,
                     max_token_age_minutes=self.max_token_age_minutes,
                     # Fuera de pump.fun no hay historial de dev ni curva que

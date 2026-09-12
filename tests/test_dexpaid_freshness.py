@@ -2,6 +2,7 @@
 
 # ruff: noqa: S101
 
+from dashboard.dexpaid_feed import edad_de_pago_aceptable
 from monitoring.dexpaid_source import DexPaidFreshnessTracker
 
 
@@ -37,3 +38,25 @@ def test_new_paid_profile_is_accepted_once() -> None:
 
     assert tracker.accept(_candidate("new"))
     assert not tracker.accept(_candidate("new"))
+
+
+# --- La antiguedad del pago deja de filtrar cuando se pone a 0 ---
+
+
+_pasa_el_filtro_de_edad = edad_de_pago_aceptable
+
+
+def test_con_tope_el_pago_viejo_se_descarta() -> None:
+    assert not _pasa_el_filtro_de_edad(30, 10)
+    assert _pasa_el_filtro_de_edad(5, 10)
+
+
+def test_con_el_tope_a_cero_pasa_cualquier_edad() -> None:
+    assert _pasa_el_filtro_de_edad(30, 0)
+    assert _pasa_el_filtro_de_edad(600, 0)
+
+
+def test_sin_orden_de_pago_no_pasa_nunca() -> None:
+    """La edad es opcional; que EXISTA un pago aprobado, no."""
+    assert not _pasa_el_filtro_de_edad(None, 0)
+    assert not _pasa_el_filtro_de_edad(None, 10)

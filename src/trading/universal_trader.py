@@ -1504,6 +1504,9 @@ class UniversalTrader:
             min_lp_locked_pct=float(
                 self.buy_on_dex_paid.get("min_lp_locked_pct", 50)
             ),
+            candidatos_por_vuelta=int(
+                self.buy_on_dex_paid.get("candidatos_por_vuelta", 30)
+            ),
         )
         try:
             await source.run(self._on_dexpaid_token)
