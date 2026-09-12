@@ -18,7 +18,13 @@ trade:
   # verdad (hay avisos en token_builder.py y en las tres fuentes). Con 1 se ve
   # si la transaccion entra antes de repetir el mismo fallo tres veces.
   max_real_buys: 2
-  reiniciar_tanda: false
+  # Cierra la tanda y pone el contador a 0 cuando no queda ninguna posicion
+  # abierta, para que el bot pueda seguir comprando. En false, max_real_buys
+  # deja de ser un tope POR TANDA y se convierte en un apagado con retardo:
+  # hechas esas compras el bot se calla para siempre aunque el servicio siga
+  # "active". El 19-ago eso dejo tres bots 23 horas sin comprar con 4.435
+  # monedas cumpliendo los filtros por delante.
+  reiniciar_tanda: true
   max_perdidas_seguidas: 0
   buy_amount_tras_sl: 0.15
   rugs_para_bloquear: 1
