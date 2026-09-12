@@ -320,42 +320,51 @@ class DexPaidSource:
     async def run(self, token_callback: Callable[[TokenInfo], Awaitable[None]]) -> None:
         """Continuously poll and emit new, non-migrated dex-paid candidates."""
         from dashboard.dexpaid_feed import get_candidates
+        from dexscreener.client import DexScreenerClient
 
         logger.info(
             "DexPaid source active: poll every %ss, max age %s min",
             self.poll_interval,
             self.max_age_minutes,
         )
-        while True:
-            try:
-                candidates = await get_candidates(
-                    limit=self.candidatos_por_vuelta,
-                    max_age_minutes=self.max_age_minutes,
-                    max_token_age_minutes=self.max_token_age_minutes,
-                    # Fuera de pump.fun no hay historial de dev ni curva que
-                    # analizar, asi que RugCheck pasa de ser un extra lento a
-                    # ser la unica red: se pide solo cuando hace falta.
-                    check_locked=self.incluir_cualquier_origen,
-                )
-                if not self._primed:
-                    self._freshness.prime(candidates)
-                    self._primed = True
-                    logger.info(
-                        "DexPaid startup baseline recorded (%d entries, no buys)",
-                        len(candidates),
+        # UN solo cliente para toda la vida del bucle. Creando uno por vuelta,
+        # el limitador nacia con el cubo lleno cada 5 segundos y no limitaba
+        # nada entre vueltas: el resultado era 429 en cadena y cero candidatas.
+        dex = DexScreenerClient()
+        try:
+            while True:
+                try:
+                    candidates = await get_candidates(
+                        limit=self.candidatos_por_vuelta,
+                        max_age_minutes=self.max_age_minutes,
+                        max_token_age_minutes=self.max_token_age_minutes,
+                        # Fuera de pump.fun no hay historial de dev ni curva que
+                        # analizar, asi que RugCheck pasa de ser un extra lento a
+                        # ser la unica red: se pide solo cuando hace falta.
+                        check_locked=self.incluir_cualquier_origen,
+                        dex=dex,
                     )
+                    if not self._primed:
+                        self._freshness.prime(candidates)
+                        self._primed = True
+                        logger.info(
+                            "DexPaid startup baseline recorded (%d entries, no buys)",
+                            len(candidates),
+                        )
+                        self._send_heartbeat_if_due()
+                        await asyncio.sleep(self.poll_interval)
+                        continue
+                    self._vistas += len(candidates)
+                    for c in candidates:
+                        token_info = await self._evaluar(c)
+                        if token_info is not None:
+                            await token_callback(token_info)
                     self._send_heartbeat_if_due()
-                    await asyncio.sleep(self.poll_interval)
-                    continue
-                self._vistas += len(candidates)
-                for c in candidates:
-                    token_info = await self._evaluar(c)
-                    if token_info is not None:
-                        await token_callback(token_info)
-                self._send_heartbeat_if_due()
-            except asyncio.CancelledError:
-                logger.info("DexPaid source cancelled")
-                break
-            except Exception:
-                logger.exception("DexPaid source error")
-            await asyncio.sleep(self.poll_interval)
+                except asyncio.CancelledError:
+                    logger.info("DexPaid source cancelled")
+                    break
+                except Exception:
+                    logger.exception("DexPaid source error")
+                await asyncio.sleep(self.poll_interval)
+        finally:
+            await dex.close()

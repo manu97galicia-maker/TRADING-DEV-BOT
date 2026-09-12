@@ -26,6 +26,7 @@ use the returned data.
 from __future__ import annotations
 
 import asyncio
+from time import monotonic
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -35,6 +36,10 @@ from core.rpc_rate_limiter import TokenBucketRateLimiter
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+_HTTP_TOO_MANY = 429
+_COOLDOWN_MIN = 5.0
+_COOLDOWN_MAX = 60.0
 
 BASE_URL = "https://api.dexscreener.com"
 
@@ -139,8 +144,18 @@ class DexScreenerClient:
         self._session_lock = asyncio.Lock()
         # DexScreener limits: 60 rpm for profile/boost/order endpoints,
         # 300 rpm for pair/token/search endpoints. Convert to req/sec.
-        self._limiter_60 = TokenBucketRateLimiter(max_rps=1.0, burst_size=5)
+        # 0.8/s = 48/min contra un tope de 60: el margen es a proposito.
+        # El limite lo cuenta DexScreener por IP, y en esta maquina hay dos
+        # procesos tirando de la misma API (el bot y el panel), asi que
+        # apurar el tope desde uno solo garantiza 429 en los dos.
+        self._limiter_60 = TokenBucketRateLimiter(max_rps=0.8, burst_size=5)
         self._limiter_300 = TokenBucketRateLimiter(max_rps=5.0, burst_size=10)
+        # Enfriamiento tras un 429. Sin esto un 429 no cuesta nada: se
+        # devuelve None y la vuelta siguiente machaca igual, asi que el
+        # bloqueo no se levanta nunca. Se dobla hasta un minuto y se
+        # reinicia con la primera respuesta buena.
+        self._cooldown_until = 0.0
+        self._cooldown_seconds = 0.0
 
     async def __aenter__(self) -> DexScreenerClient:
         return self
@@ -150,7 +165,11 @@ class DexScreenerClient:
 
     async def close(self) -> None:
         """Close the underlying session if this client created it."""
-        if self._owns_session and self._session is not None and not self._session.closed:
+        if (
+            self._owns_session
+            and self._session is not None
+            and not self._session.closed
+        ):
             await self._session.close()
             self._session = None
 
@@ -162,6 +181,27 @@ class DexScreenerClient:
                     self._session = aiohttp.ClientSession(timeout=self._timeout)
                     self._owns_session = True
         return self._session
+
+    async def _esperar_enfriamiento(self) -> None:
+        """Espera si un 429 reciente dejo la API en periodo de castigo."""
+        espera = self._cooldown_until - monotonic()
+        if espera > 0:
+            await asyncio.sleep(espera)
+
+    def _penalizar(self, retry_after: str | None) -> None:
+        """Alarga el enfriamiento tras un 429, respetando Retry-After."""
+        segundos = 0.0
+        if retry_after:
+            try:
+                segundos = float(retry_after)
+            except ValueError:
+                segundos = 0.0
+        if segundos <= 0:
+            segundos = min(
+                max(self._cooldown_seconds * 2, _COOLDOWN_MIN), _COOLDOWN_MAX
+            )
+        self._cooldown_seconds = segundos
+        self._cooldown_until = monotonic() + segundos
 
     async def _get(
         self,
@@ -181,18 +221,23 @@ class DexScreenerClient:
             errors so callers can degrade gracefully instead of crashing the
             trading loop.
         """
+        await self._esperar_enfriamiento()
         await limiter.acquire()
         session = await self._get_session()
         url = f"{BASE_URL}{path}"
         try:
             async with session.get(url, params=params) as resp:
-                if resp.status == 429:
-                    logger.warning("DexScreener rate limited (429) on %s", path)
-                    return None
-                if resp.status >= 400:
+                if resp.status == _HTTP_TOO_MANY:
+                    self._penalizar(resp.headers.get("Retry-After"))
                     logger.warning(
-                        "DexScreener %s returned HTTP %s", path, resp.status
+                        "DexScreener rate limited (429) on %s; parando %.0fs",
+                        path,
+                        self._cooldown_seconds,
                     )
+                    return None
+                self._cooldown_seconds = 0.0
+                if resp.status >= 400:
+                    logger.warning("DexScreener %s returned HTTP %s", path, resp.status)
                     return None
                 return await resp.json()
         except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
@@ -234,9 +279,7 @@ class DexScreenerClient:
             List of order objects (possibly empty).
         """
         chain = chain or self._chain
-        data = await self._get(
-            f"/orders/v1/{chain}/{token_address}", self._limiter_60
-        )
+        data = await self._get(f"/orders/v1/{chain}/{token_address}", self._limiter_60)
         return _flatten_orders(data)
 
     async def get_pair(
@@ -319,9 +362,7 @@ class DexScreenerClient:
             orders=orders,
         )
 
-    async def is_dex_paid(
-        self, token_address: str, chain: str | None = None
-    ) -> bool:
+    async def is_dex_paid(self, token_address: str, chain: str | None = None) -> bool:
         """Return True if the token has an approved paid DexScreener order."""
         status = await self.get_dex_paid_status(token_address, chain)
         return status.paid
@@ -354,7 +395,9 @@ class DexScreenerClient:
         pairs = await self.get_token_pairs(token_address, chain)
         if not pairs:
             return None
-        best = max(pairs, key=lambda p: _num((p.get("liquidity") or {}).get("usd")) or 0)
+        best = max(
+            pairs, key=lambda p: _num((p.get("liquidity") or {}).get("usd")) or 0
+        )
         liquidity = best.get("liquidity") or {}
         volume = best.get("volume") or {}
         price_native = best.get("priceNative")
