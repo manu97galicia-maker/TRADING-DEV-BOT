@@ -22,8 +22,8 @@ trade:
   max_perdidas_seguidas: 0
   buy_amount_tras_sl: 0.15
   rugs_para_bloquear: 1
-  buy_slippage: 0.20
-  sell_slippage: 0.25
+  buy_slippage: 0.10
+  sell_slippage: 0.10
   exit_strategy: tp_sl
   take_profit_percentage: 0.25
   take_profit_sell_percentage: 0.70
