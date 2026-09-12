@@ -91,7 +91,15 @@ filters:
   yolo_mode: true
   paper_trade: false
   ignorar_listas_de_devs: false
-  max_holder_pct: 0.05
+  # Rechaza si UN titular tiene mas de esta fraccion del supply. Estaba en
+  # 0.05 y era el filtro que mas compras tumbaba: ese 5% viene del sniper
+  # viejo, que compraba monedas recien creadas donde un titular gordo a los
+  # diez segundos es un insider. Esta estrategia compra lo contrario --
+  # monedas con recorrido que alguien acaba de promocionar -- y ahi un
+  # titular por encima del 5% es lo normal (compradores tempranos, el dev,
+  # quien puso la liquidez del pool). 0.15 sigue cortando el caso de verdad
+  # feo: una sola cartera con una septima parte del supply.
+  max_holder_pct: 0.15
   min_holders: 0
   min_curve_sol: 0
   min_entry_mc: 0
