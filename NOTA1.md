@@ -88,6 +88,15 @@ registro y todos los mensajes.
 > el filtro `avisos_telegram` del YAML ya existe y deja pasar solo los tipos
 > elegidos.
 
+**Ojo con las dos rutas.** `_avisa_peldano` vive dentro de `_paper_watch`, que
+solo corre bajo `if self.paper_trade:` (`universal_trader.py:3416`). En dinero
+real esa función **no se ejecuta**, así que los avisos de peldaño no salen por
+ahí. La ruta real es `_log_trade` → `alert_trade`, y ahora lleva los mismos
+datos: nombre y ticker, motivo de compra, movimiento desde la entrada y P&L de
+esa venta. El precio de entrada se apunta en `self._precio_entrada` al comprar,
+porque `_vender` solo conoce el de salida. Sin ese apunte el P&L se omite en
+vez de inventarse.
+
 ## 5. El aviso del estudio llegaba vacío y en bucle
 
 `automatizar_estudio.sh` mandaba la cabecera y nada más. Tres fallos:

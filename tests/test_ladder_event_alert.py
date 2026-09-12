@@ -4,7 +4,11 @@
 
 import pytest
 
-from monitoring.notifier import build_ladder_event_notification, token_label
+from monitoring.notifier import (
+    build_ladder_event_notification,
+    build_trade_alert,
+    token_label,
+)
 from trading.tiered_exit import Tier, ladder_progress
 
 LADDER = [Tier(gain=0.25, sell=0.70), Tier(gain=0.50, sell=0.10)]
@@ -102,3 +106,64 @@ def test_stop_alert_reports_the_loss_and_no_new_stop() -> None:
     assert "-0.0360 SOL" in message
     assert "Cierra el 100% que quedaba" in message
     assert "SL protegido" not in message
+
+
+# --- Avisos de dinero REAL (alert_trade), que no pasan por _paper_watch ---
+
+
+def test_real_sell_alert_carries_reason_move_and_pnl() -> None:
+    message = build_trade_alert(
+        "sell",
+        "BARRON",
+        0.25,  # SOL cobrados en esta venta
+        "MintAbc",
+        "tp_tier_+25%",
+        price_sol=ENTRY * 1.25,
+        name="Barron Trump",
+        source_data={"acquisition_source": "dexscreener", "dexscreener_boosts": 750},
+        entry_price_sol=ENTRY,
+    )
+
+    assert "Barron Trump ($BARRON)" in message
+    assert "TP +25%" in message
+    assert "DexScreener boost 750 (caro)" in message
+    assert "(+25.0%)" in message
+    # 0.25 SOL a 1.25x -> se vendieron 0.25/(E*1.25) tokens, con beneficio
+    # unitario de 0.25*E: el P&L es exactamente 0.25 * (1 - 1/1.25) = 0.05.
+    assert "+0.0500 SOL" in message
+    assert "gmgn.ai/sol/token/MintAbc" in message
+
+
+def test_real_stop_alert_shows_a_loss() -> None:
+    message = build_trade_alert(
+        "sell",
+        "BARRON",
+        0.164,
+        "MintAbc",
+        "stop_loss",
+        price_sol=ENTRY * 0.82,
+        entry_price_sol=ENTRY,
+    )
+
+    assert "STOP LOSS" in message
+    assert "(-18.0%)" in message
+    assert "-0.0360 SOL" in message
+
+
+def test_real_buy_alert_has_no_pnl_line() -> None:
+    message = build_trade_alert(
+        "buy", "BARRON", 0.20, "MintAbc", price_sol=ENTRY, entry_price_sol=ENTRY
+    )
+
+    assert "COMPRA" in message
+    assert "P&L" not in message
+
+
+def test_sell_without_a_known_entry_omits_the_pnl() -> None:
+    """Si no se apuntó el precio de entrada, mejor callar que inventar."""
+    message = build_trade_alert(
+        "sell", "BARRON", 0.25, "MintAbc", "stop_loss", price_sol=ENTRY
+    )
+
+    assert "P&L" not in message
+    assert "STOP LOSS" in message

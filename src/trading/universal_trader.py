@@ -1124,6 +1124,10 @@ class UniversalTrader:
         #: las monedas compradas en la vida del bot -- con 115 dentro, un tope
         #: de 3 bloqueaba antes de empezar ("Limite alcanzado: 115/3").
         self._compras_de_la_tanda: int = 0
+        # Precio de entrada por mint, apuntado al comprar. El aviso de venta
+        # REAL lo necesita para dar el P&L, y a esas alturas del codigo ya no
+        # hay forma de saberlo: `_vender` solo conoce el precio de salida.
+        self._precio_entrada: dict[str, float] = {}
         #: mint -> (momento, precio en SOL) del DEX. Ver `_precio_dex`.
         self._precio_dex_cache: dict[str, tuple[float, float | None]] = {}
         # Moonbags retenidos (no se auto-venden): el avisador manda un aviso a
@@ -5828,13 +5832,19 @@ class UniversalTrader:
         try:
             from monitoring.notifier import alert_trade
 
+            mint_str = str(token_info.mint)
+            if action == "buy" and (price or 0) > 0:
+                self._precio_entrada[mint_str] = float(price)
             alert_trade(
                 action,
                 token_info.symbol,
                 (price or 0) * (amount or 0),
-                str(token_info.mint),
+                mint_str,
                 reason,
                 price_sol=price or 0.0,
+                name=token_info.name,
+                source_data=token_info.additional_data,
+                entry_price_sol=self._precio_entrada.get(mint_str, 0.0),
             )
         except Exception:  # noqa: BLE001 - alerts must never crash trading
             logger.debug("trade alert failed", exc_info=True)

@@ -180,9 +180,7 @@ def build_paper_result_notification(
     stats: dict,
 ) -> str:
     """Build a complete paper exit report from the persisted result record."""
-    label = token_label(
-        str(record.get("name") or ""), str(record.get("symbol") or "")
-    )
+    label = token_label(str(record.get("name") or ""), str(record.get("symbol") or ""))
     safe_mint = escape(str(record.get("mint") or ""))
     exit_reason = str(record.get("exit_reason") or "open")
     if exit_reason == "stop":
@@ -224,9 +222,7 @@ def build_paper_result_notification(
 
     curve_sol = float(record.get("curve_sol") or 0)
     liquidity_warning = (
-        " · ⚠️ puede no ser vendible"
-        if curve_sol < _MIN_LIQUID_CURVE_SOL
-        else ""
+        " · ⚠️ puede no ser vendible" if curve_sol < _MIN_LIQUID_CURVE_SOL else ""
     )
     lines.extend(
         [
@@ -296,9 +292,7 @@ def build_ladder_event_notification(  # noqa: PLR0913
     safe_mint = escape(mint)
     is_stop = event.upper() == "STOP"
     tag = "PAPER" if paper else "REAL"
-    heading = (
-        f"🛑 <b>STOP {tag}</b>" if is_stop else f"🎯 <b>{escape(event)} {tag}</b>"
-    )
+    heading = f"🛑 <b>STOP {tag}</b>" if is_stop else f"🎯 <b>{escape(event)} {tag}</b>"
     move = (price_sol / entry_price_sol - 1) * 100 if entry_price_sol > 0 else 0.0
     pnl_sol = amount_sol * total_roi
     lines = [
@@ -310,13 +304,9 @@ def build_ladder_event_notification(  # noqa: PLR0913
         lines.append(f"📦 Cierra el {remaining_pct:.0f}% que quedaba")
     else:
         lines.append(f"📦 Vende {sold_pct:.0f}% · queda {remaining_pct:.0f}%")
-    lines.append(
-        f"💰 P&L: <b>{pnl_sol:+.4f} SOL ({total_roi * 100:+.1f}%)</b>"
-    )
+    lines.append(f"💰 P&L: <b>{pnl_sol:+.4f} SOL ({total_roi * 100:+.1f}%)</b>")
     if not is_stop and new_stop_price_sol:
-        lines.append(
-            f"🛡️ SL protegido sube a: <code>{new_stop_price_sol:.12f}</code>"
-        )
+        lines.append(f"🛡️ SL protegido sube a: <code>{new_stop_price_sol:.12f}</code>")
     lines.extend(
         [
             f'<a href="https://dexscreener.com/solana/{safe_mint}">DexScreener</a> · '
@@ -407,6 +397,50 @@ def _reason_label(reason: str | None) -> str:  # noqa: PLR0911
     return f" · {reason}"
 
 
+def build_trade_alert(  # noqa: PLR0913
+    action: str,
+    symbol: str,
+    sol: float,
+    mint: str | None = None,
+    reason: str | None = None,
+    *,
+    price_sol: float = 0.0,
+    name: str | None = None,
+    source_data: dict | None = None,
+    entry_price_sol: float = 0.0,
+) -> str:
+    """Build the real-money buy/sell alert. See :func:`alert_trade` for args."""
+    emoji = "🟢 COMPRA" if action == "buy" else "🔴 VENTA"
+    msg = (
+        f"{emoji}{_reason_label(reason)} · "
+        f"<b>{token_label(name, symbol)}</b> · {sol:.3f} SOL"
+    )
+    if source_data:
+        msg += f"\n🔎 Motivo de compra: <b>{purchase_reason_label(source_data)}</b>"
+    if price_sol > 0:
+        etiqueta = "compra" if action == "buy" else "venta"
+        msg += f"\n🏷️ Precio {etiqueta}: <code>{price_sol:.12f} SOL/token</code>"
+        if action == "sell" and entry_price_sol > 0:
+            move = (price_sol / entry_price_sol - 1) * 100
+            # `sol` es el valor de ESTA pata, asi que los tokens salen de
+            # dividirlo por su precio: con eso el P&L es el de la venta real y
+            # no una estimacion sobre la posicion entera.
+            pnl = (sol / price_sol) * (price_sol - entry_price_sol)
+            msg += f" ({move:+.1f}%)"
+            msg += f"\n💰 P&L de esta venta: <b>{pnl:+.4f} SOL</b>"
+    if mint:
+        safe_mint = escape(mint)
+        msg += (
+            f'\n📊 <a href="https://dexscreener.com/solana/{safe_mint}">'
+            "DexScreener</a> · "
+            f'<a href="https://gmgn.ai/sol/token/{safe_mint}">GMGN</a> · '
+            f'🤖 <a href="https://t.me/MaestroSniperBot?start={safe_mint}">'
+            "Maestro</a>\n"
+            f"CA: <code>{safe_mint}</code>"
+        )
+    return msg
+
+
 def alert_trade(  # noqa: PLR0913
     action: str,
     symbol: str,
@@ -415,28 +449,41 @@ def alert_trade(  # noqa: PLR0913
     reason: str | None = None,
     *,
     price_sol: float = 0.0,
+    name: str | None = None,
+    source_data: dict | None = None,
+    entry_price_sol: float = 0.0,
 ) -> None:
     """Fire-and-forget trade alert: local beep + optional Telegram. Never raises.
 
-    Includes a GMGN link (and Maestro) when the mint is provided, and a friendly
-    reason label (TP/SL/max-hold/manual) for sells.
+    This is the REAL-money path (paper has its own, richer, alerts), so it
+    carries the same facts a position is judged by: what fired, the reason the
+    coin was bought, the move from entry and the profit or loss of this sale.
+
+    Args:
+        action: ``buy`` or ``sell``.
+        symbol: Token ticker.
+        sol: SOL value of this leg.
+        mint: Token mint, for the links.
+        reason: Raw sell reason (``tp_tier_+25%``, ``stop_loss``, ...).
+        price_sol: Price this leg executed at.
+        name: Token name, when known.
+        source_data: Signal metadata, for the buy reason.
+        entry_price_sol: Entry price, to show the move and the P&L.
     """
     try:
         threading.Thread(target=_beep, args=(action,), daemon=True).start()
-        emoji = "🟢 COMPRA" if action == "buy" else "🔴 VENTA"
-        safe_symbol = escape(symbol or "SIN SIMBOLO")
-        msg = f"{emoji}{_reason_label(reason)} · <b>{safe_symbol}</b> · {sol:.3f} SOL"
-        if price_sol > 0:
-            label = "compra" if action == "buy" else "venta"
-            msg += f"\n🏷️ Precio {label}: <code>{price_sol:.12f} SOL/token</code>"
-        if mint:
-            safe_mint = escape(mint)
-            msg += (
-                f'\n📊 <a href="https://dexscreener.com/solana/{safe_mint}">DexScreener</a> · '
-                f'<a href="https://gmgn.ai/sol/token/{safe_mint}">GMGN</a> · '
-                f'🤖 <a href="https://t.me/MaestroSniperBot?start={safe_mint}">Maestro</a>\n'
-                f"CA: <code>{safe_mint}</code>"
+        notify(
+            build_trade_alert(
+                action,
+                symbol,
+                sol,
+                mint,
+                reason,
+                price_sol=price_sol,
+                name=name,
+                source_data=source_data,
+                entry_price_sol=entry_price_sol,
             )
-        notify(msg)
+        )
     except Exception:  # noqa: BLE001, S110
         pass
