@@ -238,12 +238,17 @@ filters:
     nitro_buy_amount: 0.17
     promoted_buy_amount: 0.20
     promotion_threshold: 500
-    # Solo el Nitro de DEXTools. MoonTok (CryptoListings), DEXTNewPairsBot y
-    # LegendsAlphas quedan fuera a peticion: la estrategia se queda con las
-    # dos senales de pago medibles (paid/boost de DexScreener y Nitro), sin
-    # mezclar calls de canal que se comportan distinto y ensucian la muestra.
+    # Nitro de DEXTools + MoonTok (CryptoListings), que publica listings de
+    # pago. DEXTNewPairsBot y LegendsAlphas siguen fuera: son calls de canal
+    # sin pago detras, se comportan distinto y ensucian la muestra.
+    #
+    # OJO: los nombres tienen que ser el @usuario exacto del canal y tu
+    # cuenta tiene que estar dentro. Un nombre que Telegram no resuelva se
+    # descarta con un aviso en el log y los demas siguen (antes tumbaba la
+    # fuente entera, Nitro incluido).
     channels:
       - dextools_nitro
+      - cryptolistings
     suffixes:
       - pump
 

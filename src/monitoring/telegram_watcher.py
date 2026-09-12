@@ -28,6 +28,41 @@ _BASE58 = r"[1-9A-HJ-NP-Za-km-z]{32,44}"
 _CA_RE = re.compile(_BASE58)
 
 
+async def resolve_channels(
+    resolver: Callable[[str | int], Awaitable[object]],
+    channels: list[str | int] | None,
+) -> tuple[list[object], list[str | int]]:
+    """Resuelve los canales configurados y devuelve (resueltos, fallidos).
+
+    Telethon revienta al arrancar si UNO de los nombres de ``chats=`` no se
+    puede resolver -- porque el @usuario no existe, cambio, o la cuenta no
+    esta dentro. Antes eso se llevaba por delante la fuente entera: anadir
+    un canal nuevo mal escrito dejaba de escuchar tambien los que si
+    funcionaban. Se resuelven de uno en uno para que un nombre malo cueste
+    solo ese canal.
+    """
+    if not channels:
+        return [], []
+    resueltos: list[object] = []
+    fallidos: list[str | int] = []
+    for canal in channels:
+        try:
+            entidad = await resolver(canal)
+        except Exception:  # noqa: BLE001 -- cualquier fallo = canal inservible
+            logger.warning(
+                "Canal de Telegram '%s' no se pudo resolver: se ignora. "
+                "Comprueba el @usuario exacto y que tu cuenta este dentro.",
+                canal,
+            )
+            fallidos.append(canal)
+            continue
+        if entidad is None:
+            fallidos.append(canal)
+            continue
+        resueltos.append(entidad)
+    return resueltos, fallidos
+
+
 def is_solana_address(token: str) -> bool:
     """True if ``token`` decodes to a 32-byte Solana public key (Solana-only)."""
     try:
@@ -117,7 +152,6 @@ class TelegramWatcher:
 
         client = TelegramClient(self.session_name, self.api_id, self.api_hash)
 
-        @client.on(events.NewMessage(chats=self.channels))
         async def _handler(event: object) -> None:
             text = getattr(event, "raw_text", "") or ""
             for address in extract_contract_addresses(text, self.suffixes):
@@ -152,6 +186,31 @@ class TelegramWatcher:
             )
             await client.disconnect()
             return
+
+        resueltos, fallidos = await resolve_channels(
+            client.get_entity, self.channels
+        )
+        if self.channels and not resueltos:
+            # Sin esto caeria en chats=None, que NO es "no escuchar" sino
+            # "escuchar TODOS los chats de la cuenta": compraria cualquier
+            # direccion pegada en cualquier grupo. Mejor no escuchar nada.
+            logger.error(
+                "Ningun canal de Telegram se pudo resolver (%s): la fuente no "
+                "escucha nada. No se cae a 'todos los chats' a proposito.",
+                fallidos,
+            )
+            await client.disconnect()
+            return
+        if fallidos:
+            logger.warning(
+                "Escuchando %d de %d canales; ignorados: %s",
+                len(resueltos),
+                len(self.channels or []),
+                fallidos,
+            )
+        client.add_event_handler(
+            _handler, events.NewMessage(chats=resueltos or None)
+        )
         try:
             await client.run_until_disconnected()
         finally:
