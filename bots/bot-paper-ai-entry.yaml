@@ -149,6 +149,18 @@ trade:
   price_check_interval: 1
   extreme_fast_mode: false
   min_reserve_sol: 0.03
+  # POLVO. Por debajo de este valor una posicion deja de gestionarse: suelta
+  # su plaza de las 5 y se deja de consultar su precio cada segundo.
+  #
+  # El motivo es economico, no de limpieza: vender cuesta comision de
+  # prioridad mas la renta de la cuenta de token, asi que por debajo de un
+  # dolar la venta se lleva mas de lo que recupera. El stop loss y los take
+  # profit no tienen nada que defender ahi, y mientras tanto esa bolsa
+  # bloquea una plaza y gasta una de las 15 consultas por segundo del nodo.
+  #
+  # La bolsa NO se vende ni se pierde: se queda en la wallet y la recoge la
+  # limpieza de cuentas. 0 desactiva la regla.
+  valor_minimo_posicion_usd: 1.0
   tope_compra_sol: 0.495
 
 compute_units:

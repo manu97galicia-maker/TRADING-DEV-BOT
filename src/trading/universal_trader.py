@@ -650,6 +650,7 @@ class UniversalTrader:
         min_buy_age: float = 0.0,
         # Reserva mínima de SOL que el bot nunca gasta (siempre deja esto).
         min_reserve_sol: float = 0.03,
+        valor_minimo_posicion_usd: float = 1.0,
         # Hard lifetime cap on successful real buys for a cautious live trial.
         # It is derived from the persistent bought-mints file, so restarts do
         # not reset the limit. 0 = unlimited.
@@ -1169,6 +1170,13 @@ class UniversalTrader:
         self._nombres_vistos: dict[str, float] = {}
         # Reserva mínima de SOL que nunca se gasta (para fees / no quedarse a 0).
         self.min_reserve_lamports = int(float(min_reserve_sol or 0.03) * LAMPORTS_PER_SOL)
+        #: Por debajo de esto una posicion deja de gestionarse. No es un
+        #: capricho de limpieza: VENDER cuesta comision de prioridad mas la
+        #: renta de la cuenta de token, asi que por debajo de un dolar la
+        #: venta se lleva mas de lo que recupera. Y mientras tanto esa bolsa
+        #: ocupa una de las plazas de posicion y gasta una consulta de precio
+        #: por segundo, que es justo lo que necesitan las que si valen algo.
+        self.valor_minimo_posicion_usd = float(valor_minimo_posicion_usd or 0)
         self.paper_watch_secs = int(paper_watch_secs or 300)
         from paper_trading import PaperTradingEngine
 
@@ -4960,6 +4968,33 @@ class UniversalTrader:
                         )
                     _sin_precio = 0
 
+                # POLVO: lo que queda ya no vale la pena gestionar. Se suelta
+                # la plaza y se deja de mirar el precio.
+                #
+                # No es limpieza: VENDER cuesta comision de prioridad mas la
+                # renta de la cuenta de token, asi que por debajo de un dolar
+                # la venta se lleva mas de lo que recupera -- el stop loss y
+                # los take profit no tienen nada que defender ahi. Mientras
+                # tanto esa bolsa ocupaba una de las 5 plazas y gastaba una
+                # consulta de precio POR SEGUNDO, que es lo que necesitan las
+                # posiciones que si valen algo.
+                #
+                # La bolsa NO se vende ni se pierde: se queda en la wallet y
+                # la recoge la limpieza de cuentas al cerrar la sesion.
+                if self.valor_minimo_posicion_usd > 0:
+                    _valor_usd = remaining * price * _SOL_USD
+                    if _valor_usd < self.valor_minimo_posicion_usd:
+                        logger.info(
+                            "%s: lo que queda vale $%.2f (mínimo $%.2f). Se "
+                            "suelta la plaza y se deja de vigilar: venderlo "
+                            "costaría más en comisiones de lo que vale. La "
+                            "bolsa se queda en la wallet.",
+                            token_info.symbol,
+                            _valor_usd,
+                            self.valor_minimo_posicion_usd,
+                        )
+                        break
+
                 # The final remainder has an absolute market-cap target.  It is
                 # only armed after every percentage TP has executed.
                 if (
@@ -6239,6 +6274,20 @@ class UniversalTrader:
             except Exception:  # noqa: BLE001 - migrado/ilegible: aviso sin PnL
                 price = None
             ep = m.get("entry_price") or 0
+            # El mismo criterio que en el monitor: un moonbag que ha caido por
+            # debajo del minimo no da para venderlo, asi que avisar de el cada
+            # cinco minutos es ruido. Se avisa UNA vez y se deja de seguir.
+            if price and self.valor_minimo_posicion_usd > 0:
+                _valor_usd = float(m.get("qty") or 0) * price * _SOL_USD
+                if _valor_usd < self.valor_minimo_posicion_usd:
+                    notify(
+                        f"🧹 Moonbag <b>{m.get('symbol', '?')}</b> vale "
+                        f"${_valor_usd:.2f} (mínimo ${self.valor_minimo_posicion_usd:.2f}). "
+                        f"Venderlo cuesta más en comisiones de lo que saca, "
+                        f"así que dejo de avisar. Sigue en tu wallet."
+                    )
+                    keep.pop()
+                    continue
             maestro = (
                 f'🤖 <a href="https://t.me/MaestroSniperBot?start={mint}">Maestro (vender)</a>'
             )
