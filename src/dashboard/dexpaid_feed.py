@@ -249,6 +249,7 @@ async def _recoger(  # noqa: PLR0913
             ),
             "price_usd": market.price_usd if market else None,
             "liquidity_usd": market.liquidity_usd if market else None,
+            "market_cap": market.market_cap if market else None,
             "dex_id": dex_id,
             "migrated": migrated,
         }

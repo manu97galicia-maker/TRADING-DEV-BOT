@@ -77,43 +77,44 @@ def build_monitor_heartbeat(  # noqa: PLR0913
     return "\n".join(lineas)
 
 
-#: Tramos de boosts y que fraccion del importe normal se arriesga en cada
-#: uno. Sube con el gasto: quien paga mas boosts se lo cree mas. El limite
-#: de cada tramo es "hasta aqui, incluido".
-TRAMOS_BOOSTS: tuple[tuple[float, float], ...] = (
-    (50.0, 0.25),  # hasta 50 boosts (y el pago sin boost): un cuarto
-    (100.0, 0.50),  # 51-100: la mitad
-    (float("inf"), 2 / 3),  # mas de 100: dos tercios
+#: Cuanto se compra en cada tramo de boosts, en SOL y por procedencia. Son
+#: importes cerrados, no fracciones: es lo que se pidio y ademas se lee de
+#: un vistazo, que en un fichero que mueve dinero importa.
+#:
+#: `hasta` es el ultimo numero de boosts del tramo; 0 significa "el resto".
+TRAMOS_IMPORTE: tuple[dict[str, float], ...] = (
+    {"hasta": 50, "pumpfun": 0.25, "otros": 0.18},
+    {"hasta": 0, "pumpfun": 0.30, "otros": 0.20},
 )
 
 #: Multiplicador cuando la moneda pago el perfil Y ademas boosts.
 FACTOR_PAGO_Y_BOOST = 1.2
 
 
-def fraccion_por_tramo(boosts: float) -> float:
-    """Que fraccion del importe normal toca segun los boosts pagados.
+def importe_por_senal(
+    boosts: float,
+    tramos: tuple[dict[str, float], ...] = TRAMOS_IMPORTE,
+    *,
+    de_fuera: bool = False,
+    pago_y_boost: bool = False,
+) -> float:
+    """Cuanto comprar segun los boosts pagados y de donde viene la moneda.
 
     El pago sin boost cae en el primer tramo: es la senal mas floja que se
     compra, y no tiene sentido darle mas que a una que ademas paga boosts.
+
+    Una de fuera de pump.fun lleva su propia columna en la tabla, asi que el
+    descuento por procedencia ya va incluido -- no hay que volver a
+    aplicarlo fuera o se descontaria dos veces.
     """
-    for limite, fraccion in TRAMOS_BOOSTS:
-        if boosts <= limite:
-            return fraccion
-    return TRAMOS_BOOSTS[-1][1]
-
-
-def importe_por_senal(
-    boosts: float,
-    normal_amount: float,
-    *,
-    pago_y_boost: bool = False,
-) -> float:
-    """Importe base de una senal, antes de los factores de origen y premio.
-
-    La base es una fraccion del importe normal segun el tramo de boosts, y
-    pagar perfil Y boosts la sube un 20%.
-    """
-    base = normal_amount * fraccion_por_tramo(boosts)
+    clave = "otros" if de_fuera else "pumpfun"
+    elegido = tramos[-1]
+    for tramo in tramos:
+        limite = float(tramo.get("hasta") or 0)
+        if limite > 0 and boosts <= limite:
+            elegido = tramo
+            break
+    base = float(elegido.get(clave) or 0)
     return base * FACTOR_PAGO_Y_BOOST if pago_y_boost else base
 
 
@@ -186,6 +187,7 @@ class DexPaidSource:
         incluir_cualquier_origen: bool = False,
         min_lp_locked_pct: float = 50.0,
         otros_max_holder_pct: float = 0.05,
+        otros_min_market_cap: float = 0.0,
         otros_factor_importe: float = 1.0,
         boost_extra_umbral: float = 0.0,
         boost_extra_factor: float = 1.0,
@@ -208,6 +210,10 @@ class DexPaidSource:
         #: normal (el dev, quien puso la liquidez); fuera no hay nada de eso,
         #: asi que se exige mas.
         self.otros_max_holder_pct = otros_max_holder_pct
+        #: Market cap minimo para una moneda de fuera de pump.fun. Sin curva
+        #: ni creador que mirar, un market cap ridiculo es la senal mas clara
+        #: de que no hay nadie detras.
+        self.otros_min_market_cap = otros_min_market_cap
         #: Cuanto del importe normal se arriesga en una de fuera de pump.fun.
         self.otros_factor_importe = otros_factor_importe
         #: Desde cuantos boosts se sube la apuesta, y cuanto.
@@ -301,11 +307,8 @@ class DexPaidSource:
         # MENOS DINERO A LAS DE FUERA. Mismo criterio de senal, apuesta mas
         # pequena: son las que menos red tienen (sin creador, sin curva, con
         # el supply sin garantizar), asi que se prueban con menos.
-        _factor = (
-            self.otros_factor_importe
-            if (token_info.additional_data or {}).get("origen") == "otro"
-            else 1.0
-        )
+        _de_fuera = (token_info.additional_data or {}).get("origen") == "otro"
+        _factor = 1.0
         # Los boosts suben la apuesta en los dos origenes. Se multiplican
         # entre si: una de fuera con boosts sube, pero sigue por debajo de
         # una de casa con los mismos boosts.
@@ -319,7 +322,7 @@ class DexPaidSource:
             "signal_buy_amount": _factor
             * importe_por_senal(
                 boosts,
-                self.normal_buy_amount,
+                de_fuera=_de_fuera,
                 pago_y_boost=bool(c.get("pago_y_boost")),
             ),
         }
@@ -355,6 +358,8 @@ class DexPaidSource:
             )
         if not self.incluir_cualquier_origen or not self._pasa_rugcheck(candidato):
             return None
+        if not self._pasa_market_cap(candidato):
+            return None
         token_info = await build_generic_token_info(
             mint,
             self._client,
@@ -369,6 +374,30 @@ class DexPaidSource:
                 "max_holder_pct": self.otros_max_holder_pct,
             }
         return token_info
+
+    def _pasa_market_cap(self, candidato: dict) -> bool:
+        """Exige un market cap minimo a una moneda de origen desconocido.
+
+        Ante la duda se descarta: si el feed no trae el dato, no hay motivo
+        para asumir lo mejor en una moneda de la que no se sabe nada mas.
+        """
+        if self.otros_min_market_cap <= 0:
+            return True
+        mc = candidato.get("market_cap")
+        if mc is None:
+            logger.info(
+                "Descarto %s: sin market cap conocido", candidato.get("mint")
+            )
+            return False
+        if float(mc) < self.otros_min_market_cap:
+            logger.info(
+                "Descarto %s: market cap %.0f $ < %.0f $ exigido",
+                candidato.get("mint"),
+                float(mc),
+                self.otros_min_market_cap,
+            )
+            return False
+        return True
 
     def _pasa_rugcheck(self, candidato: dict) -> bool:
         """Exige liquidez bloqueada a una moneda de origen desconocido.

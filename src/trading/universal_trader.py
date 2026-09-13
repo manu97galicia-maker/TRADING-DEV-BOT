@@ -1562,6 +1562,9 @@ class UniversalTrader:
             otros_max_holder_pct=float(
                 self.buy_on_dex_paid.get("otros_max_holder_pct", 0.05)
             ),
+            otros_min_market_cap=float(
+                self.buy_on_dex_paid.get("otros_min_market_cap", 0)
+            ),
             otros_factor_importe=float(
                 self.buy_on_dex_paid.get("otros_factor_importe", 1.0)
             ),

@@ -111,24 +111,17 @@ def test_se_exige_liquidez_bloqueada_a_las_de_fuera() -> None:
 def test_a_las_de_fuera_se_les_arriesga_menos() -> None:
     """Mismo criterio de senal, apuesta mas pequena: son las que menos red
     tienen (sin creador, sin curva, con el supply sin garantizar)."""
-    cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"][
-        "buy_on_dex_paid"
-    ]
-    factor = cfg["otros_factor_importe"]
-    assert 0 < factor < 1
-    assert round(factor, 2) == 0.67  # 2/3
+    from monitoring.dexpaid_source import importe_por_senal
+
+    for boosts in (0, 50, 51, 900):
+        assert importe_por_senal(boosts, de_fuera=True) < importe_por_senal(boosts)
 
 
 def test_el_factor_se_aplica_al_importe_de_la_senal() -> None:
+    """El descuento por procedencia va DENTRO de la tabla de importes."""
     from monitoring.dexpaid_source import importe_por_senal
 
-    cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"][
-        "buy_on_dex_paid"
-    ]
-    normal = importe_por_senal(0, cfg["normal_buy_amount"])
-    de_fuera = normal * cfg["otros_factor_importe"]
-    assert de_fuera < normal
-    assert round(de_fuera, 4) == round(normal * 2 / 3, 4)
+    assert importe_por_senal(0, de_fuera=True) < importe_por_senal(0)
 
 
 def test_una_de_pumpfun_no_lleva_factor() -> None:
@@ -165,9 +158,33 @@ def test_sin_configurar_el_premio_no_hace_nada() -> None:
     assert factor_por_boosts(900, 30, 0) == 1.0
 
 
-def test_el_umbral_de_boosts_es_el_pedido() -> None:
+def test_el_premio_por_boosts_no_se_cuenta_dos_veces() -> None:
+    """Los tramos ya suben el importe con los boosts. Dejar encima el premio
+    del 1,33 seria contar lo mismo dos veces."""
     cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"][
         "buy_on_dex_paid"
     ]
-    assert cfg["boost_extra_umbral"] == 30
-    assert round(cfg["boost_extra_factor"], 2) == 1.33
+    assert cfg["boost_extra_umbral"] == 0
+
+
+def test_una_de_raydium_necesita_market_cap_minimo() -> None:
+    """Sin curva ni creador que mirar, un market cap ridiculo es la senal
+    mas clara de que no hay nadie detras."""
+    cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"][
+        "buy_on_dex_paid"
+    ]
+    assert cfg["otros_min_market_cap"] == 6000
+
+
+def test_sin_market_cap_conocido_se_descarta() -> None:
+    """Ante la duda no se compra: no hay motivo para asumir lo mejor en una
+    moneda de la que no se sabe nada mas."""
+    fuente = DexPaidSource(object(), object(), otros_min_market_cap=6000)
+    assert fuente._pasa_market_cap({"mint": "x"}) is False
+    assert fuente._pasa_market_cap({"mint": "x", "market_cap": 5999}) is False
+    assert fuente._pasa_market_cap({"mint": "x", "market_cap": 6000}) is True
+
+
+def test_sin_minimo_configurado_pasa_cualquiera() -> None:
+    fuente = DexPaidSource(object(), object(), otros_min_market_cap=0)
+    assert fuente._pasa_market_cap({"mint": "x"}) is True

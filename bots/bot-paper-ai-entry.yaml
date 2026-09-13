@@ -249,7 +249,10 @@ filters:
     #   - a las 2 perdidas se dejan de comprar, y las de pump.fun siguen
     #   - se arriesgan 2/3 del importe normal
     otros_max_holder_pct: 0.05
-    otros_factor_importe: 0.6667
+    #   - market cap minimo de 6.000 $: sin curva ni creador que mirar, un
+    #     market cap ridiculo es la senal mas clara de que no hay nadie detras
+    otros_min_market_cap: 6000
+    otros_factor_importe: 1.0
     # PREMIO POR BOOSTS, para CUALQUIER origen. Pagar 30 boosts es un
     # compromiso real con la moneda, venga de pump.fun, de PumpSwap o de
     # Raydium. Se multiplica con el factor de origen: una de fuera con
@@ -257,19 +260,21 @@ filters:
     #
     # OJO: `tope_compra_sol` recorta despues, asi que en las de pump.fun
     # este premio empuja hasta el tope y ahi se queda.
-    boost_extra_umbral: 30
+    boost_extra_umbral: 0
     boost_extra_factor: 1.3333
     otros_max_compras: 3
     otros_parar_tras_perdidas: 2
-    # LA BASE de toda compra de esta fuente. Los tramos de boosts la
-    # reparten: hasta 50 boosts (y el pago sin boost) un cuarto, de 51 a 100
-    # la mitad, y a partir de ahi dos tercios. Si ademas de pagar el perfil
-    # ha comprado boosts, sube un 20%.
+    # IMPORTES, en SOL cerrados (estan en TRAMOS_IMPORTE, en el codigo):
     #
-    # Los antiguos small_boost_buy_amount / boost_threshold /
-    # boost_buy_amount se han quitado: ya no decidian nada y dejarlos en la
-    # config habria hecho creer que si.
-    normal_buy_amount: 0.2856
+    #                      pump.fun/PumpSwap   Raydium y otros
+    #   hasta 50 boosts          0,25               0,18
+    #   mas de 50 boosts         0,30               0,20
+    #
+    # El descuento por procedencia ya va en la tabla, asi que
+    # otros_factor_importe se queda en 1: aplicarlo otra vez descontaria dos
+    # veces. Y boost_extra_umbral pasa a 0 porque los tramos ya suben el
+    # importe con los boosts; tenerlo encima seria contar lo mismo dos veces.
+    normal_buy_amount: 0.25
 
   # DEXTools DEXTboard. La API v2 NO tiene endpoint de "quien pago NITRO":
   # sus 19 endpoints son blockchain/exchange/pool/token/rankings. Lo que si
