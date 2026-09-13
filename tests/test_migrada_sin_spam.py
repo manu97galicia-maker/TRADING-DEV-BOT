@@ -64,6 +64,29 @@ def test_el_desvio_no_se_confunde_con_un_fallo_de_red() -> None:
     assert "raise _CurvaMigrada" in _monitor()
 
 
+def test_el_aviso_de_migracion_sale_una_vez_no_una_por_segundo() -> None:
+    """El segundo fallo, que sobrevivio al primer arreglo.
+
+    Quitar el traceback no bastaba: quedaba una linea de INFO por segundo.
+    Su condicion era `_sin_precio == 0`, y `_sin_precio` se pone a cero justo
+    despues y solo sube cuando NO hay precio -- en una migrada con precio en
+    el DEX valia SIEMPRE cero. O sea 3.600 lineas por hora y por posicion.
+
+    Ahora el aviso cuelga de `_ya_migro`, que por definicion solo pasa de
+    falso a cierto una vez en la vida de la posicion.
+    """
+    cuerpo = _monitor()
+    migro = cuerpo.index("la curva ya no sirve")
+    guarda = cuerpo.rindex("if not _ya_migro:", 0, migro)
+    # Entre la guarda y el aviso no puede colarse otra condicion: el aviso
+    # tiene que estar DENTRO del `if not _ya_migro`.
+    entre = cuerpo[guarda:migro]
+    assert "if _sin_precio == 0:" not in entre, (
+        "el aviso volvio a colgar de _sin_precio: saldra una vez por segundo"
+    )
+    assert "_ya_migro = True" in entre
+
+
 def test_el_precio_del_dex_sigue_alimentando_el_stop() -> None:
     """Lo que NO puede pasar: que saltarse la curva deje la posicion sin
     precio. El respaldo del DEX tiene que seguir en la misma rama."""

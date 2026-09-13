@@ -4934,13 +4934,29 @@ class UniversalTrader:
                         continue
                     if not _ya_migro:
                         # Se apunta UNA vez: a partir de aqui el precio sale
-                        # del DEX directamente, sin pasar por la curva.
+                        # del DEX directamente, sin pasar por la curva. Y se
+                        # avisa UNA vez, que es lo que hace falta saber.
+                        #
+                        # Antes esta linea salia CADA SEGUNDO mientras durara
+                        # la posicion. La condicion era `_sin_precio == 0`, y
+                        # `_sin_precio` se pone a 0 justo debajo y solo sube
+                        # cuando NO hay precio: en una migrada con precio en
+                        # el DEX valia siempre cero, asi que "avisar una vez"
+                        # eran 3.600 lineas por hora y posicion. En un droplet
+                        # de 1 GB eso llena el disco sin que nadie lo note.
                         _ya_migro = True
-                    if _sin_precio == 0:
                         logger.info(
-                            "%s: la curva ya no sirve (migro); sigo con el "
+                            "%s: la curva ya no sirve (migró); sigo con el "
                             "precio del DEX: %.10f SOL",
                             token_info.symbol, price,
+                        )
+                    elif _sin_precio:
+                        # Vuelve a haber precio despues de un apagon. Esto si
+                        # merece una linea: cierra el aviso de arriba.
+                        logger.info(
+                            "%s: vuelve a haber precio en el DEX tras %d "
+                            "lecturas en blanco",
+                            token_info.symbol, _sin_precio,
                         )
                     _sin_precio = 0
 
