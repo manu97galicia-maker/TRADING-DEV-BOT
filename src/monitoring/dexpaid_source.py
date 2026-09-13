@@ -173,6 +173,28 @@ class DexPaidSource:
         self._migradas = 0
         self._sin_construir = 0
 
+    def _interesa(self, resumen: dict) -> bool:
+        """Criba BARATA, antes de gastar una sola peticion por candidata.
+
+        Antes estas dos comprobaciones vivian en `_evaluar`, o sea DESPUES
+        de que el feed hubiera pedido ordenes y datos de mercado de las 90
+        candidatas. Como ~85 se caen aqui, se pagaba el precio completo por
+        monedas que ya se sabia que no se iban a comprar: una vuelta tardaba
+        25-80 segundos en vez de los 5 configurados, y una moneda recien
+        pagada podia esperar mas de un minuto a que le llegara el turno.
+
+        Todo lo que se mira aqui viene ya en la respuesta de los feeds, asi
+        que decidirlo no cuesta ni una llamada.
+        """
+        mint = resumen.get("mint")
+        if not mint or mint in self._seen:
+            self._repetidas += 1
+            return False
+        if not self._freshness.accept(resumen):
+            self._no_frescas += 1
+            return False
+        return True
+
     async def _evaluar(self, c: dict) -> TokenInfo | None:
         """Pasa un candidato por el embudo y lo devuelve si es comprable.
 
@@ -180,12 +202,11 @@ class DexPaidSource:
         distingue entre que no llegue nada y que llegue todo y se caiga por
         el camino.
         """
+        # Las dos primeras cribas (ya vista, sin senal nueva) las hizo ya
+        # `_interesa` sobre la respuesta cruda del feed. Repetirlas aqui
+        # daria False siempre: `_freshness.accept` guarda estado.
         mint = c.get("mint")
-        if not mint or mint in self._seen:
-            self._repetidas += 1
-            return None
-        if not self._freshness.accept(c):
-            self._no_frescas += 1
+        if not mint:
             return None
         # Quien paga DexScreener suele hacerlo cuando la moneda ya tiene
         # traccion, y para entonces muchas han salido de la curva.
@@ -343,6 +364,7 @@ class DexPaidSource:
                         # ser la unica red: se pide solo cuando hace falta.
                         check_locked=self.incluir_cualquier_origen,
                         dex=dex,
+                        interesa=self._interesa,
                     )
                     if not self._primed:
                         self._freshness.prime(candidates)

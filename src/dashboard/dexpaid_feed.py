@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from collections.abc import Callable
 from typing import Any
 
 from dexscreener.client import DexScreenerClient
@@ -69,6 +70,7 @@ async def get_candidates(  # noqa: PLR0913
     chain: str = "solana",
     check_locked: bool = True,
     dex: DexScreenerClient | None = None,
+    interesa: Callable[[dict[str, Any]], bool] | None = None,
 ) -> list[dict[str, Any]]:
     """Return recently dex-paid tokens with buy-decision data.
 
@@ -105,6 +107,7 @@ async def get_candidates(  # noqa: PLR0913
             chain=chain,
             check_locked=check_locked,
             now_ms=now_ms,
+            interesa=interesa,
         )
     finally:
         if propio:
@@ -118,6 +121,48 @@ async def get_candidates(  # noqa: PLR0913
     return rows
 
 
+def _fusionar_feeds(entradas: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Junta por moneda lo que llega de los dos feeds (pagos y boosts).
+
+    Una misma moneda puede salir en los dos. Se queda con el mayor numero
+    de boosts visto y recuerda de cual de los dos vino, que es lo que luego
+    decide si hace falta consultar las ordenes.
+    """
+    por_mint: dict[str, dict[str, Any]] = {}
+    for entrada in entradas:
+        mint = entrada.get("tokenAddress")
+        if not mint:
+            continue
+        actual = por_mint.get(mint, {})
+        por_mint[mint] = {
+            **actual,
+            **entrada,
+            "totalAmount": max(
+                float(actual.get("totalAmount") or actual.get("amount") or 0),
+                float(entrada.get("totalAmount") or entrada.get("amount") or 0),
+            ),
+            "_from_boosts": bool(
+                actual.get("_from_boosts") or entrada.get("_from_boosts")
+            ),
+            "_from_profiles": bool(
+                actual.get("_from_profiles") or entrada.get("_from_profiles")
+            ),
+        }
+    return por_mint
+
+
+def _resumen(mint: str, entrada: dict[str, Any]) -> dict[str, Any]:
+    """Lo minimo para decidir si una candidata merece gastar peticiones.
+
+    Sale entero de la respuesta de los feeds, sin una sola llamada extra.
+    """
+    return {
+        "mint": mint,
+        "signal_type": "boost" if entrada.get("_from_boosts") else "paid",
+        "boosts": entrada.get("totalAmount") or entrada.get("amount") or 0,
+    }
+
+
 async def _recoger(  # noqa: PLR0913
     dex: DexScreenerClient,
     *,
@@ -127,6 +172,7 @@ async def _recoger(  # noqa: PLR0913
     chain: str,
     check_locked: bool,
     now_ms: float,
+    interesa: Callable[[dict[str, Any]], bool] | None = None,
 ) -> list[dict[str, Any]]:
     """Trae y arma las candidatas con el cliente que se le da."""
     boosts, profiles = await asyncio.gather(
@@ -141,25 +187,20 @@ async def _recoger(  # noqa: PLR0913
         for entry in profiles
         if entry.get("chainId") == chain
     ]
-    by_mint: dict[str, dict[str, Any]] = {}
-    for entry in combined:
-        mint = entry.get("tokenAddress")
-        if not mint:
-            continue
-        current = by_mint.get(mint, {})
-        by_mint[mint] = {
-            **current,
-            **entry,
-            "totalAmount": max(
-                float(current.get("totalAmount") or current.get("amount") or 0),
-                float(entry.get("totalAmount") or entry.get("amount") or 0),
-            ),
-            "_from_boosts": bool(
-                current.get("_from_boosts") or entry.get("_from_boosts")
-            ),
-            "_from_profiles": bool(
-                current.get("_from_profiles") or entry.get("_from_profiles")
-            ),
+    by_mint = _fusionar_feeds(combined)
+    # CRIBA BARATA ANTES DE GASTAR PETICIONES. Lo caro de cada candidata
+    # --la consulta de ordenes y la de mercado-- se hacia sobre las 90, y
+    # quien llama descartaba despues ~85 por repetidas o sin senal nueva.
+    # Es decir: se pagaba el precio completo por monedas que ya se sabia que
+    # no se iban a comprar, y una vuelta tardaba 25-80s en vez de 5.
+    #
+    # Lo que necesita esa criba (mint, si es boost, cuantos boosts) ya esta
+    # en la respuesta de los feeds, asi que puede decidirse gratis.
+    if interesa is not None:
+        by_mint = {
+            mint: entrada
+            for mint, entrada in by_mint.items()
+            if interesa(_resumen(mint, entrada))
         }
     toks = list(by_mint.values())[: limit * 3]
 
