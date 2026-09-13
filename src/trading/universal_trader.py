@@ -330,6 +330,7 @@ class UniversalTrader:
         take_profit_percentage: float | None = None,
         stop_loss_percentage: float | None = None,
         max_hold_time: int | None = None,
+        abandonar_tras_seg: int | None = None,
         # MONEDA MUERTA: a los N segundos, si no sube al menos `venta_muerta_gain`,
         # se vende entera. 0 = desactivado.
         venta_muerta_seg: float = 0.0,
@@ -760,6 +761,13 @@ class UniversalTrader:
         self.take_profit_percentage = take_profit_percentage
         self.stop_loss_percentage = stop_loss_percentage
         self.max_hold_time = max_hold_time
+        #: Tope duro de vigilancia de UNA posicion, para que una moneda
+        #: invendible (un rug) no retenga el semaforo para siempre. Iba
+        #: atado a `max_hold_time`, lo que escondia una trampa: al poner
+        #: `max_hold_time: 0` para dejar correr las posiciones, la formula
+        #: caia a su valor por defecto y ABANDONABA todo a los 8 minutos.
+        #: Ahora es independiente y por defecto son 24 horas.
+        self.abandonar_tras_seg = int(abandonar_tras_seg or 86400)
         self.venta_muerta_seg = float(venta_muerta_seg or 0)
         #: Segundos seguidos por debajo del precio de compra tras los cuales
         #: se vende la posicion ENTERA, moonbag incluido. 0 lo desactiva.
@@ -4616,7 +4624,10 @@ class UniversalTrader:
         # semaphore is held for this whole monitor, so an infinite sell-retry loop
         # would halt ALL new trades. After this cap we abandon the (already lost)
         # bag, release the semaphore, and keep operating.
-        abandon_after = (self.max_hold_time or 120) * 3 + 120
+        # NO depende de `max_hold_time`: con el reloj quitado (0), la vieja
+        # formula `(max_hold_time or 120) * 3 + 120` daba 480 segundos y el
+        # bot soltaba cada posicion a los 8 minutos.
+        abandon_after = self.abandonar_tras_seg
 
         # ANTI PUMP&DUMP: pico observado para el trailing stop del moonbag.
         # El SL normal mide desde la ENTRADA, así que un pump+dump que vuelve

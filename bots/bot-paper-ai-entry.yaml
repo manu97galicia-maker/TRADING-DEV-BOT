@@ -111,7 +111,20 @@ trade:
   # contador se reinicia en cuanto recupera el precio de entrada, asi que
   # exige 180 segundos SIN levantar cabeza, no 180 sueltos.
   venta_bajo_entrada_seg: 180
-  max_hold_time: 7200
+  # SIN RELOJ. 0 = una posicion no se cierra por tiempo. Lo que la saca son
+  # las reglas que miran a la MONEDA, que ya cubren el caso de la muerta:
+  #   - venta_muerta_seg: a los 3 min, si no ha hecho ni +2%, fuera
+  #   - venta_bajo_entrada_seg: 3 min seguidos bajo la compra, fuera
+  #   - stop loss, y stop a la entrada tras el primer TP
+  # La que sobrevive a todo eso es una que subio y se mantuvo: justo la que
+  # no hay que cortar por reloj. Sin esto, los peldanos de x10 a x100 no se
+  # disparaban nunca.
+  max_hold_time: 0
+  # Tope duro de vigilancia de UNA posicion, para que una moneda invendible
+  # (un rug) no retenga un hueco para siempre. Es independiente del de
+  # arriba a proposito: estaba atado a el, y poner max_hold_time a 0 hacia
+  # que el bot abandonase cada posicion a los 8 MINUTOS.
+  abandonar_tras_seg: 86400
   final_target_mc: 0
   price_check_interval: 1
   extreme_fast_mode: false

@@ -68,13 +68,10 @@ def test_el_stop_sube_a_la_entrada_tras_el_primer_tp() -> None:
     assert _trade()["stop_a_entrada_tras_tp"] is True
 
 
-def test_el_moonbag_tiene_fecha_de_caducidad() -> None:
-    """No corre para siempre: a las 2h se cierra pase lo que pase.
-
-    Por eso los peldanos lejanos (3,3x/5x/7x) valen mas que dejar ese 18%
-    en el moonbag: cobran cuando pasan, no cuando vence el reloj.
-    """
-    assert _trade()["max_hold_time"] == 7200
+def test_no_se_cierra_ninguna_posicion_por_reloj() -> None:
+    """0 = sin reloj. Con 7200 los peldanos de x10 a x100 no se disparaban
+    nunca: el reloj vendia antes de que la moneda llegara."""
+    assert _trade()["max_hold_time"] == 0
 
 
 def test_los_peldanos_lejanos_cobran_una_salida_de_verdad() -> None:
@@ -84,15 +81,25 @@ def test_los_peldanos_lejanos_cobran_una_salida_de_verdad() -> None:
     assert round(sum(v for _, v in lejanos), 6) == 0.23
 
 
-def test_el_reloj_de_2h_hace_inalcanzables_los_peldanos_altos() -> None:
-    """Aviso permanente, no un fallo: con max_hold_time en 7200 una moneda
-    no da tiempo a hacer x10, asi que esos peldanos casi nunca cobran.
+def test_los_peldanos_altos_tienen_tiempo_de_llegar() -> None:
+    """Si vuelve a ponerse un reloj corto, los peldanos de x10 a x100 dejan
+    de tener sentido y este test avisa."""
+    t = _trade()
+    hay_altos = any(g >= 9.0 for g, _ in _peldanos())
+    assert hay_altos
+    assert t["max_hold_time"] == 0 or t["max_hold_time"] >= 43200
 
-    Si algun dia se sube el reloj, este test hay que revisarlo -- que es
-    justo el momento en que conviene volver a mirar la escalera.
+
+def test_el_abandono_no_depende_del_reloj_de_posicion() -> None:
+    """La trampa que casi cuela: `abandon_after` salia de
+    `(max_hold_time or 120) * 3 + 120`, asi que poner el reloj a 0 para
+    dejar correr las posiciones hacia que el bot ABANDONASE cada una a los
+    8 minutos, dejando la bolsa huerfana en la wallet.
     """
-    assert _trade()["max_hold_time"] <= 7200
-    assert any(g >= 9.0 for g, _ in _peldanos())
+    t = _trade()
+    assert t["abandonar_tras_seg"] >= 3600
+    # Y con la formula vieja habria dado esto:
+    assert (t["max_hold_time"] or 120) * 3 + 120 < t["abandonar_tras_seg"]
 
 
 def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:
