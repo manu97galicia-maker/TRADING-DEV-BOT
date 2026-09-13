@@ -141,3 +141,39 @@ def test_una_de_pumpfun_no_lleva_factor() -> None:
     """Las de casa siguen con el importe entero."""
     fuente = DexPaidSource(object(), object())
     assert fuente.otros_factor_importe == 1.0
+
+
+def test_treinta_boosts_suben_la_apuesta() -> None:
+    """Pagar boosts es compromiso con la moneda: se apuesta mas."""
+    from monitoring.dexpaid_source import factor_por_boosts
+
+    assert factor_por_boosts(29, 30, 1.3333) == 1.0
+    assert factor_por_boosts(30, 30, 1.3333) == 1.3333
+    assert factor_por_boosts(900, 30, 1.3333) == 1.3333
+
+
+def test_el_premio_por_boosts_vale_para_cualquier_origen() -> None:
+    """Lo pedido: sean o no de Raydium. Los dos factores se multiplican, asi
+    que una de fuera con boosts sube pero sigue por debajo de una de casa."""
+    from monitoring.dexpaid_source import factor_por_boosts
+
+    premio = factor_por_boosts(100, 30, 1.3333)
+    de_casa = 1.0 * premio
+    de_fuera = 0.6667 * premio
+    assert de_fuera > 0.6667  # sube respecto a una de fuera sin boosts
+    assert de_fuera < de_casa  # pero no alcanza a una de casa
+
+
+def test_sin_configurar_el_premio_no_hace_nada() -> None:
+    from monitoring.dexpaid_source import factor_por_boosts
+
+    assert factor_por_boosts(900, 0, 1.5) == 1.0
+    assert factor_por_boosts(900, 30, 0) == 1.0
+
+
+def test_el_umbral_de_boosts_es_el_pedido() -> None:
+    cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"][
+        "buy_on_dex_paid"
+    ]
+    assert cfg["boost_extra_umbral"] == 30
+    assert round(cfg["boost_extra_factor"], 2) == 1.33

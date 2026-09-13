@@ -92,6 +92,21 @@ def _dexpaid_signal_amount(
     return normal_amount
 
 
+def factor_por_boosts(boosts: float, umbral: float, factor: float) -> float:
+    """Multiplicador extra cuando alguien ha pagado boosts de verdad.
+
+    Va aparte de los escalones normales y se aplica a CUALQUIER origen:
+    pagar 30 boosts es un compromiso real con la moneda, sea de pump.fun,
+    de PumpSwap o de Raydium. Se multiplica con el factor de origen, asi que
+    una de fuera con boosts sube pero sigue por debajo de una de casa.
+
+    Con umbral o factor a cero no hace nada.
+    """
+    if umbral <= 0 or factor <= 0:
+        return 1.0
+    return factor if boosts >= umbral else 1.0
+
+
 class DexPaidFreshnessTracker:
     """Accept only events appearing after startup or a real boost increase."""
 
@@ -150,6 +165,8 @@ class DexPaidSource:
         min_lp_locked_pct: float = 50.0,
         otros_max_holder_pct: float = 0.05,
         otros_factor_importe: float = 1.0,
+        boost_extra_umbral: float = 0.0,
+        boost_extra_factor: float = 1.0,
         candidatos_por_vuelta: int = 30,
     ) -> None:
         self._impls = platform_impls
@@ -174,6 +191,9 @@ class DexPaidSource:
         self.otros_max_holder_pct = otros_max_holder_pct
         #: Cuanto del importe normal se arriesga en una de fuera de pump.fun.
         self.otros_factor_importe = otros_factor_importe
+        #: Desde cuantos boosts se sube la apuesta, y cuanto.
+        self.boost_extra_umbral = boost_extra_umbral
+        self.boost_extra_factor = boost_extra_factor
         # Cuantas entradas del feed se miran por vuelta. Estaba fijo en 10: en
         # una ventana tan estrecha una moneda entra y sale entre dos sondeos y
         # no llega a verse nunca.
@@ -266,6 +286,12 @@ class DexPaidSource:
             self.otros_factor_importe
             if (token_info.additional_data or {}).get("origen") == "otro"
             else 1.0
+        )
+        # Los boosts suben la apuesta en los dos origenes. Se multiplican
+        # entre si: una de fuera con boosts sube, pero sigue por debajo de
+        # una de casa con los mismos boosts.
+        _factor *= factor_por_boosts(
+            boosts, self.boost_extra_umbral, self.boost_extra_factor
         )
         token_info.additional_data = {
             **(token_info.additional_data or {}),

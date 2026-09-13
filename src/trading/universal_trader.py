@@ -1572,6 +1572,12 @@ class UniversalTrader:
             otros_factor_importe=float(
                 self.buy_on_dex_paid.get("otros_factor_importe", 1.0)
             ),
+            boost_extra_umbral=float(
+                self.buy_on_dex_paid.get("boost_extra_umbral", 0)
+            ),
+            boost_extra_factor=float(
+                self.buy_on_dex_paid.get("boost_extra_factor", 1.0)
+            ),
             candidatos_por_vuelta=int(
                 self.buy_on_dex_paid.get("candidatos_por_vuelta", 30)
             ),
