@@ -134,6 +134,16 @@ _PUMP_TOTAL_SUPPLY = 1_000_000_000
 TOPE_DURO_POSICIONES = 40
 
 
+class _CurvaMigrada(Exception):  # noqa: N818
+    """La moneda ya no vive en la curva: su precio hay que pedirlo al DEX.
+
+    No es un error, es un desvio: se lanza para entrar en la misma rama de
+    respaldo que ya existia, sin tener que duplicarla ni preguntarle a una
+    curva vacia una vez por segundo.
+    """
+
+
+
 def _peldanos_extra(
     extra: list[dict] | None,
 ) -> list[tuple[float | None, float | None]]:
@@ -4858,6 +4868,10 @@ class UniversalTrader:
         _muerta_revisada = False
         _sin_precio = 0  # lecturas seguidas sin precio (ver MAX_SIN_PRECIO)
         _bajo_desde = None  # desde cuando esta por debajo de la compra
+        # Si la moneda ya no vive en la curva. Arranca en True cuando se
+        # compro ya migrada (por el pool), asi no se le pregunta a una curva
+        # vacia ni la primera vez.
+        _ya_migro = bool((token_info.additional_data or {}).get("migrated"))
 
         while remaining > 1e-9:
             if (monotonic() - start) >= abandon_after:
@@ -4879,6 +4893,15 @@ class UniversalTrader:
                 break
             try:
                 try:
+                    if _ya_migro:
+                        # YA SABEMOS QUE MIGRO: no se vuelve a preguntar a la
+                        # curva. Preguntarlo igual costaba una llamada al nodo
+                        # y un traceback completo en el log CADA SEGUNDO y por
+                        # cada posicion migrada -- con el precio comprobandose
+                        # cada segundo, eso llenaba el disco del droplet y se
+                        # comia el presupuesto de RPC que necesita el stop
+                        # loss. El precio de una migrada vive en el DEX.
+                        raise _CurvaMigrada
                     price = await curve_manager.calculate_price(pool_address)
                     _sin_precio = 0
                 except Exception:
@@ -4906,6 +4929,10 @@ class UniversalTrader:
                             break
                         await asyncio.sleep(self.price_check_interval)
                         continue
+                    if not _ya_migro:
+                        # Se apunta UNA vez: a partir de aqui el precio sale
+                        # del DEX directamente, sin pasar por la curva.
+                        _ya_migro = True
                     if _sin_precio == 0:
                         logger.info(
                             "%s: la curva ya no sirve (migro); sigo con el "
