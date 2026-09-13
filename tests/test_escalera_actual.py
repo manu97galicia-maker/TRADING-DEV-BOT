@@ -33,9 +33,9 @@ def _peldanos() -> list[tuple[float, float]]:
 
 def test_los_peldanos_son_los_pedidos() -> None:
     assert _peldanos() == [
-        (0.30, 0.50),
-        (0.60, 0.20),
-        (0.90, 0.05),
+        (0.30, 0.30),
+        (0.50, 0.10),
+        (0.70, 0.35),
         (2.30, 0.06),  # 3,3x
         (4.00, 0.06),  # 5x
         (6.00, 0.06),  # 7x
@@ -103,8 +103,22 @@ def test_el_abandono_no_depende_del_reloj_de_posicion() -> None:
 
 
 def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:
-    """Aviso permanente: con +16,5% contra -18%, hay que acertar mas de la
-    mitad de las veces solo para empatar."""
+    """Aviso permanente: el primer peldano cobra +9% de la posicion (el 30%
+    de un +30%) y el stop cuesta -18%. Un ganador que solo llega al primer
+    peldano NO cubre a un perdedor, asi que hay que acertar bastante mas de
+    la mitad de las veces solo para empatar.
+
+    Esto no es un fallo: el reparto esta echado adelante a proposito y la
+    ganancia de verdad esta en los peldanos de +70% para arriba. El test
+    esta para que nadie lo de por supuesto sin verlo escrito.
+    """
     t = _trade()
     g, v = _peldanos()[0]
     assert g * v < t["stop_loss_percentage"]
+
+
+def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
+    """30% al +30%, 10% al +50%, 35% al +70%: tres cuartos de la posicion."""
+    cerca = [(g, v) for g, v in _peldanos() if g < 2.0]
+    assert cerca == [(0.30, 0.30), (0.50, 0.10), (0.70, 0.35)]
+    assert round(sum(v for _, v in cerca), 6) == 0.75

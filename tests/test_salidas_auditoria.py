@@ -58,7 +58,7 @@ def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
 
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
-    esperado = {1.30: 0.50, 1.60: 0.70, 1.90: 0.75, 3.30: 0.81, 5.0: 0.87, 7.0: 0.93}
+    esperado = {1.30: 0.30, 1.50: 0.40, 1.70: 0.75, 3.30: 0.81, 5.0: 0.87, 7.0: 0.93}
     for multiplo, acumulado in esperado.items():
         assert round(_vendido_hasta(multiplo), 6) == acumulado, f"fallo en x{multiplo}"
 

@@ -52,23 +52,28 @@ trade:
   buy_slippage: 0.10
   sell_slippage: 0.10
   exit_strategy: tp_sl
-  # ESCALERA. Lo que no se vende en los peldanos es el moonbag, que sigue
-  # dentro: 50 + 20 + 5 + 6 + 6 + 6 = 93, o sea 7% corriendo.
+  # ESCALERA. Los porcentajes son de la cantidad ORIGINAL, no de lo que
+  # queda: el 30% del primer peldano es el 30% de lo que se compro.
   #
-  # La forma es "tres cerca y tres lejos": los tres primeros recogen la
-  # subida normal, y los tres de 3,3x/5x/7x son los que cobran cuando una
-  # sale de verdad. Antes esos 18 puntos estaban en el moonbag sin cobrar
-  # nunca, porque max_hold_time cierra a las 2h.
+  #   cerca:  30% a +30%   10% a +50%   35% a +70%   = 75%
+  #   lejos:   6% a x3,3    6% a x5      6% a x7
+  #            1,5% a x10   1,5% a x20   1% a x50     1% a x100  = 23%
+  #   moonbag: 2%, que vende Manu a mano. El bot no lo toca.
   #
-  # OJO con el techo: el moonbag NO corre para siempre. `max_hold_time`
-  # (2h) lo cierra, y `stop_a_entrada_tras_tp` lo saca al precio de compra
-  # si la moneda se da la vuelta despues del primer TP.
+  # El peso esta echado adelante a proposito (el trozo gordo, 35%, espera
+  # al +70%): se apuesta por que la moneda llegue ahi. El precio de esa
+  # apuesta es que una que se queda en +60% y se da la vuelta solo deja
+  # cobrado el 40% en vez del 70% que dejaba el reparto anterior.
+  #
+  # Lo que protege al resto es `stop_a_entrada_tras_tp`: en cuanto salta el
+  # primer peldano el stop sube al precio de compra, asi que lo que sigue
+  # dentro ya no puede perder dinero (salvo hueco de precio).
   take_profit_percentage: 0.30
-  take_profit_sell_percentage: 0.50
-  tp2_gain: 0.60
-  tp2_sell: 0.20
-  tp3_gain: 0.90
-  tp3_sell: 0.05
+  take_profit_sell_percentage: 0.30
+  tp2_gain: 0.50
+  tp2_sell: 0.10
+  tp3_gain: 0.70
+  tp3_sell: 0.35
   # Los tres de arriba son multiplos, no porcentajes: 2.30 = 3,3 veces el
   # precio de entrada, 4.00 = 5x, 6.00 = 7x. El reparto es parejo (6% cada
   # uno) para no decidir a ojo cual de los tres es mas probable.
@@ -78,14 +83,14 @@ trade:
   tp5_sell: 0.06
   tp6_gain: 6.00
   tp6_sell: 0.06
-  # PELDANOS LEJANOS. Del 7% que quedaba de moonbag se reparten 5 aqui y se
-  # dejan 2 para vender a mano. La ganancia es multiplo menos uno: x10 es
-  # 9.00. Se reparte de mas a menos porque llegar a x100 es mucho menos
-  # probable que llegar a x10, no porque pague mas.
+  # PELDANOS LEJANOS. La ganancia es multiplo menos uno: x10 es 9.00. Se
+  # reparte de mas a menos porque llegar a x100 es mucho menos probable que
+  # llegar a x10, no porque pague mas.
   #
-  # OJO, HOY ESTOS CASI NUNCA SE DISPARAN: `max_hold_time` cierra la
-  # posicion a las 2 HORAS, y una moneda no suele hacer x10 en ese rato.
-  # Para que estos peldanos sirvan de algo hay que subir ese reloj.
+  # Estos SI pueden dispararse: `max_hold_time` esta a 0, o sea que una
+  # posicion ya no se cierra por reloj. Si alguien vuelve a ponerle un
+  # reloj corto, estos peldanos dejan de tener sentido (hay un test que
+  # avisa: test_los_peldanos_altos_tienen_tiempo_de_llegar).
   tp_extra:
     - gain: 9.00     # x10
       sell: 0.015
