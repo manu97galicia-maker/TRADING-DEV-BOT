@@ -83,8 +83,8 @@ def build_monitor_heartbeat(  # noqa: PLR0913
 #:
 #: `hasta` es el ultimo numero de boosts del tramo; 0 significa "el resto".
 TRAMOS_IMPORTE: tuple[dict[str, float], ...] = (
-    {"hasta": 50, "pumpfun": 0.25, "otros": 0.18},
-    {"hasta": 0, "pumpfun": 0.30, "otros": 0.20},
+    {"hasta": 50, "pumpfun": 0.325, "otros": 0.234},
+    {"hasta": 0, "pumpfun": 0.39, "otros": 0.26},
 )
 
 #: Multiplicador cuando la moneda pago el perfil Y ademas boosts.

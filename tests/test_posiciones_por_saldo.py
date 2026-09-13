@@ -49,16 +49,22 @@ def test_un_saldo_mayor_abre_mas_posiciones() -> None:
     """Numeros a pelo a proposito: si alguien cambia tope_compra_sol, este
     test se pone rojo y le obliga a mirar cuantas posiciones pierde.
 
-    Historial de esa cuenta, que es lo que hay que ver de un vistazo:
-        0,20 -> 2/4/9   con 0,5 / 1 / 2 SOL
-        0,28 -> 1/3/6   (+40%)
-        0,38 -> 1/2/5   (+36% mas)
+    Historial de esa cuenta, que es lo que hay que ver de un vistazo
+    (posiciones con 0,5 / 1 / 2 SOL de saldo):
+        0,20  -> 2/4/9
+        0,28  -> 1/3/6   (+40%)
+        0,38  -> 1/2/5   (+36% mas)
+        0,495 -> 0/1/3   (+30% mas)
+
+    Con 0,5 SOL ya no se abre NINGUNA: la compra tope (0,495) mas su colchon
+    no cabe por debajo de la reserva. Subir el tamano cuesta posiciones, y
+    esta linea es para que se vea sin tener que calcularlo.
     """
     cfg = _trade()
     reserva, compra = cfg["min_reserve_sol"], cfg["tope_compra_sol"]
-    assert caben(0.5, reserva, compra) == 1
-    assert caben(1.0, reserva, compra) == 2
-    assert caben(2.0, reserva, compra) == 5
+    assert caben(0.5, reserva, compra) == 0
+    assert caben(1.0, reserva, compra) == 1
+    assert caben(2.0, reserva, compra) == 3
 
 
 def test_la_reserva_nunca_se_toca() -> None:
@@ -84,7 +90,7 @@ def test_lo_que_queda_cubre_las_ventas_pendientes() -> None:
 
 
 def test_con_saldo_pequeno_manda_el_saldo_y_no_el_techo() -> None:
-    """Con 1 SOL el freno es la cartera, no el 5: caben 2."""
+    """Con 1 SOL el freno es la cartera, no el 5: cabe 1."""
     cfg = _trade()
     reserva, compra = cfg["min_reserve_sol"], cfg["tope_compra_sol"]
     assert caben(1.0, reserva, compra) < TECHO
@@ -116,9 +122,9 @@ def test_saldo_necesario_para_las_cinco() -> None:
     cfg = _trade()
     reserva = cfg["min_reserve_sol"]
     for compra, hace_falta in (
-        (cfg["tope_compra_sol"], 1.949),
-        (cfg["buy_amount"], 1.473),
-        (0.20, 1.045),
+        (cfg["tope_compra_sol"], 2.520),
+        (cfg["buy_amount"], 1.902),
+        (0.26, 1.345),
     ):
         justo = reserva + TECHO * (compra + COLCHON_POR_POSICION)
         assert round(justo, 3) == hace_falta

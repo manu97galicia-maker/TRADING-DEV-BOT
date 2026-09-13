@@ -10,7 +10,7 @@ separate_process: false
 platform: pump_fun
 
 trade:
-  buy_amount: 0.2856
+  buy_amount: 0.3713
   mayhem_buy_amount: 0
   # Posiciones abiertas A LA VEZ. TECHO DE 5, y por debajo manda el SALDO.
   # Son dos frenos, y gana siempre el que se quede corto.
@@ -24,11 +24,20 @@ trade:
   #
   # OJO: poner 5 aqui no hace que haya 5. Lo que hace falta en la cartera
   # para que quepan las cinco, contando la reserva de 0,03:
-  #     compra 0,3808 (el tope de hoy) -> 1,95 SOL
-  #     compra 0,2856 (buy_amount)     -> 1,47 SOL
-  #     compra 0,20   (curva 96%)      -> 1,05 SOL
+  #     compra 0,495  (el tope de hoy) -> 2,52 SOL
+  #     compra 0,3713 (buy_amount)     -> 1,90 SOL
+  #     compra 0,26   (curva 96%)      -> 1,35 SOL
   # Con menos saldo caben menos, y no es un fallo: es el guardian evitando
   # quedarse sin SOL para cerrar.
+  #
+  # Y CUESTAN POSICIONES. Con la compra tope, segun el saldo:
+  #     0,5 SOL -> 0 posiciones (no cabe ni una: 0,495 + colchon > 0,47)
+  #     1,0 SOL -> 1
+  #     2,0 SOL -> 3
+  #     2,6 SOL -> 5
+  # Subir el tamano de compra y subir el numero de posiciones tiran en
+  # sentidos contrarios. Si lo que se quiere son las 5, la palanca es bajar
+  # tope_compra_sol, no subirlo.
   #
   # Por que 5 y no mas: cada posicion abierta consulta su precio CADA
   # SEGUNDO (price_check_interval: 1) y el nodo esta limitado a 15 por
@@ -53,7 +62,7 @@ trade:
   # monedas cumpliendo los filtros por delante.
   reiniciar_tanda: true
   max_perdidas_seguidas: 0
-  buy_amount_tras_sl: 0.2856
+  buy_amount_tras_sl: 0.3713
   rugs_para_bloquear: 1
   buy_slippage: 0.10
   sell_slippage: 0.10
@@ -140,7 +149,7 @@ trade:
   price_check_interval: 1
   extreme_fast_mode: false
   min_reserve_sol: 0.03
-  tope_compra_sol: 0.3808
+  tope_compra_sol: 0.495
 
 compute_units:
   buy: 140000
@@ -285,7 +294,7 @@ filters:
     # otros_factor_importe se queda en 1: aplicarlo otra vez descontaria dos
     # veces. Y boost_extra_umbral pasa a 0 porque los tramos ya suben el
     # importe con los boosts; tenerlo encima seria contar lo mismo dos veces.
-    normal_buy_amount: 0.25
+    normal_buy_amount: 0.325
 
   # DEXTools DEXTboard. La API v2 NO tiene endpoint de "quien pago NITRO":
   # sus 19 endpoints son blockchain/exchange/pool/token/rankings. Lo que si
@@ -314,9 +323,9 @@ filters:
     #   puesto 21-30 -> normal
     promoted_rank: 10
     medium_rank: 20
-    normal_buy_amount: 0.2856
-    medium_buy_amount: 0.3237
-    promoted_buy_amount: 0.3808
+    normal_buy_amount: 0.3713
+    medium_buy_amount: 0.4208
+    promoted_buy_amount: 0.495
     incluir_migradas: true
     # A diferencia de la fuente de DexScreener, aqui el bloqueo de liquidez
     # lo comprueba la propia API de DEXTools (/locks y /audit), no RugCheck.
@@ -341,7 +350,7 @@ filters:
     poll_interval: 30
     heartbeat_interval: 300
     limit: 20
-    buy_amount: 0.2856
+    buy_amount: 0.3713
     # Suelos a 0 para la primera muestra: en papel interesa medirlo todo y
     # filtrar despues con los datos. Subelos cuando results.jsonl tenga
     # muestra suficiente.
@@ -367,7 +376,7 @@ filters:
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995
-    buy_amount: 0.2
+    buy_amount: 0.26
     # PRUEBA ACOTADA: 3 compras y, si dos salen mal, se para sola. Estos
     # frenos son SUYOS: no gastan el cupo de las demas fuentes ni al reves.
     max_compras: 3
@@ -404,9 +413,9 @@ filters:
   telegram_calls:
     enabled: true
     session_name: moontok_watcher
-    normal_buy_amount: 0.2856
-    nitro_buy_amount: 0.3237
-    promoted_buy_amount: 0.3808
+    normal_buy_amount: 0.3713
+    nitro_buy_amount: 0.4208
+    promoted_buy_amount: 0.495
     promotion_threshold: 500
     # Nitro de DEXTools + MoonTok (CryptoListings), que publica listings de
     # pago. DEXTNewPairsBot y LegendsAlphas siguen fuera: son calls de canal

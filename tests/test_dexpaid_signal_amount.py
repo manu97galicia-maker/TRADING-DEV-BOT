@@ -23,17 +23,17 @@ from monitoring.dexpaid_source import (
 def test_un_pago_sin_boost_va_en_el_primer_tramo() -> None:
     """Es la senal mas floja que se compra: no puede pagar mas que una con
     boosts."""
-    assert importe_por_senal(0) == 0.25
+    assert importe_por_senal(0) == 0.325
 
 
 def test_hasta_cincuenta_boosts_es_el_primer_tramo() -> None:
-    assert importe_por_senal(1) == 0.25
-    assert importe_por_senal(50) == 0.25
+    assert importe_por_senal(1) == 0.325
+    assert importe_por_senal(50) == 0.325
 
 
 def test_por_encima_de_cincuenta_sube() -> None:
-    assert importe_por_senal(51) == 0.30
-    assert importe_por_senal(5000) == 0.30
+    assert importe_por_senal(51) == 0.39
+    assert importe_por_senal(5000) == 0.39
 
 
 def test_una_de_raydium_compra_menos_en_cada_tramo() -> None:
@@ -42,8 +42,8 @@ def test_una_de_raydium_compra_menos_en_cada_tramo() -> None:
 
 
 def test_los_importes_de_raydium_son_los_pedidos() -> None:
-    assert importe_por_senal(0, de_fuera=True) == 0.18
-    assert importe_por_senal(51, de_fuera=True) == 0.20
+    assert importe_por_senal(0, de_fuera=True) == 0.234
+    assert importe_por_senal(51, de_fuera=True) == 0.26
 
 
 def test_pagar_perfil_y_ademas_boosts_sube_un_veinte_por_ciento() -> None:

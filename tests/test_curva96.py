@@ -270,6 +270,6 @@ def test_la_config_del_bot_pide_lo_que_se_acordo() -> None:
     cfg = yaml.safe_load(CONFIG.read_text())["filters"]["curva_96"]
     assert cfg["enabled"] is True
     assert cfg["umbral"] == 0.96
-    assert cfg["buy_amount"] == 0.2
+    assert cfg["buy_amount"] == 0.26
     assert cfg["max_compras"] == 3
     assert cfg["parar_tras_perdidas"] == 2
