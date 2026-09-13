@@ -261,10 +261,15 @@ filters:
     boost_extra_factor: 1.3333
     otros_max_compras: 3
     otros_parar_tras_perdidas: 2
+    # LA BASE de toda compra de esta fuente. Los tramos de boosts la
+    # reparten: hasta 50 boosts (y el pago sin boost) un cuarto, de 51 a 100
+    # la mitad, y a partir de ahi dos tercios. Si ademas de pagar el perfil
+    # ha comprado boosts, sube un 20%.
+    #
+    # Los antiguos small_boost_buy_amount / boost_threshold /
+    # boost_buy_amount se han quitado: ya no decidian nada y dejarlos en la
+    # config habria hecho creer que si.
     normal_buy_amount: 0.2856
-    small_boost_buy_amount: 0.3237
-    boost_threshold: 500
-    boost_buy_amount: 0.3808
 
   # DEXTools DEXTboard. La API v2 NO tiene endpoint de "quien pago NITRO":
   # sus 19 endpoints son blockchain/exchange/pool/token/rankings. Lo que si

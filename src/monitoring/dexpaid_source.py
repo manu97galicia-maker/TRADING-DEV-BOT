@@ -77,19 +77,44 @@ def build_monitor_heartbeat(  # noqa: PLR0913
     return "\n".join(lineas)
 
 
-def _dexpaid_signal_amount(
+#: Tramos de boosts y que fraccion del importe normal se arriesga en cada
+#: uno. Sube con el gasto: quien paga mas boosts se lo cree mas. El limite
+#: de cada tramo es "hasta aqui, incluido".
+TRAMOS_BOOSTS: tuple[tuple[float, float], ...] = (
+    (50.0, 0.25),  # hasta 50 boosts (y el pago sin boost): un cuarto
+    (100.0, 0.50),  # 51-100: la mitad
+    (float("inf"), 2 / 3),  # mas de 100: dos tercios
+)
+
+#: Multiplicador cuando la moneda pago el perfil Y ademas boosts.
+FACTOR_PAGO_Y_BOOST = 1.2
+
+
+def fraccion_por_tramo(boosts: float) -> float:
+    """Que fraccion del importe normal toca segun los boosts pagados.
+
+    El pago sin boost cae en el primer tramo: es la senal mas floja que se
+    compra, y no tiene sentido darle mas que a una que ademas paga boosts.
+    """
+    for limite, fraccion in TRAMOS_BOOSTS:
+        if boosts <= limite:
+            return fraccion
+    return TRAMOS_BOOSTS[-1][1]
+
+
+def importe_por_senal(
     boosts: float,
     normal_amount: float,
-    small_boost_amount: float,
-    expensive_threshold: float,
-    expensive_amount: float,
+    *,
+    pago_y_boost: bool = False,
 ) -> float:
-    """Choose the configured buy size for a paid listing or boost tier."""
-    if boosts >= expensive_threshold:
-        return expensive_amount
-    if boosts > 0:
-        return small_boost_amount
-    return normal_amount
+    """Importe base de una senal, antes de los factores de origen y premio.
+
+    La base es una fraccion del importe normal segun el tramo de boosts, y
+    pagar perfil Y boosts la sube un 20%.
+    """
+    base = normal_amount * fraccion_por_tramo(boosts)
+    return base * FACTOR_PAGO_Y_BOOST if pago_y_boost else base
 
 
 def factor_por_boosts(boosts: float, umbral: float, factor: float) -> float:
@@ -154,9 +179,6 @@ class DexPaidSource:
         max_age_minutes: float = 180.0,
         max_token_age_minutes: float = 30.0,
         normal_buy_amount: float = 0.15,
-        small_boost_buy_amount: float = 0.17,
-        boost_threshold: float = 500.0,
-        boost_buy_amount: float = 0.20,
         *,
         heartbeat_interval: float = 300.0,
         paper_mode: bool = True,
@@ -175,9 +197,6 @@ class DexPaidSource:
         self.max_age_minutes = max_age_minutes
         self.max_token_age_minutes = max_token_age_minutes
         self.normal_buy_amount = normal_buy_amount
-        self.small_boost_buy_amount = small_boost_buy_amount
-        self.boost_threshold = boost_threshold
-        self.boost_buy_amount = boost_buy_amount
         self.heartbeat_interval = heartbeat_interval
         self.paper_mode = paper_mode
         self.incluir_migradas = incluir_migradas
@@ -298,12 +317,10 @@ class DexPaidSource:
             "acquisition_source": "dexscreener",
             "dexscreener_boosts": boosts,
             "signal_buy_amount": _factor
-            * _dexpaid_signal_amount(
+            * importe_por_senal(
                 boosts,
                 self.normal_buy_amount,
-                self.small_boost_buy_amount,
-                self.boost_threshold,
-                self.boost_buy_amount,
+                pago_y_boost=bool(c.get("pago_y_boost")),
             ),
         }
         self._seen.add(mint)

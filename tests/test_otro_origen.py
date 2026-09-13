@@ -120,18 +120,12 @@ def test_a_las_de_fuera_se_les_arriesga_menos() -> None:
 
 
 def test_el_factor_se_aplica_al_importe_de_la_senal() -> None:
-    from monitoring.dexpaid_source import _dexpaid_signal_amount
+    from monitoring.dexpaid_source import importe_por_senal
 
     cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"][
         "buy_on_dex_paid"
     ]
-    normal = _dexpaid_signal_amount(
-        0,
-        cfg["normal_buy_amount"],
-        cfg["small_boost_buy_amount"],
-        cfg["boost_threshold"],
-        cfg["boost_buy_amount"],
-    )
+    normal = importe_por_senal(0, cfg["normal_buy_amount"])
     de_fuera = normal * cfg["otros_factor_importe"]
     assert de_fuera < normal
     assert round(de_fuera, 4) == round(normal * 2 / 3, 4)

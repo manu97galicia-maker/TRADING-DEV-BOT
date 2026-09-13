@@ -241,6 +241,12 @@ async def _recoger(  # noqa: PLR0913
                 round(token_age_min, 1) if token_age_min is not None else None
             ),
             "signal_type": "boost" if is_boost else "paid",
+            # Salio en las DOS listas: pago el perfil Y ademas boosts. Son
+            # dos gastos distintos, asi que cuenta como senal mas fuerte
+            # que cualquiera de los dos por separado.
+            "pago_y_boost": bool(
+                entry.get("_from_boosts") and entry.get("_from_profiles")
+            ),
             "price_usd": market.price_usd if market else None,
             "liquidity_usd": market.liquidity_usd if market else None,
             "dex_id": dex_id,

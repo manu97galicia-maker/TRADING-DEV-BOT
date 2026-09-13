@@ -1546,13 +1546,6 @@ class UniversalTrader:
             normal_buy_amount=float(
                 self.buy_on_dex_paid.get("normal_buy_amount", self.buy_amount)
             ),
-            small_boost_buy_amount=float(
-                self.buy_on_dex_paid.get("small_boost_buy_amount", self.buy_amount)
-            ),
-            boost_threshold=float(self.buy_on_dex_paid.get("boost_threshold", 500)),
-            boost_buy_amount=float(
-                self.buy_on_dex_paid.get("boost_buy_amount", self.buy_amount)
-            ),
             heartbeat_interval=float(
                 self.buy_on_dex_paid.get("heartbeat_interval", 300)
             ),
