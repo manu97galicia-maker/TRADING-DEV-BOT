@@ -26,6 +26,7 @@ def _peldanos() -> list[tuple[float, float]]:
         (t["tp4_gain"], t["tp4_sell"]),
         (t["tp5_gain"], t["tp5_sell"]),
         (t["tp6_gain"], t["tp6_sell"]),
+        *((e["gain"], e["sell"]) for e in t.get("tp_extra") or []),
     ]
     return [(g, v) for g, v in pares if g > 0 and v > 0]
 
@@ -38,6 +39,10 @@ def test_los_peldanos_son_los_pedidos() -> None:
         (2.30, 0.06),  # 3,3x
         (4.00, 0.06),  # 5x
         (6.00, 0.06),  # 7x
+        (9.00, 0.015),  # x10
+        (19.00, 0.015),  # x20
+        (49.00, 0.010),  # x50
+        (99.00, 0.010),  # x100
     ]
 
 
@@ -53,9 +58,9 @@ def test_nunca_se_vende_mas_del_100() -> None:
 
 
 def test_queda_moonbag_corriendo() -> None:
-    """Sin moonbag la ganancia tiene techo, haga lo que haga la moneda."""
+    """Ese 2% es el que Manu vende a mano: el bot no lo toca."""
     vendido = sum(v for _, v in _peldanos())
-    assert round(1 - vendido, 6) == 0.07
+    assert round(1 - vendido, 6) == 0.02
 
 
 def test_el_stop_sube_a_la_entrada_tras_el_primer_tp() -> None:
@@ -73,10 +78,21 @@ def test_el_moonbag_tiene_fecha_de_caducidad() -> None:
 
 
 def test_los_peldanos_lejanos_cobran_una_salida_de_verdad() -> None:
-    """Tres cerca y tres lejos: los de arriba son los que cobran un 5x."""
+    """Los de arriba son los que cobran cuando una sale de verdad."""
     lejanos = [(g, v) for g, v in _peldanos() if g >= 2.0]
-    assert len(lejanos) == 3
-    assert sum(v for _, v in lejanos) == 0.18
+    assert len(lejanos) == 7
+    assert round(sum(v for _, v in lejanos), 6) == 0.23
+
+
+def test_el_reloj_de_2h_hace_inalcanzables_los_peldanos_altos() -> None:
+    """Aviso permanente, no un fallo: con max_hold_time en 7200 una moneda
+    no da tiempo a hacer x10, asi que esos peldanos casi nunca cobran.
+
+    Si algun dia se sube el reloj, este test hay que revisarlo -- que es
+    justo el momento en que conviene volver a mirar la escalera.
+    """
+    assert _trade()["max_hold_time"] <= 7200
+    assert any(g >= 9.0 for g, _ in _peldanos())
 
 
 def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:

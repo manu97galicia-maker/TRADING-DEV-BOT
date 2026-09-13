@@ -78,6 +78,23 @@ trade:
   tp5_sell: 0.06
   tp6_gain: 6.00
   tp6_sell: 0.06
+  # PELDANOS LEJANOS. Del 7% que quedaba de moonbag se reparten 5 aqui y se
+  # dejan 2 para vender a mano. La ganancia es multiplo menos uno: x10 es
+  # 9.00. Se reparte de mas a menos porque llegar a x100 es mucho menos
+  # probable que llegar a x10, no porque pague mas.
+  #
+  # OJO, HOY ESTOS CASI NUNCA SE DISPARAN: `max_hold_time` cierra la
+  # posicion a las 2 HORAS, y una moneda no suele hacer x10 en ese rato.
+  # Para que estos peldanos sirvan de algo hay que subir ese reloj.
+  tp_extra:
+    - gain: 9.00     # x10
+      sell: 0.015
+    - gain: 19.00    # x20
+      sell: 0.015
+    - gain: 49.00    # x50
+      sell: 0.010
+    - gain: 99.00    # x100
+      sell: 0.010
   stop_loss_percentage: 0.18
   stop_a_entrada_tras_tp: true
   stop_al_tp_tras_tp: false
@@ -291,6 +308,7 @@ filters:
     channels:
       - dextools_nitro
       - cryptolistings
+      - Wagbocooks
     suffixes:
       - pump
 

@@ -134,6 +134,28 @@ _PUMP_TOTAL_SUPPLY = 1_000_000_000
 TOPE_DURO_POSICIONES = 40
 
 
+def _peldanos_extra(
+    extra: list[dict] | None,
+) -> list[tuple[float | None, float | None]]:
+    """Convierte la lista `tp_extra` del YAML en pares (ganancia, venta).
+
+    Existe para no seguir anadiendo tp7_gain, tp8_gain... uno a uno: cada
+    objetivo nuevo obligaba a tocar tres ficheros. Se salta en silencio lo
+    que no tenga los dos campos, porque una entrada a medias en la config
+    no puede tumbar el arranque del bot.
+    """
+    pares: list[tuple[float | None, float | None]] = []
+    for entrada in extra or []:
+        if not isinstance(entrada, dict):
+            continue
+        ganancia, venta = entrada.get("gain"), entrada.get("sell")
+        if ganancia is None or venta is None:
+            logger.warning("Peldano extra incompleto, se ignora: %s", entrada)
+            continue
+        pares.append((float(ganancia), float(venta)))
+    return pares
+
+
 def _load_creator_medians(value: object) -> dict[str, float]:
     """Devuelve ``{wallet: median_peak_usd}`` desde un JSON de watchlist.
 
@@ -329,6 +351,7 @@ class UniversalTrader:
         tp5_sell: float | None = None,
         tp6_gain: float | None = None,
         tp6_sell: float | None = None,
+        tp_extra: list[dict] | None = None,
         final_target_mc: float = 0.0,
         # STOP POR MARKET CAP absoluto: vender si el MC cae a este
         # valor, independientemente de a que precio se entro. 0 = off.
@@ -760,6 +783,10 @@ class UniversalTrader:
                 # Sexto peldano. Con cinco no cabia la escalera pedida:
                 # tres cortes cerca (+30/+60/+90) y tres lejos (3,3x/5x/7x).
                 (tp6_gain, tp6_sell),
+                # Peldanos extra, sin limite de cuantos. Ir anadiendo
+                # tp7_gain, tp8_gain... no escala: cada nuevo objetivo
+                # obligaba a tocar el trader, el runner y la config.
+                *_peldanos_extra(tp_extra),
             ]
         )
         self.final_target_mc = float(final_target_mc or 0)
