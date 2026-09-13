@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
+from statistics import median
 from time import monotonic
 
 from interfaces.core import TokenInfo
@@ -26,6 +27,9 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+#: Vueltas que se promedian para el ritmo del heartbeat.
+_VUELTAS_MEDIDAS = 60
+
 
 def build_monitor_heartbeat(  # noqa: PLR0913
     poll_interval: float,
@@ -35,6 +39,7 @@ def build_monitor_heartbeat(  # noqa: PLR0913
     *,
     paper_mode: bool,
     embudo: dict[str, int] | None = None,
+    ritmo: tuple[float, float] | None = None,
 ) -> str:
     """Build the periodic Telegram health message for the API monitor.
 
@@ -47,6 +52,10 @@ def build_monitor_heartbeat(  # noqa: PLR0913
         "🛰 <b>MONITOR ACTIVO</b>",
         f"DexScreener: última revisión correcta · cada {poll_interval:g}s",
     ]
+    if ritmo and ritmo[1] > 0:
+        # MEDIDO, no estimado: lo que tarda de verdad una vuelta en esta
+        # maquina y con esta red.
+        lineas.append(f"⏱ Vuelta real: <b>{ritmo[0]:.1f}s</b> (peor {ritmo[1]:.1f}s)")
     if embudo:
         lineas.extend(
             [
@@ -172,6 +181,26 @@ class DexPaidSource:
         self._no_frescas = 0
         self._migradas = 0
         self._sin_construir = 0
+        self._vueltas_seg: list[float] = []
+
+    def _anota_vuelta(self, segundos: float) -> None:
+        """Guarda cuanto ha tardado esta vuelta de deteccion.
+
+        Se mide en vez de estimarse porque el calculo sobre el papel solo
+        cubre lo que impone el limitador; lo que tarde la red del droplet en
+        hablar con DexScreener no se puede saber desde otra maquina.
+        """
+        self._vueltas_seg.append(segundos)
+        # Solo interesa lo reciente: con la ventana entera, una vuelta lenta
+        # del arranque tapa para siempre el ritmo actual.
+        if len(self._vueltas_seg) > _VUELTAS_MEDIDAS:
+            del self._vueltas_seg[0]
+
+    def _ritmo(self) -> tuple[float, float]:
+        """Devuelve (mediana, peor) de las ultimas vueltas medidas."""
+        if not self._vueltas_seg:
+            return (0.0, 0.0)
+        return (median(self._vueltas_seg), max(self._vueltas_seg))
 
     def _interesa(self, resumen: dict) -> bool:
         """Criba BARATA, antes de gastar una sola peticion por candidata.
@@ -328,6 +357,7 @@ class DexPaidSource:
                     "migradas": self._migradas,
                     "sin_construir": self._sin_construir,
                 },
+                ritmo=self._ritmo(),
             )
         )
         self._last_heartbeat = now
@@ -355,6 +385,7 @@ class DexPaidSource:
         try:
             while True:
                 try:
+                    _t0 = monotonic()
                     candidates = await get_candidates(
                         limit=self.candidatos_por_vuelta,
                         max_age_minutes=self.max_age_minutes,
@@ -366,6 +397,7 @@ class DexPaidSource:
                         dex=dex,
                         interesa=self._interesa,
                     )
+                    self._anota_vuelta(monotonic() - _t0)
                     if not self._primed:
                         self._freshness.prime(candidates)
                         self._primed = True

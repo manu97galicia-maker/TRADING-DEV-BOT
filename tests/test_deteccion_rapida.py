@@ -9,7 +9,7 @@ Con el limitador a 0,8 peticiones/s eso convertia una vuelta de 5 segundos
 en una de 25-80, y una moneda recien pagada podia esperar mas de un minuto.
 """
 
-# ruff: noqa: S101, SLF001, PLR2004
+# ruff: noqa: S101, SLF001, PLR2004, PLC0415
 
 import asyncio
 from collections.abc import Callable
@@ -118,3 +118,47 @@ def test_fusionar_se_queda_con_el_boost_mas_alto() -> None:
     assert fusion["m1"]["totalAmount"] == 900
     assert fusion["m1"]["_from_boosts"] is True
     assert fusion["m1"]["_from_profiles"] is True
+
+
+def test_el_ritmo_se_mide_no_se_estima() -> None:
+    """Lo que tarda la red del droplet no se puede saber desde otra maquina."""
+    fuente = DexPaidSource(object(), object())
+    for segundos in (2.0, 4.0, 3.0):
+        fuente._anota_vuelta(segundos)
+    mediana, peor = fuente._ritmo()
+    assert mediana == 3.0
+    assert peor == 4.0
+
+
+def test_sin_medidas_el_ritmo_no_se_inventa() -> None:
+    assert DexPaidSource(object(), object())._ritmo() == (0.0, 0.0)
+
+
+def test_solo_cuentan_las_vueltas_recientes() -> None:
+    """Con la ventana entera, una vuelta lenta del arranque taparia para
+    siempre el ritmo actual."""
+    from monitoring.dexpaid_source import _VUELTAS_MEDIDAS
+
+    fuente = DexPaidSource(object(), object())
+    fuente._anota_vuelta(99.0)
+    for _ in range(_VUELTAS_MEDIDAS):
+        fuente._anota_vuelta(2.0)
+    mediana, peor = fuente._ritmo()
+    assert mediana == 2.0
+    assert peor == 2.0
+
+
+def test_el_heartbeat_ensena_el_tiempo_medido() -> None:
+    from monitoring.dexpaid_source import build_monitor_heartbeat
+
+    texto = build_monitor_heartbeat(3, 1, 0, 0, paper_mode=False, ritmo=(4.2, 9.1))
+    assert "Vuelta real" in texto
+    assert "4.2s" in texto
+    assert "9.1s" in texto
+
+
+def test_sin_medidas_el_heartbeat_no_ensena_ritmo() -> None:
+    from monitoring.dexpaid_source import build_monitor_heartbeat
+
+    texto = build_monitor_heartbeat(3, 1, 0, 0, paper_mode=False, ritmo=(0.0, 0.0))
+    assert "Vuelta real" not in texto
