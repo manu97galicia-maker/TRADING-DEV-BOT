@@ -1,0 +1,10 @@
+# Comprueba si el bot esta vivo y avisa por Telegram si no lo esta.
+# Lo dispara el timer de al lado, y tambien OnFailure= desde pump-bot.service.
+[Unit]
+Description=Vigia del Pump Bot (avisa por Telegram si esta parado)
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/ai-bot
+ExecStart=/root/.local/bin/uv run deploy/avisar_caida.py

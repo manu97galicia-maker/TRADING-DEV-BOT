@@ -349,6 +349,22 @@ def _send_blocking(text: str) -> None:
         logger.debug(f"Telegram notify failed: {exc}")
 
 
+def notify_ahora(text: str) -> bool:
+    """Manda el aviso y ESPERA a que salga. Devuelve si se pudo mandar.
+
+    `notify` lanza un hilo demonio y vuelve enseguida, que es lo que quiere
+    el bucle de compra. Un script de una sola pasada no puede usar eso: el
+    proceso termina antes de que el hilo llegue a enviar nada y el aviso se
+    pierde justo cuando mas falta hace -- avisar de que el bot se ha caido.
+
+    Tampoco filtra por tipo: si algo llama a esto es porque hay que contarlo.
+    """
+    if not os.getenv("TELEGRAM_BOT_TOKEN") or not os.getenv("TELEGRAM_CHAT_ID"):
+        return False
+    _send_blocking(text)
+    return True
+
+
 def notify(text: str, tipo: str = "otro") -> None:
     """Send a Telegram message without blocking the caller (best-effort).
 

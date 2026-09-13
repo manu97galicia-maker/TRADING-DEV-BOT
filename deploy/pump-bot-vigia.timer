@@ -1,0 +1,12 @@
+# Cada 5 minutos. Es lo que pilla los casos que OnFailure= NO cubre:
+# que alguien pare el bot a mano, o que no arranque tras reiniciar la maquina.
+[Unit]
+Description=Comprobar cada 5 min que el Pump Bot sigue vivo
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Unit=pump-bot-vigia.service
+
+[Install]
+WantedBy=timers.target
