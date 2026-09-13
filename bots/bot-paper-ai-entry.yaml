@@ -398,8 +398,17 @@ filters:
   # al umbral, o sea unas pocas veces al dia.
   curva_96:
     enabled: true
-    # Punto de la curva en que se compra (0,96 = 96% vendido).
-    umbral: 0.96
+    # Punto de la curva en que se compra (0,95 = 95% vendido).
+    #
+    # Cuanto mas bajo, antes se entra: queda mas curva por llenar, asi que
+    # hay mas recorrido si la moneda migra, pero tambien mas monedas que se
+    # quedan a medias y nunca llegan. Del 96 al 95 se dobla la ventana (de un
+    # 3,5% de curva a un 4,5%), asi que deberian entrar bastantes mas.
+    #
+    # Si se quiere bajar mas: a 0,92 quedaria un 8% de curva por llenar, que
+    # es mas del doble de recorrido que a 96 -- y bastantes mas monedas que
+    # no lo consiguen. Conviene mirar los resultados del 95 antes de bajarlo.
+    umbral: 0.95
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995

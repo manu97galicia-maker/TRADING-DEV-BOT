@@ -190,6 +190,8 @@ def test_solo_dispara_dentro_de_la_ventana() -> None:
     fuente._lanzar = lambda mint, _cb: lanzadas.append(mint)
 
     claves = {}
+    # 0,90 esta por debajo del umbral (0,95), 0,97 dentro, 0,999 pasado el
+    # tope: la de en medio es la unica que debe disparar.
     for semilla, avance in ((41, 0.90), (42, 0.97), (43, 0.999)):
         mint, clave = _nueva_moneda(semilla)
         claves[avance] = clave
@@ -306,7 +308,10 @@ def test_este_regimen_no_toca_a_las_demas_fuentes() -> None:
 def test_la_config_del_bot_pide_lo_que_se_acordo() -> None:
     cfg = yaml.safe_load(CONFIG.read_text())["filters"]["curva_96"]
     assert cfg["enabled"] is True
-    assert cfg["umbral"] == 0.96
+    assert cfg["umbral"] == 0.95
+    # La ventana de disparo: entre el umbral y el tope. Por encima del tope
+    # la moneda ya esta migrando y comprar ahi es tirar la comision.
+    assert cfg["tope"] - cfg["umbral"] > 0.04
     assert cfg["buy_amount"] == 0.26
     assert cfg["max_compras"] == 3
     assert cfg["parar_tras_perdidas"] == 2
