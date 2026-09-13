@@ -247,6 +247,7 @@ async def start_bot(config_path: str):
             birdeye_trending=cfg.get("filters", {}).get("birdeye_trending"),
             dextools_hotpools=cfg.get("filters", {}).get("dextools_hotpools"),
             # Telegram-calls acquisition mode (disabled unless present + enabled)
+            curva_96=cfg.get("filters", {}).get("curva_96"),
             telegram_calls=cfg.get("filters", {}).get("telegram_calls"),
             discord_calls=cfg.get("filters", {}).get("discord_calls"),
             # GMGN smart-money/KOL signals (disabled unless present + enabled)

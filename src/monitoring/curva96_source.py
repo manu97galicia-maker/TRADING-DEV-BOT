@@ -1,0 +1,392 @@
+"""Fuente de compra: entrar cuando la curva de pump.fun va casi llena.
+
+Por que esto existe. Las demas fuentes esperan a que alguien de fuera diga algo
+(DexScreener cobrado, un boost, DEXTools, un canal de Telegram). Eso llega
+tarde y solo para una parte de las monedas. El avance de la bonding curve, en
+cambio, es un hecho de la cadena: cuando queda un 4% para llenarse, la moneda
+esta a punto de migrar a PumpSwap, y la migracion es el momento en que entra la
+gente que no mira pump.fun.
+
+De donde sale el dato, y por que es gratis. Cada operacion de pump.fun emite un
+``TradeEvent`` que incluye las reservas de la curva DESPUES de ejecutarse. El
+bot ya lee ese stream entero para contar volumen, asi que saber por donde va
+cada curva no cuesta ni una llamada al nodo. La alternativa -- preguntar el
+estado de la curva moneda por moneda -- serian miles de llamadas por vuelta
+contra un presupuesto de 15 por segundo: no cabe.
+
+Por que esta fuente se suscribe por su cuenta. Cuando hay fuentes de
+adquisicion activas, el trader NO arranca el listener de creaciones (ver
+`UniversalTrader.start`), asi que nadie estaria alimentando `volumen`. Esta
+fuente abre su propio `logsSubscribe` y se alimenta sola.
+
+Lo que NO compra: bundles de pump and dump. Un bundle se monta en el bloque de
+creacion -- varias carteras del mismo dueno comprando a la vez que nace la
+moneda, para tener el token a precio cero y soltarlo sobre quien entre despues.
+Eso se ve en el stream sin preguntar a nadie, PERO solo si se estaba mirando
+cuando nacio; por eso por defecto se exige haber visto la creacion, y las que
+ya estaban en marcha cuando arranco el bot se dejan pasar de largo en vez de
+comprarlas a ciegas.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import contextlib
+import json
+from collections.abc import Awaitable, Callable
+from time import monotonic
+
+import websockets
+
+from interfaces.core import TokenInfo
+from monitoring import volumen
+from trading.token_builder import build_pumpfun_token_info
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+#: Cuantas monedas se recuerdan como "ya probada". Solo hace falta que dure lo
+#: que tarda una moneda en migrar; con esto sobra de largo.
+_MAX_RECORDADAS = 20_000
+
+#: Evaluaciones simultaneas. Cada una hace unas pocas llamadas al nodo para
+#: reconstruir la moneda; sin tope, una racha de migraciones a la vez se comeria
+#: el presupuesto de RPC que necesitan los stop loss de lo ya comprado.
+_MAX_EN_VUELO = 4
+
+
+def build_curva96_heartbeat(
+    umbral: float,
+    buy_amount: float,
+    embudo: dict[str, int],
+    *,
+    paper_mode: bool,
+) -> str:
+    """Mensaje periodico de salud para Telegram.
+
+    Muestra el embudo entero, no solo lo que sale por abajo: "0 compradas"
+    puede ser que no llegue nada o que llegue y se caiga todo por el camino, y
+    son problemas opuestos.
+    """
+    modo = "PAPER" if paper_mode else "REAL"
+    return "\n".join(
+        [
+            "🎯 <b>CURVA CASI LLENA</b>",
+            f"Disparo: curva ≥ <b>{umbral * 100:.0f}%</b> · {buy_amount:g} SOL",
+            f"👀 Monedas con movimiento: <b>{embudo.get('vistas', 0)}</b>",
+            f"  ↳ llegaron al {umbral * 100:.0f}%: {embudo.get('en_umbral', 0)}",
+            f"  ↳ sin ver su creación: {embudo.get('sin_historia', 0)}",
+            f"  ↳ bundle descartado: {embudo.get('bundles', 0)}",
+            f"  ↳ pocos compradores: {embudo.get('poca_gente', 0)}",
+            f"  ↳ no se pudo construir: {embudo.get('sin_construir', 0)}",
+            f"✅ Enviadas a comprar: <b>{embudo.get('comprables', 0)}</b>",
+            f"Modo: <b>{modo}</b>",
+        ]
+    )
+
+
+class Curva96Source:
+    """Vigila el avance de las curvas y compra las que llegan al umbral."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        wss_endpoint: str,
+        platform_impls: object,
+        client: object,
+        *,
+        umbral: float = 0.96,
+        tope: float = 0.995,
+        buy_amount: float = 0.2,
+        max_carteras_primer_bloque: int = 3,
+        max_sol_primer_bloque: float = 2.0,
+        min_compradores: int = 30,
+        max_bundle_pct: float = 0.5,
+        exigir_ver_creacion: bool = True,
+        heartbeat_interval: float = 300,
+        paper_mode: bool = False,
+    ) -> None:
+        self.wss_endpoint = wss_endpoint
+        self._impls = platform_impls
+        self._client = client
+        self.umbral = float(umbral)
+        self.tope = float(tope)
+        self.buy_amount = float(buy_amount)
+        self.max_carteras_primer_bloque = int(max_carteras_primer_bloque)
+        self.max_sol_primer_bloque = float(max_sol_primer_bloque)
+        self.min_compradores = int(min_compradores)
+        self.max_bundle_pct = float(max_bundle_pct)
+        self.exigir_ver_creacion = bool(exigir_ver_creacion)
+        self.heartbeat_interval = float(heartbeat_interval)
+        self.paper_mode = bool(paper_mode)
+
+        self._probadas: set[str] = set()
+        self._en_vuelo: set[asyncio.Task] = set()
+        self._last_heartbeat: float = 0.0
+        self._embudo: dict[str, int] = {}
+
+    # ------------------------------------------------------------------ datos
+
+    def _cuenta(self, clave: str) -> None:
+        self._embudo[clave] = self._embudo.get(clave, 0) + 1
+
+    def _ya_probada(self, mint: str) -> bool:
+        """True si esta moneda ya se miro. Solo se decide UNA vez por moneda.
+
+        Sin esto, una moneda que cruza el umbral lo seguiria cruzando en cada
+        operacion posterior y se intentaria comprar cientos de veces.
+        """
+        if mint in self._probadas:
+            return True
+        if len(self._probadas) >= _MAX_RECORDADAS:
+            self._probadas.clear()
+        self._probadas.add(mint)
+        return False
+
+    # ----------------------------------------------------------------- bundle
+
+    def _es_bundle(self, mint: str, symbol: str) -> bool:
+        """True si la moneda tiene pinta de bundle de pump and dump.
+
+        Todo sale del stream de la cadena, sin preguntar a ningun indexador:
+        quien compro en el bloque de creacion y cuanta gente distinta ha
+        comprado desde entonces.
+        """
+        carteras = volumen.carteras_primer_bloque(mint)
+        if (
+            self.max_carteras_primer_bloque > 0
+            and carteras > self.max_carteras_primer_bloque
+        ):
+            logger.info(
+                "BUNDLE descartado %s (%s): %d carteras compraron en el bloque "
+                "de creación (máx %d)",
+                symbol,
+                mint,
+                carteras,
+                self.max_carteras_primer_bloque,
+            )
+            self._cuenta("bundles")
+            return True
+
+        sol_inicial = volumen.sol_primer_bloque(mint)
+        if self.max_sol_primer_bloque > 0 and sol_inicial > self.max_sol_primer_bloque:
+            logger.info(
+                "BUNDLE descartado %s (%s): %.2f SOL cargados en el bloque de "
+                "creación (máx %.2f)",
+                symbol,
+                mint,
+                sol_inicial,
+                self.max_sol_primer_bloque,
+            )
+            self._cuenta("bundles")
+            return True
+
+        if self.min_compradores > 0:
+            compradores = int(
+                volumen.metricas_segunda_ola(mint).get("compradores", 0) or 0
+            )
+            if compradores < self.min_compradores:
+                logger.info(
+                    "Descartada %s (%s): solo %d compradores distintos para una "
+                    "curva casi llena (mín %d) — la subió un grupo pequeño",
+                    symbol,
+                    mint,
+                    compradores,
+                    self.min_compradores,
+                )
+                self._cuenta("poca_gente")
+                return True
+        return False
+
+    # ---------------------------------------------------------------- decidir
+
+    async def _evaluar(
+        self, mint: str, token_callback: Callable[[TokenInfo], Awaitable[None]]
+    ) -> None:
+        """Comprueba una moneda que acaba de cruzar el umbral y la manda a comprar."""
+        avance = volumen.progreso_curva(mint)
+        if avance is None:
+            return
+        progreso, sol_curva = avance
+
+        if self.exigir_ver_creacion and not volumen.vio_la_creacion(mint):
+            logger.info(
+                "Curva al %.1f%% en %s pero no se vio nacer (el bot arrancó "
+                "después): no se puede saber si es un bundle, se deja pasar",
+                progreso * 100,
+                mint,
+            )
+            self._cuenta("sin_historia")
+            return
+
+        # El bundle se mira ANTES de reconstruir la moneda: lo de arriba es
+        # memoria y no cuesta nada, y reconstruirla son varias llamadas al nodo
+        # que no hay por que gastar en algo que se va a descartar igual.
+        if self._es_bundle(mint, mint[:6]):
+            return
+
+        token_info = await build_pumpfun_token_info(
+            mint, self._impls, self._client, permitir_migradas=False
+        )
+        if token_info is None:
+            self._cuenta("sin_construir")
+            return
+
+        symbol = token_info.symbol or mint[:6]
+
+        token_info.additional_data = {
+            **(token_info.additional_data or {}),
+            "acquisition_source": "curva96",
+            "origen": "curva96",
+            "signal_buy_amount": self.buy_amount,
+            # Freno adicional EN CADENA, que no depende de haber visto nacer la
+            # moneda: si los mayores titulares concentran mas de esto, es un
+            # bundle aunque el bloque de creacion pareciera limpio.
+            "max_bundle_pct": self.max_bundle_pct,
+            "curva_progreso": progreso,
+        }
+        self._cuenta("comprables")
+        logger.info(
+            "CURVA AL %.1f%% — %s (%s): %.1f SOL en la curva, se compra con %.4f SOL",
+            progreso * 100,
+            symbol,
+            mint,
+            sol_curva,
+            self.buy_amount,
+        )
+        await token_callback(token_info)
+
+    def _lanzar(
+        self, mint: str, token_callback: Callable[[TokenInfo], Awaitable[None]]
+    ) -> None:
+        """Evalua la moneda aparte para no parar la lectura del websocket.
+
+        Reconstruir la moneda son varias llamadas al nodo. Hacerlas dentro del
+        bucle de recepcion dejaria de leer logs mientras tanto, y lo que se
+        pierde ahi son justo las operaciones de las demas curvas.
+        """
+        if len(self._en_vuelo) >= _MAX_EN_VUELO:
+            logger.warning(
+                "Curva casi llena: %s se descarta, ya hay %d evaluaciones en "
+                "marcha (el nodo no da para más)",
+                mint,
+                len(self._en_vuelo),
+            )
+            return
+
+        async def _corre() -> None:
+            try:
+                await self._evaluar(mint, token_callback)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception("Fallo evaluando la curva de %s", mint)
+
+        tarea = asyncio.create_task(_corre())
+        self._en_vuelo.add(tarea)
+        tarea.add_done_callback(self._en_vuelo.discard)
+
+    def _revisar(
+        self, mints: list[str], token_callback: Callable[[TokenInfo], Awaitable[None]]
+    ) -> None:
+        """Mira solo las monedas que acaban de operar, no las miles en memoria."""
+        for mint in mints:
+            self._cuenta("vistas")
+            avance = volumen.progreso_curva(mint)
+            if avance is None:
+                continue
+            progreso = avance[0]
+            if progreso < self.umbral or progreso > self.tope:
+                continue
+            self._cuenta("en_umbral")
+            if self._ya_probada(mint):
+                continue
+            self._lanzar(mint, token_callback)
+
+    # -------------------------------------------------------------- heartbeat
+
+    def _heartbeat_si_toca(self) -> None:
+        if self.heartbeat_interval <= 0:
+            return
+        ahora = monotonic()
+        if (
+            self._last_heartbeat
+            and ahora - self._last_heartbeat < self.heartbeat_interval
+        ):
+            return
+        self._last_heartbeat = ahora
+        try:
+            from monitoring.notifier import notify
+
+            notify(
+                build_curva96_heartbeat(
+                    self.umbral,
+                    self.buy_amount,
+                    self._embudo,
+                    paper_mode=self.paper_mode,
+                )
+            )
+        except Exception:  # noqa: BLE001
+            logger.debug("No se pudo enviar el latido de curva casi llena")
+        self._embudo = {}
+
+    # ------------------------------------------------------------------- ciclo
+
+    async def _suscribir(self, websocket: object, program_id: str) -> None:
+        await websocket.send(
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "logsSubscribe",
+                    "params": [
+                        {"mentions": [program_id]},
+                        {"commitment": "processed"},
+                    ],
+                }
+            )
+        )
+        respuesta = json.loads(await websocket.recv())
+        if "result" not in respuesta:
+            logger.warning("Respuesta rara al suscribirse: %s", respuesta)
+
+    async def _escuchar(
+        self, websocket: object, token_callback: Callable[[TokenInfo], Awaitable[None]]
+    ) -> None:
+        while True:
+            crudo = await asyncio.wait_for(websocket.recv(), timeout=60)
+            datos = json.loads(crudo)
+            if datos.get("method") != "logsNotification":
+                continue
+            resultado = datos["params"]["result"]
+            logs = resultado.get("value", {}).get("logs", [])
+            slot = resultado.get("context", {}).get("slot")
+            tocadas = volumen.registrar_logs(logs, slot=slot)
+            self._revisar(tocadas, token_callback)
+            self._heartbeat_si_toca()
+
+    async def run(self, token_callback: Callable[[TokenInfo], Awaitable[None]]) -> None:
+        """Escucha la cadena y compra las curvas que llegan al umbral."""
+        program_id = str(self._impls.event_parser.get_program_id())
+        logger.info(
+            "Curva casi llena ACTIVA: dispara al %.0f%% de la curva con %.4f "
+            "SOL, solo pump.fun (programa %s)",
+            self.umbral * 100,
+            self.buy_amount,
+            program_id,
+        )
+        while True:
+            try:
+                async with websockets.connect(self.wss_endpoint) as websocket:
+                    await self._suscribir(websocket, program_id)
+                    logger.info("Suscrito a los logs de pump.fun para ver las curvas")
+                    await self._escuchar(websocket, token_callback)
+            except asyncio.CancelledError:
+                for tarea in list(self._en_vuelo):
+                    tarea.cancel()
+                    with contextlib.suppress(asyncio.CancelledError):
+                        await tarea
+                raise
+            except Exception:
+                logger.exception("Curva casi llena: se cayó el websocket")
+            logger.info("Curva casi llena: reconectando en 5 s")
+            await asyncio.sleep(5)

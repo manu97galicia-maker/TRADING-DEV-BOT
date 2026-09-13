@@ -337,6 +337,59 @@ filters:
     min_liquidity_usd: 0
     min_volume_h24: 0
 
+  # ====================================================================
+  # CURVA CASI LLENA (pump.fun, sin depender de que nadie pague nada)
+  # ====================================================================
+  # La idea: cuando a una curva de pump.fun le queda un 4% para llenarse,
+  # esta a punto de migrar a PumpSwap, y la migracion es cuando entra la
+  # gente que no mira pump.fun. Aqui no hace falta que nadie haya pagado
+  # DexScreener ni que salga en ningun canal: el dato es de la cadena.
+  #
+  # LO QUE CUESTA: cero llamadas al nodo para VIGILAR. Cada operacion de
+  # pump.fun publica en su log las reservas de la curva, y el bot ya lee
+  # ese stream entero. Solo se consulta al nodo cuando una moneda llega
+  # al umbral, o sea unas pocas veces al dia.
+  curva_96:
+    enabled: true
+    # Punto de la curva en que se compra (0,96 = 96% vendido).
+    umbral: 0.96
+    # Pasado esto la moneda ya esta migrando y la curva deja de operar:
+    # comprar ahi es tirar el dinero en comisiones.
+    tope: 0.995
+    buy_amount: 0.2
+    # PRUEBA ACOTADA: 3 compras y, si dos salen mal, se para sola. Estos
+    # frenos son SUYOS: no gastan el cupo de las demas fuentes ni al reves.
+    max_compras: 3
+    parar_tras_perdidas: 2
+
+    # --- Nada de bundles de pump and dump -------------------------------
+    # Un bundle se monta en el bloque de creacion: varias carteras del
+    # mismo dueno comprando a la vez que nace la moneda, para tener el
+    # token a precio cero y soltarlo sobre quien entre despues. Eso se ve
+    # en el log de la cadena, sin preguntarle a ningun indexador.
+    #
+    # Carteras distintas comprando en el MISMO bloque de creacion. Un dev
+    # que se compra su parte es 1; seis carteras a la vez no es casualidad.
+    max_carteras_primer_bloque: 3
+    # SOL cargados en ese primer bloque. Un dev-buy normal va de 0,1 a 1.
+    max_sol_primer_bloque: 2.0
+    # Compradores distintos en toda su vida. Una curva al 96% que solo
+    # tocaron cuatro carteras no es demanda, es un grupo empujando.
+    min_compradores: 30
+    # Freno EN CADENA, este no depende de haber visto nacer la moneda: si
+    # los mayores titulares concentran mas de esto del supply, es un
+    # bundle aunque el bloque de creacion pareciera limpio. Va mas alto
+    # que el tope general a proposito: al 96% la curva ya solto casi todo
+    # el supply, asi que los primeros titulares pesan mucho mas que en una
+    # moneda recien nacida.
+    max_bundle_pct: 0.5
+    # Si el bot arranco DESPUES de que naciera la moneda, no hay forma de
+    # saber si fue un bundle. Con esto en true se deja pasar en vez de
+    # comprar a ciegas. Es la razon de que tras un reinicio tarde un rato
+    # en comprar por aqui: solo mira las que nacen con el bot ya en marcha.
+    exigir_ver_creacion: true
+    heartbeat_interval: 300
+
   telegram_calls:
     enabled: true
     session_name: moontok_watcher

@@ -50,10 +50,44 @@ _ops: dict[str, list[tuple[float, float, bool, str]]] = defaultdict(list)
 _first_slot: dict[str, int] = {}
 _first_slot_buys: dict[str, int] = defaultdict(int)
 
+#: Wallets distintas que compraron en el bloque de creacion, y SOL que
+#: metieron. Un bundle de pump and dump se monta justo ahi: muchas carteras
+#: entrando en el MISMO bloque que la creacion, para tener el token barato
+#: antes que nadie y soltarlo despues sobre quien llegue.
+_first_slot_wallets: dict[str, set[str]] = defaultdict(set)
+_first_slot_sol: dict[str, float] = defaultdict(float)
+
+#: mint -> (momento, tokens_reales, sol_reales, tope_tokens_visto).
+#:
+#: Cada TradeEvent publica las reservas de la curva DESPUES de ejecutarse, asi
+#: que saber por que punto de la curva va una moneda sale GRATIS del stream que
+#: ya se esta leyendo. Preguntarselo al nodo seria una llamada por moneda y por
+#: vuelta, y con miles de monedas vivas eso no cabe en el presupuesto de RPC.
+_curva: dict[str, tuple[float, int, int, int]] = {}
+
+#: Tokens que la curva de pump.fun pone a la venta al nacer (793,1 M con 6
+#: decimales). El avance de la curva es cuanto de eso se ha vendido ya.
+RESERVA_TOKENS_INICIAL = 793_100_000_000_000
+
+#: Bytes minimos del cuerpo del evento para que lleguen las reservas reales.
+#: Layout: mint(32) sol(8) tokens(8) is_buy(1) user(32) ts(8) v_sol(8)
+#: v_tokens(8) real_sol(8) real_tokens(8) = 121.
+_LARGO_RESERVAS = 121
+_OFFSET_RESERVAS = 105
+
 #: Sin esto la memoria crece sin limite: pump.fun lanza miles de monedas al dia
 #: y el bot esta pensado para correr semanas seguidas.
 _MAX_MINTS = 4000
 _VIDA = 300.0  # segundos que interesa recordar de cada moneda
+
+#: Tope de operaciones guardadas por moneda. Una que llega al final de su curva
+#: acumula decenas de miles y la lista era lo unico que crecia sin limite. Se
+#: conservan las PRIMERAS (la creacion y su bloque, que es donde se reconoce un
+#: bundle) y las ULTIMAS (lo que esta pasando ahora); lo de en medio no decide
+#: nada. A los pocos minutos de vida, que es cuando miran los filtros de
+#: siempre, ninguna moneda llega a este tope, asi que no les cambia nada.
+_MAX_OPS_POR_MONEDA = 1200
+_OPS_INICIALES = 200
 
 
 def _limpiar() -> None:
@@ -62,15 +96,22 @@ def _limpiar() -> None:
     corte = time.time() - _VIDA
     muertos = [m for m, v in _ops.items() if not v or v[-1][0] < corte]
     for m in muertos:
-        _ops.pop(m, None)
-        _first_slot.pop(m, None)
-        _first_slot_buys.pop(m, None)
+        _olvidar(m)
     # Si aun asi no baja (mucha moneda viva a la vez), se tira lo mas antiguo.
     if len(_ops) > _MAX_MINTS:
         for m in sorted(_ops, key=lambda k: _ops[k][-1][0])[: len(_ops) - _MAX_MINTS]:
-            _ops.pop(m, None)
-            _first_slot.pop(m, None)
-            _first_slot_buys.pop(m, None)
+            _olvidar(m)
+
+
+def _olvidar(mint: str) -> None:
+    """Borra todo rastro de una moneda. Que no se escape ningun diccionario:
+    uno olvidado aqui es una fuga de memoria que solo se nota tras dias."""
+    _ops.pop(mint, None)
+    _first_slot.pop(mint, None)
+    _first_slot_buys.pop(mint, None)
+    _first_slot_wallets.pop(mint, None)
+    _first_slot_sol.pop(mint, None)
+    _curva.pop(mint, None)
 
 
 def registrar_bloque_inicial(mint: str, slot: int | None) -> None:
@@ -87,16 +128,24 @@ def registrar_bloque_inicial(mint: str, slot: int | None) -> None:
     if primero is None or bloque < primero:
         _first_slot[mint] = bloque
         _first_slot_buys[mint] = 0
+        _first_slot_wallets[mint] = set()
+        _first_slot_sol[mint] = 0.0
 
 
-def registrar_logs(logs: list[str], slot: int | None = None) -> None:
+def registrar_logs(logs: list[str], slot: int | None = None) -> list[str]:
     """Apunta las operaciones que aparezcan en estos logs. No lanza nunca.
 
     Se llama para CADA notificacion del websocket, incluidas las que no son
     creaciones, asi que tiene que ser barata y silenciosa: un fallo aqui no
     puede tumbar la deteccion de monedas nuevas.
+
+    Returns:
+        Las monedas que han operado en estos logs, en orden y sin repetir. Asi
+        quien vigila el avance de la curva solo mira lo que acaba de moverse,
+        en vez de recorrer los miles de mints que hay en memoria.
     """
     ahora = time.time()
+    tocadas: list[str] = []
     for linea in logs:
         if "Program data:" not in linea:
             continue
@@ -114,18 +163,60 @@ def registrar_logs(logs: list[str], slot: int | None = None) -> None:
             #   mint(32) sol_amount(8) token_amount(8) is_buy(1) user(32) ...
             es_compra = cuerpo[48] == 1
             wallet = _b58(cuerpo[49:81]) if len(cuerpo) >= 81 else ""
-            _ops[mint].append((ahora, sol_lamports / 1e9, es_compra, wallet))
+            sol = sol_lamports / 1e9
+            _ops[mint].append((ahora, sol, es_compra, wallet))
+            _recortar(mint)
+            if mint not in tocadas:
+                tocadas.append(mint)
+            if len(cuerpo) >= _LARGO_RESERVAS:
+                # Reservas de la curva DESPUES de esta operacion: con ellas se
+                # sabe por que punto de la curva va sin preguntar al nodo.
+                sol_real, tokens_real = struct.unpack_from(
+                    "<QQ", cuerpo, _OFFSET_RESERVAS
+                )
+                previo = _curva.get(mint)
+                tope = max(tokens_real, previo[3]) if previo else tokens_real
+                _curva[mint] = (ahora, tokens_real, sol_real, tope)
             if slot is not None:
-                bloque = int(slot)
-                primero = _first_slot.get(mint)
-                if primero is None or bloque < primero:
-                    _first_slot[mint] = bloque
-                    _first_slot_buys[mint] = 1 if es_compra else 0
-                elif bloque == primero and es_compra:
-                    _first_slot_buys[mint] += 1
+                _anotar_primer_bloque(mint, int(slot), sol, wallet, es_compra=es_compra)
         except Exception:  # noqa: BLE001
             continue
     _limpiar()
+    return tocadas
+
+
+def _anotar_primer_bloque(
+    mint: str,
+    bloque: int,
+    sol: float,
+    wallet: str,
+    *,
+    es_compra: bool,
+) -> None:
+    """Acumula quien compro en el bloque de creacion, que es donde se ve el
+    bundle: muchas carteras entrando a la vez que nace la moneda."""
+    primero = _first_slot.get(mint)
+    if primero is None or bloque < primero:
+        _first_slot[mint] = bloque
+        _first_slot_buys[mint] = 1 if es_compra else 0
+        _first_slot_wallets[mint] = {wallet} if es_compra and wallet else set()
+        _first_slot_sol[mint] = sol if es_compra else 0.0
+        return
+    if bloque != primero or not es_compra:
+        return
+    _first_slot_buys[mint] += 1
+    _first_slot_sol[mint] += sol
+    if wallet:
+        _first_slot_wallets[mint].add(wallet)
+
+
+def _recortar(mint: str) -> None:
+    """Deja la moneda en las primeras y las ultimas operaciones."""
+    lista = _ops[mint]
+    if len(lista) <= _MAX_OPS_POR_MONEDA:
+        return
+    conservar_final = _MAX_OPS_POR_MONEDA - _OPS_INICIALES
+    del lista[_OPS_INICIALES : len(lista) - conservar_final]
 
 
 def volumen_sol(mint: str, segundos: float = 0.0) -> float:
@@ -174,6 +265,55 @@ def compras(mint: str) -> int:
 def compras_primer_bloque(mint: str) -> int:
     """Numero de compras vistas en el slot donde se creo la moneda."""
     return int(_first_slot_buys.get(mint, 0))
+
+
+def progreso_curva(mint: str) -> tuple[float, float] | None:
+    """Por donde va la curva de esa moneda, sin gastar una sola llamada al nodo.
+
+    Returns:
+        ``(avance, sol_en_curva)`` con el avance entre 0 y 1, o None si todavia
+        no se ha visto ninguna operacion suya con reservas.
+
+    El avance es "cuanto del tramo a la venta se ha vendido ya":
+    ``1 - tokens_que_quedan / tokens_iniciales``. La referencia es el maximo de
+    tokens visto en esa misma moneda cuando supera al inicial de fabrica, para
+    que un cambio de pump.fun en esa constante no descuadre la cuenta.
+    """
+    datos = _curva.get(mint)
+    if not datos:
+        return None
+    _t, tokens, sol, tope = datos
+    base = max(tope, RESERVA_TOKENS_INICIAL)
+    if base <= 0:
+        return None
+    avance = 1.0 - (tokens / base)
+    return (max(0.0, min(1.0, avance)), sol / 1e9)
+
+
+def vio_la_creacion(mint: str) -> bool:
+    """True si esta moneda se lleva siguiendo desde que nacio.
+
+    No se pregunta al listener: se comprueba contra la cadena. Si en algun
+    momento se le vieron las reservas llenas, es que se la vio recien creada.
+    Importa porque todo lo que delata un bundle (quien compro en el bloque de
+    creacion) solo existe si se estaba mirando en ese momento; si el bot arranco
+    con la moneda ya en marcha, esos contadores valen cero y darian el visto
+    bueno a un bundle por no haberlo visto.
+    """
+    datos = _curva.get(mint)
+    if not datos:
+        return False
+    return datos[3] >= RESERVA_TOKENS_INICIAL * 0.99
+
+
+def carteras_primer_bloque(mint: str) -> int:
+    """Wallets distintas que compraron en el bloque de creacion."""
+    return len(_first_slot_wallets.get(mint) or ())
+
+
+def sol_primer_bloque(mint: str) -> float:
+    """SOL comprado en el bloque de creacion."""
+    return float(_first_slot_sol.get(mint, 0.0))
 
 
 def compra_creador_sol(mint: str, creador: str) -> float:

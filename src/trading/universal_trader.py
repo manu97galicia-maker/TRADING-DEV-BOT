@@ -400,6 +400,7 @@ class UniversalTrader:
         buy_on_dex_paid: dict | None = None,
         birdeye_trending: dict | None = None,
         dextools_hotpools: dict | None = None,
+        curva_96: dict | None = None,
         # Telegram-calls acquisition mode (disabled unless configured)
         telegram_calls: dict | None = None,
         discord_calls: dict | None = None,
@@ -736,6 +737,12 @@ class UniversalTrader:
             max_retries,
             compute_units=self.compute_units,
         )
+
+        # La fuente de "curva casi llena" abre su PROPIA suscripcion a los
+        # logs: cuando hay fuentes de adquisicion activas el listener de abajo
+        # no llega a arrancar (ver `start`), y sin logs no hay forma de saber
+        # por donde va ninguna curva.
+        self.wss_endpoint = wss_endpoint
 
         # Initialize the appropriate listener with platform filtering
         self.token_listener = ListenerFactory.create_listener(
@@ -1115,6 +1122,11 @@ class UniversalTrader:
         #: eso toque a las de casa.
         self._compras_otro_origen = 0
         self._perdidas_otro_origen = 0
+        # Regimen aparte de las que entran por avance de curva: cupo de
+        # compras y corte por perdidas propios, para poder probarlo sin que
+        # se mezcle con el resto.
+        self._compras_curva96 = 0
+        self._perdidas_curva96 = 0
         self._parado_por_perdidas = False
         self.buy_amount_tras_sl = float(buy_amount_tras_sl or 0)
         self._ultimo_cierre_fue_sl = False
@@ -1158,6 +1170,7 @@ class UniversalTrader:
         self.buy_on_dex_paid = buy_on_dex_paid or {}
         self.birdeye_trending = birdeye_trending or {}
         self.dextools_hotpools = dextools_hotpools or {}
+        self.curva_96 = curva_96 or {}
         # Telegram-calls acquisition mode config (off unless enabled)
         self.telegram_calls = telegram_calls or {}
         self.discord_calls = discord_calls or {}
@@ -1308,6 +1321,9 @@ class UniversalTrader:
         if self.dextools_hotpools.get("enabled"):
             logger.info("DEXTools-hotpools acquisition ENABLED")
             acquisition_tasks.append(asyncio.create_task(self._run_dextools_mode()))
+        if self.curva_96.get("enabled"):
+            logger.info("Curva-casi-llena acquisition ENABLED")
+            acquisition_tasks.append(asyncio.create_task(self._run_curva96_mode()))
         if self.telegram_calls.get("enabled"):
             logger.info("Telegram-calls acquisition ENABLED")
             acquisition_tasks.append(asyncio.create_task(self._run_telegram_mode()))
@@ -1635,6 +1651,54 @@ class UniversalTrader:
         self._compras_otro_origen += 1
         return False
 
+    def _curva96_agotada(self, token_info: TokenInfo) -> bool:
+        """True si la moneda entro por avance de curva y ya no toca comprarla.
+
+        Es una prueba acotada a proposito: se compran unas pocas y, si la
+        mayoria sale mal, se corta sola. Los frenos son SUYOS, independientes
+        de los de pump.fun normal y de los de fuera, asi que ni gastan el cupo
+        de las otras ni se lo comen.
+        """
+        if (token_info.additional_data or {}).get("origen") != "curva96":
+            return False
+        cfg = self.curva_96 or {}
+        cupo = int(cfg.get("max_compras", 3) or 0)
+        tope_perdidas = int(cfg.get("parar_tras_perdidas", 2) or 0)
+        if tope_perdidas > 0 and self._perdidas_curva96 >= tope_perdidas:
+            logger.warning(
+                "CURVA 96%% PARADA: %d pérdidas; %s no se compra. El resto de "
+                "fuentes sigue igual.",
+                self._perdidas_curva96,
+                token_info.symbol,
+            )
+            return True
+        if cupo > 0 and self._compras_curva96 >= cupo:
+            logger.info(
+                "Cupo de curva 96%% agotado (%d/%d); %s no se compra",
+                self._compras_curva96,
+                cupo,
+                token_info.symbol,
+            )
+            return True
+        self._compras_curva96 += 1
+        return False
+
+    def _apunta_cierre_curva96(self, token_info: TokenInfo, neto: float) -> None:
+        """Cuenta una perdida del regimen de curva, para poder cortarlo."""
+        if (token_info.additional_data or {}).get("origen") != "curva96":
+            return
+        if neto >= 0:
+            return
+        self._perdidas_curva96 += 1
+        tope = int((self.curva_96 or {}).get("parar_tras_perdidas", 2) or 0)
+        logger.warning(
+            "CURVA 96%%: pérdida %d de %d (%+.4f SOL) en %s",
+            self._perdidas_curva96,
+            tope,
+            neto,
+            token_info.symbol,
+        )
+
     def _apunta_cierre_otro_origen(self, token_info: TokenInfo, neto: float) -> None:
         """Cuenta una perdida del regimen aparte, para poder cortarlo."""
         if (token_info.additional_data or {}).get("origen") != "otro":
@@ -1718,6 +1782,31 @@ class UniversalTrader:
             await source.run(self._on_dexpaid_token)
         except asyncio.CancelledError:
             logger.info("DEXTools-hotpools mode stopped")
+
+    async def _run_curva96_mode(self) -> None:
+        """Compra las monedas de pump.fun cuya curva va casi llena."""
+        from monitoring.curva96_source import Curva96Source
+
+        cfg = self.curva_96
+        source = Curva96Source(
+            self.wss_endpoint,
+            self.platform_implementations,
+            self.solana_client,
+            umbral=float(cfg.get("umbral", 0.96)),
+            tope=float(cfg.get("tope", 0.995)),
+            buy_amount=float(cfg.get("buy_amount", 0.2)),
+            max_carteras_primer_bloque=int(cfg.get("max_carteras_primer_bloque", 3)),
+            max_sol_primer_bloque=float(cfg.get("max_sol_primer_bloque", 2.0)),
+            min_compradores=int(cfg.get("min_compradores", 30)),
+            max_bundle_pct=float(cfg.get("max_bundle_pct", 0.5)),
+            exigir_ver_creacion=bool(cfg.get("exigir_ver_creacion", True)),
+            heartbeat_interval=float(cfg.get("heartbeat_interval", 300)),
+            paper_mode=self.paper_trade or self.paper_engine.enabled,
+        )
+        try:
+            await source.run(self._on_dexpaid_token)
+        except asyncio.CancelledError:
+            logger.info("Curva-casi-llena mode stopped")
 
     async def _run_telegram_mode(self) -> None:
         """Run the Telegram-calls acquisition loop until interrupted."""
@@ -2462,10 +2551,18 @@ class UniversalTrader:
             (token_info.additional_data or {}).get("max_holder_pct")
             or self.max_holder_pct
         )
+        # TOPE DE BUNDLE POR MONEDA. Una que entra por avance de curva trae el
+        # suyo: a esas alturas la curva ya solto casi todo el supply, asi que
+        # los mayores titulares concentran mucho mas que en una recien nacida y
+        # el tope general las tumbaria todas.
+        _tope_bundle = float(
+            (token_info.additional_data or {}).get("max_bundle_pct")
+            or self.max_bundle_pct
+        )
         if (
             _tope_holder <= 0
             and self.min_holders <= 0
-            and self.max_bundle_pct <= 0
+            and _tope_bundle <= 0
             and self.min_supply_en_manos <= 0
             and not self.require_zero_initial_holders
         ):
@@ -2554,7 +2651,7 @@ class UniversalTrader:
 
             # BUNDLE %: suma de los top holders EXCLUIDA la curva. Si concentran
             # mas de max_bundle_pct del supply -> bundle -> se omite (regla Manu).
-            if self.max_bundle_pct > 0:
+            if _tope_bundle > 0:
                 bundle_sum = 0.0
                 for a in accts:
                     addr = a.get("address")
@@ -2563,10 +2660,10 @@ class UniversalTrader:
                     if not curve_ata and addr == largest_addr:
                         continue
                     bundle_sum += float(a.get("amount") or 0) / supply
-                if bundle_sum > self.max_bundle_pct:
+                if bundle_sum > _tope_bundle:
                     logger.info(
                         f"{token_info.symbol}: bundle {bundle_sum * 100:.0f}% "
-                        f"(top holders) > {self.max_bundle_pct * 100:.0f}% -> se omite"
+                        f"(top holders) > {_tope_bundle * 100:.0f}% -> se omite"
                     )
                     return True
 
@@ -3665,6 +3762,8 @@ class UniversalTrader:
                 )
                 return
             if self._otro_origen_agotado(token_info):
+                return
+            if self._curva96_agotada(token_info):
                 return
             self._avisa_si_el_nodo_no_da_mas()
             async with self._position_semaphore:
@@ -5308,6 +5407,7 @@ class UniversalTrader:
                 logger.warning("selector: no se pudo apuntar la operacion")
 
         self._apunta_cierre_otro_origen(token_info, _para_racha)
+        self._apunta_cierre_curva96(token_info, _para_racha)
 
         if self.max_perdidas_seguidas > 0 and not self._parado_por_perdidas:
             if _para_racha < 0:
