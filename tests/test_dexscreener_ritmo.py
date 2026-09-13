@@ -62,7 +62,22 @@ def test_esperar_no_bloquea_si_no_hay_castigo() -> None:
 def test_el_limitador_deja_margen_bajo_el_tope_de_la_api() -> None:
     """60/min es el tope; apurarlo desde dos procesos garantiza 429."""
     cliente = DexScreenerClient()
-    assert cliente._limiter_60._max_rps < 1.0
+    assert cliente._limitador("orders", 60)._max_rps < 1.0
+
+
+def test_cada_endpoint_tiene_su_propio_cubo() -> None:
+    """La documentacion da 60/min A CADA UNO. Compartiendo cubo, pedir los
+    dos feeds se serializaba y costaba 2,5s en vez de ir en paralelo."""
+    cliente = DexScreenerClient()
+    boosts = cliente._limitador("boosts", 60)
+    perfiles = cliente._limitador("profiles", 60)
+    assert boosts is not perfiles
+
+
+def test_el_cubo_de_un_endpoint_se_reutiliza() -> None:
+    """Si se crease uno nuevo por llamada no limitaria nada."""
+    cliente = DexScreenerClient()
+    assert cliente._limitador("boosts", 60) is cliente._limitador("boosts", 60)
 
 
 class _ClienteEspia(DexScreenerClient):
@@ -104,5 +119,5 @@ def test_el_limitador_es_el_mismo_entre_vueltas() -> None:
     ids = []
     for _ in range(3):
         asyncio.run(get_candidates(limit=5, dex=espia, check_locked=False))
-        ids.append(id(espia._limiter_60))
+        ids.append(id(espia._limitador("boosts", 60)))
     assert len(set(ids)) == 1

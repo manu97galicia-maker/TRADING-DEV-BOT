@@ -26,8 +26,8 @@ use the returned data.
 from __future__ import annotations
 
 import asyncio
-from time import monotonic
 from dataclasses import dataclass, field
+from time import monotonic
 from typing import Any
 
 import aiohttp
@@ -144,12 +144,16 @@ class DexScreenerClient:
         self._session_lock = asyncio.Lock()
         # DexScreener limits: 60 rpm for profile/boost/order endpoints,
         # 300 rpm for pair/token/search endpoints. Convert to req/sec.
-        # 0.8/s = 48/min contra un tope de 60: el margen es a proposito.
-        # El limite lo cuenta DexScreener por IP, y en esta maquina hay dos
-        # procesos tirando de la misma API (el bot y el panel), asi que
-        # apurar el tope desde uno solo garantiza 429 en los dos.
-        self._limiter_60 = TokenBucketRateLimiter(max_rps=0.8, burst_size=5)
-        self._limiter_300 = TokenBucketRateLimiter(max_rps=5.0, burst_size=10)
+        # UN CUBO POR ENDPOINT. La documentacion da 60/min A CADA UNO por
+        # separado, y aqui compartian uno solo: pedir los dos feeds (boosts
+        # y perfiles) se serializaba y costaba 2,5s en vez de ir en paralelo,
+        # que es el trozo mas gordo de cada vuelta de deteccion.
+        #
+        # Se mantiene el 20% de margen (0,8/s = 48/min) porque el limite lo
+        # cuenta DexScreener por IP y en esta maquina hay dos procesos
+        # tirando de la misma API. Y si aun asi llega un 429, el enfriamiento
+        # de abajo frena solo: no hace falta acertar el limite exacto.
+        self._limiters: dict[str, TokenBucketRateLimiter] = {}
         # Enfriamiento tras un 429. Sin esto un 429 no cuesta nada: se
         # devuelve None y la vuelta siguiente machaca igual, asi que el
         # bloqueo no se levanta nunca. Se dobla hasta un minuto y se
@@ -181,6 +185,16 @@ class DexScreenerClient:
                     self._session = aiohttp.ClientSession(timeout=self._timeout)
                     self._owns_session = True
         return self._session
+
+    def _limitador(self, clave: str, rpm: float) -> TokenBucketRateLimiter:
+        """Devuelve el cubo de ese endpoint, creandolo la primera vez."""
+        cubo = self._limiters.get(clave)
+        if cubo is None:
+            cubo = TokenBucketRateLimiter(
+                max_rps=rpm / 60.0 * 0.8, burst_size=max(2, int(rpm / 12))
+            )
+            self._limiters[clave] = cubo
+        return cubo
 
     async def _esperar_enfriamiento(self) -> None:
         """Espera si un 429 reciente dejo la API en periodo de castigo."""
@@ -250,17 +264,21 @@ class DexScreenerClient:
 
     async def get_latest_token_profiles(self) -> list[dict[str, Any]]:
         """GET /token-profiles/latest/v1 -- latest token profiles."""
-        data = await self._get("/token-profiles/latest/v1", self._limiter_60)
+        data = await self._get(
+            "/token-profiles/latest/v1", self._limitador("profiles", 60)
+        )
         return _as_list(data)
 
     async def get_latest_boosts(self) -> list[dict[str, Any]]:
         """GET /token-boosts/latest/v1 -- latest boosted tokens."""
-        data = await self._get("/token-boosts/latest/v1", self._limiter_60)
+        data = await self._get("/token-boosts/latest/v1", self._limitador("boosts", 60))
         return _as_list(data)
 
     async def get_top_boosts(self) -> list[dict[str, Any]]:
         """GET /token-boosts/top/v1 -- tokens with most active boosts."""
-        data = await self._get("/token-boosts/top/v1", self._limiter_60)
+        data = await self._get(
+            "/token-boosts/top/v1", self._limitador("boosts_top", 60)
+        )
         return _as_list(data)
 
     async def get_orders(
@@ -279,7 +297,9 @@ class DexScreenerClient:
             List of order objects (possibly empty).
         """
         chain = chain or self._chain
-        data = await self._get(f"/orders/v1/{chain}/{token_address}", self._limiter_60)
+        data = await self._get(
+            f"/orders/v1/{chain}/{token_address}", self._limitador("orders", 60)
+        )
         return _flatten_orders(data)
 
     async def get_pair(
@@ -288,7 +308,7 @@ class DexScreenerClient:
         """GET /latest/dex/pairs/{chain}/{pair} -- a single pair by address."""
         chain = chain or self._chain
         data = await self._get(
-            f"/latest/dex/pairs/{chain}/{pair_address}", self._limiter_300
+            f"/latest/dex/pairs/{chain}/{pair_address}", self._limitador("pairs", 300)
         )
         pairs = _extract_pairs(data)
         return pairs[0] if pairs else None
@@ -296,7 +316,7 @@ class DexScreenerClient:
     async def search_pairs(self, query: str) -> list[dict[str, Any]]:
         """GET /latest/dex/search?q= -- search pairs by name/symbol/address."""
         data = await self._get(
-            "/latest/dex/search", self._limiter_300, params={"q": query}
+            "/latest/dex/search", self._limitador("search", 300), params={"q": query}
         )
         return _extract_pairs(data)
 
@@ -306,7 +326,8 @@ class DexScreenerClient:
         """GET /token-pairs/v1/{chain}/{token} -- all pairs for a token."""
         chain = chain or self._chain
         data = await self._get(
-            f"/token-pairs/v1/{chain}/{token_address}", self._limiter_300
+            f"/token-pairs/v1/{chain}/{token_address}",
+            self._limitador("token_pairs", 300),
         )
         return _as_list(data)
 
@@ -324,7 +345,7 @@ class DexScreenerClient:
         if isinstance(token_addresses, list):
             token_addresses = ",".join(token_addresses)
         data = await self._get(
-            f"/tokens/v1/{chain}/{token_addresses}", self._limiter_300
+            f"/tokens/v1/{chain}/{token_addresses}", self._limitador("tokens", 300)
         )
         return _as_list(data)
 

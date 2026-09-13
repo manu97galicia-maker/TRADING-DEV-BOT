@@ -151,7 +151,12 @@ filters:
 
   buy_on_dex_paid:
     enabled: true
-    poll_interval: 5
+    # 3s. Cada vuelta cuesta ahora 2 llamadas (los dos feeds), y cada feed
+    # tiene su propio cubo de 60/min, asi que 20 vueltas por minuto caben de
+    # sobra. Bajarlo mas no gana nada: por debajo de ~2s el cuello pasa a ser
+    # la red, y sobre todo el retraso con que DexScreener publica los pagos,
+    # que son MINUTOS y no dependen de nosotros.
+    poll_interval: 3
     heartbeat_interval: 300
     # Antiguedad maxima del pago o el boost. 0 = no filtra: el feed que se
     # consulta ya es el de "ultimos", asi que la frescura la garantizan el
