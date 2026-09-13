@@ -1,7 +1,7 @@
-"""El tope de posiciones abiertas lo pone el SALDO, no un numero fijo.
+"""Cuantas posiciones caben: techo de 5, y por debajo manda el SALDO.
 
-Con max_posiciones: 0 el semaforo deja de ser el freno y quien decide es
-el guardian del saldo, que antes de cada compra exige:
+Son dos frenos y gana el que se quede corto. El techo son 5; el otro es el
+guardian del saldo, que antes de cada compra exige:
 
     saldo - reserva_global - lo_ya_comprometido >= compra + colchon
 
@@ -20,8 +20,8 @@ CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
 # Lo que el codigo reserva por posicion: comisiones + renta de la cuenta de
 # token (_fee_headroom_lamports = 3_000_000 lamports).
 COLCHON_POR_POSICION = 0.003
-# Techo duro del semaforo cuando max_posiciones es 0.
-TECHO_DEL_CODIGO = 20
+# Techo configurado de posiciones simultaneas (max_posiciones).
+TECHO = 5
 
 
 def _trade() -> dict:
@@ -33,12 +33,12 @@ def caben(saldo: float, reserva: float, compra: float) -> int:
     libre = saldo - reserva
     if libre <= 0:
         return 0
-    return min(int(libre // (compra + COLCHON_POR_POSICION)), TECHO_DEL_CODIGO)
+    return min(int(libre // (compra + COLCHON_POR_POSICION)), TECHO)
 
 
-def test_no_hay_tope_fijo_de_posiciones() -> None:
-    """0 = que mande el saldo, que es lo pedido."""
-    assert _trade()["max_posiciones"] == 0
+def test_el_techo_son_cinco_posiciones() -> None:
+    """Lo pedido: maximo 5 a la vez, si da el capital."""
+    assert _trade()["max_posiciones"] == TECHO
 
 
 def test_la_reserva_sigue_siendo_la_pedida() -> None:
@@ -83,8 +83,46 @@ def test_lo_que_queda_cubre_las_ventas_pendientes() -> None:
     assert saldo - gastado >= reserva
 
 
-def test_el_techo_del_codigo_no_se_alcanza_con_saldo_pequeno() -> None:
-    """Avisa si alguien baja tope_compra_sol y el techo de 20 pasa a morder."""
+def test_con_saldo_pequeno_manda_el_saldo_y_no_el_techo() -> None:
+    """Con 1 SOL el freno es la cartera, no el 5: caben 2."""
     cfg = _trade()
     reserva, compra = cfg["min_reserve_sol"], cfg["tope_compra_sol"]
-    assert caben(1.0, reserva, compra) < TECHO_DEL_CODIGO
+    assert caben(1.0, reserva, compra) < TECHO
+
+
+def test_el_techo_muerde_cuando_sobra_saldo() -> None:
+    """Con 5 SOL cabrian 12 por saldo, pero el techo las deja en 5."""
+    cfg = _trade()
+    reserva, compra = cfg["min_reserve_sol"], cfg["tope_compra_sol"]
+    libre = 5.0 - reserva
+    assert int(libre // (compra + COLCHON_POR_POSICION)) > TECHO
+    assert caben(5.0, reserva, compra) == TECHO
+
+
+def test_saldo_necesario_para_las_cinco() -> None:
+    """El numero que hay que tener en la cartera para que quepan las 5.
+
+    Se fija aqui porque es la pregunta que se hace de verdad: "por que solo
+    abre dos si puse 5?". La respuesta es esta cuenta, no un fallo.
+
+    OJO AL FILO: en el saldo EXACTO el resultado NO es de fiar. La division
+    da 5,000000 justo, y que el suelo caiga en 4 o en 5 depende de como
+    redondee el binario esa compra en concreto: con 0,3808 y 0,2856 salen 4,
+    con 0,20 salen 5. No es una regla, es suerte. Un pelo por encima del
+    minimo salen 5 siempre, asi que hay que dejar margen y no fiarse del
+    numero justo. Redondear hacia arriba seria peor: abriria una posicion
+    sin SOL para cerrarla.
+    """
+    cfg = _trade()
+    reserva = cfg["min_reserve_sol"]
+    for compra, hace_falta in (
+        (cfg["tope_compra_sol"], 1.949),
+        (cfg["buy_amount"], 1.473),
+        (0.20, 1.045),
+    ):
+        justo = reserva + TECHO * (compra + COLCHON_POR_POSICION)
+        assert round(justo, 3) == hace_falta
+        # En el filo puede dar 4 o 5; lo que NO puede es pasarse.
+        assert caben(justo, reserva, compra) in (TECHO - 1, TECHO)
+        # Con un margen minimo, las 5 siempre.
+        assert caben(justo + 0.01, reserva, compra) == TECHO
