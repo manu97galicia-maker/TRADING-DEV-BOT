@@ -149,6 +149,7 @@ class DexPaidSource:
         incluir_cualquier_origen: bool = False,
         min_lp_locked_pct: float = 50.0,
         otros_max_holder_pct: float = 0.05,
+        otros_factor_importe: float = 1.0,
         candidatos_por_vuelta: int = 30,
     ) -> None:
         self._impls = platform_impls
@@ -171,6 +172,8 @@ class DexPaidSource:
         #: normal (el dev, quien puso la liquidez); fuera no hay nada de eso,
         #: asi que se exige mas.
         self.otros_max_holder_pct = otros_max_holder_pct
+        #: Cuanto del importe normal se arriesga en una de fuera de pump.fun.
+        self.otros_factor_importe = otros_factor_importe
         # Cuantas entradas del feed se miran por vuelta. Estaba fijo en 10: en
         # una ventana tan estrecha una moneda entra y sale entre dos sondeos y
         # no llega a verse nunca.
@@ -256,11 +259,20 @@ class DexPaidSource:
             self._sin_construir += 1
             return None
         boosts = float(c.get("boosts") or 0)
+        # MENOS DINERO A LAS DE FUERA. Mismo criterio de senal, apuesta mas
+        # pequena: son las que menos red tienen (sin creador, sin curva, con
+        # el supply sin garantizar), asi que se prueban con menos.
+        _factor = (
+            self.otros_factor_importe
+            if (token_info.additional_data or {}).get("origen") == "otro"
+            else 1.0
+        )
         token_info.additional_data = {
             **(token_info.additional_data or {}),
             "acquisition_source": "dexscreener",
             "dexscreener_boosts": boosts,
-            "signal_buy_amount": _dexpaid_signal_amount(
+            "signal_buy_amount": _factor
+            * _dexpaid_signal_amount(
                 boosts,
                 self.normal_buy_amount,
                 self.small_boost_buy_amount,

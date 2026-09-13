@@ -6,13 +6,14 @@ pump.fun no pueden pasar (congelacion, comision por transferencia, supply
 mintable). Se prueban con cupo y corte rapido, SIN tocar a las de casa.
 """
 
-# ruff: noqa: S101, SLF001, PLR2004
+# ruff: noqa: S101, SLF001, PLR2004, PLC0415
 
 from pathlib import Path
 from types import SimpleNamespace
 
 import yaml
 
+from monitoring.dexpaid_source import DexPaidSource
 from trading.universal_trader import UniversalTrader
 
 CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
@@ -105,3 +106,38 @@ def test_se_exige_liquidez_bloqueada_a_las_de_fuera() -> None:
     ]
     assert dp["incluir_cualquier_origen"] is True
     assert dp["min_lp_locked_pct"] >= 50
+
+
+def test_a_las_de_fuera_se_les_arriesga_menos() -> None:
+    """Mismo criterio de senal, apuesta mas pequena: son las que menos red
+    tienen (sin creador, sin curva, con el supply sin garantizar)."""
+    cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"][
+        "buy_on_dex_paid"
+    ]
+    factor = cfg["otros_factor_importe"]
+    assert 0 < factor < 1
+    assert round(factor, 2) == 0.67  # 2/3
+
+
+def test_el_factor_se_aplica_al_importe_de_la_senal() -> None:
+    from monitoring.dexpaid_source import _dexpaid_signal_amount
+
+    cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"][
+        "buy_on_dex_paid"
+    ]
+    normal = _dexpaid_signal_amount(
+        0,
+        cfg["normal_buy_amount"],
+        cfg["small_boost_buy_amount"],
+        cfg["boost_threshold"],
+        cfg["boost_buy_amount"],
+    )
+    de_fuera = normal * cfg["otros_factor_importe"]
+    assert de_fuera < normal
+    assert round(de_fuera, 4) == round(normal * 2 / 3, 4)
+
+
+def test_una_de_pumpfun_no_lleva_factor() -> None:
+    """Las de casa siguen con el importe entero."""
+    fuente = DexPaidSource(object(), object())
+    assert fuente.otros_factor_importe == 1.0

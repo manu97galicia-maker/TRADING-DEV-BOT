@@ -1569,6 +1569,9 @@ class UniversalTrader:
             otros_max_holder_pct=float(
                 self.buy_on_dex_paid.get("otros_max_holder_pct", 0.05)
             ),
+            otros_factor_importe=float(
+                self.buy_on_dex_paid.get("otros_factor_importe", 1.0)
+            ),
             candidatos_por_vuelta=int(
                 self.buy_on_dex_paid.get("candidatos_por_vuelta", 30)
             ),

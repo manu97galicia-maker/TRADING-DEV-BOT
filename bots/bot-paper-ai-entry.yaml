@@ -247,7 +247,9 @@ filters:
     #     pump.fun siguen con su 15%, que alli es lo normal)
     #   - como mucho 3 compras
     #   - a las 2 perdidas se dejan de comprar, y las de pump.fun siguen
+    #   - se arriesgan 2/3 del importe normal
     otros_max_holder_pct: 0.05
+    otros_factor_importe: 0.6667
     otros_max_compras: 3
     otros_parar_tras_perdidas: 2
     normal_buy_amount: 0.2856
