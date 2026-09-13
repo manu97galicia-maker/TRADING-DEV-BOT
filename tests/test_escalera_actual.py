@@ -30,7 +30,7 @@ def _peldanos() -> list[tuple[float, float]]:
 
 
 def test_los_peldanos_son_los_pedidos() -> None:
-    assert _peldanos() == [(0.30, 0.55), (0.60, 0.20), (0.90, 0.05)]
+    assert _peldanos() == [(0.30, 0.52), (0.60, 0.20), (0.90, 0.05)]
 
 
 def test_las_ganancias_van_en_orden_creciente() -> None:
@@ -47,7 +47,7 @@ def test_nunca_se_vende_mas_del_100() -> None:
 def test_queda_moonbag_corriendo() -> None:
     """Sin moonbag la ganancia tiene techo, haga lo que haga la moneda."""
     vendido = sum(v for _, v in _peldanos())
-    assert round(1 - vendido, 6) == 0.20
+    assert round(1 - vendido, 6) == 0.23
 
 
 def test_el_stop_sube_a_la_entrada_tras_el_primer_tp() -> None:

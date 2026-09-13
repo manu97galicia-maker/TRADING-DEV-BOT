@@ -53,14 +53,17 @@ trade:
   sell_slippage: 0.10
   exit_strategy: tp_sl
   # ESCALERA. Lo que no se vende en los peldanos es el moonbag, que sigue
-  # dentro. 55 + 20 + 5 = 80, asi que el moonbag sale del 20%, no del 5%:
-  # para dejarlo en 5% haria falta un cuarto peldano que vendiera 15% mas.
+  # dentro: 52 + 20 + 5 = 77, o sea 23% corriendo.
+  #
+  # El 3% extra del moonbag sale del PRIMER peldano (era 55). Es donde mas
+  # efecto tiene: cada punto que no se vende a +30% es un punto que sigue
+  # dentro si la moneda hace 10x.
   #
   # OJO con el techo: el moonbag NO corre para siempre. `max_hold_time`
   # (2h) lo cierra, y `stop_a_entrada_tras_tp` lo saca al precio de compra
   # si la moneda se da la vuelta despues del primer TP.
   take_profit_percentage: 0.30
-  take_profit_sell_percentage: 0.55
+  take_profit_sell_percentage: 0.52
   tp2_gain: 0.60
   tp2_sell: 0.20
   tp3_gain: 0.90
