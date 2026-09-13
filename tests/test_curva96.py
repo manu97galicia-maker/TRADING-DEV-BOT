@@ -207,12 +207,36 @@ def _moneda(origen: str | None) -> SimpleNamespace:
 
 def test_el_cupo_deja_pasar_tres_y_corta_la_cuarta() -> None:
     trader = _trader(cupo=3)
-    assert [trader._curva96_agotada(_moneda("curva96")) for _ in range(4)] == [
-        False,
-        False,
-        False,
-        True,
-    ]
+    abiertas = []
+    for _ in range(4):
+        moneda = _moneda("curva96")
+        if trader._curva96_agotada(moneda):
+            abiertas.append("cortada")
+            continue
+        trader._apunta_compra_por_origen(moneda)  # la compra entra
+        abiertas.append("comprada")
+    assert abiertas == ["comprada", "comprada", "comprada", "cortada"]
+
+
+def test_una_compra_que_no_llega_a_entrar_no_gasta_cupo() -> None:
+    """Al 96% la moneda puede migrar y la transacción falla.
+
+    Contando intentos, tres fallos se comían la prueba entera sin haber
+    abierto una sola posición. El cupo cuenta posiciones ABIERTAS.
+    """
+    trader = _trader(cupo=3)
+    for _ in range(50):
+        assert trader._curva96_agotada(_moneda("curva96")) is False
+    assert trader._compras_curva96 == 0
+
+
+def test_el_cupo_solo_cuenta_las_de_su_procedencia() -> None:
+    trader = _trader(cupo=3)
+    trader.buy_on_dex_paid = {"otros_max_compras": 3}
+    trader._compras_otro_origen = 0
+    for origen in (None, "otro"):
+        trader._apunta_compra_por_origen(_moneda(origen))
+    assert trader._compras_curva96 == 0
 
 
 def test_dos_perdidas_paran_la_curva() -> None:

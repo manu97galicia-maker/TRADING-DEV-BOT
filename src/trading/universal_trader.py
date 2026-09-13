@@ -1648,7 +1648,7 @@ class UniversalTrader:
                 token_info.symbol,
             )
             return True
-        self._compras_otro_origen += 1
+        # Igual que arriba: se cuenta la compra confirmada, no el intento.
         return False
 
     def _curva96_agotada(self, token_info: TokenInfo) -> bool:
@@ -1680,8 +1680,40 @@ class UniversalTrader:
                 token_info.symbol,
             )
             return True
-        self._compras_curva96 += 1
+        # OJO: aqui NO se suma nada. El cupo cuenta POSICIONES ABIERTAS, no
+        # intentos. Al 96% la moneda puede migrar en segundos y la transaccion
+        # falla; contando intentos, tres fallos se comian el cupo entero y la
+        # prueba no llegaba a hacerse. Ademas "si en dos perdemos" no se
+        # sostiene sobre compras que nunca entraron. Se suma en
+        # `_apunta_compra_por_origen`, cuando la compra esta confirmada.
         return False
+
+    def _apunta_compra_por_origen(self, token_info: TokenInfo) -> None:
+        """Suma una POSICION ABIERTA al cupo del regimen que la trajo.
+
+        Se llama con la compra ya confirmada, no al intentarla: un intento que
+        no entra no gasta cupo ni puede perder dinero, asi que contarlo
+        gastaria la prueba sin haberla hecho.
+        """
+        origen = (token_info.additional_data or {}).get("origen")
+        if origen == "curva96":
+            self._compras_curva96 += 1
+            logger.info(
+                "CURVA 96%%: compra %d de %d abierta (%s)",
+                self._compras_curva96,
+                int((self.curva_96 or {}).get("max_compras", 3) or 0),
+                token_info.symbol,
+            )
+        elif origen == "otro":
+            self._compras_otro_origen += 1
+            logger.info(
+                "OTRO ORIGEN: compra %d de %d abierta (%s)",
+                self._compras_otro_origen,
+                int(
+                    (self.buy_on_dex_paid or {}).get("otros_max_compras", 0) or 0
+                ),
+                token_info.symbol,
+            )
 
     def _apunta_cierre_curva96(self, token_info: TokenInfo, neto: float) -> None:
         """Cuenta una perdida del regimen de curva, para poder cortarlo."""
@@ -4157,6 +4189,7 @@ class UniversalTrader:
             f"Successfully bought {token_info.symbol} on {token_info.platform.value}"
         )
         self._compras_de_la_tanda += 1
+        self._apunta_compra_por_origen(token_info)
         self._anota_firma(str(token_info.mint), buy_result.tx_signature)
         self._log_trade(
             "buy",

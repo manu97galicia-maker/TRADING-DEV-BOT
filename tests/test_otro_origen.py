@@ -45,12 +45,26 @@ def test_una_de_pumpfun_no_pasa_por_este_regimen() -> None:
 
 def test_el_cupo_deja_pasar_tres_y_corta_la_cuarta() -> None:
     trader = _trader(cupo=3)
-    assert [trader._otro_origen_agotado(_moneda("otro")) for _ in range(4)] == [
-        False,
-        False,
-        False,
-        True,
-    ]
+    resultado = []
+    for _ in range(4):
+        moneda = _moneda("otro")
+        if trader._otro_origen_agotado(moneda):
+            resultado.append("cortada")
+            continue
+        trader._apunta_compra_por_origen(moneda)  # la compra entra
+        resultado.append("comprada")
+    assert resultado == ["comprada", "comprada", "comprada", "cortada"]
+
+
+def test_una_compra_que_no_llega_a_entrar_no_gasta_cupo() -> None:
+    """El cupo cuenta posiciones ABIERTAS, no intentos.
+
+    Una compra que no entra no gasta prueba ni puede perder dinero.
+    """
+    trader = _trader(cupo=3)
+    for _ in range(50):
+        assert trader._otro_origen_agotado(_moneda("otro")) is False
+    assert trader._compras_otro_origen == 0
 
 
 def test_dos_perdidas_cortan_las_de_fuera() -> None:
