@@ -4871,7 +4871,8 @@ class UniversalTrader:
                     await asyncio.sleep(self.price_check_interval)
                     continue
 
-                # Stop loss: vende hasta el MOONBAG (deja el 20% para venta manual),
+                # Stop loss: vende hasta el MOONBAG (lo que quede sin cubrir por
+                # los peldanos; hoy el 2%, pero sale de la config, no de aqui),
                 # priced at the LIVE price. El moonbag NUNCA se auto-vende, ni en
                 # stop-loss: se registra para avisar por Telegram y lo vende el usuario.
                 # MAS DE UN MINUTO POR DEBAJO DE LA COMPRA -> FUERA ENTERA.
