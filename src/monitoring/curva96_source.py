@@ -101,6 +101,7 @@ class Curva96Source:
         max_sol_primer_bloque: float = 2.0,
         min_compradores: int = 30,
         max_bundle_pct: float = 0.5,
+        max_bundle_pct_sin_historia: float = 0.35,
         exigir_ver_creacion: bool = True,
         heartbeat_interval: float = 300,
         paper_mode: bool = False,
@@ -115,6 +116,10 @@ class Curva96Source:
         self.max_sol_primer_bloque = float(max_sol_primer_bloque)
         self.min_compradores = int(min_compradores)
         self.max_bundle_pct = float(max_bundle_pct)
+        # MAS APRETADO CUANDO SE VA A CIEGAS. Si no se vio nacer la moneda,
+        # los avisos del bloque de creacion no existen y este tope en cadena
+        # se queda casi solo, asi que tiene que pedir mas.
+        self.max_bundle_pct_sin_historia = float(max_bundle_pct_sin_historia)
         self.exigir_ver_creacion = bool(exigir_ver_creacion)
         self.heartbeat_interval = float(heartbeat_interval)
         self.paper_mode = bool(paper_mode)
@@ -144,13 +149,32 @@ class Curva96Source:
 
     # ----------------------------------------------------------------- bundle
 
-    def _es_bundle(self, mint: str, symbol: str) -> bool:
+    def _es_bundle(self, mint: str, symbol: str, *, con_historia: bool) -> bool:
         """True si la moneda tiene pinta de bundle de pump and dump.
 
         Todo sale del stream de la cadena, sin preguntar a ningun indexador:
         quien compro en el bloque de creacion y cuanta gente distinta ha
         comprado desde entonces.
+
+        Args:
+            con_historia: Si se vio nacer la moneda. Sin eso, los dos primeros
+                avisos no se pueden comprobar: sus contadores valen CERO y
+                pasarian solos, que es peor que no mirarlos --daria un visto
+                bueno que nadie ha dado. Asi que se saltan a proposito y el
+                peso recae en el recuento de compradores, que si funciona con
+                historia parcial, y en el tope de concentracion en cadena, que
+                para estas va mas apretado.
         """
+        if not con_historia:
+            logger.info(
+                "%s (%s): no se vio nacer, así que el bloque de creación no "
+                "se puede mirar. Deciden los compradores distintos y la "
+                "concentración en cadena.",
+                symbol,
+                mint,
+            )
+            return self._poca_gente(mint, symbol)
+
         carteras = volumen.carteras_primer_bloque(mint)
         if (
             self.max_carteras_primer_bloque > 0
@@ -180,21 +204,30 @@ class Curva96Source:
             self._cuenta("bundles")
             return True
 
-        if self.min_compradores > 0:
-            compradores = int(
-                volumen.metricas_segunda_ola(mint).get("compradores", 0) or 0
+        return self._poca_gente(mint, symbol)
+
+    def _poca_gente(self, mint: str, symbol: str) -> bool:
+        """True si a la moneda la ha comprado muy poca gente distinta.
+
+        Es el unico aviso del stream que sigue valiendo sin haber visto nacer
+        la moneda: cuenta las carteras vistas desde que se la mira, asi que se
+        queda corto pero nunca de mas. Una curva casi llena movida por cuatro
+        carteras no es demanda, es un grupo empujando.
+        """
+        if self.min_compradores <= 0:
+            return False
+        compradores = int(volumen.metricas_segunda_ola(mint).get("compradores", 0) or 0)
+        if compradores < self.min_compradores:
+            logger.info(
+                "Descartada %s (%s): solo %d compradores distintos para una "
+                "curva casi llena (mín %d) — la subió un grupo pequeño",
+                symbol,
+                mint,
+                compradores,
+                self.min_compradores,
             )
-            if compradores < self.min_compradores:
-                logger.info(
-                    "Descartada %s (%s): solo %d compradores distintos para una "
-                    "curva casi llena (mín %d) — la subió un grupo pequeño",
-                    symbol,
-                    mint,
-                    compradores,
-                    self.min_compradores,
-                )
-                self._cuenta("poca_gente")
-                return True
+            self._cuenta("poca_gente")
+            return True
         return False
 
     # ---------------------------------------------------------------- decidir
@@ -208,20 +241,23 @@ class Curva96Source:
             return
         progreso, sol_curva = avance
 
-        if self.exigir_ver_creacion and not volumen.vio_la_creacion(mint):
-            logger.info(
-                "Curva al %.1f%% en %s pero no se vio nacer (el bot arrancó "
-                "después): no se puede saber si es un bundle, se deja pasar",
-                progreso * 100,
-                mint,
-            )
+        con_historia = volumen.vio_la_creacion(mint)
+        if not con_historia:
             self._cuenta("sin_historia")
-            return
+            if self.exigir_ver_creacion:
+                logger.info(
+                    "Curva al %.1f%% en %s pero no se vio nacer (el bot "
+                    "arrancó después): no se puede saber si es un bundle, se "
+                    "deja pasar",
+                    progreso * 100,
+                    mint,
+                )
+                return
 
         # El bundle se mira ANTES de reconstruir la moneda: lo de arriba es
         # memoria y no cuesta nada, y reconstruirla son varias llamadas al nodo
         # que no hay por que gastar en algo que se va a descartar igual.
-        if self._es_bundle(mint, mint[:6]):
+        if self._es_bundle(mint, mint[:6], con_historia=con_historia):
             return
 
         token_info = await build_pumpfun_token_info(
@@ -241,7 +277,11 @@ class Curva96Source:
             # Freno adicional EN CADENA, que no depende de haber visto nacer la
             # moneda: si los mayores titulares concentran mas de esto, es un
             # bundle aunque el bloque de creacion pareciera limpio.
-            "max_bundle_pct": self.max_bundle_pct,
+            "max_bundle_pct": (
+                self.max_bundle_pct
+                if con_historia
+                else self.max_bundle_pct_sin_historia
+            ),
             "curva_progreso": progreso,
         }
         self._cuenta("comprables")

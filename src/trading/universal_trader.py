@@ -1841,6 +1841,9 @@ class UniversalTrader:
             max_sol_primer_bloque=float(cfg.get("max_sol_primer_bloque", 2.0)),
             min_compradores=int(cfg.get("min_compradores", 30)),
             max_bundle_pct=float(cfg.get("max_bundle_pct", 0.5)),
+            max_bundle_pct_sin_historia=float(
+                cfg.get("max_bundle_pct_sin_historia", 0.35)
+            ),
             exigir_ver_creacion=bool(cfg.get("exigir_ver_creacion", True)),
             heartbeat_interval=float(cfg.get("heartbeat_interval", 300)),
             paper_mode=self.paper_trade or self.paper_engine.enabled,

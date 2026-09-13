@@ -117,14 +117,14 @@ def test_muchas_carteras_en_el_bloque_de_creacion_son_un_bundle() -> None:
     mint, clave = _nueva_moneda(34)
     _nace(mint, clave, carteras=6, sol=0.2, slot=20)
     _sube_hasta(mint, clave, 0.96, compradores=60)
-    assert _fuente()._es_bundle(clave, "BUNDLE") is True
+    assert _fuente()._es_bundle(clave, "BUNDLE", con_historia=True) is True
 
 
 def test_un_dev_buy_normal_no_es_un_bundle() -> None:
     mint, clave = _nueva_moneda(35)
     _nace(mint, clave, carteras=1, sol=0.5, slot=21)
     _sube_hasta(mint, clave, 0.96, compradores=60)
-    assert _fuente()._es_bundle(clave, "LIMPIA") is False
+    assert _fuente()._es_bundle(clave, "LIMPIA", con_historia=True) is False
 
 
 def test_cargar_demasiado_sol_al_nacer_es_un_bundle() -> None:
@@ -132,7 +132,7 @@ def test_cargar_demasiado_sol_al_nacer_es_un_bundle() -> None:
     mint, clave = _nueva_moneda(36)
     _nace(mint, clave, carteras=2, sol=3.0, slot=22)
     _sube_hasta(mint, clave, 0.96, compradores=60)
-    assert _fuente()._es_bundle(clave, "CARGADA") is True
+    assert _fuente()._es_bundle(clave, "CARGADA", con_historia=True) is True
 
 
 def test_una_curva_llena_por_cuatro_gatos_se_descarta() -> None:
@@ -140,7 +140,44 @@ def test_una_curva_llena_por_cuatro_gatos_se_descarta() -> None:
     mint, clave = _nueva_moneda(37)
     _nace(mint, clave, carteras=1, sol=0.5, slot=23)
     _sube_hasta(mint, clave, 0.96, compradores=5)
-    assert _fuente()._es_bundle(clave, "POCOS") is True
+    assert _fuente()._es_bundle(clave, "POCOS", con_historia=True) is True
+
+
+def test_sin_historia_el_primer_bloque_visto_no_es_el_de_creacion() -> None:
+    """La trampa del modo flexible, y es peor que un contador a cero.
+
+    En una moneda que el bot no vio nacer, «carteras del primer bloque» NO
+    vale cero: vale las del primer bloque que el bot casualmente miró, que
+    puede ser cualquiera de su vida. Ese número no dice nada sobre si hubo
+    bundle, y sin embargo dispararía el filtro igual que si lo dijera. Por eso
+    a ciegas esos dos avisos se saltan en vez de dejar que opinen.
+    """
+    mint, clave = _nueva_moneda(51)
+    # Solo se la ve ya avanzada, y el primer vistazo pilla muchas carteras.
+    _sube_hasta(mint, clave, 0.96, compradores=60)
+    assert volumen.vio_la_creacion(clave) is False
+    # El contador tiene datos, pero son de un bloque cualquiera, no del de
+    # creación: exactamente por eso no se le puede hacer caso.
+    assert volumen.carteras_primer_bloque(clave) > 0
+
+    fuente = _fuente()
+    # Con historia opinaría; a ciegas se salta y manda el recuento de
+    # compradores, que sí funciona con historia parcial.
+    assert fuente._es_bundle(clave, "CIEGA", con_historia=False) is False
+
+
+def test_sin_historia_los_pocos_compradores_siguen_cortando() -> None:
+    """Es el único aviso del stream que sigue valiendo a ciegas."""
+    mint, clave = _nueva_moneda(52)
+    _sube_hasta(mint, clave, 0.96, compradores=4)
+    assert _fuente()._es_bundle(clave, "CIEGA", con_historia=False) is True
+
+
+def test_a_ciegas_el_tope_en_cadena_va_mas_apretado() -> None:
+    """Compensa lo que se deja de mirar: si no se vio nacer la moneda, los
+    mayores titulares tienen que concentrar menos para dejarla pasar."""
+    fuente = _fuente()
+    assert fuente.max_bundle_pct_sin_historia < fuente.max_bundle_pct
 
 
 # ------------------------------------------------------------ umbral y disparo
@@ -273,3 +310,7 @@ def test_la_config_del_bot_pide_lo_que_se_acordo() -> None:
     assert cfg["buy_amount"] == 0.26
     assert cfg["max_compras"] == 3
     assert cfg["parar_tras_perdidas"] == 2
+    # Modo flexible: se compran tambien las que no se vieron nacer, pero con
+    # el tope de concentracion en cadena mas apretado para compensar.
+    assert cfg["exigir_ver_creacion"] is False
+    assert cfg["max_bundle_pct_sin_historia"] < cfg["max_bundle_pct"]

@@ -403,11 +403,26 @@ filters:
     # el supply, asi que los primeros titulares pesan mucho mas que en una
     # moneda recien nacida.
     max_bundle_pct: 0.5
-    # Si el bot arranco DESPUES de que naciera la moneda, no hay forma de
-    # saber si fue un bundle. Con esto en true se deja pasar en vez de
-    # comprar a ciegas. Es la razon de que tras un reinicio tarde un rato
-    # en comprar por aqui: solo mira las que nacen con el bot ya en marcha.
-    exigir_ver_creacion: true
+    # EL MISMO TOPE, PERO PARA LAS QUE NO SE VIO NACER. Va mas apretado a
+    # proposito: en esas los tres avisos del bloque de creacion no existen y
+    # este se queda casi solo, asi que tiene que pedir mas para compensar.
+    max_bundle_pct_sin_historia: 0.35
+    # Si el bot arranco DESPUES de que naciera la moneda, no se puede saber
+    # quien compro en su bloque de creacion, que es donde se monta un bundle.
+    #
+    # EN false (lo pedido: ser mas flexible). Se compran tambien esas. Lo que
+    # se pierde es real y conviene tenerlo escrito:
+    #     - cuantas carteras compraron en el bloque de creacion
+    #     - cuanto SOL se cargo ahi
+    # Lo que sigue mirando:
+    #     - compradores distintos vistos (min_compradores), que funciona con
+    #       historia parcial y se queda corto, nunca de mas
+    #     - concentracion de los mayores titulares EN CADENA, con el tope
+    #       apretado de arriba
+    #
+    # Con true solo compraria las que nacen con el bot ya en marcha, y tras
+    # cada reinicio estaria un rato sin comprar por aqui.
+    exigir_ver_creacion: false
     heartbeat_interval: 300
 
   telegram_calls:
