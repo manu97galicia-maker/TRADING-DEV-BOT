@@ -66,7 +66,7 @@ async def main() -> None:
         print()
         print(f"Autorizada como {yo.first_name} (@{yo.username}).")
         print("El bot ya puede leer los canales. Reinicialo:")
-        print("  systemctl restart paper-ai-entry")
+        print("  systemctl restart pump-bot")
     finally:
         await cliente.disconnect()
 

@@ -14,8 +14,8 @@ echo "=========================================================="
 
 echo
 echo "--- 1. SERVICIO ---"
-systemctl is-active paper-ai-entry
-systemctl show paper-ai-entry -p ActiveEnterTimestamp --value
+systemctl is-active pump-bot
+systemctl show pump-bot -p ActiveEnterTimestamp --value
 
 echo
 echo "--- 2. CONFIGURACION ---"
@@ -30,7 +30,7 @@ PYTHONPATH=src .venv/bin/python learning-examples/comprobar_wallet.py 2>&1 | tai
 
 echo
 echo "--- 4. CUANTAS SENALES HA VISTO ---"
-L=$(journalctl -u paper-ai-entry --since "$DESDE" --no-pager 2>/dev/null)
+L=$(journalctl -u pump-bot --since "$DESDE" --no-pager 2>/dev/null)
 printf "  senales frescas   : %s\n" "$(echo "$L" | grep -c 'Fresh DexPaid')"
 printf "  descartadas migrad: %s\n" "$(echo "$L" | grep -ci 'curve complete')"
 printf "  compras intentadas: %s\n" "$(echo "$L" | grep -c 'Buying ')"

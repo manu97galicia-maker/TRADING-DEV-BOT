@@ -85,18 +85,18 @@ rm -f "$YAML.bak"
 # --- 5. Arrancar ---
 echo
 echo "[5/5] Arrancando..."
-systemctl restart paper-ai-entry
+systemctl restart pump-bot
 sleep 3
-systemctl is-active --quiet paper-ai-entry \
+systemctl is-active --quiet pump-bot \
   && echo "  Servicio ACTIVO." \
-  || { echo "  El servicio NO arranco. Mira: journalctl -u paper-ai-entry -n 50"; exit 1; }
+  || { echo "  El servicio NO arranco. Mira: journalctl -u pump-bot -n 50"; exit 1; }
 
 echo
 echo "==========================================================="
-echo " Para parar en seco:     systemctl stop paper-ai-entry"
+echo " Para parar en seco:     systemctl stop pump-bot"
 echo " Para volver a papel:    bash volver_a_papel.sh"
 echo "==========================================================="
 echo
 echo "Mostrando logs en vivo. Ctrl+C para dejar de mirar (el bot sigue)."
 sleep 2
-journalctl -u paper-ai-entry -f
+journalctl -u pump-bot -f

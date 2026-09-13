@@ -89,7 +89,7 @@ def main() -> None:
     print("\nComprueba el saldo con:")
     print("  uv run learning-examples/comprobar_wallet.py")
     print("\nY reinicia:")
-    print("  systemctl restart paper-ai-entry")
+    print("  systemctl restart pump-bot")
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ progresiva del capital.
 > existentes nunca se había ejecutado contra una compra real.
 >
 > Para volver a papel: `bash volver_a_papel.sh`. Para parar del todo:
-> `systemctl stop paper-ai-entry`.
+> `systemctl stop pump-bot`.
 >
 > `bot-paper-ai-entry` es la **única** estrategia con `enabled: true`; el resto
 > de los YAML de `bots/` están desactivados. El runner carga todo
@@ -251,7 +251,7 @@ src/
   dashboard/                   panel y utilidades de wallet
 learning-examples/             pruebas manuales y ejemplos sin producción
 tests/                         pruebas automáticas
-paper-ai-entry.service         servicio systemd del modo paper
+pump-bot.service         servicio systemd del modo paper
 ```
 
 El repositorio conserva estrategias históricas en otros YAML y servicios.
@@ -362,11 +362,11 @@ El servicio incluido asume `/root/ai-bot` como directorio de trabajo y una
 virtualenv en `/root/ai-bot/.venv`.
 
 ```bash
-sudo cp paper-ai-entry.service /etc/systemd/system/
+sudo cp pump-bot.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now paper-ai-entry
-sudo systemctl status paper-ai-entry --no-pager
-sudo journalctl -u paper-ai-entry -f
+sudo systemctl enable --now pump-bot
+sudo systemctl status pump-bot --no-pager
+sudo journalctl -u pump-bot -f
 ```
 
 Después de cada cambio:
@@ -374,7 +374,7 @@ Después de cada cambio:
 1. Subir únicamente los archivos revisados.
 2. Sincronizar dependencias si cambió `pyproject.toml` o `uv.lock`.
 3. Verificar que la configuración sigue en paper.
-4. Reiniciar `paper-ai-entry`.
+4. Reiniciar `pump-bot`.
 5. Confirmar en logs que no hay otro servicio de trading activo.
 6. Revisar que Telegram envía heartbeat y avisos nuevos, no señales antiguas.
 
