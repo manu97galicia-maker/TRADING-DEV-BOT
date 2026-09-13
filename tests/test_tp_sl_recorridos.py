@@ -32,6 +32,8 @@ from trading.universal_trader import _peldanos_extra
 CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
 ENTRADA = 1.0
 CANTIDAD = 1000.0
+
+
 def _vender_todo_en_stop() -> bool:
     """Si el stop se lleva la posicion entera. SALE DEL YAML, no a mano.
 

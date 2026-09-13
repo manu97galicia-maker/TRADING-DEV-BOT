@@ -16,7 +16,7 @@ cuenta queda vacia y se puede cerrar; dejando el 2%, se queda abierta con sus
 0,002 SOL dentro para siempre.
 """
 
-# ruff: noqa: S101
+# ruff: noqa: S101, PLR2004
 
 from pathlib import Path
 
@@ -45,9 +45,7 @@ def test_con_el_stop_entero_no_queda_nada_que_retener() -> None:
     """La linea del codigo que lo decide: con la bandera puesta, `keep` es
     cero y se vende todo lo que quede."""
     texto = TRADER.read_text(encoding="utf-8")
-    assert (
-        "keep = 0.0 if self.vender_todo_en_stop else original_qty * moonbag" in texto
-    )
+    assert "keep = 0.0 if self.vender_todo_en_stop else original_qty * moonbag" in texto
 
 
 def test_el_moonbag_de_las_ganadoras_sigue_intacto() -> None:
