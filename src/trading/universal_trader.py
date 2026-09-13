@@ -127,6 +127,12 @@ _SOL_USD = 91.24  # actualizado 21-ago. OJO: cambiar esto mueve TODOS los
 # Supply total estándar de un token pump.fun (1e9 tokens enteros).
 _PUMP_TOTAL_SUPPLY = 1_000_000_000
 
+#: Tope de seguridad de posiciones abiertas cuando `max_posiciones` es 0.
+#: No pretende ser el limite util -- ese lo pone el saldo -- sino evitar que
+#: un fallo raro abra cientos. Antes era un 20 suelto dentro del codigo, que
+#: con "0" configurado se convertia en un tope invisible.
+TOPE_DURO_POSICIONES = 40
+
 
 def _load_creator_medians(value: object) -> dict[str, float]:
     """Devuelve ``{wallet: median_peak_usd}`` desde un JSON de watchlist.
@@ -858,13 +864,17 @@ class UniversalTrader:
         #  - _position_semaphore caps simultaneous OPEN positions so background
         #    buys/exit-monitors can't drain the wallet.
         self._filter_semaphore = asyncio.Semaphore(8)
-        #: Posiciones abiertas simultaneas. Antes estaba fijo en 20, que era
-        #: no tener tope: el limite real lo ponia el saldo. Manu lo quiere
-        #: explicito en 3 -- con una reserva de solo 0,03 SOL, el freno del
-        #: saldo llega tarde y conviene decir cuantas se abren de verdad.
-        #: Sigue mandando el que se quede corto de los dos: si no hay SOL
-        #: para la tercera, no se abre aunque el tope lo permita.
-        self._position_semaphore = asyncio.Semaphore(int(max_posiciones or 20))
+        #: Posiciones abiertas simultaneas. Con `max_posiciones: 0` manda el
+        #: SALDO -- antes de cada compra se comprueba que quede por encima de
+        #: min_reserve_sol -- y esto es solo el tope de seguridad de ultima
+        #: instancia. Estaba en 20 y se sube a TOPE_DURO_POSICIONES para que
+        #: "0" signifique de verdad "lo que aguante la cartera".
+        #:
+        #: Manda siempre el que se quede corto de los dos: si no hay SOL para
+        #: la siguiente, no se abre aunque el tope lo permita.
+        self._position_semaphore = asyncio.Semaphore(
+            int(max_posiciones or TOPE_DURO_POSICIONES)
+        )
         # Bounded concurrency for paper price-watchers (protects the RPC).
         self._watch_semaphore = asyncio.Semaphore(8)
 
@@ -1538,6 +1548,44 @@ class UniversalTrader:
             await source.run(self._on_dexpaid_token)
         except asyncio.CancelledError:
             logger.info("Birdeye-trending mode stopped")
+
+    def _avisa_si_el_nodo_no_da_mas(self) -> None:
+        """Avisa cuando hay mas posiciones de las que el nodo puede vigilar.
+
+        Cada posicion abierta consulta su precio cada `price_check_interval`
+        segundos. Pasado el limite del nodo (`node.max_rps`) las consultas se
+        encolan, y lo que se retrasa es el STOP LOSS: justo lo que no puede
+        llegar tarde. Se avisa en vez de bloquear porque quien decide cuanto
+        riesgo asume es quien puso el dinero, no este metodo.
+        """
+        intervalo = float(getattr(self, "price_check_interval", 0) or 0)
+        tope_rps = float(getattr(self.solana_client, "max_rps", 0) or 0)
+        if intervalo <= 0 or tope_rps <= 0:
+            return
+        # Se deja la mitad del presupuesto para comprar, no solo vigilar.
+        vigilables = int(tope_rps * intervalo / 2)
+        abiertas = self._posiciones_abiertas()
+        if vigilables > 0 and abiertas >= vigilables:
+            logger.warning(
+                "NODO AL LIMITE: %s posiciones abiertas y el nodo solo da para "
+                "vigilar ~%s cada %.0fs. El stop loss puede reaccionar tarde. "
+                "Sube price_check_interval antes que el numero de posiciones.",
+                abiertas,
+                vigilables,
+                intervalo,
+            )
+
+    def _posiciones_abiertas(self) -> int:
+        """Cuantas posiciones tienen ahora mismo capital dentro.
+
+        Se cuentan los marcadores en disco (`_open_position_paths`), que es
+        lo que sobrevive a un reinicio: el semaforo se recrea vacio al
+        arrancar y diria cero con posiciones abiertas de verdad.
+        """
+        try:
+            return len(self._open_position_paths())
+        except OSError:
+            return 0
 
     async def _run_dextools_mode(self) -> None:
         """Run the DEXTools DEXTboard acquisition loop until interrupted."""
@@ -3494,6 +3542,7 @@ class UniversalTrader:
                     f"Max posiciones abiertas; {token_info.symbol} pasó el filtro pero no se compra"
                 )
                 return
+            self._avisa_si_el_nodo_no_da_mas()
             async with self._position_semaphore:
                 # A2 fix: re-check the "already bought" set INSIDE the semaphore.
                 # Two create events for the same mint (websocket redelivery) can
