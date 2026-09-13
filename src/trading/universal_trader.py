@@ -2469,9 +2469,19 @@ class UniversalTrader:
             import aiohttp
 
             mint = str(token_info.mint)
+            # EN UNA MIGRADA LA CURVA YA NO GUARDA NADA. Los tokens estan en
+            # el pool de PumpSwap/Raydium, que es OTRA direccion. Excluyendo
+            # solo la curva (vacia), el pool contaba como un titular normal
+            # con medio supply en la mano y la moneda se descartaba SIEMPRE
+            # por concentracion. Eso tiraba todas las de pumpswap que pagan
+            # DexScreener, que son justo la mitad de la senal.
+            #
+            # Poniendo curve_ata a None entra el camino de abajo, que excluye
+            # al mayor titular -- y en una migrada el mayor es el pool.
+            _migrada = bool((token_info.additional_data or {}).get("migrated"))
             curve_ata = (
                 str(token_info.associated_bonding_curve)
-                if token_info.associated_bonding_curve
+                if token_info.associated_bonding_curve and not _migrada
                 else None
             )
             payload = {
