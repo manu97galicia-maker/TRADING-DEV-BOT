@@ -1108,6 +1108,13 @@ class UniversalTrader:
         ) if tp_marcados and tp_sell_marcados else []
         self.max_perdidas_seguidas = int(max_perdidas_seguidas or 0)
         self._perdidas_seguidas = 0
+        #: REGIMEN APARTE para las monedas que no nacieron en pump.fun. Se
+        #: cuentan solas porque son un experimento con menos red: no hay
+        #: creador ni historial que mirar, y el supply no es el fijo de
+        #: pump.fun. Probarlas con cupo y cortar rapido si fallan, sin que
+        #: eso toque a las de casa.
+        self._compras_otro_origen = 0
+        self._perdidas_otro_origen = 0
         self._parado_por_perdidas = False
         self.buy_amount_tras_sl = float(buy_amount_tras_sl or 0)
         self._ultimo_cierre_fue_sl = False
@@ -1559,6 +1566,9 @@ class UniversalTrader:
             min_lp_locked_pct=float(
                 self.buy_on_dex_paid.get("min_lp_locked_pct", 50)
             ),
+            otros_max_holder_pct=float(
+                self.buy_on_dex_paid.get("otros_max_holder_pct", 0.05)
+            ),
             candidatos_por_vuelta=int(
                 self.buy_on_dex_paid.get("candidatos_por_vuelta", 30)
             ),
@@ -1588,6 +1598,55 @@ class UniversalTrader:
             await source.run(self._on_dexpaid_token)
         except asyncio.CancelledError:
             logger.info("Birdeye-trending mode stopped")
+
+    def _otro_origen_agotado(self, token_info: TokenInfo) -> bool:
+        """True si la moneda es de fuera de pump.fun y ya no toca comprarla.
+
+        Dos frenos independientes de los de casa: un cupo de compras y un
+        corte por perdidas. Las de pump.fun no pasan por aqui, asi que su
+        comportamiento no cambia en nada.
+        """
+        if (token_info.additional_data or {}).get("origen") != "otro":
+            return False
+        cfg = self.buy_on_dex_paid or {}
+        cupo = int(cfg.get("otros_max_compras", 0) or 0)
+        tope_perdidas = int(cfg.get("otros_parar_tras_perdidas", 0) or 0)
+        if tope_perdidas > 0 and self._perdidas_otro_origen >= tope_perdidas:
+            logger.warning(
+                "OTRO ORIGEN PARADO: %d perdidas; %s no se compra. Las de "
+                "pump.fun siguen igual.",
+                self._perdidas_otro_origen,
+                token_info.symbol,
+            )
+            return True
+        if cupo > 0 and self._compras_otro_origen >= cupo:
+            logger.info(
+                "Cupo de otro origen agotado (%d/%d); %s no se compra",
+                self._compras_otro_origen,
+                cupo,
+                token_info.symbol,
+            )
+            return True
+        self._compras_otro_origen += 1
+        return False
+
+    def _apunta_cierre_otro_origen(self, token_info: TokenInfo, neto: float) -> None:
+        """Cuenta una perdida del regimen aparte, para poder cortarlo."""
+        if (token_info.additional_data or {}).get("origen") != "otro":
+            return
+        if neto >= 0:
+            return
+        self._perdidas_otro_origen += 1
+        tope = int(
+            (self.buy_on_dex_paid or {}).get("otros_parar_tras_perdidas", 0) or 0
+        )
+        logger.warning(
+            "OTRO ORIGEN: perdida %d de %d (%+.4f SOL) en %s",
+            self._perdidas_otro_origen,
+            tope,
+            neto,
+            token_info.symbol,
+        )
 
     def _avisa_si_el_nodo_no_da_mas(self) -> None:
         """Avisa cuando hay mas posiciones de las que el nodo puede vigilar.
@@ -2390,8 +2449,16 @@ class UniversalTrader:
         Usa getTokenLargestAccounts. Fail-open: ante error/RPC devuelve False
         para no frenar el trading.
         """
+        # TOPE POR MONEDA. Una de fuera de pump.fun trae el suyo en
+        # `additional_data`, mas estricto: alli el supply no es el fijo de
+        # pump.fun y no hay curva ni creador que mirar, asi que un titular
+        # gordo pesa mas que en una de casa.
+        _tope_holder = float(
+            (token_info.additional_data or {}).get("max_holder_pct")
+            or self.max_holder_pct
+        )
         if (
-            self.max_holder_pct <= 0
+            _tope_holder <= 0
             and self.min_holders <= 0
             and self.max_bundle_pct <= 0
             and self.min_supply_en_manos <= 0
@@ -2497,7 +2564,7 @@ class UniversalTrader:
                 if not curve_ata and addr == largest_addr:
                     continue
                 pct = float(a.get("amount") or 0) / supply
-                if pct > self.max_holder_pct:
+                if pct > _tope_holder:
                     # Excepción: un holder gordo temprano suele ser pump&dump...
                     # PERO si es un dev PROBADO cuya MEDIANA histórica de pico es
                     # >= holder_bypass_ratio (x3) veces el market cap ACTUAL, hay
@@ -2531,7 +2598,7 @@ class UniversalTrader:
                             pass
                     logger.info(
                         f"{token_info.symbol}: holder con {pct * 100:.1f}% del "
-                        f"supply (> {self.max_holder_pct * 100:.0f}%) y sin recorrido "
+                        f"supply (> {_tope_holder * 100:.0f}%) y sin recorrido "
                         f"por mediana -> se omite"
                     )
                     return True
@@ -3581,6 +3648,8 @@ class UniversalTrader:
                 logger.info(
                     f"Max posiciones abiertas; {token_info.symbol} pasó el filtro pero no se compra"
                 )
+                return
+            if self._otro_origen_agotado(token_info):
                 return
             self._avisa_si_el_nodo_no_da_mas()
             async with self._position_semaphore:
@@ -5222,6 +5291,8 @@ class UniversalTrader:
                 )
             except Exception:  # noqa: BLE001
                 logger.warning("selector: no se pudo apuntar la operacion")
+
+        self._apunta_cierre_otro_origen(token_info, _para_racha)
 
         if self.max_perdidas_seguidas > 0 and not self._parado_por_perdidas:
             if _para_racha < 0:

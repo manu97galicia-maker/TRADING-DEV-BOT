@@ -235,8 +235,21 @@ filters:
     #
     # Por eso al encenderlo se activa RugCheck y se exige liquidez bloqueada.
     # Sin informe de RugCheck, la moneda se descarta.
-    incluir_cualquier_origen: false
+    incluir_cualquier_origen: true
     min_lp_locked_pct: 50
+    # REGIMEN APARTE para las de fuera de pump.fun. No se les puede aplicar
+    # el mismo rasero: alli el supply no es el fijo de pump.fun, no hay curva
+    # ni creador que mirar, y aparecen cosas que en pump.fun no pueden pasar
+    # (autoridad de congelacion, comision por transferencia, supply mintable).
+    #
+    # Se prueban con la correa corta, sin tocar a las de casa:
+    #   - un titular por encima del 5% del supply la descarta (las de
+    #     pump.fun siguen con su 15%, que alli es lo normal)
+    #   - como mucho 3 compras
+    #   - a las 2 perdidas se dejan de comprar, y las de pump.fun siguen
+    otros_max_holder_pct: 0.05
+    otros_max_compras: 3
+    otros_parar_tras_perdidas: 2
     normal_buy_amount: 0.2856
     small_boost_buy_amount: 0.3237
     boost_threshold: 500

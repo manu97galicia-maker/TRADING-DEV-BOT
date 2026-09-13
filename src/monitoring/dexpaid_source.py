@@ -148,6 +148,7 @@ class DexPaidSource:
         incluir_migradas: bool = False,
         incluir_cualquier_origen: bool = False,
         min_lp_locked_pct: float = 50.0,
+        otros_max_holder_pct: float = 0.05,
         candidatos_por_vuelta: int = 30,
     ) -> None:
         self._impls = platform_impls
@@ -164,6 +165,12 @@ class DexPaidSource:
         self.incluir_migradas = incluir_migradas
         self.incluir_cualquier_origen = incluir_cualquier_origen
         self.min_lp_locked_pct = min_lp_locked_pct
+        #: Tope de concentracion SOLO para las de fuera de pump.fun. Va aqui
+        #: y no en el filtro global porque las dos procedencias no se pueden
+        #: medir igual: en pump.fun el supply es fijo y un titular gordo es
+        #: normal (el dev, quien puso la liquidez); fuera no hay nada de eso,
+        #: asi que se exige mas.
+        self.otros_max_holder_pct = otros_max_holder_pct
         # Cuantas entradas del feed se miran por vuelta. Estaba fijo en 10: en
         # una ventana tan estrecha una moneda entra y sale entre dos sondeos y
         # no llega a verse nunca.
@@ -293,12 +300,20 @@ class DexPaidSource:
             )
         if not self.incluir_cualquier_origen or not self._pasa_rugcheck(candidato):
             return None
-        return await build_generic_token_info(
+        token_info = await build_generic_token_info(
             mint,
             self._client,
             symbol=candidato.get("symbol", ""),
             name=candidato.get("name", ""),
         )
+        if token_info is not None:
+            # El comprador lee estas dos para aplicarle el regimen estricto.
+            token_info.additional_data = {
+                **(token_info.additional_data or {}),
+                "origen": "otro",
+                "max_holder_pct": self.otros_max_holder_pct,
+            }
+        return token_info
 
     def _pasa_rugcheck(self, candidato: dict) -> bool:
         """Exige liquidez bloqueada a una moneda de origen desconocido.
