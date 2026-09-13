@@ -32,9 +32,15 @@ from trading.universal_trader import _peldanos_extra
 CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
 ENTRADA = 1.0
 CANTIDAD = 1000.0
-#: El codigo deja el moonbag puesto cuando salta el stop
-#: (`vender_todo_en_stop` por defecto False).
-VENDER_TODO_EN_STOP = False
+def _vender_todo_en_stop() -> bool:
+    """Si el stop se lleva la posicion entera. SALE DEL YAML, no a mano.
+
+    Estuvo escrito a pelo como False y se quedo obsoleto en cuanto se activo
+    la opcion: el simulador seguia dando verde probando un comportamiento que
+    el bot ya no tenia. Un test asi es peor que no tenerlo, porque respalda
+    una verificacion que ya no es cierta.
+    """
+    return bool(_trade().get("vender_todo_en_stop", False))
 
 
 def _cfg() -> dict:
@@ -73,7 +79,7 @@ def simula(recorrido: list[float]) -> dict:
 
     for precio in recorrido:
         if sl_price is not None and precio <= sl_price:
-            keep = 0.0 if VENDER_TODO_EN_STOP else CANTIDAD * moonbag
+            keep = 0.0 if _vender_todo_en_stop() else CANTIDAD * moonbag
             vender = restante - keep
             paro_por_stop = True
             if vender > 1e-9:
@@ -173,12 +179,21 @@ def test_ni_un_x100_toca_el_moonbag() -> None:
     assert round(r["restante_pct"], 6) == round(moonbag_fraction(tiers), 6)
 
 
-def test_el_stop_tambien_deja_el_moonbag() -> None:
-    """Con `vender_todo_en_stop` apagado, un stop vende el 98% y deja el 2%
-    corriendo en una moneda que se esta cayendo. Es lo que hace hoy el
-    codigo; queda escrito para que sea una decision y no una sorpresa."""
+def test_el_stop_se_lleva_la_posicion_entera() -> None:
+    """Con `vender_todo_en_stop` encendido, un stop no deja nada corriendo en
+    una moneda que se esta cayendo a cero. Ademas la cuenta de token queda
+    vacia, que es lo que permite cerrarla y recuperar su renta."""
     r = simula([1.0, 0.80])
     assert r["paro_por_stop"]
+    assert round(r["restante_pct"], 6) == 0.0
+
+
+def test_el_moonbag_solo_sobrevive_si_no_salta_el_stop() -> None:
+    """La distincion que importa: el 2% se conserva en las que RECORREN la
+    escalera, no en las que se hunden."""
+    tiers = _tiers()
+    r = simula([1.0, *[ENTRADA * (1 + t.gain) for t in tiers]])
+    assert not r["paro_por_stop"]
     assert round(r["restante_pct"], 6) == 0.02
 
 

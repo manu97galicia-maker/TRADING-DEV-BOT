@@ -116,6 +116,21 @@ trade:
     - gain: 99.00    # x100
       sell: 0.010
   stop_loss_percentage: 0.18
+  # EL STOP SE LLEVA LA POSICION ENTERA, moonbag incluido.
+  #
+  # Antes dejaba el 2% corriendo en una moneda que se estaba cayendo a cero:
+  # por eso un stop de -18% podia acabar en -20%. El moonbag tiene sentido
+  # cuando la moneda VA BIEN y se deja correr; cuando salta el stop, lo que
+  # queda no es una apuesta, es una bolsa hundiendose.
+  #
+  # OJO, esto NO toca el moonbag de las que ganan: si la moneda recorre la
+  # escalera, el 2% sigue reservado para venderlo a mano. Solo desaparece
+  # cuando salta el stop.
+  #
+  # Ademas encaja con la renta: vendida la posicion entera la cuenta de token
+  # queda a cero, y `cleanup.mode: after_sell` la cierra y recupera sus
+  # ~0,00204 SOL. Con el 2% dentro no se puede cerrar.
+  vender_todo_en_stop: true
   stop_a_entrada_tras_tp: true
   stop_al_tp_tras_tp: false
   trailing_stop_percentage: 0
@@ -491,7 +506,15 @@ callouts:
   outbox: trades/pumpfun_callout_outbox.jsonl
 
 cleanup:
-  mode: post_session
+  # RECUPERAR LA RENTA. Cada cuenta de token de Solana retiene ~0,00204 SOL
+  # de deposito, y al cerrarla te la devuelven entera a la wallet. Estaba en
+  # `post_session`, que solo corre al terminar la sesion: en un bot que no
+  # para, eso es casi nunca, y cada moneda vendida dejaba su cuenta abierta
+  # con esos 0,002 SOL dentro. Con 50 monedas son 0,1 SOL parados.
+  #
+  # `after_sell` la cierra en cuanto la posicion sale ENTERA. No bloquea la
+  # escalera: corre despues de que el monitor haya terminado.
+  mode: after_sell
   force_close_with_burn: false
   with_priority_fee: false
 
