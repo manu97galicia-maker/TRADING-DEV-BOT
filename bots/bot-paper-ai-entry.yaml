@@ -53,25 +53,31 @@ trade:
   sell_slippage: 0.10
   exit_strategy: tp_sl
   # ESCALERA. Lo que no se vende en los peldanos es el moonbag, que sigue
-  # dentro: 52 + 20 + 5 = 77, o sea 23% corriendo.
+  # dentro: 50 + 20 + 5 + 6 + 6 + 6 = 93, o sea 7% corriendo.
   #
-  # El 3% extra del moonbag sale del PRIMER peldano (era 55). Es donde mas
-  # efecto tiene: cada punto que no se vende a +30% es un punto que sigue
-  # dentro si la moneda hace 10x.
+  # La forma es "tres cerca y tres lejos": los tres primeros recogen la
+  # subida normal, y los tres de 3,3x/5x/7x son los que cobran cuando una
+  # sale de verdad. Antes esos 18 puntos estaban en el moonbag sin cobrar
+  # nunca, porque max_hold_time cierra a las 2h.
   #
   # OJO con el techo: el moonbag NO corre para siempre. `max_hold_time`
   # (2h) lo cierra, y `stop_a_entrada_tras_tp` lo saca al precio de compra
   # si la moneda se da la vuelta despues del primer TP.
   take_profit_percentage: 0.30
-  take_profit_sell_percentage: 0.52
+  take_profit_sell_percentage: 0.50
   tp2_gain: 0.60
   tp2_sell: 0.20
   tp3_gain: 0.90
   tp3_sell: 0.05
-  tp4_gain: 0
-  tp4_sell: 0
-  tp5_gain: 0
-  tp5_sell: 0
+  # Los tres de arriba son multiplos, no porcentajes: 2.30 = 3,3 veces el
+  # precio de entrada, 4.00 = 5x, 6.00 = 7x. El reparto es parejo (6% cada
+  # uno) para no decidir a ojo cual de los tres es mas probable.
+  tp4_gain: 2.30
+  tp4_sell: 0.06
+  tp5_gain: 4.00
+  tp5_sell: 0.06
+  tp6_gain: 6.00
+  tp6_sell: 0.06
   stop_loss_percentage: 0.18
   stop_a_entrada_tras_tp: true
   stop_al_tp_tras_tp: false

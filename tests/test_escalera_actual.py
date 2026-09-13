@@ -25,12 +25,20 @@ def _peldanos() -> list[tuple[float, float]]:
         (t["tp3_gain"], t["tp3_sell"]),
         (t["tp4_gain"], t["tp4_sell"]),
         (t["tp5_gain"], t["tp5_sell"]),
+        (t["tp6_gain"], t["tp6_sell"]),
     ]
     return [(g, v) for g, v in pares if g > 0 and v > 0]
 
 
 def test_los_peldanos_son_los_pedidos() -> None:
-    assert _peldanos() == [(0.30, 0.52), (0.60, 0.20), (0.90, 0.05)]
+    assert _peldanos() == [
+        (0.30, 0.50),
+        (0.60, 0.20),
+        (0.90, 0.05),
+        (2.30, 0.06),  # 3,3x
+        (4.00, 0.06),  # 5x
+        (6.00, 0.06),  # 7x
+    ]
 
 
 def test_las_ganancias_van_en_orden_creciente() -> None:
@@ -47,7 +55,7 @@ def test_nunca_se_vende_mas_del_100() -> None:
 def test_queda_moonbag_corriendo() -> None:
     """Sin moonbag la ganancia tiene techo, haga lo que haga la moneda."""
     vendido = sum(v for _, v in _peldanos())
-    assert round(1 - vendido, 6) == 0.23
+    assert round(1 - vendido, 6) == 0.07
 
 
 def test_el_stop_sube_a_la_entrada_tras_el_primer_tp() -> None:
@@ -56,8 +64,19 @@ def test_el_stop_sube_a_la_entrada_tras_el_primer_tp() -> None:
 
 
 def test_el_moonbag_tiene_fecha_de_caducidad() -> None:
-    """No corre para siempre: a las 2h se cierra pase lo que pase."""
+    """No corre para siempre: a las 2h se cierra pase lo que pase.
+
+    Por eso los peldanos lejanos (3,3x/5x/7x) valen mas que dejar ese 18%
+    en el moonbag: cobran cuando pasan, no cuando vence el reloj.
+    """
     assert _trade()["max_hold_time"] == 7200
+
+
+def test_los_peldanos_lejanos_cobran_una_salida_de_verdad() -> None:
+    """Tres cerca y tres lejos: los de arriba son los que cobran un 5x."""
+    lejanos = [(g, v) for g, v in _peldanos() if g >= 2.0]
+    assert len(lejanos) == 3
+    assert sum(v for _, v in lejanos) == 0.18
 
 
 def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:

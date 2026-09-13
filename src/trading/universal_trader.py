@@ -327,6 +327,8 @@ class UniversalTrader:
         tp4_sell: float | None = None,
         tp5_gain: float | None = None,
         tp5_sell: float | None = None,
+        tp6_gain: float | None = None,
+        tp6_sell: float | None = None,
         final_target_mc: float = 0.0,
         # STOP POR MARKET CAP absoluto: vender si el MC cae a este
         # valor, independientemente de a que precio se entro. 0 = off.
@@ -755,6 +757,9 @@ class UniversalTrader:
                 (tp3_gain, tp3_sell),
                 (tp4_gain, tp4_sell),
                 (tp5_gain, tp5_sell),
+                # Sexto peldano. Con cinco no cabia la escalera pedida:
+                # tres cortes cerca (+30/+60/+90) y tres lejos (3,3x/5x/7x).
+                (tp6_gain, tp6_sell),
             ]
         )
         self.final_target_mc = float(final_target_mc or 0)
