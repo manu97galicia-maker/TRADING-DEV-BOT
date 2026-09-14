@@ -1,0 +1,222 @@
+"""Revision completa del droplet: ¿esta listo para operar en REAL?
+
+Un solo comando que mira todo lo que decide si el bot compra de verdad, y da
+un veredicto. Existe porque estos fallos no se ven de uno en uno: la clave
+estaba en el fichero equivocado, o el YAML dice papel, o la rama es otra, y
+cada cosa por separado parecia correcta.
+
+NO imprime ningun secreto: de las claves solo dice si estan o no.
+
+    uv run deploy/revisar_droplet.py
+"""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+from pathlib import Path
+
+import yaml
+
+CONFIG = Path("bots") / "bot-paper-ai-entry.yaml"
+#: Claves que hacen falta, y para que.
+CLAVES = {
+    "SOLANA_PRIVATE_KEY": "la wallet: sin esto no se compra nada",
+    "SOLANA_NODE_RPC_ENDPOINT": "el nodo",
+    "SOLANA_NODE_WSS_ENDPOINT": "el nodo en directo (curva al 95%)",
+    "DEXTOOLS_API_KEY": "fuente DEXTools",
+    "TELEGRAM_API_ID": "fuente Telegram",
+    "TELEGRAM_API_HASH": "fuente Telegram",
+}
+
+_ok, _mal, _avisos = [], [], []
+
+
+def bien(t: str) -> None:
+    _ok.append(t)
+    print(f"  OK    {t}")
+
+
+def mal(t: str) -> None:
+    _mal.append(t)
+    print(f"  FALLO {t}")
+
+
+def aviso(t: str) -> None:
+    _avisos.append(t)
+    print(f"  AVISO {t}")
+
+
+def _rama() -> None:
+    print("\n== RAMA ==")
+    try:
+        r = subprocess.run(
+            ["/usr/bin/git", "branch", "--show-current"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        ).stdout.strip()
+    except Exception:  # noqa: BLE001
+        aviso("no pude leer la rama")
+        return
+    if r == "main":
+        mal(
+            f"estas en '{r}': esa es la version PAPEL de Codex, sin curva 95% "
+            "ni el arreglo de retomar posiciones"
+        )
+    elif r:
+        bien(f"rama '{r}'")
+
+
+def _fichero_env() -> Path | None:
+    """El que cargaria el bot, con la MISMA regla que config_loader."""
+    print("\n== FICHERO .env ==")
+    try:
+        cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError):
+        mal(f"no pude leer {CONFIG}")
+        return None
+    nombre = cfg.get("env_file")
+    if not nombre:
+        aviso("el YAML no declara env_file")
+        return None
+    junto = CONFIG.parent / nombre
+    elegido = junto if junto.is_file() else Path(nombre)
+    print(f"  el YAML pide: {nombre}")
+    if junto.is_file():
+        aviso(f"manda {junto} (tiene prioridad sobre ./{nombre})")
+    if not elegido.is_file():
+        mal(f"{elegido} NO EXISTE: el bot no lee ninguna clave")
+        return None
+    bien(f"lee {elegido}")
+
+    sueltos = [p.name for p in Path().glob("*.env") if p.name != elegido.name]
+    if sueltos:
+        aviso(f"hay otros ficheros de claves que el bot NO lee: {', '.join(sueltos)}")
+    return elegido
+
+
+def _claves(env: Path) -> None:
+    print("\n== CLAVES ==")
+    try:
+        texto = env.read_text(encoding="utf-8")
+    except OSError:
+        mal(f"no pude leer {env}")
+        return
+    puestas = {
+        linea.split("=", 1)[0].strip()
+        for linea in texto.splitlines()
+        if "=" in linea
+        and not linea.strip().startswith("#")
+        and linea.split("=", 1)[1].strip()
+    }
+    for clave, para in CLAVES.items():
+        if clave in puestas:
+            bien(f"{clave} ({para})")
+        elif clave.startswith(("DEXTOOLS", "TELEGRAM")):
+            aviso(f"{clave} sin poner -> {para} no arranca")
+        else:
+            mal(f"{clave} sin poner -> {para}")
+
+
+def _modo(cfg: dict) -> None:
+    print("\n== MODO ==")
+    t, f = cfg.get("trade", {}), cfg.get("filters", {})
+    papel = t.get("paper_trade", f.get("paper_trade"))
+    if papel:
+        mal("paper_trade esta en true: SIMULA, no compra de verdad")
+    else:
+        bien("paper_trade false: compra de VERDAD")
+    tope = int(t.get("max_real_buys") or 0)
+    if tope:
+        aviso(f"max_real_buys = {tope}: se para tras {tope} compras por tanda")
+    else:
+        bien("max_real_buys 0: sin tope de compras")
+
+
+def _estrategia(cfg: dict) -> None:
+    print("\n== ESTRATEGIA ==")
+    t, f = cfg["trade"], cfg["filters"]
+    print(
+        f"  compra {t['buy_amount']} SOL · tope {t['tope_compra_sol']} · "
+        f"max {t['max_posiciones']} posiciones · reserva {t['min_reserve_sol']}"
+    )
+    print(
+        f"  TP1 +{t['take_profit_percentage'] * 100:.0f}% vende "
+        f"{t['take_profit_sell_percentage'] * 100:.0f}% · "
+        f"stop -{t['stop_loss_percentage'] * 100:.0f}%"
+        f"{' (vende TODO)' if t.get('vender_todo_en_stop') else ''}"
+    )
+    activas = [
+        k
+        for k, v in f.items()
+        if isinstance(v, dict) and v.get("enabled") and k != "dexscreener"
+    ]
+    print(f"  fuentes encendidas: {', '.join(activas)}")
+    if "curva_96" in f and f["curva_96"].get("enabled"):
+        bien(f"curva al {f['curva_96']['umbral'] * 100:.0f}% activa")
+    else:
+        aviso("la fuente de la curva no esta activa")
+
+
+def _servicio() -> None:
+    print("\n== SERVICIO ==")
+    for arg, texto in (
+        ("is-active", "corriendo"),
+        ("is-enabled", "arranca solo al reiniciar el servidor"),
+    ):
+        try:
+            # Ruta absoluta y argumentos fijos: no hay entrada del usuario.
+            r = subprocess.run(  # noqa: S603
+                ["/usr/bin/systemctl", arg, "pump-bot"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
+            ).stdout.strip()
+        except Exception:  # noqa: BLE001
+            aviso(f"no pude comprobar {arg}")
+            continue
+        if r in ("active", "enabled"):
+            bien(f"{texto} ({r})")
+        else:
+            (mal if arg == "is-active" else aviso)(f"NO {texto} ({r or '?'})")
+
+
+def main() -> None:
+    """Revisa el droplet entero y da un veredicto."""
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    print("=" * 58)
+    print("REVISION DEL DROPLET")
+    print("=" * 58)
+
+    _rama()
+    env = _fichero_env()
+    if env:
+        _claves(env)
+    try:
+        cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+        _modo(cfg)
+        _estrategia(cfg)
+    except (OSError, yaml.YAMLError, KeyError) as exc:
+        mal(f"no pude leer la configuracion: {exc}")
+    _servicio()
+
+    print("\n" + "=" * 58)
+    if _mal:
+        print(f"NO ESTA LISTO PARA REAL. {len(_mal)} fallo(s):")
+        for x in _mal:
+            print(f"  - {x}")
+    else:
+        print("LISTO PARA OPERAR EN REAL.")
+    if _avisos:
+        print(f"\n{len(_avisos)} aviso(s), no impiden operar:")
+        for x in _avisos:
+            print(f"  - {x}")
+    print("=" * 58)
+
+
+if __name__ == "__main__":
+    main()
