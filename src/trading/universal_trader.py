@@ -1279,7 +1279,16 @@ class UniversalTrader:
         """Start the trading bot and listen for new tokens."""
         logger.info(f"Starting Universal Trader for {self.platform.value}")
         self.paper_engine.start()
-        self._check_orphan_position()  # C2: warn if a previous run crashed open
+        # RETOMAR ANTES QUE NADA. Lo que habia aqui era `_check_orphan_position`,
+        # que avisaba de la posicion abierta y borraba su marcador SIN volver a
+        # vigilarla: la moneda se quedaba en la wallet sin stop loss ni take
+        # profit. Un reinicio de treinta segundos desarmaba la estrategia
+        # entera, y con varios reinicios en un dia no quedaba nada en pie.
+        #
+        # Ahora se retoman. Lo que no se pueda retomar (no se reconstruye, o no
+        # se puede leer su saldo) conserva su marcador y lo avisa el chequeo de
+        # huerfanas de la vuelta siguiente, en vez de borrarse en silencio.
+        await self._reanudar_posiciones()
         # Avisador de moonbags: cada 5 min notifica por Telegram los moonbags
         # retenidos para venderlos a mano (nunca los vende el bot).
         asyncio.create_task(self._moonbag_notifier_loop())  # noqa: RUF006
@@ -2332,6 +2341,18 @@ class UniversalTrader:
                 "amount": buy_result.amount,
                 "suffix": self._state_suffix,
                 "platform": token_info.platform.value,
+                # Con esto se puede leer el saldo al retomar SIN reconstruir
+                # la moneda antes: una que ya se vendio a mano se descarta
+                # con una sola llamada en vez de con media docena.
+                #
+                # Va con getattr a proposito. Este marcador es LA RED DE
+                # SEGURIDAD de la posicion: si un campo opcional que falta
+                # hiciera saltar la excepcion, no se escribiria el marcador
+                # entero y la posicion se quedaria sin forma de retomarse
+                # tras un reinicio. Sin programa solo se pierde el atajo.
+                "token_program": str(
+                    getattr(token_info, "token_program_id", "") or ""
+                ),
                 "ts": time.time(),
             }
             path = self._open_position_path(str(token_info.mint))
@@ -2446,6 +2467,144 @@ class UniversalTrader:
         except Exception:  # noqa: BLE001
             logger.exception("Error en venta manual (panel)")
         return remaining
+
+    async def _reanudar_posiciones(self) -> None:
+        """Retoma la vigilancia de las posiciones que seguian abiertas.
+
+        POR QUE ESTO ES LO MAS IMPORTANTE DE TODO EL ARRANQUE. Hasta ahora, al
+        reiniciar el bot cada posicion abierta se daba por perdida: se avisaba
+        de "bolsa huerfana", se borraba el marcador y nadie volvia a mirarla.
+        Eso deja la moneda en la wallet SIN STOP LOSS y sin take profit, con lo
+        que un reinicio de treinta segundos convertia una posicion gestionada
+        en una apuesta a ciegas. Con varios reinicios en un dia --y aqui los
+        hay-- eso es la diferencia entre tener una estrategia y no tenerla.
+
+        Lo que se temia quien lo dejo asi era reconstruir mal la venta y vender
+        una cantidad equivocada. Eso se evita sin renunciar al stop: la
+        cantidad NO se cree del fichero, se lee de la cadena. El saldo real de
+        la cuenta de token es la verdad, y ademas recoge lo que se haya vendido
+        a mano mientras el bot estaba parado.
+
+        El precio de entrada si sale del marcador: es un hecho historico que no
+        se puede consultar en ningun sitio, y sin el no hay ni stop ni escalera.
+        """
+        try:
+            paths = self._open_position_paths()
+        except OSError:
+            return
+        if not paths:
+            return
+
+        logger.info("Retomando %d posicion(es) que quedaron abiertas", len(paths))
+        for path in paths:
+            try:
+                rec = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                path.unlink(missing_ok=True)
+                continue
+            try:
+                await self._reanudar_una(rec, path)
+            except Exception:
+                # Una posicion que no se puede retomar no puede impedir que se
+                # retomen las demas: cada una lleva su propio stop loss.
+                logger.exception(
+                    "No pude retomar %s; queda como bolsa suelta",
+                    rec.get("symbol") or rec.get("mint"),
+                )
+
+    async def _sigue_en_la_wallet(self, mint: str, token_program: str) -> bool:
+        """True si la cuenta de token aun tiene algo. Ante la duda, True.
+
+        Un fallo de red no puede hacer que se suelte una posicion viva: eso la
+        dejaria sin stop loss, que es justo lo que se esta arreglando.
+        """
+        from solders.pubkey import Pubkey
+
+        try:
+            ata = self.wallet.get_associated_token_address(
+                Pubkey.from_string(mint), Pubkey.from_string(token_program)
+            )
+            return bool(await self.solana_client.get_token_account_balance(ata))
+        except Exception:  # noqa: BLE001
+            return True
+
+    async def _reanudar_una(self, rec: dict, path: Path) -> None:
+        """Retoma UNA posicion, o suelta su marcador si ya no esta."""
+        from trading.token_builder import build_pumpfun_token_info
+
+        mint = str(rec.get("mint") or "").strip()
+        sym = rec.get("symbol") or mint[:6]
+        entrada = float(rec.get("entry_price") or 0)
+        if not mint or entrada <= 0:
+            path.unlink(missing_ok=True)
+            return
+
+        # ATAJO BARATO: si el marcador trae el programa de token se puede
+        # comprobar el saldo YA. Una moneda vendida a mano con el bot parado
+        # se descarta con una llamada, sin reconstruirla entera antes.
+        _prog = str(rec.get("token_program") or "").strip()
+        if _prog and not await self._sigue_en_la_wallet(mint, _prog):
+            logger.info("%s ya no esta en la wallet: suelto el marcador", sym)
+            path.unlink(missing_ok=True)
+            return
+
+        # Se permite migrada a proposito: una moneda que se fue a PumpSwap
+        # mientras el bot estaba parado sigue siendo una posicion que vigilar.
+        token_info = await build_pumpfun_token_info(
+            mint, self.platform_implementations, self.solana_client,
+            symbol=sym, permitir_migradas=True,
+        )
+        if token_info is None:
+            logger.warning("No pude reconstruir %s (%s): queda suelta", sym, mint)
+            return
+
+        # LA CANTIDAD SALE DE LA CADENA, no del fichero. Si se vendio algo a
+        # mano con el bot parado, el fichero miente y el saldo no.
+        try:
+            ata = self.wallet.get_associated_token_address(
+                token_info.mint, token_info.token_program_id
+            )
+            cantidad = await self.solana_client.get_token_account_balance(ata)
+        except Exception:  # noqa: BLE001
+            logger.warning(
+                "No pude leer el saldo de %s: no la retomo para no vender a "
+                "ciegas una cantidad que no se", sym,
+            )
+            return
+
+        if not cantidad or cantidad <= 0:
+            logger.info("%s ya no esta en la wallet (vendida): suelto el marcador", sym)
+            path.unlink(missing_ok=True)
+            return
+
+        self.bought_mints.add(mint)  # nunca recomprarla mientras se vigila
+        logger.info(
+            "RETOMADA %s: %.0f tokens, entrada %.10f SOL. Stop y take profit "
+            "vuelven a estar activos.", sym, cantidad, entrada,
+        )
+        try:
+            from monitoring.notifier import notify
+
+            notify(
+                f"🔄 <b>RETOMADA</b> · {sym}\n"
+                f"El bot vuelve a vigilarla tras el reinicio: stop loss y take "
+                f"profit activos otra vez."
+            )
+        except Exception:  # noqa: BLE001, S110
+            pass
+
+        rehecho = TradeResult(
+            success=True,
+            platform=token_info.platform,
+            amount=cantidad,
+            price=entrada,
+        )
+
+        async def _vigilar() -> None:
+            async with self._position_semaphore:
+                await self._monitor_tiered_exit(token_info, rehecho)
+
+        asyncio.create_task(_vigilar())  # noqa: RUF006
 
     def _check_orphan_position(self) -> None:
         """C2: on startup, alert if a previous run crashed with a position open.

@@ -23,6 +23,7 @@ class OpenPositionMarkerTests(unittest.TestCase):
             mint=mint,
             symbol=mint,
             platform=SimpleNamespace(value="pump_fun"),
+            token_program_id="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",  # noqa: S106
         )
 
     @staticmethod
