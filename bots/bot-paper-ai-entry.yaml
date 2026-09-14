@@ -5,14 +5,15 @@ env_file: .env
 rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
 wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
 private_key: ${SOLANA_PRIVATE_KEY}
-enabled: false
+enabled: true
 separate_process: false
 platform: pump_fun
 
 trade:
   buy_amount: 0.15
   mayhem_buy_amount: 0
-  max_posiciones: 3
+  # Zero means no configured position cap; wallet reserve remains authoritative.
+  max_posiciones: 0
   max_real_buys: 0
   reiniciar_tanda: false
   max_perdidas_seguidas: 0
@@ -22,15 +23,21 @@ trade:
   sell_slippage: 0.25
   exit_strategy: tp_sl
   take_profit_percentage: 0.25
-  take_profit_sell_percentage: 0.70
+  take_profit_sell_percentage: 0.30
   tp2_gain: 0.50
-  tp2_sell: 0.10
+  tp2_sell: 0.25
   tp3_gain: 0.75
-  tp3_sell: 0.10
-  tp4_gain: 2.00
-  tp4_sell: 0.10
-  tp5_gain: 0
-  tp5_sell: 0
+  tp3_sell: 0.25
+  tp4_gain: 1.00
+  tp4_sell: 0.04
+  tp5_gain: 2.00
+  tp5_sell: 0.04
+  tp6_gain: 4.00
+  tp6_sell: 0.04
+  tp7_gain: 9.00
+  tp7_sell: 0.04
+  tp8_gain: 19.00
+  tp8_sell: 0.04
   stop_loss_percentage: 0.18
   stop_a_entrada_tras_tp: true
   stop_al_tp_tras_tp: false
@@ -40,12 +47,12 @@ trade:
   anti_rug_min_sol: 3
   venta_muerta_seg: 0
   venta_muerta_gain: 0
-  max_hold_time: 7200
+  max_hold_time: 0
   final_target_mc: 0
   price_check_interval: 1
   extreme_fast_mode: false
   min_reserve_sol: 0.03
-  tope_compra_sol: 0.20
+  tope_compra_sol: 0.40
 
 compute_units:
   buy: 140000
@@ -65,6 +72,8 @@ retries:
   wait_before_new_token: 0
 
 filters:
+  # Zero keeps paper positions open until TP or SL closes them.
+  paper_watch_secs: 0
   listener_type: logs
   max_token_age: 10800
   max_buy_age: 0
@@ -100,17 +109,19 @@ filters:
 
   buy_on_dex_paid:
     enabled: true
-    poll_interval: 30
+    poll_interval: 1
     heartbeat_interval: 300
     max_age_minutes: 10
-    max_token_age_minutes: 30
-    normal_buy_amount: 0.15
-    small_boost_buy_amount: 0.17
-    boost_threshold: 500
-    boost_buy_amount: 0.20
+    # Zero disables token-age filtering. The paid event itself must still be fresh.
+    max_token_age_minutes: 0
+    require_volume_h24: true
+    normal_buy_amount: 0.30
+    small_boost_buy_amount: 0.35
+    boost_threshold: 100
+    boost_buy_amount: 0.40
 
   telegram_calls:
-    enabled: true
+    enabled: false
     session_name: moontok_watcher
     normal_buy_amount: 0.15
     nitro_buy_amount: 0.17
@@ -124,10 +135,17 @@ filters:
     suffixes:
       - pump
 
-  # Explicitly excluded acquisition modes. This bot only consumes the
-  # DexScreener paid/boost feed and the approved MoonTok/DEXTools channels.
+  # New-token alerts from the requested Discord channel. Paper only: the
+  # source-specific amount overrides the default simulated entry size.
   discord_calls:
     enabled: false
+    channels:
+      - "1466400963509227811"
+    poll_seconds: 1.0
+    is_bot_token: true
+    buy_amount: 0.20
+    suffixes:
+      - pump
   gmgn_signals:
     enabled: false
 

@@ -34,12 +34,16 @@ def build_monitor_heartbeat(
 ) -> str:
     """Build the periodic Telegram health message for the API monitor."""
     mode = "PAPER" if paper_mode else "REAL"
+    token_age = (
+        f"moneda ≤{max_token_age_minutes:g}m"
+        if max_token_age_minutes > 0
+        else "edad de moneda sin límite"
+    )
     return (
         "🛰 <b>MONITOR ACTIVO</b>\n"
         f"DexScreener: última revisión correcta · cada {poll_interval:g}s\n"
         f"Señales frescas desde el último aviso: <b>{fresh_signals}</b>\n"
-        f"Filtros: pago ≤{max_payment_age_minutes:g}m · "
-        f"moneda ≤{max_token_age_minutes:g}m\n"
+        f"Filtros: pago ≤{max_payment_age_minutes:g}m · {token_age}\n"
         f"Modo: <b>{mode}</b>"
     )
 
@@ -110,6 +114,7 @@ class DexPaidSource:
         boost_threshold: float = 500.0,
         boost_buy_amount: float = 0.20,
         *,
+        require_volume_h24: bool = False,
         heartbeat_interval: float = 300.0,
         paper_mode: bool = True,
     ) -> None:
@@ -122,6 +127,7 @@ class DexPaidSource:
         self.small_boost_buy_amount = small_boost_buy_amount
         self.boost_threshold = boost_threshold
         self.boost_buy_amount = boost_buy_amount
+        self.require_volume_h24 = require_volume_h24
         self.heartbeat_interval = heartbeat_interval
         self.paper_mode = paper_mode
         self._seen: set[str] = set()
@@ -182,6 +188,11 @@ class DexPaidSource:
                     await asyncio.sleep(self.poll_interval)
                     continue
                 for c in candidates:
+                    if (
+                        self.require_volume_h24
+                        and float(c.get("volume_h24") or 0) <= 0
+                    ):
+                        continue
                     mint = c.get("mint")
                     if not mint or mint in self._seen:
                         continue

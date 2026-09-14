@@ -321,6 +321,12 @@ class UniversalTrader:
         tp4_sell: float | None = None,
         tp5_gain: float | None = None,
         tp5_sell: float | None = None,
+        tp6_gain: float | None = None,
+        tp6_sell: float | None = None,
+        tp7_gain: float | None = None,
+        tp7_sell: float | None = None,
+        tp8_gain: float | None = None,
+        tp8_sell: float | None = None,
         final_target_mc: float = 0.0,
         # STOP POR MARKET CAP absoluto: vender si el MC cae a este
         # valor, independientemente de a que precio se entro. 0 = off.
@@ -747,6 +753,9 @@ class UniversalTrader:
                 (tp3_gain, tp3_sell),
                 (tp4_gain, tp4_sell),
                 (tp5_gain, tp5_sell),
+                (tp6_gain, tp6_sell),
+                (tp7_gain, tp7_sell),
+                (tp8_gain, tp8_sell),
             ]
         )
         self.final_target_mc = float(final_target_mc or 0)
@@ -856,13 +865,13 @@ class UniversalTrader:
         #  - _position_semaphore caps simultaneous OPEN positions so background
         #    buys/exit-monitors can't drain the wallet.
         self._filter_semaphore = asyncio.Semaphore(8)
-        #: Posiciones abiertas simultaneas. Antes estaba fijo en 20, que era
-        #: no tener tope: el limite real lo ponia el saldo. Manu lo quiere
-        #: explicito en 3 -- con una reserva de solo 0,03 SOL, el freno del
-        #: saldo llega tarde y conviene decir cuantas se abren de verdad.
-        #: Sigue mandando el que se quede corto de los dos: si no hay SOL
-        #: para la tercera, no se abre aunque el tope lo permita.
-        self._position_semaphore = asyncio.Semaphore(int(max_posiciones or 20))
+        #: Posiciones abiertas simultaneas. Un valor positivo fija el tope;
+        #: cero significa sin limite configurado y deja mandar a la reserva
+        #: de saldo. El semaforo grande conserva la misma interfaz interna.
+        _position_limit = int(max_posiciones or 0)
+        self._position_semaphore = asyncio.Semaphore(
+            _position_limit if _position_limit > 0 else 1_000_000
+        )
         # Bounded concurrency for paper price-watchers (protects the RPC).
         self._watch_semaphore = asyncio.Semaphore(8)
 
@@ -1088,7 +1097,7 @@ class UniversalTrader:
         self._nombres_vistos: dict[str, float] = {}
         # Reserva mínima de SOL que nunca se gasta (para fees / no quedarse a 0).
         self.min_reserve_lamports = int(float(min_reserve_sol or 0.03) * LAMPORTS_PER_SOL)
-        self.paper_watch_secs = int(paper_watch_secs or 300)
+        self.paper_watch_secs = int(paper_watch_secs or 0)
         from paper_trading import PaperTradingEngine
 
         self.paper_engine = PaperTradingEngine(paper_trading_config)
@@ -1482,6 +1491,9 @@ class UniversalTrader:
             boost_buy_amount=float(
                 self.buy_on_dex_paid.get("boost_buy_amount", self.buy_amount)
             ),
+            require_volume_h24=bool(
+                self.buy_on_dex_paid.get("require_volume_h24", False)
+            ),
             heartbeat_interval=float(
                 self.buy_on_dex_paid.get("heartbeat_interval", 300)
             ),
@@ -1574,7 +1586,10 @@ class UniversalTrader:
         start = time.time()
         try:
             async with self._watch_semaphore:
-                while time.time() - start < self.paper_watch_secs:
+                while (
+                    self.paper_watch_secs <= 0
+                    or time.time() - start < self.paper_watch_secs
+                ):
                     await asyncio.sleep(5)
                     try:
                         st = await self.platform_implementations.curve_manager.get_pool_state(

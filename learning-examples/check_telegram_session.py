@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import sys
 
 from dotenv import load_dotenv
 from telethon import TelegramClient
@@ -18,7 +19,11 @@ async def main() -> None:
         print("Telegram API credentials are not configured")
         return
     client = TelegramClient("moontok_watcher", int(api_id), api_hash)
-    await client.connect()
+    login_requested = "--login" in sys.argv[1:]
+    if login_requested:
+        await client.start()
+    else:
+        await client.connect()
     try:
         print(f"Telegram session authorized: {await client.is_user_authorized()}")
     finally:

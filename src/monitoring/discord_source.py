@@ -94,6 +94,13 @@ class DiscordSource:
                 )
             _log_call(call, bought=token_info is not None)
             if token_info is not None:
+                token_info.additional_data = {
+                    **(token_info.additional_data or {}),
+                    "acquisition_source": f"discord/{call.get('chat') or 'unknown'}",
+                    "signal_buy_amount": float(
+                        self._config.get("buy_amount", 0) or 0
+                    ),
+                }
                 logger.info(
                     "Call de Discord -> a comprar %s (de %s)",
                     call["address"],

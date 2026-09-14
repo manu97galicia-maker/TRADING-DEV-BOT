@@ -123,6 +123,7 @@ async def get_candidates(
                 "signal_type": "boost" if is_boost else "paid",
                 "price_usd": market.price_usd if market else None,
                 "liquidity_usd": market.liquidity_usd if market else None,
+                "volume_h24": market.volume_h24 if market else None,
                 "dex_id": dex_id,
                 "migrated": migrated,
             }
