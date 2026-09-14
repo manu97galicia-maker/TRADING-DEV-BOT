@@ -6325,6 +6325,13 @@ class UniversalTrader:
             trades_dir = Path("trades")
             trades_dir.mkdir(exist_ok=True)
 
+            # DE DONDE VINO Y POR QUE SALIO. Sin estos dos campos no se puede
+            # responder "que fuente va mejor": el registro decia que se compro
+            # y a cuanto, pero no quien la trajo, asi que comparar DexScreener
+            # contra la curva del 95% era imposible aunque los datos
+            # estuvieran delante. El motivo de venta ya se pasaba a esta
+            # funcion y se tiraba sin escribirlo.
+            _senal = token_info.additional_data or {}
             log_entry = {
                 "timestamp": datetime.utcnow().isoformat(),
                 "action": action,
@@ -6334,6 +6341,8 @@ class UniversalTrader:
                 "price": price,
                 "amount": amount,
                 "tx_hash": str(tx_hash) if tx_hash else None,
+                "origen": _senal.get("acquisition_source") or "listener",
+                "motivo": reason,
             }
 
             log_file_path = trades_dir / "trades.log"
