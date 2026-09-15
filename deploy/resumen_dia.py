@@ -67,6 +67,103 @@ def _acumular_por_fuente(
     return gastado, cobrado, n
 
 
+#: Como se agrupa el motivo de salida. El orden importa: es de peor a mejor.
+_ESCALONES = (
+    ("stop", "stop loss", ("stop_loss", "panic_sell")),
+    ("muerta", "muerta / bajo entrada", ("muerta", "bajo_entrada", "abandono")),
+    ("tp1", "solo TP1 (+30%)", ("TP1",)),
+    ("tp2", "hasta TP2 (+50%)", ("TP2",)),
+    (
+        "tp3",
+        "cruzó TP3 (+70%)",
+        ("TP3", "TP4", "TP5", "TP6", "TP7", "TP8", "TP9", "TP10"),
+    ),
+)
+
+
+def _escalon(motivo: str) -> str:
+    """En que escalon murio esta venta. '?' si no se apunto el motivo."""
+    if not motivo:
+        return "?"
+    texto = str(motivo).strip()
+    # De mas alto a mas bajo: lo que importa de una moneda es HASTA DONDE
+    # llego, no por donde salio al final.
+    for clave, _, marcas in reversed(_ESCALONES):
+        if any(m.lower() in texto.lower() for m in marcas):
+            return clave
+    return "?"
+
+
+def _recorrido(ops: list[dict]) -> tuple[dict[str, str], dict[str, str]]:
+    """De que fuente vino cada moneda, y hasta que escalon llego.
+
+    De una moneda importa HASTA DONDE llego, no por donde salio al final: una
+    que cobro el TP3 y luego cerro en el stop es una ganadora, no una perdida.
+    Por eso se guarda el escalon MAS ALTO de todas sus ventas.
+    """
+    orden = [c for c, _, _ in _ESCALONES] + ["?"]
+    fuente_de: dict[str, str] = {}
+    llego: dict[str, str] = {}
+    for o in ops:
+        sim = o.get("symbol") or o.get("token_address", "?")[:6]
+        if o.get("action") == "buy":
+            fuente_de[sim] = o.get("origen") or "listener"
+        elif o.get("action") == "sell":
+            nuevo = _escalon(o.get("motivo") or "")
+            previo = llego.get(sim)
+            if previo is None or orden.index(nuevo) > orden.index(previo):
+                llego[sim] = nuevo
+    return fuente_de, llego
+
+
+def _hasta_donde(ops: list[dict]) -> None:
+    """Hasta que peldano llego cada moneda, por fuente.
+
+    ES LA TABLA QUE DECIDE EL REPARTO DE LA ESCALERA. El TP3 (+70%) lleva el
+    35% de cada posicion: si casi ninguna moneda lo cruza, ese 35% esta
+    esperando un tren que no pasa y hay que bajarlo. Si lo cruzan muchas,
+    esta bien donde esta. Sin este recuento, mover el TP3 es adivinar.
+    """
+    fuente_de, llego = _recorrido(ops)
+    if not llego:
+        return
+    print("\n\nHASTA DONDE LLEGO CADA MONEDA\n")
+    fuentes = sorted({fuente_de.get(s, "?") for s in llego})
+    etiquetas = {c: e for c, e, _ in _ESCALONES}
+    etiquetas["?"] = "sin motivo apuntado"
+    print(f"{'':24}" + "".join(f"{c:>8}" for c, _, _ in _ESCALONES) + f"{'?':>8}")
+    print("-" * (24 + 8 * (len(_ESCALONES) + 1)))
+    for f in fuentes:
+        fila = dict.fromkeys(etiquetas, 0)
+        for sim, esc in llego.items():
+            if fuente_de.get(sim, "?") == f:
+                fila[esc] = fila.get(esc, 0) + 1
+        print(
+            f"{f:<24}"
+            + "".join(f"{fila[c]:>8}" for c, _, _ in _ESCALONES)
+            + f"{fila['?']:>8}"
+        )
+    print("\n  " + " · ".join(f"{c}={e}" for c, e in etiquetas.items()))
+
+    total = len(llego)
+    cruzaron = sum(1 for e in llego.values() if e == "tp3")
+    conocidas = sum(1 for e in llego.values() if e != "?")
+    if conocidas:
+        print(
+            f"\n  CRUZARON EL +70%: {cruzaron} de {conocidas} "
+            f"({cruzaron / conocidas * 100:.0f}%)"
+        )
+        print(
+            "  Ahi esta el 35% de cada posicion. Si ese porcentaje es bajo,\n"
+            "  conviene bajar el TP3; si es alto, esta bien donde esta."
+        )
+    if total != conocidas:
+        print(
+            f"\n  ({total - conocidas} sin motivo: son de antes del 14-sep, "
+            "cuando no se apuntaba)"
+        )
+
+
 def _por_fuente(ops: list[dict]) -> None:
     """Que fuente de compra va mejor y cual peor.
 
@@ -129,6 +226,7 @@ def main() -> None:
             ultima[sim] = float(o.get("price") or 0)
 
     _por_fuente(ops)
+    _hasta_donde(ops)
     print(f"\nPOR MONEDA, ULTIMOS {dias} DIA(S)\n")
     print(
         f"{'moneda':<12}{'compras':>8}{'ventas':>7}{'puesto':>9}{'sacado':>9}{'balance':>10}"
