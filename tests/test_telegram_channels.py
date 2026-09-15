@@ -9,6 +9,9 @@ entera. Anadir MoonTok al lado de Nitro hacia ese fallo mas probable.
 
 import asyncio
 from collections.abc import Awaitable, Callable
+from pathlib import Path
+
+import yaml
 
 from monitoring.telegram_watcher import resolve_channels
 
@@ -71,3 +74,28 @@ def test_una_entidad_nula_cuenta_como_fallo() -> None:
     resueltos, fallidos = asyncio.run(resolve_channels(resolver, ["x"]))
     assert resueltos == []
     assert fallidos == ["x"]
+
+
+def test_los_canales_configurados_son_los_pedidos() -> None:
+    """Cada canal de esta lista es una fuente de compra con dinero real, asi
+    que anadir o quitar uno se ve aqui en rojo.
+
+    Van mezclados dos tipos y conviene saberlo al leer resultados:
+      - dextools_nitro, cryptolistings: hay un PAGO detras (Nitro, listing).
+      - Wagbocooks, LegendsAlphas: son CALLS, alguien opina sin pagar.
+
+    Desde el 14-sep cada compra apunta de que canal vino, asi que
+    `deploy/resumen_dia.py` los separa y se puede ver cual gana.
+    """
+    cfg = yaml.safe_load(
+        (
+            Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
+        ).read_text(encoding="utf-8")
+    )
+    canales = cfg["filters"]["telegram_calls"]["channels"]
+    assert canales == [
+        "dextools_nitro",
+        "cryptolistings",
+        "Wagbocooks",
+        "LegendsAlphas",
+    ]

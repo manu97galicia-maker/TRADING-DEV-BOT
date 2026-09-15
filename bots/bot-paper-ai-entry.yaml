@@ -468,9 +468,19 @@ filters:
     nitro_buy_amount: 0.4208
     promoted_buy_amount: 0.495
     promotion_threshold: 500
-    # Nitro de DEXTools + MoonTok (CryptoListings), que publica listings de
-    # pago. DEXTNewPairsBot y LegendsAlphas siguen fuera: son calls de canal
-    # sin pago detras, se comportan distinto y ensucian la muestra.
+    # Dos tipos de canal mezclados, y conviene saberlo al leer resultados:
+    #
+    #   dextools_nitro, cryptolistings -> hay un PAGO detras (Nitro, listing
+    #     de MoonTok). Alguien se ha gastado dinero en la moneda.
+    #   Wagbocooks, LegendsAlphas -> son CALLS. Alguien opina, sin pago.
+    #
+    # LegendsAlphas estuvo fuera por eso: "ensucia la muestra" al mezclarse
+    # con las de pago. Esa objecion ya no aplica igual, porque desde el
+    # 14-sep cada compra apunta de QUE CANAL vino (`origen` en trades.log) y
+    # `deploy/resumen_dia.py` los separa. Ahora se puede ver si un canal de
+    # calls gana o pierde en vez de discutirlo: si pierde, se quita.
+    #
+    # DEXTNewPairsBot sigue fuera.
     #
     # OJO: los nombres tienen que ser el @usuario exacto del canal y tu
     # cuenta tiene que estar dentro. Un nombre que Telegram no resuelva se
@@ -480,6 +490,7 @@ filters:
       - dextools_nitro
       - cryptolistings
       - Wagbocooks
+      - LegendsAlphas
     suffixes:
       - pump
 
