@@ -755,16 +755,41 @@ class UniversalTrader:
         # por donde va ninguna curva.
         self.wss_endpoint = wss_endpoint
 
-        # Initialize the appropriate listener with platform filtering
-        self.token_listener = ListenerFactory.create_listener(
-            listener_type=listener_type,
-            wss_endpoint=wss_endpoint,
-            geyser_endpoint=geyser_endpoint,
-            geyser_api_token=geyser_api_token,
-            geyser_auth_type=geyser_auth_type,
-            pumpportal_url=pumpportal_url,
-            platforms=[self.platform],  # Only listen for our platform
-        )
+        # Initialize the appropriate listener with platform filtering.
+        #
+        # UN LISTENER MAL CONFIGURADO NO PUEDE TUMBAR EL BOT. Pedir `geyser`
+        # sin GEYSER_ENDPOINT y GEYSER_API_TOKEN levantaba un ValueError AQUI,
+        # en el constructor: el bot no arrancaba, y con posiciones abiertas eso
+        # significa que nadie las vigila -- ni stop loss ni take profit. Es un
+        # precio desproporcionado por un fallo de configuracion, sobre todo
+        # cuando `logs` (que si esta configurado) hace el mismo trabajo algo
+        # mas lento. Se avisa a gritos en el log y se sigue.
+        try:
+            self.token_listener = ListenerFactory.create_listener(
+                listener_type=listener_type,
+                wss_endpoint=wss_endpoint,
+                geyser_endpoint=geyser_endpoint,
+                geyser_api_token=geyser_api_token,
+                geyser_auth_type=geyser_auth_type,
+                pumpportal_url=pumpportal_url,
+                platforms=[self.platform],  # Only listen for our platform
+            )
+        except ValueError as exc:
+            if listener_type.lower() == "logs" or not wss_endpoint:
+                raise
+            # Se silencia TRY400 a proposito: el traceback no aporta nada
+            # sobre un fallo de configuracion y el mensaje ya dice que falta.
+            logger.error(  # noqa: TRY400
+                "listener_type='%s' no se puede montar (%s). Se sigue con "
+                "'logs', que es mas lento pero funciona. Revisa el .env si "
+                "querias %s de verdad.",
+                listener_type, exc, listener_type,
+            )
+            self.token_listener = ListenerFactory.create_listener(
+                listener_type="logs",
+                wss_endpoint=wss_endpoint,
+                platforms=[self.platform],
+            )
 
         # Trading parameters
         self.buy_amount = buy_amount

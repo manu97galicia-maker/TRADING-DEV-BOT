@@ -156,6 +156,72 @@ def _nodo(texto: str) -> None:
             aviso(f"{clave} = {host} (nodo propio o de otro proveedor)")
 
 
+#: Fuentes de adquisicion. Si hay alguna encendida, el listener principal
+#: NO llega a arrancar: `start` lanza las fuentes y hace `return` sin tocarlo.
+FUENTES = (
+    "buy_on_dex_paid",
+    "birdeye_trending",
+    "dextools_hotpools",
+    "curva_96",
+    "telegram_calls",
+    "discord_calls",
+    "gmgn_signals",
+)
+
+
+def _listener(cfg: dict, texto_env: str) -> None:
+    """Que escucha el bot, y si el `listener_type` configurado sirve de algo.
+
+    LA TRAMPA QUE ESTO DESTAPA. `listener_type` (logs / blocks / geyser /
+    pumpportal) solo manda cuando el bot compra por el camino normal: ver
+    nacer una moneda y decidir. Pero en cuanto hay UNA fuente de adquisicion
+    encendida, el arranque lanza las fuentes y se va sin montar ese listener.
+    Cada fuente trae su propia forma de escuchar.
+
+    O sea: con fuentes activas, cambiar `listener_type` a geyser no acelera
+    NADA -- y si falta la configuracion de geyser, antes ni siquiera
+    arrancaba el bot. Vale la pena verlo escrito antes de pagar por un
+    endpoint que no se va a usar.
+    """
+    print("\n== QUE ESCUCHA ==")
+    f = cfg.get("filters", {})
+    tipo = str(f.get("listener_type") or "?")
+    activas = [
+        n for n in FUENTES if ((f.get(n) or {}).get("enabled"))
+    ]
+    hay_geyser = all(
+        any(
+            linea.split("=", 1)[0].strip() == clave
+            and linea.split("=", 1)[1].strip()
+            for linea in texto_env.splitlines()
+            if "=" in linea and not linea.strip().startswith("#")
+        )
+        for clave in ("GEYSER_ENDPOINT", "GEYSER_API_TOKEN")
+    )
+
+    if activas:
+        bien(f"fuentes de compra activas: {', '.join(activas)}")
+        aviso(
+            f"listener_type '{tipo}' NO se usa: con fuentes activas el "
+            "listener principal no arranca. Cambiarlo a geyser no cambia nada"
+        )
+    else:
+        bien(f"sin fuentes de adquisicion: manda listener_type '{tipo}'")
+        if tipo == "geyser" and not hay_geyser:
+            mal(
+                "listener_type geyser sin GEYSER_ENDPOINT/GEYSER_API_TOKEN: "
+                "el bot cae a 'logs' y avisa en el log"
+            )
+
+    if hay_geyser:
+        bien("GEYSER_ENDPOINT y GEYSER_API_TOKEN puestos")
+    else:
+        aviso(
+            "sin GEYSER_ENDPOINT/GEYSER_API_TOKEN en el .env: geyser no esta "
+            "disponible (no todos los planes de nodo lo incluyen)"
+        )
+
+
 def _modo(cfg: dict) -> None:
     print("\n== MODO ==")
     t, f = cfg.get("trade", {}), cfg.get("filters", {})
@@ -234,6 +300,7 @@ def main() -> None:
         _claves(env)
     try:
         cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+        _listener(cfg, env.read_text(encoding="utf-8") if env else "")
         _modo(cfg)
         _estrategia(cfg)
     except (OSError, yaml.YAMLError, KeyError) as exc:
