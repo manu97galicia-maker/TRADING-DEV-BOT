@@ -14,7 +14,7 @@ Lo que se temia quien lo dejo asi era reconstruir mal la venta. Eso se evita
 sin renunciar al stop: la cantidad se lee de la CADENA, no del fichero.
 """
 
-# ruff: noqa: S101, SLF001, ANN001, ANN202, TRY003
+# ruff: noqa: S101, SLF001, ANN001, ANN002, ANN003, ANN202, TRY003, PLC0415
 
 import asyncio
 import json
@@ -89,10 +89,24 @@ def test_se_permiten_las_migradas() -> None:
 
 
 def test_la_posicion_retomada_ocupa_plaza() -> None:
-    """Si no tomara el semaforo, el bot creeria tener hueco de mas y abriria
-    mas posiciones de las que el saldo aguanta."""
+    """Coge el hueco si lo hay, pero NO se queda esperando si no lo hay.
+
+    Este test miraba el codigo y exigia `async with self._position_semaphore`.
+    Eso cubria media verdad --que no se abran posiciones de mas-- y escondia
+    la otra media: con el tope lleno, `async with` deja la posicion retomada
+    ESPERANDO, sin stop loss y sin escalera, hasta que otra cierre. El dinero
+    de una posicion retomada ya esta gastado, asi que el tope no pinta nada.
+
+    Las dos mitades se comprueban de verdad, corriendolo, mas abajo:
+    `test_retomar_ocupa_el_hueco_si_lo_hay` y
+    `test_retomar_no_espera_a_que_haya_hueco`.
+    """
     cuerpo = _metodo("_reanudar_una")
-    assert "async with self._position_semaphore:" in cuerpo
+    assert "self._position_semaphore.acquire()" in cuerpo
+    assert "self._position_semaphore.release()" in cuerpo
+    assert "async with self._position_semaphore:" not in cuerpo, (
+        "vuelve a esperar hueco: una posicion viva se quedaria sin stop loss"
+    )
 
 
 # ---------------------------------------------------- comportamiento real
@@ -106,6 +120,7 @@ def _trader(tmp: Path, saldo: float) -> UniversalTrader:
         get_token_account_balance=lambda _a: asyncio.sleep(0, result=saldo)
     )
     t.wallet = SimpleNamespace(get_associated_token_address=lambda _m, _p: "ATA")
+    t.platform_implementations = SimpleNamespace()
     return t
 
 
@@ -188,3 +203,93 @@ def test_un_fichero_ilegible_no_tumba_el_arranque(tmp_path: Path) -> None:
 def test_sin_posiciones_no_hace_nada(tmp_path: Path) -> None:
     trader = _trader(tmp_path, saldo=0.0)
     asyncio.run(trader._reanudar_posiciones())  # no debe lanzar
+
+
+# ------------------------------- retomar no espera hueco en el tope de 5
+
+
+def _trader_con_tope(tmp: Path, saldo: float, tope: int) -> UniversalTrader:
+    """Como `_trader`, pero con el semaforo de posiciones de verdad."""
+    t = _trader(tmp, saldo)
+    t.max_posiciones = tope
+    t._position_semaphore = asyncio.Semaphore(tope)
+    return t
+
+
+def test_retomar_no_espera_a_que_haya_hueco(tmp_path: Path, monkeypatch) -> None:
+    """EL AGUJERO: el semaforo cuenta cuantas posiciones se pueden ABRIR.
+
+    Al retomar, el dinero YA esta gastado: la moneda esta viva en la wallet.
+    Si el tope estaba lleno, el `async with` de antes dejaba la posicion
+    esperando un hueco -- sin stop loss ni take profit -- hasta que otra
+    cerrara, que puede ser nunca. Justo el fallo que se creia arreglado.
+    """
+    trader = _trader_con_tope(tmp_path, saldo=3_000_000, tope=1)
+    vigiladas: list[str] = []
+
+    async def _falso_token_info(mint, *_a, **_k):
+        return SimpleNamespace(
+            mint=mint,
+            symbol="TEST",
+            token_program_id=TOKEN_PROGRAM,
+            platform=SimpleNamespace(value="pump_fun"),
+        )
+
+    async def _falso_monitor(_self, token_info, _res):
+        vigiladas.append(str(token_info.mint))
+
+    from trading import token_builder as tb
+
+    monkeypatch.setattr(tb, "build_pumpfun_token_info", _falso_token_info)
+    monkeypatch.setattr(
+        UniversalTrader, "_monitor_tiered_exit", _falso_monitor, raising=False
+    )
+
+    async def _correr() -> None:
+        # El unico hueco del tope ya esta ocupado por otra posicion.
+        await trader._position_semaphore.acquire()
+        p = _marcador(tmp_path, MINT, 1e-7, 3_000_000)
+        await trader._reanudar_una(json.loads(p.read_text()), p)
+        # La tarea de vigilancia se lanza con create_task: darle su turno.
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+
+    asyncio.run(_correr())
+    assert vigiladas == [MINT], (
+        "la posicion retomada se quedo esperando hueco: sin stop loss"
+    )
+
+
+def test_retomar_ocupa_el_hueco_si_lo_hay(tmp_path: Path, monkeypatch) -> None:
+    """Con sitio libre si se coge, para que el bot no abra otra encima."""
+    trader = _trader_con_tope(tmp_path, saldo=3_000_000, tope=1)
+    dentro: list[bool] = []
+
+    async def _falso_token_info(mint, *_a, **_k):
+        return SimpleNamespace(
+            mint=mint,
+            symbol="TEST",
+            token_program_id=TOKEN_PROGRAM,
+            platform=SimpleNamespace(value="pump_fun"),
+        )
+
+    async def _falso_monitor(_self, _ti, _res):
+        dentro.append(trader._position_semaphore.locked())
+
+    from trading import token_builder as tb
+
+    monkeypatch.setattr(tb, "build_pumpfun_token_info", _falso_token_info)
+    monkeypatch.setattr(
+        UniversalTrader, "_monitor_tiered_exit", _falso_monitor, raising=False
+    )
+
+    async def _correr() -> None:
+        p = _marcador(tmp_path, MINT, 1e-7, 3_000_000)
+        await trader._reanudar_una(json.loads(p.read_text()), p)
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+
+    asyncio.run(_correr())
+    assert dentro == [True], "no cogio el hueco: el bot abriria una posicion de mas"
+    # Y lo suelta al terminar, o el hueco se perderia para siempre.
+    assert not trader._position_semaphore.locked()

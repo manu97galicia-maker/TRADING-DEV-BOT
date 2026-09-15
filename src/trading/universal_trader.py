@@ -930,9 +930,8 @@ class UniversalTrader:
         #:
         #: Manda siempre el que se quede corto de los dos: si no hay SOL para
         #: la siguiente, no se abre aunque el tope lo permita.
-        self._position_semaphore = asyncio.Semaphore(
-            int(max_posiciones or TOPE_DURO_POSICIONES)
-        )
+        self.max_posiciones = int(max_posiciones or TOPE_DURO_POSICIONES)
+        self._position_semaphore = asyncio.Semaphore(self.max_posiciones)
         # Bounded concurrency for paper price-watchers (protects the RPC).
         self._watch_semaphore = asyncio.Semaphore(8)
 
@@ -2605,8 +2604,31 @@ class UniversalTrader:
         )
 
         async def _vigilar() -> None:
-            async with self._position_semaphore:
+            # VIGILAR NUNCA ESPERA SU TURNO. Antes esto era un `async with` sobre
+            # el semaforo de posiciones, y ahi habia un agujero serio: el
+            # semaforo cuenta cuantas posiciones se pueden ABRIR a la vez. Si al
+            # reiniciar ya habia 5 monedas vigilandose, la sexta que se retomaba
+            # se quedaba esperando un hueco -- sin stop loss y sin take profit --
+            # hasta que alguna de las otras cerrara. Que puede ser nunca.
+            #
+            # El dinero de una posicion retomada YA esta gastado: el tope no
+            # pinta nada aqui, lo unico que hace es dejar de mirar una moneda
+            # que esta viva. Se coge el hueco si lo hay (para que el bot no
+            # abra otra encima) y, si no lo hay, se vigila igual.
+            hueco = not self._position_semaphore.locked()
+            if hueco:
+                await self._position_semaphore.acquire()
+            else:
+                logger.warning(
+                    "%s se retoma SIN ocupar hueco (ya hay %s posiciones): "
+                    "se vigila igual, el dinero ya esta dentro.",
+                    sym, self.max_posiciones,
+                )
+            try:
                 await self._monitor_tiered_exit(token_info, rehecho)
+            finally:
+                if hueco:
+                    self._position_semaphore.release()
 
         asyncio.create_task(_vigilar())  # noqa: RUF006
 
