@@ -25,27 +25,35 @@ suman 98 limpio.
 
 | | Sube un | O sea | Vende | Acumulado | Stop pasa a |
 |---|---|---|---|---|---|
-| TP1 | +30% | x1,3 | 30% | 30% | precio de compra |
-| TP2 | +50% | x1,5 | 10% | 40% | +30% |
-| TP3 | +70% | x1,7 | **35%** | 75% | +50% |
-| TP4 | +230% | x3,3 | 6% | 81% | +70% |
-| TP5 | +400% | x5 | 6% | 87% | x3,3 |
-| TP6 | +600% | x7 | 6% | 93% | x5 |
-| TP7 | +900% | x10 | 1,5% | 94,5% | x7 |
-| TP8 | +1.900% | x20 | 1,5% | 96% | x10 |
-| TP9 | +4.900% | x50 | 1% | 97% | x20 |
-| TP10 | +9.900% | x100 | 1% | 98% | x50 |
+| TP1 | +25% | x1,25 | 20% | 20% | precio de compra |
+| TP2 | +48% | x1,48 | 25% | 45% | +25% |
+| TP3 | +80% | x1,8 | **27,5%** | 72,5% | +48% |
+| TP4 | +150% | x2,5 | 6,5% | 79% | +80% |
+| TP5 | +230% | x3,3 | 5,5% | 84,5% | x2,5 |
+| TP6 | +400% | x5 | 4,5% | 89% | x3,3 |
+| TP7 | +600% | x7 | 3,5% | 92,5% | x5 |
+| TP8 | +900% | x10 | 2,5% | 95% | x7 |
+| TP9 | +1.400% | x15 | 1,5% | 96,5% | x10 |
+| TP10 | +1.900% | x20 | 1,5% | 98% | x15 |
 | moonbag | — | — | **2%** | 100% | lo vende Manu a mano |
 
-**Del TP4 en adelante son múltiplos, no porcentajes sueltos.** `tp4_gain: 2.30`
-significa x3,3, no +2,3%. Es el error que más caro saldría: leído mal, el
+**Del TP4 en adelante son múltiplos, no porcentajes sueltos.** `tp4_gain: 1.50`
+significa x2,5, no +1,5%. Es el error que más caro saldría: leído mal, el
 peldaño de x10 se dispararía a +9% y vendería casi todo enseguida. Hay una
 prueba que lo vigila (`test_una_ganancia_de_9_significa_x10_y_no_mas_9_por_ciento`).
 
-**El TP3 es el peldaño que decide.** Concentra el 35% de la posición. Una
-moneda que se queda en +60% y se da la vuelta deja cobrado el 40%; una que
-cruza el +70% deja el 75%. Toda la rentabilidad depende de cuántas cruzan esa
-línea, y **eso todavía no está medido**.
+**El TP3 vende "la mitad de lo que queda", traducido.** Lo pedido fue eso; el
+bot solo sabe vender fracciones de la compra **original**, y a esa altura queda
+el 55% (se vendió 20% + 25%). La mitad de 55 es 27,5, que es lo que hay
+escrito. Poner `0.50` ahí vendería el 50% de la compra, casi el doble.
+Vigilado por `test_el_tercer_peldano_es_la_mitad_de_lo_que_queda`.
+
+**La escalera termina en x20**, no en x100 como antes. Una moneda que pase de
+x20 ya no tiene peldaños por encima: lo único que sigue dentro es el 2%.
+
+**El TP3 sigue siendo el peldaño que decide**, pero menos que antes: concentra
+el 27,5% en vez del 35%, y por debajo ya hay 45% cobrado en vez de 40%. Cuántas
+monedas cruzan el +80% sigue sin estar medido.
 
 ### Medido sobre recorridos de precio reales
 
@@ -54,10 +62,17 @@ Simulaciones con las funciones de verdad (`tests/test_tp_sl_recorridos.py`):
 | Escenario | Resultado | Queda |
 |---|---|---|
 | Rug tocando justo el −18% | −18,0% | 0% |
-| +30% y vuelta a la entrada | **+9,3%** | 0% |
-| Se queda en +60% y cae | +26,5% | 0% |
-| Llega a +70% y se hunde | +51,8% | 0% |
-| Escalera entera hasta x100 | +501% | 2% |
+| +25% y vuelta a la entrada | **+5,2%** | 0% |
+| Se queda en +45% y cae | +5,2% | 0% |
+| Llega a +80% y se hunde | +52,9% | 0% |
+| Escalera entera hasta x20 | +210,4% | 2% |
+
+**El aviso que no hay que perder de vista:** el primer peldaño asegura +5,2% y
+el stop cuesta −18%. Un ganador que solo toca el TP1 no cubre a un perdedor.
+Lo que evita que eso sea un problema es que tras el TP1 el suelo sube al precio
+de compra: a partir de ahí esa posición ya no puede terminar en rojo. Con el
+reparto anterior (30% al +30%) el TP1 aseguraba +9,3%; este salta más veces
+pero asegura menos cada vez.
 
 ---
 
@@ -71,7 +86,7 @@ Simulaciones con las funciones de verdad (`tests/test_tp_sl_recorridos.py`):
 | `venta_muerta_seg` / `_gain` | 180 / 0.02 | A los 3 min mira **una vez**: si no ha hecho +2%, vende entera. Si va por encima, no vuelve a preguntar nunca |
 | `venta_bajo_entrada_seg` | 180 | 3 min **seguidos** bajo la compra. El contador se reinicia si recupera |
 | `anti_rug_ratio` / `_seg` | 2.0 / 4 | Las ventas doblan a las compras en 4 s → fuera |
-| `max_hold_time` | **0** | Sin reloj. Quitado a propósito para que los x10–x100 tengan tiempo |
+| `max_hold_time` | **0** | Sin reloj. Quitado a propósito para que los x10–x20 tengan tiempo |
 | `abandonar_tras_seg` | 86400 | Tope duro de 24 h vigilando una posición invendible |
 | `trailing_stop_percentage` | 0 | Desactivado |
 
@@ -325,7 +340,7 @@ funciona.**
   «connecting», que no es «conectado». Comprobar
   `wc -l trades/telegram_calls.log`.
 - **DEXTools**: no arranca, falta la clave.
-- **Cuántas monedas cruzan el +70%**: es lo que decide si la escalera está bien
+- **Cuántas monedas cruzan el +80%**: es lo que decide si la escalera está bien
   repartida. Sin eso, cualquier ajuste del TP3 es adivinar.
 - **ROI por caller**: se empezó a grabar el 14-sep. Las anteriores salen como
   `listener`.

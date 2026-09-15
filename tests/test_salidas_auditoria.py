@@ -54,11 +54,22 @@ def test_una_ganancia_de_9_significa_x10_y_no_mas_9_por_ciento() -> None:
 
 
 def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
-    assert _vendido_hasta(1.29) == 0.0
+    assert _vendido_hasta(1.24) == 0.0
 
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
-    esperado = {1.30: 0.30, 1.50: 0.40, 1.70: 0.75, 3.30: 0.81, 5.0: 0.87, 7.0: 0.93}
+    esperado = {
+        1.25: 0.20,
+        1.48: 0.45,
+        1.80: 0.725,
+        2.50: 0.79,   # x2,5
+        3.30: 0.845,  # x3,3
+        5.0: 0.89,
+        7.0: 0.925,
+        10.0: 0.95,
+        15.0: 0.965,
+        20.0: 0.98,   # el ultimo peldano: solo queda el moonbag
+    }
     for multiplo, acumulado in esperado.items():
         assert round(_vendido_hasta(multiplo), 6) == acumulado, f"fallo en x{multiplo}"
 

@@ -33,16 +33,16 @@ def _peldanos() -> list[tuple[float, float]]:
 
 def test_los_peldanos_son_los_pedidos() -> None:
     assert _peldanos() == [
-        (0.30, 0.30),
-        (0.50, 0.10),
-        (0.70, 0.35),
-        (2.30, 0.06),  # 3,3x
-        (4.00, 0.06),  # 5x
-        (6.00, 0.06),  # 7x
-        (9.00, 0.015),  # x10
+        (0.25, 0.20),
+        (0.48, 0.25),
+        (0.80, 0.275),  # la mitad del 55% que queda a esa altura
+        (1.50, 0.065),  # x2,5
+        (2.30, 0.055),  # x3,3
+        (4.00, 0.045),  # x5
+        (6.00, 0.035),  # x7
+        (9.00, 0.025),  # x10
+        (14.00, 0.015),  # x15
         (19.00, 0.015),  # x20
-        (49.00, 0.010),  # x50
-        (99.00, 0.010),  # x100
     ]
 
 
@@ -69,20 +69,31 @@ def test_el_stop_sube_a_la_entrada_tras_el_primer_tp() -> None:
 
 
 def test_no_se_cierra_ninguna_posicion_por_reloj() -> None:
-    """0 = sin reloj. Con 7200 los peldanos de x10 a x100 no se disparaban
+    """0 = sin reloj. Con 7200 los peldanos de x10 a x20 no se disparaban
     nunca: el reloj vendia antes de que la moneda llegara."""
     assert _trade()["max_hold_time"] == 0
 
 
 def test_los_peldanos_lejanos_cobran_una_salida_de_verdad() -> None:
     """Los de arriba son los que cobran cuando una sale de verdad."""
-    lejanos = [(g, v) for g, v in _peldanos() if g >= 2.0]
+    lejanos = [(g, v) for g, v in _peldanos() if g >= 1.5]
     assert len(lejanos) == 7
-    assert round(sum(v for _, v in lejanos), 6) == 0.23
+    assert round(sum(v for _, v in lejanos), 6) == 0.255
+
+
+def test_la_escalera_termina_en_x20() -> None:
+    """Lo pedido: el resto repartido en escalones HASTA x20.
+
+    Antes subia hasta x100. La consecuencia de cortar ahi hay que tenerla
+    escrita: una moneda que pase de x20 ya no tiene peldanos por encima, y
+    lo unico que sigue dentro es el 2% del moonbag.
+    """
+    ganancias = [g for g, _ in _peldanos()]
+    assert max(ganancias) == 19.00
 
 
 def test_los_peldanos_altos_tienen_tiempo_de_llegar() -> None:
-    """Si vuelve a ponerse un reloj corto, los peldanos de x10 a x100 dejan
+    """Si vuelve a ponerse un reloj corto, los peldanos de x10 a x20 dejan
     de tener sentido y este test avisa."""
     t = _trade()
     hay_altos = any(g >= 9.0 for g, _ in _peldanos())
@@ -103,13 +114,18 @@ def test_el_abandono_no_depende_del_reloj_de_posicion() -> None:
 
 
 def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:
-    """Aviso permanente: el primer peldano cobra +9% de la posicion (el 30%
-    de un +30%) y el stop cuesta -18%. Un ganador que solo llega al primer
+    """Aviso permanente: el primer peldano cobra +5% de la posicion (el 20%
+    de un +25%) y el stop cuesta -18%. Un ganador que solo llega al primer
     peldano NO cubre a un perdedor, asi que hay que acertar bastante mas de
     la mitad de las veces solo para empatar.
 
+    Y con este reparto el aviso PESA MAS que con el anterior: alli el primer
+    peldano dejaba +9% (el 30% de un +30%), aqui deja +5%. Bajar el primer
+    objetivo hace que salte mas veces, pero cada vez que salta asegura menos.
+    Lo que compensa es que el stop sube al precio de compra en cuanto salta.
+
     Esto no es un fallo: el reparto esta echado adelante a proposito y la
-    ganancia de verdad esta en los peldanos de +70% para arriba. El test
+    ganancia de verdad esta en los peldanos de +48% para arriba. El test
     esta para que nadie lo de por supuesto sin verlo escrito.
     """
     t = _trade()
@@ -118,7 +134,21 @@ def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:
 
 
 def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
-    """30% al +30%, 10% al +50%, 35% al +70%: tres cuartos de la posicion."""
-    cerca = [(g, v) for g, v in _peldanos() if g < 2.0]
-    assert cerca == [(0.30, 0.30), (0.50, 0.10), (0.70, 0.35)]
-    assert round(sum(v for _, v in cerca), 6) == 0.75
+    """20% al +25%, 25% al +48%, y al +80% la MITAD DE LO QUE QUEDA."""
+    cerca = [(g, v) for g, v in _peldanos() if g < 1.5]
+    assert cerca == [(0.25, 0.20), (0.48, 0.25), (0.80, 0.275)]
+    assert round(sum(v for _, v in cerca), 6) == 0.725
+
+
+def test_el_tercer_peldano_es_la_mitad_de_lo_que_queda() -> None:
+    """LA TRADUCCION QUE SE PUEDE EQUIVOCAR, y por eso esta fijada aqui.
+
+    Lo pedido fue "al +80% vende la mitad de lo que queda". El bot no sabe
+    vender fracciones de lo que queda: todos sus peldanos son fraccion de la
+    compra ORIGINAL. A esa altura queda el 55% (se vendio 20% + 25%), asi
+    que la mitad es el 27,5% de la compra. Poner 0.50 ahi venderia el 50%
+    de la compra -- casi el doble de lo pedido.
+    """
+    cerca = _peldanos()[:3]
+    queda_antes_del_tercero = 1 - cerca[0][1] - cerca[1][1]
+    assert round(cerca[2][1], 6) == round(queda_antes_del_tercero / 2, 6)

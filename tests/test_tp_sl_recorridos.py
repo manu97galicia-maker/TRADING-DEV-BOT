@@ -156,21 +156,26 @@ def test_tras_el_primer_tp_la_operacion_ya_no_pierde() -> None:
 
 
 def test_los_tres_peldanos_de_cerca_y_vuelta_atras() -> None:
-    """Llega al +70%, cobra 75% de la posicion y el suelo queda en el +50%."""
-    r = simula([1.0, 1.31, 1.52, 1.71, 1.60, 1.50])
+    """Llega al +80%, cobra 72,5% de la posicion y el suelo queda en el +48%.
+
+    El trinquete va un peldano por detras: cobrado el tercero, el suelo sube
+    al precio del SEGUNDO. Deja sitio para que la moneda respire y aun asi
+    cada cobro asegura lo ya ganado.
+    """
+    r = simula([1.0, 1.26, 1.49, 1.81, 1.60, 1.48])
     assert r["peldanos"] == [1, 2, 3]
     assert r["paro_por_stop"]
-    assert round(r["suelo_final"], 4) == 1.50
+    assert round(r["suelo_final"], 4) == 1.48
     assert r["resultado"] > 0.5
 
 
 def test_un_salto_de_golpe_cobra_todos_los_peldanos_que_deja_atras() -> None:
-    """Si el precio salta a x7 en un tick, no se pierden los seis de abajo:
+    """Si el precio salta a x7 en un tick, no se pierden los siete de abajo:
     se venden todos, a x7, que es el precio al que se esta vendiendo."""
     r = simula([1.0, 7.0])
-    assert r["peldanos"] == [1, 2, 3, 4, 5, 6]
+    assert r["peldanos"] == [1, 2, 3, 4, 5, 6, 7]
     assert not r["paro_por_stop"]
-    assert round(r["restante_pct"], 6) == 0.07
+    assert round(r["restante_pct"], 6) == 0.075
 
 
 def test_ni_un_x100_toca_el_moonbag() -> None:
