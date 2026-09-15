@@ -1136,6 +1136,10 @@ class UniversalTrader:
         # Regimen aparte de las que entran por avance de curva: cupo de
         # compras y corte por perdidas propios, para poder probarlo sin que
         # se mezcle con el resto.
+        #: Precio mas alto visto en cada moneda MIENTRAS se vigilaba. No es el
+        #: maximo historico de la moneda: lo de antes de comprar y lo de
+        #: despues de salir no se ve. Es "hasta donde llego estando dentro".
+        self._pico_visto: dict[str, float] = {}
         self._compras_curva96 = 0
         self._perdidas_curva96 = 0
         self._parado_por_perdidas = False
@@ -5250,6 +5254,11 @@ class UniversalTrader:
                 # stop_loss_percentage desde el máximo, se vende TODO lo que queda
                 # (incluido el moonbag) en vez de dejarlo caer a cero.
                 peak_price = max(peak_price, price)
+                # Se apunta para que la VENTA pueda registrarlo. Hasta ahora
+                # el pico solo vivia en esta variable y se perdia al cerrar
+                # la posicion, asi que despues no habia forma de saber hasta
+                # donde habia llegado una moneda ni si se vendio pronto.
+                self._pico_visto[str(token_info.mint)] = peak_price
                 last_price = price
 
                 # TRINQUETE POR MARKET CAP. Va ANTES del trailing porcentual a
@@ -6502,6 +6511,10 @@ class UniversalTrader:
                 "tx_hash": str(tx_hash) if tx_hash else None,
                 "origen": _senal.get("acquisition_source") or "listener",
                 "motivo": reason,
+                # Hasta donde llego la moneda mientras se vigilaba. Sirve para
+                # ver si se vendio pronto: con la entrada y el pico se sabe
+                # cuanto recorrido se dejo encima de la mesa.
+                "pico": self._pico_visto.get(str(token_info.mint)),
             }
 
             log_file_path = trades_dir / "trades.log"
