@@ -12,6 +12,7 @@ NO imprime ningun secreto: de las claves solo dice si estan o no.
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -118,6 +119,41 @@ def _claves(env: Path) -> None:
             aviso(f"{clave} sin poner -> {para} no arranca")
         else:
             mal(f"{clave} sin poner -> {para}")
+    _nodo(texto)
+
+
+def _nodo(texto: str) -> None:
+    """Que nodo se esta usando. Se imprime el HOST, nunca la clave.
+
+    Importa para el stop loss y los take profit: cada posicion abierta pide el
+    precio UNA VEZ POR SEGUNDO. Con el endpoint publico y gratuito de Solana
+    eso son 429 a los pocos segundos, y cuando no hay precio la escalera no
+    puede dispararse -- a los 40 segundos seguidos sin precio el bot suelta la
+    posicion. O sea: un nodo malo se parece exactamente a "los take profit no
+    saltan".
+    """
+    for clave in ("SOLANA_NODE_RPC_ENDPOINT", "SOLANA_NODE_WSS_ENDPOINT"):
+        valor = ""
+        for linea in texto.splitlines():
+            if linea.strip().startswith("#") or "=" not in linea:
+                continue
+            k, v = linea.split("=", 1)
+            if k.strip() == clave:
+                valor = v.strip()
+        if not valor:
+            continue
+        m = re.match(r"\w+://([^/?]+)", valor)
+        host = m.group(1) if m else "?"
+        # La clave de API viaja en la ruta o en el parametro; el host no la lleva.
+        if "mainnet-beta.solana.com" in host:
+            mal(
+                f"{clave} = {host}: es el nodo PUBLICO gratuito. Limita a pocas "
+                "peticiones y el precio se corta -> la escalera no dispara"
+            )
+        elif "helius" in host.lower():
+            bien(f"{clave} = {host} (Helius)")
+        else:
+            aviso(f"{clave} = {host} (nodo propio o de otro proveedor)")
 
 
 def _modo(cfg: dict) -> None:
