@@ -247,6 +247,10 @@ async def _recoger(  # noqa: PLR0913
             "pago_y_boost": bool(
                 entry.get("_from_boosts") and entry.get("_from_profiles")
             ),
+            # Los enlaces sociales vienen ya en la respuesta del feed, asi que
+            # detectar que una moneda estrena redes no cuesta NI UNA llamada
+            # extra. Quien decide si eso es senal es `dexpaid_source`.
+            "links": entry.get("links") or [],
             "price_usd": market.price_usd if market else None,
             "liquidity_usd": market.liquidity_usd if market else None,
             "market_cap": market.market_cap if market else None,

@@ -19,6 +19,7 @@ from statistics import median
 from time import monotonic
 
 from interfaces.core import TokenInfo
+from monitoring.redes_sociales import RedesVistas
 from trading.token_builder import (
     build_generic_token_info,
     build_pumpfun_token_info,
@@ -86,6 +87,14 @@ TRAMOS_IMPORTE: tuple[dict[str, float], ...] = (
     {"hasta": 50, "pumpfun": 0.325, "otros": 0.234},
     {"hasta": 0, "pumpfun": 0.39, "otros": 0.26},
 )
+
+#: SOL que se suman cuando la moneda ESTRENA redes sociales.
+#:
+#: Es una suma y no un tramo aparte a proposito. Pagar el perfil de
+#: DexScreener es, en la practica, poner las redes: muchas monedas daran las
+#: dos senales a la vez. Con una fuente aparte se compraria dos veces la misma
+#: moneda; sumando, la senal doble sube la apuesta una vez y ya.
+EXTRA_REDES_NUEVAS = 0.1
 
 #: Multiplicador cuando la moneda pago el perfil Y ademas boosts.
 FACTOR_PAGO_Y_BOOST = 1.2
@@ -224,6 +233,8 @@ class DexPaidSource:
         # no llega a verse nunca.
         self.candidatos_por_vuelta = candidatos_por_vuelta
         self._seen: set[str] = set()
+        # Recuerda que redes tenia cada moneda, para saber cuando estrena una.
+        self._redes = RedesVistas()
         self._freshness = DexPaidFreshnessTracker()
         self._primed = False
         self._last_heartbeat = 0.0
@@ -315,16 +326,30 @@ class DexPaidSource:
         _factor *= factor_por_boosts(
             boosts, self.boost_extra_umbral, self.boost_extra_factor
         )
+        # REDES RECIEN ESTRENADAS. Un dev que anade Twitter o web esta
+        # invirtiendo en su moneda. No es una fuente aparte: pagar el perfil
+        # de DexScreener ES poner las redes, asi que muchas darian las dos
+        # senales y se compraria dos veces lo mismo. Suma sobre el importe.
+        _redes_nuevas = self._redes.novedades(mint, c.get("links"))
+        _importe = _factor * importe_por_senal(
+            boosts,
+            de_fuera=_de_fuera,
+            pago_y_boost=bool(c.get("pago_y_boost")),
+        )
+        if _redes_nuevas:
+            _importe += EXTRA_REDES_NUEVAS
+            logger.info(
+                "%s estrena redes (%s): +%.2f SOL sobre la senal",
+                token_info.symbol or mint[:6],
+                ", ".join(sorted(_redes_nuevas)),
+                EXTRA_REDES_NUEVAS,
+            )
         token_info.additional_data = {
             **(token_info.additional_data or {}),
             "acquisition_source": "dexscreener",
             "dexscreener_boosts": boosts,
-            "signal_buy_amount": _factor
-            * importe_por_senal(
-                boosts,
-                de_fuera=_de_fuera,
-                pago_y_boost=bool(c.get("pago_y_boost")),
-            ),
+            "redes_nuevas": sorted(_redes_nuevas),
+            "signal_buy_amount": _importe,
         }
         self._seen.add(mint)
         self._fresh_signals += 1
@@ -459,6 +484,10 @@ class DexPaidSource:
                 ritmo=self._ritmo(),
             )
         )
+        # Se aprovecha el latido para guardar la foto de las redes. Sin esto,
+        # un reinicio la perderia y el bot creeria que TODAS las monedas del
+        # feed estrenan redes, comprando de golpe por una senal vieja.
+        self._redes.guardar()
         self._last_heartbeat = now
         self._fresh_signals = 0
         self._vistas = 0
