@@ -39,6 +39,7 @@ from trading.position import Position
 from trading.panic import panic_time
 from trading.ganancia import Ganancia
 from trading.reserva import reserva as _reserva_moneda, suelta as _suelta_moneda
+from monitoring.volumen import precio_en_vivo
 from trading.tiered_exit import (
     build_tiers,
     moonbag_fraction,
@@ -337,6 +338,8 @@ class UniversalTrader:
         extreme_fast_token_amount: int = 30,
         # Exit strategy configuration
         exit_strategy: str = "time_based",
+        precio_stream_seg: float = 0.0,
+        tick_stream_seg: float = 0.25,
         take_profit_percentage: float | None = None,
         stop_loss_percentage: float | None = None,
         max_hold_time: int | None = None,
@@ -801,6 +804,11 @@ class UniversalTrader:
 
         # Exit strategy parameters
         self.exit_strategy = exit_strategy.lower()
+        #: Segundos que se acepta el precio del stream antes de volver a
+        #: preguntar al nodo. 0 apaga el stream y deja el comportamiento de
+        #: siempre (una consulta al nodo por vuelta).
+        self.precio_stream_seg = float(precio_stream_seg or 0)
+        self.tick_stream_seg = float(tick_stream_seg or 0)
         self.take_profit_percentage = take_profit_percentage
         self.stop_loss_percentage = stop_loss_percentage
         self.max_hold_time = max_hold_time
@@ -1164,6 +1172,11 @@ class UniversalTrader:
         #: maximo historico de la moneda: lo de antes de comprar y lo de
         #: despues de salir no se ve. Es "hasta donde llego estando dentro".
         self._pico_visto: dict[str, float] = {}
+        #: Cuando se le pregunto al nodo por ultima vez, y que contesto. Con
+        #: esto el monitor puede dar vueltas rapidas usando el precio del
+        #: stream sin gastar ni una peticion de mas (ver `_precio_rapido`).
+        self._ultima_rpc: dict[str, float] = {}
+        self._ultimo_precio: dict[str, float] = {}
         self._compras_curva96 = 0
         self._perdidas_curva96 = 0
         self._parado_por_perdidas = False
@@ -4889,6 +4902,75 @@ class UniversalTrader:
                 pass
         return False
 
+    async def _precio_rapido(
+        self, mint: str, pool_address: "Pubkey", curve_manager: object
+    ) -> float:
+        """Precio de la curva: del stream si lo hay, y si no del nodo.
+
+        POR QUE EXISTE. El precio de una bonding curve solo cambia cuando
+        alguien opera, y cada operacion publica en su TradeEvent las reservas
+        virtuales que quedan despues -- que es de donde sale el precio. El bot
+        ya esta suscrito a ese stream, asi que tenia el precio exacto delante
+        y aun asi le preguntaba al nodo una vez por segundo. Eso es hasta un
+        segundo tarde (justo lo que dura un pico) y cinco peticiones por
+        segundo del presupuesto del nodo con cinco posiciones abiertas.
+
+        LO QUE NO CAMBIA: el nodo se sigue consultando a su ritmo de siempre
+        (`price_check_interval`). No es redundancia, es el unico modo de
+        notar que el stream se ha caido: un websocket cortado no avisa, deja
+        de mandar eventos, y desde aqui eso es idéntico a "no hay
+        operaciones". Sin esa consulta periodica una posicion podria quedarse
+        mirando un precio congelado mientras la moneda se hunde de verdad, y
+        el stop loss no saltaria nunca.
+
+        Entre consulta y consulta se usa el stream, que es donde se gana la
+        velocidad. Si tampoco hay stream se devuelve el ultimo precio sabido:
+        preguntar al nodo mas a menudo de lo configurado es justo lo que este
+        cambio viene a evitar.
+
+        Raises:
+            Lo que lance el nodo. El monitor lo recoge para pasarse al DEX,
+            que es como detecta que una moneda migro.
+        """
+        # Con el stream apagado se pregunta al nodo SIEMPRE, sin pasar por la
+        # cache. Es el comportamiento de siempre y tiene que quedar identico:
+        # quien marca el ritmo entonces es el bucle, que duerme
+        # `price_check_interval` entre vueltas. Dejar la cache puesta aqui
+        # haria que una vuelta que llega un pelo pronto devolviera el precio
+        # anterior en vez de uno fresco -- una diferencia pequena, pero en el
+        # camino por el que pasa el stop loss.
+        if self.precio_stream_seg <= 0:
+            precio = await curve_manager.calculate_price(pool_address)
+            self._ultima_rpc[mint] = monotonic()
+            self._ultimo_precio[mint] = precio
+            return precio
+
+        ahora = monotonic()
+        toca_nodo = (ahora - self._ultima_rpc.get(mint, 0.0)) >= self.price_check_interval
+        if not toca_nodo:
+            precio = precio_en_vivo(mint, self.precio_stream_seg)
+            if precio is not None:
+                return precio
+            ultimo = self._ultimo_precio.get(mint)
+            if ultimo is not None:
+                return ultimo
+        precio = await curve_manager.calculate_price(pool_address)
+        self._ultima_rpc[mint] = monotonic()
+        self._ultimo_precio[mint] = precio
+        return precio
+
+    def _tick_vigilancia(self) -> float:
+        """Cada cuanto da una vuelta el monitor de salida.
+
+        Con el precio del stream encendido la vuelta es corta a proposito: es
+        lo que hace que un take profit se cobre en la operacion y no hasta un
+        segundo despues. No cuesta peticiones al nodo -- `_precio_rapido` lo
+        consulta a su ritmo pase lo que pase.
+        """
+        if self.precio_stream_seg > 0 and self.tick_stream_seg > 0:
+            return min(self.price_check_interval, self.tick_stream_seg)
+        return self.price_check_interval
+
     async def _monitor_tiered_exit(
         self, token_info: TokenInfo, buy_result: TradeResult
     ) -> None:
@@ -5123,7 +5205,9 @@ class UniversalTrader:
                         # comia el presupuesto de RPC que necesita el stop
                         # loss. El precio de una migrada vive en el DEX.
                         raise _CurvaMigrada
-                    price = await curve_manager.calculate_price(pool_address)
+                    price = await self._precio_rapido(
+                        str(token_info.mint), pool_address, curve_manager
+                    )
                     _sin_precio = 0
                 except Exception:
                     # La curva ya no se puede leer: casi siempre porque la
@@ -5634,10 +5718,12 @@ class UniversalTrader:
                         )
                     break
 
-                await asyncio.sleep(self.price_check_interval)
+                await asyncio.sleep(self._tick_vigilancia())
 
             except Exception:
                 logger.exception("Error in tiered exit monitor")
+                # Aqui NO se usa el tick corto: si algo esta fallando, dar
+                # vueltas mas deprisa solo llena el log mas deprisa.
                 await asyncio.sleep(self.price_check_interval)
 
         # Marca para la proxima compra: si cerro por SL, la siguiente va reducida.

@@ -40,12 +40,36 @@ def test_la_bandera_arranca_de_la_compra() -> None:
 
 
 def test_no_se_pide_la_curva_cuando_ya_se_sabe_que_migro() -> None:
+    """El corte tiene que ir ANTES de pedir el precio, sea a quien sea.
+
+    La lectura del precio pasa ahora por `_precio_rapido`, que mira primero
+    el stream y solo llama a la curva cuando toca. Da igual: lo que este test
+    defiende es el ORDEN. Si el corte por migrada quedara detras, se seguiria
+    preguntando por una curva vacia una vez por segundo y por posicion, que
+    es lo que llenaba el disco del droplet de tracebacks.
+    """
     cuerpo = _monitor()
     salto = cuerpo.index("if _ya_migro:")
-    curva = cuerpo.index("await curve_manager.calculate_price(pool_address)")
-    assert salto < curva, (
-        "la llamada a la curva va ANTES del corte: se sigue preguntando a una "
+    precio = cuerpo.index("await self._precio_rapido(")
+    assert salto < precio, (
+        "la lectura del precio va ANTES del corte: se sigue preguntando a una "
         "curva vacia una vez por segundo"
+    )
+
+
+def test_quien_habla_con_la_curva_es_precio_rapido() -> None:
+    """Y la curva se pide en UN solo sitio, para que el corte de arriba baste.
+
+    Si alguien anadiera otra llamada suelta a `calculate_price` dentro del
+    bucle, el corte por migrada dejaria de protegerla sin que nadie lo note.
+    """
+    texto = FUENTE.read_text(encoding="utf-8")
+    inicio = texto.index("while remaining > 1e-9:")
+    cuerpo = texto[inicio:]
+    fin = cuerpo.index("# Marca para la proxima compra")
+    assert "curve_manager.calculate_price" not in cuerpo[:fin], (
+        "hay una llamada a la curva suelta dentro del bucle: deberia pasar "
+        "por _precio_rapido"
     )
 
 

@@ -179,6 +179,27 @@ trade:
   abandonar_tras_seg: 86400
   final_target_mc: 0
   price_check_interval: 1
+  # PRECIO DEL STREAM. El bot ya esta suscrito a todas las operaciones de
+  # pump.fun, y cada una publica las reservas virtuales que quedan despues:
+  # o sea, el precio exacto en el instante en que se forma. Hasta ahora eso
+  # se tiraba y se le preguntaba al nodo una vez por segundo.
+  #
+  # Que cambia: el take profit y el stop loss reaccionan EN LA OPERACION, no
+  # hasta un segundo despues. Y se dejan de gastar 5 peticiones por segundo
+  # del nodo (una por posicion abierta).
+  #
+  # Los 8 segundos NO son "cada cuanto caduca el precio" -- en una bonding
+  # curve el precio no se mueve si nadie opera, asi que uno de hace 20
+  # segundos sin operaciones de por medio sigue siendo el precio. Son el
+  # seguro por si el stream se cae: un websocket cortado no avisa, deja de
+  # mandar eventos, y desde dentro eso se ve igual que "no hay operaciones".
+  # Pasados esos segundos se vuelve a preguntar al nodo, que es lento pero
+  # no miente. 0 = apagado, comportamiento de siempre.
+  precio_stream_seg: 8
+  # Cada cuanto da una vuelta el monitor cuando el stream esta encendido.
+  # No cuesta peticiones: al nodo se le sigue preguntando cada
+  # `price_check_interval`, pase lo que pase.
+  tick_stream_seg: 0.25
   extreme_fast_mode: false
   min_reserve_sol: 0.03
   # POLVO. Por debajo de este valor una posicion deja de gestionarse: suelta

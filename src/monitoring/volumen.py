@@ -75,6 +75,30 @@ RESERVA_TOKENS_INICIAL = 793_100_000_000_000
 _LARGO_RESERVAS = 121
 _OFFSET_RESERVAS = 105
 
+#: mint -> (momento, precio en SOL). El PRECIO EN VIVO, sacado del mismo
+#: evento y gratis.
+#:
+#: POR QUE ESTO IMPORTA MAS DE LO QUE PARECE. En una bonding curve el precio
+#: NO se mueve solo: solo cambia cuando alguien compra o vende. Y cada
+#: operacion publica en su TradeEvent las reservas virtuales que quedan
+#: DESPUES de ejecutarse, que es exactamente de donde sale el precio. O sea
+#: que el precio que llega por el stream no es una estimacion ni una foto
+#: vieja: es el precio exacto, en el instante en que se forma.
+#:
+#: Hasta ahora el bot lo tenia delante y no lo miraba: preguntaba al nodo una
+#: vez por segundo, por cada posicion abierta. Eso es hasta un segundo tarde
+#: --el suficiente para perderse un pico-- y cinco peticiones por segundo del
+#: presupuesto del nodo con cinco posiciones.
+#:
+#: Las reservas VIRTUALES van en 89 (sol) y 97 (tokens); las que hay en 105
+#: son las REALES, que sirven para el avance de la curva pero no para el
+#: precio.
+_precio: dict[str, tuple[float, float]] = {}
+_OFFSET_VIRTUALES = 89
+#: Decimales: el SOL va en lamports (9) y el token de pump.fun tiene 6.
+_DEC_TOKEN = 10**6
+_LAMPORTS = 10**9
+
 #: Sin esto la memoria crece sin limite: pump.fun lanza miles de monedas al dia
 #: y el bot esta pensado para correr semanas seguidas.
 _MAX_MINTS = 4000
@@ -112,6 +136,9 @@ def _olvidar(mint: str) -> None:
     _first_slot_wallets.pop(mint, None)
     _first_slot_sol.pop(mint, None)
     _curva.pop(mint, None)
+    # Olvidar el precio no deja ninguna posicion a ciegas: `precio_en_vivo`
+    # devuelve None y quien lo use vuelve a preguntar al nodo.
+    _precio.pop(mint, None)
 
 
 def registrar_bloque_inicial(mint: str, slot: int | None) -> None:
@@ -169,6 +196,16 @@ def registrar_logs(logs: list[str], slot: int | None = None) -> list[str]:
             if mint not in tocadas:
                 tocadas.append(mint)
             if len(cuerpo) >= _LARGO_RESERVAS:
+                # Reservas VIRTUALES: de aqui sale el precio, que es la misma
+                # cuenta que hace el nodo cuando se le pregunta.
+                v_sol, v_tokens = struct.unpack_from(
+                    "<QQ", cuerpo, _OFFSET_VIRTUALES
+                )
+                if v_tokens > 0:
+                    _precio[mint] = (
+                        ahora,
+                        (v_sol / _LAMPORTS) / (v_tokens / _DEC_TOKEN),
+                    )
                 # Reservas de la curva DESPUES de esta operacion: con ellas se
                 # sabe por que punto de la curva va sin preguntar al nodo.
                 sol_real, tokens_real = struct.unpack_from(
@@ -265,6 +302,46 @@ def compras(mint: str) -> int:
 def compras_primer_bloque(mint: str) -> int:
     """Numero de compras vistas en el slot donde se creo la moneda."""
     return int(_first_slot_buys.get(mint, 0))
+
+
+def precio_en_vivo(mint: str, max_edad: float) -> float | None:
+    """Precio en SOL de la ultima operacion vista, si es lo bastante reciente.
+
+    Devuelve None cuando no hay nada apuntado o cuando lo apuntado es mas
+    viejo que ``max_edad`` segundos.
+
+    POR QUE HAY UN LIMITE DE EDAD SI EL PRECIO NO CADUCA. En una bonding curve
+    el precio solo se mueve cuando alguien opera, asi que un precio de hace
+    veinte segundos sin operaciones de por medio SIGUE SIENDO EL PRECIO. El
+    limite no esta por eso: esta por si el stream se cae.
+
+    Esa es la diferencia que importa. Si el websocket se corta, aqui no llega
+    ningun aviso -- simplemente dejan de entrar eventos, que desde fuera es
+    idéntico a "no hay operaciones". Sin limite de edad, una posicion se
+    quedaria mirando un precio congelado mientras la moneda se desploma de
+    verdad, y el stop loss no saltaria NUNCA. Con limite, en cuanto pasan esos
+    segundos se vuelve a preguntar al nodo, que es lento pero no miente.
+
+    Args:
+        mint: la moneda.
+        max_edad: segundos que se acepta el ultimo precio visto. 0 o menos
+            desactiva la funcion (devuelve None siempre).
+    """
+    if max_edad <= 0:
+        return None
+    dato = _precio.get(mint)
+    if not dato:
+        return None
+    visto, precio = dato
+    if (time.time() - visto) > max_edad:
+        return None
+    return precio or None
+
+
+def edad_del_precio(mint: str) -> float | None:
+    """Segundos desde la ultima operacion vista, o None si no hay ninguna."""
+    dato = _precio.get(mint)
+    return (time.time() - dato[0]) if dato else None
 
 
 def progreso_curva(mint: str) -> tuple[float, float] | None:
