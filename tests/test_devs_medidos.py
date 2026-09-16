@@ -157,3 +157,44 @@ def test_la_union_no_pierde_devs_por_el_camino() -> None:
     # Hay devs repetidos entre listas, asi que la union es menor que la suma,
     # pero no puede ser mayor.
     assert 0 < len(datos["wallets"]) <= total
+
+
+# ------------------------------------------- lanzarlo desde el movil
+
+
+def _script() -> str:
+    return (RAIZ / "deploy" / "devs.sh").read_text(encoding="utf-8")
+
+
+def test_la_medicion_sobrevive_a_que_se_caiga_el_ssh() -> None:
+    """EL FALLO REAL DEL 16-SEP. Medir 180 devs son varios minutos, y la
+    sesion de SSH del movil se corta al bloquear la pantalla: la medicion
+    murio a mitad y no quedo nada. `setsid` la saca de la sesion para que
+    siga viva cuando esta muera.
+    """
+    s = _script()
+    assert "setsid" in s
+    assert "nohup" in s
+
+
+def test_no_se_lanzan_dos_mediciones_a_la_vez() -> None:
+    """Dos procesos pidiendo a las mismas APIs es la forma mas rapida de que
+    te corten por exceso de peticiones."""
+    s = _script()
+    assert 'pgrep -f "medir_devs.py"' in s
+
+
+def test_subir_no_manda_nada_si_no_hay_medicion() -> None:
+    """Un commit vacio no dice nada y confunde: parece que hay datos."""
+    s = _script()
+    subir = s[s.index("  subir)") :]
+    assert 'if [ ! -f "$SALIDA" ]' in subir
+
+
+def test_solo_se_suben_los_ficheros_de_devs() -> None:
+    """Nada de `git add -A` aqui: el droplet tiene el .env y los logs, y un
+    add a ciegas podria mandar a GitHub lo que no debe."""
+    s = _script()
+    assert "git add devs_medidos.json devs_unificados.json" in s
+    assert "git add -A" not in s
+    assert "git add ." not in s
