@@ -1,0 +1,2535 @@
+{
+  "_README": "Union de las listas de devs que habia sueltas. `n_listas` es en cuantas aparece: cada lista se hizo con un criterio distinto, asi que salir en varias es pasar varios examenes. NO mide rugs, ni pagos de dex, ni si sigue activo -- para eso, medir_devs.py.",
+  "_fuentes": {
+    "top_devs_quality.json": "quality (jul-2026)",
+    "top_devs_premium.json": "premium (jul-2026)",
+    "top_devs_init4k.json": "init4k (jul-2026)",
+    "top_devs_nextbig.json": "nextbig (jul/ago-2026)",
+    "top_devs_no_mayhem.json": "no_mayhem (ago-2026)"
+  },
+  "_count": 180,
+  "wallets": [
+    {
+      "wallet": "3FiWnNDTZrKPbjPeMiTe2r5m5zygxSu57ePck5LUQp7d",
+      "listas": [
+        "premium (jul-2026)",
+        "init4k (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 13975,
+        "launches_7d": 9,
+        "per_day": 1.29
+      },
+      "n_listas": 3,
+      "pago_dex": true,
+      "vetado": null
+    },
+    {
+      "wallet": "DxQ1iNidsGap2kr14VdEzA8NheqXabfh6fRkvZQbnZVY",
+      "listas": [
+        "premium (jul-2026)",
+        "init4k (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 13916,
+        "launches_7d": 14,
+        "per_day": 2.0
+      },
+      "n_listas": 3,
+      "pago_dex": true,
+      "vetado": null
+    },
+    {
+      "wallet": "9BjcGY9ZfMvS13ozDRMwCaR2toE71hiLBXXvqBcGmeiU",
+      "listas": [
+        "quality (jul-2026)",
+        "premium (jul-2026)",
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 20082,
+        "launches_7d": 10,
+        "per_day": 1.43
+      },
+      "n_listas": 3,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "AMRsSeU5JpqwQWJGNLMpZzRCZSFEwYQYbMnms3dD4311",
+      "listas": [
+        "quality (jul-2026)",
+        "premium (jul-2026)",
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 16506,
+        "launches_7d": 7,
+        "per_day": 1.0
+      },
+      "n_listas": 3,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "F5ExBJxM7zJhowwSBYGMTQVesxWvNzsPJhJTuXxLHiyZ",
+      "listas": [
+        "premium (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 30475,
+        "launches_7d": 3
+      },
+      "n_listas": 2,
+      "pago_dex": true,
+      "vetado": null
+    },
+    {
+      "wallet": "862TYSvRYoiHAK3F3WwTRYAfuGiQaGdxedN9AGvRGWo2",
+      "listas": [
+        "premium (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 19930,
+        "launches_7d": 9
+      },
+      "n_listas": 2,
+      "pago_dex": true,
+      "vetado": null
+    },
+    {
+      "wallet": "HoKiWhcU3YBN9f5Uxj1bBLkcWkw5iDEQbPiiU6EnYCwQ",
+      "listas": [
+        "premium (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 17036,
+        "launches_7d": 6
+      },
+      "n_listas": 2,
+      "pago_dex": true,
+      "vetado": null
+    },
+    {
+      "wallet": "7ufmve7ZSFCzuNcKRunYrGtyb2Ka1MXzkWwf7jZhVsmL",
+      "listas": [
+        "init4k (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "per_day": 2.43,
+        "launches_7d": 19
+      },
+      "n_listas": 2,
+      "pago_dex": true,
+      "vetado": null
+    },
+    {
+      "wallet": "DAEdBmTPEKM6xkwfzC3d411QUe6coKpkND6UURa4CvHC",
+      "listas": [
+        "init4k (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "per_day": 1.0,
+        "launches_7d": 9
+      },
+      "n_listas": 2,
+      "pago_dex": true,
+      "vetado": null
+    },
+    {
+      "wallet": "3YxvtPQ1G84us76A3PK8LaJeizjrFjfJb8jjWQtSKQFv",
+      "listas": [
+        "quality (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 24743,
+        "launches_7d": 3,
+        "per_day": 0.43
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "B3ZNdoxQB5zSro19P97nGyQM8b7roReprRw3EiFX3SvC",
+      "listas": [
+        "quality (jul-2026)",
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 22748,
+        "launches_7d": 17,
+        "per_day": 2.43
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "Accyhhx8z4kbhobAcwpASqh8miUxaay4L8mB6UNwzZt4",
+      "listas": [
+        "quality (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 22098,
+        "launches_7d": 3,
+        "per_day": 0.43
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "GATbxwUSPRhN7GERjLNJv1hwkg1iuJdj7KCc8gVd9eXc",
+      "listas": [
+        "quality (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 21057,
+        "launches_7d": 3,
+        "per_day": 0.43
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "A1jmc6mZGgCEJSSyj2BULXgYTHvAEShZERSiDQmnkufX",
+      "listas": [
+        "quality (jul-2026)",
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 19538,
+        "launches_7d": 7,
+        "per_day": 1.0
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "5ZuV8eqkvzYFVEKbLvGBdexL2tFv7E5BCd2HZpjqbdg",
+      "listas": [
+        "quality (jul-2026)",
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 19534,
+        "launches_7d": 29,
+        "per_day": 4.14
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "CKe8kev7FGtnEFST3s7Mfoi3SDHuuMBnL6SwozNxCzTf",
+      "listas": [
+        "quality (jul-2026)",
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 19446,
+        "launches_7d": 8,
+        "per_day": 1.14
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "3bJLjcwvSHqFGYJxWbRzNzXgY3ci3tPMd6fZsVuZ2Dj5",
+      "listas": [
+        "quality (jul-2026)",
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 19411,
+        "launches_7d": 8,
+        "per_day": 1.14
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "BmBpkdYtqADEo9SdEyMg7riQQvV3DiF7aeniv7t6zKG3",
+      "listas": [
+        "quality (jul-2026)",
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 16129,
+        "launches_7d": 29,
+        "per_day": 4.14
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "2syzfo53Bt2yvTezwZMMwnAqdL3xss6ZKcjQDtYV94y2",
+      "listas": [
+        "quality (jul-2026)",
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 15622,
+        "launches_7d": 9,
+        "per_day": 1.29
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "DWtCvHf2ui3qocbdMWep2LPjXVxTBSaj5evkpVAj3uN1",
+      "listas": [
+        "quality (jul-2026)",
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 15532,
+        "launches_7d": 10,
+        "per_day": 1.43
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "6kkjU6JUUwP7v3wsZPvXbmEjvTTQvfAiUhWZTCQ8p1Qh",
+      "listas": [
+        "quality (jul-2026)",
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 15334,
+        "launches_7d": 9,
+        "per_day": 1.29
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "FnW6MLyu5UX1G4fYcmmBrPy46foBi6vm4GTWNZQkxUrF",
+      "listas": [
+        "quality (jul-2026)",
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 15044,
+        "launches_7d": 9,
+        "per_day": 1.29
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "3fKF8cbyWKU56fpFkrQ1E6zJoAh4mqArdsPoUE6ycTKL",
+      "listas": [
+        "premium (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 27237,
+        "launches_7d": 5,
+        "per_day": 0.71
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "DFrfDB7vsQRNQYFWyQwtihMWGEfD8vAPPHFEW6krXytc",
+      "listas": [
+        "premium (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 23381,
+        "launches_7d": 3,
+        "per_day": 0.29
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "4DrtsW86GarGJJeYrBwYCjoyMgDPG95QWSGhFHvCkU2s",
+      "listas": [
+        "premium (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 19789,
+        "launches_7d": 4,
+        "per_day": 0.29
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "7VzKD7nTQg9ypcJtT1cA34aa9wLGRHzjGvZNQx53r8WA",
+      "listas": [
+        "premium (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 19583,
+        "launches_7d": 3
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "D2hrzDdF5JDeunEyfKC74PuERdfT3NomExBYmgfNFhaZ",
+      "listas": [
+        "premium (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 19392,
+        "launches_7d": 5,
+        "per_day": 0.71
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "FFcNgJj4SV2eDMyDJRk8EWBX7w14hH3KUqVu77C7HtjQ",
+      "listas": [
+        "premium (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 18975,
+        "launches_7d": 4
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "B6btiuEgrwa5MHNkxH7csA7paDfCXns8ZTUJr3nds3CZ",
+      "listas": [
+        "init4k (jul-2026)",
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "per_day": 1.57,
+        "launches_7d": 11
+      },
+      "n_listas": 2,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "2Vgmp9bTNzvj1D5XaFNdUtNDxaRFH2UGPJXrcUPVGj1B",
+      "listas": [
+        "premium (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 24455,
+        "launches_7d": 4
+      },
+      "n_listas": 1,
+      "pago_dex": true,
+      "vetado": null
+    },
+    {
+      "wallet": "yHCxHBEaJW5tbndqC8JciSThr7U1cqLpdcsvHcx6PRe",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "per_day": 1.43
+      },
+      "n_listas": 1,
+      "pago_dex": true,
+      "vetado": null
+    },
+    {
+      "wallet": "CzwWvTVn39dSd4LiVc6W9gZxgu36737M2fcX4EWhquh4",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "per_day": 1.14
+      },
+      "n_listas": 1,
+      "pago_dex": true,
+      "vetado": null
+    },
+    {
+      "wallet": "GeBJSHK4WsGrz2HRvTbqvWGx4JRMpHfJG2ikzrYBDuwR",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "per_day": 1.14
+      },
+      "n_listas": 1,
+      "pago_dex": true,
+      "vetado": null
+    },
+    {
+      "wallet": "9LUgfzet43ZdwdAzbvV5msQjGzx9g6sqvtgLaQyQAEog",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 24091,
+        "launches_7d": 4
+      },
+      "n_listas": 1,
+      "pago_dex": true,
+      "vetado": null
+    },
+    {
+      "wallet": "2hcbvVnPutVmXW6TbNEx6U1KuMiyFPWKwSjknzwCYiwX",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 23141,
+        "launches_7d": 5
+      },
+      "n_listas": 1,
+      "pago_dex": true,
+      "vetado": null
+    },
+    {
+      "wallet": "GCc5qzbbN8xjARVJPovDxfKTCyeqXeeRzhwPH5csKwY6",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 30853,
+        "launches_7d": 4
+      },
+      "n_listas": 1,
+      "pago_dex": true,
+      "vetado": null
+    },
+    {
+      "wallet": "Ho4j2bH52YumcwBLTzCbH7acvmAvuvQYpQHukQDSv4Nn",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 23903,
+        "launches_7d": 4,
+        "per_day": 0.57
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "HwKvWbr7KZYQF5DK1n3HXcyKNgytbP5obrH9cDV5eChH",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 23120,
+        "launches_7d": 4,
+        "per_day": 0.57
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "FEgCzGDkWaCVjCgACtZczjvaXDzyo1rzn1nbC9tSyB3H",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 22985,
+        "launches_7d": 3,
+        "per_day": 0.43
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "5qNfUyBsz3AZZzJFJJBNiPs8a7oC1YofHYwqvzKREbYN",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 21894,
+        "launches_7d": 6,
+        "per_day": 0.86
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "6Vs63D3UVdXqNVvmx3Gd4wk9hPArbeicrZ2JvnMJtKhd",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 21711,
+        "launches_7d": 4,
+        "per_day": 0.57
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "A8p6AScevHXTshxEG4mdKC5RuPgknvqzK9KhBDQFSNRv",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 20648,
+        "launches_7d": 4,
+        "per_day": 0.57
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "9U7JYKSkYgr3S6nKA9Fcx3g5Pjm2CB7dhtG4CEUFXuXu",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 20362,
+        "launches_7d": 3,
+        "per_day": 0.43
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "2rpmssicN8sQ8rwjxiB3Q12CXwUAJwWHzCEsQrMfwsVY",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 19752,
+        "launches_7d": 3,
+        "per_day": 0.43
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "26Dpsf1diayaKzBezHHVWKDwwyetDT1eATqyaQY1ju7s",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 19529,
+        "launches_7d": 4,
+        "per_day": 0.57
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "9b9yJc1FjxHfDy3xhVes4Bns5esDzHHHzaEUAYcekUnA",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 19368,
+        "launches_7d": 4,
+        "per_day": 0.57
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "89jFbt1W2bswHQxYSLPy197hWU3E2D9JK2gNBNojvSFj",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 18668,
+        "launches_7d": 3,
+        "per_day": 0.43
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "BiKEa7fnRGtRmgc9tgVoSXVacmFegB5SRhuHcrVDUk66",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 18296,
+        "launches_7d": 3,
+        "per_day": 0.43
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "DtCR4w3WREYJPo76pCmLt4boPPhCjVJHaHU4RmGSZg9b",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 17431,
+        "launches_7d": 3,
+        "per_day": 0.43
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "EPFfJ9okgifmCEyU8Qg2cmWwXphjxUetG6k9g64XrFn4",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 17008,
+        "launches_7d": 3,
+        "per_day": 0.43
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "49nSpmxwnTTyXujNm3zHqoin1mg1y1rKd1THXwJjYdLa",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 16984,
+        "launches_7d": 7,
+        "per_day": 1.0
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "8RH4d1EHzEB7Gfyykdaf5nY4yPwBFT2D2ceREp2ovtcG",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 16837,
+        "launches_7d": 6,
+        "per_day": 0.86
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "EwMz8cE1H7JPkzo26YJfWvSJexr6d9Yr7A1cUYrqa2Yz",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 16791,
+        "launches_7d": 3,
+        "per_day": 0.43
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "9Q18hhGJxvy16VAa8Th8Lua4WUSxnW1E1mYmqS16aPFN",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 16041,
+        "launches_7d": 5,
+        "per_day": 0.71
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "gVDXhoGbePACvSqN7CZBtQXFW9eyJwsgudPEwSydAkx",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 15999,
+        "launches_7d": 4,
+        "per_day": 0.57
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "BwAMXudDjLeAc9SoFdjyrPZCKWWQxarEWuMKwf1MDPFV",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 15709,
+        "launches_7d": 4,
+        "per_day": 0.57
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "9DL1JJZMZbPAaaqkGwzS2LWTtHYveVmjsJkH93aLnWNU",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 15405,
+        "launches_7d": 4,
+        "per_day": 0.57
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "Etv7bs3Yoh88CzQu1BwxstSrJ5jokeN29XS8L5aUfLNv",
+      "listas": [
+        "quality (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 15177,
+        "launches_7d": 3,
+        "per_day": 0.43
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "5t9xBNuDdGTGpjaPTx6hKd7sdRJbvtKS8Mhq6qVbo8Qz",
+      "listas": [
+        "premium (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 8949,
+        "launches_7d": 5
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "EL8zSAncePrCE4kJKkTNofX4aX97aoJmxH4GeYNAQnay",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 12631,
+        "per_day": 5.86
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "77sfKgMStSGGidSspbKCpVFDQFVVygBF7AKfyGTkJAyu",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 13519,
+        "per_day": 5.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "8tr2RQBBt3hGNbKNrCwvb7MwcHsW1JDwPEkjH35U7t8w",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 14279,
+        "per_day": 4.86
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "FYppjNLMbq4ruUnoLL9HS4xEE9fhRWLdNTRZgUCxbdjW",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 12090,
+        "per_day": 3.86
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "uH9FY1StsAHWbDQaHNu2ZcHtBtWXqkNtwzi83MSFgmC",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 12837,
+        "per_day": 2.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "ARW9NzhpuBVYaYBZo6fW1P1U6LTNwUY6jfi7XC37Sa97",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 25721,
+        "per_day": 2.14
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "Dzp1SrZ474xwGp6ZEP6cNKo39u9zeXe1YAuTkyZyv3t4",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 14696,
+        "per_day": 2.14
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "HDSWjRcHxCxHePYqA3XPqxc8deL6jF8dgDeS6T9TZpZB",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 14935,
+        "per_day": 2.0
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "9miM6dXbwZeKf4vws8ohQAc7iEChojuzKux6CdmJ1L1x",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 13371,
+        "per_day": 1.57
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "AYJSaJiDbxZjPjTKWdLjpFfoqMBvivp8uHEHqvabPFvb",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 13948,
+        "per_day": 1.43
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "4euyaqBe45J5dniAcNARERUo7B1wG96riG21sEpNndfU",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 12548,
+        "per_day": 1.43
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "3JJ8fneWhCkCEM7yEEfEvd9iSDyWUZyAC3B8u1q1ESob",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 13085,
+        "per_day": 1.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "4gwSSVxkkoTp6e4jiYuzP1oazA73eYaHRutxuZScvNnn",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "per_day": 1.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "6FGsiDL3GAFQ3duWJMakqcjKqC2n69XooYjGU2YpCR5M",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 16581,
+        "per_day": 1.14
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "CM1YeKEVqMe1ZyLGmMtqTYXi4RsKcoZcQH1ThDyZUpV5",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 12438,
+        "per_day": 1.14
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "8tz9muGq9cu7dCdHhh1aQmRLZUzXWEcPj8ydUVKE5Ncy",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "per_day": 1.0
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "2fjnasKeqKS63myiKHqeVjaCKGEN75U4iPv6ZjsoJ8xa",
+      "listas": [
+        "init4k (jul-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "per_day": 1.0
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "J6FAJ2Pz2htqoKUD1WLZJC9RTsRuF9oQYo8RxS3s6dnH",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "coins_over_200k": 10,
+        "best_peak_usd": 28872212
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "HhH3m3GjvQKrSF4auLHCTCJsKgXqBWnoqB2nMeBXFJsM",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "coins_over_200k": 6,
+        "best_peak_usd": 53338911
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "5dwwJkyF2KUcsgH8ndE3sYaZzS4KLQdCrxgARgzc9b3s",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "coins_over_200k": 5,
+        "best_peak_usd": 18178284
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "9C5qBGDMDrqU5SiJeWVvb3zy7uFaUQEgYqLinEhtZBSJ",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "coins_over_200k": 5,
+        "best_peak_usd": 9856346
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "FxUrNcTKrTzYRk4W4MxygXRtNmE8r3S5Vm7kMtoP9cdr",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "coins_over_200k": 4,
+        "best_peak_usd": 273262819
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "EaZC5U93bbSn44kvuAno75qc3TeLbcPNDP58JVsYZDb7",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "coins_over_200k": 4,
+        "best_peak_usd": 73181820
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "4LUcoS2imfQ14t4dmH273d6FV7Lx16ihV1wdagEdYjmR",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "coins_over_200k": 4,
+        "best_peak_usd": 18290229
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "ArSrjXsRUsLMjBTVKPrZsSKZtLAswMqC5C4G9t4NuNgo",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "coins_over_200k": 4,
+        "best_peak_usd": 14776254
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "HWqpVCy2UDiY7N79qVumTMUeaXVXSQyDpoMmQ46ug1pX",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "coins_over_200k": 3,
+        "best_peak_usd": 49334097
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "CKPaVEHqGNB8BUdWPr6J4PsbuHXs8EN455EkEtEYQCpk",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "coins_over_200k": 3,
+        "best_peak_usd": 36587473
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "GF3aWh5zc5EX2LGhLDmVpPPrKdDN1qo5kXHbStEkXwyS",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "coins_over_200k": 3,
+        "best_peak_usd": 23463509
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "4a7XiutQp7spcV14sLw1uMw3GijUchp7oW5TVKJbkc52",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "coins_over_200k": 3,
+        "best_peak_usd": 21889675
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "5hoVSrmowAW7cSEC5Zhe3GbkMPXwgZc784UJNRQLjgxv",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "coins_over_200k": 3,
+        "best_peak_usd": 21221153
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "HwgrAEFZgHqbeZJc4LfJpg3T4YQmChDuH2bNHsYQU9g3",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "coins_over_200k": 3,
+        "best_peak_usd": 12696727
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "55Perpb3rnWxV6LsjZux3cmtXUossXQ4PDHVm4T2tca1",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "coins_over_200k": 3,
+        "best_peak_usd": 678999
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "BTdjaPaor31yqs1mggv6eaRJbEox8sE3MbyBCMEjHPbq",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "CVvJnDPcWdmUJN6YC4cHwBS2cJ9T8KoVh3xEwGquHYz1",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 3,
+        "per_day": 0.43
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "ARmXsApnsp78ziLGbwrBaS6Mi7uCvr5R5FRmaimdSfZp",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "2yZnzgaC2NghYbdmN1YwhJDaMSSomjKaEnLsikkEAFiU",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "9k5LD7QZJzC7hR8GH23jAKAGG5JXyKvgcR1PFBvxQdv1",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "CT7TXtt1ZRobUk4TK5qPkWRqtT3c1qScZ2CfYZXKSZtN",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "GXqk4nhgC4x1AMuRWikd9E2ZyGqfhxH1anYXj8x4vXUx",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 43842,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "2D699BTvL6G6ydAQrRmXcx3VuWDNkJs1WmthiXfYdtit",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "DfFjNc6rBbfaihDCFzYyepeNXmmFzLsN272kVuxKzQ4Z",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "9bchB9W9Pn9PKhjmSUNiuqdapoDkgUjYhDoMLhJPVRqp",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "GCMnackZv9fqC93jrk2du1QwBcSDztjYdvo7WhsMan7C",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "GmHGJdMymipZefqSFU5v2gh2fQdGZjAaX63ziVLbjZbu",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "7M1nj84mZ6pFM89zSK7UG9eHQr4EsNEXtbDTCgpTScZC",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "HS8pdCmXhxSvSSSaxNEqqABjSy6kgkV3oEZHEmG2hX33",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "CQLLBQW9deii6Sow4i1VJFjyLKBxLRS6E89NaDC6BEGz",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "E7WUBW175FdSHBtoT9XVfPT35P4oPpcMg3t15NHhwTwm",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "5n9KsxgRrJc4x8E7Zi8WHZDQrJxmg9ucDJigMT149Sx8",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "BMnA6BJd2xEpfPfVoy1sT2RJieQWdVbqNnVqdo55jZ6y",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "AyVQudTuHWFr6xpqXiSyxP1MQdm9AcvVY23Xqf2QUHpi",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "C6GsAJupLB33xEvqErAYxnPWnNcFeyDwDpd5UqPfnYfZ",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "ErKVZPYady3LB2spmLCVCX5uF8R5ytpxiceTMJxujLhZ",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "Cqpjit97Pf8h8qTjcHwQFczL8JJwUGGYaqC69h7EWKLN",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "42V2wz5tiLQvKY5AVS8V2uXnCfqEpNxtYi6XDrZjCJ3B",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "CFvFULPLd6Hk5QjvWhyN3JepMybjTCKCBMFbvhtsvbuE",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "JAHNgRnre3DwUwNQQerKx2W2TLWvHAwyTKAa2fG8LT7o",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 25924,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "FaHQ6E5BRJYubMW8L6cD9biHSAhi2twhXa49hdDX6PpF",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "D1AgMwipkyYoGQmphTHs3VxCsG2gZo1Nm2wFTgndZ51E",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "3geKhG2S5vdg7rUN5aHPyQdY4dvCrbuhEcwGPwnw8Uy2",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "CUTPQHXW6Xxg6DFL5fjFTqHykMZUTvrQ7Qi1WGPcEzdT",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "6ueJnZLy4kdyZoat8gSWgADEbNAPbXsrFFWdLyNBHfM2",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "3GyjKcsQkpDuyoQrd4Ciz3QypoEpiMRDfFs4Cgz5fyXk",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "3gWKh9nAunorwYXicoexdnbZ746vN3jKVsz7qDVJMrYP",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 30101,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "FqoeFX1nLxH9aisuJprWsVUDsZ7mUkRYF5PEJ8qraPCy",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "FNVsSxQjEtucEzWyuNwdJH2wVVhsaT5oWqYUc6haPQtz",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "3z7xQC2PSfixVJdMt23oGdew7fFzuboAYdcBAYSAX4Xg",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "3YpQRAGDCpraoXG9c9ntVaax9jRKPRSQQRXm7mg8YMiF",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "88g7tXbBFUvLKUNCQpVqR6UrugL7jFeGf5kpzJ5DTkks",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "9xdK3DkLZ8CCr3bvvFAXbNcWvAr8BJSyyWDVKwSLwRPF",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "9PQ9kNKj4hztTN26N3JaZ1To3rZRDu6rGiyzfC4JPETw",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 5,
+        "per_day": 0.71
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "951wq3qDowjKHaycrNaiRB5WpovYVKXnqhnrcKPh46zt",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "BeigSSuYKGK3XKNW58fuVFEYinNw5WUJ6MXGnxBb7Z7U",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "8wRr7k93rEHS9GiVAVGniAM3CHiAtW85AGv2qKXwF9Fk",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "48S8ne8cnCYeEhzkR7JAeocZ98bwuNRQ4pKkJ3u4VQpT",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "GCFyk8ZopGpo1HR25WhsVaP1h1p6ta44q9uHfq9Em8WB",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "Hu4YpHXYVD8Dw9vGzpqFPYzFGprLpWrXgbRQ8WtDQJ3a",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "9qKYscHeVzqVmgNL64fwS9VLp2X1uHoo4RBCCVZfvf3q",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 25973,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "9X1VTHyNdLcZNG66QkCRJVQinohBpPvktbxAxJAVQpu8",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 4,
+        "per_day": 0.57
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "9DPZGyDw3gg1vrd9nvPA6xsj86wdYEVugfSUbscw9ahx",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "6mxfP4nXD1MSXvCSbJP5NZi1RNojYKxNs5eHBoZBYDak",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "ANg3JLb5uRnjPggwCU4QcwTxhVn5mM2DfVwCifymGZGz",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "FExQWxmw6NqmcbpfnSVzmfEe46mzZ7UjaQNH6zbz5eee",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "8WuCFQnCqmaTNmTjw25UBjaTHXqDQQgYMXcgsDAKLFUz",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "5Gx8nvnthE236pJmMiFfFNeTc5fEBNtgeuBn3GeGeDnR",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "5wPuZfZyPQxuBUrmjN6RV31TdLsoxG6LuBMtwQAd9jUJ",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "3h7vhXCmuUvXEfYEbpQbcFQdSB7v1iBA1bqJRXoZn2VV",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "CmCeodBTk8wCn1P3mhgEwBVyrWfLR7khrJbvfag2h6pv",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 5,
+        "per_day": 0.71
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "9Cik4BvJRcag1FLgCk1UBkAXdgLWd9fSoHMoWHjS4GXo",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "7WgTby15XjccLvoRjMTbjdGxotFj4bBcMuDksQU7XzWn",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "A95YPcDUkVUrmoKuBNRC8C3N69wethksqQxvqNpTzbcS",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "2KQKDA9RtgB8wfGMcnGsKMfFY2BkktG2ETMtRPSAzB8C",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 40958,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "EtKNJYzTWu5ewnGEyu37bKoY569Kf43TrvzDbGEAbVSb",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "79ZGmaQQ9GveHWuHvdBexZUy1nKudGvc65J8b7GvV9fY",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 3,
+        "per_day": 0.43
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "A697SEniU79su72YzGDM7tUNnWc6aPQ9FUxKJZuEauiq",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "8ihLV77aBWdAk4CpMMx8LH4915pZm6pc5t1DoMycz94n",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "HcNx7YFokv99hV4jfxe7TRyu5ArPMEpwtQqKrpqgAGYK",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "DfdJfVfhEdY3ZuCS5QF1DDMryeyEjH365Cr9ZoLGbXLP",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "8jaZKGBSUq83a2BdzTxtMkPUcGcgF7viVpPk9WMetrau",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "4Gtb3xN9yqSmTSpmVV8ocZWakBPxorA283jJv4bNsjBT",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "HnSkGGhxAwTYjzdxJTFg53MnZDziUxhjBbQinYeb2Fdd",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 2,
+        "per_day": 0.29
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "Gjp136Q24ikiMFX3HdioqzVFmVK3sqb9wePZwGmCJfxi",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 3
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "ozDnyApycm95Zz9Y12PPoJ1Mp4Zx8pJiTLaFg2aB8QX",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 3
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "4R1ezMFT32QbBbSp2h98T5tmo7gidKnpN2sjHFy76gWQ",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 27426,
+        "launches_7d": 4
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "Aj6cr5Q3iKpkuujnabSQyKfEb1ZQ1Z1LeeK6LEpTV8Xs",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 3
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "Hi6WK6V9rVcGQ4iGSihps62g1EtJ9QAA32dUMuLts2C1",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 3
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "APWfqBLvDZUkRPERdWPG9aA3ijn1Nh74XLMxBszJKjmq",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 3
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "9RfUHPsdKx1eU8Y4EiDFHkzv8psfmLLcNhFa2Yk9mWcx",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 31054,
+        "launches_7d": 3
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "8cFDqZRYdiCuDgt8cG2iNYjEvpD83yv8XZggjzkGWCM2",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 25522
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "5KTX7LZyoewhQ2keNCNQ6qQCXW9uermzr8r5K6uss4PY",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 21391
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "Hcrr3q7o4PkBF2dvt1xc4VZCDHVbDvkmZ2gHeeb3JDVz",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 30446
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "5AubfxeUqy6MZWEcTQaqGd7pMCQzcLA55EH66tq4z7cZ",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 30779
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "Aqje5DsN4u2PHmQxGF9PKfpsDGwQRCBhWeLKHCFhSMXk",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {},
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "3Xs1yPTkPu753BQRKrauqZroFdS46yB4kx6AJAMoZ3vG",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 21048,
+        "launches_7d": 3
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "WnBVqVTaiJk5hNbcwbHiffRVnMdf1aaxNU5JkSpvGub",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 30056,
+        "launches_7d": 5
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "G36Ki3U33R88QmHfsVQT4QQVhkBQWG1bEE8zTWeSuGQy",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 30039,
+        "launches_7d": 4
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "7FdmUabHfLS7Td2VFJF8VuSSfMmRqYFqKSnGLzZpsFrz",
+      "listas": [
+        "nextbig (jul/ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 19328,
+        "launches_7d": 5
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "CJzdSpdfHQoQ3jMneVHGfjb63h8zDPQd4s8SDGn81Kh3",
+      "listas": [
+        "no_mayhem (ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 6352,
+        "best_peak_usd": 9885,
+        "pct_8k": 22.2
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "timeworn2X1EwMLSzeVhdVTbVSzSCKuibKd2kQ2Lsyn",
+      "listas": [
+        "no_mayhem (ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 3925,
+        "best_peak_usd": 8228,
+        "pct_8k": 20.0
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    },
+    {
+      "wallet": "Gfsk5ZojnHSLoxRhUBD5vviJELFuTGkyBh9QTqEo7Ehg",
+      "listas": [
+        "no_mayhem (ago-2026)"
+      ],
+      "datos": {
+        "median_peak": 3190,
+        "best_peak_usd": 10296,
+        "pct_8k": 20.0
+      },
+      "n_listas": 1,
+      "pago_dex": false,
+      "vetado": null
+    }
+  ],
+  "vetados": [
+    {
+      "wallet": "6Fy8LxPMdETrkaU1xMF3uvz4w6ofJC5dHsk1LqAPUP5r",
+      "motivo": "blacklist medida (ago-2026): <5% de sus monedas pasan de 8K"
+    },
+    {
+      "wallet": "C3wT32xC4vd2XkEs3kGsqZsqJ7WwnHoRDdu7ptHWPrfR",
+      "motivo": "blacklist medida (ago-2026): <5% de sus monedas pasan de 8K"
+    },
+    {
+      "wallet": "GaBUTwhmtuSFYvGbK941W9dNwRxMBNvQ4Ui3m936H92a",
+      "motivo": "blacklist medida (ago-2026): <5% de sus monedas pasan de 8K"
+    },
+    {
+      "wallet": "4JWWLGUdqEk5o2pt6BYnLypn49RaFaVEJvWjXC7uXiy7",
+      "motivo": "blacklist medida (ago-2026): <5% de sus monedas pasan de 8K"
+    },
+    {
+      "wallet": "D1MYLCXn4YvfiQSCeKKk8WUv84KHXEmqogEqBLzqLK5z",
+      "motivo": "blacklist medida (ago-2026): <5% de sus monedas pasan de 8K"
+    }
+  ]
+}
