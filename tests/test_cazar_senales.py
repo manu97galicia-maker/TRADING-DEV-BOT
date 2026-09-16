@@ -153,3 +153,34 @@ def test_los_peldanos_medidos_son_los_de_la_escalera_real() -> None:
     assert cz.TP2 == t["tp2_gain"]
     assert cz.TP3 == t["tp3_gain"]
     assert cz.STOP == -t["stop_loss_percentage"]
+
+
+# ------------------------------------------- lanzarlo desde el movil
+
+
+def test_el_servicio_lanza_el_cazador_y_no_el_bot() -> None:
+    """Un copy-paste mal hecho aqui arrancaria el bot por duplicado, con dos
+    procesos comprando con la misma wallet."""
+    unidad = (RAIZ / "deploy" / "pump-bot-cazador.service").read_text(
+        encoding="utf-8"
+    )
+    assert "deploy/cazar_senales.py" in unidad
+    assert "bot_runner" not in unidad
+    assert "pump_bot" not in unidad
+
+
+def test_el_servicio_vuelve_solo_si_se_corta_el_websocket() -> None:
+    """Medir bien son horas. Perder un rato de escucha no rompe nada --cada
+    moneda es una linea suelta-- pero perder la tarde entera si."""
+    unidad = (RAIZ / "deploy" / "pump-bot-cazador.service").read_text(
+        encoding="utf-8"
+    )
+    assert "Restart=always" in unidad
+
+
+def test_el_script_no_borra_lo_apuntado_al_apagar() -> None:
+    """Apagar y encender no puede costar las horas de datos ya recogidas."""
+    script = (RAIZ / "deploy" / "cazador.sh").read_text(encoding="utf-8")
+    apagado = script[script.index("  off)") : script.index("  ver)")]
+    assert "rm " not in apagado
+    assert "senales.jsonl" not in apagado.replace('Lo apuntado sigue en "$DATOS"', "")

@@ -1,0 +1,34 @@
+# Mide que senales predicen un pump. NO COMPRA NADA: solo escucha la cadena
+# y apunta, por cada moneda, sus senales y lo que hizo despues.
+#
+# Existe como servicio, y no como un comando suelto, porque hacen falta
+# HORAS de datos para que los umbrales signifiquen algo -- y desde el movil
+# no se puede dejar una ventana abierta esa tarde. Lanzado asi sigue
+# corriendo con el telefono apagado, y vuelve solo si la maquina se reinicia.
+#
+# Instalar y arrancar (una vez, desde el movil):
+#   cd /root/ai-bot && bash deploy/cazador.sh on
+# Ver como va:
+#   bash deploy/cazador.sh ver
+# Parar cuando haya bastante:
+#   bash deploy/cazador.sh off
+[Unit]
+Description=Cazador de senales del Pump Bot (solo mide, no compra)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/ai-bot
+ExecStart=/root/.local/bin/uv run deploy/cazar_senales.py
+# Si se corta el websocket, vuelve a entrar solo. Perder un rato de escucha
+# no rompe nada --cada moneda es una linea independiente-- pero perder la
+# tarde entera si.
+Restart=always
+RestartSec=10
+StandardOutput=append:/root/ai-bot/logs/cazador.log
+StandardError=append:/root/ai-bot/logs/cazador.log
+
+[Install]
+WantedBy=multi-user.target
