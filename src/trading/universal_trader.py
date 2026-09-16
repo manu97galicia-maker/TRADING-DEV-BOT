@@ -338,6 +338,10 @@ class UniversalTrader:
         extreme_fast_token_amount: int = 30,
         # Exit strategy configuration
         exit_strategy: str = "time_based",
+        # Los dos avisos de booleano posicional se silencian para no
+        # sumar al recuento del fichero: este constructor ya tiene 19
+        # iguales y siempre se llama con nombre desde bot_runner.
+        pausar_compras: bool = False,  # noqa: FBT001, FBT002
         precio_stream_seg: float = 0.0,
         tick_stream_seg: float = 0.25,
         take_profit_percentage: float | None = None,
@@ -807,6 +811,11 @@ class UniversalTrader:
         #: Segundos que se acepta el precio del stream antes de volver a
         #: preguntar al nodo. 0 apaga el stream y deja el comportamiento de
         #: siempre (una consulta al nodo por vuelta).
+        #: Modo estudio: se filtra, se decide y se apunta, pero no se firma
+        #: ninguna compra. Las posiciones YA abiertas se siguen vigilando con
+        #: su stop loss y su escalera -- parar el bot entero seria lo que las
+        #: dejaria a ciegas.
+        self.pausar_compras = bool(pausar_compras)
         self.precio_stream_seg = float(precio_stream_seg or 0)
         self.tick_stream_seg = float(tick_stream_seg or 0)
         self.take_profit_percentage = take_profit_percentage
@@ -4301,6 +4310,15 @@ class UniversalTrader:
                         f"on {token_info.platform.value}..."
                         + (" [MAYHEM a prueba]" if _importe != self.buy_amount else "")
                     )
+                    if self.pausar_compras:
+                        # MODO ESTUDIO: se hace TODO menos gastar. La moneda
+                        # ha pasado los filtros, se sabe el importe exacto y
+                        # con que wallet iria -- solo que no se firma nada.
+                        # El `finally` de abajo devuelve los lamports que se
+                        # habian apartado.
+                        self._apuntar_compra_en_pausa(token_info, _importe)
+                        _suelta_moneda(_mint_str)
+                        return
                     # Una moneda migrada no tiene curva que comprar: su
                     # liquidez esta en un pool y hay que rutar por Jupiter.
                     if (token_info.additional_data or {}).get("migrated"):
@@ -4901,6 +4919,49 @@ class UniversalTrader:
             except Exception:  # noqa: BLE001
                 pass
         return False
+
+    def _apuntar_compra_en_pausa(
+        self, token_info: TokenInfo, importe: float
+    ) -> None:
+        """Deja constancia de una compra que NO se hizo, y por que.
+
+        En modo estudio esto es el producto: la lista de lo que el bot habria
+        comprado, con su importe y su origen, sin haber gastado un duro. Sirve
+        para dos cosas que no se pueden hacer mirando el log a secas -- contar
+        cuantas oportunidades da cada fuente al dia, y despues comprobar que
+        habria pasado con cada una.
+
+        Se escribe en el MISMO fichero de operaciones y con el mismo formato
+        que una compra real, marcada con `motivo: "pausa"`. Asi los informes
+        que ya existen la ven sin tocarles nada.
+        """
+        origen = (token_info.additional_data or {}).get(
+            "acquisition_source", "listener"
+        )
+        logger.info(
+            "PAUSA · %s: habria comprado %.4f SOL (origen %s). No se gasta "
+            "nada: `pausar_compras` esta puesto.",
+            token_info.symbol, importe, origen,
+        )
+        try:
+            # `amount` lleva el importe en SOL que se habria gastado, y el
+            # precio va a 0 a proposito: no hay compra, asi que no hay precio
+            # de entrada que apuntar. La accion propia
+            # ("compra_en_pausa") impide que ningun informe la sume como si
+            # fuera una compra de verdad.
+            self._log_trade(
+                "compra_en_pausa",
+                token_info,
+                0.0,
+                round(importe, 6),
+                None,
+                reason="pausar_compras",
+            )
+        except Exception:  # noqa: BLE001, S110
+            # Apuntarlo es lo que da valor al modo estudio, pero si fallara
+            # tampoco puede tumbar el bot: la linea del log de arriba ya ha
+            # salido.
+            pass
 
     async def _precio_rapido(
         self, mint: str, pool_address: "Pubkey", curve_manager: object
@@ -6501,6 +6562,9 @@ class UniversalTrader:
                     )
                     return
                 self._reserved_lamports += need
+            if self.pausar_compras:
+                self._apuntar_compra_en_pausa(token_info, importe)
+                return
             try:
                 buy_result: TradeResult = await self.buyer.execute(
                     token_info, amount_sol=importe,

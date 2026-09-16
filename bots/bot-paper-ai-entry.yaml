@@ -178,6 +178,23 @@ trade:
   # que el bot abandonase cada posicion a los 8 MINUTOS.
   abandonar_tras_seg: 86400
   final_target_mc: 0
+  # MODO ESTUDIO: NO SE COMPRA NADA NUEVO.
+  #
+  # El bot escucha, filtra, decide y APUNTA cada compra que habria hecho --con
+  # su importe y su fuente-- pero no firma ninguna. Es lo que hace falta para
+  # estudiar sin arriesgar: al cabo de un dia se sabe cuantas oportunidades da
+  # cada fuente, y luego se puede comprobar que habria pasado con cada una.
+  #
+  # POR QUE ESTO Y NO PARAR EL BOT. Parar el servicio deja las posiciones que
+  # YA estan abiertas sin stop loss y sin escalera: el dinero que ya esta
+  # dentro se queda a ciegas. Con esta bandera el bot sigue vigilandolas y
+  # vendiendolas normalmente; lo unico que no hace es abrir nuevas.
+  #
+  # Las compras apuntadas van a trades/trades.log con action
+  # "compra_en_pausa", asi que no se confunden con las de verdad.
+  #
+  # Poner false para volver a comprar.
+  pausar_compras: true
   price_check_interval: 1
   # PRECIO DEL STREAM. El bot ya esta suscrito a todas las operaciones de
   # pump.fun, y cada una publica las reservas virtuales que quedan despues:

@@ -193,6 +193,7 @@ async def start_bot(config_path: str):
                 "entrada_alternativa"
             ),
             price_check_interval=cfg["trade"].get("price_check_interval", 10),
+            pausar_compras=cfg["trade"].get("pausar_compras", False),
             precio_stream_seg=cfg["trade"].get("precio_stream_seg", 0),
             tick_stream_seg=cfg["trade"].get("tick_stream_seg", 0.25),
             # Listener configuration

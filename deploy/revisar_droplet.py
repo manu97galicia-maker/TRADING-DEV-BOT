@@ -225,9 +225,20 @@ def _listener(cfg: dict, texto_env: str) -> None:
 def _modo(cfg: dict) -> None:
     print("\n== MODO ==")
     t, f = cfg.get("trade", {}), cfg.get("filters", {})
+    if t.get("pausar_compras"):
+        # No es un fallo: es lo que se ha pedido. Pero tiene que verse a la
+        # primera, porque un bot en pausa que nadie recuerda haber pausado
+        # parece un bot roto.
+        aviso(
+            "MODO ESTUDIO (pausar_compras: true): NO se compra nada nuevo. "
+            "Lo ya abierto se sigue vigilando y vendiendo con normalidad. "
+            "Para volver a comprar, poner pausar_compras: false"
+        )
     papel = t.get("paper_trade", f.get("paper_trade"))
     if papel:
         mal("paper_trade esta en true: SIMULA, no compra de verdad")
+    elif t.get("pausar_compras"):
+        bien("paper_trade false: las VENTAS son de verdad (lo que importa en pausa)")
     else:
         bien("paper_trade false: compra de VERDAD")
     tope = int(t.get("max_real_buys") or 0)
