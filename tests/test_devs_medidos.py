@@ -198,3 +198,43 @@ def test_solo_se_suben_los_ficheros_de_devs() -> None:
     assert "git add devs_medidos.json devs_unificados.json" in s
     assert "git add -A" not in s
     assert "git add ." not in s
+
+
+# --------------------------------- que se pueda llamar desde cualquier sitio
+
+
+def _instalador() -> str:
+    return (RAIZ / "deploy" / "instalar_comandos.sh").read_text(encoding="utf-8")
+
+
+def test_los_comandos_no_dependen_de_en_que_carpeta_estes() -> None:
+    """EL FALLO QUE SE REPITIO TRES VECES. `bash deploy/devs.sh ver` solo vale
+    estando dentro de /root/ai-bot, y desde el movil no se esta: cada corte de
+    SSH devuelve la sesion a ~ y el comando falla con "No such file or
+    directory". Los envoltorios llevan la ruta absoluta dentro.
+    """
+    s = _instalador()
+    assert "RAIZ=/root/ai-bot" in s
+    assert 'exec bash "$RAIZ/deploy/$guion"' in s
+
+
+def test_los_comandos_pasan_los_argumentos() -> None:
+    """Sin esto, `devs ver` y `devs medir` harian lo mismo."""
+    assert '"\\$@"' in _instalador()
+
+
+def test_el_resumen_dice_si_se_esta_comprando_de_verdad() -> None:
+    """Es lo primero que hay que poder comprobar de un vistazo: que el bot no
+    este gastando dinero cuando se cree que esta en pausa."""
+    s = _instalador()
+    assert "pausar_compras: true" in s
+    assert "EN PAUSA" in s
+    assert "ACTIVAS" in s
+
+
+def test_el_instalador_no_toca_nada_del_bot() -> None:
+    """Solo escribe envoltorios en /usr/local/bin: no reinicia servicios, no
+    cambia configuracion y no borra nada."""
+    s = _instalador()
+    for peligroso in ("systemctl restart", "systemctl stop", "rm ", "git "):
+        assert peligroso not in s, f"el instalador hace '{peligroso}'"
