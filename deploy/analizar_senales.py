@@ -223,6 +223,59 @@ def _rentabilidad(filas: list[dict]) -> None:
         print("Antes de comprar hay que cambiar la escalera, no el filtro.")
 
 
+def _ritmo(filas: list[dict]) -> None:
+    """Cuantas monedas por minuto pasarian cada filtro.
+
+    POR QUE ESTO IMPORTA TANTO COMO EL ACIERTO. Un filtro se juzga por dos
+    cosas y casi siempre se mira solo una. La otra es el RITMO: de nada sirve
+    el mejor filtro del mundo si deja pasar tres monedas por minuto y solo
+    caben cinco posiciones a la vez -- el bot se llena en dos minutos con las
+    tres primeras que aparezcan, que no son las mejores, son las primeras. A
+    partir de ahi el filtro no elige nada: elige el reloj.
+
+    Al reves tambien duele: un filtro que deja pasar una moneda cada dos horas
+    tiene las cinco plazas vacias casi todo el dia.
+
+    El ritmo sale de las marcas de tiempo apuntadas, no de una estimacion.
+    """
+    tiempos = sorted(float(f["t"]) for f in filas if f.get("t"))
+    if len(tiempos) < 2:  # noqa: PLR2004
+        return
+    minutos = (tiempos[-1] - tiempos[0]) / 60.0
+    if minutos <= 0:
+        return
+    print(f"\n{'=' * 72}")
+    print(f"EL RITMO: cuantas caerian por minuto  ({minutos / 60:.1f} horas medidas)")
+    print(f"{'=' * 72}")
+    print(f"Monedas vistas: {len(filas)}  ->  {len(filas) / minutos:.1f} por minuto\n")
+    print(f"{'filtro':<30}{'pasan':>8}{'por minuto':>12}{'una cada':>12}")
+    print("-" * 72)
+
+    ritmos = []
+    for senal, (cortes, sentido) in CORTES.items():
+        for corte in cortes:
+            if sentido == "mayor":
+                pasan = [f for f in filas if (f.get(senal) or 0) >= corte]
+            else:
+                pasan = [f for f in filas if (f.get(senal) or 0) <= corte]
+            if len(pasan) < MINIMO_FIABLE:
+                continue
+            ritmos.append((len(pasan) / minutos, senal, corte, len(pasan), sentido))
+    ritmos.sort(reverse=True)
+    for por_min, senal, corte, n, sentido in ritmos[:12]:
+        signo = ">=" if sentido == "mayor" else "<="
+        cada = f"{60 / por_min:.0f} s" if por_min >= 1 else f"{1 / por_min:.0f} min"
+        etiqueta = f"{senal} {signo} {corte:g}"
+        print(f"{etiqueta:<30}{n:>8}{por_min:>11.1f}{cada:>12}")
+
+    print("\nCOMO SE LEE ESTO. Con 5 plazas y posiciones que duran minutos, un")
+    print("filtro que deja caer mas de ~1 por minuto NO esta eligiendo: el bot")
+    print("se llena con las primeras que pasen y el resto ni las mira. Si el")
+    print("ritmo sale alto, hay que APRETAR el corte aunque baje el acierto --")
+    print("porque el acierto medido aqui es el de TODAS las que pasan, y el bot")
+    print("solo va a poder comprar las primeras.")
+
+
 def main() -> None:
     """Lee lo apuntado y dice que senal predice que."""
     if hasattr(sys.stdout, "reconfigure"):
@@ -235,6 +288,7 @@ def main() -> None:
     for objetivo in ("llego_tp1", "llego_tp2", "llego_tp3"):
         _analizar(filas, objetivo)
     _rentabilidad(filas)
+    _ritmo(filas)
     print(f"\n{'=' * 72}")
     if len(filas) < MINIMO_FIABLE:
         print(f"OJO: solo {len(filas)} monedas. Por debajo de {MINIMO_FIABLE} esto")

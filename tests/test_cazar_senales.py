@@ -250,3 +250,44 @@ def test_lo_que_queda_dentro_no_se_valora_al_pico() -> None:
 def test_sin_datos_la_cuenta_es_cero_y_no_revienta() -> None:
     an = _modulo("analizar_senales")
     assert an._cuenta([]) == (0.0, 0.0)
+
+
+# ---------------------------------------------------------- el ritmo
+
+
+def test_el_ritmo_sale_de_las_marcas_de_tiempo_no_de_una_estimacion() -> None:
+    """Un filtro se juzga por DOS cosas y casi siempre se mira solo una.
+
+    La otra es el ritmo: de nada sirve el mejor filtro si deja caer tres
+    monedas por minuto y solo caben cinco posiciones -- el bot se llena con
+    las primeras que pasen, que no son las mejores, son las primeras, y a
+    partir de ahi quien elige es el reloj.
+    """
+    an = _modulo("analizar_senales")
+    fuente = (RAIZ / "deploy" / "analizar_senales.py").read_text(encoding="utf-8")
+    cuerpo = fuente[fuente.index("def _ritmo(") : fuente.index("def main(")]
+    assert 'float(f["t"])' in cuerpo, "el ritmo no usa las marcas de tiempo"
+    assert an is not None
+
+
+def test_sin_marcas_de_tiempo_no_inventa_un_ritmo(capsys) -> None:
+    """Datos viejos sin `t` no pueden producir un numero de la nada."""
+    an = _modulo("analizar_senales")
+    an._ritmo([_fila(), _fila()])
+    assert capsys.readouterr().out == ""
+
+
+def test_con_una_sola_moneda_no_hay_ritmo(capsys) -> None:
+    """Un solo punto no define un intervalo."""
+    an = _modulo("analizar_senales")
+    an._ritmo([{**_fila(), "t": 1000.0}])
+    assert capsys.readouterr().out == ""
+
+
+def test_el_ritmo_se_calcula_bien(capsys) -> None:
+    """60 monedas repartidas en una hora son una por minuto."""
+    an = _modulo("analizar_senales")
+    filas = [{**_fila(ola_compradores=5), "t": 1000.0 + i * 60} for i in range(60)]
+    an._ritmo(filas)
+    salida = capsys.readouterr().out
+    assert "1.0 por minuto" in salida
