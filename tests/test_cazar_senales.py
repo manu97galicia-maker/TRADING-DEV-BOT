@@ -184,3 +184,69 @@ def test_el_script_no_borra_lo_apuntado_al_apagar() -> None:
     apagado = script[script.index("  off)") : script.index("  ver)")]
     assert "rm " not in apagado
     assert "senales.jsonl" not in apagado.replace('Lo apuntado sigue en "$DATOS"', "")
+
+
+# --------------------------------------------- la cuenta, que es lo que decide
+
+
+def test_una_que_solo_toca_el_stop_pierde_justo_el_stop() -> None:
+    """El caso mas simple, y el que fija la escala de todo lo demas."""
+    an = _modulo("analizar_senales")
+    _esc, stop = an._escalera()
+    peor, mejor = an._cuenta([{"pico": 0.0, "suelo": -0.30, "ultimo": -0.30}])
+    assert peor == -stop
+    assert mejor == -stop
+
+
+def test_acertar_mucho_no_significa_ganar() -> None:
+    """LA TRAMPA QUE ESTA CUENTA DESTAPA, y el motivo de escribirla.
+
+    El analisis de senales dice cuantas monedas LLEGAN al TP1. Es facil leer
+    un 27% de acierto como "vamos bien". Pero el TP1 vende el 20% de un +25%,
+    o sea +5% de la posicion, y el stop cuesta -18%: con esos numeros hay que
+    acertar mucho mas de una de cada cuatro solo para empatar.
+
+    Aqui se fija con una tasa de acierto ALTA --una de cada cuatro llega al
+    +30%-- y aun asi la cuenta sale negativa. Si alguien sube el peso del TP1
+    o baja el stop, este test cambia de signo y obliga a mirarlo.
+    """
+    an = _modulo("analizar_senales")
+    filas = []
+    for i in range(100):
+        if i < 25:
+            filas.append({"pico": 0.30, "suelo": -0.05, "ultimo": 0.30})
+        else:
+            filas.append({"pico": 0.05, "suelo": -0.25, "ultimo": -0.25})
+    peor, mejor = an._cuenta(filas)
+    assert peor < 0, "la punta pesimista deberia salir negativa"
+    assert mejor < 0, "ni siendo optimista sale la cuenta"
+
+
+def test_la_punta_peor_nunca_supera_a_la_mejor() -> None:
+    """Son las dos puntas del mismo intervalo: si se cruzan, la cuenta miente."""
+    an = _modulo("analizar_senales")
+    rng = random.Random(5)
+    filas = [
+        {"pico": rng.random() * 3, "suelo": -rng.random() * 0.5,
+         "ultimo": rng.random() * 2 - 1}
+        for _ in range(300)
+    ]
+    peor, mejor = an._cuenta(filas)
+    assert peor <= mejor
+
+
+def test_lo_que_queda_dentro_no_se_valora_al_pico() -> None:
+    """Valorar el resto al pico seria hacer trampa: ese precio ya paso.
+
+    Una moneda que sube a +100% y se cae a -50% no vale +100% al final. Si se
+    contara asi, cualquier filtro pareceria rentable.
+    """
+    an = _modulo("analizar_senales")
+    subio_y_cayo = [{"pico": 1.0, "suelo": -0.10, "ultimo": -0.50}]
+    se_quedo_arriba = [{"pico": 1.0, "suelo": -0.10, "ultimo": 1.0}]
+    assert an._cuenta(subio_y_cayo)[1] < an._cuenta(se_quedo_arriba)[1]
+
+
+def test_sin_datos_la_cuenta_es_cero_y_no_revienta() -> None:
+    an = _modulo("analizar_senales")
+    assert an._cuenta([]) == (0.0, 0.0)

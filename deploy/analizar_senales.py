@@ -22,6 +22,8 @@ import json
 import sys
 from pathlib import Path
 
+import yaml
+
 ENTRADA = Path("trades") / "senales.jsonl"
 #: Monedas por debajo de las cuales no se decide nada.
 MINIMO_FIABLE = 50
@@ -112,6 +114,115 @@ def _analizar(filas: list[dict], objetivo: str) -> None:
               f"(+{ventaja:.1f} puntos, sobre {n} monedas)")
 
 
+# --------------------------------------------------------- LA CUENTA
+
+
+def _escalera() -> tuple[list[tuple[float, float]], float]:
+    """La escalera de venta que hay puesta ahora mismo en el bot."""
+    t = yaml.safe_load(
+        (Path("bots") / "bot-paper-ai-entry.yaml").read_text(encoding="utf-8")
+    )["trade"]
+    pares = [(t["take_profit_percentage"], t["take_profit_sell_percentage"])]
+    n = 2
+    while t.get(f"tp{n}_gain") and t.get(f"tp{n}_sell"):
+        pares.append((float(t[f"tp{n}_gain"]), float(t[f"tp{n}_sell"])))
+        n += 1
+    for e in t.get("tp_extra") or []:
+        pares.append((float(e["gain"]), float(e["sell"])))
+    pares.sort()
+    return pares, float(t["stop_loss_percentage"])
+
+
+def _cuenta(filas: list[dict]) -> tuple[float, float]:
+    """Cuanto se gana o se pierde por operacion, en tanto por uno.
+
+    POR QUE HAY DOS NUMEROS Y NO UNO. De cada moneda se apunto hasta donde
+    subio (`pico`) y hasta donde cayo (`suelo`), pero NO en que orden pasaron
+    las dos cosas. Sin el orden no se puede saber si el stop salto antes o
+    despues de cobrar los peldanos, asi que se dan las dos puntas:
+
+      PEOR  -- si toco el stop, se supone que salto ANTES de cobrar nada.
+      MEJOR -- se supone que cobro todos los peldanos que alcanzo y el stop
+               salto despues.
+
+    La verdad esta entre las dos. Si la PEOR ya sale positiva, se gana dinero
+    seguro; si la MEJOR sale negativa, se pierde seguro. Cuando una es
+    positiva y la otra negativa, hace falta medir el orden antes de arriesgar.
+    """
+    if not filas:
+        return 0.0, 0.0
+    escalones, stop = _escalera()
+    peor = mejor = 0.0
+    for f in filas:
+        pico = float(f.get("pico") or 0.0)
+        suelo = float(f.get("suelo") or 0.0)
+        toco_stop = suelo <= -stop
+        # Lo que la escalera habria cobrado llegando hasta el pico.
+        cobrado = sum(v * g for g, v in escalones if pico >= g)
+        vendido = sum(v for g, v in escalones if pico >= g)
+        if toco_stop:
+            # PEOR: el stop primero, no se cobra ningun peldano.
+            peor += -stop
+            # MEJOR: se cobran los peldanos y el resto sale en el stop.
+            mejor += cobrado + (1 - vendido) * -stop
+        else:
+            # Sin stop, lo que no se vendio sigue dentro: se valora al
+            # ULTIMO precio visto, no al pico, que seria hacer trampa.
+            ultimo = f.get("ultimo")
+            resto = float(ultimo) if ultimo is not None else 0.0
+            peor += cobrado + (1 - vendido) * min(resto, 0.0)
+            mejor += cobrado + (1 - vendido) * resto
+    n = len(filas)
+    return peor / n, mejor / n
+
+
+def _rentabilidad(filas: list[dict]) -> None:
+    """Lo unico que decide de verdad: si la cuenta sale o no sale."""
+    print(f"\n{'=' * 72}")
+    print("LA CUENTA: cuanto deja cada operacion, con la escalera de hoy")
+    print(f"{'=' * 72}")
+    escalones, stop = _escalera()
+    print(f"Escalera: {', '.join(f'+{g * 100:.0f}%/{v * 100:.0f}%' for g, v in escalones[:3])}"
+          f" ...   Stop: -{stop * 100:.0f}%")
+    base_peor, base_mejor = _cuenta(filas)
+    print(f"\nComprando A CIEGAS:  entre {base_peor * 100:+.1f}% y "
+          f"{base_mejor * 100:+.1f}% por operacion")
+    print("\nCon cada filtro:")
+    print(f"{'filtro':<30}{'monedas':>8}{'peor':>9}{'mejor':>9}")
+    print("-" * 72)
+
+    filtros = []
+    for senal, (cortes, sentido) in CORTES.items():
+        for corte in cortes:
+            if sentido == "mayor":
+                pasan = [f for f in filas if (f.get(senal) or 0) >= corte]
+            else:
+                pasan = [f for f in filas if (f.get(senal) or 0) <= corte]
+            if len(pasan) < MINIMO_FIABLE:
+                continue
+            peor, mejor = _cuenta(pasan)
+            filtros.append((mejor, peor, senal, corte, len(pasan), sentido))
+
+    filtros.sort(reverse=True)
+    for mejor, peor, senal, corte, n, sentido in filtros[:15]:
+        signo = ">=" if sentido == "mayor" else "<="
+        print(f"{senal} {signo} {corte:<{28 - len(senal) - len(signo)}g}"
+              f"{n:>8}{peor * 100:>8.1f}%{mejor * 100:>8.1f}%")
+
+    seguros = [f for f in filtros if f[1] > 0]
+    print()
+    if seguros:
+        mejor, peor, senal, corte, n, sentido = seguros[0]
+        signo = ">=" if sentido == "mayor" else "<="
+        print(f"GANA SEGURO: {senal} {signo} {corte:g} deja al menos "
+              f"{peor * 100:+.1f}% por operacion ({n} monedas).")
+    else:
+        print("NINGUN filtro gana seguro: en todos, la punta PEOR sale negativa.")
+        print("Traducido: con esta escalera, acertar mas no basta -- lo que")
+        print("cobra el TP1 (+5% de la posicion) no cubre un stop de -18%.")
+        print("Antes de comprar hay que cambiar la escalera, no el filtro.")
+
+
 def main() -> None:
     """Lee lo apuntado y dice que senal predice que."""
     if hasattr(sys.stdout, "reconfigure"):
@@ -123,6 +234,7 @@ def main() -> None:
         return
     for objetivo in ("llego_tp1", "llego_tp2", "llego_tp3"):
         _analizar(filas, objetivo)
+    _rentabilidad(filas)
     print(f"\n{'=' * 72}")
     if len(filas) < MINIMO_FIABLE:
         print(f"OJO: solo {len(filas)} monedas. Por debajo de {MINIMO_FIABLE} esto")
