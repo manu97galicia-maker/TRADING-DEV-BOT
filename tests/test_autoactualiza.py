@@ -146,3 +146,57 @@ def test_la_sintaxis_del_guion_es_valida() -> None:
         capture_output=True, text=True, timeout=30, check=False,
     )
     assert r.returncode == 0, r.stderr
+
+
+# ------------------------------------------ el diagnostico de "no compra"
+
+
+def _porque() -> str:
+    return (RAIZ / "deploy" / "porque.sh").read_text(encoding="utf-8")
+
+
+def test_el_diagnostico_agrupa_los_motivos_en_vez_de_volcar_el_log() -> None:
+    """Desde el movil no se puede leer un log de miles de lineas. Lo que hace
+    falta es el EMBUDO: cuantas se caen en cada paso y por que."""
+    s = _porque()
+    assert "uniq -c" in s, "no agrupa: volcaria el log entero"
+    assert "sort -rn" in s, "no ordena por frecuencia: el motivo gordo se pierde"
+
+
+def test_los_motivos_se_agrupan_quitando_lo_que_cambia() -> None:
+    """Si no se quita el simbolo y los numeros, cada descarte es unico y el
+    recuento sale todo a uno: inservible."""
+    s = _porque()
+    assert "s/Evitado [^:]+: //" in s, "no quita el simbolo de la moneda"
+    assert "s/[0-9]+" in s, "no quita los numeros"
+
+
+def test_distingue_no_hay_candidatas_de_no_se_compran() -> None:
+    """Son problemas OPUESTOS con arreglos opuestos: o el corte de la fuente
+    esta muy alto, o lo que sobra es un filtro de mas abajo."""
+    s = _porque()
+    assert "La fuente no ha mandado NI UNA candidata" in s
+    assert "NINGUNA llega a comprarse" in s
+
+
+def test_mira_tambien_los_frenos_de_cartera() -> None:
+    """Un bot con las 5 plazas llenas o sin SOL no compra, y no es culpa de
+    ningun filtro."""
+    s = _porque()
+    assert "max posiciones" in s.lower()
+    assert "SOL insuficiente" in s
+
+
+def test_el_diagnostico_solo_lee() -> None:
+    """Se va a correr cuando algo va mal: no puede empeorarlo."""
+    s = _porque()
+    for peligroso in ("systemctl restart", "systemctl stop", "git ", "rm ", ">"):
+        if peligroso == ">":
+            continue  # las redirecciones de `2>/dev/null` son inevitables
+        assert peligroso not in s, f"el diagnostico hace '{peligroso}'"
+
+
+def test_esta_entre_los_comandos_cortos() -> None:
+    """Se escribe cuando uno esta harto: tiene que ser una palabra."""
+    s = (RAIZ / "deploy" / "instalar_comandos.sh").read_text(encoding="utf-8")
+    assert "_poner porque porque.sh" in s

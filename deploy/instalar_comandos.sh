@@ -29,6 +29,7 @@ EOF
 echo "Instalando comandos globales:"
 _poner devs devs.sh
 _poner cazador cazador.sh
+_poner porque porque.sh
 
 # `bot` no envuelve un guion: resume de un vistazo el estado de todo, que es
 # lo que de verdad se quiere saber al entrar.
