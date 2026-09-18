@@ -264,12 +264,36 @@ filters:
   max_token_age: 120
   max_buy_age: 0
   min_buy_age: 0
-  allow_mayhem: false
+  # MAYHEM. En false el bot DESCARTA las monedas en modo mayhem de
+  # pump.fun, y eso era una tercera condicion que nadie pidio: se comian
+  # monedas que cumplian las dos reglas sin decir nada. Con la estrategia
+  # de 99 titulares ("solo esas dos condiciones") pasa a true.
+  #
+  # Que cambia de verdad: nada del riesgo de la moneda. Mayhem es un modo
+  # de pump.fun que cambia a quien van las comisiones; el bot ya sabe
+  # mandarlas donde toca. Se compra con los mismos 0,07 SOL, porque
+  # `mayhem_buy_amount` esta a 0 y manda el importe de la senal.
+  allow_mayhem: true
   require_mayhem: false
   marry_mode: false
   yolo_mode: true
   paper_trade: false
-  ignorar_listas_de_devs: false
+  # NO SE MIDEN DEVS. Pedido el 19-sep: "que no mida devs, solo si una
+  # moneda nueva llega a los 99 holders, nada mas".
+  #
+  # En false corrian dos listas que descartaban por el CREADOR y no por la
+  # moneda: la blacklist manual y el auto-baneo por rugs (`rugs_para_bloquear`
+  # a 1, o sea que un solo rug apuntado dejaba a ese dev fuera para
+  # siempre). Ninguna de las dos es una de las dos condiciones.
+  #
+  # LO QUE CUESTA, dicho claro: un dev al que ya le has visto hundir una
+  # moneda vuelve a ser comprable. Si su siguiente lanzamiento llega a 99
+  # titulares en menos de cinco minutos, el bot entra igual.
+  #
+  # Las listas NO se borran: siguen en disco y vuelven poniendo esto en
+  # false. El filtro de reputacion en vivo (`pumpfun_dev`) ya estaba
+  # apagado, y `max_dev_hold_pct`/`dev_buy.min_sol` estan a 0.
+  ignorar_listas_de_devs: true
   # Rechaza si UN titular tiene mas de esta fraccion del supply. Estaba en
   # 0.05 y era el filtro que mas compras tumbaba: ese 5% viene del sniper
   # viejo, que compraba monedas recien creadas donde un titular gordo a los

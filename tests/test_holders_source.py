@@ -234,3 +234,38 @@ def test_queda_escrito_que_esto_no_mira_bundles() -> None:
     assert "max_carteras_primer_bloque" not in texto.replace(
         "`max_carteras_primer_bloque`", ""
     ), "si algun dia se anade el anti-bundle, quitar este test y el aviso"
+
+
+def test_no_se_mide_ningun_dev() -> None:
+    """Pedido el 19-sep: "que no mida devs, solo si una moneda nueva llega a
+    los 99 holders, nada mas".
+
+    Eran CUATRO cosas distintas mirando al creador, y ninguna era una de las
+    dos condiciones:
+      * `ignorar_listas_de_devs: false` -> blacklist manual + auto-baneo por
+        rugs. Era la unica que seguia viva.
+      * `pumpfun_dev` -> reputacion en vivo (migraciones / lanzamientos).
+      * `max_dev_hold_pct` -> cuanto supply guarda el dev.
+      * `dev_buy.min_sol` -> cuanto se compro el dev a si mismo.
+
+    LO QUE CUESTA: un dev al que ya se le vio hundir una moneda vuelve a ser
+    comprable. Las listas siguen en disco; volver es poner el primero en false.
+    """
+    f = _filtros()
+    assert f["ignorar_listas_de_devs"] is True
+    assert f["pumpfun_dev"]["enabled"] is False
+    assert not f.get("max_dev_hold_pct", 0)
+    assert not f.get("min_dev_hold_pct", 0)
+    assert not f.get("dev_buy", {}).get("min_sol", 0)
+
+
+def test_las_mayhem_ya_no_se_descartan() -> None:
+    """Era una tercera condicion que nadie pidio, y se comia monedas que
+    cumplian las dos sin decir nada.
+
+    No afloja ningun riesgo de la moneda: mayhem es un modo de pump.fun que
+    cambia a quien van las comisiones, y el bot ya sabe mandarlas donde toca.
+    """
+    f = _filtros()
+    assert f["allow_mayhem"] is True
+    assert f["require_mayhem"] is False
