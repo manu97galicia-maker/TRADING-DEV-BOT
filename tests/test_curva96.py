@@ -306,8 +306,16 @@ def test_este_regimen_no_toca_a_las_demas_fuentes() -> None:
 
 
 def test_la_config_del_bot_pide_lo_que_se_acordo() -> None:
+    """Los ajustes de la curva, listos para cuando se vuelva a encender.
+
+    El 18-sep se apago esta fuente: Manu pidio probar SOLO la de presion
+    compradora, asi que las cuatro que habia se quedaron en false. Los
+    numeros de aqui abajo siguen fijados a proposito -- describen como tiene
+    que quedar la fuente cuando se reactive, y si alguien los cambia mientras
+    esta apagada este test lo dice igual.
+    """
     cfg = yaml.safe_load(CONFIG.read_text())["filters"]["curva_96"]
-    assert cfg["enabled"] is True
+    assert cfg["enabled"] is False  # apagada: solo corre `presion`
     assert cfg["umbral"] == 0.95
     # La ventana de disparo: entre el umbral y el tope. Por encima del tope
     # la moneda ya esta migrando y comprar ahi es tirar la comision.

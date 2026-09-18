@@ -298,7 +298,7 @@ filters:
     enabled: false
 
   buy_on_dex_paid:
-    enabled: true
+    enabled: false
     # 3s. Cada vuelta cuesta ahora 2 llamadas (los dos feeds), y cada feed
     # tiene su propio cubo de 60/min, asi que 20 vueltas por minuto caben de
     # sobra. Bajarlo mas no gana nada: por debajo de ~2s el cuello pasa a ser
@@ -392,7 +392,7 @@ filters:
   # de la URL (/trial/v2, /standard/v2...), asi que una clave puesta contra
   # el plan equivocado devuelve 401 y la fuente se queda muda.
   dextools_hotpools:
-    enabled: true
+    enabled: false
     poll_interval: 15
     heartbeat_interval: 300
     limit: 30
@@ -451,8 +451,47 @@ filters:
   # pump.fun publica en su log las reservas de la curva, y el bot ya lee
   # ese stream entero. Solo se consulta al nodo cuando una moneda llega
   # al umbral, o sea unas pocas veces al dia.
-  curva_96:
+  # ------------------------------------------------------------------
+  # PRESION COMPRADORA — la unica fuente activa desde el 18-sep-2026.
+  #
+  # DE DONDE SALE EL NUMERO. Se midieron 27.241 monedas apuntando sus senales
+  # a los 20 segundos de vida y siguiendolas 5 minutos. De todo lo probado, lo
+  # que mas predijo un pump fue el numero de COMPRADORES DISTINTOS en una
+  # ventana corta:
+  #     de base            llegan al +25%   14,4%
+  #     con >=3                             27,4%   (+13,0 puntos)
+  #     con >=12                            25,8%   (+11,4 puntos)
+  #
+  # POR QUE 12 Y NO 3, QUE ACIERTA MAS. Por el RITMO. Con >=3 caen unas 3
+  # monedas por minuto y con 5 plazas el bot se llena en dos minutos con las
+  # PRIMERAS que pasen, no con las mejores: a partir de ahi elige el reloj y
+  # no el filtro. Con >=12 caen unas 0,7 por minuto, que es el ritmo al que
+  # las cinco plazas de verdad eligen. Se pierden 1,6 puntos de acierto y se
+  # gana poder elegir.
+  #
+  # AVISO QUE NO HAY QUE OLVIDAR: con la escalera actual la cuenta sale
+  # NEGATIVA incluso con este filtro (el TP1 cobra +5% de la posicion contra
+  # un stop de -18%). Se arranca igual por decision de Manu y con 0,07 SOL
+  # por operacion, que es lo que lo hace asumible mientras se mide de verdad.
+  presion:
     enabled: true
+    # Compradores DISTINTOS que tienen que entrar en la ventana.
+    min_compradores_ola: 12
+    ventana: 5.0
+    buy_amount: 0.07
+    # Por encima de este avance no se entra: eso lo cubre `curva_96`.
+    max_avance_curva: 0.95
+    # ANTI-BUNDLE. Sin esto esta fuente seria un iman de pump and dump: un
+    # bundle ES "muchas carteras comprando a la vez", que es justo lo que
+    # busca. La diferencia es CUANDO -- las del bundle entran en el bloque de
+    # creacion. Si no se vio nacer la moneda, no se compra.
+    max_carteras_primer_bloque: 3
+    max_sol_primer_bloque: 2.0
+    max_bundle_pct: 0.5
+    heartbeat_interval: 300
+
+  curva_96:
+    enabled: false
     # Punto de la curva en que se compra (0,95 = 95% vendido).
     #
     # Cuanto mas bajo, antes se entra: queda mas curva por llenar, asi que
@@ -517,7 +556,7 @@ filters:
     heartbeat_interval: 300
 
   telegram_calls:
-    enabled: true
+    enabled: false
     session_name: moontok_watcher
     normal_buy_amount: 0.07
     nitro_buy_amount: 0.07

@@ -418,6 +418,7 @@ class UniversalTrader:
         birdeye_trending: dict | None = None,
         dextools_hotpools: dict | None = None,
         curva_96: dict | None = None,
+        presion: dict | None = None,
         # Telegram-calls acquisition mode (disabled unless configured)
         telegram_calls: dict | None = None,
         discord_calls: dict | None = None,
@@ -1239,6 +1240,10 @@ class UniversalTrader:
         self.birdeye_trending = birdeye_trending or {}
         self.dextools_hotpools = dextools_hotpools or {}
         self.curva_96 = curva_96 or {}
+        #: Compra por oleada de compradores distintos. Es la fuente que sale
+        #: de lo medido: 27.241 monedas dijeron que lo que predice un pump no
+        #: es el ratio compras/ventas sino cuanta GENTE DISTINTA entra.
+        self.presion = presion or {}
         # Telegram-calls acquisition mode config (off unless enabled)
         self.telegram_calls = telegram_calls or {}
         self.discord_calls = discord_calls or {}
@@ -1401,6 +1406,9 @@ class UniversalTrader:
         if self.curva_96.get("enabled"):
             logger.info("Curva-casi-llena acquisition ENABLED")
             acquisition_tasks.append(asyncio.create_task(self._run_curva96_mode()))
+        if self.presion.get("enabled"):
+            logger.info("Presion-compradora acquisition ENABLED")
+            acquisition_tasks.append(asyncio.create_task(self._run_presion_mode()))
         if self.telegram_calls.get("enabled"):
             logger.info("Telegram-calls acquisition ENABLED")
             acquisition_tasks.append(asyncio.create_task(self._run_telegram_mode()))
@@ -1919,6 +1927,30 @@ class UniversalTrader:
             await source.run(self._on_dexpaid_token)
         except asyncio.CancelledError:
             logger.info("Curva-casi-llena mode stopped")
+
+    async def _run_presion_mode(self) -> None:
+        """Compra las monedas donde entra mucha gente distinta de golpe."""
+        from monitoring.presion_source import PresionSource
+
+        cfg = self.presion
+        source = PresionSource(
+            self.wss_endpoint,
+            self.platform_implementations,
+            self.solana_client,
+            min_compradores_ola=int(cfg.get("min_compradores_ola", 12)),
+            ventana=float(cfg.get("ventana", 5.0)),
+            buy_amount=float(cfg.get("buy_amount", 0.07)),
+            max_avance_curva=float(cfg.get("max_avance_curva", 0.95)),
+            max_carteras_primer_bloque=int(cfg.get("max_carteras_primer_bloque", 3)),
+            max_sol_primer_bloque=float(cfg.get("max_sol_primer_bloque", 2.0)),
+            max_bundle_pct=float(cfg.get("max_bundle_pct", 0.5)),
+            heartbeat_interval=float(cfg.get("heartbeat_interval", 300)),
+            paper_mode=self.paper_trade or self.paper_engine.enabled,
+        )
+        try:
+            await source.run(self._on_dexpaid_token)
+        except asyncio.CancelledError:
+            logger.info("Presion-compradora mode stopped")
 
     async def _run_telegram_mode(self) -> None:
         """Run the Telegram-calls acquisition loop until interrupted."""

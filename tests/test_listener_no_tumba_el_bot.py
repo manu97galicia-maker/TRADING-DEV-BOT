@@ -33,6 +33,7 @@ FUENTES = (
     "telegram_calls",
     "discord_calls",
     "gmgn_signals",
+    "presion",
 )
 
 

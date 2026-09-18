@@ -254,6 +254,7 @@ async def start_bot(config_path: str):
                 cfg["trade"].get("valor_minimo_posicion_usd", 1.0)
             ),
             curva_96=cfg.get("filters", {}).get("curva_96"),
+            presion=cfg.get("filters", {}).get("presion"),
             telegram_calls=cfg.get("filters", {}).get("telegram_calls"),
             discord_calls=cfg.get("filters", {}).get("discord_calls"),
             # GMGN smart-money/KOL signals (disabled unless present + enabled)
