@@ -307,6 +307,24 @@ retries:
   wait_after_buy: 0
   wait_before_new_token: 0
 
+# TELEGRAM SILENCIADO (19-sep, pedido por Manu: "parate telegram de momento").
+#
+# `false` = no se manda NADA, avisos de caida incluidos. La lista vacia `[]` NO
+# vale para esto: significa "todos", que es contraintuitivo y por eso existe el
+# `false`.
+#
+# LO QUE SE PIERDE MIENTRAS ESTE ASI, dicho claro:
+#   - el parte cada 5 min con el embudo (cuantas monedas se vieron, cuantas
+#     llegaron al corte, por que se cayeron las demas). Es lo unico que se lee
+#     desde el movil para saber si la estrategia encuentra algo.
+#   - los avisos de compra y de venta.
+#   - el aviso de que el bot se ha caido.
+#   - el aviso de fallo de programacion.
+#
+# Todo eso sigue yendo al log; lo que se apaga es el mensajero. Para volver a
+# encenderlo: borrar esta linea, o ponerla a `true`.
+avisos_telegram: false
+
 filters:
   listener_type: logs
   # Antiguedad EN LA COLA interna, no de la moneda. Con compra instantanea

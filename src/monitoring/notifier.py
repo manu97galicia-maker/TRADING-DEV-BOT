@@ -27,6 +27,11 @@ logger = get_logger(__name__)
 #: arranques, y eso convierte el canal en ruido que se acaba ignorando --
 #: justo el que no hay que ignorar es el de "acabo de gastar tu dinero".
 _TIPOS_PERMITIDOS: set[str] = set()
+#: Silencio total. Lo pone `configurar_avisos(False)` y lo miran LAS DOS
+#: puertas de salida: `notify` y `notify_ahora`. La segunda se salta el
+#: filtro por tipo a proposito (avisos de caida), asi que sin esta bandera
+#: seguiria escribiendo con todo lo demas apagado.
+_SILENCIO = False
 _EXPENSIVE_PROMOTION_THRESHOLD = 500
 _MIN_LIQUID_CURVE_SOL = 7
 
@@ -76,7 +81,7 @@ def purchase_reason_label(source_data: dict | None) -> str:
     return reason
 
 
-def build_purchase_notification(  # noqa: PLR0913, PLR0917
+def build_purchase_notification(  # noqa: PLR0913
     symbol: str,
     mint: str,
     amount_sol: float,
@@ -127,7 +132,7 @@ def build_purchase_notification(  # noqa: PLR0913, PLR0917
     return "\n".join(lines)
 
 
-def build_paper_entry_notification(  # noqa: PLR0913, PLR0917
+def build_paper_entry_notification(  # noqa: PLR0913
     symbol: str,
     mint: str,
     amount_sol: float,
@@ -318,9 +323,30 @@ def build_ladder_event_notification(  # noqa: PLR0913
     return "\n".join(lines)
 
 
-def configurar_avisos(solo: list[str] | None) -> None:
-    """Limita los avisos a los tipos indicados. None o lista vacia = todos."""
-    global _TIPOS_PERMITIDOS  # noqa: PLW0603
+def configurar_avisos(solo: list[str] | bool | None) -> None:  # noqa: FBT001
+    # FBT001 pide que un booleano vaya por palabra clave. Aqui no es una
+    # bandera: es UNO de los tres valores que puede traer la misma clave del
+    # yaml (lista / false / nada), y partirlo en dos parametros obligaria a
+    # quien lee la config a decidir cual usar antes de mirarla.
+    """Que avisos de Telegram se mandan.
+
+    Tres formas de llamarla, y la de en medio es nueva:
+
+    * ``None`` (la clave no esta en el yaml) -> se manda TODO, como siempre.
+    * ``False`` -> NO se manda NADA. Silencio total, avisos de caida incluidos.
+    * una lista de tipos -> solo esos.
+
+    OJO CON LA LISTA VACIA: `[]` significa "todos", no "ninguno". Es
+    contraintuitivo y por eso hizo falta el `False`: `set([]) ` es falsy y el
+    filtro de abajo lo trata como "sin filtro". Quien quiera silencio tiene que
+    decirlo con `false`, no con una lista vacia.
+    """
+    global _TIPOS_PERMITIDOS, _SILENCIO  # noqa: PLW0603
+    _SILENCIO = solo is False
+    if _SILENCIO:
+        _TIPOS_PERMITIDOS = set()
+        logger.info("Telegram: SILENCIADO (avisos_telegram: false)")
+        return
     _TIPOS_PERMITIDOS = set(solo or [])
     if _TIPOS_PERMITIDOS:
         logger.info("Telegram: solo se avisara de %s", sorted(_TIPOS_PERMITIDOS))
@@ -359,6 +385,8 @@ def notify_ahora(text: str) -> bool:
 
     Tampoco filtra por tipo: si algo llama a esto es porque hay que contarlo.
     """
+    if _SILENCIO:
+        return False
     if not os.getenv("TELEGRAM_BOT_TOKEN") or not os.getenv("TELEGRAM_CHAT_ID"):
         return False
     _send_blocking(text)
@@ -374,6 +402,8 @@ def notify(text: str, tipo: str = "otro") -> None:
             no. Los que importan van marcados ("compra"); todo lo demas se
             queda con el valor por defecto y cae cuando hay filtro puesto.
     """
+    if _SILENCIO:
+        return
     if _TIPOS_PERMITIDOS and tipo not in _TIPOS_PERMITIDOS:
         return
     if not os.getenv("TELEGRAM_BOT_TOKEN") or not os.getenv("TELEGRAM_CHAT_ID"):
