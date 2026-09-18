@@ -193,5 +193,21 @@ paper_1s_resultado.json
 # Claves de las wallets generadas: ESTO ES DINERO, nunca al repo
 wallets_generadas.json
 
+# Sesiones de Telegram: son una LLAVE DE LA CUENTA, no un fichero de datos.
+# Quien tenga una entra sin contrasena ni SMS, y ademas leen los canales de
+# senales. Comprobado el 18-sep-2026 que ninguna habia llegado al repo
+# (`git log --all -- '*.session'` vacio); esto es para que siga asi. El .env
+# ya se colo una vez y sigue en el historial, en el commit 229d705.
+*.session
+*.session-journal
+
+# Copias viejas del trader que viven sueltas en el droplet
+# (universal_trader.new.py, ut3_new.py ... ut7_new.py). Ninguna esta
+# versionada y ninguna corre, pero estan a un `uv run` de mover dinero con
+# codigo de hace meses, y ensuciaban `git status` hasta hacerlo tardar 4
+# segundos. Ignorarlas NO las borra: eso es decision de quien mire el droplet.
+*_new.py
+*.new.py
+
 # Estado de ejecucion del bot (ficheros de claim por token)
 reservas/

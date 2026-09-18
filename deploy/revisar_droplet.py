@@ -223,6 +223,59 @@ def _listener(cfg: dict, texto_env: str) -> None:
         )
 
 
+def _secretos_sueltos() -> None:
+    """Ficheros que NO pueden acabar en GitHub, y basura que estorba.
+
+    LA SESION DE TELEGRAM ES UNA LLAVE. No es un fichero de datos: quien la
+    tenga entra en la cuenta sin contrasena ni SMS, y ademas lee los canales
+    de senales. Si esta sin ignorar, un `git add -A` hecho con prisa desde el
+    droplet la sube. El .env ya se colo asi una vez y sigue en el historial.
+
+    Y LAS COPIAS DEL TRADER estorban de otra forma: ninguna corre, pero estan
+    a un `uv run` de mover dinero con codigo de hace meses, y son las que
+    hacian que `git status` tardara cuatro segundos.
+    """
+    print("\n== FICHEROS SUELTOS ==")
+    sesiones = sorted(Path().glob("*.session"))
+    if not sesiones:
+        bien("sin sesiones de Telegram sueltas en el directorio")
+    else:
+        for ruta in sesiones:
+            if _esta_ignorado(ruta.name):
+                bien(f"{ruta.name} esta ignorado por git (no puede subirse)")
+            else:
+                mal(
+                    f"{ruta.name} NO esta en .gitignore: es una llave de la "
+                    "cuenta de Telegram y un `git add -A` la subiria"
+                )
+
+    copias = sorted(Path().glob("*_new.py")) + sorted(Path().glob("*.new.py"))
+    if copias:
+        aviso(
+            f"{len(copias)} copias viejas del trader en el directorio "
+            f"({copias[0].name}...): no corren, pero se pueden lanzar a mano"
+        )
+
+
+def _esta_ignorado(nombre: str) -> bool:
+    """True si git ignora ese fichero. Ante la duda, False (avisa de mas)."""
+    try:
+        return (
+            # S603 silenciado como en la otra llamada de este fichero: el
+            # nombre sale de listar el directorio, no de nadie de fuera, y
+            # `check-ignore` no ejecuta nada.
+            subprocess.run(  # noqa: S603
+                ["/usr/bin/git", "check-ignore", "-q", nombre],
+                capture_output=True,
+                timeout=10,
+                check=False,
+            ).returncode
+            == 0
+        )
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _modo(cfg: dict) -> None:
     print("\n== MODO ==")
     t, f = cfg.get("trade", {}), cfg.get("filters", {})
@@ -313,6 +366,7 @@ def main() -> None:
     try:
         cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
         _listener(cfg, env.read_text(encoding="utf-8") if env else "")
+        _secretos_sueltos()
         _modo(cfg)
         _estrategia(cfg)
     except (OSError, yaml.YAMLError, KeyError) as exc:
