@@ -4,8 +4,8 @@ import asyncio
 import json
 import tempfile
 import unittest
-from unittest.mock import patch
 from pathlib import Path
+from unittest.mock import patch
 
 from paper_trading.analytics import simulate_pair, summarize
 from paper_trading.engine import PaperTradingEngine

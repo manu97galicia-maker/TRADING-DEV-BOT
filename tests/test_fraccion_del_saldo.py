@@ -10,7 +10,7 @@ nada. Es el mismo tipo de no-op silencioso que ya paso con `hard_cap` en las
 comisiones de prioridad.
 """
 
-# ruff: noqa: S101, PLR2004
+# ruff: noqa: S101, PLR2004, PLC0415
 
 from pathlib import Path
 
@@ -97,9 +97,18 @@ def test_el_umbral_a_partir_del_cual_compra() -> None:
     assert round(umbral, 3) == 0.110
 
 
-def test_el_importe_fijo_sigue_ahi_por_si_se_vuelve_atras() -> None:
-    """`fraccion_saldo: 0` devuelve el comportamiento de antes, y para eso el
-    importe fijo tiene que seguir teniendo un valor con sentido."""
+def test_no_queda_ningun_importe_fijo() -> None:
+    """Pedido el 19-sep: "elimina lo del 0.12, solo el porcentaje".
+
+    Todos a cero, y el cero es la decision importante: si alguien apaga el
+    porcentaje, el importe sale 0, cae por debajo de `compra_minima_sol` y la
+    compra se salta con un aviso. El bot se PARA en vez de gastar una cantidad
+    vieja que nadie ha pedido. Es el fallo seguro.
+    """
     t = _trade()
-    assert t["buy_amount"] > 0
-    assert t["buy_amount"] <= t["tope_compra_sol"]
+    assert t["buy_amount"] == 0
+    assert t["buy_amount_tras_sl"] == 0
+    assert t["mayhem_buy_amount"] == 0
+    import yaml
+    h = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"]["holders"]
+    assert h["buy_amount"] == 0

@@ -38,6 +38,9 @@ def _trader(**kw) -> UniversalTrader:
     t.paper_engine = types.SimpleNamespace(enabled=False)
     t.tope_compra_sol = 0.07
     t.buy_amount = 0.07
+    # Por defecto, importe fijo. Los tests que quieran el modo porcentaje lo
+    # pasan por `kw`.
+    t.fraccion_saldo = 0.0
     t.max_posiciones = 5
     for k, v in kw.items():
         setattr(t, k, v)
@@ -173,3 +176,24 @@ def test_el_aviso_sale_una_sola_vez_por_arranque() -> None:
     que corre una vez, no en ningun bucle."""
     texto = (RAIZ / "src/trading/universal_trader.py").read_text(encoding="utf-8")
     assert texto.count("BOT ARRANCADO") == 1
+
+
+def test_el_cartel_dice_el_porcentaje_y_no_el_tope() -> None:
+    """LA LINEA QUE SE MIRA AL ARRANCAR. Enseñaba `tope_compra_sol`, que desde
+    que manda el porcentaje ya no es el importe sino un freno contra fallos:
+    diria "REALES 0.5000 SOL" estando comprando 0,24.
+
+    Mentir aqui es exactamente lo que no puede pasar: es la unica confirmacion
+    de que la configuracion que corre es la que se cree.
+    """
+    t = _trader(fraccion_saldo=0.25, tope_compra_sol=0.5)
+    cartel = t._cartel_de_configuracion()
+    assert "25%" in cartel
+    assert "saldo libre" in cartel
+    assert "REALES 0.5000 SOL" not in cartel
+
+
+def test_con_importe_fijo_el_cartel_sigue_dando_el_importe() -> None:
+    """Si alguien apaga el porcentaje, el cartel vuelve a lo de antes."""
+    t = _trader(fraccion_saldo=0.0, tope_compra_sol=0.07)
+    assert "0.0700 SOL" in t._cartel_de_configuracion()

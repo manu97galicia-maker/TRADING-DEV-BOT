@@ -11,7 +11,7 @@ Manu si lee Telegram. Asi que el bot lo cuenta por ahi solo: un mensaje cada
 cinco minutos con los motivos agrupados, y SOLO cuando no ha comprado nada.
 """
 
-# ruff: noqa: S101, SLF001, ANN001, PLR2004, PLC0415, ARG005
+# ruff: noqa: S101, SLF001, ANN001, PLC0415, ARG005
 
 import asyncio
 from pathlib import Path

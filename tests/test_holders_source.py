@@ -244,7 +244,8 @@ def test_los_dos_numeros_son_los_pedidos() -> None:
     # deliberado: 99/5min (19-sep) -> 90/5min -> 60/20min, todos pedidos.
     assert h["min_holders"] == 60
     assert h["max_edad_seg"] == 1200
-    assert h["buy_amount"] == 0.12
+    # Sin importe propio desde el 19-sep: manda el 25% del saldo.
+    assert h["buy_amount"] == 0
 
 
 def test_ningun_filtro_global_puede_descartar_por_su_cuenta() -> None:

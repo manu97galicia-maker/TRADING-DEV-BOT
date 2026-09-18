@@ -106,13 +106,20 @@ def test_apagado_es_el_comportamiento_de_antes() -> None:
 
 def test_la_config_pide_lo_que_se_pidio() -> None:
     t = _cfg()["trade"]
-    assert t["buy_amount"] == 0.12
+    # El importe fijo se elimino el 19-sep ("solo el porcentaje"): manda
+    # `fraccion_saldo`. El 0 es a proposito -- si alguien apaga el porcentaje,
+    # el bot se para en vez de comprar una cantidad vieja que nadie ha pedido.
+    assert t["buy_amount"] == 0
+    assert t["fraccion_saldo"] == 0.25
     assert t["fraccion_si_no_llega"] == 0.75
 
 
 def test_la_fuente_manda_el_mismo_importe_que_el_global() -> None:
-    """El importe de la SENAL pisa al global: si la fuente se queda en 0,07,
-    el `buy_amount` de arriba no sirve de nada. Ya paso una vez."""
+    """El importe de la SENAL pisa al global, asi que los dos tienen que decir
+    lo mismo o el de arriba no sirve de nada. Ya paso una vez.
+
+    Hoy los dos estan a 0 y manda el porcentaje; el test sigue valiendo para
+    el dia que se vuelva al importe fijo."""
     c = _cfg()
     assert c["filters"]["holders"]["buy_amount"] == c["trade"]["buy_amount"]
 

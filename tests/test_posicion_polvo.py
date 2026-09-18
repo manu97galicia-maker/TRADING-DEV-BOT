@@ -24,6 +24,7 @@ import yaml
 CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
 FUENTE = Path(__file__).resolve().parent.parent / "src/trading/universal_trader.py"
 #: El precio del SOL que usa el bot para pasar a dolares (_SOL_USD).
+SALDO_REFERENCIA = 1.0
 SOL_USD = 91.24
 
 
@@ -39,13 +40,27 @@ def vale_usd(cantidad: float, precio_sol: float) -> float:
     return cantidad * precio_sol * SOL_USD
 
 
+def compra_tipica() -> float:
+    """Tamano representativo de una posicion, en SOL.
+
+    Desde el 19-sep el importe NO es fijo: es el 25% del saldo libre, asi que
+    "el tamano de la compra" ya no es un numero del yaml. Estos tests necesitan
+    uno concreto, y se toma el de la PRIMERA compra con un saldo de referencia
+    de 1 SOL, que es el caso que interesa mirar (la posicion mas grande que se
+    abre; si la regla del polvo no la suelta a ella, no suelta a ninguna).
+    """
+    t = _trade()
+    libre = SALDO_REFERENCIA - t["min_reserve_sol"]
+    return min(libre * t["fraccion_saldo"], t["tope_compra_sol"])
+
+
 def test_el_minimo_es_un_dolar() -> None:
     assert _trade()["valor_minimo_posicion_usd"] == 1.0
 
 
 def test_una_bolsa_de_centimos_esta_por_debajo() -> None:
     """El caso real: el moonbag del 2% de una compra que se hundio."""
-    compra_sol = _trade()["buy_amount"]
+    compra_sol = compra_tipica()
     moonbag = 0.02
     # La moneda cae un 90% desde la entrada.
     valor = compra_sol * moonbag * 0.10 * SOL_USD
@@ -54,7 +69,7 @@ def test_una_bolsa_de_centimos_esta_por_debajo() -> None:
 
 def test_una_posicion_entera_recien_comprada_no_se_suelta() -> None:
     """Lo que NO puede pasar: que la regla tire una posicion buena."""
-    compra_sol = _trade()["buy_amount"]
+    compra_sol = compra_tipica()
     assert compra_sol * SOL_USD > _trade()["valor_minimo_posicion_usd"] * 3
 
 
@@ -63,21 +78,20 @@ def test_hasta_donde_llega_la_escalera_con_el_tamano_de_compra_de_hoy() -> None:
 
     La regla del polvo suelta la plaza cuando lo que queda vale menos de
     `valor_minimo_posicion_usd`. Con compras grandes eso solo pasaba al final
-    de todo; con 0,07 SOL (unos 6,4 $) la posicion entera son ya solo seis
-    veces ese minimo, asi que la escalera deja de gestionarse mucho antes.
+    de todo; con compras pequenas la escalera podria dejar de gestionarse
+    mucho antes, y eso es lo que aqui se mide.
 
-    Este test calcula EN QUE PELDANO pasa, y el resultado con 0,07 SOL es
-    tranquilizador: la escalera aguanta ENTERA, hasta el x20. La razon es que
-    la regla mira el VALOR de lo que queda, no la fraccion, y el precio sube
-    mas deprisa de lo que encoge la bolsa -- al cobrar el x20 todavia quedan
-    2,55 $ de los 6,39 $ iniciales.
+    Este test calcula EN QUE PELDANO pasa. El resultado es tranquilizador: la
+    escalera aguanta ENTERA, hasta el x20. La razon es que la regla mira el
+    VALOR de lo que queda, no la fraccion, y el precio sube mas deprisa de lo
+    que encoge la bolsa.
 
     O sea que comprar pequeno NO deja los peldanos altos sin cobrar, que era
-    lo que se temia. Si algun dia se baja mas el tamano (o se sube el minimo
-    de polvo), este test se pone rojo y lo dice.
+    lo que se temia. Si algun dia se baja mucho el porcentaje (o se sube el
+    minimo de polvo), este test se pone rojo y lo dice.
     """
     t = _trade()
-    valor = t["buy_amount"] * SOL_USD
+    valor = compra_tipica() * SOL_USD
     minimo = t["valor_minimo_posicion_usd"]
     escalera = [(t["take_profit_percentage"], t["take_profit_sell_percentage"])]
     n = 2

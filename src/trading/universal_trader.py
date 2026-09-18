@@ -34,14 +34,15 @@ from dexscreener import DexScreenerFilter
 from interfaces.core import Platform, TokenInfo
 from monitoring.dev_blocklist import any_dev_blocked
 from monitoring.listener_factory import ListenerFactory
+from monitoring.volumen import precio_en_vivo
 from platforms import get_platform_implementations
 from trading.base import TradeResult
+from trading.ganancia import Ganancia
+from trading.panic import panic_time
 from trading.platform_aware import PlatformAwareBuyer, PlatformAwareSeller
 from trading.position import Position
-from trading.panic import panic_time
-from trading.ganancia import Ganancia
-from trading.reserva import reserva as _reserva_moneda, suelta as _suelta_moneda
-from monitoring.volumen import precio_en_vivo
+from trading.reserva import reserva as _reserva_moneda
+from trading.reserva import suelta as _suelta_moneda
 from trading.tiered_exit import (
     build_tiers,
     moonbag_fraction,
@@ -1471,6 +1472,17 @@ class UniversalTrader:
             compras = "EN PAUSA (modo estudio, no gasta)"
         elif self.paper_trade or self.paper_engine.enabled:
             compras = "PAPEL (simuladas)"
+        elif self.fraccion_saldo > 0:
+            # EL CARTEL TIENE QUE DECIR LO QUE COMPRA, no el tope. La linea de
+            # abajo enseñaba `tope_compra_sol`, que desde que manda el
+            # porcentaje ya no es el importe sino un freno contra fallos: diria
+            # "REALES 0.5000 SOL" comprando 0,24. Es la linea que se mira al
+            # arrancar para confirmar la configuracion, asi que mentir aqui es
+            # exactamente lo que no puede pasar.
+            compras = (
+                f"REALES {self.fraccion_saldo * 100:.0f}% del saldo libre "
+                f"(tope {self.tope_compra_sol:.4f} SOL)"
+            )
         else:
             compras = f"REALES {self.tope_compra_sol or self.buy_amount:.4f} SOL"
         return (
@@ -2740,7 +2752,7 @@ class UniversalTrader:
                     )
                 except Exception:  # noqa: BLE001
                     pass
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception("Error en venta manual (panel)")
         return remaining
 
@@ -3248,7 +3260,7 @@ class UniversalTrader:
         def _consulta() -> int:
             try:
                 import json as _json
-                import subprocess  # noqa: PLC0415, S404
+                import subprocess  # noqa: PLC0415
 
                 r = subprocess.run(  # noqa: S603
                     [exe, "token", "info", "--chain", "sol",
@@ -3653,14 +3665,14 @@ class UniversalTrader:
                 or self.min_titulares > 0
                 or self.second_wave.get("enabled")
             ):
-                from monitoring.volumen import operaciones as _n_ops
                 from monitoring.volumen import compras as _n_buys
                 from monitoring.volumen import compras_primer_bloque as _n_first_buys
-                from monitoring.volumen import ultimas_son_compra as _ult_compra
-                from monitoring.volumen import titulares as _n_tit
-                from monitoring.volumen import volumen_sol as _vol_sol
                 from monitoring.volumen import metricas_segunda_ola as _segunda_ola
+                from monitoring.volumen import operaciones as _n_ops
                 from monitoring.volumen import presion as _presion
+                from monitoring.volumen import titulares as _n_tit
+                from monitoring.volumen import ultimas_son_compra as _ult_compra
+                from monitoring.volumen import volumen_sol as _vol_sol
 
                 _nacida = self.token_timestamps.get(str(token_info.mint))
                 _t0 = _nacida if _nacida is not None else monotonic()
@@ -4368,7 +4380,7 @@ class UniversalTrader:
                     async def _seguir(ti=token_info, ep=entry_price, cs=curve_sol):
                         try:
                             await self._paper_watch(ti, ep, cs)
-                        except Exception as e:  # noqa: BLE001
+                        except Exception as e:
                             logger.exception("paper watch roto")
                             try:
                                 from monitoring.notifier import notify
@@ -4472,7 +4484,17 @@ class UniversalTrader:
 
                 # TRAS UN SL: la siguiente compra va con importe reducido.
                 # Se consume una sola vez y vuelve al tamaño normal.
-                if self._ultimo_cierre_fue_sl and self.buy_amount_tras_sl > 0:
+                # NO SE ANUNCIA LO QUE NO VA A PASAR. Si manda el porcentaje
+                # del saldo, este importe se recalcula despues dentro del
+                # cerrojo de gasto y esta asignacion no sobrevive -- pero la
+                # linea de log SI salia, diciendo "compra reducida 0,0700 SOL"
+                # de una compra que iba a ser otra cosa. Un log que miente es
+                # peor que no tenerlo: manda a buscar el fallo donde no esta.
+                if (
+                    self._ultimo_cierre_fue_sl
+                    and self.buy_amount_tras_sl > 0
+                    and self.fraccion_saldo <= 0
+                ):
                     logger.info(
                         "TRAS SL: compra reducida %.4f SOL (normal %.4f)",
                         self.buy_amount_tras_sl, _importe,
@@ -4894,7 +4916,7 @@ class UniversalTrader:
                 from monitoring.notifier import notify
 
                 notify(f"📣 <b>CALLOUT PREPARADO</b>\n{callout_message}")
-            except Exception:  # noqa: BLE001 -- must not orphan a position
+            except Exception:
                 logger.exception("Failed to enqueue post-buy callout for %s", mint_str)
         if token_info.token_program_id:
             self.traded_token_programs[mint_str] = token_info.token_program_id
@@ -6963,7 +6985,7 @@ class UniversalTrader:
             try:
                 if not self.reiniciar_tanda or not self._compras_de_la_tanda:
                     continue
-                if list(Path(".").glob(f"open_position{self._state_suffix}_*.json")):
+                if list(Path().glob(f"open_position{self._state_suffix}_*.json")):
                     continue
                 logger.info(
                     "TANDA cerrada: %d compras hechas y ninguna posicion abierta. "

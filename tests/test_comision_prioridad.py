@@ -79,7 +79,12 @@ def test_la_escalera_entera_no_se_come_la_posicion() -> None:
     c = _cfg()
     venta = _sol(c["priority_fees"]["fixed_amount"], c["compute_units"]["sell"])
     peldanos = 3 + len(c["trade"]["tp_extra"]) + 3  # cercanos + extra + lejanos
-    posicion = c["trade"]["buy_amount"]
+    # El importe ya no es fijo: se toma la primera compra con 1 SOL de saldo,
+    # que es la posicion mas grande que se abre.
+    _t = c["trade"]
+    posicion = min(
+        (1.0 - _t["min_reserve_sol"]) * _t["fraccion_saldo"], _t["tope_compra_sol"]
+    )
     assert venta * peldanos < posicion * 0.02, (
         f"vender la escalera entera cuesta {venta * peldanos:.5f} SOL, "
         f"mas del 2% de una posicion de {posicion}"

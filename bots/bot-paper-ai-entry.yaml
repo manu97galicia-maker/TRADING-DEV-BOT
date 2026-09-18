@@ -10,7 +10,15 @@ separate_process: false
 platform: pump_fun
 
 trade:
-  buy_amount: 0.12
+  # IMPORTE FIJO ELIMINADO (19-sep: "elimina lo del 0.12, solo el
+  # porcentaje"). Manda `fraccion_saldo`, mas abajo.
+  #
+  # POR QUE 0 Y NO BORRAR LA CLAVE: dejarla a cero hace que el bot se PARE si
+  # alguien apaga el porcentaje, en vez de comprar una cantidad vieja que nadie
+  # ha pedido. Con `fraccion_saldo: 0` el importe saldria 0, caeria por debajo
+  # de `compra_minima_sol` y la compra se salta con un aviso en el log. Es el
+  # fallo seguro: mejor quieto que gastando lo que no toca.
+  buy_amount: 0
   mayhem_buy_amount: 0
   # Posiciones abiertas A LA VEZ. TECHO DE 5, y por debajo manda el SALDO.
   # Son dos frenos, y gana siempre el que se quede corto.
@@ -66,7 +74,13 @@ trade:
   # monedas cumpliendo los filtros por delante.
   reiniciar_tanda: true
   max_perdidas_seguidas: 0
-  buy_amount_tras_sl: 0.07
+  # SIN COMPRA REDUCIDA TRAS UN STOP LOSS. Mientras mande el porcentaje esto
+  # no puede hacer nada: el importe se recalcula despues, dentro del cerrojo de
+  # gasto, y cualquier numero que se ponga aqui se pierde. Se deja a 0 para que
+  # la configuracion diga la verdad. Si algun dia vuelve el importe fijo y se
+  # quiere recuperar la idea, hay que hacerlo como FRACCION del porcentaje, no
+  # como una cantidad suelta.
+  buy_amount_tras_sl: 0
   rugs_para_bloquear: 1
   buy_slippage: 0.10
   sell_slippage: 0.10
@@ -698,7 +712,13 @@ filters:
     # de hace medio minuto tapa que ahora mismo esta cayendo, que es
     # justo lo que se quiere detectar.
     presion_seg: 3.0
-    buy_amount: 0.12
+    # SIN IMPORTE PROPIO (19-sep: "elimina lo del 0.12, solo el
+    # porcentaje"). Sin esta clave la fuente no manda importe y decide
+    # el 25% del saldo. Si se le pusiera un numero aqui, ese numero
+    # pisaria al global... y aun asi el porcentaje lo volveria a pisar
+    # a el dentro del cerrojo de gasto. O sea: poner algo aqui no
+    # serviria de nada y confundiria al leerlo.
+    buy_amount: 0
     heartbeat_interval: 300
 
   curva_96:
