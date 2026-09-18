@@ -1410,7 +1410,21 @@ class UniversalTrader:
     async def start(self) -> None:
         """Start the trading bot and listen for new tokens."""
         logger.info(f"Starting Universal Trader for {self.platform.value}")
-        logger.info(self._cartel_de_configuracion())
+        _cartel = self._cartel_de_configuracion()
+        logger.info(_cartel)
+        # Y TAMBIEN A TELEGRAM. El log vive en un droplet que se administra
+        # desde un movil: en la practica no lo lee nadie. Manu si lee Telegram,
+        # y esta es la linea que contesta "¿ya va en real?" sin escribir ni un
+        # comando -- la pregunta que se ha hecho cuatro veces esta semana
+        # porque no habia forma de verlo.
+        #
+        # Sale UNA vez por arranque, asi que no puede volverse ruido.
+        try:
+            from monitoring.notifier import notify  # noqa: PLC0415
+
+            notify("🤖 <b>BOT ARRANCADO</b>\n" + _cartel.replace(" · ", "\n"))
+        except Exception:  # noqa: BLE001, S110
+            pass
         self.paper_engine.start()
         # RETOMAR ANTES QUE NADA. Lo que habia aqui era `_check_orphan_position`,
         # que avisaba de la posicion abierta y borraba su marcador SIN volver a

@@ -144,3 +144,32 @@ def test_se_escribe_al_arrancar() -> None:
     texto = (RAIZ / "src/trading/universal_trader.py").read_text(encoding="utf-8")
     inicio = texto.index("async def start(self) -> None:")
     assert "self._cartel_de_configuracion()" in texto[inicio : inicio + 600]
+
+
+# ------------------------------------------- el cartel tambien va a Telegram
+
+
+def test_el_cartel_se_manda_al_movil_al_arrancar() -> None:
+    """EL LOG NO LO LEE NADIE. Vive en un droplet que se administra desde un
+    movil; Manu si lee Telegram. Esta es la linea que contesta "¿ya va en
+    real?" sin escribir ni un comando -- la pregunta que se hizo cuatro veces
+    en una semana porque no habia forma de verlo."""
+    texto = (RAIZ / "src/trading/universal_trader.py").read_text(encoding="utf-8")
+    inicio = texto.index("async def start(self) -> None:")
+    trozo = texto[inicio : inicio + 1500]
+    assert "BOT ARRANCADO" in trozo
+    assert "notify(" in trozo
+
+
+def test_el_aviso_de_arranque_no_puede_tumbar_el_bot() -> None:
+    """Telegram mal configurado no puede impedir que el bot opere."""
+    texto = (RAIZ / "src/trading/universal_trader.py").read_text(encoding="utf-8")
+    inicio = texto.index("BOT ARRANCADO")
+    assert "except Exception" in texto[inicio : inicio + 300]
+
+
+def test_el_aviso_sale_una_sola_vez_por_arranque() -> None:
+    """Un aviso repetido se vuelve ruido y deja de leerse. Este va en `start`,
+    que corre una vez, no en ningun bucle."""
+    texto = (RAIZ / "src/trading/universal_trader.py").read_text(encoding="utf-8")
+    assert texto.count("BOT ARRANCADO") == 1
