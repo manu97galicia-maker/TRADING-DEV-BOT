@@ -45,28 +45,41 @@ def test_la_reserva_sigue_siendo_la_pedida() -> None:
     assert _trade()["min_reserve_sol"] == 0.03
 
 
-def test_un_saldo_mayor_abre_mas_posiciones() -> None:
-    """Numeros a pelo a proposito: si alguien cambia tope_compra_sol, este
-    test se pone rojo y le obliga a mirar cuantas posiciones gana o pierde.
+def test_ahora_el_tamano_sale_del_saldo_no_del_tope() -> None:
+    """EL CAMBIO DEL 19-SEP: se compra el 25% de lo libre, no una cantidad fija.
 
-    Historial de esa cuenta, que es lo que hay que ver de un vistazo
-    (posiciones con 0,5 / 1 / 2 SOL de saldo):
-        0,20  -> 2/4/9
-        0,28  -> 1/3/6   (+40%)
-        0,38  -> 1/2/5   (+36% mas)
-        0,495 -> 0/1/3   (+30% mas)
-        0,07  -> 5/5/5   (18-sep: se baja para arrancar en real)
-        0,12  -> 3/5/5   (19-sep: pedido por Manu)
-
-    EL PRECIO DE SUBIR A 0,12, que es lo que hay que ver aqui: con medio SOL
-    ya NO caben las cinco, caben tres. Para las cinco hacen falta 0,645 SOL
-    (lo fija el test de abajo). Por encima de 1 SOL vuelve a mandar el techo.
+    Los dos tests que habia aqui modelaban posiciones de tamano FIJO
+    (`tope_compra_sol`) y contaban cuantas cabian. Ese modelo ya no describe al
+    bot: `tope_compra_sol` paso a ser un freno contra fallos y quien decide el
+    tamano es `fraccion_saldo`. Mantenerlos habria sido peor que borrarlos --
+    verde sobre un comportamiento que el bot ya no tiene.
     """
-    cfg = _trade()
-    reserva, compra = cfg["min_reserve_sol"], cfg["tope_compra_sol"]
-    assert caben(0.5, reserva, compra) == 3
-    assert caben(1.0, reserva, compra) == TECHO
-    assert caben(2.0, reserva, compra) == TECHO
+    t = _trade()
+    assert t["fraccion_saldo"] > 0, "si esto es 0, vuelve a mandar el importe fijo"
+    # Y el tope tiene que quedar por ENCIMA del 25% en saldos normales, o
+    # recortaria sin avisar y volveriamos al tamano fijo por la puerta de atras.
+    libre = 1.0 - t["min_reserve_sol"]
+    assert libre * t["fraccion_saldo"] <= t["tope_compra_sol"]
+
+
+def test_con_el_25_por_ciento_nunca_se_llena_el_saldo() -> None:
+    """La propiedad que de verdad protege: cada compra sale de lo que QUEDA,
+    asi que por muchas plazas que haya nunca se gasta todo.
+
+    Con tamano fijo esto no era cierto -- por eso hacia falta el guardian del
+    saldo con su colchon. Ahora el propio tamano se encoge solo.
+    """
+    t = _trade()
+    libre = 1.0 - t["min_reserve_sol"]
+    gastado = 0.0
+    for _ in range(t["max_posiciones"]):
+        imp = min(libre * t["fraccion_saldo"], t["tope_compra_sol"])
+        if imp < t["compra_minima_sol"]:
+            break
+        gastado += imp
+        libre -= imp * (1 + t["buy_slippage"]) + COLCHON_POR_POSICION
+    assert libre > 0, "se ha gastado hasta el ultimo lamport"
+    assert gastado < 1.0 - t["min_reserve_sol"]
 
 
 def test_la_reserva_nunca_se_toca() -> None:
@@ -112,30 +125,25 @@ def test_el_techo_muerde_cuando_sobra_saldo() -> None:
     assert caben(5.0, reserva, compra) == TECHO
 
 
-def test_saldo_necesario_para_las_cinco() -> None:
-    """El numero que hay que tener en la cartera para que quepan las 5.
+def test_saldo_a_partir_del_cual_compra_algo() -> None:
+    """El numero que se pregunta de verdad: "por que no compra nada?".
 
-    Se fija aqui porque es la pregunta que se hace de verdad: "por que solo
-    abre dos si puse 5?". La respuesta es esta cuenta, no un fallo.
+    Con el 25%, por debajo de cierto saldo la compra sale por debajo del minimo
+    que compensa y el bot se queda quieto. NO es un fallo -- esa compra naceria
+    perdiendo, porque las comisiones fijas no bajan con el tamano.
 
-    OJO AL FILO: en el saldo EXACTO el resultado NO es de fiar. La division
-    da 5,000000 justo, y que el suelo caiga en 4 o en 5 depende de como
-    redondee el binario esa compra en concreto: con 0,3808 y 0,2856 salen 4,
-    con 0,20 salen 5. No es una regla, es suerte. Un pelo por encima del
-    minimo salen 5 siempre, asi que hay que dejar margen y no fiarse del
-    numero justo. Redondear hacia arriba seria peor: abriria una posicion
-    sin SOL para cerrarla.
+        umbral = reserva + minimo / fraccion
     """
-    cfg = _trade()
-    reserva = cfg["min_reserve_sol"]
-    for compra, hace_falta in (
-        (cfg["tope_compra_sol"], 0.645),
-        (cfg["buy_amount"], 0.645),
-        (0.26, 1.345),
-    ):
-        justo = reserva + TECHO * (compra + COLCHON_POR_POSICION)
-        assert round(justo, 3) == hace_falta
-        # En el filo puede dar 4 o 5; lo que NO puede es pasarse.
-        assert caben(justo, reserva, compra) in (TECHO - 1, TECHO)
-        # Con un margen minimo, las 5 siempre.
-        assert caben(justo + 0.01, reserva, compra) == TECHO
+    t = _trade()
+    umbral = t["min_reserve_sol"] + t["compra_minima_sol"] / t["fraccion_saldo"]
+    assert round(umbral, 3) == 0.110
+
+    # Justo por debajo no compra; justo por encima, si.
+    def primera(saldo: float) -> float:
+        return min((saldo - t["min_reserve_sol"]) * t["fraccion_saldo"],
+                   t["tope_compra_sol"])
+
+    assert primera(umbral - 0.001) < t["compra_minima_sol"]
+    assert primera(umbral + 0.001) >= t["compra_minima_sol"]
+
+

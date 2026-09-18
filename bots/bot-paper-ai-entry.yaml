@@ -249,7 +249,31 @@ trade:
   # La bolsa NO se vende ni se pierde: se queda en la wallet y la recoge la
   # limpieza de cuentas. 0 desactiva la regla.
   valor_minimo_posicion_usd: 1.0
-  tope_compra_sol: 0.12
+  # EL 25% DEL SALDO POR COMPRA (19-sep, pedido por Manu). Sustituye al
+  # importe fijo: `buy_amount` y el `buy_amount` de la fuente dejan de mandar
+  # mientras esto sea mayor que cero.
+  #
+  # SE CALCULA SOBRE LO LIBRE, no sobre el saldo a secas: libre = saldo - la
+  # reserva intocable (0,03) - lo ya comprometido por las posiciones que se
+  # estan abriendo. Y se calcula DENTRO del cerrojo de gasto, con el saldo
+  # recien leido: si se hiciera fuera, dos compras a la vez pedirian cada una
+  # el 25% del MISMO saldo.
+  #
+  # CONSECUENCIA AL ABRIR VARIAS: cada compra es el 25% de lo que queda, no de
+  # lo inicial, asi que las posiciones van menguando. Con 1 SOL libre y las
+  # cinco plazas salen aprox. 0,250 / 0,188 / 0,141 / 0,105 / 0,079 -- en
+  # total un 76% del saldo, y nunca se pasa. Es a proposito: la quinta
+  # oportunidad no vale lo mismo que la primera.
+  fraccion_saldo: 0.25
+  # TOPE DURO. Ya NO es quien decide el tamano --de eso se encarga el 25%--
+  # sino un freno de ultima hora contra un fallo: el 12-ago la cadena registro
+  # compras de 0,25 y 0,30 SOL con `buy_amount: 0.15` configurado.
+  #
+  # OJO SI SE TOCA EL SALDO: esto recorta el 25% SIN AVISAR en el log de la
+  # compra. Con 0,5 solo empieza a morder cuando el saldo libre pasa de 2 SOL.
+  # Si algun dia se recarga la cartera por encima de eso, hay que subirlo o el
+  # bot comprara 0,5 pensando que compra el 25%.
+  tope_compra_sol: 0.5
   # SI NO LLEGA EL SALDO, SE COMPRA CON EL 75% DE LO QUE QUEDE en vez de
   # saltarse la moneda. Pedido el 19-sep.
   #

@@ -147,19 +147,20 @@ def test_el_extra_no_se_salta_el_tope_por_compra() -> None:
     assert min(mayor, tope) == tope
 
 
-def test_con_compras_pequenas_el_extra_de_redes_no_hace_nada() -> None:
-    """CONSECUENCIA DE BAJAR A 0,07 SOL, escrita para que no sorprenda.
+def test_el_extra_de_redes_ya_no_cambia_nada_por_otro_motivo() -> None:
+    """Sigue sin hacer nada, pero por una razon distinta y mas fuerte.
 
-    El +0,1 SOL por estrenar redes se penso cuando la compra base rondaba
-    0,33: subia la apuesta un 30% en la senal doble. Con el tope en 0,07 ese
-    extra queda ENTERO por debajo del recorte -- una moneda que estrena redes
-    y una que no se compran exactamente igual.
+    ANTES: el tope duro estaba en el importe fijo, asi que el +0,1 SOL por
+    estrenar redes quedaba entero por debajo del recorte.
 
-    No es un fallo ni hay dinero en riesgo: el tope duro cumple su trabajo. Lo
-    que pasa es que la senal doble ha dejado de significar nada, y si se
-    quiere recuperar hay que hacer el extra proporcional a la compra en vez de
-    una cantidad fija. Este test lo deja anotado y se pondra rojo el dia que
-    se suba el tope por encima del importe base mas el extra.
+    AHORA (19-sep): el tamano de la compra es el 25% del saldo libre, y ese
+    calculo SUSTITUYE al importe que trae la senal -- se hace despues, dentro
+    del cerrojo de gasto. Asi que da igual lo que sume el extra: nunca llega a
+    aplicarse mientras `fraccion_saldo` sea mayor que cero.
+
+    No hay dinero en riesgo. Lo que pasa es que la senal doble no significa
+    nada, y recuperarla exigiria que el extra fuera un porcentaje de la compra
+    en vez de una cantidad fija. Queda anotado.
     """
     import yaml
 
@@ -168,8 +169,7 @@ def test_con_compras_pequenas_el_extra_de_redes_no_hace_nada() -> None:
             Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
         ).read_text(encoding="utf-8")
     )
-    tope = float(cfg["trade"]["tope_compra_sol"])
-    base = importe_por_senal(0)
-    assert min(base, tope) == min(base + EXTRA_REDES_NUEVAS, tope), (
-        "el extra de redes vuelve a cambiar el importe: revisar si se queria"
+    assert cfg["trade"]["fraccion_saldo"] > 0, (
+        "con el importe fijo el extra vuelve a contar: revisar si se queria"
     )
+    assert EXTRA_REDES_NUEVAS > 0, "el extra sigue existiendo en el codigo"
