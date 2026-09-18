@@ -127,6 +127,20 @@ ruff check --fix
 - Event parsing and processing
 - Real-time data stream handling
 
+### Antes de decirle a alguien que ejecute un script de `deploy/`
+
+Comprobar que ese fichero EXISTE en el commit que tiene la maquina de destino:
+
+```bash
+git log --oneline --diff-filter=A -- deploy/<fichero>
+```
+
+El 18-sep esto costo tres viajes seguidos. Se mandaron `deploy/devs.sh`,
+`deploy/instalar_comandos.sh` y `deploy/arranca.sh` a un droplet parado en un
+commit anterior a los tres, y los "No such file or directory" se
+diagnosticaron como carpeta equivocada. El unico comando que siempre funciona
+en una maquina desactualizada es `cd <repo> && git pull`, porque solo usa git.
+
 ### Development Workflow
 1. Make changes to source code
 2. Run `ruff check --fix` for linting

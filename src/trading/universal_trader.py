@@ -5,11 +5,13 @@ Cleaned up to remove all platform-specific hardcoding.
 
 import asyncio
 import json
+import subprocess
 import sys
 from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
 from time import monotonic
+from typing import ClassVar
 
 from solders.pubkey import Pubkey
 
@@ -1330,9 +1332,77 @@ class UniversalTrader:
             devs_marcados=self.buyer._devs_marcados,
         )
 
+    #: Las fuentes de compra, en un solo sitio. Cada entrada es
+    #: (atributo, nombre corto). ESTA LISTA VIVIA REPETIDA y se desincronizo:
+    #: al anadir `presion` faltaba en tres sitios distintos, y uno de ellos era
+    #: el revisor del droplet, que habria dicho "sin fuentes activas" con el
+    #: bot comprando. Quien anada una fuente la pone AQUI y las dos lecturas
+    #: -- el arranque y el cartel de configuracion -- se enteran solas.
+    FUENTES: ClassVar[tuple[tuple[str, str], ...]] = (
+        ("buy_on_dex_paid", "dexpaid"),
+        ("birdeye_trending", "birdeye"),
+        ("dextools_hotpools", "dextools"),
+        ("curva_96", "curva96"),
+        ("presion", "presion"),
+        ("telegram_calls", "telegram"),
+        ("discord_calls", "discord"),
+        ("gmgn_signals", "gmgn"),
+    )
+
+    def _fuentes_activas(self) -> list[str]:
+        """Nombres cortos de las fuentes encendidas ahora mismo."""
+        return [
+            corto
+            for attr, corto in self.FUENTES
+            if (getattr(self, attr, None) or {}).get("enabled")
+        ]
+
+    def _commit_actual(self) -> str:
+        """El commit que esta corriendo, o '?' si no se puede saber.
+
+        Es el dato que mas falta ha hecho: el droplet estuvo dias con codigo
+        viejo sin que se pudiera ver de un vistazo, y los comandos que se le
+        mandaban eran de ficheros que su commit todavia no tenia.
+        """
+        try:
+            return subprocess.run(
+                ["/usr/bin/git", "rev-parse", "--short", "HEAD"],
+                capture_output=True, text=True, timeout=10, check=False,
+            ).stdout.strip() or "?"
+        except Exception:  # noqa: BLE001
+            return "?"
+
+    def _cartel_de_configuracion(self) -> str:
+        """UNA linea con todo lo que hay que saber para diagnosticar.
+
+        POR QUE EN UNA SOLA LINEA. Saber que estaba corriendo el bot pedia
+        cuatro comandos y cuatro capturas desde el movil: el commit, si estaba
+        en pausa, que fuentes y con cuanto compraba. Media manana para una
+        pregunta. Asi una captura de
+
+            journalctl -u pump-bot | grep "CONFIG ACTIVA" | tail -1
+
+        las contesta todas de golpe.
+
+        No lleva NADA del .env: ni claves, ni endpoints, ni la wallet.
+        """
+        fuentes = ", ".join(self._fuentes_activas()) or "NINGUNA (listener normal)"
+        if getattr(self, "pausar_compras", False):
+            compras = "EN PAUSA (modo estudio, no gasta)"
+        elif self.paper_trade or self.paper_engine.enabled:
+            compras = "PAPEL (simuladas)"
+        else:
+            compras = f"REALES {self.tope_compra_sol or self.buy_amount:.4f} SOL"
+        return (
+            f"CONFIG ACTIVA · commit {self._commit_actual()} · "
+            f"compras {compras} · {self.max_posiciones} plazas · "
+            f"fuentes: {fuentes}"
+        )
+
     async def start(self) -> None:
         """Start the trading bot and listen for new tokens."""
         logger.info(f"Starting Universal Trader for {self.platform.value}")
+        logger.info(self._cartel_de_configuracion())
         self.paper_engine.start()
         # RETOMAR ANTES QUE NADA. Lo que habia aqui era `_check_orphan_position`,
         # que avisaba de la posicion abierta y borraba su marcador SIN volver a
@@ -1393,31 +1463,23 @@ class UniversalTrader:
             await self._run_copy_mode()
             return
 
+        # LAS FUENTES SALEN DE `FUENTES`, no de una lista escrita aqui. Antes
+        # esto eran ocho `if` a mano y la lista vivia repetida en cuatro
+        # sitios; al anadir `presion` falto en tres de ellos. Ahora anadir una
+        # fuente es una linea en `FUENTES` y su `_run_*_mode`.
         acquisition_tasks: list[asyncio.Task] = []
-        if self.buy_on_dex_paid.get("enabled"):
-            logger.info("Buy-on-dex-paid acquisition ENABLED")
-            acquisition_tasks.append(asyncio.create_task(self._run_dexpaid_mode()))
-        if self.birdeye_trending.get("enabled"):
-            logger.info("Birdeye-trending acquisition ENABLED")
-            acquisition_tasks.append(asyncio.create_task(self._run_birdeye_mode()))
-        if self.dextools_hotpools.get("enabled"):
-            logger.info("DEXTools-hotpools acquisition ENABLED")
-            acquisition_tasks.append(asyncio.create_task(self._run_dextools_mode()))
-        if self.curva_96.get("enabled"):
-            logger.info("Curva-casi-llena acquisition ENABLED")
-            acquisition_tasks.append(asyncio.create_task(self._run_curva96_mode()))
-        if self.presion.get("enabled"):
-            logger.info("Presion-compradora acquisition ENABLED")
-            acquisition_tasks.append(asyncio.create_task(self._run_presion_mode()))
-        if self.telegram_calls.get("enabled"):
-            logger.info("Telegram-calls acquisition ENABLED")
-            acquisition_tasks.append(asyncio.create_task(self._run_telegram_mode()))
-        if self.discord_calls.get("enabled"):
-            logger.info("Discord-calls acquisition ENABLED")
-            acquisition_tasks.append(asyncio.create_task(self._run_discord_mode()))
-        if self.gmgn_signals.get("enabled"):
-            logger.info("GMGN signals acquisition ENABLED")
-            acquisition_tasks.append(asyncio.create_task(self._run_gmgn_mode()))
+        for attr, corto in self.FUENTES:
+            if not (getattr(self, attr, None) or {}).get("enabled"):
+                continue
+            arranca = getattr(self, f"_run_{corto}_mode", None)
+            if arranca is None:
+                logger.error(
+                    "La fuente '%s' esta encendida pero no tiene _run_%s_mode: "
+                    "no se va a ejecutar", corto, corto,
+                )
+                continue
+            logger.info("%s acquisition ENABLED", corto)
+            acquisition_tasks.append(asyncio.create_task(arranca()))
         if acquisition_tasks:
             await asyncio.gather(*acquisition_tasks)
             return

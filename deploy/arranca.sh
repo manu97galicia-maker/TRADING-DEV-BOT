@@ -51,6 +51,27 @@ echo "== 5/5 ESTADO =="
 bot
 
 echo
+echo "== LLEGO EL CAMBIO? =="
+# La ambiguedad que costo tres dias: el guion decia "reiniciado" aunque el
+# pull no hubiera traido nada, y el bot seguia con la configuracion de hace
+# tres dias pareciendo que estaba al dia.
+git fetch -q origin 2>/dev/null
+local_c="$(git rev-parse --short HEAD 2>/dev/null)"
+remoto_c="$(git rev-parse --short '@{u}' 2>/dev/null || echo "$local_c")"
+if [ "$local_c" = "$remoto_c" ]; then
+  echo "  OK: al dia con GitHub ($local_c)"
+else
+  echo "  OJO: el droplet esta en $local_c y GitHub en $remoto_c."
+  echo "  El pull no ha traido todo. Reintenta:  cd $RAIZ && git pull"
+fi
+
+echo
+echo "== QUE CONFIGURACION ESTA CORRIENDO =="
+journalctl -u pump-bot --since "-2 min" --no-pager 2>/dev/null \
+  | grep "CONFIG ACTIVA" | tail -1 | sed 's/^/  /' \
+  || echo "  (aun sin linea; espera un minuto y escribe:  bot)"
+
+echo
 echo "== QUE FUENTE ESTA COMPRANDO =="
 # Lo que de verdad hay que ver: UNA sola fuente activa, y que sea la de
 # presion. Mas de una linea aqui significa que el pull no entro.
