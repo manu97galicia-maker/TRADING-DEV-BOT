@@ -241,8 +241,9 @@ def test_es_la_unica_fuente_encendida() -> None:
 def test_los_dos_numeros_son_los_pedidos() -> None:
     h = _filtros()["holders"]
     # Historial de estos dos numeros, para que un cambio sea siempre
-    # deliberado: 99/5min (19-sep) -> 90/5min -> 60/20min, todos pedidos.
-    assert h["min_holders"] == 60
+    # deliberado: 99/5min (19-sep) -> 90/5min -> 60/20min -> 23/20min,
+    # todos pedidos.
+    assert h["min_holders"] == 23
     assert h["max_edad_seg"] == 1200
     # Sin importe propio desde el 19-sep: manda el 25% del saldo.
     assert h["buy_amount"] == 0
