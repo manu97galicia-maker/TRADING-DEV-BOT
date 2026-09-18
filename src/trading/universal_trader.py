@@ -3480,6 +3480,31 @@ class UniversalTrader:
                 # Primera comprobacion inmediata: si la moneda ya cumple al
                 # segundo 1, se compra al segundo 1. Solo se duerme cuando NO
                 # cumple, nunca antes de mirar.
+                # SIN VENTANA DE ESPERA NO HAY NADA QUE ESPERAR, y eso NO
+                # puede significar "descarta todo".
+                #
+                # EL FALLO QUE ESTO ARREGLA, que tuvo el bot sin comprar una
+                # sola moneda durante horas pareciendo que funcionaba: esto es
+                # un `while ... else`, y en Python el `else` se ejecuta cuando
+                # el bucle termina SIN `break`. Con `max_buy_age: 0` la
+                # condicion es falsa desde el primer instante, el cuerpo no
+                # corre NUNCA, el `break` de dentro no se alcanza jamas y el
+                # `else` de abajo se dispara SIEMPRE -- con su `return`. Cada
+                # moneda salia rechazada con "no cumplio en 0s" sin que se
+                # hubiera comprobado absolutamente nada.
+                #
+                # En el resto de esta configuracion 0 significa "sin limite",
+                # asi que aqui tiene que significar lo mismo: sin ventana, se
+                # decide ya. Todos los filtros que viven dentro del bucle
+                # (volumen minimo, compras, presion, titulares, market cap...)
+                # se saltan igual que se saltaban antes, porque estan a cero:
+                # si alguien enciende uno, tiene que poner tambien una ventana
+                # en la que comprobarlo.
+                if self.max_buy_age <= 0:
+                    logger.debug(
+                        "%s: sin ventana de espera (max_buy_age=0), se decide ya",
+                        token_info.symbol,
+                    )
                 while monotonic() - _t0 < self.max_buy_age:
                     # Los tres se leen SIEMPRE, aunque el primero ya descarte:
                     # los tres salen del mismo diccionario en memoria y no
@@ -3765,20 +3790,26 @@ class UniversalTrader:
                     )
                     break
                 else:
-                    # Se dice QUE falto, no solo que fallo: sin esto no hay forma
-                    # de saber si el filtro que sobra es el dinero o la gente.
-                    logger.info(
-                        f"Evitado {token_info.symbol}: no cumplio en "
-                        f"{self.max_buy_age:.0f}s (lo mejor visto: "
-                        f"{_visto_vol:.1f} SOL, {_visto_buys} compras, "
-                        f"{_visto_first_buys} en primer bloque, "
-                        f"{_visto_ops} tx, "
-                        f"{_visto_tit} titulares, "
-                        f"presion: {_visto_presion})"
-                    )
-                    if _tarea_redes is not None:
-                        _tarea_redes.cancel()
-                    return
+                    # OJO: este `else` es del `while`, no de ningun `if`. Se
+                    # ejecuta cuando el bucle acaba sin `break`, INCLUIDO el
+                    # caso de que no llegara a correr. Por eso hace falta la
+                    # guarda: sin ella, `max_buy_age: 0` rechazaba todo.
+                    if self.max_buy_age > 0:
+                        # Se dice QUE falto, no solo que fallo: sin esto no hay
+                        # forma de saber si el filtro que sobra es el dinero o
+                        # la gente.
+                        logger.info(
+                            f"Evitado {token_info.symbol}: no cumplio en "
+                            f"{self.max_buy_age:.0f}s (lo mejor visto: "
+                            f"{_visto_vol:.1f} SOL, {_visto_buys} compras, "
+                            f"{_visto_first_buys} en primer bloque, "
+                            f"{_visto_ops} tx, "
+                            f"{_visto_tit} titulares, "
+                            f"presion: {_visto_presion})"
+                        )
+                        if _tarea_redes is not None:
+                            _tarea_redes.cancel()
+                        return
 
             # EDAD AL COMPRAR. `max_token_age` se comprueba al sacarla de la
             # cola, cuando la moneda tiene ~1 segundo, así que no acota nada.
