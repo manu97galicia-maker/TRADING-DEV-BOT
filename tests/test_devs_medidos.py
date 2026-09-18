@@ -234,9 +234,19 @@ def test_el_resumen_dice_si_se_esta_comprando_de_verdad() -> None:
 
 def test_el_instalador_no_toca_nada_del_bot() -> None:
     """Solo escribe envoltorios en /usr/local/bin: no reinicia servicios, no
-    cambia configuracion y no borra nada."""
+    cambia configuracion y no borra nada.
+
+    OJO CON QUE SE PROHIBE. Antes esta lista incluia `git ` a secas, y eso se
+    puso rojo al hacer que `bot` ensenara el commit -- con `git rev-parse`,
+    que solo LEE. Prohibir git entero no protege de nada y estorba: lo que no
+    puede hacer un instalador es CAMBIAR el repo. Esos son los de abajo.
+    """
     s = _instalador()
-    for peligroso in ("systemctl restart", "systemctl stop", "rm ", "git "):
+    for peligroso in (
+        "systemctl restart", "systemctl stop", "rm ",
+        "git add", "git commit", "git push", "git reset",
+        "git checkout", "git clean", "git pull",
+    ):
         assert peligroso not in s, f"el instalador hace '{peligroso}'"
 
 

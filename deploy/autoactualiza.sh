@@ -40,6 +40,14 @@ fi
 # es una ventana sin vigilancia y no hay que abrirla gratis.
 asunto="$(git log -1 --pretty=%s)"
 echo "Actualizado: ${antes:0:7} -> ${despues:0:7}  ($asunto)"
+
+# LOS COMANDOS CORTOS TAMBIEN SE REFRESCAN. Sin esto el auto-actualizador
+# traia el codigo pero no los comandos nuevos: `porque` llego al droplet el
+# 18-sep y siguio dando "command not found" porque nadie volvio a correr el
+# instalador. Es idempotente, asi que repetirlo no cuesta nada.
+bash deploy/instalar_comandos.sh >/dev/null 2>&1 \
+  && echo "comandos cortos al dia"
+
 systemctl restart "$SERVICIO" && echo "$SERVICIO reiniciado"
 
 # Avisar por Telegram, que es donde Manu mira. Si falla, da igual: lo

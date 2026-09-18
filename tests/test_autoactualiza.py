@@ -200,3 +200,53 @@ def test_esta_entre_los_comandos_cortos() -> None:
     """Se escribe cuando uno esta harto: tiene que ser una palabra."""
     s = (RAIZ / "deploy" / "instalar_comandos.sh").read_text(encoding="utf-8")
     assert "_poner porque porque.sh" in s
+
+
+# ------------------------------- que `bot` conteste "ya va?" de verdad
+
+
+def _instalador() -> str:
+    return (RAIZ / "deploy" / "instalar_comandos.sh").read_text(encoding="utf-8")
+
+
+def test_bot_dice_el_commit_y_si_esta_al_dia() -> None:
+    """LO QUE FALTABA Y YO DABA POR HECHO. Le dije a Manu que `bot` mostraba
+    el commit y no era verdad: el droplet estuvo TRES DIAS con codigo viejo
+    pareciendo que funcionaba, y no habia forma de verlo de un vistazo."""
+    s = _instalador()
+    assert "rev-parse --short HEAD" in s
+    assert "AUN NO HA LLEGADO" in s
+
+
+def test_bot_dice_si_ha_comprado_no_solo_si_puede_comprar() -> None:
+    """"ACTIVAS" solo dice como esta CONFIGURADO. La pregunta de verdad es si
+    ha comprado algo, y hasta ahora no la contestaba nadie -- por eso
+    "compras: ACTIVAS" convivio dias con "no compra nada"."""
+    s = _instalador()
+    assert "HA COMPRADO?" in s
+    assert "Buying .* SOL worth" in s
+
+
+def test_bot_manda_a_porque_cuando_no_ha_comprado() -> None:
+    """Si lleva seis horas sin comprar, el siguiente paso tiene que estar
+    escrito en la misma pantalla."""
+    assert "escribe:  porque" in _instalador()
+
+
+def test_el_guion_de_bot_se_escribe_con_heredoc_citado() -> None:
+    """El sin citar obligaba a escapar cada $ y cada backtick del guion de
+    dentro, y una escapada mal puesta generaba un fichero roto que solo se
+    veia al ejecutarlo. Paso: salio `bot\\: command not found`."""
+    s = _instalador()
+    assert "<<'BOT'" in s
+    assert "__RAIZ__" in s, "la ruta tiene que meterse despues, con sed"
+
+
+def test_el_autoactualizador_refresca_los_comandos() -> None:
+    """EL AGUJERO QUE DEJABA COMANDOS NUEVOS SIN INSTALAR. Traia el codigo
+    pero no los comandos: `porque` llego al droplet y siguio dando "command
+    not found" porque nadie volvio a correr el instalador."""
+    s = (RAIZ / "deploy" / "autoactualiza.sh").read_text(encoding="utf-8")
+    assert "instalar_comandos.sh" in s
+    # Y antes de reiniciar, para que el reinicio ya lleve todo al dia.
+    assert s.index("instalar_comandos.sh") < s.index('systemctl restart "$SERVICIO"')
