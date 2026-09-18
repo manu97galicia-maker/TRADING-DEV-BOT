@@ -34,6 +34,7 @@ FUENTES = (
     "discord_calls",
     "gmgn_signals",
     "presion",
+    "holders",
 )
 
 

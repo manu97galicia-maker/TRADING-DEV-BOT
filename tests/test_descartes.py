@@ -206,14 +206,24 @@ def test_a_ciegas_el_tope_de_titular_va_mas_apretado() -> None:
     assert p["max_holder_pct_sin_historia"] < p["max_holder_pct"]
 
 
-def test_el_tope_de_la_fuente_es_mas_flojo_que_el_global() -> None:
-    """Si no lo fuera, no habria servido de nada: el global seguiria mandando."""
+def test_la_fuente_de_presion_sigue_trayendo_su_propio_tope() -> None:
+    """Sigue siendo suyo aunque este apagada: el dia que se vuelva a encender
+    tiene que traer su tope, porque el global ya no le va a poner ninguno."""
     f = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"]
-    assert f["presion"]["max_holder_pct"] > f["max_holder_pct"]
+    assert f["presion"]["max_holder_pct"] > 0
 
 
-def test_el_global_no_se_ha_tocado() -> None:
-    """Aflojar para esta fuente no puede aflojar para las demas: el 0,15 tiene
-    sentido en una moneda recien nacida."""
+def test_el_global_esta_a_cero_a_proposito() -> None:
+    """EL 0,15 SE QUITO EL 19-SEP, y no es un descuido.
+
+    Lo pedido para la estrategia de 99 titulares fue "solo esas dos
+    condiciones, no quiero mas condiciones", y este tope se aplicaba a TODAS
+    las fuentes: habria descartado monedas que cumplian las dos, en silencio.
+    Asi estuvo el bot dias encendido sin comprar.
+
+    LO QUE CUESTA, dicho claro: ya no hay nada que mire cuanto supply tiene una
+    sola mano. Si se enciende otra fuente, tiene que traer su tope en
+    `additional_data` -- el global ya no la cubre.
+    """
     f = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"]
-    assert f["max_holder_pct"] == 0.15
+    assert f["max_holder_pct"] == 0

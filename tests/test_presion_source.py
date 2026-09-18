@@ -215,18 +215,19 @@ def test_no_se_desbordan_las_evaluaciones_en_vuelo() -> None:
 # ------------------------------------------------------------ la config
 
 
-def test_es_la_unica_fuente_encendida() -> None:
-    """Lo pedido: probar SOLO esta condicion. Si alguien vuelve a encender
-    otra, este test lo dice -- porque entonces las compras que se midan ya no
-    serian de esta estrategia."""
+def test_esta_apagada_y_sigue_entera() -> None:
+    """Apagada el 19-sep al cambiar a la estrategia de 99 titulares.
+
+    NO se borra, y eso es lo que fija este test: la fuente de titulares NO
+    mira bundles, asi que el anti-bundle que se queda aqui dentro
+    (`max_carteras_primer_bloque`) es la unica proteccion escrita contra el
+    pump and dump que hay en el repo. Volver a ella es cambiar dos `enabled`.
+    """
     f = _filtros()
-    otras = [
-        n for n in ("buy_on_dex_paid", "birdeye_trending", "dextools_hotpools",
-                    "curva_96", "telegram_calls", "discord_calls", "gmgn_signals")
-        if (f.get(n) or {}).get("enabled")
-    ]
-    assert not otras, f"hay otras fuentes encendidas: {otras}"
-    assert f["presion"]["enabled"] is True
+    assert f["presion"]["enabled"] is False
+    # Los ajustes siguen puestos: encenderla no pide reconstruir nada.
+    assert f["presion"]["min_compradores_ola"] == 8
+    assert f["presion"]["max_carteras_primer_bloque"] > 0
 
 
 def test_el_corte_es_el_pedido() -> None:

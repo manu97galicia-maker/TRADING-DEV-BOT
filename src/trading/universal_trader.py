@@ -422,6 +422,7 @@ class UniversalTrader:
         dextools_hotpools: dict | None = None,
         curva_96: dict | None = None,
         presion: dict | None = None,
+        holders: dict | None = None,
         # Telegram-calls acquisition mode (disabled unless configured)
         telegram_calls: dict | None = None,
         discord_calls: dict | None = None,
@@ -1254,6 +1255,12 @@ class UniversalTrader:
         #: de lo medido: 27.241 monedas dijeron que lo que predice un pump no
         #: es el ratio compras/ventas sino cuanta GENTE DISTINTA entra.
         self.presion = presion or {}
+        #: Compra por titulares: N carteras distintas dentro y menos de X
+        #: minutos de vida. DOS CONDICIONES Y NADA MAS, pedido asi por
+        #: Manu. Lo que se pierde esta escrito en holders_source.py: sin
+        #: anti-bundle, un bundle de N carteras recien creadas cumple las
+        #: dos a la perfeccion.
+        self.holders = holders or {}
         # Telegram-calls acquisition mode config (off unless enabled)
         self.telegram_calls = telegram_calls or {}
         self.discord_calls = discord_calls or {}
@@ -1352,6 +1359,7 @@ class UniversalTrader:
         ("dextools_hotpools", "dextools"),
         ("curva_96", "curva96"),
         ("presion", "presion"),
+        ("holders", "holders"),
         ("telegram_calls", "telegram"),
         ("discord_calls", "discord"),
         ("gmgn_signals", "gmgn"),
@@ -2051,6 +2059,26 @@ class UniversalTrader:
             await source.run(self._on_dexpaid_token)
         except asyncio.CancelledError:
             logger.info("Presion-compradora mode stopped")
+
+    async def _run_holders_mode(self) -> None:
+        """Compra con N titulares y poca vida. Sin mas condiciones."""
+        from monitoring.holders_source import HoldersSource
+
+        cfg = self.holders
+        source = HoldersSource(
+            self.wss_endpoint,
+            self.platform_implementations,
+            self.solana_client,
+            min_holders=int(cfg.get("min_holders", 99)),
+            max_edad_seg=float(cfg.get("max_edad_seg", 300.0)),
+            buy_amount=float(cfg.get("buy_amount", 0.07)),
+            heartbeat_interval=float(cfg.get("heartbeat_interval", 300)),
+            paper_mode=self.paper_trade or self.paper_engine.enabled,
+        )
+        try:
+            await source.run(self._on_dexpaid_token)
+        except asyncio.CancelledError:
+            logger.info("Titulares mode stopped")
 
     async def _run_telegram_mode(self) -> None:
         """Run the Telegram-calls acquisition loop until interrupted."""

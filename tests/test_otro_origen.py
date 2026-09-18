@@ -105,12 +105,15 @@ def test_parado_por_perdidas_manda_sobre_el_cupo() -> None:
     assert trader._otro_origen_agotado(_moneda("otro")) is True
 
 
-def test_la_config_pide_mas_a_las_de_fuera_que_a_las_de_casa() -> None:
+def test_las_de_fuera_traen_su_propio_tope_de_titular() -> None:
+    """El global se puso a 0 el 19-sep con la estrategia de 99 titulares
+    ("solo esas dos condiciones"), asi que ya no sirve de suelo para nadie.
+    Lo unico que protege a las de fuera es el tope que traen ellas, y por eso
+    lo que se comprueba aqui es que sigue puesto y que es estricto."""
     cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"]
-    de_casa = cfg["max_holder_pct"]
     de_fuera = cfg["buy_on_dex_paid"]["otros_max_holder_pct"]
     assert de_fuera == 0.05
-    assert de_fuera < de_casa
+    assert de_fuera > 0
 
 
 def test_se_exige_liquidez_bloqueada_a_las_de_fuera() -> None:

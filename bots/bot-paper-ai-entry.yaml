@@ -278,7 +278,7 @@ filters:
   # titular por encima del 5% es lo normal (compradores tempranos, el dev,
   # quien puso la liquidez del pool). 0.15 sigue cortando el caso de verdad
   # feo: una sola cartera con una septima parte del supply.
-  max_holder_pct: 0.15
+  max_holder_pct: 0
   min_holders: 0
   min_curve_sol: 0
   min_entry_mc: 0
@@ -478,7 +478,7 @@ filters:
   # un stop de -18%). Se arranca igual por decision de Manu y con 0,07 SOL
   # por operacion, que es lo que lo hace asumible mientras se mide de verdad.
   presion:
-    enabled: true
+    enabled: false
     # Compradores DISTINTOS que tienen que entrar en la ventana.
     #
     # HISTORIA DE ESTE NUMERO, porque ha cambiado tres veces:
@@ -528,6 +528,33 @@ filters:
     # poder ver si de verdad era este el filtro.
     max_holder_pct: 0.30
     max_holder_pct_sin_historia: 0.25
+    heartbeat_interval: 300
+
+  # ESTRATEGIA ACTIVA: 99 TITULARES Y MENOS DE 5 MINUTOS.
+  #
+  # Lo pedido, literal: "que me compre cuando haya 99 holders en una moneda y
+  # que tenga menos de cinco minutos de creacion, solo esas dos condiciones,
+  # no quiero mas condiciones".
+  #
+  # LO QUE SE PIERDE, y tiene que estar escrito: esta fuente NO mira bundles.
+  # Un bundle se monta con muchas carteras comprando a la vez que nace la
+  # moneda, asi que cumple LAS DOS condiciones a la perfeccion -- muchos
+  # titulares y recien creada. Es justo lo que se llevaba meses evitando. El
+  # freno sigue en el repo (`max_carteras_primer_bloque` en `presion`,
+  # apagada) y vuelve con una linea el dia que se quiera.
+  #
+  # Por eso el tope global `max_holder_pct` esta a 0 mas arriba: era la unica
+  # condicion de mas que quedaba en el camino y habria descartado monedas sin
+  # que ninguna de las dos reglas lo pidiera.
+  holders:
+    enabled: true
+    # Carteras DISTINTAS que han comprado y no han soltado, contadas del
+    # stream (no de un indexador: eso tardaria segundos y a esta edad ni
+    # conoce la mitad de las monedas).
+    min_holders: 99
+    # Cinco minutos.
+    max_edad_seg: 300
+    buy_amount: 0.07
     heartbeat_interval: 300
 
   curva_96:
