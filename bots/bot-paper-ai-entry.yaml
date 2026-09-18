@@ -195,6 +195,10 @@ trade:
   #
   # Poner false para volver a comprar.
   pausar_compras: false
+  # Cada cuanto avisa por Telegram de POR QUE no esta comprando, si no compra
+  # nada en ese rato. Si compra, no manda nada: un aviso que sale siempre deja
+  # de leerse. 0 lo apaga.
+  resumen_descartes_seg: 300
   price_check_interval: 1
   # PRECIO DEL STREAM. El bot ya esta suscrito a todas las operaciones de
   # pump.fun, y cada una publica las reservas virtuales que quedan despues:
@@ -507,6 +511,18 @@ filters:
     # va mas apretado para ellas.
     exigir_ver_creacion: false
     max_bundle_pct_sin_historia: 0.35
+    # TOPE DE UN SOLO TITULAR, propio de esta fuente. El global es 0,15 y esta
+    # pensado para monedas RECIEN NACIDAS, donde nadie ha tenido tiempo de
+    # acumular. Esta fuente compra a media vida: alli un titular con mas del
+    # 15% es lo normal, y ese tope las descartaba TODAS -- por eso el bot
+    # estaba encendido, en real y sin comprar nada.
+    #
+    # Afloja una proteccion de verdad: con el 30% en una sola mano, esa mano
+    # puede hundir la moneda cuando quiera. Es el precio de comprar a media
+    # vida, y por eso el parte de descartes de Telegram va antes que esto: para
+    # poder ver si de verdad era este el filtro.
+    max_holder_pct: 0.30
+    max_holder_pct_sin_historia: 0.25
     heartbeat_interval: 300
 
   curva_96:

@@ -194,6 +194,7 @@ async def start_bot(config_path: str):
             ),
             price_check_interval=cfg["trade"].get("price_check_interval", 10),
             pausar_compras=cfg["trade"].get("pausar_compras", False),
+            resumen_descartes_seg=cfg["trade"].get("resumen_descartes_seg", 300),
             precio_stream_seg=cfg["trade"].get("precio_stream_seg", 0),
             tick_stream_seg=cfg["trade"].get("tick_stream_seg", 0.25),
             # Listener configuration

@@ -344,6 +344,7 @@ class UniversalTrader:
         # sumar al recuento del fichero: este constructor ya tiene 19
         # iguales y siempre se llama con nombre desde bot_runner.
         pausar_compras: bool = False,  # noqa: FBT001, FBT002
+        resumen_descartes_seg: float = 300.0,
         precio_stream_seg: float = 0.0,
         tick_stream_seg: float = 0.25,
         take_profit_percentage: float | None = None,
@@ -819,6 +820,8 @@ class UniversalTrader:
         #: su stop loss y su escalera -- parar el bot entero seria lo que las
         #: dejaria a ciegas.
         self.pausar_compras = bool(pausar_compras)
+        #: Cada cuanto se manda el parte de descartes. 0 lo apaga.
+        self.resumen_descartes_seg = float(resumen_descartes_seg or 0)
         self.precio_stream_seg = float(precio_stream_seg or 0)
         self.tick_stream_seg = float(tick_stream_seg or 0)
         self.take_profit_percentage = take_profit_percentage
@@ -1184,6 +1187,11 @@ class UniversalTrader:
         #: maximo historico de la moneda: lo de antes de comprar y lo de
         #: despues de salir no se ve. Es "hasta donde llego estando dentro".
         self._pico_visto: dict[str, float] = {}
+        #: Motivo de descarte -> cuantas veces. Es lo que contesta "por que no
+        #: compra" sin tener que leer el log desde un movil.
+        self._descartes: dict[str, int] = {}
+        self._compras_del_resumen = 0
+        self._ultimo_resumen = monotonic()
         #: Cuando se le pregunto al nodo por ultima vez, y que contesto. Con
         #: esto el monitor puede dar vueltas rapidas usando el precio del
         #: stream sin gastar ni una peticion de mas (ver `_precio_rapido`).
@@ -1468,6 +1476,10 @@ class UniversalTrader:
         # sitios; al anadir `presion` falto en tres de ellos. Ahora anadir una
         # fuente es una linea en `FUENTES` y su `_run_*_mode`.
         acquisition_tasks: list[asyncio.Task] = []
+        if self.resumen_descartes_seg > 0:
+            acquisition_tasks.append(
+                asyncio.create_task(self._vigilar_los_descartes())
+            )
         for attr, corto in self.FUENTES:
             if not (getattr(self, attr, None) or {}).get("enabled"):
                 continue
@@ -1835,6 +1847,10 @@ class UniversalTrader:
         # `_apunta_compra_por_origen`, cuando la compra esta confirmada.
         return False
 
+    def _cuenta_compra_para_el_resumen(self) -> None:
+        """Una compra apaga el parte de descartes de este tramo."""
+        self._compras_del_resumen += 1
+
     def _apunta_compra_por_origen(self, token_info: TokenInfo) -> None:
         """Suma una POSICION ABIERTA al cupo del regimen que la trajo.
 
@@ -2006,6 +2022,10 @@ class UniversalTrader:
             max_carteras_primer_bloque=int(cfg.get("max_carteras_primer_bloque", 3)),
             max_sol_primer_bloque=float(cfg.get("max_sol_primer_bloque", 2.0)),
             max_bundle_pct=float(cfg.get("max_bundle_pct", 0.5)),
+            max_holder_pct=float(cfg.get("max_holder_pct", 0.30)),
+            max_holder_pct_sin_historia=float(
+                cfg.get("max_holder_pct_sin_historia", 0.25)
+            ),
             exigir_ver_creacion=bool(cfg.get("exigir_ver_creacion", True)),
             max_bundle_pct_sin_historia=float(
                 cfg.get("max_bundle_pct_sin_historia", 0.35)
@@ -3139,6 +3159,86 @@ class UniversalTrader:
         except Exception:  # noqa: BLE001
             return -1
 
+    async def _vigilar_los_descartes(self) -> None:
+        """Manda el parte de descartes cada tanto, haya o no posiciones.
+
+        VA EN SU PROPIA TAREA A PROPOSITO. La primera version lo colgue del
+        bucle que vigila las posiciones abiertas, y eso era exactamente al
+        reves: ese bucle SOLO corre cuando hay algo comprado, asi que el aviso
+        de "no compra nada" no habria salido justo en el unico caso para el
+        que existe.
+        """
+        while True:
+            await asyncio.sleep(min(30.0, max(5.0, self.resumen_descartes_seg / 4)))
+            try:
+                self._avisar_de_los_descartes_si_toca()
+            except Exception:  # noqa: BLE001
+                logger.debug("parte de descartes", exc_info=True)
+
+    def _descarta(self, token_info: TokenInfo, motivo: str) -> None:
+        """Apunta POR QUE no se compro esta moneda, y lo cuenta.
+
+        POR QUE HACE FALTA CONTARLOS. El bot ya escribia cada descarte en el
+        log, pero ese log vive en un droplet que se administra desde un movil:
+        los motivos estan mezclados entre miles de lineas y en la practica
+        nadie los lee nunca. Dos dias enteros diagnosticando a ciegas por eso,
+        con cada hipotesis costando un viaje de ida y vuelta.
+
+        El motivo que llega aqui va SIN el simbolo ni los numeros de la moneda
+        --"un titular concentra demasiado", no "PEPE: el titular X tiene el
+        34,2%"-- porque si no cada descarte seria unico y el recuento saldria
+        todo a uno, que no dice nada. El detalle concreto sigue yendo al log.
+        """
+        self._descartes[motivo] = self._descartes.get(motivo, 0) + 1
+        logger.info("Evitado %s: %s", token_info.symbol, motivo)
+
+    def _resumen_de_descartes(self) -> str | None:
+        """El parte de por que no se compra, o None si no hay nada que contar.
+
+        Devuelve None cuando NO hubo descartes, y quien llama tampoco lo manda
+        si hubo compras: un aviso que sale siempre deja de leerse a la segunda
+        semana, y entonces no sirve para el dia que de verdad pasa algo.
+        """
+        if not self._descartes:
+            return None
+        total = sum(self._descartes.values())
+        lineas = [
+            f"🔎 <b>POR QUÉ NO COMPRA</b> (últimos {self.resumen_descartes_seg / 60:.0f} min)",
+            f"{total} candidatas · {self._compras_del_resumen} compradas",
+            "",
+        ]
+        # De mas frecuente a menos: el motivo gordo es el que hay que mirar, y
+        # tiene que estar el primero aunque el mensaje se corte en el movil.
+        for motivo, veces in sorted(
+            self._descartes.items(), key=lambda x: -x[1]
+        )[:6]:
+            lineas.append(f"<b>{veces}</b> · {motivo}")
+        return "\n".join(lineas)
+
+    def _avisar_de_los_descartes_si_toca(self) -> None:
+        """Manda el parte cada `resumen_descartes_seg`, y solo si hace falta."""
+        if self.resumen_descartes_seg <= 0:
+            return
+        ahora = monotonic()
+        if ahora - self._ultimo_resumen < self.resumen_descartes_seg:
+            return
+        self._ultimo_resumen = ahora
+        # SI ESTA COMPRANDO, NO SE AVISA DE NADA. Descartar monedas es lo que
+        # hace un filtro; solo es un problema cuando NINGUNA pasa.
+        if self._compras_del_resumen == 0:
+            parte = self._resumen_de_descartes()
+            if parte:
+                try:
+                    # Perezoso como las demas llamadas a notify de este
+                    # fichero, para no arrastrar Telegram en el arranque.
+                    from monitoring.notifier import notify  # noqa: PLC0415
+
+                    notify(parte)
+                except Exception:  # noqa: BLE001, S110
+                    pass
+        self._descartes.clear()
+        self._compras_del_resumen = 0
+
     async def _handle_token(self, token_info: TokenInfo) -> None:
         """Handle a new token creation event."""
         try:
@@ -3168,10 +3268,7 @@ class UniversalTrader:
                     _dev_user in self._manual_blacklist
                     or _dev_creator in self._manual_blacklist
                 ):
-                    logger.info(
-                        f"Evitado {token_info.symbol}: dev {_dev_user[:8]} en "
-                        f"BLACKLIST manual (bloqueo permanente)"
-                    )
+                    self._descarta(token_info, "dev en BLACKLIST manual")
                     return
 
                 # Auto-baneo: dev que alcanzo el umbral configurado -> no se compra.
@@ -3182,17 +3279,16 @@ class UniversalTrader:
                 if self._is_dev_blocked(_dev_user, _dev_creator) and not self._es_marcado(
                     token_info
                 ):
-                    logger.info(
-                        f"Evitado {token_info.symbol}: dev "
-                        f"{_dev_user[:8]} BLOQUEADO "
-                        f"({self.rugs_para_bloquear} rug(s) acumulados)"
+                    self._descarta(
+                        token_info,
+                        f"dev bloqueado por {self.rugs_para_bloquear} rug(s)",
                     )
                     return
 
             # Avoid pump.fun "mayhem mode" tokens unless this strategy allows them.
             _es_mayhem = bool(getattr(token_info, "is_mayhem_mode", False))
             if not self.allow_mayhem and _es_mayhem:
-                logger.info(f"Evitado {token_info.symbol}: mayhem mode")
+                self._descarta(token_info, "mayhem mode (allow_mayhem: false)")
                 return
 
             if not self._dentro_del_horario():
@@ -4104,6 +4200,7 @@ class UniversalTrader:
                 # corte del creador, y evita el trabajo de holders si el dev ya
                 # está cargado y va a vender encima.
                 if await self._dev_holds_too_much(token_info):
+                    self._descarta(token_info, "el dev tiene demasiado supply")
                     return
 
                 # Anti-concentración: no comprar si un holder tiene >max_holder_pct.
@@ -4112,11 +4209,21 @@ class UniversalTrader:
                 ) and await self._top_holder_exceeds(
                     token_info
                 ):
+                    _tope = float(
+                        (token_info.additional_data or {}).get("max_holder_pct")
+                        or self.max_holder_pct
+                    )
+                    self._descarta(
+                        token_info,
+                        f"un titular concentra más del {_tope * 100:.0f}% "
+                        "(o hay muy pocos)",
+                    )
                     return
 
                 if not await self.dex_filter.should_buy(
                     str(token_info.mint), token_info.symbol
                 ):
+                    self._descarta(token_info, "no pasa el filtro de DexScreener")
                     return
 
             # SEÑAL: aviso DESACTIVADO el 4-ago a peticion de Manu. Se mandaba por
@@ -4581,6 +4688,7 @@ class UniversalTrader:
         )
         self._compras_de_la_tanda += 1
         self._apunta_compra_por_origen(token_info)
+        self._cuenta_compra_para_el_resumen()
         self._anota_firma(str(token_info.mint), buy_result.tx_signature)
         self._log_trade(
             "buy",

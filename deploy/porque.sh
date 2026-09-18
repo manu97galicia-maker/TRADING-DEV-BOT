@@ -57,6 +57,17 @@ printf '  %-42s %s\n' "SOL insuficiente"        "$(cuenta 'SOL insuficiente')"
 printf '  %-42s %s\n' "en PAUSA (modo estudio)" "$(cuenta 'PAUSA ·')"
 
 echo
+echo "5. EL PARTE QUE MANDA EL BOT A TELEGRAM"
+# El mismo recuento que llega al movil cada 5 minutos, por si el aviso se
+# perdio o Telegram no esta configurado.
+parte="$(log | grep -A 8 "POR QUÉ NO COMPRA" | tail -12)"
+if [ -n "$parte" ]; then
+  echo "$parte" | sed 's/.*]: /  /; s/<[^>]*>//g'
+else
+  echo "  (todavia no ha mandado ninguno; sale a los 5 min si no compra nada)"
+fi
+
+echo
 echo "== VEREDICTO =="
 c=$(cuenta 'PRESIÓN —'); b=$(cuenta 'Buying .* SOL worth')
 if [ "$c" -eq 0 ]; then

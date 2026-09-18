@@ -105,6 +105,8 @@ class PresionSource:
         max_carteras_primer_bloque: int = 3,
         max_sol_primer_bloque: float = 2.0,
         max_bundle_pct: float = 0.5,
+        max_holder_pct: float = 0.30,
+        max_holder_pct_sin_historia: float = 0.25,
         exigir_ver_creacion: bool = True,
         max_bundle_pct_sin_historia: float = 0.35,
         heartbeat_interval: float = 300,
@@ -124,6 +126,20 @@ class PresionSource:
         self.max_carteras_primer_bloque = int(max_carteras_primer_bloque)
         self.max_sol_primer_bloque = float(max_sol_primer_bloque)
         self.max_bundle_pct = float(max_bundle_pct)
+        #: Cuanto puede concentrar UN SOLO titular. Esta fuente trae el suyo
+        #: porque el tope general (0,15) esta pensado para monedas recien
+        #: nacidas, donde nadie ha tenido tiempo de acumular. Esta compra a
+        #: media vida: alli un titular con mas del 15% es lo normal y ese tope
+        #: las descarta TODAS. El mismo problema que ya tenia la fuente de la
+        #: curva, y que su comentario en `_top_holder_exceeds` ya avisaba.
+        #:
+        #: Subirlo afloja una proteccion de verdad: con el 30% en una sola
+        #: mano, esa mano puede hundir la moneda cuando quiera. Es el precio
+        #: de comprar a media vida.
+        self.max_holder_pct = float(max_holder_pct)
+        #: Y mas apretado cuando no se vio nacer la moneda, por lo mismo que
+        #: el tope de bundle: alli no hay nada mas que mire.
+        self.max_holder_pct_sin_historia = float(max_holder_pct_sin_historia)
         #: Si se exige haber visto NACER la moneda. En True el bot arranca
         #: ciego: solo puede comprar lo que nazca despues, porque de lo que ya
         #: existia no tiene los contadores del bloque de creacion. Es lo mas
@@ -254,6 +270,11 @@ class PresionSource:
                 self.max_bundle_pct
                 if volumen.vio_la_creacion(mint)
                 else self.max_bundle_pct_sin_historia
+            ),
+            "max_holder_pct": (
+                self.max_holder_pct
+                if volumen.vio_la_creacion(mint)
+                else self.max_holder_pct_sin_historia
             ),
             "ola_compradores": compradores,
             "curva_progreso": avance[0] if avance else None,
