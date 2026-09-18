@@ -33,16 +33,16 @@ def _peldanos() -> list[tuple[float, float]]:
 
 def test_los_peldanos_son_los_pedidos() -> None:
     assert _peldanos() == [
-        (0.25, 0.20),
+        (0.25, 0.10),
         (0.48, 0.25),
-        (0.80, 0.275),  # la mitad del 55% que queda a esa altura
-        (1.50, 0.065),  # x2,5
-        (2.30, 0.055),  # x3,3
-        (4.00, 0.045),  # x5
-        (6.00, 0.035),  # x7
-        (9.00, 0.025),  # x10
-        (14.00, 0.015),  # x15
-        (19.00, 0.015),  # x20
+        (0.80, 0.327),  # sigue siendo ~la mitad de lo que queda a esa altura
+        (1.50, 0.077),  # x2,5
+        (2.30, 0.065),  # x3,3
+        (4.00, 0.053),  # x5
+        (6.00, 0.042),  # x7
+        (9.00, 0.030),  # x10
+        (14.00, 0.018),  # x15
+        (19.00, 0.018),  # x20
     ]
 
 
@@ -78,7 +78,7 @@ def test_los_peldanos_lejanos_cobran_una_salida_de_verdad() -> None:
     """Los de arriba son los que cobran cuando una sale de verdad."""
     lejanos = [(g, v) for g, v in _peldanos() if g >= 1.5]
     assert len(lejanos) == 7
-    assert round(sum(v for _, v in lejanos), 6) == 0.255
+    assert round(sum(v for _, v in lejanos), 6) == 0.303
 
 
 def test_la_escalera_termina_en_x20() -> None:
@@ -136,19 +136,27 @@ def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:
 def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
     """20% al +25%, 25% al +48%, y al +80% la MITAD DE LO QUE QUEDA."""
     cerca = [(g, v) for g, v in _peldanos() if g < 1.5]
-    assert cerca == [(0.25, 0.20), (0.48, 0.25), (0.80, 0.275)]
-    assert round(sum(v for _, v in cerca), 6) == 0.725
+    assert cerca == [(0.25, 0.10), (0.48, 0.25), (0.80, 0.327)]
+    assert round(sum(v for _, v in cerca), 6) == 0.677
 
 
-def test_el_tercer_peldano_es_la_mitad_de_lo_que_queda() -> None:
+def test_el_tercer_peldano_sigue_siendo_casi_la_mitad_de_lo_que_queda() -> None:
     """LA TRADUCCION QUE SE PUEDE EQUIVOCAR, y por eso esta fijada aqui.
 
-    Lo pedido fue "al +80% vende la mitad de lo que queda". El bot no sabe
-    vender fracciones de lo que queda: todos sus peldanos son fraccion de la
-    compra ORIGINAL. A esa altura queda el 55% (se vendio 20% + 25%), asi
-    que la mitad es el 27,5% de la compra. Poner 0.50 ahi venderia el 50%
-    de la compra -- casi el doble de lo pedido.
+    El tercer peldano nacio de "al +80% vende la mitad de lo que queda". El bot
+    no sabe vender fracciones de lo que queda: TODOS sus peldanos son fraccion
+    de la compra ORIGINAL. Entonces quedaba el 55% y la mitad era 27,5%. Poner
+    0.50 ahi venderia el 50% de la compra, casi el doble de lo pedido -- ese es
+    el error que este test existe para impedir.
+
+    El 19-sep el reparto cambio (diez puntos del primer peldano repartidos del
+    tercero en adelante) y ya no es la mitad EXACTA. Sale casi: 32,7% de un 65%
+    restante es el 50,3%. Se comprueba que sigue en ese entorno, no que sea
+    exacto: si alguien vuelve a poner 0.50 o algo parecido al 65%, salta.
     """
     cerca = _peldanos()[:3]
     queda_antes_del_tercero = 1 - cerca[0][1] - cerca[1][1]
-    assert round(cerca[2][1], 6) == round(queda_antes_del_tercero / 2, 6)
+    proporcion = cerca[2][1] / queda_antes_del_tercero
+    assert 0.45 <= proporcion <= 0.55, (
+        f"el tercer peldano vende el {proporcion * 100:.1f}% de lo que queda"
+    )

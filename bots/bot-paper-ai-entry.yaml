@@ -72,38 +72,48 @@ trade:
   sell_slippage: 0.10
   exit_strategy: tp_sl
   # ESCALERA. Los porcentajes son de la cantidad ORIGINAL, no de lo que
-  # queda: el 20% del primer peldano es el 20% de lo que se compro.
+  # queda: el 10% del primer peldano es el 10% de lo que se compro.
   #
-  #   cerca:  20% a +25%   25% a +48%   27,5% a +80%  = 72,5%
-  #   lejos:  6,5% a x2,5  5,5% a x3,3  4,5% a x5
-  #           3,5% a x7    2,5% a x10   1,5% a x15   1,5% a x20  = 25,5%
+  #   cerca:  10% a +25%   25% a +48%   32,7% a +80%  = 67,7%
+  #   lejos:  7,7% a x2,5  6,5% a x3,3  5,3% a x5
+  #           4,2% a x7    3,0% a x10   1,8% a x15   1,8% a x20  = 30,3%
   #   moonbag: 2%, que vende Manu a mano. El bot no lo toca.
   #
-  # QUE CAMBIA RESPECTO AL REPARTO ANTERIOR (30/50/70 con el 35% esperando
-  # al +70%). Este cobra ANTES y mas repartido: el primer peldano baja de
-  # +30% a +25% y el trozo gordo ya no espera al +70%, se parte entre +48%
-  # y +80%. A los +48% este reparto lleva cobrado el 45% de la posicion
-  # donde el anterior llevaba el 40%, y a los +80% lleva el 72,5% donde el
-  # anterior llevaba el 75%: casi lo mismo arriba, bastante mas abajo.
+  # ULTIMO CAMBIO (19-sep), pedido: "quita un total de un 10 por ciento del
+  # primer escalon y repartelo entre el tercero en adelante". El primero baja
+  # de 20% a 10% y esos diez puntos se reparten del tercero para arriba EN
+  # PROPORCION a lo que ya vendia cada uno. Proporcional y no a partes
+  # iguales a proposito: repartir igual habria subido el x20 de 1,5 a 2,75
+  # --un 83% mas-- y el +80% solo un 4%, o sea cargar el peso en los
+  # peldanos que casi nunca se alcanzan. La forma de la escalera se respeta.
   #
-  # EL PRECIO DE ESO, dicho claro: el primer peldano cobra el 20% de un
-  # +25%, o sea un +5% de la posicion, cuando el stop cuesta -18%. Un
-  # ganador que solo toca el primer peldano NO cubre a un perdedor. Lo que
-  # de verdad protege es `stop_a_entrada_tras_tp`: en cuanto salta ese
-  # primer peldano el stop sube al precio de compra, asi que lo que sigue
-  # dentro ya no puede perder dinero (salvo hueco de precio).
+  # EL PRECIO DE ESO, dicho claro y en numeros: el primer peldano ahora cobra
+  # el 10% de un +25%, o sea un +2,5% de la posicion -- 0,66 $ con una compra
+  # de 0,12 SOL. El stop cuesta -18%, que son 4,75 $. Antes hacian falta tres
+  # ganadores de primer peldano para pagar un perdedor; ahora hacen falta
+  # SIETE.
+  #
+  # Lo que de verdad protege no es ese cobro, es `stop_a_entrada_tras_tp`: en
+  # cuanto salta el primer peldano el stop sube al precio de compra, asi que
+  # lo que sigue dentro ya no puede perder dinero (salvo hueco de precio). Ese
+  # efecto NO cambia con este reparto -- salta igual de pronto, porque el
+  # gatillo es el +25%, no cuanto se venda alli.
+  #
+  # Y lo que se gana: si la moneda pasa del +80%, ahora hay mas posicion
+  # dentro para cobrarla. El punto en que se recupera la compra sigue siendo
+  # el tercer peldano.
   #
   # TODO LO QUE SE VENDE ES FRACCION DE LA COMPRA ORIGINAL, no de lo que
-  # queda dentro. Esto importa para leer el tercer peldano: lo pedido fue
-  # "al +80% vende la MITAD DE LO QUE QUEDA", y a esa altura queda el 55%
-  # (se vendio 20% + 25%). La mitad de 55 es 27,5, y asi esta escrito. Si
-  # se pusiera 0.50 el bot venderia el 50% DE LA COMPRA, casi el doble.
+  # queda dentro. El tercer peldano nacio de "al +80% vende la MITAD DE LO
+  # QUE QUEDA": a esa altura quedaba el 55% y la mitad era 27,5. Tras este
+  # reparto ya no es la mitad exacta (32,7 de un 65% restante), y es correcto:
+  # manda lo pedido ahora.
   take_profit_percentage: 0.25
-  take_profit_sell_percentage: 0.20
+  take_profit_sell_percentage: 0.10
   tp2_gain: 0.48
   tp2_sell: 0.25
   tp3_gain: 0.80
-  tp3_sell: 0.275
+  tp3_sell: 0.327
   # DE AQUI EN ADELANTE, EL RESTO REPARTIDO HASTA x20. Queda el 27,5% de la
   # compra; se deja corriendo el 2% de siempre y los otros 25,5 se reparten
   # en siete peldanos, de mas a menos: llegar a x20 es mucho menos probable
@@ -113,11 +123,11 @@ trade:
   # 1.50 es x2,5 -- no un +150% suelto que se pueda confundir con los de
   # arriba. 19.00 es x20.
   tp4_gain: 1.50   # x2,5
-  tp4_sell: 0.065
+  tp4_sell: 0.077
   tp5_gain: 2.30   # x3,3
-  tp5_sell: 0.055
+  tp5_sell: 0.065
   tp6_gain: 4.00   # x5
-  tp6_sell: 0.045
+  tp6_sell: 0.053
   # PELDANOS LEJANOS. Antes llegaban a x50 y x100; ahora la escalera termina
   # en x20 porque es lo pedido. Consecuencia, dicha en claro: una moneda que
   # pase de x20 ya no tiene peldanos por encima -- lo unico que sigue dentro
@@ -129,13 +139,13 @@ trade:
   # avisa: test_los_peldanos_altos_tienen_tiempo_de_llegar).
   tp_extra:
     - gain: 6.00     # x7
-      sell: 0.035
+      sell: 0.042
     - gain: 9.00     # x10
-      sell: 0.025
+      sell: 0.030
     - gain: 14.00    # x15
-      sell: 0.015
+      sell: 0.018
     - gain: 19.00    # x20
-      sell: 0.015
+      sell: 0.018
   stop_loss_percentage: 0.18
   # EL STOP SE LLEVA LA POSICION ENTERA, moonbag incluido.
   #

@@ -156,7 +156,7 @@ def test_tras_el_primer_tp_la_operacion_ya_no_pierde() -> None:
 
 
 def test_los_tres_peldanos_de_cerca_y_vuelta_atras() -> None:
-    """Llega al +80%, cobra 72,5% de la posicion y el suelo queda en el +48%.
+    """Llega al +80%, cobra 67,7% de la posicion y el suelo queda en el +48%.
 
     El trinquete va un peldano por detras: cobrado el tercero, el suelo sube
     al precio del SEGUNDO. Deja sitio para que la moneda respire y aun asi
@@ -175,7 +175,7 @@ def test_un_salto_de_golpe_cobra_todos_los_peldanos_que_deja_atras() -> None:
     r = simula([1.0, 7.0])
     assert r["peldanos"] == [1, 2, 3, 4, 5, 6, 7]
     assert not r["paro_por_stop"]
-    assert round(r["restante_pct"], 6) == 0.075
+    assert round(r["restante_pct"], 6) == 0.086
 
 
 def test_ni_un_x100_toca_el_moonbag() -> None:
