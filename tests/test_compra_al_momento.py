@@ -221,3 +221,42 @@ def test_el_precio_reutilizado_tiene_caducidad() -> None:
     from trading.platform_aware import _PRECIO_FRESCO_SEG
 
     assert 0 < _PRECIO_FRESCO_SEG <= 5
+
+
+def test_la_compra_no_se_simula_y_la_venta_si() -> None:
+    """LA ASIMETRIA, y el porqué de cada lado.
+
+    COMPRAR: se compite por entrar. La simulación previa es otro viaje al nodo
+    (100-300 ms) y llegar tarde es lo que ha costado dinero. Va sin simular.
+
+    VENDER: no hay carrera -- la posición ya es nuestra. Ahí la simulación sale
+    a cuenta: una venta que iba a reventar se rechaza sin enviarse y sale
+    gratis. El 1-ago, sin ella, 178 ventas fallidas quemaron 0,64 SOL en
+    comisiones.
+
+    Este test existe porque las dos líneas están en el MISMO fichero y a 300
+    líneas de distancia: es fácil "uniformarlas" sin darse cuenta de que son
+    distintas a propósito.
+    """
+    fuente = (
+        Path(__file__).resolve().parent.parent / "src/trading/platform_aware.py"
+    ).read_text(encoding="utf-8")
+    # Solo CODIGO: los comentarios que explican cada decision nombran las dos
+    # opciones, y sin esto el test se contaria a si mismo.
+    codigo = [
+        ln.strip() for ln in fuente.split("\n")
+        if "skip_preflight=" in ln and not ln.lstrip().startswith("#")
+    ]
+    assert codigo == ["skip_preflight=True,", "skip_preflight=False,"], (
+        f"se esperaba comprar sin simular y vender simulado; hay: {codigo}"
+    )
+
+
+def test_queda_escrito_lo_que_cuesta_no_simular() -> None:
+    """Sin simulación, una compra que revierte aterriza y paga igual. Con la
+    comisión subida a ~0,22 US$ eso ya no es calderilla, y quien lea esto
+    dentro de tres meses tiene que encontrarlo escrito."""
+    fuente = (
+        Path(__file__).resolve().parent.parent / "src/trading/platform_aware.py"
+    ).read_text(encoding="utf-8")
+    assert "LO QUE CUESTA" in fuente

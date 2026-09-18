@@ -300,17 +300,32 @@ class PlatformAwareBuyer(Trader):
                 f"Total cost: {amount:.6f} SOL (max: {max_amount_lamports / LAMPORTS_PER_SOL:.6f} SOL)"
             )
 
-            # skip_preflight=False TAMBIEN EN LA COMPRA (3-ago). Antes iba en
-            # True para ganar los ~100ms de la simulacion, y esa prisa solo
-            # tiene sentido cuando se compite por el primer bloque. Esta
-            # estrategia espera 12 segundos a proposito antes de mirar la
-            # moneda, asi que no compite con nadie: los 100ms no valen nada y a
-            # cambio una compra que iba a revertir se rechaza ANTES de aterrizar
-            # y cuesta 0 en vez de pagar la comision de prioridad igualmente.
+            # skip_preflight=True EN LA COMPRA. Sin simulacion previa: la
+            # transaccion sale directa, sin el viaje al nodo que cuesta
+            # simularla (100-300 ms).
+            #
+            # HISTORIA DE ESTA LINEA, porque ha ido y vuelto:
+            #   True  -> el original: aqui se compite por entrar.
+            #   False -> el 3-ago. El razonamiento escrito entonces fue "esta
+            #            estrategia espera 12 segundos a proposito antes de
+            #            mirar la moneda, asi que no compite con nadie".
+            #   True  -> el 19-sep, pedido por Manu. Aquel razonamiento ya no
+            #            vale: la espera de 12 segundos no existe y la
+            #            estrategia de hoy compra en cuanto una moneda cruza
+            #            los titulares. Llegar tarde fue el problema que costo
+            #            dinero, no la comision.
+            #
+            # LO QUE CUESTA, dicho claro: con preflight, una compra que iba a
+            # revertir se rechazaba ANTES de aterrizar y salia gratis. Sin el,
+            # aterriza y paga la comision de prioridad igual -- que ahora son
+            # ~0,22 $ por intento fallido, no calderilla.
+            #
+            # LA VENTA NO CAMBIA: alli no hay carrera y el 1-ago se quemaron
+            # 0,64 SOL en 178 ventas que reventaban y pagaban. Ver mas abajo.
             tx_signature = await self.client.build_and_send_transaction(
                 instructions,
                 self.wallet.keypair,
-                skip_preflight=False,
+                skip_preflight=True,
                 max_retries=self.max_retries,
                 priority_fee=(
                     priority_fee_override
@@ -609,10 +624,12 @@ class PlatformAwareSeller(Trader):
             # Ese dia esto costo 0,64 SOL: 178 ventas que reventaban con 6023
             # NotEnoughTokensToSell, todas aterrizando y todas pagando.
             #
-            # En la COMPRA se mantiene skip_preflight=True a proposito: ahi se
-            # compite por entrar y los ~100ms de la simulacion se notan. En la
-            # venta no hay carrera, y jupiter_seller.py ya llego a esta misma
-            # conclusion el 31-jul.
+            # En la COMPRA va en True a proposito: ahi se compite por entrar
+            # y los 100-300 ms de la simulacion se notan. En la venta no hay
+            # carrera --la posicion ya es nuestra y el precio se defiende con
+            # los reintentos, no con la prisa-- asi que aqui compensa pagar el
+            # viaje a cambio de que un fallo salga gratis. `jupiter_seller.py`
+            # llego a la misma conclusion el 31-jul por su cuenta.
             tx_signature = await self.client.build_and_send_transaction(
                 instructions,
                 self.wallet.keypair,
