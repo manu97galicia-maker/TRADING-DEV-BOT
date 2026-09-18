@@ -445,3 +445,156 @@ def test_dexscreener_no_puede_bloquear_aunque_este_encendido() -> None:
         dx.get("min_market_cap"), dx.get("max_market_cap"),
     )
     assert not any(criterios), f"DexScreener tiene criterios vivos: {criterios}"
+
+
+# ================================================================== el dip
+#
+# "Asegurate de que la presion compradora es superior a la vendedora en ese
+# momento, para no coger un dip, y las dos transacciones previas a la nuestra
+# han de ser compras." (19-sep)
+#
+# Las dos primeras condiciones miran CUANTA gente hay y CUANDO nacio la moneda.
+# Estas dos miran si en ESTE INSTANTE sube o se cae.
+
+
+def _ops(mint: str, ops: list[tuple[float, bool]]) -> None:
+    """Deja `volumen` con esas operaciones (segundos_atras, es_compra)."""
+    volumen._ops.clear()
+    volumen._curva.clear()
+    ahora = time.time()
+    volumen._ops[mint] = [
+        (ahora - atras, 1.0, compra, f"w{i}")
+        for i, (atras, compra) in enumerate(ops)
+    ]
+    volumen._curva[mint] = (
+        ahora, 700_000_000_000_000, 40_000_000_000,
+        volumen.RESERVA_TOKENS_INICIAL,
+    )
+
+
+def test_una_venta_en_las_dos_ultimas_lo_descarta() -> None:
+    """Lo pedido: las DOS previas a la nuestra han de ser compras."""
+    assert volumen.ultimas_son_compra.__module__  # el helper existe
+    _ops(MINT, [(9, True), (8, True), (1, False)])
+    assert volumen.ultimas_son_compra(MINT, 2) is False
+
+
+def test_dos_compras_seguidas_pasan() -> None:
+    _ops(MINT, [(9, False), (2, True), (1, True)])
+    assert volumen.ultimas_son_compra(MINT, 2) is True
+
+
+def test_no_basta_con_que_el_saldo_salga_bien() -> None:
+    """LA DIFERENCIA ENTRE LAS DOS CONDICIONES, y por eso estan las dos.
+
+    Aqui entra mas dinero del que sale --la presion da bien-- pero la ultima
+    operacion es una venta: alguien esta saliendo por detras. La condicion de
+    las dos compras lo caza y la de la presion no.
+    """
+    volumen._ops.clear()
+    ahora = time.time()
+    volumen._ops[MINT] = [
+        (ahora - 2, 10.0, True, "a"),
+        (ahora - 1, 1.0, False, "b"),
+    ]
+    comprado, vendido = volumen.presion(MINT, 3.0)
+    assert comprado > vendido, "la presion sale bien"
+    assert volumen.ultimas_son_compra(MINT, 2) is False, "y aun asi no se compra"
+
+
+def _pone(mint: str, ops: list[tuple[float, float, bool, str]]) -> None:
+    """Estado exacto de `volumen` para esa moneda, con la curva de recien nacida."""
+    ahora = time.time()
+    volumen._ops[mint] = [(ahora - atras, sol, compra, w) for atras, sol, compra, w in ops]
+    volumen._curva[mint] = (
+        ahora, 700_000_000_000_000, 40_000_000_000,
+        volumen.RESERVA_TOKENS_INICIAL,
+    )
+
+
+def test_se_descarta_por_venta_reciente() -> None:
+    """Tres titulares y joven, pero la ultima operacion es una venta."""
+    f = _fuente(min_holders=3, max_edad_seg=1200.0)
+    volumen._ops.clear()
+    volumen._curva.clear()
+    _pone(MINT, [(5, 1.0, True, "a")])           # 1 titular: por debajo
+    _revisa(f, [MINT])
+    assert f._embudo.get("con_titulares", 0) == 0
+
+    _pone(MINT, [
+        (5, 1.0, True, "a"), (4, 1.0, True, "b"), (3, 1.0, True, "c"),
+        (1, 0.2, False, "d"),                     # alguien sale por detras
+    ])
+    _revisa(f, [MINT])
+    assert f._embudo.get("venta_reciente") == 1, f"embudo: {f._embudo}"
+
+
+def test_se_descarta_por_dip() -> None:
+    """Las dos ultimas SON compras, pero sale mas dinero del que entra."""
+    f = _fuente(min_holders=3, max_edad_seg=1200.0)
+    volumen._ops.clear()
+    volumen._curva.clear()
+    _pone(MINT, [(5, 1.0, True, "a")])           # 1 titular: por debajo
+    _revisa(f, [MINT])
+
+    _pone(MINT, [
+        (5, 1.0, True, "a"), (4, 1.0, True, "b"), (3, 1.0, True, "c"),
+        (2, 50.0, False, "ballena"),              # volcada gorda
+        (1, 0.5, True, "d"), (0.5, 0.5, True, "e"),
+    ])
+    _revisa(f, [MINT])
+    assert volumen.ultimas_son_compra(MINT, 2) is True, "las dos ultimas son compras"
+    assert f._embudo.get("dip") == 1, f"embudo: {f._embudo}"
+
+
+def test_una_moneda_que_sube_limpia_si_pasa() -> None:
+    """Las cuatro condiciones a la vez, para que el freno no mate las buenas."""
+    f = _fuente(min_holders=3, max_edad_seg=1200.0)
+    volumen._ops.clear()
+    volumen._curva.clear()
+    _pone(MINT, [(5, 1.0, True, "a")])
+    _revisa(f, [MINT])
+
+    _pone(MINT, [
+        (5, 1.0, True, "a"), (4, 1.0, True, "b"),
+        (2, 2.0, True, "c"), (1, 2.0, True, "d"),
+    ])
+    _revisa(f, [MINT])
+    assert f._embudo.get("dip", 0) == 0
+    assert f._embudo.get("venta_reciente", 0) == 0
+    assert f._embudo.get("con_titulares") == 1
+
+
+def test_el_parte_dice_por_cual_de_los_dos_se_cae() -> None:
+    texto = build_holders_heartbeat(
+        60, 1200.0, 0.12,
+        {"vistas": 100, "venta_reciente": 7, "dip": 5, "sin_datos_presion": 2},
+        paper_mode=False,
+    )
+    assert "venta reciente" in texto
+    assert "cayendo" in texto
+    assert "sin datos" in texto
+
+
+def test_sin_datos_de_presion_se_cuenta_aparte() -> None:
+    """EL ERROR QUE ESTO EVITA REPETIR. El 10-ago un filtro parecido vetó las
+    seis únicas candidatas del día por tener la ventana vacía -- no por ir mal,
+    por falta de dato. Se cuenta aparte para que se VEA en Telegram si vuelve a
+    tumbarlo todo, en vez de tardar días en descubrirlo.
+    """
+    assert "sin_datos_presion" in _fuente_texto()
+
+
+def _fuente_texto() -> str:
+    return (
+        Path(__file__).resolve().parent.parent / "src/monitoring/holders_source.py"
+    ).read_text(encoding="utf-8")
+
+
+def test_la_config_pide_las_dos() -> None:
+    h = _filtros()["holders"]
+    assert h["ultimas_compras"] == 2
+    assert h["presion_seg"] > 0
+    # Ventana corta a proposito: en una larga, una compra gorda de hace medio
+    # minuto tapa que AHORA MISMO esta cayendo.
+    assert h["presion_seg"] <= 5

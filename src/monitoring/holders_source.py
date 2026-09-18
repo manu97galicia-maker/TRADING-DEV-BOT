@@ -77,6 +77,9 @@ def build_holders_heartbeat(
         f"  ↳ ya los tenían al verlas (no se vio el cruce): "
         f"{embudo.get('ya_venian_cumplidas', 0)}",
         f"  ↳ descartadas por viejas: {embudo.get('viejas', 0)}",
+        f"  ↳ con una venta reciente: {embudo.get('venta_reciente', 0)}",
+        f"  ↳ cayendo (salía más de lo que entraba): {embudo.get('dip', 0)}",
+        f"  ↳ sin datos de presión: {embudo.get('sin_datos_presion', 0)}",
         f"  ↳ sin ver su creación (edad desconocida): {embudo.get('sin_historia', 0)}",
         f"  ↳ <b>comprables: {embudo.get('comprables', 0)}</b>",
         f"Modo: {'PAPER' if paper_mode else 'REAL'}",
@@ -94,6 +97,12 @@ class HoldersSource:
         *,
         min_holders: int = 90,
         max_edad_seg: float = 300.0,
+        #: Operaciones seguidas que tienen que ser COMPRAS justo antes de
+        #: entrar. 0 = no se mira.
+        ultimas_compras: int = 2,
+        #: Ventana en la que se compara dinero que entra contra dinero que
+        #: sale. 0 = no se mira.
+        presion_seg: float = 3.0,
         buy_amount: float = 0.07,
         heartbeat_interval: float = 300,
         paper_mode: bool = False,
@@ -103,6 +112,8 @@ class HoldersSource:
         self._client = client
         self.min_holders = int(min_holders)
         self.max_edad_seg = float(max_edad_seg)
+        self.ultimas_compras = int(ultimas_compras or 0)
+        self.presion_seg = float(presion_seg or 0)
         self.buy_amount = float(buy_amount)
         self.heartbeat_interval = float(heartbeat_interval)
         self.paper_mode = bool(paper_mode)
@@ -259,6 +270,44 @@ class HoldersSource:
             if edad > self.max_edad_seg:
                 self._cuenta("viejas", mint)
                 continue
+
+            # 3) LAS ULTIMAS OPERACIONES, TODAS COMPRAS.
+            #
+            # No es lo mismo que "entra mas dinero del que sale", que es lo de
+            # abajo: el saldo puede salir bien mientras alguien va soltando por
+            # detras. Esto exige que NADIE haya vendido en las ultimas
+            # operaciones. Al medirlo fue lo que mas separo: las monedas sin
+            # ventas recientes hacian x2 el 41% de las veces, contra el 17% de
+            # base.
+            #
+            # Si todavia no hay tantas operaciones devuelve False a proposito:
+            # no se puede afirmar algo de lo que no hay datos.
+            if self.ultimas_compras > 0 and not volumen.ultimas_son_compra(
+                mint, self.ultimas_compras
+            ):
+                self._cuenta("venta_reciente", mint)
+                continue
+
+            # 4) ENTRA MAS DINERO DEL QUE SALE, AHORA MISMO.
+            #
+            # Para no comprar el primer escalon de una caida. El precio es la
+            # consecuencia; esto mira la causa --quien esta poniendo dinero-- y
+            # llega antes.
+            #
+            # OJO CON EL CASO SIN DATOS, que ya costo una vez: si la ventana
+            # esta vacia salen 0,00 y 0,00 y la condicion no se cumple. El
+            # 10-ago un filtro parecido veto las seis unicas candidatas del dia
+            # por ventana vacia, no por ir mal. Aqui no deberia pasar --el paso
+            # 3 ya exige operaciones recientes-- pero se cuenta aparte para que
+            # se VEA en el parte de Telegram si empieza a tumbarlo todo.
+            if self.presion_seg > 0:
+                comprado, vendido = volumen.presion(mint, self.presion_seg)
+                if comprado <= 0 and vendido <= 0:
+                    self._cuenta("sin_datos_presion", mint)
+                    continue
+                if comprado <= vendido:
+                    self._cuenta("dip", mint)
+                    continue
 
             if self._ya_decidida(mint):
                 continue

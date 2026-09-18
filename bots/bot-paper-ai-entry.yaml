@@ -628,6 +628,24 @@ filters:
     min_holders: 60
     # Veinte minutos (19-sep; antes cinco).
     max_edad_seg: 1200
+    # NO COGER UN DIP. Pedido el 19-sep. Las dos condiciones de
+    # arriba miran cuanta gente hay y cuando nacio la moneda; estas
+    # dos miran si en ESTE INSTANTE la moneda sube o se cae.
+    #
+    # Operaciones seguidas que tienen que ser COMPRAS justo antes de
+    # entrar. No es lo mismo que el saldo de abajo: ese puede salir
+    # bien mientras alguien va soltando por detras. Esto exige que
+    # NADIE haya vendido en las ultimas. Medido: las monedas sin
+    # ventas recientes hacian x2 el 41% de las veces, contra el 17%
+    # de base. 0 = no se mira.
+    ultimas_compras: 2
+    # Ventana en la que se compara el dinero que ENTRA contra el que
+    # SALE. Tiene que entrar mas. 0 = no se mira.
+    #
+    # Tres segundos y no mas: en una ventana larga una compra gorda
+    # de hace medio minuto tapa que ahora mismo esta cayendo, que es
+    # justo lo que se quiere detectar.
+    presion_seg: 3.0
     buy_amount: 0.12
     heartbeat_interval: 300
 
