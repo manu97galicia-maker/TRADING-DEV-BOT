@@ -131,7 +131,12 @@ def test_el_tope_duro_deja_pasar_el_importe_configurado() -> None:
     assert t["tope_compra_sol"] >= t["buy_amount"]
 
 
-def test_hay_suelo_de_compra() -> None:
-    """Estaba sin poner (0) y con el 75% de un saldo casi vacio eso era
-    comprar polvo."""
-    assert _cfg()["trade"]["compra_minima_sol"] > 0
+def test_el_suelo_de_compra_esta_quitado() -> None:
+    """Se quito el 19-sep, pedido. Queda escrito lo que eso significa: con el
+    75% de un saldo casi vacio el bot comprara polvo, y las comisiones fijas
+    --que no bajan con el tamano-- se llevaran una parte enorme.
+
+    No es un descuido: es la decision que se tomo. Si algun dia se quiere
+    recuperar, este test dice donde mirar.
+    """
+    assert _cfg()["trade"]["compra_minima_sol"] == 0

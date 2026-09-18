@@ -40,6 +40,20 @@ def vale_usd(cantidad: float, precio_sol: float) -> float:
     return cantidad * precio_sol * SOL_USD
 
 
+def _importe(libre: float, t: dict) -> float:
+    """El importe de una compra, como lo calcula el bot.
+
+    El tope y el suelo solo se aplican si son MAYORES QUE CERO: en toda esta
+    configuracion, cero significa "sin limite". Escribir `min(x, tope)` a secas
+    daria 0 en cuanto el tope se apague.
+    """
+    imp = max(0.0, libre * t["fraccion_saldo"])
+    tope = t["tope_compra_sol"]
+    if tope > 0 and imp > tope:
+        imp = tope
+    return imp
+
+
 def compra_tipica() -> float:
     """Tamano representativo de una posicion, en SOL.
 
@@ -50,8 +64,7 @@ def compra_tipica() -> float:
     abre; si la regla del polvo no la suelta a ella, no suelta a ninguna).
     """
     t = _trade()
-    libre = SALDO_REFERENCIA - t["min_reserve_sol"]
-    return min(libre * t["fraccion_saldo"], t["tope_compra_sol"])
+    return _importe(SALDO_REFERENCIA - t["min_reserve_sol"], t)
 
 
 def test_el_minimo_es_un_dolar() -> None:

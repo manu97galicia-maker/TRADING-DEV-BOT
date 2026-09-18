@@ -23,6 +23,21 @@ def _trade() -> dict:
     return yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["trade"]
 
 
+def importe(libre: float, t: dict | None = None) -> float:
+    """El importe de UNA compra con ese saldo libre, como lo calcula el bot.
+
+    Copia la logica, incluidas las dos guardas que importan: el tope y el suelo
+    solo se aplican si son MAYORES QUE CERO. Cero significa "sin limite" en
+    toda esta configuracion, y escribir `min(x, tope)` a secas daria 0.
+    """
+    t = t or _trade()
+    imp = max(0.0, libre * t["fraccion_saldo"])
+    tope = t["tope_compra_sol"]
+    if tope > 0 and imp > tope:
+        imp = tope
+    return imp
+
+
 def _tamanos(saldo: float, plazas: int | None = None) -> list[float]:
     """Reproduce la cuenta del trader para un saldo dado.
 
@@ -33,8 +48,9 @@ def _tamanos(saldo: float, plazas: int | None = None) -> list[float]:
     libre = saldo - t["min_reserve_sol"]
     salen: list[float] = []
     for _ in range(plazas or t["max_posiciones"]):
-        imp = min(libre * t["fraccion_saldo"], t["tope_compra_sol"])
-        if imp < t["compra_minima_sol"]:
+        imp = importe(libre, t)
+        suelo = t["compra_minima_sol"]
+        if imp <= 0 or (suelo > 0 and imp < suelo):
             break
         salen.append(round(imp, 6))
         libre -= imp * (1 + t["buy_slippage"]) + 0.003
@@ -45,14 +61,19 @@ def test_la_config_pide_el_25_por_ciento() -> None:
     assert _trade()["fraccion_saldo"] == 0.25
 
 
-def test_el_tope_no_recorta_el_25_por_ciento_en_saldos_normales() -> None:
-    """EL TEST QUE IMPIDE EL NO-OP. Si alguien deja el tope en el importe fijo
-    viejo, el 25% deja de aplicarse en cuanto haya algo de saldo."""
+def test_el_tope_no_recorta_el_25_por_ciento() -> None:
+    """EL TEST QUE IMPIDE EL NO-OP.
+
+    El tope recorta SIN dejar rastro en el log de la compra, asi que si alguien
+    lo deja por debajo del 25% el porcentaje deja de aplicarse y desde fuera
+    parece que el ajuste no hace nada. Hoy esta a 0 (sin tope) y el test vale
+    igual para el dia que se vuelva a poner.
+    """
     t = _trade()
-    for saldo in (0.5, 1.0, 2.0):
+    for saldo in (0.5, 1.0, 2.0, 10.0):
         libre = saldo - t["min_reserve_sol"]
         pedido = libre * t["fraccion_saldo"]
-        assert pedido <= t["tope_compra_sol"], (
+        assert abs(importe(libre, t) - pedido) < 1e-12, (
             f"con {saldo} SOL el tope ({t['tope_compra_sol']}) recorta el 25% "
             f"({pedido:.3f}) sin avisar"
         )
@@ -78,23 +99,26 @@ def test_nunca_se_gasta_mas_de_lo_que_hay() -> None:
         )
 
 
-def test_con_la_cartera_casi_vacia_no_compra_polvo() -> None:
-    """El suelo de compra manda sobre el porcentaje.
+def test_sin_suelo_compra_con_lo_que_haya() -> None:
+    """EL SUELO SE QUITO el 19-sep, pedido. Antes, por debajo de ~0,11 SOL el
+    bot se quedaba quieto; ahora compra igual, mas pequeno.
 
-    Con 0,10 SOL, el 25% de lo libre son 0,0175 -- por debajo del minimo que
-    compensa, asi que NO se compra nada. Es correcto (esa compra nacería
-    perdiendo), pero hay que saberlo: por debajo de ~0,11 SOL el bot se queda
-    quieto, y eso no es un fallo.
+    LO QUE CUESTA: la comision de prioridad y la renta de la cuenta de token no
+    bajan con el tamano. Una compra de 0,005 SOL se deja una parte enorme en
+    entrar y salir. El test no lo impide --es lo pedido-- pero lo deja escrito.
     """
-    assert _tamanos(0.10) == []
-    assert len(_tamanos(0.20)) >= 1
+    assert _trade()["compra_minima_sol"] == 0
+    assert len(_tamanos(0.10)) >= 1, "con el suelo a 0 tiene que comprar igual"
+    assert len(_tamanos(0.05)) >= 1
 
 
-def test_el_umbral_a_partir_del_cual_compra() -> None:
-    """Se fija el numero para que sea consultable sin tener que calcularlo."""
+def test_la_reserva_sigue_siendo_intocable() -> None:
+    """Lo unico que queda protegiendo: sin esto no habria gas para VENDER lo
+    comprado, y una posicion sin salida vale cero."""
     t = _trade()
-    umbral = t["min_reserve_sol"] + t["compra_minima_sol"] / t["fraccion_saldo"]
-    assert round(umbral, 3) == 0.110
+    assert t["min_reserve_sol"] > 0
+    # Con un saldo igual a la reserva no se compra nada.
+    assert _tamanos(t["min_reserve_sol"]) == []
 
 
 def test_no_queda_ningun_importe_fijo() -> None:

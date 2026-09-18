@@ -279,15 +279,19 @@ trade:
   # total un 76% del saldo, y nunca se pasa. Es a proposito: la quinta
   # oportunidad no vale lo mismo que la primera.
   fraccion_saldo: 0.25
-  # TOPE DURO. Ya NO es quien decide el tamano --de eso se encarga el 25%--
-  # sino un freno de ultima hora contra un fallo: el 12-ago la cadena registro
-  # compras de 0,25 y 0,30 SOL con `buy_amount: 0.15` configurado.
+  # SIN TOPE DURO (19-sep, pedido por Manu). 0 = no se recorta nada.
   #
-  # OJO SI SE TOCA EL SALDO: esto recorta el 25% SIN AVISAR en el log de la
-  # compra. Con 0,5 solo empieza a morder cuando el saldo libre pasa de 2 SOL.
-  # Si algun dia se recarga la cartera por encima de eso, hay que subirlo o el
-  # bot comprara 0,5 pensando que compra el 25%.
-  tope_compra_sol: 0.5
+  # QUE SE PIERDE: era el ultimo freno contra un fallo de calculo. El 12-ago la
+  # cadena registro compras de 0,25 y 0,30 SOL con `buy_amount: 0.15`
+  # configurado, y nunca se supo por que; este tope es lo que se puso entonces
+  # para que no volviera a pasar.
+  #
+  # QUE SIGUE PROTEGIENDO: el guardian del saldo. Antes de firmar, el bot lee
+  # el saldo REAL y exige que quepa la compra mas el slippage mas las
+  # comisiones, dejando intacta la reserva de 0,03. Eso no se puede saltar, asi
+  # que un fallo no puede vaciar la cartera -- como mucho gastaria de mas
+  # dentro de lo que hay.
+  tope_compra_sol: 0
   # SI NO LLEGA EL SALDO, SE COMPRA CON EL 75% DE LO QUE QUEDE en vez de
   # saltarse la moneda. Pedido el 19-sep.
   #
@@ -301,15 +305,16 @@ trade:
   # estan abriendo. El 25% que se deja es lo que cubre el slippage y las
   # comisiones.
   fraccion_si_no_llega: 0.75
-  # SUELO. Estaba sin poner, o sea a cero, y con el 75% de un saldo casi
-  # vacio eso significaba comprar polvo: la comision de prioridad y la
-  # renta de la cuenta de token NO bajan con el tamano de la compra, asi
-  # que por debajo de esto la operacion nace perdiendo y ni un x2 la
-  # salva. Con 0,02 haria falta bajar de ~0,027 SOL libres para que el bot
-  # deje de comprar del todo.
+  # SIN SUELO DE COMPRA (19-sep, pedido por Manu). 0 = compra con lo que haya.
   #
-  # Poner 0 aqui quita el suelo y compra con lo que haya, por poco que sea.
-  compra_minima_sol: 0.02
+  # QUE SE PIERDE, en numeros: la comision de prioridad y la renta de la cuenta
+  # de token NO bajan con el tamano de la compra. Con la comision de compra en
+  # ~0,00098 SOL, una compra de 0,005 SOL se deja el 20% en entrar y otro tanto
+  # en salir: nace perdiendo casi la mitad y ni un x2 la recupera.
+  #
+  # Con esto a 0 el bot ya no se para por saldo bajo. Antes, con el 25%, por
+  # debajo de 0,11 SOL se quedaba quieto; ahora comprara igual, mas pequeno.
+  compra_minima_sol: 0
 
 compute_units:
   buy: 140000
@@ -864,4 +869,17 @@ cleanup:
   with_priority_fee: false
 
 node:
-  max_rps: 15
+  # CONSULTAS POR SEGUNDO. Es un tope NUESTRO, no de Helius: cuando se agota,
+  # el bot se espera a si mismo y desde fuera parece que el nodo va lento.
+  #
+  # 45 con el primer plan de pago de Helius (19-sep), que da 50. Se dejan 5 de
+  # margen a proposito: pasarse significa que el nodo conteste 429, y un 429
+  # hace esperar al bot -- justo lo contrario de lo que se busca.
+  #
+  # ANTES ESTABA EN 15, y estrangulaba: 5 posiciones pidiendo precio cada
+  # segundo son 5, mas las compras, las confirmaciones y los filtros. Con el
+  # presupuesto agotado lo que se retrasa es el STOP LOSS.
+  #
+  # Si se cambia de plan, cambiar esto. En el log sale una linea por minuto,
+  # SOLO cuando de verdad se ha esperado, que dice cuanto ha frenado este tope.
+  max_rps: 45

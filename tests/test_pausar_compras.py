@@ -179,7 +179,10 @@ def test_ahora_mismo_compra_de_verdad() -> None:
     # tamano -- es un freno contra un fallo (el 12-ago la cadena registro
     # compras de 0,25 y 0,30 con 0,15 configurado).
     assert _trade()["fraccion_saldo"] == 0.25
-    assert _trade()["tope_compra_sol"] > 0, "sin tope, un fallo puede vaciar todo"
+    # El tope duro se quito el 19-sep, pedido. Lo que sigue impidiendo que un
+    # fallo vacie la cartera es el guardian del saldo: antes de firmar se lee el
+    # saldo REAL y se exige que quepa la compra dejando intacta la reserva.
+    assert _trade()["min_reserve_sol"] > 0, "sin reserva no quedaria gas para vender"
 
 
 def test_en_pausa_se_sigue_operando_de_verdad_no_en_papel() -> None:

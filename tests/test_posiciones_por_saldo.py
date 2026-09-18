@@ -28,6 +28,36 @@ def _trade() -> dict:
     return yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["trade"]
 
 
+def tamanos(saldo: float) -> list[float]:
+    """Los importes de las compras que se abrirían con ese saldo.
+
+    Cada una es el 25% de lo que queda LIBRE en ese momento, no del saldo
+    inicial. El tope y el suelo solo se aplican si son mayores que cero: en
+    esta configuracion, cero significa "sin limite".
+    """
+    t = _trade()
+    libre = saldo - t["min_reserve_sol"]
+    salen: list[float] = []
+    for _ in range(TECHO):
+        if libre <= 0:
+            break
+        imp = libre * t["fraccion_saldo"]
+        if t["tope_compra_sol"] > 0:
+            imp = min(imp, t["tope_compra_sol"])
+        if imp <= 0 or (t["compra_minima_sol"] > 0 and imp < t["compra_minima_sol"]):
+            break
+        # EL GUARDIAN DEL SALDO, igual que en el codigo: no basta con que el
+        # 25% "quepa", tiene que caber la compra MAS el slippage MAS las
+        # comisiones. Con saldos muy pequenos el colchon fijo (0,003) pesa mas
+        # que la propia compra, y ahi el bot se para en vez de pasarse.
+        necesita = imp * (1 + t["buy_slippage"]) + COLCHON_POR_POSICION
+        if necesita > libre:
+            break
+        salen.append(imp)
+        libre -= necesita
+    return salen
+
+
 def caben(saldo: float, reserva: float, compra: float) -> int:
     """Cuantas posiciones caben en un saldo, dejando la reserva intacta."""
     libre = saldo - reserva
@@ -56,10 +86,15 @@ def test_ahora_el_tamano_sale_del_saldo_no_del_tope() -> None:
     """
     t = _trade()
     assert t["fraccion_saldo"] > 0, "si esto es 0, vuelve a mandar el importe fijo"
-    # Y el tope tiene que quedar por ENCIMA del 25% en saldos normales, o
-    # recortaria sin avisar y volveriamos al tamano fijo por la puerta de atras.
+    # Y el tope no puede recortar el 25%, o volveriamos al tamano fijo por la
+    # puerta de atras y sin rastro en el log. Hoy esta a 0 --sin tope-- pero la
+    # comprobacion vale igual para el dia que se vuelva a poner.
     libre = 1.0 - t["min_reserve_sol"]
-    assert libre * t["fraccion_saldo"] <= t["tope_compra_sol"]
+    pedido = libre * t["fraccion_saldo"]
+    tope = t["tope_compra_sol"]
+    assert tope == 0 or pedido <= tope, (
+        f"el tope ({tope}) recortaria el 25% ({pedido:.3f}) sin avisar"
+    )
 
 
 def test_con_el_25_por_ciento_nunca_se_llena_el_saldo() -> None:
@@ -104,46 +139,38 @@ def test_lo_que_queda_cubre_las_ventas_pendientes() -> None:
     assert saldo - gastado >= reserva
 
 
-def test_con_saldo_pequeno_manda_el_saldo_y_no_el_techo() -> None:
-    """Sigue habiendo un saldo por debajo del cual manda la cartera.
+def test_con_saldo_pequeno_siguen_saliendo_posiciones_mas_chicas() -> None:
+    """EL CAMBIO DE MODELO. Antes, con tamano fijo, un saldo pequeno reducia el
+    NUMERO de posiciones. Ahora reduce su TAMANO: el 25% de poco es poco, pero
+    sigue siendo una compra.
 
-    Con 0,495 por compra ese punto estaba en 1 SOL. Con 0,07 hay que bajar
-    mucho mas para encontrarlo: con 0,25 SOL de saldo (menos la reserva de
-    0,03) solo caben tres. El freno existe, esta mas abajo.
+    Con el suelo quitado (19-sep) ya no hay saldo por debajo del cual el bot se
+    pare, mientras quede algo por encima de la reserva.
     """
-    cfg = _trade()
-    reserva, compra = cfg["min_reserve_sol"], cfg["tope_compra_sol"]
-    assert caben(0.25, reserva, compra) < TECHO
+    assert len(tamanos(0.25)) == TECHO, "deberian salir las cinco, mas pequenas"
+    assert len(tamanos(0.05)) >= 1, "con poco saldo compra poco, pero compra"
+    # Y son de verdad mas pequenas.
+    assert max(tamanos(0.25)) < max(tamanos(2.0))
 
 
-def test_el_techo_muerde_cuando_sobra_saldo() -> None:
-    """Con 5 SOL cabrian 12 por saldo, pero el techo las deja en 5."""
-    cfg = _trade()
-    reserva, compra = cfg["min_reserve_sol"], cfg["tope_compra_sol"]
-    libre = 5.0 - reserva
-    assert int(libre // (compra + COLCHON_POR_POSICION)) > TECHO
-    assert caben(5.0, reserva, compra) == TECHO
+def test_el_techo_de_cinco_sigue_mandando() -> None:
+    """Por mucho saldo que haya, nunca mas de cinco a la vez: cada posicion
+    abierta consulta su precio cada segundo y el presupuesto del nodo no es
+    infinito."""
+    assert len(tamanos(50.0)) == TECHO
 
 
-def test_saldo_a_partir_del_cual_compra_algo() -> None:
-    """El numero que se pregunta de verdad: "por que no compra nada?".
+def test_nunca_se_gasta_la_reserva() -> None:
+    """Lo unico que queda protegiendo el saldo, ahora que no hay tope ni suelo.
 
-    Con el 25%, por debajo de cierto saldo la compra sale por debajo del minimo
-    que compensa y el bot se queda quieto. NO es un fallo -- esa compra naceria
-    perdiendo, porque las comisiones fijas no bajan con el tamano.
-
-        umbral = reserva + minimo / fraccion
+    Sin reserva no habria gas para VENDER lo comprado, y una posicion sin
+    salida vale cero.
     """
     t = _trade()
-    umbral = t["min_reserve_sol"] + t["compra_minima_sol"] / t["fraccion_saldo"]
-    assert round(umbral, 3) == 0.110
-
-    # Justo por debajo no compra; justo por encima, si.
-    def primera(saldo: float) -> float:
-        return min((saldo - t["min_reserve_sol"]) * t["fraccion_saldo"],
-                   t["tope_compra_sol"])
-
-    assert primera(umbral - 0.001) < t["compra_minima_sol"]
-    assert primera(umbral + 0.001) >= t["compra_minima_sol"]
-
-
+    for saldo in (0.05, 0.25, 1.0, 5.0):
+        gastado = sum(x * (1 + t["buy_slippage"]) + COLCHON_POR_POSICION
+                      for x in tamanos(saldo))
+        assert gastado <= saldo - t["min_reserve_sol"] + 1e-9, (
+            f"con {saldo} SOL se gastarian {gastado:.4f} y hay que dejar "
+            f"{t['min_reserve_sol']} de reserva"
+        )
