@@ -10,7 +10,7 @@ separate_process: false
 platform: pump_fun
 
 trade:
-  buy_amount: 0.3713
+  buy_amount: 0.07
   mayhem_buy_amount: 0
   # Posiciones abiertas A LA VEZ. TECHO DE 5, y por debajo manda el SALDO.
   # Son dos frenos, y gana siempre el que se quede corto.
@@ -62,7 +62,7 @@ trade:
   # monedas cumpliendo los filtros por delante.
   reiniciar_tanda: true
   max_perdidas_seguidas: 0
-  buy_amount_tras_sl: 0.3713
+  buy_amount_tras_sl: 0.07
   rugs_para_bloquear: 1
   buy_slippage: 0.10
   sell_slippage: 0.10
@@ -194,7 +194,7 @@ trade:
   # "compra_en_pausa", asi que no se confunden con las de verdad.
   #
   # Poner false para volver a comprar.
-  pausar_compras: true
+  pausar_compras: false
   price_check_interval: 1
   # PRECIO DEL STREAM. El bot ya esta suscrito a todas las operaciones de
   # pump.fun, y cada una publica las reservas virtuales que quedan despues:
@@ -231,7 +231,7 @@ trade:
   # La bolsa NO se vende ni se pierde: se queda en la wallet y la recoge la
   # limpieza de cuentas. 0 desactiva la regla.
   valor_minimo_posicion_usd: 1.0
-  tope_compra_sol: 0.495
+  tope_compra_sol: 0.07
 
 compute_units:
   buy: 140000
@@ -363,7 +363,7 @@ filters:
     # OJO: `tope_compra_sol` recorta despues, asi que en las de pump.fun
     # este premio empuja hasta el tope y ahi se queda.
     boost_extra_umbral: 0
-    boost_extra_factor: 1.3333
+    boost_extra_factor: 1.0
     otros_max_compras: 3
     otros_parar_tras_perdidas: 2
     # IMPORTES, en SOL cerrados (estan en TRAMOS_IMPORTE, en el codigo):
@@ -376,7 +376,7 @@ filters:
     # otros_factor_importe se queda en 1: aplicarlo otra vez descontaria dos
     # veces. Y boost_extra_umbral pasa a 0 porque los tramos ya suben el
     # importe con los boosts; tenerlo encima seria contar lo mismo dos veces.
-    normal_buy_amount: 0.325
+    normal_buy_amount: 0.07
 
   # DEXTools DEXTboard. La API v2 NO tiene endpoint de "quien pago NITRO":
   # sus 19 endpoints son blockchain/exchange/pool/token/rankings. Lo que si
@@ -405,9 +405,9 @@ filters:
     #   puesto 21-30 -> normal
     promoted_rank: 10
     medium_rank: 20
-    normal_buy_amount: 0.3713
-    medium_buy_amount: 0.4208
-    promoted_buy_amount: 0.495
+    normal_buy_amount: 0.07
+    medium_buy_amount: 0.07
+    promoted_buy_amount: 0.07
     incluir_migradas: true
     # A diferencia de la fuente de DexScreener, aqui el bloqueo de liquidez
     # lo comprueba la propia API de DEXTools (/locks y /audit), no RugCheck.
@@ -432,7 +432,7 @@ filters:
     poll_interval: 30
     heartbeat_interval: 300
     limit: 20
-    buy_amount: 0.3713
+    buy_amount: 0.07
     # Suelos a 0 para la primera muestra: en papel interesa medirlo todo y
     # filtrar despues con los datos. Subelos cuando results.jsonl tenga
     # muestra suficiente.
@@ -467,7 +467,7 @@ filters:
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995
-    buy_amount: 0.26
+    buy_amount: 0.07
     # PRUEBA ACOTADA: 3 compras y, si dos salen mal, se para sola. Estos
     # frenos son SUYOS: no gastan el cupo de las demas fuentes ni al reves.
     max_compras: 3
@@ -519,9 +519,9 @@ filters:
   telegram_calls:
     enabled: true
     session_name: moontok_watcher
-    normal_buy_amount: 0.3713
-    nitro_buy_amount: 0.4208
-    promoted_buy_amount: 0.495
+    normal_buy_amount: 0.07
+    nitro_buy_amount: 0.07
+    promoted_buy_amount: 0.07
     promotion_threshold: 500
     # Dos tipos de canal mezclados, y conviene saberlo al leer resultados:
     #

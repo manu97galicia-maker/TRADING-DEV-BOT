@@ -156,11 +156,21 @@ def test_por_defecto_se_compra() -> None:
     assert "pausar_compras: bool = False" in texto
 
 
-def test_ahora_mismo_esta_en_pausa() -> None:
-    """Lo pedido: parar las compras reales y estudiar. Este test es el
-    recordatorio de que el bot NO esta comprando -- cuando se quiera volver,
-    se pone false y este test avisa del cambio."""
-    assert _trade()["pausar_compras"] is True
+def test_ahora_mismo_compra_de_verdad() -> None:
+    """EL BOT ESTA GASTANDO DINERO. Este test es el recordatorio.
+
+    El 18-sep se levanto la pausa a peticion de Manu, con 0,07 SOL por
+    operacion. El estudio dijo que las fuentes actuales pierden --entre
+    -12% y -6% por operacion segun lo medido-- y aun asi se arranca: es su
+    decision, y el tamano de 0,07 es lo que la hace asumible.
+
+    Si algun dia alguien vuelve a poner la pausa, este test se pone rojo y
+    obliga a decirlo en voz alta en vez de que el bot se quede callado sin
+    comprar durante dias sin que nadie lo note (que ya paso en agosto).
+    """
+    assert _trade()["pausar_compras"] is False
+    # Y el tamano: el tope duro es quien garantiza que ninguna via gaste mas.
+    assert _trade()["tope_compra_sol"] == 0.07
 
 
 def test_en_pausa_se_sigue_operando_de_verdad_no_en_papel() -> None:

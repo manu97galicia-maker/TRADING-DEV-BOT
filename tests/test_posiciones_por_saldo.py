@@ -47,7 +47,7 @@ def test_la_reserva_sigue_siendo_la_pedida() -> None:
 
 def test_un_saldo_mayor_abre_mas_posiciones() -> None:
     """Numeros a pelo a proposito: si alguien cambia tope_compra_sol, este
-    test se pone rojo y le obliga a mirar cuantas posiciones pierde.
+    test se pone rojo y le obliga a mirar cuantas posiciones gana o pierde.
 
     Historial de esa cuenta, que es lo que hay que ver de un vistazo
     (posiciones con 0,5 / 1 / 2 SOL de saldo):
@@ -55,16 +55,17 @@ def test_un_saldo_mayor_abre_mas_posiciones() -> None:
         0,28  -> 1/3/6   (+40%)
         0,38  -> 1/2/5   (+36% mas)
         0,495 -> 0/1/3   (+30% mas)
+        0,07  -> 5/5/5   (18-sep: se baja para arrancar en real)
 
-    Con 0,5 SOL ya no se abre NINGUNA: la compra tope (0,495) mas su colchon
-    no cabe por debajo de la reserva. Subir el tamano cuesta posiciones, y
-    esta linea es para que se vea sin tener que calcularlo.
+    Con 0,495 y medio SOL no se abria NINGUNA. Con 0,07 caben las cinco ya
+    con medio SOL, asi que a partir de aqui el freno deja de ser el saldo y
+    pasa a ser el techo -- que es lo que se buscaba al bajar el tamano.
     """
     cfg = _trade()
     reserva, compra = cfg["min_reserve_sol"], cfg["tope_compra_sol"]
-    assert caben(0.5, reserva, compra) == 0
-    assert caben(1.0, reserva, compra) == 1
-    assert caben(2.0, reserva, compra) == 3
+    assert caben(0.5, reserva, compra) == TECHO
+    assert caben(1.0, reserva, compra) == TECHO
+    assert caben(2.0, reserva, compra) == TECHO
 
 
 def test_la_reserva_nunca_se_toca() -> None:
@@ -90,10 +91,15 @@ def test_lo_que_queda_cubre_las_ventas_pendientes() -> None:
 
 
 def test_con_saldo_pequeno_manda_el_saldo_y_no_el_techo() -> None:
-    """Con 1 SOL el freno es la cartera, no el 5: cabe 1."""
+    """Sigue habiendo un saldo por debajo del cual manda la cartera.
+
+    Con 0,495 por compra ese punto estaba en 1 SOL. Con 0,07 hay que bajar
+    mucho mas para encontrarlo: con 0,25 SOL de saldo (menos la reserva de
+    0,03) solo caben tres. El freno existe, esta mas abajo.
+    """
     cfg = _trade()
     reserva, compra = cfg["min_reserve_sol"], cfg["tope_compra_sol"]
-    assert caben(1.0, reserva, compra) < TECHO
+    assert caben(0.25, reserva, compra) < TECHO
 
 
 def test_el_techo_muerde_cuando_sobra_saldo() -> None:
@@ -122,8 +128,8 @@ def test_saldo_necesario_para_las_cinco() -> None:
     cfg = _trade()
     reserva = cfg["min_reserve_sol"]
     for compra, hace_falta in (
-        (cfg["tope_compra_sol"], 2.520),
-        (cfg["buy_amount"], 1.902),
+        (cfg["tope_compra_sol"], 0.395),
+        (cfg["buy_amount"], 0.395),
         (0.26, 1.345),
     ):
         justo = reserva + TECHO * (compra + COLCHON_POR_POSICION)

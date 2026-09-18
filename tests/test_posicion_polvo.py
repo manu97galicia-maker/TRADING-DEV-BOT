@@ -55,7 +55,58 @@ def test_una_bolsa_de_centimos_esta_por_debajo() -> None:
 def test_una_posicion_entera_recien_comprada_no_se_suelta() -> None:
     """Lo que NO puede pasar: que la regla tire una posicion buena."""
     compra_sol = _trade()["buy_amount"]
-    assert compra_sol * SOL_USD > _trade()["valor_minimo_posicion_usd"] * 30
+    assert compra_sol * SOL_USD > _trade()["valor_minimo_posicion_usd"] * 3
+
+
+def test_hasta_donde_llega_la_escalera_con_el_tamano_de_compra_de_hoy() -> None:
+    """CONSECUENCIA DE COMPRAR PEQUENO, escrita para que no sorprenda.
+
+    La regla del polvo suelta la plaza cuando lo que queda vale menos de
+    `valor_minimo_posicion_usd`. Con compras grandes eso solo pasaba al final
+    de todo; con 0,07 SOL (unos 6,4 $) la posicion entera son ya solo seis
+    veces ese minimo, asi que la escalera deja de gestionarse mucho antes.
+
+    Este test calcula EN QUE PELDANO pasa, y el resultado con 0,07 SOL es
+    tranquilizador: la escalera aguanta ENTERA, hasta el x20. La razon es que
+    la regla mira el VALOR de lo que queda, no la fraccion, y el precio sube
+    mas deprisa de lo que encoge la bolsa -- al cobrar el x20 todavia quedan
+    2,55 $ de los 6,39 $ iniciales.
+
+    O sea que comprar pequeno NO deja los peldanos altos sin cobrar, que era
+    lo que se temia. Si algun dia se baja mas el tamano (o se sube el minimo
+    de polvo), este test se pone rojo y lo dice.
+    """
+    t = _trade()
+    valor = t["buy_amount"] * SOL_USD
+    minimo = t["valor_minimo_posicion_usd"]
+    escalera = [(t["take_profit_percentage"], t["take_profit_sell_percentage"])]
+    n = 2
+    while t.get(f"tp{n}_gain") and t.get(f"tp{n}_sell"):
+        escalera.append((float(t[f"tp{n}_gain"]), float(t[f"tp{n}_sell"])))
+        n += 1
+    for e in t.get("tp_extra") or []:
+        escalera.append((float(e["gain"]), float(e["sell"])))
+    escalera.sort()
+
+    queda = 1.0
+    ultimo_gestionado = None
+    for ganancia, vende in escalera:
+        queda -= vende
+        # Al cobrar este peldano el precio esta a (1 + ganancia) de la entrada.
+        if queda * valor * (1 + ganancia) < minimo:
+            break
+        ultimo_gestionado = ganancia
+
+    assert ultimo_gestionado is not None, (
+        "con este tamano de compra la posicion es polvo desde el primer "
+        "peldano: la escalera no gestionaria nada"
+    )
+    # Con 0,07 SOL aguanta la escalera entera: el ultimo peldano tambien.
+    assert ultimo_gestionado == escalera[-1][0], (
+        f"solo se gestiona hasta +{ultimo_gestionado * 100:.0f}% y la escalera "
+        f"llega a +{escalera[-1][0] * 100:.0f}%: por encima la bolsa se "
+        "quedaria en la wallet sin vender"
+    )
 
 
 def test_el_monitor_suelta_la_plaza_con_el_polvo() -> None:

@@ -312,7 +312,7 @@ def test_la_config_del_bot_pide_lo_que_se_acordo() -> None:
     # La ventana de disparo: entre el umbral y el tope. Por encima del tope
     # la moneda ya esta migrando y comprar ahi es tirar la comision.
     assert cfg["tope"] - cfg["umbral"] > 0.04
-    assert cfg["buy_amount"] == 0.26
+    assert cfg["buy_amount"] == 0.07
     assert cfg["max_compras"] == 3
     assert cfg["parar_tras_perdidas"] == 2
     # Modo flexible: se compran tambien las que no se vieron nacer, pero con

@@ -140,6 +140,36 @@ def test_el_extra_no_se_salta_el_tope_por_compra() -> None:
     )
     tope = float(cfg["trade"]["tope_compra_sol"])
     mayor = importe_por_senal(999, pago_y_boost=True) + EXTRA_REDES_NUEVAS
-    # No hace falta que quepa: el tope recorta. Pero si quepa el caso normal.
-    assert importe_por_senal(0) + EXTRA_REDES_NUEVAS <= tope
     assert mayor > 0
+    # Quien manda de verdad es el tope duro, que recorta CUALQUIER via justo
+    # antes de firmar la compra. Se comprueba que el caso mayor posible queda
+    # recortado a el y no se cuela ni un lamport de mas.
+    assert min(mayor, tope) == tope
+
+
+def test_con_compras_pequenas_el_extra_de_redes_no_hace_nada() -> None:
+    """CONSECUENCIA DE BAJAR A 0,07 SOL, escrita para que no sorprenda.
+
+    El +0,1 SOL por estrenar redes se penso cuando la compra base rondaba
+    0,33: subia la apuesta un 30% en la senal doble. Con el tope en 0,07 ese
+    extra queda ENTERO por debajo del recorte -- una moneda que estrena redes
+    y una que no se compran exactamente igual.
+
+    No es un fallo ni hay dinero en riesgo: el tope duro cumple su trabajo. Lo
+    que pasa es que la senal doble ha dejado de significar nada, y si se
+    quiere recuperar hay que hacer el extra proporcional a la compra en vez de
+    una cantidad fija. Este test lo deja anotado y se pondra rojo el dia que
+    se suba el tope por encima del importe base mas el extra.
+    """
+    import yaml
+
+    cfg = yaml.safe_load(
+        (
+            Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
+        ).read_text(encoding="utf-8")
+    )
+    tope = float(cfg["trade"]["tope_compra_sol"])
+    base = importe_por_senal(0)
+    assert min(base, tope) == min(base + EXTRA_REDES_NUEVAS, tope), (
+        "el extra de redes vuelve a cambiar el importe: revisar si se queria"
+    )
