@@ -74,6 +74,8 @@ def build_holders_heartbeat(
         f"{max_edad_seg / 60:.0f} min · {buy_amount:g} SOL",
         f"👀 Monedas con movimiento: <b>{embudo.get('vistas', 0)}</b>",
         f"  ↳ llegaron a {min_holders} titulares: {embudo.get('con_titulares', 0)}",
+        f"  ↳ ya los tenían al verlas (no se vio el cruce): "
+        f"{embudo.get('ya_venian_cumplidas', 0)}",
         f"  ↳ descartadas por viejas: {embudo.get('viejas', 0)}",
         f"  ↳ sin ver su creación (edad desconocida): {embudo.get('sin_historia', 0)}",
         f"  ↳ <b>comprables: {embudo.get('comprables', 0)}</b>",
@@ -106,13 +108,34 @@ class HoldersSource:
         self.paper_mode = bool(paper_mode)
 
         self._decididas: set[str] = set()
+        #: Monedas que se han visto POR DEBAJO del corte. Una moneda solo puede
+        #: dispararse si esta aqui: ver "Condicion 1" en `_revisar`.
+        self._vistas_por_debajo: set[str] = set()
         self._en_vuelo: set[asyncio.Task] = set()
         self._last_heartbeat: float = 0.0
         self._embudo: dict[str, int] = {}
+        #: Que monedas ya se contaron en cada escalon del embudo.
+        self._contadas: dict[str, set[str]] = {}
 
     # ------------------------------------------------------------------ datos
 
-    def _cuenta(self, clave: str) -> None:
+    def _cuenta(self, clave: str, mint: str = "") -> None:
+        """Suma uno al embudo. Con `mint`, solo la PRIMERA vez de esa moneda.
+
+        POR QUE. `_revisar` corre en CADA operacion de la moneda, asi que una
+        sola moneda activa pasaba por el mismo escalon decenas de veces y el
+        parte de Telegram decia "llegaron a 90 titulares: 47" con 3 monedas
+        detras. El parte es lo unico que se lee desde el movil para decidir si
+        el corte esta bien puesto: si infla, la decision se toma con un numero
+        inventado.
+        """
+        if mint:
+            visto = self._contadas.setdefault(clave, set())
+            if mint in visto:
+                return
+            if len(visto) >= _MAX_RECORDADAS:
+                visto.clear()
+            visto.add(mint)
         self._embudo[clave] = self._embudo.get(clave, 0) + 1
 
     def _ya_decidida(self, mint: str) -> bool:
@@ -122,6 +145,12 @@ class HoldersSource:
             self._decididas.clear()
         self._decididas.add(mint)
         return False
+
+    def _apunta_por_debajo(self, mint: str) -> None:
+        """Deja constancia de que esta moneda se vio con pocos titulares."""
+        if len(self._vistas_por_debajo) >= _MAX_RECORDADAS:
+            self._vistas_por_debajo.clear()
+        self._vistas_por_debajo.add(mint)
 
     def _edad(self, mint: str) -> float | None:
         """Segundos de vida, o None si no se puede saber.
@@ -144,7 +173,7 @@ class HoldersSource:
             mint, self._impls, self._client, permitir_migradas=False
         )
         if token_info is None:
-            self._cuenta("sin_construir")
+            self._cuenta("sin_construir", mint)
             return
 
         symbol = token_info.symbol or mint[:6]
@@ -155,8 +184,13 @@ class HoldersSource:
             "signal_buy_amount": self.buy_amount,
             "titulares": titulares,
             "edad_seg": round(edad, 1),
+            #: El instante en que se decidio. Lo lee el trader al confirmarse
+            #: la compra para imprimir cuanto se tardo en entrar. Sin esto, ese
+            #: dato --que es EL dato cuando una compra llega tarde-- habia que
+            #: sacarlo restando horas a mano de dos lineas del log.
+            "decidida_en": monotonic(),
         }
-        self._cuenta("comprables")
+        self._cuenta("comprables", mint)
         logger.info(
             "TITULARES — %s (%s): %d titulares con %.0fs de vida, se compra "
             "con %.4f SOL",
@@ -192,21 +226,38 @@ class HoldersSource:
     ) -> None:
         """LAS DOS CONDICIONES, y nada mas."""
         for mint in mints:
-            self._cuenta("vistas")
+            self._cuenta("vistas", mint)
 
             # 1) Titulares. Va primero porque es gratis y descarta casi todo.
+            #
+            # SE COMPRA CUANDO LLEGA AL CORTE, NO CUANDO LO TIENE. Es lo pedido
+            # ("solo compra cuando llegue a 90") y no es lo mismo: los titulares
+            # solo suben, asi que una moneda que subio, se desplomo y conserva
+            # 299 titulares cumple "los tiene" para siempre. Comprar por el
+            # estado es comprar el cadaver; comprar por el cruce es comprar el
+            # momento en que la gente entra.
+            #
+            # No cuesta candidatas: esto se ejecuta en CADA operacion de la
+            # moneda, y una nacida con el bot escuchando empieza en 1 titular,
+            # asi que su cruce siempre se ve. Las unicas que quedan fuera son
+            # las que ya existian antes del arranque -- que ya se descartan de
+            # todas formas en el paso 2, por no haber visto su creacion.
             titulares = volumen.titulares(mint)
             if titulares < self.min_holders:
+                self._apunta_por_debajo(mint)
                 continue
-            self._cuenta("con_titulares")
+            if mint not in self._vistas_por_debajo:
+                self._cuenta("ya_venian_cumplidas", mint)
+                continue
+            self._cuenta("con_titulares", mint)
 
             # 2) Edad.
             edad = self._edad(mint)
             if edad is None:
-                self._cuenta("sin_historia")
+                self._cuenta("sin_historia", mint)
                 continue
             if edad > self.max_edad_seg:
-                self._cuenta("viejas")
+                self._cuenta("viejas", mint)
                 continue
 
             if self._ya_decidida(mint):

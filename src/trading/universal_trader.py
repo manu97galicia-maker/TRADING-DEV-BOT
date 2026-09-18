@@ -396,6 +396,13 @@ class UniversalTrader:
         enable_dynamic_priority_fee: bool = False,
         enable_fixed_priority_fee: bool = True,
         fixed_priority_fee: int = 200_000,
+        #: Comision SOLO para comprar. 0 = usar la de siempre para todo.
+        #: Existe porque comprar y vender no se pagan igual de veces: una
+        #: posicion se compra UNA vez y se vende hasta DIEZ, una por peldano
+        #: de la escalera. Una comision que merece la pena para entrar a
+        #: tiempo se convierte, multiplicada por diez, en un mordisco real
+        #: a la ganancia.
+        fixed_priority_fee_compra: int = 0,
         extra_priority_fee: float = 0.0,
         hard_cap_prior_fee: int = 200_000,
         # Retry and timeout settings
@@ -709,6 +716,18 @@ class UniversalTrader:
             extra_fee=extra_priority_fee,
             hard_cap=hard_cap_prior_fee,
         )
+        #: Comision de compra. Se aplica como `priority_fee_override`, y ese
+        #: camino NO pasa por `calculate_priority_fee`, o sea que NO lo recorta
+        #: el `hard_cap`. Se recorta aqui a mano: un tope que se puede saltar
+        #: por una puerta lateral no es un tope, y este existe para que una
+        #: errata de un cero de mas no vacie la cartera en comisiones.
+        self.fee_compra = int(fixed_priority_fee_compra or 0)
+        if self.fee_compra > hard_cap_prior_fee > 0:
+            logger.warning(
+                "La comision de compra (%d) pasa del tope (%d); se recorta.",
+                self.fee_compra, hard_cap_prior_fee,
+            )
+            self.fee_compra = int(hard_cap_prior_fee)
 
         # Platform setup
         if isinstance(platform, str):
@@ -4437,7 +4456,9 @@ class UniversalTrader:
                 # las compras fue lo que convirtio un dia de +0,4455 SOL en
                 # uno de -0,3221.
                 _elite_compra = str(token_info.mint) in self._mints_elite
-                _fee_override = None
+                # COMPRAR CORRE MAS PRISA QUE VENDER. Si hay comision propia de
+                # compra, se usa; si no, `None` deja que mande la de siempre.
+                _fee_override = self.fee_compra or None
                 if _elite_compra:
                     _imp_elite = float(self.dev_elite.get("buy_amount") or 0)
                     if _imp_elite > 0:
@@ -4788,8 +4809,17 @@ class UniversalTrader:
         buy_reason: str | None = None,
     ) -> None:
         """Handle successful token purchase."""
+        # CUANTO SE TARDO EN ENTRAR. Es el dato que decide si una compra mala
+        # fue mala idea o simplemente llego tarde, y hasta ahora habia que
+        # sacarlo restando a mano las horas de dos lineas distintas del log.
+        # El 19-sep eso costo una moneda comprada despues de desplomarse.
+        _decidida = (token_info.additional_data or {}).get("decidida_en")
+        _tardanza = ""
+        if _decidida:
+            _tardanza = f" — tardo {monotonic() - float(_decidida):.1f}s en entrar"
         logger.info(
-            f"Successfully bought {token_info.symbol} on {token_info.platform.value}"
+            f"Successfully bought {token_info.symbol} on "
+            f"{token_info.platform.value}{_tardanza}"
         )
         self._compras_de_la_tanda += 1
         self._apunta_compra_por_origen(token_info)
@@ -4840,7 +4870,6 @@ class UniversalTrader:
         # habia hecho entrar, asi que era imposible juzgar la señal despues.
         try:
             from monitoring.notifier import build_purchase_notification, notify
-            from monitoring.pumpfun_dev import creator_migration_stats
             from monitoring.senales import tiene_senal
             from monitoring.volumen import operaciones, volumen_sol
 
@@ -4856,14 +4885,24 @@ class UniversalTrader:
                 or ""
             ).strip()
             if _dev:
-                try:
-                    _l, _m, _r = await creator_migration_stats(_dev)
-                    if _l:
-                        _lineas.append(
-                            f"👤 Dev migró <b>{_r * 100:.0f}%</b> ({_m}/{_l})"
-                        )
-                except Exception:  # noqa: BLE001
-                    pass
+                # AQUI HABIA UN `await creator_migration_stats(_dev)`, y era
+                # doce segundos de ceguera en el peor momento posible.
+                #
+                # QUE HACIA: una llamada HTTP a la API de pump.fun, con
+                # `ClientTimeout(total=12)`, para preguntar cuantas monedas ha
+                # migrado el creador. UNICO uso: la linea "👤 Dev migró X%" de
+                # este mensaje de Telegram.
+                #
+                # DONDE ESTABA: en el camino critico, entre que la compra
+                # confirma y que arranca el monitor de la posicion. Durante esos
+                # segundos la moneda recien comprada NO la mira nadie: ni take
+                # profit, ni stop loss. En una moneda que hace x3,75 en un
+                # minuto, doce segundos es media subida.
+                #
+                # Y ADEMAS ES MEDIR UN DEV, que Manu pidio quitar el 19-sep.
+                # Las dos razones apuntan al mismo sitio, asi que fuera. La
+                # mediana de abajo se queda: sale de un diccionario en memoria
+                # y no cuesta ni una llamada.
                 _med = (self._creator_medians or {}).get(_dev)
                 if _med:
                     _lineas.append(f"📈 Mediana del dev: <b>${int(_med):,}</b>")

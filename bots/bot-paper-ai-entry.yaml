@@ -270,12 +270,36 @@ compute_units:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  # Coste = fixed_amount / 1e10 SOL. 1_000_000 -> 0.0001 SOL.
-  # A 200 $/SOL son ~0.02 $. Si SOL cambia mucho, recalcula:
-  #   fixed_amount = (0.02 / precio_sol_usd) * 1e10
+  # LA UNIDAD SON MICROLAMPORTS POR UNIDAD DE COMPUTO, no SOL. El coste real
+  # depende de las CU de cada operacion (bloque `compute_units` mas arriba):
+  #
+  #   coste_SOL = fixed_amount * compute_units / 1e15
+  #
+  # Con 140.000 CU (comprar):  7.000.000 -> ~0,00098 SOL  (~0,22 $)
+  # Con 120.000 CU (vender):   1.000.000 -> ~0,00012 SOL  (~0,03 $)
+  #
+  # El comentario anterior decia "fixed_amount / 1e10" y daba el numero
+  # aproximado, pero escondia que depende de las CU.
+  #
+  # POR QUE COMPRAR Y VENDER NO PAGAN LO MISMO. Una posicion se compra UNA vez
+  # y se vende hasta DIEZ, una por peldano de la escalera. Poner la comision
+  # rapida en las dos significaria pagarla once veces: ~0,0084 SOL solo en
+  # ventas, el 7% de una posicion de 0,12 SOL. Comprar tarde cuesta mucho mas
+  # que vender un bloque tarde, asi que la prisa se paga donde hace falta.
   fixed_amount: 1000000
+  # LA DE COMPRAR (19-sep, pedida por Manu: ~0,001 SOL). Si se quita esta
+  # linea, comprar y vender vuelven a pagar lo mismo.
+  #
+  # OJO SI SE TOCA: esta comision va por `priority_fee_override`, que NO pasa
+  # por el calculo normal y por tanto NO lo recortaria el `hard_cap`. El bot lo
+  # recorta a mano al arrancar para que el tope siga siendo un tope, pero eso
+  # significa que subir esto sin subir el `hard_cap` no hace nada.
+  fixed_amount_compra: 7000000
   extra_percentage: 0.0
-  hard_cap: 1000000
+  # EL TOPE. Estaba en 1.000.000, el mismo valor que `fixed_amount`, asi que
+  # cualquier intento de subir la comision se recortaba solo y en silencio
+  # (con un `logger.warning` enterrado como unica pista).
+  hard_cap: 10000000
 
 retries:
   max_attempts: 2

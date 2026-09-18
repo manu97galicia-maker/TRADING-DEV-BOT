@@ -131,3 +131,64 @@ def test_no_hay_esperas_artificiales_antes_de_comprar() -> None:
     assert cfg.get("retries", {}).get("wait_after_creation", 15) == 0
     assert cfg["filters"]["max_buy_age"] == 0
     assert cfg.get("retries", {}).get("wait_before_new_token", 0) == 0
+
+
+# ------------------------------------- lo que pasa JUSTO despues de comprar
+
+
+def test_el_aviso_de_compra_no_llama_a_la_api_de_devs() -> None:
+    """DOCE SEGUNDOS DE CEGUERA en el peor momento posible.
+
+    Aqui habia un `await creator_migration_stats(dev)`: una llamada HTTP a la
+    API de pump.fun con `ClientTimeout(total=12)`, puesta en el camino critico
+    entre que la compra confirma y que arranca el monitor de la posicion.
+    Durante esos segundos la moneda recien comprada no la mira nadie -- ni take
+    profit ni stop loss. En una moneda que hace x3,75 en un minuto, doce
+    segundos es media subida.
+
+    Y ademas era medir un dev, que Manu pidio quitar el 19-sep. Las dos razones
+    apuntan al mismo sitio.
+
+    El test mira el bloque del aviso de compra, no el fichero entero: la
+    llamada sigue siendo legitima en el camino del filtro `pumpfun_dev`, que
+    esta apagado y es una decision distinta.
+    """
+    fuente = (
+        Path(__file__).resolve().parent.parent / "src/trading/universal_trader.py"
+    ).read_text(encoding="utf-8")
+    inicio = fuente.index("AVISO DE COMPRA con el porque")
+    # Solo CODIGO: el comentario que explica por que se quito nombra la
+    # llamada, y sin esto el test se tropezaria con su propia explicacion.
+    codigo = [
+        ln for ln in fuente[inicio:inicio + 4000].split("\n")
+        if not ln.lstrip().startswith("#")
+    ]
+    assert "await creator_migration_stats" not in "\n".join(codigo), (
+        "vuelve a haber una llamada bloqueante a la API de devs en el aviso "
+        "de compra"
+    )
+
+
+def test_la_comision_de_compra_llega_como_override() -> None:
+    """Si no se pasa, la compra pagaria la comision barata de las ventas."""
+    fuente = (
+        Path(__file__).resolve().parent.parent / "src/trading/universal_trader.py"
+    ).read_text(encoding="utf-8")
+    assert "_fee_override = self.fee_compra or None" in fuente
+    assert "priority_fee_override=_fee_override" in fuente
+
+
+def test_se_apunta_cuanto_tardo_la_compra_en_entrar() -> None:
+    """EL DATO QUE FALTABA el 19-sep.
+
+    Una moneda se compro despues de haberse desplomado, y para saber si fue
+    mala idea o simplemente llego tarde habia que restar a mano las horas de
+    dos lineas distintas del log, desde el movil. Ahora la linea de la compra
+    lo dice sola.
+    """
+    fuente = Path(__file__).resolve().parent.parent
+    holders = (fuente / "src/monitoring/holders_source.py").read_text(encoding="utf-8")
+    trader = (fuente / "src/trading/universal_trader.py").read_text(encoding="utf-8")
+    assert '"decidida_en": monotonic()' in holders, "la fuente no apunta la hora"
+    assert '"decidida_en"' in trader, "el trader no la lee"
+    assert "en entrar" in trader, "no se imprime la tardanza"

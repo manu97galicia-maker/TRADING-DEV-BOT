@@ -1,0 +1,91 @@
+"""La comisión de prioridad: la de comprar, la de vender y el tope.
+
+POR QUE HAY DOS. Una posición se compra UNA vez y se vende hasta DIEZ, una por
+peldaño de la escalera. Poner la comisión rápida en las dos significa pagarla
+once veces: con 0,001 SOL serían ~0,0084 SOL solo en ventas, el 7% de una
+posición de 0,12 SOL. Comprar tarde cuesta mucho más que vender un peldaño
+tarde, así que la prisa se paga donde hace falta.
+
+EL NO-OP SILENCIOSO QUE FIJA EL PRIMER TEST. `hard_cap` valía lo mismo que
+`fixed_amount`, así que subir la comisión no hacía absolutamente nada: el
+cálculo la recortaba de vuelta y dejaba un `logger.warning` enterrado como
+única pista. Es exactamente la clase de cambio que parece hecho y no lo está.
+"""
+
+# ruff: noqa: S101, PLR2004
+
+import asyncio
+from pathlib import Path
+
+import yaml
+
+from core.priority_fee.manager import PriorityFeeManager
+
+CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
+
+
+def _cfg() -> dict:
+    return yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+
+
+def _comision(fixed: int, tope: int) -> int | None:
+    """Lo que acaba pagando el camino normal (el de las ventas)."""
+    gestor = PriorityFeeManager(
+        client=None, enable_dynamic_fee=False, enable_fixed_fee=True,
+        fixed_fee=fixed, extra_fee=0.0, hard_cap=tope,
+    )
+    return asyncio.run(gestor.calculate_priority_fee(None))
+
+
+def test_el_tope_recorta_y_por_eso_hay_que_subirlo_tambien() -> None:
+    """Subir la comisión sin subir el tope NO cambia nada."""
+    assert _comision(7_000_000, 1_000_000) == 1_000_000
+    assert _comision(7_000_000, 10_000_000) == 7_000_000
+
+
+def test_la_config_no_tiene_el_tope_pegado_a_la_comision() -> None:
+    """Si vuelven a quedar iguales, cualquier subida futura sería un no-op."""
+    pf = _cfg()["priority_fees"]
+    assert pf["hard_cap"] > pf["fixed_amount"]
+    assert pf["hard_cap"] >= pf["fixed_amount_compra"]
+
+
+# ------------------------------------------------- lo que cuesta de verdad
+
+
+def _sol(fixed: int, unidades: int) -> float:
+    """Microlamports por unidad de cómputo -> SOL.
+
+    La unidad NO es SOL: el coste depende de las CU de cada operación. El
+    comentario viejo del YAML decía `fixed_amount / 1e10`, que da el número
+    aproximado pero esconde de qué depende.
+    """
+    return fixed * unidades / 1e15
+
+
+def test_comprar_cuesta_lo_pedido() -> None:
+    """~0,001 SOL, pedido por Manu el 19-sep."""
+    c = _cfg()
+    coste = _sol(c["priority_fees"]["fixed_amount_compra"], c["compute_units"]["buy"])
+    assert 0.0008 < coste < 0.0015, f"la compra cuesta {coste:.5f} SOL"
+
+
+def test_la_escalera_entera_no_se_come_la_posicion() -> None:
+    """Diez peldaños a la comisión de compra serían el 7% de la posición.
+
+    Este test es el que impide que alguien "simplifique" dejando una sola
+    comisión para todo: si las ventas pagaran la de comprar, salta.
+    """
+    c = _cfg()
+    venta = _sol(c["priority_fees"]["fixed_amount"], c["compute_units"]["sell"])
+    peldanos = 3 + len(c["trade"]["tp_extra"]) + 3  # cercanos + extra + lejanos
+    posicion = c["trade"]["buy_amount"]
+    assert venta * peldanos < posicion * 0.02, (
+        f"vender la escalera entera cuesta {venta * peldanos:.5f} SOL, "
+        f"mas del 2% de una posicion de {posicion}"
+    )
+
+
+def test_vender_es_mas_barato_que_comprar() -> None:
+    pf = _cfg()["priority_fees"]
+    assert pf["fixed_amount"] < pf["fixed_amount_compra"]

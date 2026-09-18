@@ -12,8 +12,10 @@ lo que se llevaba meses evitando. Se hizo asi porque se pidio asi, y el dia que
 esta estrategia salga mal este test dice por que.
 """
 
-# ruff: noqa: S101, SLF001, ANN003, ANN202, PLR2004
+# ruff: noqa: S101, SLF001, ANN003, PLR2004
 
+import asyncio
+import contextlib
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -21,7 +23,11 @@ from types import SimpleNamespace
 import yaml
 
 from monitoring import volumen
-from monitoring.holders_source import HoldersSource, build_holders_heartbeat
+from monitoring.holders_source import (
+    _MAX_RECORDADAS,
+    HoldersSource,
+    build_holders_heartbeat,
+)
 
 CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
 MINT = "Er1sFZm3HGuXFiKeXQLg84H9B9Vqk3dp94AjLiS9pump"
@@ -63,6 +69,30 @@ def _poblar(
         )
     else:
         volumen._curva[mint] = (time.time(), 700_000_000_000_000, 40_000_000_000, 1)
+
+
+def _revisa(f: HoldersSource, mints: list[str]) -> list[str]:
+    """Corre `_revisar` de verdad y devuelve los mints que llegaron a comprar.
+
+    Hace falta un bucle de eventos porque `_lanzar` crea una tarea. Antes del
+    freno del cruce ninguna moneda de estos tests llegaba tan lejos, asi que se
+    podia llamar en seco; ahora si llegan, y eso es justo lo que se quiere
+    comprobar.
+    """
+    comprados: list[str] = []
+
+    async def _cb(token_info: object) -> None:
+        comprados.append(str(getattr(token_info, "mint", "")))
+
+    async def _corre() -> None:
+        f._revisar(mints, _cb)
+        # Deja terminar las tareas que `_lanzar` acaba de crear.
+        for tarea in list(f._en_vuelo):
+            with contextlib.suppress(Exception):
+                await tarea
+
+    asyncio.run(_corre())
+    return comprados
 
 
 # ------------------------------------------------- condicion 1: titulares
@@ -150,19 +180,23 @@ def test_el_embudo_cuenta_cada_caida_por_separado() -> None:
     por el camino, y son problemas opuestos con arreglos opuestos."""
     f = _fuente(min_holders=90)
     _poblar(MINT, 10, creacion=True)
-    f._revisar([MINT], None)
+    _revisa(f, [MINT])
     assert f._embudo["vistas"] == 1
     assert f._embudo.get("con_titulares", 0) == 0
 
     f = _fuente(min_holders=90, max_edad_seg=300.0)
+    _poblar(MINT, 40, creacion=True, edad=900.0)
+    _revisa(f, [MINT])                      # se ve pequena: queda apuntada
     _poblar(MINT, 120, creacion=True, edad=900.0)
-    f._revisar([MINT], None)
+    _revisa(f, [MINT])                      # cruza, pero ya es vieja
     assert f._embudo["con_titulares"] == 1
     assert f._embudo["viejas"] == 1
 
     f = _fuente(min_holders=90)
+    _poblar(MINT, 40, creacion=False)
+    _revisa(f, [MINT])
     _poblar(MINT, 120, creacion=False)
-    f._revisar([MINT], None)
+    _revisa(f, [MINT])
     assert f._embudo["sin_historia"] == 1
 
 
@@ -269,3 +303,85 @@ def test_las_mayhem_ya_no_se_descartan() -> None:
     f = _filtros()
     assert f["allow_mayhem"] is True
     assert f["require_mayhem"] is False
+
+
+# ------------------------------------ se compra el CRUCE, no el estado
+
+
+def test_una_moneda_que_ya_los_tenia_al_verla_no_se_compra() -> None:
+    """EL CASO QUE COSTO DINERO (`vuviun musk`, 19-sep).
+
+    Subio de 3K a 12K y se desplomo a 3,16K. El bot la compro abajo. Los
+    titulares SOLO SUBEN, asi que despues del desplome seguia teniendo 299 y
+    cumplia "los tiene" a la perfeccion. Comprar por el estado es comprar el
+    cadaver.
+    """
+    f = _fuente(min_holders=90)
+    _poblar(MINT, 299, creacion=True, edad=90.0)
+    assert _revisa(f, [MINT]) == [], "no debia comprarse"
+    assert f._embudo.get("ya_venian_cumplidas") == 1
+    assert f._embudo.get("con_titulares", 0) == 0
+
+
+def test_la_misma_moneda_vista_antes_por_debajo_si_se_compra() -> None:
+    """Y esto es lo que impide que el freno mate las buenas."""
+    f = _fuente(min_holders=90)
+    _poblar(MINT, 40, creacion=True, edad=20.0)
+    _revisa(f, [MINT])                # la ve pequena: queda apuntada
+    assert f._embudo.get("con_titulares", 0) == 0
+
+    _poblar(MINT, 120, creacion=True, edad=40.0)
+    _revisa(f, [MINT])                # ahora cruza
+    assert f._embudo.get("con_titulares") == 1
+    assert f._embudo.get("ya_venian_cumplidas", 0) == 0
+
+
+def test_una_moneda_nacida_con_el_bot_mirando_siempre_ve_su_cruce() -> None:
+    """Por eso el freno no cuesta candidatas.
+
+    `_revisar` corre en CADA operacion de la moneda, y una nacida con el bot
+    escuchando empieza en 1 titular. Se simula el crecimiento operacion a
+    operacion y tiene que acabar comprandose.
+    """
+    f = _fuente(min_holders=90)
+    for cuantos in range(1, 140, 7):
+        _poblar(MINT, cuantos, creacion=True, edad=float(cuantos))
+        _revisa(f, [MINT])
+    assert f._embudo.get("con_titulares") == 1
+    assert f._embudo.get("ya_venian_cumplidas", 0) == 0
+    # Y una sola moneda cuenta UNA vez, aunque se la haya mirado veinte.
+    assert f._embudo["vistas"] == 1
+
+
+def test_la_memoria_del_cruce_esta_acotada() -> None:
+    """El bot ve cientos de monedas por minuto: sin tope, esto crece sin fin."""
+    f = _fuente(min_holders=90)
+    for i in range(_MAX_RECORDADAS + 50):
+        f._apunta_por_debajo(f"mint{i}")
+    assert len(f._vistas_por_debajo) <= _MAX_RECORDADAS
+
+
+def test_el_parte_dice_cuantas_se_cayeron_por_el_cruce() -> None:
+    """Si el freno se pasa de listo, tiene que verse en Telegram y no en un
+    log que desde el movil no se lee."""
+    texto = build_holders_heartbeat(
+        90, 300.0, 0.12, {"vistas": 10, "ya_venian_cumplidas": 7},
+        paper_mode=False,
+    )
+    assert "7" in texto
+    assert "cruce" in texto.lower()
+
+
+def test_el_embudo_cuenta_monedas_y_no_veces() -> None:
+    """El parte de Telegram es lo unico que se lee desde el movil.
+
+    `_revisar` corre en CADA operacion de la moneda, asi que sin esto una sola
+    moneda activa aparecia decenas de veces y el parte decia "llegaron a 90
+    titulares: 47" con tres monedas detras. Con ese numero se decide si el
+    corte esta bien puesto.
+    """
+    f = _fuente(min_holders=90)
+    for _ in range(25):
+        _poblar(MINT, 10, creacion=True)
+        _revisa(f, [MINT])
+    assert f._embudo["vistas"] == 1
