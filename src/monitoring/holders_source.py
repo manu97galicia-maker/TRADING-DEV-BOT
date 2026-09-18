@@ -1,13 +1,18 @@
-"""Fuente de compra: 99 titulares y menos de 5 minutos de vida. Nada mas.
+"""Fuente de compra: N titulares y menos de 5 minutos de vida. Nada mas.
 
 LO PEDIDO, literal: "que me compre cuando haya 99 holders en una moneda y que
 tenga menos de cinco minutos de creacion, solo esas dos condiciones, no quiero
-mas condiciones".
+mas condiciones". El 19-sep el corte bajo a 90, tambien pedido.
+
+EL NUMERO NO SE ESCRIBE EN NINGUN ROTULO, a proposito: sale del ajuste
+`min_holders` y se imprime desde ahi. Cuando estaba escrito a mano en los
+mensajes, bajarlo a 90 habria dejado el parte de Telegram y el guion de
+arranque diciendo 99 para siempre.
 
 QUE SE PIERDE AL QUITAR LO DEMAS, y hay que tenerlo escrito. Esta fuente NO
 mira si la moneda es un bundle. Un bundle de pump and dump se monta con muchas
 carteras comprando a la vez que nace la moneda: cumple las DOS condiciones de
-esta estrategia a la perfeccion --99 titulares, recien creada-- y es
+esta estrategia a la perfeccion --muchos titulares, recien creada-- y es
 exactamente lo que se lleva meses intentando evitar. Se hace asi porque es lo
 pedido; el freno existe y esta a una linea de volver (`max_carteras_primer_bloque`
 en la fuente de presion, que sigue en el repo apagada).
@@ -64,7 +69,7 @@ def build_holders_heartbeat(
     el camino, y son problemas opuestos con arreglos opuestos.
     """
     return "\n".join([
-        "👥 <b>99 TITULARES</b>",
+        "👥 <b>TITULARES</b>",
         f"Disparo: <b>{min_holders}</b> titulares · menos de "
         f"{max_edad_seg / 60:.0f} min · {buy_amount:g} SOL",
         f"👀 Monedas con movimiento: <b>{embudo.get('vistas', 0)}</b>",
@@ -85,7 +90,7 @@ class HoldersSource:
         platform_impls: object,
         client: object,
         *,
-        min_holders: int = 99,
+        min_holders: int = 90,
         max_edad_seg: float = 300.0,
         buy_amount: float = 0.07,
         heartbeat_interval: float = 300,
@@ -153,7 +158,7 @@ class HoldersSource:
         }
         self._cuenta("comprables")
         logger.info(
-            "99 TITULARES — %s (%s): %d titulares con %.0fs de vida, se compra "
+            "TITULARES — %s (%s): %d titulares con %.0fs de vida, se compra "
             "con %.4f SOL",
             symbol, mint, titulares, edad, self.buy_amount,
         )
@@ -256,7 +261,7 @@ class HoldersSource:
         """Escucha la cadena y compra las que cumplen las dos condiciones."""
         program_id = str(self._impls.event_parser.get_program_id())
         logger.info(
-            "99 TITULARES ACTIVA: dispara con %d titulares y menos de %.0f min "
+            "TITULARES ACTIVA: dispara con %d titulares y menos de %.0f min "
             "de vida, %.4f SOL, solo pump.fun (programa %s). SIN anti-bundle.",
             self.min_holders, self.max_edad_seg / 60, self.buy_amount, program_id,
         )

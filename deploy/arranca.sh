@@ -77,6 +77,6 @@ echo "== QUE FUENTE ESTA COMPRANDO =="
 # una significa que hay varias estrategias comprando a la vez; ninguna, que el
 # pull no entro y el bot sigue con la configuracion de antes.
 journalctl -u pump-bot --since "-2 min" --no-pager 2>/dev/null \
-  | grep -iE "acquisition ENABLED|99 TITULARES ACTIVA" \
+  | grep -iE "acquisition ENABLED|TITULARES ACTIVA" \
   | sed 's/^/  /' \
   || echo "  (aun sin lineas; espera un minuto y escribe:  bot)"

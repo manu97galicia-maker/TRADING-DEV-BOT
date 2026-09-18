@@ -1,4 +1,4 @@
-"""La estrategia de 99 titulares: las DOS condiciones, y lo que se perdio.
+"""La estrategia de los titulares: las DOS condiciones, y lo que se perdio.
 
 LO PEDIDO, literal: "que me compre cuando haya 99 holders en una moneda y que
 tenga menos de cinco minutos de creacion, solo esas dos condiciones, no quiero
@@ -33,7 +33,7 @@ def _filtros() -> dict:
 
 def _fuente(**kw) -> HoldersSource:
     opciones = {
-        "min_holders": 99,
+        "min_holders": 90,
         "max_edad_seg": 300.0,
         "buy_amount": 0.07,
         "heartbeat_interval": 0,
@@ -69,15 +69,15 @@ def _poblar(
 
 
 def test_no_dispara_con_menos_titulares_de_los_pedidos() -> None:
-    f = _fuente(min_holders=99)
-    _poblar(MINT, 98, creacion=True)
+    f = _fuente(min_holders=90)
+    _poblar(MINT, 89, creacion=True)
     assert volumen.titulares(MINT) < f.min_holders
 
 
 def test_dispara_justo_al_llegar_al_corte() -> None:
-    """99 significa 99, no 100: el corte es `< min_holders` descarta."""
-    f = _fuente(min_holders=99)
-    _poblar(MINT, 99, creacion=True)
+    """90 significa 90, no 91: el corte es `< min_holders` descarta."""
+    f = _fuente(min_holders=90)
+    _poblar(MINT, 90, creacion=True)
     assert volumen.titulares(MINT) >= f.min_holders
 
 
@@ -148,19 +148,19 @@ def test_con_tope_de_cinco_minutos_exigir_ver_nacer_no_quita_candidatas() -> Non
 def test_el_embudo_cuenta_cada_caida_por_separado() -> None:
     """"0 compradas" puede ser que no llegue nada o que llegue y se caiga todo
     por el camino, y son problemas opuestos con arreglos opuestos."""
-    f = _fuente(min_holders=99)
+    f = _fuente(min_holders=90)
     _poblar(MINT, 10, creacion=True)
     f._revisar([MINT], None)
     assert f._embudo["vistas"] == 1
     assert f._embudo.get("con_titulares", 0) == 0
 
-    f = _fuente(min_holders=99, max_edad_seg=300.0)
+    f = _fuente(min_holders=90, max_edad_seg=300.0)
     _poblar(MINT, 120, creacion=True, edad=900.0)
     f._revisar([MINT], None)
     assert f._embudo["con_titulares"] == 1
     assert f._embudo["viejas"] == 1
 
-    f = _fuente(min_holders=99)
+    f = _fuente(min_holders=90)
     _poblar(MINT, 120, creacion=False)
     f._revisar([MINT], None)
     assert f._embudo["sin_historia"] == 1
@@ -169,14 +169,14 @@ def test_el_embudo_cuenta_cada_caida_por_separado() -> None:
 def test_una_moneda_se_decide_una_sola_vez() -> None:
     """Sin esto, la que cruza el corte lo seguiria cruzando en CADA operacion
     que llegue y el bot mandaria la misma compra veinte veces."""
-    f = _fuente(min_holders=99)
+    f = _fuente(min_holders=90)
     _poblar(MINT, 120, creacion=True)
     assert f._ya_decidida(MINT) is False
     assert f._ya_decidida(MINT) is True
 
 
 def test_el_parte_no_lleva_nada_del_env() -> None:
-    texto = build_holders_heartbeat(99, 300.0, 0.07, {"vistas": 4}, paper_mode=False)
+    texto = build_holders_heartbeat(90, 300.0, 0.07, {"vistas": 4}, paper_mode=False)
     bajo = texto.lower()
     for veneno in ("private", "key", "wss://", "http", "@"):
         assert veneno not in bajo
@@ -199,7 +199,7 @@ def test_es_la_unica_fuente_encendida() -> None:
 
 def test_los_dos_numeros_son_los_pedidos() -> None:
     h = _filtros()["holders"]
-    assert h["min_holders"] == 99
+    assert h["min_holders"] == 90
     assert h["max_edad_seg"] == 300
     assert h["buy_amount"] == 0.12
 

@@ -139,18 +139,30 @@ class _CurvaMigrada:
 
     def __init__(self) -> None:
         self.exigio_precio: list[bool] = []
+        self.commitments: list[str | None] = []
 
     async def is_curve_complete(self, _pool: object) -> bool:
-        return True
+        """El constructor ya NO debe llamar aqui.
+
+        Este metodo no hacia otra cosa que llamar a `get_pool_state`, asi que
+        usarlo antes de `get_pool_state` era leer dos veces la misma cuenta:
+        dos viajes al nodo seguidos en el camino critico entre detectar la
+        moneda y comprarla. Si alguien lo vuelve a poner, este test lo dice.
+        """
+        msg = "el constructor no debe leer la curva dos veces"
+        raise AssertionError(msg)
 
     async def get_pool_state(
-        self, _pool: object, *, exigir_precio: bool = True
+        self, _pool: object, commitment: str | None = None,
+        *, exigir_precio: bool = True,
     ) -> dict:
         self.exigio_precio.append(exigir_precio)
+        self.commitments.append(commitment)
         if exigir_precio:
             msg = "Invalid virtual_token_reserves: 0 - cannot calculate price"
             raise ValueError(msg)
         return {
+            "complete": True,
             "creator": "11111111111111111111111111111111",
             "is_mayhem_mode": False,
             "is_cashback_coin": False,
@@ -195,4 +207,11 @@ def test_a_una_migrada_no_se_le_pide_precio() -> None:
     asyncio.run(_comprobar())
     assert curva.exigio_precio == [False], (
         f"debia consultarse sin exigir precio, se hizo con {curva.exigio_precio}"
+    )
+    # UNA SOLA LECTURA. Antes eran dos viajes al nodo por la misma cuenta.
+    assert len(curva.exigio_precio) == 1, "la curva se leyo mas de una vez"
+    # Y con "processed": el "confirmed" por defecto va 1-2 slots por detras,
+    # que en una moneda que se mueve es leer un precio que ya no existe.
+    assert curva.commitments == ["processed"], (
+        f"debia leerse con processed, se leyo con {curva.commitments}"
     )

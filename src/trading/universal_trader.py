@@ -2082,7 +2082,7 @@ class UniversalTrader:
             self.wss_endpoint,
             self.platform_implementations,
             self.solana_client,
-            min_holders=int(cfg.get("min_holders", 99)),
+            min_holders=int(cfg.get("min_holders", 90)),
             max_edad_seg=float(cfg.get("max_edad_seg", 300.0)),
             buy_amount=float(cfg.get("buy_amount", 0.07)),
             heartbeat_interval=float(cfg.get("heartbeat_interval", 300)),

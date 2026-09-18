@@ -16,6 +16,8 @@ against a live buy in this workspace. Test with a tiny buy_amount first.
 
 from __future__ import annotations
 
+import asyncio
+
 from solders.pubkey import Pubkey
 
 from interfaces.core import Platform, TokenInfo
@@ -61,29 +63,50 @@ async def build_pumpfun_token_info(  # noqa: PLR0913
     # defecto se rechaza, porque el comprador normal entra POR la curva y ahi
     # ya no hay nada que comprar. Con `permitir_migradas` se deja pasar y se
     # marca, para que quien compre enrute por el pool en vez de por la curva.
-    migrada = False
+    # UNA SOLA VUELTA AL NODO PARA LAS DOS COSAS, y las dos a la vez.
+    #
+    # Esto estaba en el camino critico entre detectar la moneda y comprarla, y
+    # eran TRES viajes seguidos donde basta uno:
+    #
+    #   1. `is_curve_complete()` -- que por dentro no hace otra cosa que
+    #      llamar a `get_pool_state()`.
+    #   2. `get_pool_state()` otra vez, leyendo LA MISMA cuenta que acababa de
+    #      leer la anterior.
+    #   3. `get_account_info(mint)`, que no depende de las otras dos y aun asi
+    #      esperaba a que terminaran.
+    #
+    # Ahora la curva se lee una vez y a la vez que el mint. El estado trae ya
+    # el campo `complete`, que es exactamente lo que miraba el paso 1.
+    #
+    # `exigir_precio=False` para poder mirar `complete` sin que una curva
+    # vacia (migrada) lance antes de llegar a la comprobacion. Con reservas
+    # normales el precio se calcula igual que siempre, asi que no se pierde
+    # nada; lo unico que cambia es que un estado ilegible se detecta abajo, a
+    # mano, en vez de por excepcion.
+    #
+    # `commitment="processed"` porque es el que usa el resto del camino de
+    # compra: el "confirmed" por defecto va 1-2 slots por detras, y en una
+    # moneda que se mueve eso es leer un precio que ya no existe.
     try:
-        migrada = await curve_manager.is_curve_complete(bonding_curve)
+        state, mint_acct = await asyncio.gather(
+            curve_manager.get_pool_state(
+                bonding_curve, commitment="processed", exigir_precio=False
+            ),
+            client.get_account_info(mint),
+        )
     except Exception:  # noqa: BLE001 -- unreadable curve => can't safely buy
-        logger.warning("Could not read curve for %s; skipping", mint_str)
+        logger.warning("Could not read curve state for %s; skipping", mint_str)
         return None
+
+    migrada = bool(state.get("complete", False))
     if migrada and not permitir_migradas:
         logger.info("Skip %s (%s): bonding curve complete (migrated)", symbol, mint_str)
         return None
 
-    # A una migrada NO se le puede pedir precio: la curva sigue existiendo
-    # pero vacia, y calcularlo lanza. El arreglo anterior (a6692eb) tapo esto
-    # en is_curve_complete pero no aqui, dos lineas mas abajo, asi que la
-    # moneda pasaba el "¿migro?" y moria en el "ahora leela": en los logs
-    # salia como "Could not read curve state for ...pump; skipping".
-    #
-    # De este estado solo se usan creator y las banderas mayhem/cashback, que
-    # son validos igualmente. El precio de una migrada sale del pool.
-    try:
-        state = await curve_manager.get_pool_state(
-            bonding_curve, exigir_precio=not migrada
-        )
-    except Exception:  # noqa: BLE001
+    # UNA CURVA SIN PRECIO QUE NO ESTA MIGRADA ES ILEGIBLE, y antes lo decia
+    # la excepcion de `exigir_precio=True`. Ahora se dice aqui: comprar por
+    # una curva cuyo precio no se puede calcular es comprar a ciegas.
+    if not migrada and not state.get("price_per_token"):
         logger.warning("Could not read curve state for %s; skipping", mint_str)
         return None
 
@@ -103,12 +126,8 @@ async def build_pumpfun_token_info(  # noqa: PLR0913
     # guess: a wrong program derives the wrong ATA and the buy fails. If the
     # mint account can't be read, skip this candidate.
     token_program_id = None
-    try:
-        mint_acct = await client.get_account_info(mint)
-        if mint_acct and getattr(mint_acct, "owner", None):
-            token_program_id = mint_acct.owner
-    except Exception:  # noqa: BLE001
-        token_program_id = None
+    if mint_acct and getattr(mint_acct, "owner", None):
+        token_program_id = mint_acct.owner
     if token_program_id is None:
         logger.warning(
             "Could not read token program for %s; skipping (won't guess)", mint_str
