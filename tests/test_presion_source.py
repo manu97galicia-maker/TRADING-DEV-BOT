@@ -229,20 +229,20 @@ def test_es_la_unica_fuente_encendida() -> None:
     assert f["presion"]["enabled"] is True
 
 
-def test_el_corte_es_el_que_mas_acierta() -> None:
-    """3, que en lo medido es el que MAS acierta: 27,4% contra el 25,8% del 12.
+def test_el_corte_es_el_pedido() -> None:
+    """8, pedido por Manu el 19-sep. Ha cambiado tres veces y el test lo fija
+    para que cualquier cambio futuro sea deliberado.
 
-    HISTORIA DE ESTE NUMERO, porque cambio y conviene saber por que. Empezo en
-    12 por el RITMO: con >=3 caen unas 3 monedas por minuto y con cinco plazas
-    el bot se llena en dos minutos con las PRIMERAS que pasen, no con las
-    mejores, y a partir de ahi elige el reloj. El 18-sep se bajo a 3 a peticion
-    de Manu tras cinco minutos sin una sola compra.
+    LO QUE DICEN LOS DATOS y no cambia por elegir otro numero: sobre 27.241
+    monedas medidas, el 8 es el que PEOR acierta de los tres que se han usado
+    -- 24,5%, contra el 27,4% del 3 y el 25,8% del 12. El 12 se habia elegido
+    por el RITMO (con 5 plazas, 3 monedas por minuto llenan el bot en dos
+    minutos con las PRIMERAS que pasen, no con las mejores); el 3, por acierto,
+    tras cinco minutos sin una sola compra.
 
-    El precio sigue siendo el mismo y no desaparece por haberlo elegido: con
-    las plazas llenas, el acierto real sera peor que ese 27,4%, porque ese es
-    el de TODAS las que pasan y el bot solo compra las que pillan hueco.
+    Queda anotado para que el dia que se revise no haya que volver a medirlo.
     """
-    assert _filtros()["presion"]["min_compradores_ola"] == 3
+    assert _filtros()["presion"]["min_compradores_ola"] == 8
 
 
 def test_el_antibundle_esta_puesto_en_la_config() -> None:

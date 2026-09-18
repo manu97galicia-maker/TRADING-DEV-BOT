@@ -481,13 +481,18 @@ filters:
     enabled: true
     # Compradores DISTINTOS que tienen que entrar en la ventana.
     #
-    # 18-sep, segunda vuelta: BAJADO DE 12 A 3. El 12 se eligio por el ritmo
-    # --con 5 plazas, 3 monedas por minuto llenan el bot en dos minutos con
-    # las PRIMERAS que pasen, no con las mejores-- pero en los datos el 3 es
-    # ademas el que MAS acierta (27,4% contra 25,8%), asi que al aflojar se
-    # gana por los dos lados menos por la selectividad. El precio esta dicho:
-    # el bot se llenara rapido y a partir de ahi elige el reloj.
-    min_compradores_ola: 3
+    # HISTORIA DE ESTE NUMERO, porque ha cambiado tres veces:
+    #   12 -> se eligio por el RITMO (con 5 plazas, 3 monedas por minuto
+    #         llenan el bot en dos minutos con las PRIMERAS que pasen)
+    #    3 -> se bajo el 18-sep tras cinco minutos sin una sola compra
+    #    8 -> pedido por Manu el 19-sep
+    #
+    # LO QUE DICEN LOS DATOS, sobre 27.241 monedas medidas: el 8 es el que
+    # PEOR acierta de los tres (24,5%, contra 27,4% del 3 y 25,8% del 12).
+    # Queda escrito aqui para que el dia que se revise no haya que volver a
+    # medirlo: si se quiere acertar mas, el 3; si se quiere elegir mejor con
+    # las 5 plazas, el 12.
+    min_compradores_ola: 8
     ventana: 5.0
     buy_amount: 0.07
     # Por encima de este avance no se entra: eso lo cubre `curva_96`.
