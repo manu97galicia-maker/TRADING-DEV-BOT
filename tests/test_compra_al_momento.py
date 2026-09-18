@@ -14,7 +14,7 @@ luego `get_account_info(mint)`, que no dependia de ninguna de las dos y aun asi
 esperaba su turno. Tres viajes en serie donde basta uno.
 """
 
-# ruff: noqa: S101, ANN001, ANN202, ARG002
+# ruff: noqa: S101, ANN001, ANN202, ARG002, PLC0415, PLR2004
 
 import asyncio
 from pathlib import Path
@@ -192,3 +192,32 @@ def test_se_apunta_cuanto_tardo_la_compra_en_entrar() -> None:
     assert '"decidida_en": monotonic()' in holders, "la fuente no apunta la hora"
     assert '"decidida_en"' in trader, "el trader no la lee"
     assert "en entrar" in trader, "no se imprime la tardanza"
+
+
+def test_el_precio_de_la_curva_no_se_lee_dos_veces() -> None:
+    """UN VIAJE AL NODO MENOS entre detectar la moneda y firmar la compra.
+
+    `token_builder` lee la cuenta de la curva para construir la moneda, y el
+    comprador la volvia a leer milisegundos despues -- la MISMA cuenta. Con la
+    moneda moviendose, cada viaje al nodo es precio que se escapa.
+
+    Ahora el constructor deja el precio con su hora y el comprador lo reutiliza
+    si sigue fresco.
+    """
+    raiz = Path(__file__).resolve().parent.parent
+    builder = (raiz / "src/trading/token_builder.py").read_text(encoding="utf-8")
+    comprador = (raiz / "src/trading/platform_aware.py").read_text(encoding="utf-8")
+    assert '"precio_curva"' in builder, "el constructor no deja el precio"
+    assert '"precio_curva_en"' in builder, "sin la hora no se puede saber si vale"
+    assert "_precio_ya" in comprador, "el comprador no lo aprovecha"
+
+
+def test_el_precio_reutilizado_tiene_caducidad() -> None:
+    """Un precio viejo no se usa JAMAS: si el camino se atasca, se relee.
+
+    Sin caducidad esto seria comprar a ciegas con un precio de hace quien sabe
+    cuanto, que es exactamente el fallo que se esta intentando arreglar.
+    """
+    from trading.platform_aware import _PRECIO_FRESCO_SEG
+
+    assert 0 < _PRECIO_FRESCO_SEG <= 5

@@ -17,6 +17,7 @@ against a live buy in this workspace. Test with a tiny buy_amount first.
 from __future__ import annotations
 
 import asyncio
+from time import monotonic
 
 from solders.pubkey import Pubkey
 
@@ -146,6 +147,19 @@ async def build_pumpfun_token_info(  # noqa: PLR0913
         token_program_id=token_program_id,
         is_mayhem_mode=bool(state.get("is_mayhem_mode", False)),
         is_cashback_coin=bool(state.get("is_cashback_coin", False)),
+        # EL PRECIO QUE ACABA DE LEERSE, para que el comprador no vuelva a
+        # pedir LA MISMA cuenta unos milisegundos despues. Era un viaje entero
+        # al nodo en el camino critico entre detectar la moneda y firmar la
+        # compra, duplicando el que se hace tres lineas mas arriba.
+        #
+        # Lleva la hora: el comprador solo lo usa si sigue fresco, y si no, lo
+        # relee como siempre. Las banderas mayhem/cashback ya van puestas en
+        # este mismo TokenInfo, asi que no se pierde nada al saltarse la
+        # segunda lectura.
+        additional_data={
+            "precio_curva": float(state.get("price_per_token") or 0.0),
+            "precio_curva_en": monotonic(),
+        },
     )
 
     if migrada:

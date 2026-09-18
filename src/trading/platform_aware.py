@@ -4,6 +4,7 @@ Final cleanup removing all platform-specific hardcoding.
 """
 
 import asyncio
+from time import monotonic
 
 from solders.pubkey import Pubkey
 
@@ -17,6 +18,12 @@ from trading.base import Trader, TradeResult
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+#: Cuanto vale el precio que dejo el constructor de la moneda antes de
+#: tener que releerlo. Dos segundos: lo que tarda el camino entre detectar
+#: y firmar es de decimas, asi que en la practica se reutiliza siempre; si
+#: algo se atasca por el camino, se relee y no se compra a ciegas.
+_PRECIO_FRESCO_SEG = 2.0
 
 
 class PlatformAwareBuyer(Trader):
@@ -159,9 +166,44 @@ class PlatformAwareBuyer(Trader):
                 # while confirmed/finalized can lag several seconds on a brand-new
                 # mint -> "Account not found" and a failed buy. Retry briefly for
                 # any RPC/index lag.
+                # SI YA SE ACABA DE LEER, NO SE VUELVE A LEER. El
+                # constructor de la moneda (`token_builder`) lee esta MISMA
+                # cuenta milisegundos antes y deja aqui el precio. Releerla era
+                # un viaje entero al nodo en el camino critico entre detectar y
+                # firmar -- y con la moneda moviendose, cada viaje es precio
+                # que se escapa.
+                #
+                # Con fecha de caducidad: pasado `_PRECIO_FRESCO_SEG` se relee.
+                # Un precio viejo no se usa jamas. Las banderas mayhem/cashback
+                # ya vienen puestas en el TokenInfo por el mismo constructor,
+                # asi que tampoco se pierden. Y el tope de gasto
+                # (`max_sol_cost`, mas abajo) sigue protegiendo igual.
+                _extra = token_info.additional_data or {}
+                _precio_ya = float(_extra.get("precio_curva") or 0.0)
+                _leido_en = float(_extra.get("precio_curva_en") or 0.0)
                 pool_state = None
+                if (
+                    _precio_ya > 0
+                    and _leido_en
+                    and (monotonic() - _leido_en) <= _PRECIO_FRESCO_SEG
+                ):
+                    logger.info(
+                        "Precio de la curva reutilizado (%.0f ms): un viaje al "
+                        "nodo menos antes de comprar",
+                        (monotonic() - _leido_en) * 1000,
+                    )
+                    pool_state = {
+                        "price_per_token": _precio_ya,
+                        "is_mayhem_mode": getattr(
+                            token_info, "is_mayhem_mode", False
+                        ),
+                        "is_cashback_coin": getattr(
+                            token_info, "is_cashback_coin", False
+                        ),
+                    }
+
                 _last: Exception | None = None
-                for _attempt in range(10):
+                for _attempt in range(10 if pool_state is None else 0):
                     try:
                         pool_state = await curve_manager.get_pool_state(
                             pool_address, commitment="processed"
