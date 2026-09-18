@@ -56,14 +56,15 @@ def test_un_saldo_mayor_abre_mas_posiciones() -> None:
         0,38  -> 1/2/5   (+36% mas)
         0,495 -> 0/1/3   (+30% mas)
         0,07  -> 5/5/5   (18-sep: se baja para arrancar en real)
+        0,12  -> 3/5/5   (19-sep: pedido por Manu)
 
-    Con 0,495 y medio SOL no se abria NINGUNA. Con 0,07 caben las cinco ya
-    con medio SOL, asi que a partir de aqui el freno deja de ser el saldo y
-    pasa a ser el techo -- que es lo que se buscaba al bajar el tamano.
+    EL PRECIO DE SUBIR A 0,12, que es lo que hay que ver aqui: con medio SOL
+    ya NO caben las cinco, caben tres. Para las cinco hacen falta 0,645 SOL
+    (lo fija el test de abajo). Por encima de 1 SOL vuelve a mandar el techo.
     """
     cfg = _trade()
     reserva, compra = cfg["min_reserve_sol"], cfg["tope_compra_sol"]
-    assert caben(0.5, reserva, compra) == TECHO
+    assert caben(0.5, reserva, compra) == 3
     assert caben(1.0, reserva, compra) == TECHO
     assert caben(2.0, reserva, compra) == TECHO
 
@@ -128,8 +129,8 @@ def test_saldo_necesario_para_las_cinco() -> None:
     cfg = _trade()
     reserva = cfg["min_reserve_sol"]
     for compra, hace_falta in (
-        (cfg["tope_compra_sol"], 0.395),
-        (cfg["buy_amount"], 0.395),
+        (cfg["tope_compra_sol"], 0.645),
+        (cfg["buy_amount"], 0.645),
         (0.26, 1.345),
     ):
         justo = reserva + TECHO * (compra + COLCHON_POR_POSICION)

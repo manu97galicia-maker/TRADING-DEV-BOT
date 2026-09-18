@@ -10,7 +10,7 @@ separate_process: false
 platform: pump_fun
 
 trade:
-  buy_amount: 0.07
+  buy_amount: 0.12
   mayhem_buy_amount: 0
   # Posiciones abiertas A LA VEZ. TECHO DE 5, y por debajo manda el SALDO.
   # Son dos frenos, y gana siempre el que se quede corto.
@@ -24,9 +24,13 @@ trade:
   #
   # OJO: poner 5 aqui no hace que haya 5. Lo que hace falta en la cartera
   # para que quepan las cinco, contando la reserva de 0,03:
-  #     compra 0,495  (el tope de hoy) -> 2,52 SOL
-  #     compra 0,3713 (buy_amount)     -> 1,90 SOL
-  #     compra 0,26   (curva 96%)      -> 1,35 SOL
+  #     compra 0,12 (el tope de hoy)   -> 0,645 SOL
+  #     compra 0,26 (curva 96%)        -> 1,345 SOL
+  #     compra 0,495 (el tope de ago)  -> 2,52 SOL
+  #
+  # AL SUBIR DE 0,07 A 0,12 EL 19-SEP se perdieron posiciones con saldo
+  # pequeno: con medio SOL caben TRES, no cinco. Con 0,07 cabian las cinco
+  # ya con medio SOL. Para las cinco con 0,12 hacen falta 0,645.
   # Con menos saldo caben menos, y no es un fallo: es el guardian evitando
   # quedarse sin SOL para cerrar.
   #
@@ -235,7 +239,29 @@ trade:
   # La bolsa NO se vende ni se pierde: se queda en la wallet y la recoge la
   # limpieza de cuentas. 0 desactiva la regla.
   valor_minimo_posicion_usd: 1.0
-  tope_compra_sol: 0.07
+  tope_compra_sol: 0.12
+  # SI NO LLEGA EL SALDO, SE COMPRA CON EL 75% DE LO QUE QUEDE en vez de
+  # saltarse la moneda. Pedido el 19-sep.
+  #
+  # NO es lo mismo que `fraccion_saldo`, y confundirlas cuesta dinero:
+  # aquella compra SIEMPRE ese porcentaje del saldo, asi que con la wallet
+  # llena compraria muchisimo mas de los 0,12. Esta solo entra cuando la
+  # compra normal no cabe.
+  #
+  # El 75% se toma de lo que queda LIBRE, que ya es el saldo menos la
+  # reserva de 0,03 y menos lo comprometido por las posiciones que se
+  # estan abriendo. El 25% que se deja es lo que cubre el slippage y las
+  # comisiones.
+  fraccion_si_no_llega: 0.75
+  # SUELO. Estaba sin poner, o sea a cero, y con el 75% de un saldo casi
+  # vacio eso significaba comprar polvo: la comision de prioridad y la
+  # renta de la cuenta de token NO bajan con el tamano de la compra, asi
+  # que por debajo de esto la operacion nace perdiendo y ni un x2 la
+  # salva. Con 0,02 haria falta bajar de ~0,027 SOL libres para que el bot
+  # deje de comprar del todo.
+  #
+  # Poner 0 aqui quita el suelo y compra con lo que haya, por poco que sea.
+  compra_minima_sol: 0.02
 
 compute_units:
   buy: 140000
@@ -578,7 +604,7 @@ filters:
     min_holders: 99
     # Cinco minutos.
     max_edad_seg: 300
-    buy_amount: 0.07
+    buy_amount: 0.12
     heartbeat_interval: 300
 
   curva_96:

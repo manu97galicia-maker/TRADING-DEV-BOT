@@ -201,7 +201,7 @@ def test_los_dos_numeros_son_los_pedidos() -> None:
     h = _filtros()["holders"]
     assert h["min_holders"] == 99
     assert h["max_edad_seg"] == 300
-    assert h["buy_amount"] == 0.07
+    assert h["buy_amount"] == 0.12
 
 
 def test_ningun_filtro_global_puede_descartar_por_su_cuenta() -> None:

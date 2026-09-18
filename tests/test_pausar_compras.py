@@ -160,9 +160,14 @@ def test_ahora_mismo_compra_de_verdad() -> None:
     """EL BOT ESTA GASTANDO DINERO. Este test es el recordatorio.
 
     El 18-sep se levanto la pausa a peticion de Manu, con 0,07 SOL por
-    operacion. El estudio dijo que las fuentes actuales pierden --entre
-    -12% y -6% por operacion segun lo medido-- y aun asi se arranca: es su
-    decision, y el tamano de 0,07 es lo que la hace asumible.
+    operacion. El 19-sep el tamano subio a 0,12, tambien pedido. El estudio
+    dijo que las fuentes medidas pierden --entre -12% y -6% por operacion--
+    y aun asi se arranca: es su decision.
+
+    LO QUE CAMBIA AL SUBIR DE 0,07 A 0,12: cada operacion arriesga un 71%
+    mas, y con el stop en -18% una perdida pasa de ~0,013 a ~0,022 SOL. Y
+    caben menos posiciones a la vez con el mismo saldo, porque las cinco
+    plazas y el tamano de compra tiran en sentidos contrarios.
 
     Si algun dia alguien vuelve a poner la pausa, este test se pone rojo y
     obliga a decirlo en voz alta en vez de que el bot se quede callado sin
@@ -170,7 +175,7 @@ def test_ahora_mismo_compra_de_verdad() -> None:
     """
     assert _trade()["pausar_compras"] is False
     # Y el tamano: el tope duro es quien garantiza que ninguna via gaste mas.
-    assert _trade()["tope_compra_sol"] == 0.07
+    assert _trade()["tope_compra_sol"] == 0.12
 
 
 def test_en_pausa_se_sigue_operando_de_verdad_no_en_papel() -> None:

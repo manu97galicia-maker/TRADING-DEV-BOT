@@ -578,6 +578,7 @@ class UniversalTrader:
         # calcula en el momento de comprar y dentro del cerrojo de gasto, asi
         # que sube solo cuando la wallet sube y no hay que reeditar el yaml.
         fraccion_saldo: float = 0.0,
+        fraccion_si_no_llega: float = 0.0,
         # Suelo por debajo del cual NO se compra. Las comisiones de pump.fun y
         # la renta de la cuenta de token son fijas: en una compra de 0,02 SOL
         # se llevan mas del 15% de ida y vuelta, asi que hace falta un +15%
@@ -1112,6 +1113,18 @@ class UniversalTrader:
         self.tope_compra_sol = float(tope_compra_sol or 0)
         #: Fraccion del saldo libre con la que se compra. 0 = tamano fijo.
         self.fraccion_saldo = max(0.0, min(1.0, float(fraccion_saldo or 0)))
+        #: RED DE SEGURIDAD, no una forma de comprar. Cuando el saldo no
+        #: da para el importe entero, en vez de saltarse la moneda se
+        #: compra con esta fraccion de lo que quede libre. 0 = apagado,
+        #: o sea el comportamiento de siempre: sin saldo, no se compra.
+        #:
+        #: NO ES LO MISMO QUE `fraccion_saldo`, y confundirlas cuesta
+        #: dinero: aquella compra SIEMPRE un porcentaje del saldo, asi que
+        #: con la wallet llena compraria muchisimo mas de lo autorizado.
+        #: Esta solo se mira cuando la compra normal NO cabe.
+        self.fraccion_si_no_llega = max(
+            0.0, min(1.0, float(fraccion_si_no_llega or 0))
+        )
         #: Suelo de compra en SOL. Por debajo se avisa y no se compra.
         self.compra_minima_sol = float(compra_minima_sol or 0)
         #: Cuanto crece la compra por cada SOL ganado de verdad. Con 0.35 y una
@@ -4547,12 +4560,62 @@ class UniversalTrader:
                         )
                         _suelta_moneda(_mint_str)
                         return
+                    # NO LLEGA EL IMPORTE ENTERO: se compra con una parte
+                    # de lo que quede en vez de saltarse la moneda. Pedido asi
+                    # ("0,12 SOL y si no hay saldo, el 75% de lo que quede").
+                    #
+                    # `free` ya viene limpio: es el saldo menos la reserva
+                    # minima y menos lo comprometido por las posiciones que
+                    # estan abriendose. Coger el 75% DE ESO deja el otro 25%
+                    # para el slippage y las comisiones, que es justo lo que
+                    # pide `need` -- por eso el recorte cabe casi siempre y se
+                    # vuelve a comprobar de todas formas.
+                    if free < need and self.fraccion_si_no_llega > 0 and free > 0:
+                        _recorte = (
+                            free / LAMPORTS_PER_SOL * self.fraccion_si_no_llega
+                        )
+                        if _tope > 0 and _recorte > _tope:
+                            _recorte = _tope
+                        _need_recorte = int(
+                            _recorte * (1 + self.buy_slippage) * LAMPORTS_PER_SOL
+                        ) + self._fee_headroom_lamports
+                        _bajo_minimo = (
+                            self.compra_minima_sol > 0
+                            and _recorte < self.compra_minima_sol
+                        )
+                        if _recorte > 0 and _need_recorte <= free and not _bajo_minimo:
+                            logger.warning(
+                                "SALDO CORTO: %s no llegaba a %.4f SOL; se "
+                                "compra con %.4f (el %.0f%% de los %.4f libres).",
+                                token_info.symbol, _importe, _recorte,
+                                self.fraccion_si_no_llega * 100,
+                                free / LAMPORTS_PER_SOL,
+                            )
+                            _importe = _recorte
+                            need = _need_recorte
+                        elif _bajo_minimo:
+                            # NO se compra polvo. Por debajo del suelo la
+                            # operacion nace perdiendo: la comision de
+                            # prioridad y la renta de la cuenta de token no
+                            # bajan con el tamano de la compra.
+                            logger.warning(
+                                "Compra de %s omitida: del saldo libre solo "
+                                "saldrian %.4f SOL y el minimo que compensa es "
+                                "%.4f. Recarga la wallet.",
+                                token_info.symbol, _recorte,
+                                self.compra_minima_sol,
+                            )
                     if free < need:
                         logger.warning(
                             f"Compra de {token_info.symbol} omitida: SOL insuficiente "
                             f"(libre={free / LAMPORTS_PER_SOL:.4f}, "
                             f"necesita={need / LAMPORTS_PER_SOL:.4f})"
                         )
+                        # La reserva se suelta: si no, esta moneda quedaba
+                        # bloqueada para los tres bots hasta que caducara el
+                        # fichero (10 min). El camino de al lado, el del suelo
+                        # de compra, ya lo hacia.
+                        _suelta_moneda(_mint_str)
                         return
                     self._reserved_lamports += need
                     self._reserved_real_buy_slots += 1
