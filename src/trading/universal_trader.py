@@ -122,12 +122,19 @@ def _load_creator_file(path: str) -> set[str]:
 # que se calcularon los `median_peak` de las listas Dune). Da igual el precio
 # real de SOL: la comparación mediana_vs_MC_actual es un RATIO, así que la
 # constante se cancela mientras sea la misma a ambos lados.
+#: Cuantas vueltas de 10 s se aguantan con el valor por defecto antes de
+#: avisar por Telegram. 30 son cinco minutos.
+_AVISAR_TRAS_VUELTAS = 30
+
 _SOL_USD = 91.24  # actualizado 21-ago. OJO: cambiar esto mueve TODOS los
 #                   filtros de market cap, porque el MC se calcula como
 #                   precio x supply x _SOL_USD. Si se sube, hay que subir los
 #                   techos en la misma proporcion o el filtro se vuelve mas
 #                   estricto sin que nadie lo haya decidido.
 # Supply total estándar de un token pump.fun (1e9 tokens enteros).
+#: Copia del valor de arranque: sirve para saber si el refresco ya acerto.
+_ARRANQUE_SOL_USD = _SOL_USD
+
 _PUMP_TOTAL_SUPPLY = 1_000_000_000
 
 #: Tope de seguridad de posiciones abiertas cuando `max_posiciones` es 0.
@@ -312,6 +319,23 @@ class UniversalTrader:
     #: proposito: una venta que falla paga la comision de prioridad igual, y el
     #: bucle de vigilancia reintenta cada segundo. Si no sale en 3, no sale.
     MAX_FALLOS_VENTA = 3
+    #: Espera antes de volver a intentar una venta que ya fallo tres veces.
+    #: Antes esto no existia: al tercer fallo la moneda quedaba bloqueada PARA
+    #: SIEMPRE, y con ella el stop loss. Ahora se espera y se reintenta, con la
+    #: espera doblandose en cada fallo nuevo.
+    #:
+    #: Las que limitan perdidas esperan poco: si el stop loss no entra, lo que
+    #: se pierde es mucho mas que la comision de reintentarlo. Los take profit
+    #: esperan mucho: pueden esperar, y cada intento cuesta.
+    ESPERA_PROTECTORA_SEG = 20.0
+    ESPERA_TP_SEG = 300.0
+    ESPERA_MAX_SEG = 1800.0
+
+    #: Motivos de venta que existen para LIMITAR PERDIDAS. Nunca se abandonan.
+    MOTIVOS_PROTECTORES = (
+        "stop_loss", "trailing_stop", "anti_rug", "panic_sell",
+        "bajo_entrada", "suelo_por_mc", "muerta", "max_hold_time", "manual_",
+    )
 
     #: Lecturas seguidas sin precio (ni de la curva ni del DEX) antes de
     #: soltar la posicion. A un precio cada 3 s son unos 2 minutos. Con el
@@ -958,6 +982,14 @@ class UniversalTrader:
         #: igual, asi que a partir de MAX_FALLOS_VENTA se deja de intentar en vez
         #: de reintentar cada segundo hasta agotar la wallet (ver _sell_amount).
         self._fallos_venta: dict[str, int] = {}
+        #: Monedas de las que ya se ha avisado de un fallo de
+        #: programacion. El bucle da cuatro vueltas por segundo: sin
+        #: esto, un bug manda cuatro mensajes por segundo.
+        self._bugs_avisados: set[str] = set()
+        #: Hasta cuando no se vuelve a intentar vender cada moneda.
+        self._bloqueada_hasta: dict[str, float] = {}
+        #: Vueltas que lleva el refresco sin conseguir el precio de SOL.
+        self._vueltas_sin_precio_sol = 0
 
         # Timing parameters
         self.wait_time_after_creation = wait_time_after_creation
@@ -5202,7 +5234,21 @@ class UniversalTrader:
         # 0,64 SOL en 178 ventas fallidas. Tras unos pocos fallos seguidos se
         # deja de pagar: si no ha salido en 3, no va a salir en 300.
         mint = str(token_info.mint)
-        if self._fallos_venta.get(mint, 0) >= self.MAX_FALLOS_VENTA:
+        # ESPERA, NO RENDICION. Antes, al tercer fallo esta moneda quedaba
+        # bloqueada para siempre: devolvia False sin tocar la red para TODO --
+        # take profits, stop loss, anti-rug, panico y ventas manuales--, y lo
+        # unico que lo reiniciaba era una venta con exito, que ya no podia
+        # ocurrir. La posicion se quedaba sin freno hasta las 24 horas de
+        # `abandonar_tras_seg`.
+        #
+        # Y se alimentaba solo: el suelo de slippage se calcula contra el
+        # precio del tick anterior menos un 10%, asi que en una caida rapida
+        # los tres fallos llegan seguidos JUSTO cuando hace falta vender.
+        #
+        # Esto gasta menos que antes en el caso normal --un intento por
+        # ventana en vez de uno por segundo hasta el tope-- y no abandona.
+        _hasta = self._bloqueada_hasta.get(mint, 0.0)
+        if _hasta and monotonic() < _hasta:
             self._ultimo_cobro = 0.0
             return False
 
@@ -5235,6 +5281,7 @@ class UniversalTrader:
         )
         if sell_result.success:
             self._fallos_venta.pop(mint, None)
+            self._bloqueada_hasta.pop(mint, None)
             logger.info(
                 f"Sold {amount:.6f} {token_info.symbol} ({reason}) "
                 f"@ {sell_result.price:.8f} SOL"
@@ -5269,6 +5316,7 @@ class UniversalTrader:
             ok, sig, err = False, None, str(exc)
         if ok:
             self._fallos_venta.pop(mint, None)
+            self._bloqueada_hasta.pop(mint, None)
             logger.info("Sold %s via Jupiter (%s) tx=%s", token_info.symbol, reason, sig)
             self._anota_firma(str(token_info.mint), sig)
             self._log_trade("sell", token_info, ref_price, amount, sig, reason)
@@ -5283,23 +5331,45 @@ class UniversalTrader:
             sell_result.error_message, err,
         )
         if fallos >= self.MAX_FALLOS_VENTA:
+            # La espera se dobla en cada fallo nuevo, y las que limitan
+            # perdidas arrancan de una espera mucho mas corta.
+            _base = (
+                self.ESPERA_PROTECTORA_SEG
+                if self._es_venta_protectora(reason)
+                else self.ESPERA_TP_SEG
+            )
+            _espera = min(
+                _base * (2 ** (fallos - self.MAX_FALLOS_VENTA)),
+                self.ESPERA_MAX_SEG,
+            )
+            self._bloqueada_hasta[mint] = monotonic() + _espera
             logger.error(
-                "%s: %d ventas fallidas seguidas; dejo de intentarlo para no "
-                "seguir quemando comisiones. La bolsa queda en la wallet.",
-                token_info.symbol, fallos,
+                "%s: %d ventas fallidas seguidas (%s); espero %.0fs antes de "
+                "volver a intentarlo, para no quemar comisiones.",
+                token_info.symbol, fallos, reason, _espera,
             )
             try:
                 from monitoring.notifier import notify
 
                 notify(
-                    f"🛑 <b>VENTA BLOQUEADA</b> · <b>{token_info.symbol}</b>\n"
+                    f"⏳ <b>VENTA EN ESPERA</b> · <b>{token_info.symbol}</b>\n"
                     f"{fallos} intentos fallidos ({sell_result.error_message}).\n"
-                    f"Dejo de reintentar: cada intento cuesta comision.\n"
+                    f"Reintento en {_espera:.0f}s. La posición SIGUE vigilada.\n"
                     f"CA: <code>{mint}</code>"
                 )
             except Exception:  # noqa: BLE001
                 pass
         return False
+
+    def _es_venta_protectora(self, reason: str) -> bool:
+        """True si esta venta existe para limitar perdidas.
+
+        Un take profit puede esperar: si no sale hoy, sale manana o no sale, y
+        cada intento cuesta comision. Un stop loss no: lo que se pierde por no
+        ejecutarlo es mucho mayor que lo que cuesta reintentarlo.
+        """
+        _r = (reason or "").lower()
+        return any(_r.startswith(m) for m in self.MOTIVOS_PROTECTORES)
 
     def _apuntar_compra_en_pausa(
         self, token_info: TokenInfo, importe: float
@@ -5608,6 +5678,9 @@ class UniversalTrader:
         peak_price = entry_price
         # Auto-baneo por P&L NETO: SOL cobrado en ventas vs coste de entrada.
         realized_sol = 0.0
+        #: Lecturas seguidas en las que la bolsa valia menos del
+        #: minimo. Hacen falta dos para soltarla: ver mas abajo.
+        _polvo_seguidas = 0
         cost_sol = original_qty * entry_price
         last_price = entry_price
         _muerta_revisada = False
@@ -5717,9 +5790,26 @@ class UniversalTrader:
                 #
                 # La bolsa NO se vende ni se pierde: se queda en la wallet y
                 # la recoge la limpieza de cuentas al cerrar la sesion.
-                if self.valor_minimo_posicion_usd > 0:
+                # DOS GUARDAS, y las dos por el mismo motivo: esto hace
+                # `break`, o sea que deja la posicion SIN VIGILAR para siempre
+                # -- sin stop loss. Un error aqui no se puede deshacer.
+                #
+                # 1. Un precio 0 no es "no vale nada". `calculate_price`
+                #    devuelve 0.0 cuando las reservas virtuales estan a cero en
+                #    vez de lanzar, asi que UNA sola lectura mala abandonaba la
+                #    posicion entera.
+                # 2. Hace falta que se cumpla dos veces seguidas. Una lectura
+                #    suelta no decide si se suelta una posicion.
+                if self.valor_minimo_posicion_usd > 0 and price > 0:
                     _valor_usd = remaining * price * _SOL_USD
-                    if _valor_usd < self.valor_minimo_posicion_usd:
+                    if _valor_usd >= self.valor_minimo_posicion_usd:
+                        _polvo_seguidas = 0
+                    else:
+                        _polvo_seguidas += 1
+                    if (
+                        _valor_usd < self.valor_minimo_posicion_usd
+                        and _polvo_seguidas >= 2
+                    ):
                         logger.info(
                             "%s: lo que queda vale $%.2f (mínimo $%.2f). Se "
                             "suelta la plaza y se deja de vigilar: venderlo "
@@ -5814,7 +5904,21 @@ class UniversalTrader:
                                 )
                             except Exception:  # noqa: BLE001
                                 pass
-                            if await self._sell_amount(token_info, remaining, price):
+                            # EL MOTIVO ES OBLIGATORIO, y aqui faltaba.
+                            #
+                            # `_sell_amount` pide cuatro datos y se le pasaban
+                            # tres, asi que esta llamada lanzaba TypeError
+                            # SIEMPRE. Se la tragaba el `except Exception` del
+                            # final del bucle, que lo apuntaba en el log y
+                            # seguia. Resultado: el aviso de Telegram de aqui
+                            # arriba salia, decia "saliendo de la posicion
+                            # entera", y no se vendia nada -- y como la moneda
+                            # seguia cayendo, volvia a avisar y a reventar en
+                            # cada vuelta. La salida de emergencia no ha
+                            # vendido nunca.
+                            if await self._sell_amount(
+                                token_info, remaining, price, "anti_rug"
+                            ):
                                 realized_sol += self._ultimo_cobro
                                 remaining = 0.0
                                 hit_sl = True
@@ -5889,9 +5993,19 @@ class UniversalTrader:
                 self._write_live_status(
                     token_info, entry_price, remaining, price, original_qty
                 )
+                # SOLO SE SUMA SI DE VERDAD SE VENDIO. `_check_manual_sell`
+                # vuelve sin tocar `_ultimo_cobro` cuando no hay orden manual
+                # --que es casi siempre--, asi que sumar a ciegas repetia el
+                # cobro de la ULTIMA venta buena cuatro veces por segundo
+                # durante el resto de la vida de la posicion. La linea del P&L
+                # es con la que se juzga si la estrategia gana dinero.
+                #
+                # La variable ya estaba escrita y sin usar: la intencion era
+                # esta.
                 _before_manual = remaining
                 remaining = await self._check_manual_sell(token_info, remaining, price)
-                realized_sol += self._ultimo_cobro
+                if remaining < _before_manual - 1e-12:
+                    realized_sol += self._ultimo_cobro
                 if remaining <= 1e-9:
                     fully_exited = True
                     break
@@ -6162,6 +6276,41 @@ class UniversalTrader:
 
                 await asyncio.sleep(self._tick_vigilancia())
 
+            except (TypeError, AttributeError) as _bug:
+                # UN FALLO DE PROGRAMACION NO PUEDE SER SILENCIOSO.
+                #
+                # Esta captura general trataba igual un fallo de red --que es
+                # normal y pasa todos los dias-- y una llamada mal escrita
+                # --que es SIEMPRE un bug--. La segunda clase se quedaba en una
+                # linea del log que nadie lee desde el movil.
+                #
+                # Lo que costo: la salida de emergencia anti-rug llamaba a
+                # `_sell_amount` con tres argumentos de los cuatro que pide.
+                # Lanzaba TypeError en cada disparo, esto se lo tragaba, y la
+                # posicion no se vendia NUNCA mientras el aviso de Telegram
+                # decia que si. Estuvo asi sin que nadie lo viera.
+                #
+                # Se sigue capturando --matar el monitor dejaria la posicion
+                # sin vigilancia, que es peor-- pero ahora avisa. Una vez por
+                # posicion: en un bucle de cuatro vueltas por segundo, avisar
+                # siempre seria inutilizable.
+                logger.exception("BUG en el monitor de salida (no es red)")
+                _mint_bug = str(token_info.mint)
+                if _mint_bug not in self._bugs_avisados:
+                    self._bugs_avisados.add(_mint_bug)
+                    try:
+                        from monitoring.notifier import notify
+
+                        notify(
+                            f"🐞 <b>FALLO DEL BOT</b> · <b>{token_info.symbol}</b>\n"
+                            f"{type(_bug).__name__}: {_bug}\n"
+                            "La vigilancia sigue, pero algo de esta posicion no "
+                            "se esta ejecutando. Mandame esto.\n"
+                            f"CA: <code>{_mint_bug}</code>"
+                        )
+                    except Exception:  # noqa: BLE001
+                        pass
+                await asyncio.sleep(self.price_check_interval)
             except Exception:
                 logger.exception("Error in tiered exit monitor")
                 # Aqui NO se usa el tick corto: si algo esta fallando, dar
@@ -6757,6 +6906,34 @@ class UniversalTrader:
                             logger.info("SOL %.2f -> %.2f $", viejo, nuevo)
             except Exception:  # noqa: BLE001 - esto nunca debe romper el bot
                 logger.debug("no pude refrescar el precio de SOL", exc_info=True)
+            # AL PRINCIPIO, DEPRISA. Hasta el primer acierto el bot usa el
+            # valor escrito a mano en `_SOL_USD`, y con SOL a ~220 $ ese valor
+            # (91,24) deja TODOS los dolares del bot 2,4 veces por debajo de lo
+            # real -- la regla que abandona posiciones por valer menos de 1 $
+            # incluida. Esperar una hora a la primera lectura es una hora
+            # entera decidiendo con numeros falsos.
+            if _mod._SOL_USD == _ARRANQUE_SOL_USD:
+                self._vueltas_sin_precio_sol += 1
+                if self._vueltas_sin_precio_sol == _AVISAR_TRAS_VUELTAS:
+                    logger.error(
+                        "El precio de SOL sigue en el valor por defecto "
+                        "(%.2f $) tras %d intentos: todos los importes en "
+                        "dolares estan mal.", _ARRANQUE_SOL_USD,
+                        self._vueltas_sin_precio_sol,
+                    )
+                    try:
+                        from monitoring.notifier import notify
+
+                        notify(
+                            "⚠️ <b>PRECIO DE SOL SIN ACTUALIZAR</b>\n"
+                            f"Sigue en {_ARRANQUE_SOL_USD:.2f} $ por defecto. "
+                            "Todo lo que el bot calcula en dólares está mal "
+                            "hasta que se corrija."
+                        )
+                    except Exception:  # noqa: BLE001
+                        pass
+                await asyncio.sleep(10)
+                continue
             await asyncio.sleep(3600)
 
     async def _reinicia_tanda_loop(self) -> None:

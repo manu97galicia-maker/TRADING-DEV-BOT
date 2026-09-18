@@ -118,7 +118,21 @@ def test_el_monitor_suelta_la_plaza_con_el_polvo() -> None:
 def test_la_regla_se_puede_apagar() -> None:
     """Con 0 no se suelta nada, que es lo que espera quien pone un cero."""
     texto = _fuente()
-    assert "if self.valor_minimo_posicion_usd > 0:" in texto
+    assert "if self.valor_minimo_posicion_usd > 0 and price > 0:" in texto
+
+
+def test_un_precio_malo_no_suelta_la_posicion() -> None:
+    """LA GUARDA QUE FALTABA, y que se anadio el 19-sep.
+
+    `calculate_price` devuelve 0.0 cuando las reservas virtuales estan a cero,
+    en vez de lanzar. Sin el `price > 0`, ese cero daba "vale 0 $, menos del
+    minimo" y la regla hacia `break`: posicion sin vigilar y sin stop loss,
+    para siempre, por UNA lectura mala.
+    """
+    texto = _fuente()
+    assert "and price > 0:" in texto
+    # Y ademas hace falta que se repita: una lectura suelta no decide.
+    assert "_polvo_seguidas >= 2" in texto
 
 
 def test_el_avisador_deja_de_dar_la_lata_con_el_polvo() -> None:
