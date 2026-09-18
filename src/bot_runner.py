@@ -2,6 +2,7 @@ import asyncio
 import logging
 import math
 import multiprocessing
+import os
 import re
 import sys
 from datetime import datetime
@@ -200,9 +201,25 @@ async def start_bot(config_path: str):
             # Listener configuration
             listener_type=cfg["filters"]["listener_type"],
             # Geyser configuration (if applicable)
-            geyser_endpoint=cfg.get("geyser", {}).get("endpoint"),
-            geyser_api_token=cfg.get("geyser", {}).get("api_token"),
-            geyser_auth_type=cfg.get("geyser", {}).get("auth_type", "x-token"),
+            # GEYSER: del yaml si esta, y si no del entorno.
+            #
+            # NO se pone `${GEYSER_ENDPOINT}` en el yaml a proposito:
+            # `resolve_env_vars` LANZA si la variable no existe, asi que una
+            # maquina sin esas lineas en su `.env` no arrancaria el bot. Leerlo
+            # aqui con `os.getenv` y un valor por defecto no puede romper nada:
+            # sin credenciales simplemente no se usa Geyser.
+            geyser_endpoint=(
+                cfg.get("geyser", {}).get("endpoint")
+                or os.getenv("GEYSER_ENDPOINT", "")
+            ),
+            geyser_api_token=(
+                cfg.get("geyser", {}).get("api_token")
+                or os.getenv("GEYSER_API_TOKEN", "")
+            ),
+            geyser_auth_type=(
+                cfg.get("geyser", {}).get("auth_type")
+                or os.getenv("GEYSER_AUTH_TYPE", "x-token")
+            ),
             # PumpPortal configuration (if applicable)
             pumpportal_url=cfg.get("pumpportal", {}).get(
                 "url", "wss://pumpportal.fun/api/data"

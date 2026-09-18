@@ -821,6 +821,14 @@ class UniversalTrader:
         # precio desproporcionado por un fallo de configuracion, sobre todo
         # cuando `logs` (que si esta configurado) hace el mismo trabajo algo
         # mas lento. Se avisa a gritos en el log y se sigue.
+        # LAS CREDENCIALES DE GEYSER, GUARDADAS. Hasta ahora solo se le pasaban
+        # al escuchador de creaciones -- que NO arranca cuando hay fuentes de
+        # compra activas--, asi que tener Geyser configurado no servia de nada
+        # con la estrategia de titulares. La fuente las necesita para usar la
+        # tuberia rapida.
+        self.geyser_endpoint = geyser_endpoint or ""
+        self.geyser_api_token = geyser_api_token or ""
+        self.geyser_auth_type = geyser_auth_type or "x-token"
         try:
             self.token_listener = ListenerFactory.create_listener(
                 listener_type=listener_type,
@@ -2152,6 +2160,9 @@ class UniversalTrader:
             buy_amount=float(cfg.get("buy_amount", 0.07)),
             heartbeat_interval=float(cfg.get("heartbeat_interval", 300)),
             paper_mode=self.paper_trade or self.paper_engine.enabled,
+            geyser_endpoint=self.geyser_endpoint,
+            geyser_token=self.geyser_api_token,
+            geyser_auth=self.geyser_auth_type,
         )
         try:
             await source.run(self._on_dexpaid_token)

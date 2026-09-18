@@ -53,7 +53,11 @@ def test_geyser_sin_credenciales_sigue_lanzando_en_la_factoria() -> None:
 def test_el_trader_no_se_cae_por_eso_y_baja_a_logs() -> None:
     """Quien decide que hacer con ese fallo es el trader, no la factoria."""
     texto = _fuente()
-    inicio = texto.index("# Initialize the appropriate listener")
+    # Se busca desde el `try` real, no desde el comentario: los comentarios de
+    # ahi crecen (el 19-sep se anadio el guardado de las credenciales de
+    # Geyser) y una ventana contada en caracteres desde el comentario acababa
+    # cortando antes de llegar al codigo que se quiere comprobar.
+    inicio = texto.index("self.token_listener = ListenerFactory.create_listener")
     trozo = texto[inicio : inicio + 2000]
     assert "except ValueError" in trozo
     assert 'listener_type="logs"' in trozo
@@ -63,7 +67,7 @@ def test_sin_wss_no_hay_a_donde_caer_y_se_propaga() -> None:
     """Sin endpoint de websocket no hay respaldo: callarse el fallo dejaria
     el bot corriendo sin escuchar nada, que es peor que no arrancar."""
     texto = _fuente()
-    inicio = texto.index("# Initialize the appropriate listener")
+    inicio = texto.index("self.token_listener = ListenerFactory.create_listener")
     trozo = texto[inicio : inicio + 2000]
     assert "or not wss_endpoint:" in trozo
     assert "raise" in trozo

@@ -54,9 +54,11 @@ logger = get_logger(__name__)
 #: esto, una que cruza el corte lo seguiria cruzando en cada operacion.
 _MAX_RECORDADAS = 20_000
 
-#: Evaluaciones simultaneas. Cada una hace varias llamadas al nodo; sin tope,
-#: una racha se comeria el presupuesto que necesitan los stop loss.
-_MAX_EN_VUELO = 4
+#: Evaluaciones simultaneas. Cada una hace UNA vuelta al nodo (antes tres), y
+#: el presupuesto subio de 15 a 45 consultas/s con el plan de Helius, asi que
+#: 4 se quedaba muy corto: con el corte en 23 titulares hay muchas monedas
+#: cumpliendo a la vez y las que no cabian se perdian.
+_MAX_EN_VUELO = 12
 
 
 def build_holders_heartbeat(
@@ -106,6 +108,13 @@ class HoldersSource:
         buy_amount: float = 0.07,
         heartbeat_interval: float = 300,
         paper_mode: bool = False,
+        #: Endpoint gRPC de Geyser. Si esta puesto, los datos entran por ahi en
+        #: vez de por el websocket: llegan del validador directamente, sin
+        #: pasar por la capa RPC, y eso son 100-300 ms menos en enterarse. Sin
+        #: endpoint no cambia nada: se sigue usando el websocket de siempre.
+        geyser_endpoint: str = "",
+        geyser_token: str = "",
+        geyser_auth: str = "x-token",
     ) -> None:
         self.wss_endpoint = wss_endpoint
         self._impls = platform_impls
@@ -117,6 +126,9 @@ class HoldersSource:
         self.buy_amount = float(buy_amount)
         self.heartbeat_interval = float(heartbeat_interval)
         self.paper_mode = bool(paper_mode)
+        self.geyser_endpoint = (geyser_endpoint or "").strip()
+        self.geyser_token = (geyser_token or "").strip()
+        self.geyser_auth = (geyser_auth or "x-token").strip().lower()
 
         self._decididas: set[str] = set()
         #: Monedas que se han visto POR DEBAJO del corte. Una moneda solo puede
@@ -212,13 +224,23 @@ class HoldersSource:
     def _lanzar(
         self, mint: str, titulares: int, edad: float,
         token_callback: Callable[[TokenInfo], Awaitable[None]],
-    ) -> None:
+    ) -> bool:
+        """Lanza la evaluacion. Devuelve si de verdad se lanzo.
+
+        EL VALOR DE VUELTA IMPORTA. Antes esto no devolvia nada y quien llamaba
+        ya habia marcado la moneda como "decidida" -- asi que una moneda
+        descartada por tope de concurrencia quedaba marcada PARA SIEMPRE y no
+        se volvia a mirar nunca, aunque un segundo despues hubiera hueco de
+        sobra. Con el corte en 23 titulares hay muchas cumpliendo a la vez, asi
+        que eso tiraba a la basura buena parte de las candidatas.
+        """
         if len(self._en_vuelo) >= _MAX_EN_VUELO:
             logger.warning(
-                "Titulares: %s se descarta, ya hay %d evaluaciones en marcha",
+                "Titulares: %s se aparca, ya hay %d evaluaciones en marcha "
+                "(se volvera a mirar)",
                 mint, len(self._en_vuelo),
             )
-            return
+            return False
 
         async def _corre() -> None:
             try:
@@ -231,6 +253,7 @@ class HoldersSource:
         tarea = asyncio.create_task(_corre())
         self._en_vuelo.add(tarea)
         tarea.add_done_callback(self._en_vuelo.discard)
+        return True
 
     def _revisar(
         self, mints: list[str], token_callback: Callable[[TokenInfo], Awaitable[None]]
@@ -309,9 +332,13 @@ class HoldersSource:
                     self._cuenta("dip", mint)
                     continue
 
-            if self._ya_decidida(mint):
+            # SE MARCA DESPUES DE LANZAR, NO ANTES. Si no hay hueco, la
+            # moneda NO queda marcada y se vuelve a mirar en la siguiente
+            # operacion suya; marcarla antes la perdia para siempre.
+            if mint in self._decididas:
                 continue
-            self._lanzar(mint, titulares, edad, token_callback)
+            if self._lanzar(mint, titulares, edad, token_callback):
+                self._ya_decidida(mint)
 
     def _heartbeat_si_toca(self) -> None:
         if self.heartbeat_interval <= 0:
@@ -357,6 +384,69 @@ class HoldersSource:
             self._revisar(tocadas, token_callback)
             self._heartbeat_si_toca()
 
+    # ----------------------------------------------------------- por geyser
+
+    async def _escuchar_geyser(
+        self, program_id: str,
+        token_callback: Callable[[TokenInfo], Awaitable[None]],
+    ) -> None:
+        """Mismo trabajo que el websocket, pero con los datos antes.
+
+        POR QUE ES MAS RAPIDO. El websocket (`logsSubscribe`) espera a que el
+        nodo RPC procese el bloque y entonces te lo empuja. Geyser sale del
+        validador directamente, sin esa capa. Son tipicamente 100-300 ms de
+        diferencia -- poco para casi todo, decisivo en los primeros segundos de
+        una moneda.
+
+        LO QUE NO CAMBIA: lo que se hace con los datos. Geyser trae los mismos
+        `log_messages` que el websocket, asi que se los pasa al mismo
+        `registrar_logs` y al mismo `_revisar`. Solo cambia la tuberia.
+        """
+        import grpc  # noqa: PLC0415
+
+        from geyser.generated import geyser_pb2, geyser_pb2_grpc  # noqa: PLC0415
+
+        if self.geyser_auth == "x-token":
+            auth = grpc.metadata_call_credentials(
+                lambda _, cb: cb((("x-token", self.geyser_token),), None)
+            )
+        else:
+            auth = grpc.metadata_call_credentials(
+                lambda _, cb: cb(
+                    (("authorization", f"Basic {self.geyser_token}"),), None
+                )
+            )
+        creds = grpc.composite_channel_credentials(
+            grpc.ssl_channel_credentials(), auth
+        )
+        canal = grpc.aio.secure_channel(self.geyser_endpoint, creds)
+        try:
+            stub = geyser_pb2_grpc.GeyserStub(canal)
+            peticion = geyser_pb2.SubscribeRequest()
+            peticion.transactions["pump"].account_include.append(program_id)
+            # Las fallidas no dicen nada: no mueven reservas ni titulares.
+            peticion.transactions["pump"].failed = False
+            # PROCESSED, igual que el websocket: es el unico nivel que existe
+            # a tiempo para esto. Esperar a "confirmed" son cientos de ms mas.
+            peticion.commitment = geyser_pb2.CommitmentLevel.PROCESSED
+
+            logger.info("TITULARES: escuchando por GEYSER (%s)", self.geyser_endpoint)
+            async for update in stub.Subscribe(iter([peticion])):
+                if not update.HasField("transaction"):
+                    continue
+                meta = getattr(update.transaction.transaction, "meta", None)
+                logs = list(getattr(meta, "log_messages", None) or ())
+                if not logs:
+                    continue
+                tocadas = volumen.registrar_logs(
+                    logs, slot=getattr(update.transaction, "slot", None)
+                )
+                self._revisar(tocadas, token_callback)
+                self._heartbeat_si_toca()
+        finally:
+            with contextlib.suppress(Exception):
+                await canal.close()
+
     async def run(self, token_callback: Callable[[TokenInfo], Awaitable[None]]) -> None:
         """Escucha la cadena y compra las que cumplen las dos condiciones."""
         program_id = str(self._impls.event_parser.get_program_id())
@@ -365,8 +455,18 @@ class HoldersSource:
             "de vida, %.4f SOL, solo pump.fun (programa %s). SIN anti-bundle.",
             self.min_holders, self.max_edad_seg / 60, self.buy_amount, program_id,
         )
+        por_geyser = bool(self.geyser_endpoint and self.geyser_token)
+        if not por_geyser:
+            logger.info(
+                "TITULARES: escuchando por websocket. Con GEYSER_ENDPOINT y "
+                "GEYSER_API_TOKEN puestos en el .env se usaria Geyser, que "
+                "llega 100-300 ms antes."
+            )
         while True:
             try:
+                if por_geyser:
+                    await self._escuchar_geyser(program_id, token_callback)
+                    continue
                 async with websockets.connect(
                     self.wss_endpoint, ping_interval=20
                 ) as ws:

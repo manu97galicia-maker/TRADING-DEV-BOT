@@ -260,3 +260,52 @@ def test_queda_escrito_lo_que_cuesta_no_simular() -> None:
         Path(__file__).resolve().parent.parent / "src/trading/platform_aware.py"
     ).read_text(encoding="utf-8")
     assert "LO QUE CUESTA" in fuente
+
+
+# ---------------------------------------- la tuberia por la que entran datos
+
+
+def test_la_fuente_puede_escuchar_por_geyser() -> None:
+    """LO QUE DE VERDAD ATACA "LOS PRIMEROS SEGUNDOS".
+
+    El websocket (`logsSubscribe`) espera a que el nodo RPC procese el bloque y
+    entonces lo empuja. Geyser sale del validador directamente, sin esa capa:
+    tipicamente 100-300 ms antes. Poco para casi todo, decisivo en los primeros
+    segundos de una moneda.
+
+    Lo que NO cambia es el tratamiento: Geyser trae los mismos `log_messages`
+    que el websocket, asi que van al mismo `registrar_logs` y al mismo
+    `_revisar`. Solo cambia la tuberia.
+    """
+    fuente = (
+        Path(__file__).resolve().parent.parent / "src/monitoring/holders_source.py"
+    ).read_text(encoding="utf-8")
+    assert "_escuchar_geyser" in fuente
+    assert "log_messages" in fuente
+    # Y por el mismo sitio que el websocket, o serian dos caminos que mantener.
+    assert fuente.count("volumen.registrar_logs(") == 2
+
+
+def test_sin_credenciales_de_geyser_se_sigue_usando_el_websocket() -> None:
+    """No puede exigir configuracion nueva para seguir funcionando: una maquina
+    sin esas credenciales tiene que arrancar igual que antes."""
+    fuente = (
+        Path(__file__).resolve().parent.parent / "src/monitoring/holders_source.py"
+    ).read_text(encoding="utf-8")
+    assert "por_geyser = bool(self.geyser_endpoint and self.geyser_token)" in fuente
+
+
+def test_las_credenciales_no_pasan_por_el_yaml() -> None:
+    """SI EL YAML LAS PIDIERA Y NO ESTUVIERAN, EL BOT NO ARRANCARIA.
+
+    `resolve_env_vars` LANZA cuando una variable `${...}` no existe, asi que
+    poner `${GEYSER_ENDPOINT}` en el yaml dejaria sin arrancar a cualquier
+    maquina que no tenga esa linea en su `.env`. Se leen con `os.getenv` y un
+    valor por defecto, que no puede romper nada.
+    """
+    runner = (
+        Path(__file__).resolve().parent.parent / "src/bot_runner.py"
+    ).read_text(encoding="utf-8")
+    assert 'os.getenv("GEYSER_ENDPOINT", "")' in runner
+    yaml_txt = CONFIG.read_text(encoding="utf-8")
+    assert "${GEYSER" not in yaml_txt
