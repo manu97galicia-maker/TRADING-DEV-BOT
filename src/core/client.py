@@ -26,6 +26,9 @@ logger = get_logger(__name__)
 
 HTTP_TOO_MANY_REQUESTS = 429
 
+#: Espera maxima tras un 429, en segundos. Ver el comentario donde se usa.
+_ESPERA_429_MAX = 4
+
 
 def set_loaded_accounts_data_size_limit(bytes_limit: int) -> Instruction:
     """
@@ -73,7 +76,15 @@ class SolanaClient:
         self._blockhash_updater_task = asyncio.create_task(
             self.start_blockhash_updater()
         )
+        #: EL TOPE, GUARDADO. Antes solo se pasaba al limitador y no se
+        #: guardaba, asi que `_avisa_si_el_nodo_no_da_mas` leia 0 con un
+        #: `getattr(..., "max_rps", 0)` y se salia sin avisar NUNCA. El aviso
+        #: que existe para decir "hay mas posiciones de las que el nodo puede
+        #: vigilar" no ha funcionado ni una vez.
+        self.max_rps = float(max_rps)
         self._rate_limiter = TokenBucketRateLimiter(max_rps=max_rps)
+        #: Cuantas veces ha contestado el nodo con 429 (te estoy limitando).
+        self.veces_429 = 0
         self._session: aiohttp.ClientSession | None = None
         self._session_lock = asyncio.Lock()
 
@@ -547,6 +558,7 @@ class SolanaClient:
                 ) as response:
                     if response.status == HTTP_TOO_MANY_REQUESTS:
                         rate_limit_attempts += 1
+                        self.veces_429 += 1
                         if rate_limit_attempts >= max_429_retries:
                             logger.error(
                                 f"RPC rate limited (429) on {method}, "
@@ -559,7 +571,13 @@ class SolanaClient:
                         except (ValueError, TypeError):
                             wait_time = None
                         if wait_time is None:
-                            wait_time = min(2**rate_limit_attempts, 30)
+                            # TOPE DE ESPERA BAJO A PROPOSITO. Estaba en 30
+                            # segundos: en un bot que necesita el precio CADA
+                            # SEGUNDO para el stop loss, media espera asi es
+                            # una eternidad -- la moneda hace el recorrido
+                            # entero mientras se espera. Mejor fallar pronto y
+                            # que el bucle lo reintente que quedarse colgado.
+                            wait_time = min(2**rate_limit_attempts, _ESPERA_429_MAX)
                         jitter = wait_time * random.uniform(0, 0.25)  # noqa: S311
                         total_wait = wait_time + jitter
                         logger.warning(
