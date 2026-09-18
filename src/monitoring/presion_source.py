@@ -105,6 +105,8 @@ class PresionSource:
         max_carteras_primer_bloque: int = 3,
         max_sol_primer_bloque: float = 2.0,
         max_bundle_pct: float = 0.5,
+        exigir_ver_creacion: bool = True,
+        max_bundle_pct_sin_historia: float = 0.35,
         heartbeat_interval: float = 300,
         paper_mode: bool = False,
     ) -> None:
@@ -122,6 +124,16 @@ class PresionSource:
         self.max_carteras_primer_bloque = int(max_carteras_primer_bloque)
         self.max_sol_primer_bloque = float(max_sol_primer_bloque)
         self.max_bundle_pct = float(max_bundle_pct)
+        #: Si se exige haber visto NACER la moneda. En True el bot arranca
+        #: ciego: solo puede comprar lo que nazca despues, porque de lo que ya
+        #: existia no tiene los contadores del bloque de creacion. Es lo mas
+        #: seguro y lo mas lento.
+        self.exigir_ver_creacion = bool(exigir_ver_creacion)
+        #: MAS APRETADO CUANDO SE VA A CIEGAS. Sin haber visto nacer la
+        #: moneda, los avisos del bloque de creacion no existen y todo el peso
+        #: recae en este tope de concentracion en cadena, que se comprueba
+        #: antes de comprar y no necesita historia.
+        self.max_bundle_pct_sin_historia = float(max_bundle_pct_sin_historia)
         self.heartbeat_interval = float(heartbeat_interval)
         self.paper_mode = bool(paper_mode)
 
@@ -163,13 +175,27 @@ class PresionSource:
         limpia una oleada que no se ha visto empezar.
         """
         if not volumen.vio_la_creacion(mint):
-            logger.info(
-                "%s (%s): oleada de compradores pero no se vio nacer la "
-                "moneda, así que no se puede descartar un bundle. Se deja "
-                "pasar.", symbol, mint,
-            )
             self._cuenta("sin_historia")
-            return True
+            if self.exigir_ver_creacion:
+                logger.info(
+                    "%s (%s): oleada de compradores pero no se vio nacer la "
+                    "moneda, así que no se puede descartar un bundle. Se deja "
+                    "pasar.", symbol, mint,
+                )
+                return True
+            # MODO FLEXIBLE. Se compra igual, pero sabiendo lo que se pierde:
+            # los dos avisos de abajo (cuantas carteras y cuanto SOL entraron
+            # en el bloque de creacion) valen CERO sin historia y pasarian
+            # solos, asi que no se miran -- mirarlos seria darse un visto
+            # bueno que nadie ha dado. Todo el peso recae en el tope de
+            # concentracion en cadena, que va mas apretado para estas y lo
+            # comprueba el filtro general justo antes de comprar.
+            logger.info(
+                "%s (%s): no se vio nacer; se compra igual con el tope de "
+                "concentración apretado al %.0f%%",
+                symbol, mint, self.max_bundle_pct_sin_historia * 100,
+            )
+            return False
 
         carteras = volumen.carteras_primer_bloque(mint)
         if (
@@ -224,7 +250,11 @@ class PresionSource:
             "acquisition_source": "presion",
             "origen": "presion",
             "signal_buy_amount": self.buy_amount,
-            "max_bundle_pct": self.max_bundle_pct,
+            "max_bundle_pct": (
+                self.max_bundle_pct
+                if volumen.vio_la_creacion(mint)
+                else self.max_bundle_pct_sin_historia
+            ),
             "ola_compradores": compradores,
             "curva_progreso": avance[0] if avance else None,
         }

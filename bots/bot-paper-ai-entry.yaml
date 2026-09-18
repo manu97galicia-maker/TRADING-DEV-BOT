@@ -476,7 +476,14 @@ filters:
   presion:
     enabled: true
     # Compradores DISTINTOS que tienen que entrar en la ventana.
-    min_compradores_ola: 12
+    #
+    # 18-sep, segunda vuelta: BAJADO DE 12 A 3. El 12 se eligio por el ritmo
+    # --con 5 plazas, 3 monedas por minuto llenan el bot en dos minutos con
+    # las PRIMERAS que pasen, no con las mejores-- pero en los datos el 3 es
+    # ademas el que MAS acierta (27,4% contra 25,8%), asi que al aflojar se
+    # gana por los dos lados menos por la selectividad. El precio esta dicho:
+    # el bot se llenara rapido y a partir de ahi elige el reloj.
+    min_compradores_ola: 3
     ventana: 5.0
     buy_amount: 0.07
     # Por encima de este avance no se entra: eso lo cubre `curva_96`.
@@ -488,6 +495,18 @@ filters:
     max_carteras_primer_bloque: 3
     max_sol_primer_bloque: 2.0
     max_bundle_pct: 0.5
+    # MODO FLEXIBLE (18-sep). En true el bot arrancaba CIEGO: solo podia
+    # comprar monedas nacidas despues del arranque, porque de las que ya
+    # existian no tiene los contadores del bloque de creacion. Eso es lo mas
+    # seguro y resulto ser lo mas lento -- cinco minutos sin una sola compra.
+    #
+    # En false se compran tambien las que no se vio nacer. Lo que se pierde
+    # hay que tenerlo escrito: de esas NO se puede saber si el bloque de
+    # creacion estaba cargado de carteras, que es la firma del bundle. Todo el
+    # peso pasa al tope de concentracion en cadena de la linea siguiente, que
+    # va mas apretado para ellas.
+    exigir_ver_creacion: false
+    max_bundle_pct_sin_historia: 0.35
     heartbeat_interval: 300
 
   curva_96:

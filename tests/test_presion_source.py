@@ -110,12 +110,47 @@ def test_una_oleada_limpia_pasa() -> None:
     assert f._es_bundle(MINT, "TEST") is False
 
 
-def test_sin_haber_visto_nacer_la_moneda_no_se_compra() -> None:
+def test_en_modo_estricto_sin_ver_nacer_no_se_compra() -> None:
     """Los contadores del bloque de creacion valen cero cuando no se vio
     nacer la moneda, asi que pasarian solos -- y eso es peor que no mirarlos,
-    porque da un visto bueno que nadie ha dado. Se deja pasar la moneda."""
-    f = _fuente()
+    porque da un visto bueno que nadie ha dado."""
+    f = _fuente(exigir_ver_creacion=True)
     _poblar(MINT, 30, creacion=False, bloque_carteras=0)
+    assert f._es_bundle(MINT, "TEST") is True
+
+
+def test_en_modo_flexible_sin_ver_nacer_si_se_compra() -> None:
+    """LO QUE SE ACTIVO EL 18-SEP, y lo que cuesta.
+
+    En estricto el bot arrancaba CIEGO: solo podia comprar lo que naciera
+    despues del arranque, y fueron cinco minutos sin una sola compra. En
+    flexible se compran tambien las que ya existian.
+
+    Lo que se pierde: de esas NO se puede saber si el bloque de creacion
+    estaba cargado de carteras, que es la firma del bundle. El unico freno
+    que queda es el tope de concentracion en cadena, y por eso va mas
+    apretado para ellas (test de abajo).
+    """
+    f = _fuente(exigir_ver_creacion=False)
+    _poblar(MINT, 30, creacion=False, bloque_carteras=0)
+    assert f._es_bundle(MINT, "TEST") is False
+
+
+def test_sin_historia_el_tope_de_concentracion_va_mas_apretado() -> None:
+    """Es lo unico que protege a las que no se vio nacer, asi que pide mas."""
+    f = _fuente(
+        exigir_ver_creacion=False,
+        max_bundle_pct=0.5,
+        max_bundle_pct_sin_historia=0.35,
+    )
+    assert f.max_bundle_pct_sin_historia < f.max_bundle_pct
+
+
+def test_el_modo_flexible_no_se_salta_el_antibundle_de_las_que_si_vio() -> None:
+    """Aflojar para las ciegas no puede aflojar para las demas: una moneda
+    cuyo bloque de creacion SI se vio y venia cargado se sigue descartando."""
+    f = _fuente(exigir_ver_creacion=False, max_carteras_primer_bloque=3)
+    _poblar(MINT, 20, creacion=True, bloque_carteras=9)
     assert f._es_bundle(MINT, "TEST") is True
 
 
@@ -194,12 +229,20 @@ def test_es_la_unica_fuente_encendida() -> None:
     assert f["presion"]["enabled"] is True
 
 
-def test_el_corte_esta_donde_el_ritmo_lo_permite() -> None:
-    """12 y no 3. Con >=3 caen ~3 monedas por minuto y con 5 plazas el bot se
-    llena en dos minutos con las PRIMERAS que pasen; a partir de ahi elige el
-    reloj y no el filtro. Se pierden 1,6 puntos de acierto y se gana elegir.
+def test_el_corte_es_el_que_mas_acierta() -> None:
+    """3, que en lo medido es el que MAS acierta: 27,4% contra el 25,8% del 12.
+
+    HISTORIA DE ESTE NUMERO, porque cambio y conviene saber por que. Empezo en
+    12 por el RITMO: con >=3 caen unas 3 monedas por minuto y con cinco plazas
+    el bot se llena en dos minutos con las PRIMERAS que pasen, no con las
+    mejores, y a partir de ahi elige el reloj. El 18-sep se bajo a 3 a peticion
+    de Manu tras cinco minutos sin una sola compra.
+
+    El precio sigue siendo el mismo y no desaparece por haberlo elegido: con
+    las plazas llenas, el acierto real sera peor que ese 27,4%, porque ese es
+    el de TODAS las que pasan y el bot solo compra las que pillan hueco.
     """
-    assert _filtros()["presion"]["min_compradores_ola"] >= 8
+    assert _filtros()["presion"]["min_compradores_ola"] == 3
 
 
 def test_el_antibundle_esta_puesto_en_la_config() -> None:
@@ -207,6 +250,15 @@ def test_el_antibundle_esta_puesto_en_la_config() -> None:
     p = _filtros()["presion"]
     assert p["max_carteras_primer_bloque"] > 0
     assert p["max_sol_primer_bloque"] > 0
+
+
+def test_al_ir_a_ciegas_la_config_aprieta_la_concentracion() -> None:
+    """La config esta en modo flexible desde el 18-sep, asi que el unico
+    freno que le queda a esas monedas tiene que pedir MAS que el normal. Si
+    alguien iguala los dos numeros, se queda sin proteccion ninguna."""
+    p = _filtros()["presion"]
+    if p.get("exigir_ver_creacion") is False:
+        assert p["max_bundle_pct_sin_historia"] < p["max_bundle_pct"]
 
 
 def test_compra_lo_acordado() -> None:
