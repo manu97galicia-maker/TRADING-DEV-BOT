@@ -238,3 +238,48 @@ def test_el_instalador_no_toca_nada_del_bot() -> None:
     s = _instalador()
     for peligroso in ("systemctl restart", "systemctl stop", "rm ", "git "):
         assert peligroso not in s, f"el instalador hace '{peligroso}'"
+
+
+# ------------------------------------------ arrancar con un comando corto
+
+
+def _arranca() -> str:
+    return (RAIZ / "deploy" / "arranca.sh").read_text(encoding="utf-8")
+
+
+def test_el_arranque_no_depende_de_la_carpeta() -> None:
+    """EL FALLO QUE SE REPITIO CUATRO VECES. Desde el movil la sesion vuelve
+    a ~ cada vez que se cae el SSH, y un comando con rutas relativas muere con
+    "No such file or directory"."""
+    s = _arranca()
+    assert "RAIZ=/root/ai-bot" in s
+    assert 'cd "$RAIZ"' in s
+
+
+def test_el_arranque_no_abre_ningun_editor() -> None:
+    """Un `git pull` que abre nano deja la sesion colgada en un editor que
+    desde el movil no se sabe cerrar. Ya paso una vez."""
+    assert "git pull --no-edit" in _arranca()
+
+
+def test_el_arranque_dice_que_hacer_si_falla_el_pull() -> None:
+    """Un error a secas desde el movil no se puede diagnosticar: el propio
+    guion tiene que traer el comando de salida escrito."""
+    s = _arranca()
+    assert "git commit --no-edit" in s
+
+
+def test_el_arranque_termina_ensenando_que_fuente_compra() -> None:
+    """Lo unico que de verdad hay que comprobar: UNA sola fuente activa y que
+    sea la de presion. Mas de una linea ahi significa que el pull no entro."""
+    s = _arranca()
+    assert "acquisition ENABLED" in s
+    assert "systemctl restart pump-bot" in s
+
+
+def test_el_arranque_se_puede_repetir_sin_miedo() -> None:
+    """Desde el movil se repite un comando cuando no se sabe si llego. No
+    puede borrar nada ni hacer un add a ciegas."""
+    s = _arranca()
+    for peligroso in ("rm ", "git add -A", "git add .", "git reset --hard"):
+        assert peligroso not in s, f"arranca.sh hace '{peligroso}'"
