@@ -166,10 +166,17 @@ def test_sin_ver_nacer_la_edad_es_desconocida_y_no_se_compra() -> None:
     assert f._edad(MINT) is None
 
 
-def test_con_tope_de_cinco_minutos_exigir_ver_nacer_no_quita_candidatas() -> None:
-    """Y por eso no cuesta nada: cualquier moneda de menos de 5 minutos nacio
-    con el bot ya escuchando, salvo en los primeros 5 minutos tras arrancar."""
-    assert _filtros()["holders"]["max_edad_seg"] <= 300
+def test_exigir_ver_nacer_cuesta_poco_con_el_tope_que_haya() -> None:
+    """Exigir haber visto nacer la moneda solo quita candidatas durante los
+    primeros `max_edad_seg` segundos despues de arrancar el bot: pasado ese
+    rato, cualquier moneda lo bastante joven nacio con el bot escuchando.
+
+    Con el tope en 20 minutos (19-sep) esa ventana ciega del arranque es de 20
+    minutos, no de 5. Sigue siendo una vez por arranque, pero conviene saberlo:
+    justo despues de un reinicio el bot compra menos.
+    """
+    tope = _filtros()["holders"]["max_edad_seg"]
+    assert tope <= 3600, "por encima de una hora la ventana ciega ya pesa"
 
 
 # --------------------------------------------------- las dos, y solo las dos
@@ -233,8 +240,10 @@ def test_es_la_unica_fuente_encendida() -> None:
 
 def test_los_dos_numeros_son_los_pedidos() -> None:
     h = _filtros()["holders"]
-    assert h["min_holders"] == 90
-    assert h["max_edad_seg"] == 300
+    # Historial de estos dos numeros, para que un cambio sea siempre
+    # deliberado: 99/5min (19-sep) -> 90/5min -> 60/20min, todos pedidos.
+    assert h["min_holders"] == 60
+    assert h["max_edad_seg"] == 1200
     assert h["buy_amount"] == 0.12
 
 
@@ -385,3 +394,54 @@ def test_el_embudo_cuenta_monedas_y_no_veces() -> None:
         _poblar(MINT, 10, creacion=True)
         _revisa(f, [MINT])
     assert f._embudo["vistas"] == 1
+
+
+def test_no_queda_ningun_filtro_que_pueda_descartar() -> None:
+    """"Que no haya mas restricciones", pedido el 19-sep.
+
+    No basta con no anadir ninguna: hay que comprobar que no quede viva una de
+    las que ya estaban. Asi estuvo el bot dias encendido sin comprar --por
+    `max_buy_age: 0` y por el tope global de titular-- sin que nada lo dijera.
+
+    Este test recorre TODOS los ajustes del camino de compra y exige que esten
+    a cero o apagados. Si alguien enciende uno, salta y tiene que decirlo.
+    """
+    f = _filtros()
+    numericos = (
+        "no_repeat_name_min", "min_volumen_sol", "max_volumen_sol", "min_buys",
+        "min_ops", "min_presion_ratio", "max_first_block_pct",
+        "ultimas_tx_compra", "min_titulares", "max_titulares",
+        "min_vol_ventana_sol", "max_mc_por_sol_curva", "max_entry_mc",
+        "min_entry_mc", "min_buy_age", "max_buy_age", "min_curve_sol",
+        "min_holders_gmgn", "max_holder_pct", "min_holders",
+        "max_dev_hold_pct", "min_dev_hold_pct", "max_bundle_pct",
+        "min_supply_en_manos",
+    )
+    vivos = [k for k in numericos if f.get(k, 0)]
+    assert not vivos, f"estos filtros pueden descartar monedas: {vivos}"
+
+    assert f["ignorar_listas_de_devs"] is True, "las listas de devs descartan"
+    assert f["allow_mayhem"] is True, "las mayhem se descartarian"
+    assert f.get("require_mayhem") is False
+    assert f.get("redes_originales") is False
+    assert not f.get("senal_gmgn")
+    for bloque in ("pumpfun_dev", "dev_elite", "second_wave"):
+        assert not (f.get(bloque) or {}).get("enabled"), f"{bloque} activo"
+    assert not (f.get("dev_buy") or {}).get("min_sol")
+
+
+def test_dexscreener_no_puede_bloquear_aunque_este_encendido() -> None:
+    """Está `enabled: true` y `enforce: true`, que asusta al leerlo.
+
+    No bloquea: con TODOS sus criterios a cero, `_needs_market_data` es False,
+    así que ni llega a consultar la API y no hay nada que pueda fallar. Queda
+    escrito aquí para no volver a perseguirlo cada vez que se revisa por qué no
+    compra.
+    """
+    dx = _filtros()["dexscreener"]
+    criterios = (
+        dx.get("require_listed"), dx.get("require_dex_paid"),
+        dx.get("min_boosts"), dx.get("min_liquidity_usd"),
+        dx.get("min_market_cap"), dx.get("max_market_cap"),
+    )
+    assert not any(criterios), f"DexScreener tiene criterios vivos: {criterios}"

@@ -604,7 +604,7 @@ filters:
     max_holder_pct_sin_historia: 0.25
     heartbeat_interval: 300
 
-  # ESTRATEGIA ACTIVA: 90 TITULARES Y MENOS DE 5 MINUTOS.
+  # ESTRATEGIA ACTIVA: 60 TITULARES Y MENOS DE 20 MINUTOS.
   #
   # Lo pedido, literal: "que me compre cuando haya 99 holders en una moneda y
   # que tenga menos de cinco minutos de creacion, solo esas dos condiciones,
@@ -625,9 +625,9 @@ filters:
     # Carteras DISTINTAS que han comprado y no han soltado, contadas del
     # stream (no de un indexador: eso tardaria segundos y a esta edad ni
     # conoce la mitad de las monedas).
-    min_holders: 90
-    # Cinco minutos.
-    max_edad_seg: 300
+    min_holders: 60
+    # Veinte minutos (19-sep; antes cinco).
+    max_edad_seg: 1200
     buy_amount: 0.12
     heartbeat_interval: 300
 
