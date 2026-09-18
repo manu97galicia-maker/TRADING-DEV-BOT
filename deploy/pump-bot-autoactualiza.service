@@ -1,0 +1,14 @@
+# Trae los cambios de GitHub y reinicia el bot solo si hay algo nuevo.
+# Lo dispara el timer de al lado. Ver deploy/autoactualiza.sh para el porque.
+[Unit]
+Description=Auto-actualiza el Pump Bot desde GitHub
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/ai-bot
+ExecStart=/usr/bin/bash /root/ai-bot/deploy/autoactualiza.sh
+StandardOutput=append:/root/ai-bot/logs/autoactualiza.log
+StandardError=append:/root/ai-bot/logs/autoactualiza.log

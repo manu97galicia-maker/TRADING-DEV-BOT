@@ -223,6 +223,51 @@ def _listener(cfg: dict, texto_env: str) -> None:
         )
 
 
+def _autoactualiza() -> None:
+    """Si el droplet se trae los cambios solo, y cuando lo hizo por ultima vez.
+
+    UN AUTOMATISMO QUE NADIE COMPRUEBA ES UN AUTOMATISMO CAIDO. En agosto el
+    bot estuvo OCHO DIAS parado sin que nadie se enterara. Con el temporizador
+    pasa igual pero peor: mientras parece que todo llega solo, el bot puede
+    llevar semanas corriendo codigo viejo.
+    """
+    print("\n== SE ACTUALIZA SOLO? ==")
+    try:
+        activo = subprocess.run(
+            ["/usr/bin/systemctl", "is-active", "pump-bot-autoactualiza.timer"],
+            capture_output=True, text=True, timeout=10, check=False,
+        ).stdout.strip()
+    except Exception:  # noqa: BLE001
+        aviso("no pude preguntar por el temporizador")
+        return
+
+    if activo != "active":
+        aviso(
+            "el temporizador NO esta activo: los cambios de GitHub no llegan "
+            "solos. Se enciende con: bash /root/ai-bot/deploy/arranca.sh"
+        )
+        return
+    bien("temporizador activo: los cambios llegan solos cada 10 min")
+
+    registro = Path("logs") / "autoactualiza.log"
+    if not registro.exists():
+        aviso("todavia no ha corrido ninguna vez")
+        return
+    try:
+        lineas = [x for x in registro.read_text(encoding="utf-8").splitlines() if x]
+    except OSError:
+        return
+    ultima = next(
+        (x for x in reversed(lineas) if x.startswith("Actualizado:")), ""
+    )
+    if ultima:
+        bien(f"ultimo cambio traido: {ultima.removeprefix('Actualizado: ')}")
+    elif any(x.startswith("PULL FALLIDO") for x in lineas[-20:]):
+        mal("el ultimo intento de traer cambios FALLO: mirar logs/autoactualiza.log")
+    else:
+        bien("corriendo, sin cambios nuevos que traer")
+
+
 def _secretos_sueltos() -> None:
     """Ficheros que NO pueden acabar en GitHub, y basura que estorba.
 
@@ -366,6 +411,7 @@ def main() -> None:
     try:
         cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
         _listener(cfg, env.read_text(encoding="utf-8") if env else "")
+        _autoactualiza()
         _secretos_sueltos()
         _modo(cfg)
         _estrategia(cfg)

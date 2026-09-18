@@ -29,14 +29,25 @@ echo "== 2/4 COMANDOS CORTOS =="
 bash deploy/instalar_comandos.sh
 
 echo
-echo "== 3/4 REINICIANDO EL BOT =="
+echo "== 3/5 QUE SE ACTUALICE SOLO =="
+# A partir de aqui no hace falta volver a escribir nada: cada cambio llega
+# solo en menos de diez minutos.
+cp deploy/pump-bot-autoactualiza.service /etc/systemd/system/
+cp deploy/pump-bot-autoactualiza.timer   /etc/systemd/system/
+mkdir -p "$RAIZ/logs"
+systemctl daemon-reload
+systemctl enable --now pump-bot-autoactualiza.timer \
+  && echo "  temporizador activo: se trae los cambios cada 10 min"
+
+echo
+echo "== 4/5 REINICIANDO EL BOT =="
 systemctl restart pump-bot && echo "  reiniciado"
 
 # Un momento para que arranque y escriba sus primeras lineas.
 sleep 3
 
 echo
-echo "== 4/4 ESTADO =="
+echo "== 5/5 ESTADO =="
 bot
 
 echo

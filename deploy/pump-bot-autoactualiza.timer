@@ -1,0 +1,12 @@
+# Cada 10 minutos. Es el retraso maximo entre que se empuja un cambio y llega
+# al droplet, y el precio de no tener que escribir nada desde el movil.
+[Unit]
+Description=Comprobar cada 10 min si hay cambios que traer
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+Unit=pump-bot-autoactualiza.service
+
+[Install]
+WantedBy=timers.target
