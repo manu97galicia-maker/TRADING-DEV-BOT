@@ -16,7 +16,7 @@ set -uo pipefail
 RAIZ=/root/ai-bot
 cd "$RAIZ" || { echo "No existe $RAIZ"; exit 1; }
 
-echo "== 1/4 TRAYENDO LO NUEVO =="
+echo "== 1/5 TRAYENDO LO NUEVO =="
 git pull --no-edit || {
   echo
   echo "El pull fallo. Si habla de un merge sin terminar:"
@@ -25,7 +25,7 @@ git pull --no-edit || {
 }
 
 echo
-echo "== 2/4 COMANDOS CORTOS =="
+echo "== 2/5 COMANDOS CORTOS =="
 bash deploy/instalar_comandos.sh
 
 echo
@@ -73,9 +73,10 @@ journalctl -u pump-bot --since "-2 min" --no-pager 2>/dev/null \
 
 echo
 echo "== QUE FUENTE ESTA COMPRANDO =="
-# Lo que de verdad hay que ver: UNA sola fuente activa, y que sea la de
-# presion. Mas de una linea aqui significa que el pull no entro.
+# Lo que de verdad hay que ver: UNA sola linea, y que diga "holders". Mas de
+# una significa que hay varias estrategias comprando a la vez; ninguna, que el
+# pull no entro y el bot sigue con la configuracion de antes.
 journalctl -u pump-bot --since "-2 min" --no-pager 2>/dev/null \
-  | grep -iE "acquisition ENABLED|PRESIÓN COMPRADORA ACTIVA" \
+  | grep -iE "acquisition ENABLED|99 TITULARES ACTIVA" \
   | sed 's/^/  /' \
   || echo "  (aun sin lineas; espera un minuto y escribe:  bot)"
