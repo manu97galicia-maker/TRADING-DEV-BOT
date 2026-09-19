@@ -304,16 +304,33 @@ def test_no_se_mide_ningun_dev() -> None:
     assert not f.get("dev_buy", {}).get("min_sol", 0)
 
 
-def test_las_mayhem_ya_no_se_descartan() -> None:
-    """Era una tercera condicion que nadie pidio, y se comia monedas que
-    cumplian las dos sin decir nada.
+def test_solo_monedas_de_pumpfun_normales() -> None:
+    """Pedido en claro el 19-sep: "solo moneda de pumpfun normal".
 
-    No afloja ningun riesgo de la moneda: mayhem es un modo de pump.fun que
-    cambia a quien van las comisiones, y el bot ya sabe mandarlas donde toca.
+    IDA Y VUELTA DE ESTE AJUSTE, anotada para que no se mueva sin querer:
+    estuvo en false siempre; se puso en true ese mismo dia al repasar filtros,
+    porque estaba descartando monedas en silencio sin que nadie lo hubiera
+    pedido; y volvio a false cuando Manu lo pidio explicitamente.
+
+    La leccion: aquel repaso buscaba que nada descartara A ESPALDAS suyas, no
+    que se comprara de todo. Un filtro pedido es distinto de un filtro
+    heredado.
     """
     f = _filtros()
-    assert f["allow_mayhem"] is True
+    assert f["allow_mayhem"] is False
     assert f["require_mayhem"] is False
+
+
+def test_tampoco_se_compran_monedas_ya_migradas() -> None:
+    """La otra forma de no ser "normal": haber salido de la curva.
+
+    Una migrada ya no se compra por la curva sino por un pool de PumpSwap, que
+    es otro camino entero. La fuente lo corta en origen.
+    """
+    fuente = (
+        Path(__file__).resolve().parent.parent / "src/monitoring/holders_source.py"
+    ).read_text(encoding="utf-8")
+    assert "permitir_migradas=False" in fuente
 
 
 # ------------------------------------ se compra el CRUCE, no el estado
@@ -423,7 +440,10 @@ def test_no_queda_ningun_filtro_que_pueda_descartar() -> None:
     assert not vivos, f"estos filtros pueden descartar monedas: {vivos}"
 
     assert f["ignorar_listas_de_devs"] is True, "las listas de devs descartan"
-    assert f["allow_mayhem"] is True, "las mayhem se descartarian"
+    # `allow_mayhem` NO se comprueba aqui: descartar las mayhem es una
+    # condicion PEDIDA ("solo moneda de pumpfun normal"), no una heredada. Este
+    # test existe para cazar filtros que nadie pidio, y tiene su propio test
+    # mas arriba.
     assert f.get("require_mayhem") is False
     assert f.get("redes_originales") is False
     assert not f.get("senal_gmgn")

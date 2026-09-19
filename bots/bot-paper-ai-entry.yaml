@@ -385,16 +385,19 @@ filters:
   max_token_age: 120
   max_buy_age: 0
   min_buy_age: 0
-  # MAYHEM. En false el bot DESCARTA las monedas en modo mayhem de
-  # pump.fun, y eso era una tercera condicion que nadie pidio: se comian
-  # monedas que cumplian las dos reglas sin decir nada. Con la estrategia
-  # de 99 titulares ("solo esas dos condiciones") pasa a true.
+  # SOLO MONEDAS DE PUMP.FUN NORMALES (19-sep, pedido por Manu). En false el
+  # bot descarta las que van en modo mayhem.
   #
-  # Que cambia de verdad: nada del riesgo de la moneda. Mayhem es un modo
-  # de pump.fun que cambia a quien van las comisiones; el bot ya sabe
-  # mandarlas donde toca. Se compra con los mismos 0,07 SOL, porque
-  # `mayhem_buy_amount` esta a 0 y manda el importe de la senal.
-  allow_mayhem: true
+  # IDA Y VUELTA DE ESTA LINEA, para que no se vuelva a mover sin querer:
+  #   false -> siempre
+  #   true  -> el 19-sep, al repasar filtros: estaba descartando monedas en
+  #            silencio sin que nadie lo hubiera pedido, con la estrategia de
+  #            "solo dos condiciones".
+  #   false -> el mismo dia, pedido en claro: "solo moneda de pumpfun normal".
+  #
+  # Lo pedido manda: el repaso de filtros buscaba que nada descartara A
+  # ESPALDAS de Manu, no que se comprara de todo.
+  allow_mayhem: false
   require_mayhem: false
   marry_mode: false
   yolo_mode: true
