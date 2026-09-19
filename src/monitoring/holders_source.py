@@ -50,6 +50,11 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+
+def _sin_etiquetas(texto: str) -> str:
+    """Quita el <b> de Telegram para que el parte se lea igual en el log."""
+    return texto.replace("<b>", "").replace("</b>", "")
+
 #: Monedas recordadas como "ya decidida". Se decide UNA vez por moneda: sin
 #: esto, una que cruza el corte lo seguiria cruzando en cada operacion.
 _MAX_RECORDADAS = 20_000
@@ -65,11 +70,24 @@ def build_holders_heartbeat(
     min_holders: int, max_edad_seg: float, buy_amount: float, embudo: dict[str, int],
     *, paper_mode: bool,
 ) -> str:
-    """Parte periodico para Telegram: el embudo entero, no solo el final.
+    """Parte periodico: el embudo entero, no solo el final.
 
     "0 compradas" puede ser que no llegue nada o que llegue y se caiga todo por
     el camino, y son problemas opuestos con arreglos opuestos.
+
+    LLEVA ADEMAS LAS DOS MEDIDAS QUE FALTABAN, porque "el numero de titulares
+    tarda muchisimo" tiene tres causas posibles y sin datos no se distinguen:
+
+    * el RETRASO dice si los datos llegan tarde, en cuyo caso el recuento es
+      exacto pero de hace segundos. Contar titulares esta medido en 0,03 ms,
+      asi que lo lento nunca es contar;
+    * las monedas BORRADAS POR TOPE dicen si la memoria se queda corta, que es
+      lo que hace que a una moneda el recuento le vuelva a empezar en cero;
+    * y si esas dos salen bien, entonces las monedas sencillamente tardan en
+      juntar titulares y lo que hay que mover es el corte.
     """
+    p50, p95, muestras = volumen.retraso()
+    mem = volumen.estado_memoria()
     return "\n".join([
         "👥 <b>TITULARES</b>",
         f"Disparo: <b>{min_holders}</b> titulares · menos de "
@@ -84,6 +102,11 @@ def build_holders_heartbeat(
         f"  ↳ sin datos de presión: {embudo.get('sin_datos_presion', 0)}",
         f"  ↳ sin ver su creación (edad desconocida): {embudo.get('sin_historia', 0)}",
         f"  ↳ <b>comprables: {embudo.get('comprables', 0)}</b>",
+        f"⏱️ Retraso del stream: <b>{p50:.0f}s</b> (p95 {p95:.0f}s, "
+        f"{muestras} muestras)",
+        f"🧠 Memoria: {mem['monedas']}/{mem['tope']} monedas · "
+        f"{mem['ventana_seg'] // 60} min · borradas por tope: "
+        f"<b>{mem['por_tope']}</b>",
         f"Modo: {'PAPER' if paper_mode else 'REAL'}",
     ])
 
@@ -182,9 +205,7 @@ class HoldersSource:
         cuanto hace que se la mira, que en una moneda de dos horas pueden ser
         diez segundos. Devolver ese numero seria comprar creyendo que es nueva.
         """
-        if not volumen.vio_la_creacion(mint):
-            return None
-        return float(volumen.metricas_segunda_ola(mint).get("edad", 0.0) or 0.0)
+        return volumen.edad(mint)
 
     # ---------------------------------------------------------------- decidir
 
@@ -347,13 +368,19 @@ class HoldersSource:
         if ahora - self._last_heartbeat < self.heartbeat_interval:
             return
         self._last_heartbeat = ahora
+        parte = build_holders_heartbeat(
+            self.min_holders, self.max_edad_seg, self.buy_amount,
+            self._embudo, paper_mode=self.paper_mode,
+        )
+        # AL LOG SIEMPRE. El embudo es el unico diagnostico que hay para saber
+        # POR QUE no se compra, y se estaba calculando para mandarlo solo a
+        # Telegram... que esta apagado a peticion. O sea que se tiraba justo
+        # cuando hacia falta.
+        logger.info("Parte de titulares:\n%s", _sin_etiquetas(parte))
         try:
-            from monitoring.notifier import notify
+            from monitoring.notifier import notify  # noqa: PLC0415
 
-            notify(build_holders_heartbeat(
-                self.min_holders, self.max_edad_seg, self.buy_amount,
-                self._embudo, paper_mode=self.paper_mode,
-            ))
+            notify(parte)
         except Exception:  # noqa: BLE001, S110
             pass
 
@@ -450,6 +477,11 @@ class HoldersSource:
     async def run(self, token_callback: Callable[[TokenInfo], Awaitable[None]]) -> None:
         """Escucha la cadena y compra las que cumplen las dos condiciones."""
         program_id = str(self._impls.event_parser.get_program_id())
+        # Que el stream recuerde al menos lo que dura la ventana de compra. Sin
+        # esto guardaba cinco minutos mientras la ventana era de veinte: a las
+        # monedas que borraba en marcha les volvia el recuento de titulares a
+        # cero y ademas quedaban descartadas para siempre por "sin historia".
+        volumen.configurar_memoria(self.max_edad_seg)
         logger.info(
             "TITULARES ACTIVA: dispara con %d titulares y menos de %.0f min "
             "de vida, %.4f SOL, solo pump.fun (programa %s). SIN anti-bundle.",

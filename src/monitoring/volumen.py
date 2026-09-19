@@ -26,7 +26,7 @@ import base64
 import hashlib
 import struct
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 
 from utils.logger import get_logger
 
@@ -101,8 +101,67 @@ _LAMPORTS = 10**9
 
 #: Sin esto la memoria crece sin limite: pump.fun lanza miles de monedas al dia
 #: y el bot esta pensado para correr semanas seguidas.
+#:
+#: NO SE TOCAN A MANO: los pone `configurar_memoria()` al arrancar, a partir de
+#: la ventana de compra que tenga puesta la estrategia. El 19-sep esa ventana
+#: subio a 20 minutos y estos dos se quedaron en 5, asi que el bot prometia
+#: mirar veinte minutos con datos de cinco: a las monedas que se le borraban en
+#: marcha el recuento de titulares les volvia a CERO, que es exactamente la
+#: queja de "el numero de holders tarda muchisimo".
 _MAX_MINTS = 4000
 _VIDA = 300.0  # segundos que interesa recordar de cada moneda
+
+#: Cada cuanto se pasa la escoba. Antes corria en CADA notificacion y, con la
+#: memoria llena, eso es recorrer y ordenar miles de monedas por cada operacion
+#: de pump.fun: medido, 0,46 ms, o sea ~14% de un nucleo tirado. Nada de lo que
+#: se limpia caduca en milisegundos, asi que cada dos segundos sobra.
+_CADA_CUANTO_LIMPIA = 2.0
+_ultima_limpieza = 0.0
+
+#: TOPE DURO DE MEMORIA, en operaciones guardadas entre todas las monedas.
+#:
+#: El tope de MONEDAS no basta: una moneda tranquila ocupa treinta operaciones
+#: y una que se pone de moda llega a `_MAX_OPS_POR_MONEDA` (1.200). Contando
+#: solo monedas, un dia movido cabria en el limite y aun asi se comeria varios
+#: GB. El droplet tiene 1 GB y un OOM mata el bot CON POSICIONES ABIERTAS, que
+#: es la peor forma de fallar que tiene esto.
+#:
+#: Medido con tracemalloc: ~89 bytes por operacion, asi que 1,5 M de
+#: operaciones son ~130 MB. Al pasarse se sueltan las monedas mas paradas, que
+#: es degradar; quedarse sin memoria no es degradar.
+_MAX_OPS_TOTAL = 1_500_000
+
+#: Cuantas monedas se han borrado, y por que. Lo lee el parte periodico: si las
+#: borradas POR TOPE dejan de ser cero, la memoria se ha quedado corta y el bot
+#: esta perdiendo monedas que todavia estaba mirando.
+_borradas_viejas = 0
+_borradas_por_tope = 0
+
+#: mint -> (momento del primer TradeEvent visto, si se le vieron las reservas
+#: llenas). SOBREVIVE a `_olvidar()` a proposito, y es lo unico que lo hace.
+#:
+#: POR QUE. Sin esto, a una moneda borrada por falta de sitio le pasan dos
+#: cosas y las dos malas: su edad vuelve a contarse desde cero --una moneda de
+#: quince minutos parece recien nacida-- y pierde el "se le vio nacer", con lo
+#: que `vio_la_creacion()` da False, la fuente de titulares la descarta como
+#: "sin_historia" y ya no se puede comprar NUNCA, por mucho que despues junte
+#: doscientos titulares.
+#:
+#: Cuesta ~150 bytes por moneda, contra los ~83 bytes POR OPERACION que cuesta
+#: el historial entero. Por eso se puede recordar mucho mas tiempo que el resto.
+_nacimiento: dict[str, tuple[float, bool]] = {}
+_MAX_NACIMIENTOS = 60_000
+
+#: RETRASO DEL STREAM: segundos entre que la cadena produce una operacion y el
+#: bot la digiere. Sale GRATIS y hasta ahora se estaba tirando -- cada
+#: TradeEvent trae SU PROPIA marca de tiempo (byte 81 del cuerpo: mint 32 +
+#: sol 8 + tokens 8 + is_buy 1 + user 32), que es la de la CADENA, no la del
+#: reloj de aqui.
+#:
+#: Resolucion de 1 segundo, que es como va la marca: sirve para saber si vamos
+#: seis segundos por detras, no para afinar milisegundos.
+_OFFSET_TS = 81
+_retrasos: deque[float] = deque(maxlen=2000)
 
 #: Tope de operaciones guardadas por moneda. Una que llega al final de su curva
 #: acumula decenas de miles y la lista era lo unico que crecia sin limite. Se
@@ -114,17 +173,91 @@ _MAX_OPS_POR_MONEDA = 1200
 _OPS_INICIALES = 200
 
 
-def _limpiar() -> None:
-    if len(_ops) <= _MAX_MINTS:
+def configurar_memoria(ventana_de_compra: float, margen: float = 1.5) -> None:
+    """Recordar de cada moneda al menos lo que dura la ventana de compra.
+
+    LO QUE ARREGLA. `_VIDA` estaba escrito a mano en cinco minutos. Cuando la
+    ventana de compra subio a veinte, el bot empezo a borrar en marcha monedas
+    que todavia estaba mirando: volvian a cero titulares y, peor, perdian el
+    "se le vio nacer", que las deja descartadas para siempre. Ahora el limite
+    lo pone quien conoce la ventana, no un numero suelto en este fichero.
+
+    Args:
+        ventana_de_compra: Segundos de vida que la estrategia acepta comprar.
+        margen: Multiplicador de seguridad. Una moneda puede pasarse un rato
+            sin operar y volver; si se la olvida justo antes de volver, se
+            pierde entera.
+    """
+    global _VIDA, _MAX_MINTS  # noqa: PLW0603
+    nueva = max(float(ventana_de_compra) * float(margen), 300.0)
+    if nueva <= _VIDA:
         return
-    corte = time.time() - _VIDA
-    muertos = [m for m, v in _ops.items() if not v or v[-1][0] < corte]
-    for m in muertos:
-        _olvidar(m)
-    # Si aun asi no baja (mucha moneda viva a la vez), se tira lo mas antiguo.
+    # El tope de monedas tiene que crecer con la ventana o vuelve a ser EL que
+    # borra: recordar veinte minutos en hueco para cuatro mil no recuerda
+    # veinte minutos. Medido con tracemalloc, ~83 bytes por operacion
+    # compartiendo cadenas (ver el cache de `_b58`), asi que sale del orden de
+    # 80 MB. El droplet tiene 1 GB.
+    _MAX_MINTS = max(_MAX_MINTS, int(4000 * nueva / 300.0))
+    _VIDA = nueva
+    logger.info(
+        "Memoria del stream: se recuerdan %.0f min por moneda, hasta %d monedas "
+        "(ventana de compra %.0f min)",
+        nueva / 60, _MAX_MINTS, float(ventana_de_compra) / 60,
+    )
+
+
+def _limpiar() -> None:
+    global _ultima_limpieza, _borradas_viejas, _borradas_por_tope  # noqa: PLW0603
+    # NO EN CADA NOTIFICACION. Con la memoria llena esto recorre y ordena miles
+    # de monedas, y se llamaba una vez por operacion de pump.fun.
+    ahora = time.time()
+    if ahora - _ultima_limpieza < _CADA_CUANTO_LIMPIA:
+        return
+    _ultima_limpieza = ahora
     if len(_ops) > _MAX_MINTS:
-        for m in sorted(_ops, key=lambda k: _ops[k][-1][0])[: len(_ops) - _MAX_MINTS]:
+        corte = ahora - _VIDA
+        muertos = [m for m, v in _ops.items() if not v or v[-1][0] < corte]
+        for m in muertos:
             _olvidar(m)
+        _borradas_viejas += len(muertos)
+        # Si aun asi no baja (mucha moneda viva a la vez), se tira lo mas
+        # parado.
+        if len(_ops) > _MAX_MINTS:
+            sobran = len(_ops) - _MAX_MINTS
+            for m in sorted(_ops, key=lambda k: _ops[k][-1][0])[:sobran]:
+                _olvidar(m)
+            _borradas_por_tope += sobran
+    # FUERA del `if` de arriba a proposito: el tope de memoria NO depende de
+    # cuantas monedas haya. Pocas monedas muy activas ocupan mas que muchas
+    # tranquilas, y comprobarlo solo al pasarse el tope de monedas dejaba el
+    # presupuesto sin vigilar justo en ese caso.
+    _borradas_por_tope += _respetar_el_tope_de_memoria()
+
+
+def _respetar_el_tope_de_memoria() -> int:
+    """Suelta monedas paradas hasta bajar del presupuesto de operaciones.
+
+    Devuelve cuantas ha soltado. Contar monedas no acota la memoria: lo que
+    ocupa son las OPERACIONES, y una moneda de moda guarda cuarenta veces mas
+    que una tranquila. Ver `_MAX_OPS_TOTAL`.
+    """
+    total = sum(len(v) for v in _ops.values())
+    if total <= _MAX_OPS_TOTAL:
+        return 0
+    soltadas = 0
+    for m in sorted(_ops, key=lambda k: _ops[k][-1][0]):
+        if total <= _MAX_OPS_TOTAL:
+            break
+        total -= len(_ops[m])
+        _olvidar(m)
+        soltadas += 1
+    logger.warning(
+        "Memoria del stream al tope: se sueltan %d monedas paradas. Si esto "
+        "sale a menudo, la ventana de compra no cabe y hay monedas que se "
+        "quedan sin comprar.",
+        soltadas,
+    )
+    return soltadas
 
 
 def _olvidar(mint: str) -> None:
@@ -139,6 +272,9 @@ def _olvidar(mint: str) -> None:
     # Olvidar el precio no deja ninguna posicion a ciegas: `precio_en_vivo`
     # devuelve None y quien lo use vuelve a preguntar al nodo.
     _precio.pop(mint, None)
+    # `_nacimiento` NO se toca aqui, y es lo unico que sobrevive. Sin el, una
+    # moneda borrada por falta de sitio miente sobre su edad y queda marcada
+    # como "sin historia" de por vida. Ver su comentario mas arriba.
 
 
 def registrar_bloque_inicial(mint: str, slot: int | None) -> None:
@@ -193,6 +329,7 @@ def registrar_logs(logs: list[str], slot: int | None = None) -> list[str]:
             sol = sol_lamports / 1e9
             _ops[mint].append((ahora, sol, es_compra, wallet))
             _recortar(mint)
+            _anotar_nacimiento(mint, _marca_de_la_cadena(cuerpo, ahora))
             if mint not in tocadas:
                 tocadas.append(mint)
             if len(cuerpo) >= _LARGO_RESERVAS:
@@ -214,6 +351,11 @@ def registrar_logs(logs: list[str], slot: int | None = None) -> list[str]:
                 previo = _curva.get(mint)
                 tope = max(tokens_real, previo[3]) if previo else tokens_real
                 _curva[mint] = (ahora, tokens_real, sol_real, tope)
+                if tope >= RESERVA_TOKENS_INICIAL * 0.99:
+                    # Se la vio con la curva llena: se la vio NACER. Queda
+                    # apuntado en el sitio que sobrevive al borrado.
+                    _nac = _nacimiento.get(mint)
+                    _nacimiento[mint] = ((_nac[0] if _nac else ahora), True)
             if slot is not None:
                 _anotar_primer_bloque(mint, int(slot), sol, wallet, es_compra=es_compra)
         except Exception:  # noqa: BLE001
@@ -245,6 +387,50 @@ def _anotar_primer_bloque(
     _first_slot_sol[mint] += sol
     if wallet:
         _first_slot_wallets[mint].add(wallet)
+
+
+#: Retraso maximo que se considera creible. Por encima no es retraso: es un
+#: reloj descuadrado en el droplet o una operacion vieja reprocesada, y contarlo
+#: estropearia justo el numero con el que se va a decidir.
+_RETRASO_CREIBLE = 600.0
+
+
+def _marca_de_la_cadena(cuerpo: bytes, ahora: float) -> float:
+    """Cuando ocurrio de verdad la operacion, y de paso apunta el retraso.
+
+    La marca es de la CADENA, asi que `ahora - marca` mide el camino entero
+    --validador, nodo RPC, websocket, este bucle-- y no el reloj de aqui contra
+    si mismo. Es la medida que faltaba: contar titulares esta medido en 0,03 ms
+    y no puede ser lo lento, asi que si el bot va tarde es porque los datos
+    llegan tarde. Es lo unico que distingue eso de "las monedas tardan en
+    juntar gente", que se arreglan al reves.
+
+    Y LA EDAD SE CUENTA DESDE AQUI, no desde que llego el dato: si no, una
+    moneda cuya creacion llega con retraso parece recien nacida justo cuando el
+    bot va tarde, y un error tapaba al otro.
+    """
+    if len(cuerpo) < _OFFSET_TS + 8:
+        return ahora
+    ts_cadena = float(struct.unpack_from("<q", cuerpo, _OFFSET_TS)[0])
+    atraso = ahora - ts_cadena
+    if not 0.0 <= atraso <= _RETRASO_CREIBLE:
+        return ahora
+    _retrasos.append(atraso)
+    return ts_cadena
+
+
+def _anotar_nacimiento(mint: str, nacio: float) -> None:
+    """Primera vez que se ve la moneda. No se borra con el resto."""
+    if mint in _nacimiento:
+        return
+    if len(_nacimiento) >= _MAX_NACIMIENTOS:
+        # Se tira la mitad mas antigua de golpe: recortar de uno en uno a cada
+        # moneda nueva seria ordenar sesenta mil entradas por operacion.
+        for viejo in sorted(_nacimiento, key=lambda k: _nacimiento[k][0])[
+            : _MAX_NACIMIENTOS // 2
+        ]:
+            del _nacimiento[viejo]
+    _nacimiento[mint] = (nacio, False)
 
 
 def _recortar(mint: str) -> None:
@@ -377,10 +563,71 @@ def vio_la_creacion(mint: str) -> bool:
     con la moneda ya en marcha, esos contadores valen cero y darian el visto
     bueno a un bundle por no haberlo visto.
     """
+    nac = _nacimiento.get(mint)
+    if nac and nac[1]:
+        # Se le vieron las reservas llenas en algun momento. Vale AUNQUE el
+        # historial se haya borrado despues por falta de sitio: eso no deshace
+        # haberla visto nacer, y antes si lo deshacia.
+        return True
     datos = _curva.get(mint)
     if not datos:
         return False
     return datos[3] >= RESERVA_TOKENS_INICIAL * 0.99
+
+
+def edad(mint: str) -> float | None:
+    """Segundos de vida, o None si no se vio nacer la moneda.
+
+    Se mira `_nacimiento`, que sobrevive a que se borre el historial: si se
+    usara la primera operacion guardada, una moneda de quince minutos a la que
+    se le limpio la lista pareceria recien nacida -- y se compraria por nueva.
+    """
+    if not vio_la_creacion(mint):
+        return None
+    nac = _nacimiento.get(mint)
+    if nac:
+        return max(0.0, time.time() - nac[0])
+    # Sin nacimiento apuntado se cae a la primera operacion guardada, que es lo
+    # de siempre. Solo pasa si alguien llena `_ops` sin pasar por
+    # `registrar_logs`; los tests lo hacen.
+    ops = _ops.get(mint)
+    if not ops:
+        return 0.0
+    return max(0.0, time.time() - ops[0][0])
+
+
+def retraso() -> tuple[float, float, int]:
+    """(mediana, percentil 95, muestras) del retraso del stream, en segundos.
+
+    Es el tiempo entre que la cadena produce una operacion y el bot la digiere.
+    Si sale alto, el recuento de titulares es exacto pero de hace varios
+    segundos, y no hay filtro que arregle eso.
+    """
+    if not _retrasos:
+        return (0.0, 0.0, 0)
+    orden = sorted(_retrasos)
+    return (
+        orden[len(orden) // 2],
+        orden[min(len(orden) - 1, int(len(orden) * 0.95))],
+        len(orden),
+    )
+
+
+def estado_memoria() -> dict[str, int]:
+    """Cuantas monedas se recuerdan y cuantas se han tenido que borrar.
+
+    `por_tope` distinto de cero significa que la memoria se ha quedado corta:
+    el bot esta olvidando monedas que todavia estaba mirando, y a esas el
+    recuento de titulares les vuelve a empezar en cero.
+    """
+    return {
+        "monedas": len(_ops),
+        "tope": _MAX_MINTS,
+        "ventana_seg": int(_VIDA),
+        "borradas_viejas": _borradas_viejas,
+        "por_tope": _borradas_por_tope,
+        "nacimientos": len(_nacimiento),
+    }
 
 
 def carteras_primer_bloque(mint: str) -> int:
@@ -509,7 +756,10 @@ def metricas_segunda_ola(
             ola_venta += sol
 
     return {
-        "edad": max(0.0, instante - ops[0][0]),
+        # Del nacimiento apuntado aparte, no de la primera operacion que
+        # quede en la lista: esa se puede haber borrado, y entonces una moneda
+        # vieja pareceria recien nacida.
+        "edad": _edad_desde_nacimiento(mint, instante, ops[0][0]),
         "compras": compras_total,
         "compradores": len(compradores),
         "neto_sol": compra_total - venta_total,
@@ -522,10 +772,34 @@ def metricas_segunda_ola(
     }
 
 
+def _edad_desde_nacimiento(mint: str, instante: float, primera_op: float) -> float:
+    nac = _nacimiento.get(mint)
+    return max(0.0, instante - (nac[0] if nac else primera_op))
+
+
 _ALFA = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+#: Cache de base58. Las mismas pocas centenas de wallets salen una y otra vez,
+#: y cada `_b58` costaba 5,1 us y creaba una cadena NUEVA. Con cache son 0,09 us
+#: y --lo que de verdad importa-- una sola copia en memoria: medido, 83 bytes
+#: por operacion compartiendo cadenas contra casi el doble sin compartir. Es lo
+#: que hace que quepa recordar veinte minutos en un droplet de 1 GB.
+_b58_cache: dict[bytes, str] = {}
+_MAX_B58 = 50_000
 
 
 def _b58(datos: bytes) -> str:
+    cacheado = _b58_cache.get(datos)
+    if cacheado is not None:
+        return cacheado
+    salida = _b58_calcula(datos)
+    if len(_b58_cache) >= _MAX_B58:
+        _b58_cache.clear()
+    _b58_cache[datos] = salida
+    return salida
+
+
+def _b58_calcula(datos: bytes) -> str:
     n = int.from_bytes(datos, "big")
     salida = ""
     while n > 0:
