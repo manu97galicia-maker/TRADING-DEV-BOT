@@ -123,11 +123,11 @@ trade:
   # reparto ya no es la mitad exacta (32,7 de un 65% restante), y es correcto:
   # manda lo pedido ahora.
   take_profit_percentage: 0.25
-  take_profit_sell_percentage: 0.10
-  tp2_gain: 0.48
+  take_profit_sell_percentage: 0
+  tp2_gain: 0.50
   tp2_sell: 0.25
   tp3_gain: 0.80
-  tp3_sell: 0.327
+  tp3_sell: 0.379
   # DE AQUI EN ADELANTE, EL RESTO REPARTIDO HASTA x20. Queda el 27,5% de la
   # compra; se deja corriendo el 2% de siempre y los otros 25,5 se reparten
   # en siete peldanos, de mas a menos: llegar a x20 es mucho menos probable
@@ -137,11 +137,11 @@ trade:
   # 1.50 es x2,5 -- no un +150% suelto que se pueda confundir con los de
   # arriba. 19.00 es x20.
   tp4_gain: 1.50   # x2,5
-  tp4_sell: 0.077
+  tp4_sell: 0.089
   tp5_gain: 2.30   # x3,3
-  tp5_sell: 0.065
+  tp5_sell: 0.075
   tp6_gain: 4.00   # x5
-  tp6_sell: 0.053
+  tp6_sell: 0.061
   # PELDANOS LEJANOS. Antes llegaban a x50 y x100; ahora la escalera termina
   # en x20 porque es lo pedido. Consecuencia, dicha en claro: una moneda que
   # pase de x20 ya no tiene peldanos por encima -- lo unico que sigue dentro
@@ -153,13 +153,13 @@ trade:
   # avisa: test_los_peldanos_altos_tienen_tiempo_de_llegar).
   tp_extra:
     - gain: 6.00     # x7
-      sell: 0.042
+      sell: 0.049
     - gain: 9.00     # x10
-      sell: 0.030
+      sell: 0.035
     - gain: 14.00    # x15
-      sell: 0.018
+      sell: 0.021
     - gain: 19.00    # x20
-      sell: 0.018
+      sell: 0.021
   stop_loss_percentage: 0.18
   # EL STOP SE LLEVA LA POSICION ENTERA, moonbag incluido.
   #
@@ -177,6 +177,25 @@ trade:
   # ~0,00204 SOL. Con el 2% dentro no se puede cerrar.
   vender_todo_en_stop: true
   stop_a_entrada_tras_tp: true
+  # AL TOCAR UN ESCALON, EL SUELO SE VA UN 12% POR ENCIMA del
+  # escalon anterior (del precio de compra, en el primero). Pedido:
+  # "si toca tp1 vamos a subir stop loss a precio de compra +12%
+  # asegurando asi ganancias, lo mismo para los demas escalones".
+  #
+  # CON ESTO, TOCAR +25% YA ASEGURA +12% sin haber vendido nada.
+  #
+  # LO QUE OBLIGA, y por eso el TP2 subio de +48% a +50%: el suelo
+  # tiene que quedar por DEBAJO del escalon que acaba de tocarse. Con
+  # el margen al 12%, dos escalones seguidos tienen que distar mas de
+  # un 12%. Con el TP2 en +40% el suelo caia en +40% exacto y la
+  # posicion se cerraba sola en el instante de cumplir su objetivo.
+  #
+  # EL COLCHON MAS APRETADO queda en 6,7% (escalones 2 y 3): eso es lo
+  # que puede caer la moneda tras tocarlos antes de que cierre. En una
+  # memecoin son segundos, asi que cobrar el TP2 o el TP3 y salir sera
+  # lo normal. Es la consecuencia del 12%, no un fallo. Para aflojar,
+  # bajar este numero.
+  margen_stop_tras_tp: 0.12
   stop_al_tp_tras_tp: false
   trailing_stop_percentage: 0
   anti_rug_ratio: 2.0

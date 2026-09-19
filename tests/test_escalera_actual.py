@@ -28,21 +28,25 @@ def _peldanos() -> list[tuple[float, float]]:
         (t["tp6_gain"], t["tp6_sell"]),
         *((e["gain"], e["sell"]) for e in t.get("tp_extra") or []),
     ]
-    return [(g, v) for g, v in pares if g > 0 and v > 0]
+    # SE ACEPTA `v == 0`, igual que `build_tiers`. Este helper filtraba
+    # `v > 0` y con el TP1 a 0% se dejaba fuera el primer escalon, asi que los
+    # tests miraban una escalera distinta de la que corre. Un escalon que no
+    # vende SI existe: dispara la subida del stop.
+    return [(g, v) for g, v in pares if g > 0 and v >= 0]
 
 
 def test_los_peldanos_son_los_pedidos() -> None:
     assert _peldanos() == [
-        (0.25, 0.10),
-        (0.48, 0.25),
-        (0.80, 0.327),  # sigue siendo ~la mitad de lo que queda a esa altura
-        (1.50, 0.077),  # x2,5
-        (2.30, 0.065),  # x3,3
-        (4.00, 0.053),  # x5
-        (6.00, 0.042),  # x7
-        (9.00, 0.030),  # x10
-        (14.00, 0.018),  # x15
-        (19.00, 0.018),  # x20
+        (0.25, 0.0),
+        (0.50, 0.25),
+        (0.80, 0.379),  # sigue siendo ~la mitad de lo que queda a esa altura
+        (1.50, 0.089),  # x2,5
+        (2.30, 0.075),  # x3,3
+        (4.00, 0.061),  # x5
+        (6.00, 0.049),  # x7
+        (9.00, 0.035),  # x10
+        (14.00, 0.021),  # x15
+        (19.00, 0.021),  # x20
     ]
 
 
@@ -78,7 +82,7 @@ def test_los_peldanos_lejanos_cobran_una_salida_de_verdad() -> None:
     """Los de arriba son los que cobran cuando una sale de verdad."""
     lejanos = [(g, v) for g, v in _peldanos() if g >= 1.5]
     assert len(lejanos) == 7
-    assert round(sum(v for _, v in lejanos), 6) == 0.303
+    assert round(sum(v for _, v in lejanos), 6) == 0.351
 
 
 def test_la_escalera_termina_en_x20() -> None:
@@ -136,8 +140,8 @@ def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:
 def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
     """20% al +25%, 25% al +48%, y al +80% la MITAD DE LO QUE QUEDA."""
     cerca = [(g, v) for g, v in _peldanos() if g < 1.5]
-    assert cerca == [(0.25, 0.10), (0.48, 0.25), (0.80, 0.327)]
-    assert round(sum(v for _, v in cerca), 6) == 0.677
+    assert cerca == [(0.25, 0.0), (0.50, 0.25), (0.80, 0.379)]
+    assert round(sum(v for _, v in cerca), 6) == 0.629
 
 
 def test_el_tercer_peldano_sigue_siendo_casi_la_mitad_de_lo_que_queda() -> None:

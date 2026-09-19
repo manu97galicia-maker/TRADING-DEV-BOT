@@ -59,15 +59,15 @@ def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
     esperado = {
-        1.25: 0.10,
-        1.48: 0.35,
-        1.80: 0.677,
-        2.50: 0.754,  # x2,5
-        3.30: 0.819,  # x3,3
-        5.0: 0.872,
-        7.0: 0.914,
-        10.0: 0.944,
-        15.0: 0.962,
+        1.25: 0.0,    # el TP1 ya no vende: solo sube el stop
+        1.50: 0.25,
+        1.80: 0.629,
+        2.50: 0.718,  # x2,5
+        3.30: 0.793,  # x3,3
+        5.0: 0.854,
+        7.0: 0.903,
+        10.0: 0.938,
+        15.0: 0.959,
         20.0: 0.98,   # el ultimo peldano: solo queda el moonbag
     }
     for multiplo, acumulado in esperado.items():

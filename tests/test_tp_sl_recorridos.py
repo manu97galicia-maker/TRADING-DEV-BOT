@@ -45,6 +45,16 @@ def _vender_todo_en_stop() -> bool:
     return bool(_trade().get("vender_todo_en_stop", False))
 
 
+def _margen() -> float:
+    """El margen del stop, DEL YAML, no escrito a mano.
+
+    Sin esto el simulador calcularia suelos distintos de los del bot: daria
+    verde sobre un comportamiento que el bot no tiene, que es peor que no
+    tener test. Ya paso con `vender_todo_en_stop`, justo arriba.
+    """
+    return float(_trade().get("margen_stop_tras_tp", 0.0))
+
+
 def _cfg() -> dict:
     return yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
 
@@ -95,7 +105,7 @@ def simula(recorrido: list[float]) -> dict:
             restante -= vender
             peldanos_cobrados.append(i + 1)
             if sube_tras_tp:
-                suelo = stepped_stop_price(ENTRADA, tiers, i)
+                suelo = stepped_stop_price(ENTRADA, tiers, i, _margen())
                 if suelo is not None and (sl_price is None or sl_price < suelo):
                     sl_price = suelo
 
@@ -145,27 +155,51 @@ def test_un_rug_corta_en_el_stop_y_no_mas_abajo() -> None:
     assert round(r["resultado"], 6) == -0.18
 
 
-def test_tras_el_primer_tp_la_operacion_ya_no_pierde() -> None:
-    """Lo que hace `stop_a_entrada_tras_tp`: cobrado el TP1, el suelo pasa al
-    precio de compra, asi que volver a la entrada cierra EN VERDE."""
-    r = simula([1.0, 1.20, 1.31, 1.10, 1.00])
+def test_tocar_el_tp1_asegura_ganancia_sin_vender_nada() -> None:
+    """EL RECORRIDO QUE RESUME EL CAMBIO DEL 19-SEP.
+
+    Antes, cobrado el TP1 el suelo pasaba al precio de COMPRA: la operacion
+    dejaba de perder. Ahora pasa a compra +12%, asi que tocar el primer
+    objetivo la convierte en GANADORA pase lo que pase despues -- y sin haber
+    vendido un solo token, porque el TP1 esta a 0%.
+
+    La moneda sube a +25%, se da la vuelta y cae. Cierra en +12%.
+    """
+    # Primero: toca el TP1 y se queda ahi. No se vende NADA y el suelo ya esta
+    # en +12%.
+    r = simula([1.0, 1.20, 1.26])
     assert r["peldanos"] == [1]
+    assert not r["paro_por_stop"]
+    assert round(r["restante_pct"], 6) == 1.0, "el TP1 no puede vender nada"
+    assert round(r["suelo_final"], 4) == 1.12
+
+    # Y ahora la vuelta atras: el stop la cierra en +12%, en verde. Aqui
+    # `restante` SI acaba en 0 porque `vender_todo_en_stop` se lleva la
+    # posicion entera -- que es lo correcto.
+    # Cayendo justo hasta el suelo, se cobra el +12% clavado.
+    r = simula([1.0, 1.20, 1.26, 1.15, 1.12])
     assert r["paro_por_stop"]
-    assert r["suelo_final"] == 1.0  # el precio de compra
-    assert r["resultado"] > 0
+    assert round(r["resultado"], 4) == 0.12, "cierra en el +12% asegurado"
+
+    # Y si el precio se salta el suelo entre dos lecturas, se vende a lo que
+    # haya: sigue siendo verde, pero MENOS del 12%. El suelo es una orden, no
+    # una garantia de precio -- en una moneda que cae a plomo hay hueco.
+    r = simula([1.0, 1.20, 1.26, 1.15, 1.05])
+    assert r["paro_por_stop"]
+    assert 0 < r["resultado"] < 0.12
 
 
 def test_los_tres_peldanos_de_cerca_y_vuelta_atras() -> None:
-    """Llega al +80%, cobra 67,7% de la posicion y el suelo queda en el +48%.
+    """Llega al +80%, cobra 62,9% de la posicion y el suelo queda en +68%.
 
-    El trinquete va un peldano por detras: cobrado el tercero, el suelo sube
-    al precio del SEGUNDO. Deja sitio para que la moneda respire y aun asi
-    cada cobro asegura lo ya ganado.
+    El trinquete va un peldano por detras Y con el margen: cobrado el tercero,
+    el suelo sube al precio del SEGUNDO (+50%) mas un 12% -> +68%. Deja sitio
+    para que la moneda respire y aun asi cada cobro asegura lo ya ganado.
     """
-    r = simula([1.0, 1.26, 1.49, 1.81, 1.60, 1.48])
+    r = simula([1.0, 1.26, 1.51, 1.81, 1.75, 1.67])
     assert r["peldanos"] == [1, 2, 3]
     assert r["paro_por_stop"]
-    assert round(r["suelo_final"], 4) == 1.48
+    assert round(r["suelo_final"], 4) == 1.68
     assert r["resultado"] > 0.5
 
 
@@ -175,7 +209,7 @@ def test_un_salto_de_golpe_cobra_todos_los_peldanos_que_deja_atras() -> None:
     r = simula([1.0, 7.0])
     assert r["peldanos"] == [1, 2, 3, 4, 5, 6, 7]
     assert not r["paro_por_stop"]
-    assert round(r["restante_pct"], 6) == 0.086
+    assert round(r["restante_pct"], 6) == 0.097
 
 
 def test_ni_un_x100_toca_el_moonbag() -> None:
@@ -213,7 +247,7 @@ def test_el_suelo_nunca_queda_por_encima_del_precio_que_lo_arma() -> None:
     tiers = _tiers()
     for i, tier in enumerate(tiers):
         precio_disparo = ENTRADA * (1 + tier.gain)
-        suelo = stepped_stop_price(ENTRADA, tiers, i)
+        suelo = stepped_stop_price(ENTRADA, tiers, i, _margen())
         assert suelo < precio_disparo, f"TP{i + 1}: el suelo cerraria al cobrar"
 
 
@@ -222,5 +256,8 @@ def test_el_suelo_solo_sube() -> None:
     r = simula([1.0, 1.31, 1.52, 1.71, 3.3, 5.0, 7.0])
     assert r["suelo_final"] >= 1.0
     tiers = _tiers()
-    suelos = [stepped_stop_price(ENTRADA, tiers, i) for i in range(len(tiers))]
+    suelos = [
+        stepped_stop_price(ENTRADA, tiers, i, _margen())
+        for i in range(len(tiers))
+    ]
     assert suelos == sorted(suelos)

@@ -189,6 +189,7 @@ async def start_bot(config_path: str):
             stop_a_entrada_tras_tp=cfg["trade"].get(
                 "stop_a_entrada_tras_tp", False
             ),
+            margen_stop_tras_tp=cfg["trade"].get("margen_stop_tras_tp", 0.0),
             stop_al_tp_tras_tp=cfg["trade"].get("stop_al_tp_tras_tp", False),
             entrada_alternativa=cfg.get("filters", {}).get(
                 "entrada_alternativa"

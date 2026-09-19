@@ -23,27 +23,49 @@ class Tier:
 
 
 def stepped_stop_price(
-    entry_price: float, tiers: list[Tier], completed_tier: int
+    entry_price: float, tiers: list[Tier], completed_tier: int,
+    margen: float = 0.0,
 ) -> float | None:
     """Return the protected stop one rung below a completed TP.
 
     TP1 protects the entry price, TP2 protects TP1, TP3 protects TP2, and so
     on. ``completed_tier`` is zero-based.
+
+    ``margen`` sube ese suelo un tanto por uno mas: con 0,12 el suelo tras el
+    TP1 no queda en el precio de compra sino un 12% por encima, asi que tocar
+    el primer objetivo ya asegura ganancia en vez de solo evitar la perdida.
+    Pedido asi por Manu.
+
+    OJO AL ELEGIR EL MARGEN. El suelo tiene que quedar por DEBAJO del precio
+    del escalon que acaba de tocarse; si lo alcanza, esa posicion se cierra
+    sola en el mismo instante en que cumple su objetivo. Con un margen del 12%
+    eso obliga a que dos escalones consecutivos disten mas de un 12% entre si
+    -- por eso el TP2 tuvo que subir de +40% a +50%.
     """
     if entry_price <= 0 or not tiers or completed_tier < 0:
         return None
+    _factor = 1.0 + max(0.0, margen)
     previous_tier = completed_tier - 1
     if previous_tier < 0:
-        return entry_price
+        return entry_price * _factor
     previous_tier = min(previous_tier, len(tiers) - 1)
-    return entry_price * (1 + tiers[previous_tier].gain)
+    return entry_price * (1 + tiers[previous_tier].gain) * _factor
 
 
 def build_tiers(pairs: list[tuple[float | None, float | None]]) -> list[Tier]:
     """Build a validated, ascending list of tiers from (gain, sell) pairs.
 
-    Drops pairs with a missing/zero sell fraction, clamps sell to (0, 1],
-    and sorts by trigger gain so lower targets fire first.
+    Drops pairs with a missing sell fraction, clamps sell to [0, 1], and sorts
+    by trigger gain so lower targets fire first.
+
+    SE ACEPTA `sell = 0`, y no es un descuido. Un escalon que no vende nada
+    sigue sirviendo para algo: DISPARA LA SUBIDA DEL STOP. Asi esta pedido el
+    TP1 -- al tocar +25% no cobra, pero el suelo se va a compra +12% y la
+    operacion deja de poder perder.
+
+    Antes se descartaban (`sell <= 0`), asi que poner 0 en el yaml hacia
+    DESAPARECER el escalon en silencio: ni vendia ni movia el stop, y desde
+    fuera parecia que la configuracion no se aplicaba.
 
     Args:
         pairs: ``[(gain, sell), ...]`` possibly containing ``None``/zero.
@@ -55,7 +77,7 @@ def build_tiers(pairs: list[tuple[float | None, float | None]]) -> list[Tier]:
     for gain, sell in pairs:
         if gain is None or sell is None:
             continue
-        if gain < 0 or sell <= 0:
+        if gain < 0 or sell < 0:
             continue
         tiers.append(Tier(gain=float(gain), sell=min(float(sell), 1.0)))
     return sorted(tiers, key=lambda t: t.gain)

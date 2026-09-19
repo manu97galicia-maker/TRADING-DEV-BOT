@@ -54,7 +54,12 @@ VENTANA_OLA = 5.0
 MIN_OPERACIONES = 5
 #: Los peldanos de la escalera de hoy, para poder preguntar directamente
 #: "cuantas habrian cobrado el TP1". Si cambia la escalera, cambiar aqui.
-TP1, TP2, TP3 = 0.25, 0.48, 0.80
+#:
+#: Hay un test (`test_los_peldanos_medidos_son_los_de_la_escalera_real`) que
+#: compara estos numeros con el yaml y salta si se desincronizan: sin el, este
+#: script mediria una escalera que el bot ya no tiene y los informes dirian
+#: cosas que no pasaron.
+TP1, TP2, TP3 = 0.25, 0.50, 0.80
 STOP = -0.18
 #: Cada cuanto se imprime una linea de estado.
 AVISO_SEG = 30

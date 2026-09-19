@@ -410,6 +410,7 @@ class UniversalTrader:
         rugs_para_bloquear: int = 2,
         # Mover el stop al precio de entrada en cuanto cobra el primer TP.
         stop_a_entrada_tras_tp: bool = False,
+        margen_stop_tras_tp: float = 0.0,
         # Mover el stop al precio objetivo del TP que acaba de ejecutarse.
         stop_al_tp_tras_tp: bool = False,
         # Segunda puerta de entrada: {max_mc, min_volumen_sol}. Si la moneda
@@ -963,6 +964,11 @@ class UniversalTrader:
         #: Encaja con una estrategia SIN stop de entrada -- se acepta el
         #: riesgo hasta el primer escalon, y a partir de ahi ya no.
         self.stop_a_entrada_tras_tp = bool(stop_a_entrada_tras_tp)
+        #: Cuanto POR ENCIMA del escalon anterior queda el suelo al cobrar un
+        #: take profit. 0 = como antes (el suelo va justo al escalon anterior,
+        #: o a la entrada en el primero). Con 0,12 tocar el TP1 ya asegura un
+        #: +12%, que es lo pedido.
+        self.margen_stop_tras_tp = max(0.0, float(margen_stop_tras_tp or 0))
         self.stop_al_tp_tras_tp = bool(stop_al_tp_tras_tp)
         #: SEGUNDA PUERTA DE ENTRADA. La banda normal compra en el
         #: nacimiento, donde no hay volumen que medir porque no ha dado
@@ -6143,14 +6149,25 @@ class UniversalTrader:
                 # Take-profit tiers that are now due (priced at the LIVE price).
                 for i in tiers_due(entry_price, price, tiers, executed):
                     amount = min(original_qty * tiers[i].sell, remaining)
-                    if amount <= 1e-9:
-                        executed[i] = True
-                        continue
                     reason = f"tp_tier{i + 1}_+{tiers[i].gain * 100:.0f}%"
-                    if await self._sell_amount(token_info, amount, price, reason):
-                        realized_sol += self._ultimo_cobro
+                    # UN ESCALON QUE NO VENDE SIGUE CONTANDO. El TP1 esta
+                    # puesto a 0%: no cobra nada, pero tocarlo sube el stop y
+                    # eso es TODO su trabajo. Antes este caso salia por un
+                    # `continue` que se saltaba la subida del suelo, o sea que
+                    # el escalon no hacia absolutamente nada.
+                    _vendido = True
+                    if amount > 1e-9:
+                        _vendido = await self._sell_amount(
+                            token_info, amount, price, reason
+                        )
+                        if _vendido:
+                            realized_sol += self._ultimo_cobro
+                            remaining -= amount
+                    if _vendido:
                         executed[i] = True
-                        remaining -= amount
+                        # Llegar al objetivo cuenta como pump AUNQUE no se
+                        # venda: alimenta la clasificacion rug/win del dev, y
+                        # la moneda entrego igual.
                         had_tp = True  # el dev entregó un pump -> no es rug
                         # STOP A LA ENTRADA. En cuanto cobra el primer escalon,
                         # lo que sigue dentro deja de poder acabar en perdida:
@@ -6177,14 +6194,21 @@ class UniversalTrader:
                                 # SL sube al precio del propio TP1 (no a entrada)
                                 _suelo = entry_price * (1 + tiers[0].gain)
                             else:
-                                _suelo = stepped_stop_price(entry_price, tiers, i)
+                                _suelo = stepped_stop_price(
+                                    entry_price, tiers, i,
+                                    self.margen_stop_tras_tp,
+                                )
                                 if _suelo is None:
                                     continue
                             if sl_price is None or sl_price < _suelo:
                                 sl_price = _suelo
                                 _donde = (
                                     f"TP1 (+{tiers[0].gain * 100:.0f}%)" if i == 0 and self.stop_al_tp_tras_tp
-                                    else "el PRECIO DE COMPRA" if i == 0
+                                    else (
+                                        f"compra +{self.margen_stop_tras_tp * 100:.0f}%"
+                                        if self.margen_stop_tras_tp > 0
+                                        else "el PRECIO DE COMPRA"
+                                    ) if i == 0
                                     else f"TP{i} (+{tiers[i - 1].gain * 100:.0f}%)"
                                 )
                                 logger.info(
