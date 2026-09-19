@@ -106,11 +106,10 @@ def test_apagado_es_el_comportamiento_de_antes() -> None:
 
 def test_la_config_pide_lo_que_se_pidio() -> None:
     t = _cfg()["trade"]
-    # El importe fijo se elimino el 19-sep ("solo el porcentaje"): manda
-    # `fraccion_saldo`. El 0 es a proposito -- si alguien apaga el porcentaje,
-    # el bot se para en vez de comprar una cantidad vieja que nadie ha pedido.
-    assert t["buy_amount"] == 0
-    assert t["fraccion_saldo"] == 0.25
+    # Vuelve el importe fijo: 0,04 SOL por entrada, y el porcentaje apagado.
+    # Los dos no pueden mandar a la vez.
+    assert t["buy_amount"] == 0.04
+    assert t["fraccion_saldo"] == 0
     assert t["fraccion_si_no_llega"] == 0.75
 
 
@@ -124,11 +123,16 @@ def test_la_fuente_manda_el_mismo_importe_que_el_global() -> None:
     assert c["filters"]["holders"]["buy_amount"] == c["trade"]["buy_amount"]
 
 
-def test_el_tope_duro_deja_pasar_el_importe_configurado() -> None:
-    """El tope recorta TODO lo que pase por encima. Si se queda por debajo del
-    importe, el bot compraria menos de lo pedido sin que nadie lo note."""
+def test_el_tope_duro_no_recorta_el_importe_configurado() -> None:
+    """El tope recorta TODO lo que pase por encima, y SIN dejar rastro en el
+    log de la compra: si se queda por debajo del importe, el bot compra menos
+    de lo pedido y desde fuera parece que el ajuste no se aplica.
+
+    Hoy esta a 0 --sin tope-- y la comprobacion vale igual para el dia que se
+    vuelva a poner.
+    """
     t = _cfg()["trade"]
-    assert t["tope_compra_sol"] >= t["buy_amount"]
+    assert t["tope_compra_sol"] == 0 or t["tope_compra_sol"] >= t["buy_amount"]
 
 
 def test_el_suelo_de_compra_esta_quitado() -> None:

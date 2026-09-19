@@ -169,7 +169,11 @@ def test_el_extra_de_redes_ya_no_cambia_nada_por_otro_motivo() -> None:
             Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
         ).read_text(encoding="utf-8")
     )
-    assert cfg["trade"]["fraccion_saldo"] > 0, (
-        "con el importe fijo el extra vuelve a contar: revisar si se queria"
+    # Con el importe FIJO el extra si podria sumar... pero la fuente de
+    # titulares manda su propio importe en la senal (`signal_buy_amount`), y
+    # ese pisa a cualquier calculo de la fuente de dexpaid --que ademas esta
+    # apagada--. Asi que sigue sin cambiar nada, por una tercera via.
+    assert not cfg["filters"]["buy_on_dex_paid"]["enabled"], (
+        "la fuente del extra esta encendida: revisar si se queria"
     )
     assert EXTRA_REDES_NUEVAS > 0, "el extra sigue existiendo en el codigo"

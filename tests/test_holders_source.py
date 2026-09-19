@@ -245,8 +245,10 @@ def test_los_dos_numeros_son_los_pedidos() -> None:
     # todos pedidos.
     assert h["min_holders"] == 23
     assert h["max_edad_seg"] == 1200
-    # Sin importe propio desde el 19-sep: manda el 25% del saldo.
-    assert h["buy_amount"] == 0
+    # 0,04 SOL por entrada. Tiene que coincidir con el `buy_amount` global:
+    # el importe de la SENAL pisa al global, asi que si no coinciden el de
+    # arriba no sirve de nada. Ya paso una vez.
+    assert h["buy_amount"] == 0.04
 
 
 def test_ningun_filtro_global_puede_descartar_por_su_cuenta() -> None:

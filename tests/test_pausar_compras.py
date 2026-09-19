@@ -174,11 +174,10 @@ def test_ahora_mismo_compra_de_verdad() -> None:
     comprar durante dias sin que nadie lo note (que ya paso en agosto).
     """
     assert _trade()["pausar_compras"] is False
-    # Y EL TAMANO. Desde el 19-sep no es una cantidad fija: cada compra es el
-    # 25% de lo que queda libre. El tope duro sigue ahi, pero ya no decide el
-    # tamano -- es un freno contra un fallo (el 12-ago la cadena registro
-    # compras de 0,25 y 0,30 con 0,15 configurado).
-    assert _trade()["fraccion_saldo"] == 0.25
+    # Y EL TAMANO: 0,04 SOL por entrada, importe fijo. Ha ido y venido en un
+    # mismo dia (0,07 -> 0,12 -> 25% del saldo -> 0,04), asi que el numero se
+    # fija aqui para que cualquier cambio sea deliberado.
+    assert _trade()["buy_amount"] == 0.04
     # El tope duro se quito el 19-sep, pedido. Lo que sigue impidiendo que un
     # fallo vacie la cartera es el guardian del saldo: antes de firmar se lee el
     # saldo REAL y se exige que quepa la compra dejando intacta la reserva.

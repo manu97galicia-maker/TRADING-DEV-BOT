@@ -70,25 +70,47 @@ def test_comprar_cuesta_lo_pedido() -> None:
     assert 0.0008 < coste < 0.0015, f"la compra cuesta {coste:.5f} SOL"
 
 
-def test_la_escalera_entera_no_se_come_la_posicion() -> None:
-    """Diez peldaños a la comisión de compra serían el 7% de la posición.
+def test_lo_que_se_va_en_comisiones_por_operacion() -> None:
+    """CUANTO SE LLEVAN LAS COMISIONES DE PRIORIDAD, en tanto por uno de la
+    posicion. No es un umbral inventado: es el numero que hay que mirar al
+    cambiar el tamano de entrada o la comision, porque los dos lo mueven.
 
-    Este test es el que impide que alguien "simplifique" dejando una sola
-    comisión para todo: si las ventas pagaran la de comprar, salta.
+    Con la entrada en 0,04 SOL (19-sep):
+
+        comprar                     0,00098 SOL = 2,45% de la posicion
+        cada venta                  0,00012 SOL = 0,30%
+        ida y vuelta (1 venta)      0,00110 SOL = 2,75%
+        con la escalera entera      0,00218 SOL = 5,45%
+
+    A 0,12 SOL la escalera entera costaba el 1,82%: bajar la entrada a un
+    tercio TRIPLICA el peso de las comisiones, porque son fijas.
+
+    EN LA PRACTICA seran 2 o 3 ventas, no 10: con el colchon del stop en 6,7%
+    lo normal es cobrar un par de escalones y salir. O sea ~3%.
+
+    El tope de este test (8%) no es un objetivo, es una alarma: si se cruza,
+    la operacion nace perdiendo demasiado y hay que bajar la comision de
+    compra o subir la entrada.
     """
     c = _cfg()
+    compra = _sol(c["priority_fees"]["fixed_amount_compra"], c["compute_units"]["buy"])
     venta = _sol(c["priority_fees"]["fixed_amount"], c["compute_units"]["sell"])
-    peldanos = 3 + len(c["trade"]["tp_extra"]) + 3  # cercanos + extra + lejanos
-    # El importe ya no es fijo: se toma la primera compra con 1 SOL de saldo,
-    # que es la posicion mas grande que se abre.
+    peldanos = 3 + len(c["trade"]["tp_extra"]) + 3
     _t = c["trade"]
-    posicion = (1.0 - _t["min_reserve_sol"]) * _t["fraccion_saldo"]
-    if _t["tope_compra_sol"] > 0:
-        posicion = min(posicion, _t["tope_compra_sol"])
-    assert venta * peldanos < posicion * 0.02, (
-        f"vender la escalera entera cuesta {venta * peldanos:.5f} SOL, "
-        f"mas del 2% de una posicion de {posicion}"
+    _frac = _t["fraccion_saldo"]
+    posicion = (
+        (1.0 - _t["min_reserve_sol"]) * _frac if _frac > 0 else _t["buy_amount"]
     )
+    assert posicion > 0
+
+    peor = (compra + venta * peldanos) / posicion
+    assert peor < 0.08, (
+        f"ida y vuelta con la escalera entera se lleva el {peor * 100:.1f}% "
+        f"de una posicion de {posicion} SOL"
+    )
+    # Y el caso normal, que es el que de verdad se repite.
+    normal = (compra + venta * 3) / posicion
+    assert normal < 0.05, f"una operacion tipica se deja el {normal * 100:.1f}%"
 
 
 def test_vender_es_mas_barato_que_comprar() -> None:

@@ -40,18 +40,24 @@ def vale_usd(cantidad: float, precio_sol: float) -> float:
     return cantidad * precio_sol * SOL_USD
 
 
-def _importe(libre: float, t: dict) -> float:
-    """El importe de una compra, como lo calcula el bot.
+def importe_de_compra(libre: float, t: dict) -> float:
+    """Lo que compraria el bot con ese saldo libre, en el modo que este puesto.
 
-    El tope y el suelo solo se aplican si son MAYORES QUE CERO: en toda esta
-    configuracion, cero significa "sin limite". Escribir `min(x, tope)` a secas
-    daria 0 en cuanto el tope se apague.
+    Hay DOS modos y se excluyen: importe fijo (`buy_amount`) o porcentaje del
+    saldo (`fraccion_saldo`); el porcentaje, si es mayor que cero, sustituye al
+    fijo dentro del cerrojo de gasto. Esta funcion existe para que los tests no
+    tengan que saber cual esta activo -- cada vez que se cambiaba de modo habia
+    que rehacer media docena de tests.
+
+    El tope y el suelo solo se aplican si son MAYORES QUE CERO: en esta
+    configuracion, cero significa "sin limite".
     """
-    imp = max(0.0, libre * t["fraccion_saldo"])
-    tope = t["tope_compra_sol"]
+    frac = t.get("fraccion_saldo", 0)
+    imp = libre * frac if frac > 0 else float(t["buy_amount"])
+    tope = t.get("tope_compra_sol", 0)
     if tope > 0 and imp > tope:
         imp = tope
-    return imp
+    return max(0.0, imp)
 
 
 def compra_tipica() -> float:
@@ -64,7 +70,7 @@ def compra_tipica() -> float:
     abre; si la regla del polvo no la suelta a ella, no suelta a ninguna).
     """
     t = _trade()
-    return _importe(SALDO_REFERENCIA - t["min_reserve_sol"], t)
+    return importe_de_compra(SALDO_REFERENCIA - t["min_reserve_sol"], t)
 
 
 def test_el_minimo_es_un_dolar() -> None:
