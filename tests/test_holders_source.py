@@ -226,16 +226,28 @@ def test_el_parte_no_lleva_nada_del_env() -> None:
 # ---------------------------------------------------- la configuracion real
 
 
-def test_es_la_unica_fuente_encendida() -> None:
+def test_las_fuentes_encendidas_son_las_dos_pedidas() -> None:
+    """Titulares y los canales de Telegram, y NADA mas.
+
+    El 21-sep se volvieron a encender los canales ("anade de nuevo los grupos
+    de telegram y mantenemos la estrategia holder"), asi que este test dejo de
+    afirmar que titulares es la unica. Sigue haciendo su trabajo: cualquier
+    OTRA fuente que se cuele sin querer sale aqui en rojo.
+
+    No son lo mismo ni de lejos. Titulares exige 23 carteras, menos de 20
+    minutos, las dos ultimas operaciones compras y presion compradora. Un canal
+    no exige nada: cualquier direccion acabada en `pump` que alguien pegue se
+    compra. Y las cinco plazas de `max_posiciones` son COMPARTIDAS.
+    """
     f = _filtros()
     otras = [
         n for n in ("buy_on_dex_paid", "birdeye_trending", "dextools_hotpools",
-                    "curva_96", "presion", "telegram_calls", "discord_calls",
-                    "gmgn_signals")
+                    "curva_96", "presion", "discord_calls", "gmgn_signals")
         if (f.get(n) or {}).get("enabled")
     ]
     assert not otras, f"hay otras fuentes encendidas: {otras}"
     assert f["holders"]["enabled"] is True
+    assert f["telegram_calls"]["enabled"] is True
 
 
 def test_los_dos_numeros_son_los_pedidos() -> None:

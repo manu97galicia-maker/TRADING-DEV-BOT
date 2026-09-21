@@ -5,7 +5,7 @@ de ``chats=`` no se puede resolver, y eso se llevaba por delante la fuente
 entera. Anadir MoonTok al lado de Nitro hacia ese fallo mas probable.
 """
 
-# ruff: noqa: S101
+# ruff: noqa: S101, PLR2004
 
 import asyncio
 from collections.abc import Awaitable, Callable
@@ -14,6 +14,14 @@ from pathlib import Path
 import yaml
 
 from monitoring.telegram_watcher import resolve_channels
+
+
+def _config() -> dict:
+    return yaml.safe_load(
+        (
+            Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
+        ).read_text(encoding="utf-8")
+    )
 
 
 def _resolver(validos: set[str]) -> Callable[[str | int], Awaitable[object]]:
@@ -82,20 +90,53 @@ def test_los_canales_configurados_son_los_pedidos() -> None:
 
     Van mezclados dos tipos y conviene saberlo al leer resultados:
       - dextools_nitro, cryptolistings: hay un PAGO detras (Nitro, listing).
-      - Wagbocooks, LegendsAlphas: son CALLS, alguien opina sin pagar.
+      - Wagbocooks, LegendsAlphas, SolanaInsiderTerminal: son CALLS, alguien
+        opina sin pagar. El ultimo entro el 21-sep, pedido.
 
     Desde el 14-sep cada compra apunta de que canal vino, asi que
     `deploy/resumen_dia.py` los separa y se puede ver cual gana.
     """
-    cfg = yaml.safe_load(
-        (
-            Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
-        ).read_text(encoding="utf-8")
-    )
-    canales = cfg["filters"]["telegram_calls"]["channels"]
+    canales = _config()["filters"]["telegram_calls"]["channels"]
     assert canales == [
         "dextools_nitro",
         "cryptolistings",
         "Wagbocooks",
         "LegendsAlphas",
+        "SolanaInsiderTerminal",
     ]
+
+
+def test_el_importe_de_canal_coincide_con_el_global() -> None:
+    """EL FALLO QUE YA PASO UNA VEZ.
+
+    El importe de la SENAL pisa al `buy_amount` global, asi que si aqui hubiera
+    un numero distinto, el de arriba no serviria de nada y se estaria comprando
+    con un tamano que nadie puso a proposito. Pedido el 21-sep: 0,04 SOL en las
+    compras de canal, igual que la entrada de titulares.
+    """
+    cfg = _config()
+    tg = cfg["filters"]["telegram_calls"]
+    global_ = cfg["trade"]["buy_amount"]
+    assert global_ == 0.04
+    for clave in ("normal_buy_amount", "nitro_buy_amount", "promoted_buy_amount"):
+        assert tg[clave] == global_, f"{clave} no coincide con el buy_amount global"
+    assert cfg["filters"]["holders"]["buy_amount"] == global_
+
+
+def test_los_canales_estan_encendidos_pero_los_avisos_no() -> None:
+    """Dos cosas distintas con el mismo nombre, y es facil deshacer una al
+    tocar la otra.
+
+    Los CANALES son de donde el bot lee senales de compra. Los AVISOS son los
+    mensajes que el bot te manda, y siguen apagados a peticion: "no quiero
+    avisos, solo quiero que se compre y se venda". El parte de por que no se
+    compra se lee en el log desde el 19-sep, asi que apagarlos no deja a ciegas.
+    """
+    cfg = _config()
+    assert cfg["filters"]["telegram_calls"]["enabled"] is True
+    assert cfg["avisos_telegram"] is False
+
+
+def test_solo_monedas_de_pumpfun() -> None:
+    """Pedido, y repetido: "acuerdate, solo moneda de pump.fun normal"."""
+    assert _config()["filters"]["telegram_calls"]["suffixes"] == ["pump"]

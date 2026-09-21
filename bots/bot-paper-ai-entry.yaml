@@ -801,17 +801,30 @@ filters:
     heartbeat_interval: 300
 
   telegram_calls:
-    enabled: false
+    # ENCENDIDA el 21-sep, pedido: "anade de nuevo los grupos de telegram y
+    # mantenemos la estrategia holder". Las DOS fuentes corren a la vez: el
+    # trader arranca una tarea por fuente encendida y las junta.
+    #
+    # NO CONFUNDIR CON LOS AVISOS. Esto son los canales de los que el bot LEE
+    # senales de compra. Que el bot TE MANDE mensajes es `avisos_telegram`,
+    # mas arriba, y sigue en false: "no quiero avisos, solo quiero que se
+    # compre y se venda".
+    enabled: true
     session_name: moontok_watcher
-    normal_buy_amount: 0.07
-    nitro_buy_amount: 0.07
-    promoted_buy_amount: 0.07
+    # 0,04 SOL, los tres, para que coincida con el `buy_amount` global y con
+    # la entrada de titulares. TIENEN QUE COINCIDIR: el importe de la SENAL
+    # pisa al global, asi que si aqui hubiera otro numero el de arriba no
+    # serviria de nada. Ya paso una vez.
+    normal_buy_amount: 0.04
+    nitro_buy_amount: 0.04
+    promoted_buy_amount: 0.04
     promotion_threshold: 500
     # Dos tipos de canal mezclados, y conviene saberlo al leer resultados:
     #
     #   dextools_nitro, cryptolistings -> hay un PAGO detras (Nitro, listing
     #     de MoonTok). Alguien se ha gastado dinero en la moneda.
-    #   Wagbocooks, LegendsAlphas -> son CALLS. Alguien opina, sin pago.
+    #   Wagbocooks, LegendsAlphas, SolanaInsiderTerminal -> son CALLS.
+    #     Alguien opina, sin pago detras.
     #
     # LegendsAlphas estuvo fuera por eso: "ensucia la muestra" al mezclarse
     # con las de pago. Esa objecion ya no aplica igual, porque desde el
@@ -820,6 +833,16 @@ filters:
     # calls gana o pierde en vez de discutirlo: si pierde, se quita.
     #
     # DEXTNewPairsBot sigue fuera.
+    #
+    # SolanaInsiderTerminal entro el 21-sep, pedido. Es de los de CALLS, asi
+    # que se lee junto a Wagbocooks y LegendsAlphas al mirar el resumen.
+    #
+    # Y LO QUE NO MIRA NINGUN CANAL: una compra que venga de aqui NO pasa por
+    # las condiciones de titulares --ni 23 carteras, ni edad, ni presion
+    # compradora--. Cualquier direccion que acabe en `pump` y que alguien
+    # pegue se compra si la curva se puede leer y la moneda no ha migrado.
+    # Ademas las cinco plazas de `max_posiciones` son COMPARTIDAS, asi que un
+    # canal movido puede ocupar huecos que queria titulares.
     #
     # OJO: los nombres tienen que ser el @usuario exacto del canal y tu
     # cuenta tiene que estar dentro. Un nombre que Telegram no resuelva se
@@ -830,6 +853,8 @@ filters:
       - cryptolistings
       - Wagbocooks
       - LegendsAlphas
+      - SolanaInsiderTerminal
+    # Solo monedas de pump.fun normales, que es lo pedido.
     suffixes:
       - pump
 
