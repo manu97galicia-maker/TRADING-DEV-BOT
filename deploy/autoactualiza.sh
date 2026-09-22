@@ -21,11 +21,20 @@ cd "$RAIZ" || { echo "No existe $RAIZ"; exit 1; }
 
 antes="$(git rev-parse HEAD 2>/dev/null)" || { echo "No es un repo git"; exit 1; }
 
-if ! salida="$(git pull --no-edit 2>&1)"; then
+# --ff-only, Y ES EL ARREGLO DE LA RAIZ. Con `git pull` a secas, en cuanto el
+# historial se separa esto CREA un commit de merge en el droplet -- y desde ese
+# momento la maquina ya no vuelve a coincidir con GitHub nunca, asi que todos
+# los carteles decian "AUN NO HA LLEGADO" en bucle aunque el codigo estuviera.
+# El 21-sep eso costo cuatro vueltas desde el movil con el bot corriendo codigo
+# viejo. Un automatismo cada diez minutos no debe inventar historia: o avanza
+# en linea recta, o se calla y lo arregla una persona con `arranca.sh`.
+if ! salida="$(git pull --ff-only 2>&1)"; then
   # NO SE REINICIA. Un bot corriendo con codigo viejo es mejor que un bot
   # reiniciado a medias: el viejo al menos vigila las posiciones abiertas.
   echo "PULL FALLIDO, no se reinicia nada:"
   echo "$salida"
+  echo "Si dice 'Not possible to fast-forward' o habla de cambios locales:"
+  echo "  bash $RAIZ/deploy/arranca.sh"
   exit 1
 fi
 

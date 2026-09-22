@@ -257,6 +257,15 @@ def _arranca() -> str:
     return (RAIZ / "deploy" / "arranca.sh").read_text(encoding="utf-8")
 
 
+def _pulls(texto: str) -> list[str]:
+    """Las lineas que de verdad EJECUTAN un `git pull`, sin comentarios."""
+    return [
+        linea.strip()
+        for linea in texto.splitlines()
+        if "git pull" in linea and not linea.strip().startswith("#")
+    ]
+
+
 def test_el_arranque_no_depende_de_la_carpeta() -> None:
     """EL FALLO QUE SE REPITIO CUATRO VECES. Desde el movil la sesion vuelve
     a ~ cada vez que se cae el SSH, y un comando con rutas relativas muere con
@@ -268,8 +277,17 @@ def test_el_arranque_no_depende_de_la_carpeta() -> None:
 
 def test_el_arranque_no_abre_ningun_editor() -> None:
     """Un `git pull` que abre nano deja la sesion colgada en un editor que
-    desde el movil no se sabe cerrar. Ya paso una vez."""
-    assert "git pull --no-edit" in _arranca()
+    desde el movil no se sabe cerrar. Ya paso una vez.
+
+    Se comprueba la PROPIEDAD, no un texto exacto: antes esto exigia la cadena
+    literal "git pull --no-edit" y se puso en rojo al anadir `--no-rebase`, que
+    hacia falta porque desde git 2.34 un pull con el historial separado se
+    niega en seco. Lo que importa es que NINGUNA traida pueda abrir un editor.
+    """
+    for linea in _pulls(_arranca()):
+        assert "--no-edit" in linea or "--ff-only" in linea, (
+            f"esta traida puede abrir un editor: {linea}"
+        )
 
 
 def test_el_arranque_dice_que_hacer_si_falla_el_pull() -> None:

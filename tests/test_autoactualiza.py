@@ -50,8 +50,21 @@ def test_no_empuja_nada_a_github() -> None:
 
 def test_no_abre_ningun_editor() -> None:
     """Un `git pull` que abre nano deja el servicio colgado para siempre,
-    esperando a alguien que nunca va a escribir en esa terminal."""
-    assert "git pull --no-edit" in _fuente()
+    esperando a alguien que nunca va a escribir en esa terminal.
+
+    `--ff-only` tambien vale, y es lo que se usa desde el 22-sep: al no poder
+    crear un commit de merge, no hay mensaje que editar ni editor que abrir.
+    """
+    lineas = [
+        linea.strip()
+        for linea in _fuente().splitlines()
+        if "git pull" in linea and not linea.strip().startswith("#")
+    ]
+    assert lineas, "el actualizador tiene que traer algo"
+    for linea in lineas:
+        assert "--no-edit" in linea or "--ff-only" in linea, (
+            f"esta traida puede abrir un editor: {linea}"
+        )
 
 
 # --------------------------------------- reiniciar solo cuando toca

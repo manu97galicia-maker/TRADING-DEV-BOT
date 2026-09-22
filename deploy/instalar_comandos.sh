@@ -56,13 +56,29 @@ fi
 # EL COMMIT Y SI ESTA AL DIA. Sin esto no habia forma de saber si el droplet
 # tiene los ultimos arreglos: estuvo tres dias con codigo viejo pareciendo
 # que funcionaba.
+#
+# OJO CON COMPARAR COMMITS A PELO, que es lo que hacia y costo cuatro vueltas
+# desde el movil el 21-sep. En cuanto una traida deja un commit de merge en la
+# maquina, el commit de aqui ya no es igual al de GitHub NUNCA, aunque el
+# codigo este entero: esto decia "AUN NO HA LLEGADO" para siempre y mandaba a
+# reintentar una traida que ya no hacia nada. La pregunta es "tengo todo lo de
+# GitHub", no "es el mismo numero", y se contesta por antepasados.
+#
+# (Aqui no se nombra el comando de traer a proposito: un test comprueba que
+# este instalador no lo lleva escrito ni en los comentarios, porque no le
+# toca traer nada.)
 git fetch -q origin 2>/dev/null || true
 _l="$(git rev-parse --short HEAD 2>/dev/null || echo '?')"
-_r="$(git rev-parse --short '@{u}' 2>/dev/null || echo "$_l")"
+_ref="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null \
+        || echo origin/main)"
+_r="$(git rev-parse --short "$_ref" 2>/dev/null || echo "$_l")"
 if [ "$_l" = "$_r" ]; then
   echo "  codigo:   $_l (al dia)"
+elif git merge-base --is-ancestor "$_ref" HEAD 2>/dev/null; then
+  echo "  codigo:   $_l (al dia; tiene todo lo de GitHub $_r y algo propio)"
 else
-  echo "  codigo:   $_l  ·  GitHub en $_r -- AUN NO HA LLEGADO"
+  echo "  codigo:   $_l  ·  GitHub en $_r -- FALTA CODIGO"
+  echo "            arreglalo con:  bash /root/ai-bot/deploy/arranca.sh"
 fi
 
 # HA COMPRADO O NO. Es la pregunta de verdad, y hasta ahora no la contestaba
@@ -72,7 +88,11 @@ echo "== HA COMPRADO? =="
 _c="$(journalctl -u pump-bot --since '-6 hours' --no-pager 2>/dev/null | grep -c 'Buying .* SOL worth' || true)"
 echo "  intentos de compra (6 h): ${_c:-0}"
 if [ "${_c:-0}" -eq 0 ]; then
-  _p="$(journalctl -u pump-bot --since '-30 min' --no-pager 2>/dev/null | grep -c 'PRESIÓN —' || true)"
+  # LAS TRES FUENTES QUE PUEDEN MANDAR CANDIDATAS, no solo una. Esto buscaba
+  # unicamente "PRESIÓN —", de cuando esa era la fuente encendida: desde que
+  # se cambio a titulares el contador salia 0 SIEMPRE, pasara lo que pasara.
+  # El 21-sep eso hizo creer que la fuente no encontraba nada.
+  _p="$(journalctl -u pump-bot --since '-30 min' --no-pager 2>/dev/null | grep -cE 'TITULARES —|PRESIÓN —|Telegram call' || true)"
   echo "  candidatas de la fuente (30 min): ${_p:-0}"
   echo "  -> para saber que las para, escribe:  porque"
 fi
