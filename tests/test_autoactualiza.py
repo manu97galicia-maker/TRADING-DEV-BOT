@@ -192,6 +192,33 @@ def test_distingue_no_hay_candidatas_de_no_se_compran() -> None:
     assert "NINGUNA llega a comprarse" in s
 
 
+def test_busca_el_arranque_en_todo_el_log_no_en_la_ventana() -> None:
+    """EL FALSO "LA FUENTE NO ARRANCO" DEL 22-SEP.
+
+    La linea que dice que fuente esta escuchando se escribe UNA SOLA VEZ, al
+    arrancar. Buscandola en una ventana de veinte minutos, un bot que llevaba
+    cuatro horas funcionando perfectamente salia como "no esta escuchando
+    nada" -- y mando a buscar una averia que no existia.
+    """
+    s = _porque()
+    assert "log_entero()" in s, "no hay forma de mirar mas alla de la ventana"
+    corte = s.index("1. ARRANCO LA FUENTE?")
+    bloque = s[corte : s.index("2. EL EMBUDO", corte)]
+    assert "log_entero" in bloque, (
+        "el arranque se busca en la ventana corta: dara falso negativo"
+    )
+
+
+def test_cuenta_las_candidatas_de_la_fuente_encendida() -> None:
+    """Cero por no mirar y cero por no haber se leen igual, y llevan a sitios
+    opuestos. Esto contaba solo "PRESIÓN —", de cuando esa era la fuente: desde
+    que se cambio a titulares daba 0 siempre, pasara lo que pasara."""
+    s = _porque()
+    assert "TITULARES —" in s, "no cuenta las candidatas de la fuente de titulares"
+    assert "Telegram call" in s, "no cuenta las que vienen de un canal"
+    assert "PRESIÓN —" in s, "se ha perdido la fuente de presion"
+
+
 def test_mira_tambien_los_frenos_de_cartera() -> None:
     """Un bot con las 5 plazas llenas o sin SOL no compra, y no es culpa de
     ningun filtro."""
@@ -228,7 +255,14 @@ def test_bot_dice_el_commit_y_si_esta_al_dia() -> None:
     pareciendo que funcionaba, y no habia forma de verlo de un vistazo."""
     s = _instalador()
     assert "rev-parse --short HEAD" in s
-    assert "AUN NO HA LLEGADO" in s
+    assert "FALTA CODIGO" in s, "tiene que avisar cuando falte codigo"
+    # Y QUE NO LO DIGA CUANDO NO ES VERDAD. Antes comparaba los dos commits a
+    # pelo, asi que con un merge local en el droplet avisaba para siempre
+    # aunque el codigo estuviera entero. La pregunta correcta es por
+    # antepasados, y eso es lo que se exige aqui.
+    assert "merge-base --is-ancestor" in s, (
+        "compara commits a pelo: dara falsa alarma tras cualquier merge local"
+    )
 
 
 def test_bot_dice_si_ha_comprado_no_solo_si_puede_comprar() -> None:
