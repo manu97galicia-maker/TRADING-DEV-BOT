@@ -78,6 +78,20 @@ _MAX_RECORDADAS = 20_000
 #: cumpliendo a la vez y las que no cabian se perdian.
 _MAX_EN_VUELO = 12
 
+#: Espera entre reintentos de conexion, en segundos. SE DOBLA en cada fallo
+#: seguido y se reinicia al conectar.
+#:
+#: ANTES ERA 5 FIJO Y PARA SIEMPRE, y eso fue lo que tuvo el bot dos dias sin
+#: comprar: el nodo contestaba 429 ("demasiadas peticiones"), el bot reintentaba
+#: 720 veces por hora, y ese martilleo mantenia vivo el 429. No se recuperaba
+#: solo nunca.
+_ESPERA_RECONEXION = 5.0
+_ESPERA_RECONEXION_MAX = 300.0
+
+#: Un 429 no es un corte de red: es una cuota. Reintentar enseguida solo la
+#: gasta mas, asi que se empieza alto en vez de subir poco a poco.
+_ESPERA_TRAS_429 = 60.0
+
 
 def build_holders_heartbeat(
     min_holders: int, max_edad_seg: float, buy_amount: float, embudo: dict[str, int],
@@ -553,6 +567,7 @@ class HoldersSource:
                 "GEYSER_API_TOKEN puestos en el .env se usaria Geyser, que "
                 "llega 100-300 ms antes."
             )
+        espera = _ESPERA_RECONEXION
         while True:
             try:
                 if por_geyser:
@@ -562,6 +577,8 @@ class HoldersSource:
                     self.wss_endpoint, ping_interval=20
                 ) as ws:
                     await self._suscribir(ws, program_id)
+                    # Conectado Y suscrito: se vuelve a empezar de abajo.
+                    espera = _ESPERA_RECONEXION
                     await self._escuchar(ws, token_callback)
             except asyncio.CancelledError:
                 for tarea in list(self._en_vuelo):
@@ -569,6 +586,42 @@ class HoldersSource:
                     with contextlib.suppress(asyncio.CancelledError):
                         await tarea
                 raise
-            except Exception:
-                logger.exception("Titulares: se cayo el websocket, reconectando")
-                await asyncio.sleep(5)
+            except Exception as exc:  # noqa: BLE001
+                espera = self._avisa_de_la_caida(exc, espera)
+                await asyncio.sleep(espera)
+                espera = min(espera * 2, _ESPERA_RECONEXION_MAX)
+
+    def _avisa_de_la_caida(self, exc: Exception, espera: float) -> float:
+        """Cuenta la caida en UNA linea y dice cuanto hay que esperar.
+
+        DOS COSAS QUE COSTARON DOS DIAS EL 22-SEP, y las dos estaban aqui:
+
+        1. SE REINTENTABA CADA 5 SEGUNDOS PARA SIEMPRE. Cuando el nodo
+           contesta 429 ("demasiadas peticiones"), reintentar 720 veces por
+           hora es exactamente lo que mantiene vivo el 429: el bot se
+           autobloqueaba y no volvia a conectarse nunca. Ahora la espera se
+           dobla en cada intento, y un 429 empieza directamente alto porque no
+           es un corte de red, es un limite de cuota que necesita tiempo.
+
+        2. SE ESCRIBIA EL RASTRO ENTERO (`logger.exception`) en cada intento.
+           Con un fallo cada 5 s eso son miles de lineas de traza por hora: el
+           log quedaba ilegible desde el movil y el motivo de verdad --una
+           linea de 429 al final de todo-- estaba enterrado. Ahora va una
+           linea, con el porque escrito en castellano.
+        """
+        motivo = str(exc) or exc.__class__.__name__
+        if "429" in motivo:
+            espera = max(espera, _ESPERA_TRAS_429)
+            logger.warning(
+                "TITULARES: el nodo rechaza la conexion por EXCESO DE "
+                "PETICIONES (429). No es un corte de red: es la cuota de "
+                "Helius. Se espera %.0fs. Si se repite, hay que bajar "
+                "`node.max_rps` o subir de plan.",
+                espera,
+            )
+            return espera
+        logger.warning(
+            "TITULARES: se cayo el websocket (%s). Se reintenta en %.0fs.",
+            motivo[:160], espera,
+        )
+        return espera
