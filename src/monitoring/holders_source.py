@@ -1,4 +1,4 @@
-"""Fuente de compra: N titulares y menos de 5 minutos de vida. Nada mas.
+"""Fuente de compra: N titulares cruzados, y presion compradora. Nada mas.
 
 LO PEDIDO, literal: "que me compre cuando haya 99 holders en una moneda y que
 tenga menos de cinco minutos de creacion, solo esas dos condiciones, no quiero
@@ -24,13 +24,26 @@ DE DONDE SALEN LOS DOS DATOS, y por que del stream y no de un indexador:
   Cuesta cero y esta en el mismo instante. Un indexador tardaria segundos y a
   esta edad ni conoce la mitad de las monedas.
 
-* EDAD: se mide desde el primer TradeEvent visto, que en pump.fun es la compra
-  de creacion. Eso solo vale si el bot estaba escuchando cuando nacio: de una
-  moneda que ya existia, lo unico que se sabe es cuanto hace que se la mira,
-  que puede ser diez segundos en una moneda de dos horas. Por eso se exige
-  haber visto la creacion -- NO es una condicion de mas, es la unica forma de
-  saber la edad. Y con un tope de cinco minutos no cuesta nada: cualquier
-  moneda que cumpla nacio mientras el bot ya estaba escuchando.
+* EDAD: se mide desde la marca de tiempo DE LA CADENA del primer TradeEvent
+  visto, que en pump.fun es la compra de creacion. Eso solo vale si el bot
+  estaba escuchando cuando nacio: de una moneda que ya existia, lo unico que
+  se sabe es cuanto hace que se la mira, que puede ser diez segundos en una
+  moneda de dos horas. Por eso, MIENTRAS SE MIRA LA EDAD, se exige haber visto
+  la creacion: no es una condicion de mas, es la unica forma de saberla.
+
+EL 22-SEP SE APAGO EL CORTE DE EDAD (`max_edad_seg: 0`), pedido, y con el cae
+tambien el requisito de haber visto nacer la moneda -- porque ese requisito
+existia solo para poder medir la edad. Era ademas el filtro mas duro de todos:
+descartaba TODAS las monedas vivas cada vez que se reiniciaba el bot, que en
+una maquina que se reinicia a menudo son casi todas.
+
+QUE QUEDA SUJETANDO LA ENTRADA, entonces:
+
+* el CRUCE del corte de titulares (paso 1): no basta con que la moneda TENGA
+  23 titulares, hay que verla pasar de menos a mas. Una moneda muerta no suma
+  gente nueva, asi que esto ya descarta los cadaveres;
+* la PRESION COMPRADORA (ultimo paso): que ahora mismo entre mas dinero del
+  que sale.
 """
 
 from __future__ import annotations
@@ -88,10 +101,17 @@ def build_holders_heartbeat(
     """
     p50, p95, muestras = volumen.retraso()
     mem = volumen.estado_memoria()
+    # "menos de 0 min" seria mentira y ademas alarmante: con el corte de edad
+    # apagado no es que el limite sea cero, es que no hay limite.
+    edad_txt = (
+        f"menos de {max_edad_seg / 60:.0f} min"
+        if max_edad_seg > 0
+        else "sin límite de edad"
+    )
     return "\n".join([
         "👥 <b>TITULARES</b>",
-        f"Disparo: <b>{min_holders}</b> titulares · menos de "
-        f"{max_edad_seg / 60:.0f} min · {buy_amount:g} SOL",
+        f"Disparo: <b>{min_holders}</b> titulares · {edad_txt} · "
+        f"{buy_amount:g} SOL",
         f"👀 Monedas con movimiento: <b>{embudo.get('vistas', 0)}</b>",
         f"  ↳ llegaron a {min_holders} titulares: {embudo.get('con_titulares', 0)}",
         f"  ↳ ya los tenían al verlas (no se vio el cruce): "
@@ -276,6 +296,25 @@ class HoldersSource:
         tarea.add_done_callback(self._en_vuelo.discard)
         return True
 
+    def _edad_vale(self, mint: str, edad: float | None) -> bool:
+        """Si la moneda pasa el corte de edad. Con el corte en 0, siempre.
+
+        Apagar el corte apaga TAMBIEN el requisito de haber visto nacer la
+        moneda, y va junto a proposito: ese requisito nunca fue un filtro de
+        calidad, era la unica forma de SABER la edad. Sin mirar la edad no
+        protege de nada, y era el filtro mas duro que habia -- descartaba todas
+        las monedas vivas en cada reinicio del bot.
+        """
+        if self.max_edad_seg <= 0:
+            return True
+        if edad is None:
+            self._cuenta("sin_historia", mint)
+            return False
+        if edad > self.max_edad_seg:
+            self._cuenta("viejas", mint)
+            return False
+        return True
+
     def _revisar(
         self, mints: list[str], token_callback: Callable[[TokenInfo], Awaitable[None]]
     ) -> None:
@@ -306,13 +345,22 @@ class HoldersSource:
                 continue
             self._cuenta("con_titulares", mint)
 
-            # 2) Edad.
+            # 2) EDAD. Con `max_edad_seg` en 0 NO SE MIRA, y se deja de exigir
+            # tambien haber visto nacer la moneda (22-sep, pedido).
+            #
+            # LAS DOS COSAS VAN JUNTAS A PROPOSITO. Exigir haberla visto nacer
+            # nunca fue un filtro de calidad: es la UNICA forma de saber la
+            # edad, porque de una moneda que ya existia solo se sabe cuanto
+            # hace que se la mira. Si la edad no se mira, ese requisito no
+            # protege de nada y sigue siendo el mas duro de todos: descarta
+            # TODAS las monedas vivas en cada reinicio del bot.
+            #
+            # Lo que se pierde: se podra comprar una moneda de dos horas que
+            # esta rebotando. Lo que lo sujeta es el paso 1, que exige verla
+            # CRUZAR el corte de titulares -- una moneda muerta no suma gente
+            # nueva-- y el paso de la presion compradora, aqui abajo.
             edad = self._edad(mint)
-            if edad is None:
-                self._cuenta("sin_historia", mint)
-                continue
-            if edad > self.max_edad_seg:
-                self._cuenta("viejas", mint)
+            if not self._edad_vale(mint, edad):
                 continue
 
             # 3) LAS ULTIMAS OPERACIONES, TODAS COMPRAS.
@@ -358,7 +406,9 @@ class HoldersSource:
             # operacion suya; marcarla antes la perdia para siempre.
             if mint in self._decididas:
                 continue
-            if self._lanzar(mint, titulares, edad, token_callback):
+            # `edad` puede ser None con el corte de edad apagado: entonces no
+            # se conoce y va 0 al rotulo, que es lo que significa "no se sabe".
+            if self._lanzar(mint, titulares, edad or 0.0, token_callback):
                 self._ya_decidida(mint)
 
     def _heartbeat_si_toca(self) -> None:
@@ -481,11 +531,20 @@ class HoldersSource:
         # esto guardaba cinco minutos mientras la ventana era de veinte: a las
         # monedas que borraba en marcha les volvia el recuento de titulares a
         # cero y ademas quedaban descartadas para siempre por "sin historia".
-        volumen.configurar_memoria(self.max_edad_seg)
+        # Sin corte de edad no hay "ventana de compra" que cubrir, pero la
+        # memoria sigue haciendo falta para contar titulares: se le da un rato
+        # generoso para que a una moneda no le vuelva el recuento a cero.
+        volumen.configurar_memoria(self.max_edad_seg or 1800.0)
         logger.info(
-            "TITULARES ACTIVA: dispara con %d titulares y menos de %.0f min "
-            "de vida, %.4f SOL, solo pump.fun (programa %s). SIN anti-bundle.",
-            self.min_holders, self.max_edad_seg / 60, self.buy_amount, program_id,
+            "TITULARES ACTIVA: dispara con %d titulares y %s, %.4f SOL, solo "
+            "pump.fun (programa %s). SIN anti-bundle.",
+            self.min_holders,
+            (
+                f"menos de {self.max_edad_seg / 60:.0f} min de vida"
+                if self.max_edad_seg > 0
+                else "SIN corte de edad (tampoco hace falta verla nacer)"
+            ),
+            self.buy_amount, program_id,
         )
         por_geyser = bool(self.geyser_endpoint and self.geyser_token)
         if not por_geyser:

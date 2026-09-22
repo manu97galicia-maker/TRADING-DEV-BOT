@@ -706,8 +706,15 @@ filters:
     # stream (no de un indexador: eso tardaria segundos y a esta edad ni
     # conoce la mitad de las monedas).
     min_holders: 23
-    # Veinte minutos (19-sep; antes cinco).
-    max_edad_seg: 1200
+    # SIN CORTE DE EDAD (22-sep, pedido: "3 y 4 pon simplemente presion
+    # compradora"). Historial: 5 min -> 20 min -> sin limite.
+    #
+    # 0 NO significa "cero minutos": significa que no se mira la edad. Y al
+    # apagarlo se deja de exigir tambien haber visto NACER la moneda, porque
+    # eso nunca fue un filtro de calidad -- era la unica forma de saber la
+    # edad. Era ademas el filtro mas duro de todos: descartaba todas las
+    # monedas vivas cada vez que se reiniciaba el bot.
+    max_edad_seg: 0
     # NO COGER UN DIP. Pedido el 19-sep. Las dos condiciones de
     # arriba miran cuanta gente hay y cuando nacio la moneda; estas
     # dos miran si en ESTE INSTANTE la moneda sube o se cae.
@@ -718,7 +725,9 @@ filters:
     # NADIE haya vendido en las ultimas. Medido: las monedas sin
     # ventas recientes hacian x2 el 41% de las veces, contra el 17%
     # de base. 0 = no se mira.
-    ultimas_compras: 2
+    # APAGADO el 22-sep, pedido. 0 = no se mira. Lo que queda cuidando de no
+    # entrar en una caida es la presion compradora de aqui abajo.
+    ultimas_compras: 0
     # Ventana en la que se compara el dinero que ENTRA contra el que
     # SALE. Tiene que entrar mas. 0 = no se mira.
     #

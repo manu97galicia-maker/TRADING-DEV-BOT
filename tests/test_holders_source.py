@@ -253,10 +253,10 @@ def test_las_fuentes_encendidas_son_las_dos_pedidas() -> None:
 def test_los_dos_numeros_son_los_pedidos() -> None:
     h = _filtros()["holders"]
     # Historial de estos dos numeros, para que un cambio sea siempre
-    # deliberado: 99/5min (19-sep) -> 90/5min -> 60/20min -> 23/20min,
-    # todos pedidos.
+    # deliberado: 99/5min (19-sep) -> 90/5min -> 60/20min -> 23/20min ->
+    # 23/sin corte de edad (22-sep), todos pedidos.
     assert h["min_holders"] == 23
-    assert h["max_edad_seg"] == 1200
+    assert h["max_edad_seg"] == 0, "sin corte de edad: 0 = no se mira"
     # 0,04 SOL por entrada. Tiene que coincidir con el `buy_amount` global:
     # el importe de la SENAL pisa al global, asi que si no coinciden el de
     # arriba no sirve de nada. Ya paso una vez.
@@ -628,9 +628,106 @@ def _fuente_texto() -> str:
 
 
 def test_la_config_pide_las_dos() -> None:
+    """Desde el 22-sep solo queda la presion: "3 y 4 pon simplemente presion
+    compradora". Las ultimas-operaciones-compras se apagaron con ella."""
     h = _filtros()["holders"]
-    assert h["ultimas_compras"] == 2
+    assert h["ultimas_compras"] == 0
     assert h["presion_seg"] > 0
     # Ventana corta a proposito: en una larga, una compra gorda de hace medio
     # minuto tapa que AHORA MISMO esta cayendo.
     assert h["presion_seg"] <= 5
+
+
+# ------------------------- sin corte de edad (22-sep): que se abre y que no
+
+
+def _cumple(f: HoldersSource, mint: str) -> None:
+    """Deja la moneda justo por debajo del corte, para que luego se vea cruzar."""
+    _poblar(mint, f.min_holders - 1, creacion=False, edad=5.0)
+    _pasan(f, [mint])
+
+
+def _pasan(f: HoldersSource, mints: list[str]) -> list[str]:
+    """Los mints que pasan TODOS los filtros, sin salir a la red.
+
+    `_evaluar` reconstruye el token preguntandole al nodo, y estos tests van de
+    los filtros, no de eso. Se sustituye por un apuntador: lo que se comprueba
+    es que la moneda llega hasta la decision de comprar.
+    """
+    llegaron: list[str] = []
+
+    async def _apunta(mint: str, _t: int, _e: float, _cb: object) -> None:
+        llegaron.append(mint)
+
+    f._evaluar = _apunta  # type: ignore[method-assign]
+    _revisa(f, mints)
+    return llegaron
+
+
+def test_sin_corte_de_edad_ya_no_hace_falta_verla_nacer() -> None:
+    """EL FILTRO MAS DURO QUE HABIA, y por que cae con el de la edad.
+
+    Exigir haber visto nacer la moneda nunca fue un filtro de calidad: era la
+    unica forma de SABER su edad. Si la edad no se mira, no protege de nada, y
+    mientras tanto descartaba TODAS las monedas vivas en cada reinicio del bot
+    -- que en una maquina que se reinicia a menudo son casi todas.
+    """
+    f = _fuente(min_holders=3, max_edad_seg=0.0, ultimas_compras=0, presion_seg=0)
+    _cumple(f, MINT)
+    # creacion=False: el bot NO la vio nacer. Antes esto era "sin_historia".
+    _poblar(MINT, 5, creacion=False, edad=5.0)
+    assert _pasan(f, [MINT]) == [MINT], f"no llego a comprar; embudo: {f._embudo}"
+    assert f._embudo.get("sin_historia", 0) == 0
+
+
+def test_sin_corte_de_edad_una_moneda_vieja_tambien_vale() -> None:
+    """Dos horas de vida y cruzando el corte: entra."""
+    f = _fuente(min_holders=3, max_edad_seg=0.0, ultimas_compras=0, presion_seg=0)
+    _cumple(f, MINT)
+    _poblar(MINT, 5, creacion=True, edad=7200.0)
+    assert _pasan(f, [MINT]) == [MINT]
+    assert f._embudo.get("viejas", 0) == 0
+
+
+def test_con_corte_de_edad_sigue_descartando_como_antes() -> None:
+    """El apagado no puede haberse llevado por delante el filtro de verdad."""
+    f = _fuente(min_holders=3, max_edad_seg=300.0, ultimas_compras=0, presion_seg=0)
+    _cumple(f, MINT)
+    _poblar(MINT, 5, creacion=True, edad=9999.0)
+    assert _pasan(f, [MINT]) == []
+    assert f._embudo.get("viejas") == 1
+
+
+def test_lo_que_sigue_sujetando_la_entrada_es_el_cruce() -> None:
+    """SIN ESTO, quitar la edad seria comprar cadaveres.
+
+    Una moneda muerta conserva sus titulares para siempre, asi que "tiene 23"
+    lo cumple eternamente. Lo que la deja fuera es que hay que verla CRUZAR el
+    corte -- y una moneda muerta no suma gente nueva.
+    """
+    f = _fuente(min_holders=3, max_edad_seg=0.0, ultimas_compras=0, presion_seg=0)
+    # Nunca se la vio por debajo: llega ya con los titulares hechos.
+    _poblar(MINT, 50, creacion=False, edad=7200.0)
+    assert _pasan(f, [MINT]) == []
+    assert f._embudo.get("ya_venian_cumplidas") == 1
+
+
+def test_la_presion_compradora_sigue_siendo_la_que_manda() -> None:
+    """Es lo unico que queda mirando si la moneda sube o se cae AHORA."""
+    f = _fuente(min_holders=3, max_edad_seg=0.0, ultimas_compras=0, presion_seg=3.0)
+    _cumple(f, MINT)
+    ahora = time.time()
+    volumen._ops[MINT] = [
+        (ahora, 0.5, True, "a"), (ahora, 0.5, True, "b"), (ahora, 0.5, True, "c"),
+        (ahora, 50.0, False, "ballena"),  # se esta volcando
+    ]
+    assert _pasan(f, [MINT]) == []
+    assert f._embudo.get("dip") == 1
+
+
+def test_el_parte_no_dice_menos_de_0_min() -> None:
+    """"menos de 0 min" seria mentira y encima alarmante: no es que el limite
+    sea cero, es que no hay limite."""
+    texto = build_holders_heartbeat(23, 0.0, 0.04, {}, paper_mode=False)
+    assert "0 min" not in texto
+    assert "sin límite de edad" in texto
