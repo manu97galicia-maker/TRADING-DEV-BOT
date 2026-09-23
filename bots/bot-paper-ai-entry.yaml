@@ -922,16 +922,34 @@ filters:
     enabled: true
     # Punto de la curva en que se compra (0,95 = 95% vendido).
     #
-    # Cuanto mas bajo, antes se entra: queda mas curva por llenar, asi que
-    # hay mas recorrido si la moneda migra, pero tambien mas monedas que se
-    # quedan a medias y nunca llegan. Del 96 al 95 se dobla la ventana (de un
-    # 3,5% de curva a un 4,5%), asi que deberian entrar bastantes mas.
+    # 94,4% (23-sep, pedido: "entra un 1,6% antes"). Historial: 0,96 -> 0,95
+    # -> 0,96 -> 0,944.
     #
-    # Si se quiere bajar mas: a 0,92 quedaria un 8% de curva por llenar, que
-    # es mas del doble de recorrido que a 96 -- y bastantes mas monedas que
-    # no lo consiguen. Conviene mirar los resultados del 95 antes de bajarlo.
-    # 96% (23-sep, pedido). Historial: 0,96 -> 0,95 -> 0,96.
-    umbral: 0.96
+    # LO QUE SE DESCUBRIO AL HACER LA CUENTA, y es lo importante de este
+    # cambio. La curva de pump.fun es un producto constante, asi que el precio
+    # va como 1/(tokens_virtuales)^2 y sube cada vez mas rapido segun se
+    # llena. Entrar "1,6 puntos antes" NO es entrar un 1,6% mas barato:
+    #
+    #   curva   SOL dentro   falta   precio    subida hasta migrar
+    #   92,0%      63,8       21,2   -17,6%          +50,5%
+    #   94,4%      69,3       15,7    -7,7%          +34,3%   <- aqui
+    #   95,0%      70,7       14,3    -4,9%          +30,3%
+    #   96,0%      73,3       11,7     0,0%          +24,0%   <- antes
+    #   97,0%      76,0        9,0    +5,3%          +17,7%
+    #
+    # (85 SOL es lo que hace falta para migrar. "Precio" es respecto al 96%.)
+    #
+    # EL FALLO QUE ARREGLA. Al 96% queda un +24% de recorrido hasta migrar, y
+    # el primer take profit esta en +30%. O sea que la escalera NO PODIA
+    # cobrar ni un peldano mientras la moneda siguiera en la curva: hacia
+    # falta que migrara y siguiera subiendo YA en PumpSwap, que es otro
+    # mercado y otra liquidez. Al 94,4% el recorrido es +34,3%, asi que el TP1
+    # cae DENTRO de la curva. Los numeros ya encajan entre si.
+    #
+    # QUE CUESTA BAJARLO: mas monedas se quedan a medias y no llegan nunca a
+    # migrar. A cambio entran bastantes mas candidatas (la ventana pasa de 3,5
+    # puntos de curva a 5,1) y cada una entra un 7,7% mas abajo.
+    umbral: 0.944
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995

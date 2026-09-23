@@ -314,11 +314,11 @@ def test_la_config_del_bot_pide_lo_que_se_acordo() -> None:
     """
     cfg = yaml.safe_load(CONFIG.read_text())["filters"]["curva_96"]
     assert cfg["enabled"] is True
-    assert cfg["umbral"] == 0.96
+    assert cfg["umbral"] == 0.944
     # La ventana de disparo: entre el umbral y el tope. Por encima del tope
     # la moneda ya esta migrando y comprar ahi es tirar la comision.
     assert cfg["tope"] > cfg["umbral"]
-    # A cero: manda el 15% del saldo, igual que en todas las demas fuentes.
+    # A cero: manda el importe en dolares, igual que en las demas fuentes.
     assert cfg["buy_amount"] == 0
     # SIN TOPE DE PRUEBA. "3 compras y si dos salen mal se para sola" era lo
     # correcto para una prueba acotada; siendo LA estrategia, dejaria el bot
