@@ -148,11 +148,17 @@ def test_nada_sustituye_el_stop_loss_configurado() -> None:
 
 
 def test_un_rug_corta_en_el_stop_y_no_mas_abajo() -> None:
-    """Tocando justo el -18%, se pierde justo el 18%."""
-    r = simula([1.0, 0.90, 0.82])
+    """Tocando justo el suelo, se pierde justo eso y ni un punto mas.
+
+    Los precios salen del `stop_loss_percentage` del yaml, no escritos a mano:
+    el 23-sep paso de 18% a 28% y con el recorrido fijo la moneda ya no llegaba
+    a tocar el suelo, asi que el test pasaba a medir otra cosa sin avisar.
+    """
+    sl = float(_trade()["stop_loss_percentage"])
+    r = simula([1.0, 1.0 - sl / 2, 1.0 - sl])
     assert r["paro_por_stop"]
     assert r["peldanos"] == []
-    assert round(r["resultado"], 6) == -0.18
+    assert round(r["resultado"], 6) == round(-sl, 6)
 
 
 def test_tocar_el_tp1_asegura_ganancia_sin_vender_nada() -> None:
@@ -223,8 +229,12 @@ def test_ni_un_x100_toca_el_moonbag() -> None:
 def test_el_stop_se_lleva_la_posicion_entera() -> None:
     """Con `vender_todo_en_stop` encendido, un stop no deja nada corriendo en
     una moneda que se esta cayendo a cero. Ademas la cuenta de token queda
-    vacia, que es lo que permite cerrarla y recuperar su renta."""
-    r = simula([1.0, 0.80])
+    vacia, que es lo que permite cerrarla y recuperar su renta.
+
+    El precio sale del yaml: con el suelo escrito a mano (0,80, de cuando el
+    stop era del 18%) este test dejo de tocar el stop al pasarlo a 28% y
+    comprobaba otra cosa."""
+    r = simula([1.0, 1.0 - float(_trade()["stop_loss_percentage"])])
     assert r["paro_por_stop"]
     assert round(r["restante_pct"], 6) == 0.0
 

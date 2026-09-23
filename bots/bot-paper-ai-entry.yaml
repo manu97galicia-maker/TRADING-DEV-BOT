@@ -158,7 +158,18 @@ trade:
       sell: 0.021
     - gain: 19.00    # x20
       sell: 0.021
-  stop_loss_percentage: 0.18
+  # 28% (23-sep, pedido). Historial: 18% -> 28%.
+  #
+  # SOLO MANDA HASTA EL PRIMER PELDANO. En cuanto la moneda toca el TP1
+  # (+25%), el suelo se sube a precio de compra +12% (`margen_stop_tras_tp`)
+  # y este numero deja de usarse en esa posicion. O sea que el 28% es lo que
+  # se arriesga ANTES de que la moneda demuestre nada.
+  #
+  # Que se gana y que se pierde: un stop mas ancho aguanta los tirones
+  # normales de una memecoin recien nacida, que con el 18% cerraban en rojo
+  # posiciones que luego subian. A cambio, cuando la moneda va de verdad a
+  # cero, se pierde un 28% en vez de un 18%.
+  stop_loss_percentage: 0.28
   # EL STOP SE LLEVA LA POSICION ENTERA, moonbag incluido.
   #
   # Antes dejaba el 2% corriendo en una moneda que se estaba cayendo a cero:
