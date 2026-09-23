@@ -46,6 +46,26 @@ else
 fi
 
 echo
+# ANTES QUE EL EMBUDO: SI LLEGAN DATOS.
+#
+# Un embudo lleno de ceros se lee como "la estrategia es muy exigente" y lleva
+# a aflojar filtros. Pero si el nodo esta rechazando la conexion, esos ceros no
+# significan nada: el bot no ha visto NI UNA moneda. Los dos dias del 21 y 22
+# de septiembre se fueron en eso -- se movieron el corte de titulares, la edad
+# y el anti-dip mientras el problema era un 429.
+echo "1b. LLEGAN DATOS DE LA CADENA?"
+_429="$(cuenta '429|se cayo el websocket')"
+if [ "${_429:-0}" -gt 0 ]; then
+  echo "  NO. El nodo rechaza la conexion: ${_429} avisos en ${MIN} min."
+  echo "  429 = demasiadas peticiones. Es la cuota del nodo, no los filtros."
+  echo "  Con el stream caido el embudo de abajo sale a cero SIEMPRE y no"
+  echo "  significa nada. Mira el plan de Helius o baja node.max_rps."
+  echo
+else
+  echo "  Si: sin rechazos del nodo en los ultimos ${MIN} min."
+fi
+
+echo
 echo "2. EL EMBUDO (cuantas monedas se caen en cada paso)"
 printf '  %-42s %s\n' "candidatas que mando la fuente" "$(cuenta "$CANDIDATAS")"
 printf '  %-42s %s\n' "  descartadas por bundle"        "$(cuenta 'BUNDLE descartado')"

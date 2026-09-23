@@ -16,7 +16,7 @@ eran miles de lineas de traza y el motivo de verdad --una linea con el 429 al
 final-- quedaba enterrado. Desde el movil eso es invisible.
 """
 
-# ruff: noqa: S101, SLF001
+# ruff: noqa: S101, SLF001, PLR2004
 
 import logging
 from types import SimpleNamespace
@@ -93,3 +93,45 @@ def test_el_bucle_reinicia_la_espera_al_reconectar() -> None:
     assert "espera = _ESPERA_RECONEXION" in tras_suscribir, (
         "la espera no se reinicia despues de conectar y suscribirse"
     )
+
+
+# ------------------- que el panel GRITE cuando el stream esta caido
+
+
+from pathlib import Path  # noqa: E402
+
+import yaml  # noqa: E402
+
+RAIZ = Path(__file__).resolve().parent.parent
+
+
+def test_el_panel_avisa_de_que_no_llegan_datos() -> None:
+    """LO QUE COSTO DOS DIAS.
+
+    Con el nodo rechazando la conexion, `bot` decia "compras: ACTIVAS" y
+    "candidatas: 0". Las dos cosas son ciertas y juntas parecen normales: da la
+    sensacion de que la estrategia es exigente. Se movieron el corte de
+    titulares, la edad y el anti-dip mientras el bot estaba sencillamente
+    ciego. Un bot que no recibe datos no es exigente: esta averiado.
+    """
+    s = (RAIZ / "deploy/instalar_comandos.sh").read_text(encoding="utf-8")
+    assert "NO ESTA RECIBIENDO LA CADENA" in s
+    assert "429" in s
+    assert "max_rps" in s, "no dice que hacer al respecto"
+
+
+def test_el_diagnostico_mira_el_stream_antes_que_el_embudo() -> None:
+    """Un embudo a cero con el stream caido no significa nada, asi que hay que
+    decirlo ANTES de enseñar los ceros o se lee al reves."""
+    s = (RAIZ / "deploy/porque.sh").read_text(encoding="utf-8")
+    assert "LLEGAN DATOS DE LA CADENA?" in s
+    assert s.index("LLEGAN DATOS DE LA CADENA?") < s.index("2. EL EMBUDO")
+
+
+def test_el_tope_de_consultas_deja_margen_de_verdad() -> None:
+    """45 sobre un plan de 50 no es margen: una rafaga se come esos cinco en un
+    instante y empieza el 429. El 22-sep eso dejo al bot dos dias ciego."""
+    cfg = yaml.safe_load(
+        (RAIZ / "bots/bot-paper-ai-entry.yaml").read_text(encoding="utf-8")
+    )
+    assert cfg["node"]["max_rps"] <= 30, "sin margen real volvera el 429"

@@ -94,6 +94,30 @@ if [ "${_c:-0}" -eq 0 ]; then
   # El 21-sep eso hizo creer que la fuente no encontraba nada.
   _p="$(journalctl -u pump-bot --since '-30 min' --no-pager 2>/dev/null | grep -cE 'TITULARES —|PRESIÓN —|Telegram call' || true)"
   echo "  candidatas de la fuente (30 min): ${_p:-0}"
+
+  # LO PRIMERO DE TODO: SI LLEGAN DATOS O NO.
+  #
+  # ESTO ES LO QUE COSTO DOS DIAS. El nodo contestaba 429 en el saludo del
+  # websocket, el bot no recibia NI UNA operacion de la cadena, y este panel
+  # decia tan tranquilo "compras: ACTIVAS" con "candidatas: 0". Los dos
+  # mensajes son ciertos y juntos parecen normales: da la sensacion de que la
+  # estrategia es exigente, cuando en realidad el bot estaba ciego. Se toco el
+  # corte de titulares, la edad, el anti-dip... todo mientras el problema no
+  # tenia nada que ver con los filtros.
+  #
+  # Un bot que no recibe datos no es un bot exigente: es un bot averiado, y
+  # tiene que decirlo con esas palabras.
+  _429="$(journalctl -u pump-bot --since '-15 min' --no-pager 2>/dev/null | grep -cE '429|se cayo el websocket' || true)"
+  if [ "${_429:-0}" -gt 0 ]; then
+    echo
+    echo "  !! EL BOT NO ESTA RECIBIENDO LA CADENA !!"
+    echo "     El nodo rechaza la conexion (429 = demasiadas peticiones):"
+    echo "     ${_429} avisos en los ultimos 15 min. Con el stream caido NO"
+    echo "     puede comprar nada, y no es culpa de los filtros."
+    echo "     Mira el plan de Helius o baja node.max_rps."
+  else
+    echo "  stream de la cadena: OK (sin rechazos del nodo en 15 min)"
+  fi
   echo "  -> para saber que las para, escribe:  porque"
 fi
 

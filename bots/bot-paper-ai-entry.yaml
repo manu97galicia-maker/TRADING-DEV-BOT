@@ -923,6 +923,17 @@ node:
   # segundo son 5, mas las compras, las confirmaciones y los filtros. Con el
   # presupuesto agotado lo que se retrasa es el STOP LOSS.
   #
+  # BAJADO A 25 EL 22-SEP, y con un motivo muy concreto: el nodo estaba
+  # contestando 429 ("demasiadas peticiones") hasta en el saludo del
+  # websocket, y el bot llevaba DOS DIAS sin recibir una sola operacion de la
+  # cadena. 45 sobre un plan de 50 deja cinco de margen sobre el papel, pero el
+  # limite de Helius no es un grifo liso: hay rafagas --confirmar una compra,
+  # cinco posiciones pidiendo precio a la vez-- que se comen ese margen en un
+  # instante, y basta con pasarse un segundo para que empiece el 429.
+  #
+  # 25 deja la mitad del plan libre. Se entra algo mas despacio, pero un bot
+  # que entra despacio compra; uno bloqueado por 429 no compra nada.
+  #
   # Si se cambia de plan, cambiar esto. En el log sale una linea por minuto,
   # SOLO cuando de verdad se ha esperado, que dice cuanto ha frenado este tope.
-  max_rps: 45
+  max_rps: 25
