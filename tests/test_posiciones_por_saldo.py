@@ -116,7 +116,7 @@ def test_el_modo_de_tamano_esta_claro() -> None:
     """
     t = _trade()
     # Uno de los dos manda, nunca los dos: el porcentaje, si es >0, SUSTITUYE
-    # al importe fijo dentro del cerrojo de gasto. Hoy manda el fijo.
+    # al importe fijo dentro del cerrojo de gasto. Hoy manda el porcentaje.
     assert (t["fraccion_saldo"] > 0) != (t["buy_amount"] > 0), (
         "o importe fijo o porcentaje, no los dos ni ninguno"
     )

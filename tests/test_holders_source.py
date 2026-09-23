@@ -257,10 +257,13 @@ def test_los_dos_numeros_son_los_pedidos() -> None:
     # 23/sin corte de edad (22-sep), todos pedidos.
     assert h["min_holders"] == 23
     assert h["max_edad_seg"] == 0, "sin corte de edad: 0 = no se mira"
-    # 0,04 SOL por entrada. Tiene que coincidir con el `buy_amount` global:
-    # el importe de la SENAL pisa al global, asi que si no coinciden el de
-    # arriba no sirve de nada. Ya paso una vez.
-    assert h["buy_amount"] == 0.04
+    # El importe de la fuente tiene que coincidir con el `buy_amount` global:
+    # el de la SENAL pisa al global, asi que si no coinciden el de arriba no
+    # sirve de nada. Ya paso una vez. Desde el 23-sep los dos estan a CERO
+    # porque manda el 15% del saldo (`fraccion_saldo`).
+    trade = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["trade"]
+    assert h["buy_amount"] == trade["buy_amount"] == 0
+    assert trade["fraccion_saldo"] == 0.15
 
 
 def test_ningun_filtro_global_puede_descartar_por_su_cuenta() -> None:

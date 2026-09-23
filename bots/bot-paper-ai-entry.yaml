@@ -10,13 +10,20 @@ separate_process: false
 platform: pump_fun
 
 trade:
-  # ENTRADA DE 0,04 SOL (19-sep, pedido). Importe FIJO: manda este numero,
-  # no el porcentaje del saldo -- `fraccion_saldo` esta a 0 mas abajo.
+  # YA NO MANDA ESTE NUMERO (23-sep): manda el 15% del saldo, que esta en
+  # `fraccion_saldo` mas abajo. Con el porcentaje encendido, el importe se
+  # recalcula DENTRO del cerrojo de gasto con el saldo recien leido, y pisa
+  # tanto a este numero como al de cada fuente.
   #
-  # OJO, ES UNO DE DOS: el `buy_amount` de la fuente de titulares pisa a este
-  # porque el importe de la senal manda. Los dos tienen que decir lo mismo o el
-  # de aqui no sirve de nada, y hay un test que lo comprueba.
-  buy_amount: 0.04
+  # A CERO, Y NO ES UN OLVIDO. La regla de esta configuracion es que mande
+  # UNO de los dos, nunca los dos: dejar aqui un numero mientras el porcentaje
+  # esta encendido es un numero que parece decidir y no decide. Los tres
+  # sitios que pueden mandar importe --este, titulares y telegram-- van a cero
+  # juntos, para que no quede ninguno pareciendo que manda.
+  #
+  # Si algun dia se apaga el porcentaje, hay que poner un numero aqui: con los
+  # dos a cero el bot no compraria, que es un fallo ruidoso y no uno silencioso.
+  buy_amount: 0
   mayhem_buy_amount: 0
   # Posiciones abiertas A LA VEZ. TECHO DE 5, y por debajo manda el SALDO.
   # Son dos frenos, y gana siempre el que se quede corto.
@@ -291,11 +298,24 @@ trade:
   # La bolsa NO se vende ni se pierde: se queda en la wallet y la recoge la
   # limpieza de cuentas. 0 desactiva la regla.
   valor_minimo_posicion_usd: 1.0
-  # PORCENTAJE DEL SALDO: APAGADO (19-sep). Estuvo en 0,25 unas horas; ahora
-  # manda el importe fijo de arriba. Con cualquier valor mayor que cero, este
-  # porcentaje SUSTITUYE al importe fijo dentro del cerrojo de gasto, asi que
-  # los dos no pueden mandar a la vez.
-  fraccion_saldo: 0
+  # PORCENTAJE DEL SALDO: 15% (23-sep, pedido). Historial: 0,25 unas horas el
+  # 19-sep -> apagado -> 0,15.
+  #
+  # MANDA ESTE, no el importe fijo de arriba: con cualquier valor mayor que
+  # cero, el porcentaje SUSTITUYE al importe fijo dentro del cerrojo de gasto.
+  # Los dos no pueden mandar a la vez.
+  #
+  # ES SOBRE EL SALDO LIBRE, no sobre el total: se descuentan la reserva
+  # minima y lo ya comprometido por las posiciones abiertas. Por eso con cinco
+  # plazas no se compromete el 75% de la cartera -- cada compra es el 15% de
+  # lo que queda, asi que van menguando solas.
+  #
+  # OJO CON EL SUELO. A partir de cierto saldo el 15% se queda tan pequeno que
+  # los costes fijos --la renta de la cuenta de token y la comision de
+  # prioridad, que no bajan con el tamano-- se comen la operacion. Con un
+  # saldo de 0,2 SOL el 15% son 0,03, que ya es territorio de nacer perdiendo.
+  # Si pasa a menudo, lo que hay que poner es `compra_minima_sol`.
+  fraccion_saldo: 0.15
   # SIN TOPE DURO (19-sep, pedido por Manu). 0 = no se recorta nada.
   #
   # QUE SE PIERDE: era el ultimo freno contra un fallo de calculo. El 12-ago la
@@ -752,7 +772,9 @@ filters:
     # pisaria al global... y aun asi el porcentaje lo volveria a pisar
     # a el dentro del cerrojo de gasto. O sea: poner algo aqui no
     # serviria de nada y confundiria al leerlo.
-    buy_amount: 0.04
+    # A CERO: manda el 15% del saldo (`fraccion_saldo`). Ver el comentario del
+    # `buy_amount` global: o importe fijo o porcentaje, nunca los dos.
+    buy_amount: 0
     heartbeat_interval: 300
 
   curva_96:
@@ -831,13 +853,13 @@ filters:
     # compre y se venda".
     enabled: true
     session_name: moontok_watcher
-    # 0,04 SOL, los tres, para que coincida con el `buy_amount` global y con
-    # la entrada de titulares. TIENEN QUE COINCIDIR: el importe de la SENAL
-    # pisa al global, asi que si aqui hubiera otro numero el de arriba no
-    # serviria de nada. Ya paso una vez.
-    normal_buy_amount: 0.04
-    nitro_buy_amount: 0.04
-    promoted_buy_amount: 0.04
+    # A CERO los tres, igual que el `buy_amount` global: desde el 23-sep manda
+    # el 15% del saldo. TIENEN QUE COINCIDIR con el global: el importe de la
+    # SENAL pisa al de arriba, asi que un numero distinto aqui dejaria el de
+    # arriba sin efecto. Ya paso una vez.
+    normal_buy_amount: 0
+    nitro_buy_amount: 0
+    promoted_buy_amount: 0
     promotion_threshold: 500
     # Dos tipos de canal mezclados, y conviene saberlo al leer resultados:
     #

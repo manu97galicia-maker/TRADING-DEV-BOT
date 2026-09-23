@@ -91,12 +91,18 @@ def _tamanos(saldo: float, plazas: int | None = None) -> list[float]:
     return salen
 
 
-def test_el_modo_activo_es_el_importe_fijo() -> None:
-    """0,04 SOL por entrada, pedido el 19-sep. El porcentaje queda apagado:
-    los dos no pueden mandar a la vez."""
+def test_el_modo_activo_es_el_porcentaje() -> None:
+    """15% del saldo libre por entrada (23-sep, pedido).
+
+    Historial del tamano: 0,12 fijo -> 25% -> 0,04 fijo -> 15%.
+
+    Y la regla de siempre: manda UNO de los dos. Un importe fijo distinto de
+    cero con el porcentaje encendido es un numero que parece decidir y no
+    decide -- justo la clase de cosa que hace buscar el fallo donde no esta.
+    """
     t = _trade()
-    assert t["buy_amount"] == 0.04
-    assert t["fraccion_saldo"] == 0, "con esto >0 el porcentaje pisa al fijo"
+    assert t["fraccion_saldo"] == 0.15
+    assert t["buy_amount"] == 0, "con el porcentaje encendido el fijo no manda"
 
 
 def test_el_tope_no_recorta_el_importe_configurado() -> None:
@@ -118,17 +124,18 @@ def test_el_tope_no_recorta_el_importe_configurado() -> None:
         )
 
 
-def test_todas_las_posiciones_son_iguales_con_importe_fijo() -> None:
-    """Con importe fijo las cinco valen lo mismo.
+def test_con_el_porcentaje_las_posiciones_menguan() -> None:
+    """LA DIFERENCIA PRACTICA ENTRE LOS DOS MODOS, y conviene tenerla escrita.
 
-    Con el porcentaje menguaban --cada compra era el 25% de lo que QUEDABA--,
-    que es la diferencia practica entre los dos modos: el fijo gasta lo mismo
-    en la quinta oportunidad que en la primera.
+    Cada compra es el 15% de lo que QUEDA libre, no del saldo inicial: la
+    primera es la mas grande y la quinta la mas pequena. Con importe fijo las
+    cinco valdrian lo mismo. Por eso cinco plazas al 15% no comprometen el 75%
+    de la cartera.
     """
     tam = _tamanos(1.0)
     assert len(tam) == 5
-    assert len(set(round(x, 9) for x in tam)) == 1, f"deberian ser iguales: {tam}"
-    assert tam[0] == _trade()["buy_amount"]
+    assert len(set(round(x, 9) for x in tam)) == 5, f"deberian menguar: {tam}"
+    assert tam[0] > tam[-1]
 
 
 def test_nunca_se_gasta_mas_de_lo_que_hay() -> None:
@@ -145,20 +152,22 @@ def test_nunca_se_gasta_mas_de_lo_que_hay() -> None:
 def test_sin_suelo_compra_con_lo_que_haya() -> None:
     """EL SUELO SE QUITO el 19-sep, pedido: el bot ya no se para por saldo bajo.
 
-    Con la entrada fija en 0,04 y poco saldo, quien compra es la regla del 75%:
-    si no cabe el importe entero, se compra con esa fraccion de lo que quede.
+    Con el 15% del saldo y poco dinero, la compra sale diminuta sola.
 
-    LO QUE CUESTA: la comision de prioridad y la renta de la cuenta de token no
-    bajan con el tamano. Una compra de 0,005 SOL se deja una parte enorme en
-    entrar y salir. El test no lo impide --es lo pedido-- pero lo deja escrito.
+    LO QUE CUESTA, y hay que tenerlo escrito: la comision de prioridad y la
+    renta de la cuenta de token NO bajan con el tamano. Con 0,05 SOL de saldo,
+    el 15% de lo libre son ~0,003 SOL: una compra que se deja la mayor parte
+    en entrar y salir, o sea que nace perdiendo. El test no lo impide --es lo
+    pedido-- pero lo deja por escrito, y el dia que moleste lo que hay que
+    poner es `compra_minima_sol`.
     """
     t = _trade()
     assert t["compra_minima_sol"] == 0
     assert t["fraccion_si_no_llega"] > 0, "sin esto, con poco saldo no compraria"
     assert len(_tamanos(0.10)) >= 1, "con el suelo a 0 tiene que comprar igual"
     assert len(_tamanos(0.05)) >= 1
-    # Y con poco saldo la compra sale MAS PEQUENA que la configurada.
-    assert max(_tamanos(0.05)) < t["buy_amount"]
+    # Con poco saldo la compra sale diminuta: menos de una centesima de SOL.
+    assert max(_tamanos(0.05)) < 0.01
 
 
 def test_la_reserva_sigue_siendo_intocable() -> None:

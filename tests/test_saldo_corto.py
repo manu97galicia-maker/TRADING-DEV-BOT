@@ -106,10 +106,10 @@ def test_apagado_es_el_comportamiento_de_antes() -> None:
 
 def test_la_config_pide_lo_que_se_pidio() -> None:
     t = _cfg()["trade"]
-    # Vuelve el importe fijo: 0,04 SOL por entrada, y el porcentaje apagado.
-    # Los dos no pueden mandar a la vez.
-    assert t["buy_amount"] == 0.04
-    assert t["fraccion_saldo"] == 0
+    # Manda el porcentaje: 15% del saldo libre (23-sep). El importe fijo va a
+    # cero porque los dos no pueden mandar a la vez.
+    assert t["fraccion_saldo"] == 0.15
+    assert t["buy_amount"] == 0
     assert t["fraccion_si_no_llega"] == 0.75
 
 

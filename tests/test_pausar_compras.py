@@ -174,10 +174,15 @@ def test_ahora_mismo_compra_de_verdad() -> None:
     comprar durante dias sin que nadie lo note (que ya paso en agosto).
     """
     assert _trade()["pausar_compras"] is False
-    # Y EL TAMANO: 0,04 SOL por entrada, importe fijo. Ha ido y venido en un
-    # mismo dia (0,07 -> 0,12 -> 25% del saldo -> 0,04), asi que el numero se
-    # fija aqui para que cualquier cambio sea deliberado.
-    assert _trade()["buy_amount"] == 0.04
+    # Y EL TAMANO: 15% del saldo libre (23-sep). Ha ido y venido mucho
+    # (0,07 -> 0,12 -> 25% -> 0,04 -> 15%), asi que se fija aqui para que
+    # cualquier cambio sea deliberado.
+    #
+    # CON PORCENTAJE EL RIESGO ES PROPORCIONAL, que es la diferencia de fondo
+    # con el importe fijo: si la cartera mengua, las compras menguan solas y no
+    # hay que acordarse de bajarlas a mano.
+    assert _trade()["fraccion_saldo"] == 0.15
+    assert _trade()["buy_amount"] == 0, "o porcentaje o fijo, nunca los dos"
     # El tope duro se quito el 19-sep, pedido. Lo que sigue impidiendo que un
     # fallo vacie la cartera es el guardian del saldo: antes de firmar se lee el
     # saldo REAL y se exige que quepa la compra dejando intacta la reserva.

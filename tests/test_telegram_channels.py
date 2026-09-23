@@ -5,7 +5,7 @@ de ``chats=`` no se puede resolver, y eso se llevaba por delante la fuente
 entera. Anadir MoonTok al lado de Nitro hacia ese fallo mas probable.
 """
 
-# ruff: noqa: S101, PLR2004
+# ruff: noqa: S101
 
 import asyncio
 from collections.abc import Awaitable, Callable
@@ -117,10 +117,15 @@ def test_el_importe_de_canal_coincide_con_el_global() -> None:
     cfg = _config()
     tg = cfg["filters"]["telegram_calls"]
     global_ = cfg["trade"]["buy_amount"]
-    assert global_ == 0.04
     for clave in ("normal_buy_amount", "nitro_buy_amount", "promoted_buy_amount"):
         assert tg[clave] == global_, f"{clave} no coincide con el buy_amount global"
     assert cfg["filters"]["holders"]["buy_amount"] == global_
+    # Desde el 23-sep los cuatro estan a CERO porque manda el 15% del saldo.
+    # Que coincidan sigue importando: el dia que se apague el porcentaje, los
+    # cuatro tienen que volver a la vez o el de la senal pisara al global.
+    assert cfg["trade"]["fraccion_saldo"] > 0 or global_ > 0, (
+        "sin porcentaje y sin importe fijo el bot no compraria nada"
+    )
 
 
 def test_los_canales_estan_encendidos_pero_los_avisos_no() -> None:
