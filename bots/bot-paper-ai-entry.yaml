@@ -186,18 +186,36 @@ trade:
       sell: 0.024
     - gain: 19.00    # x20
       sell: 0.024
-  # 40% (23-sep, pedido). Historial: 18% -> 28% -> 40%.
+  # 30% (23-sep, pedido). Historial: 18% -> 28% -> 40% -> 30%.
   #
   # SOLO MANDA HASTA EL PRIMER PELDANO. En cuanto la moneda toca el TP1
   # (+30%), el suelo se sube a precio de compra +5% (`margen_stop_tras_tp`)
-  # y este numero deja de usarse en esa posicion. O sea que el 28% es lo que
+  # y este numero deja de usarse en esa posicion. O sea que el 30% es lo que
   # se arriesga ANTES de que la moneda demuestre nada.
   #
-  # Que se gana y que se pierde: un stop mas ancho aguanta los tirones
-  # normales de una memecoin recien nacida, que con el 18% cerraban en rojo
-  # posiciones que luego subian. A cambio, cuando la moneda va de verdad a
-  # cero, se pierde un 28% en vez de un 18%.
-  stop_loss_percentage: 0.40
+  # POR QUE SE BAJO DE 40 A 30. Es la palanca que mas pesa de toda la
+  # estrategia, y se vio al hacer la cuenta de cuanto deja cada final:
+  #
+  #   stop   se pierde   una que migra y muere   aciertos para no perder
+  #    40%     -39,2%           +9,9%                     80%
+  #    30%     -29,4%           +9,9%                     75%
+  #    25%     -24,5%           +9,9%                     71%
+  #
+  # (La perdida real no es el stop exacto: el 2% de moonbag no se vende y el
+  # slippage se come algo, por eso -39,2 y no -40.)
+  #
+  # EL NUMERO QUE IMPORTA es el de la derecha. Entrando al 94,4% de la curva,
+  # una moneda que hace todo bien y se muere justo al migrar llega a +34% y
+  # deja +9,9% con esta escalera: se cobra el TP1 y el resto sale por el
+  # suelo en compra +5%. Contra una perdida de -39,2%, eso pedia acertar 8 de
+  # cada 10 solo para quedarse igual. Con el stop al 30% baja a 7,5 de cada
+  # 10, que sigue siendo exigente pero es alcanzable.
+  #
+  # QUE CUESTA: se sale antes de las que se hunden y luego se recuperan. Un
+  # stop mas ancho aguanta los tirones normales de una memecoin; con el 18%
+  # cerraban en rojo posiciones que luego subian. Este es el equilibrio
+  # elegido entre las dos cosas.
+  stop_loss_percentage: 0.30
   # EL STOP SE LLEVA LA POSICION ENTERA, moonbag incluido.
   #
   # Antes dejaba el 2% corriendo en una moneda que se estaba cayendo a cero:
@@ -267,7 +285,7 @@ trade:
   #
   # QUE SE PIERDE AL SUBIRLO, y hay que saberlo: en un rug que empiece flojo
   # se sale mas tarde y mas abajo. La red de abajo sigue siendo el stop del
-  # 40%. A cambio deja de cortar las que solo estaban respirando, que es lo
+  # 30%. A cambio deja de cortar las que solo estaban respirando, que es lo
   # que estaba costando dinero de verdad -- salia en verde flojo de monedas
   # que luego hacian el movimiento entero sin nosotros.
   anti_rug_ratio: 3.0
@@ -381,8 +399,8 @@ trade:
   # solo caben TRES posiciones enteras (0,30 · 0,30 · 0,30 = el 90% de la
   # cartera jugado a la vez). La cuarta la recorta `fraccion_si_no_llega` con
   # lo que quede y la quinta no se compra por falta de saldo, aunque
-  # `max_posiciones` diga 5. Con el stop en el 40%, cada posicion arriesga el
-  # 12% de la cartera entera.
+  # `max_posiciones` diga 5. Con el stop en el 30%, cada posicion arriesga el
+  # 9% de la cartera entera.
   #
   # OJO CON EL SUELO. A partir de cierto saldo el 30% se queda tan pequeno que
   # los costes fijos --la renta de la cuenta de token y la comision de
@@ -415,7 +433,7 @@ trade:
   # QUE CAMBIA respecto al 30% de la cartera: el tamano ya no crece con las
   # ganancias ni encoge con las perdidas, y ya no lo limita el saldo. Con 10 $
   # por compra caben las cinco plazas de sobra (50 $ en juego). Con el stop en
-  # el 40%, cada posicion arriesga 4 $.
+  # el 30%, cada posicion arriesga 3 $.
   buy_amount_usd: 10
   # SIN TOPE DURO (19-sep, pedido por Manu). 0 = no se recorta nada.
   #

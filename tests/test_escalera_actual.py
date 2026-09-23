@@ -118,19 +118,26 @@ def test_el_abandono_no_depende_del_reloj_de_posicion() -> None:
 
 
 def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:
-    """Aviso permanente: el primer peldano cobra +5% de la posicion (el 20%
-    de un +25%) y el stop cuesta -18%. Un ganador que solo llega al primer
-    peldano NO cubre a un perdedor, asi que hay que acertar bastante mas de
-    la mitad de las veces solo para empatar.
+    """AVISO PERMANENTE: un ganador que solo llega al primer peldano no cubre
+    a un perdedor, ni de lejos.
 
-    Y con este reparto el aviso PESA MAS que con el anterior: alli el primer
-    peldano dejaba +9% (el 30% de un +30%), aqui deja +5%. Bajar el primer
-    objetivo hace que salte mas veces, pero cada vez que salta asegura menos.
-    Lo que compensa es que el stop sube al precio de compra en cuanto salta.
+    LOS NUMEROS DE HOY (23-sep). El TP1 cobra el 20% de un +30%, o sea +6% de
+    la posicion. Despues el suelo sube a compra +5%, asi que si la moneda se
+    da la vuelta ahi mismo el resto sale en +5%: la operacion entera deja
+    alrededor de +10%. Un perdedor cuesta -29,4% (el stop del 30%, menos el
+    2% de moonbag que no se vende).
 
-    Esto no es un fallo: el reparto esta echado adelante a proposito y la
-    ganancia de verdad esta en los peldanos de +48% para arriba. El test
-    esta para que nadie lo de por supuesto sin verlo escrito.
+    O SEA QUE HACEN FALTA UNOS TRES ACIERTOS POR CADA FALLO solo para
+    empatar, contando que los aciertos se queden en el primer peldano.
+
+    Esto NO es un fallo: el reparto esta echado adelante a proposito y la
+    ganancia de verdad esta en los peldanos de +50% para arriba, donde una
+    sola moneda paga varias perdidas. El test esta para que nadie lo de por
+    supuesto sin verlo escrito, y para que salte el dia que alguien ponga un
+    primer peldano tan gordo que parezca que la estrategia se sostiene sola.
+
+    (La cuenta completa --cuanto deja cada final y cuantos aciertos pide--
+    esta en el comentario de `stop_loss_percentage` del yaml.)
     """
     t = _trade()
     g, v = _peldanos()[0]
