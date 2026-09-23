@@ -329,3 +329,28 @@ def test_la_config_del_bot_pide_lo_que_se_acordo() -> None:
     # el tope de concentracion en cadena mas apretado para compensar.
     assert cfg["exigir_ver_creacion"] is False
     assert cfg["max_bundle_pct_sin_historia"] < cfg["max_bundle_pct"]
+
+
+def test_el_parte_de_la_curva_sale_por_el_log() -> None:
+    """EL MISMO FALLO, POR TERCERA VEZ, y por eso hay test.
+
+    El embudo de esta fuente se calculaba para mandarlo UNICAMENTE a Telegram.
+    Los avisos estan apagados a peticion desde el 19-sep, asi que eso es
+    calcular el unico diagnostico que existe para tirarlo a la basura. Con la
+    fuente de titulares paso exactamente lo mismo y costo dos dias mirando
+    ceros sin poder saber por que.
+
+    Se comprueba en el fuente y no ejecutando: el latido necesita un stream
+    detras, y lo que importa aqui es que la llamada al log EXISTA y vaya
+    ANTES del intento de Telegram -- si Telegram falla, el log ya salio.
+    """
+    fuente = (
+        Path(__file__).resolve().parent.parent
+        / "src/monitoring/curva96_source.py"
+    ).read_text(encoding="utf-8")
+    corte = fuente.index("def _heartbeat_si_toca")
+    cuerpo = fuente[corte : corte + 1400]
+    assert "Parte de la curva" in cuerpo, "el embudo no sale por el log"
+    assert cuerpo.index("logger.info") < cuerpo.index("from monitoring.notifier"), (
+        "el log va despues de Telegram: si Telegram falla, no queda rastro"
+    )

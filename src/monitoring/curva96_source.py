@@ -354,17 +354,25 @@ class Curva96Source:
         ):
             return
         self._last_heartbeat = ahora
+        parte = build_curva96_heartbeat(
+            self.umbral,
+            self.buy_amount,
+            self._embudo,
+            paper_mode=self.paper_mode,
+        )
+        # AL LOG SIEMPRE, no solo a Telegram. Los avisos estan apagados a
+        # peticion, asi que mandarlo unicamente alli es calcular el unico
+        # diagnostico que existe para tirarlo. Paso exactamente lo mismo con
+        # la fuente de titulares el 19-sep y costo dos dias de ceros sin poder
+        # saber por que.
+        logger.info(
+            "Parte de la curva:\n%s",
+            parte.replace("<b>", "").replace("</b>", ""),
+        )
         try:
-            from monitoring.notifier import notify
+            from monitoring.notifier import notify  # noqa: PLC0415
 
-            notify(
-                build_curva96_heartbeat(
-                    self.umbral,
-                    self.buy_amount,
-                    self._embudo,
-                    paper_mode=self.paper_mode,
-                )
-            )
+            notify(parte)
         except Exception:  # noqa: BLE001
             logger.debug("No se pudo enviar el latido de curva casi llena")
         self._embudo = {}

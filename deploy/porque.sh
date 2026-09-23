@@ -99,7 +99,7 @@ echo "5. EL PARTE DEL BOT (el embudo con sus propios numeros)"
 # El parte de titulares sale por el LOG desde el 19-sep, precisamente porque
 # los avisos de Telegram estan apagados a peticion: era el unico diagnostico
 # que habia y se estaba calculando solo para tirarlo.
-parte="$(log | grep -A 16 "Parte de titulares" | tail -18)"
+parte="$(log | grep -A 16 -E "Parte de titulares|Parte de la curva" | tail -18)"
 if [ -z "$parte" ]; then
   parte="$(log | grep -A 8 "POR QUÉ NO COMPRA" | tail -12)"
 fi
