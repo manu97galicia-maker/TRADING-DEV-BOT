@@ -1184,7 +1184,8 @@ class UniversalTrader:
         # Maximo absoluto por compra, en SOL. 0 = sin tope. Se lee del YAML
         # como `tope_compra_sol`.
         self.tope_compra_sol = float(tope_compra_sol or 0)
-        #: Fraccion del saldo libre con la que se compra. 0 = tamano fijo.
+        #: Fraccion de la CARTERA (saldo + lo que ya esta en monedas) con
+        #: la que se compra. 0 = tamano fijo. Ver `_valor_en_posiciones_lamports`.
         self.fraccion_saldo = max(0.0, min(1.0, float(fraccion_saldo or 0)))
         #: RED DE SEGURIDAD, no una forma de comprar. Cuando el saldo no
         #: da para el importe entero, en vez de saltarse la moneda se
@@ -1501,7 +1502,7 @@ class UniversalTrader:
             # arrancar para confirmar la configuracion, asi que mentir aqui es
             # exactamente lo que no puede pasar.
             compras = (
-                f"REALES {self.fraccion_saldo * 100:.0f}% del saldo libre "
+                f"REALES {self.fraccion_saldo * 100:.0f}% de la cartera "
                 f"(tope {self.tope_compra_sol:.4f} SOL)"
             )
         else:
@@ -2103,6 +2104,50 @@ class UniversalTrader:
             return len(self._open_position_paths())
         except OSError:
             return 0
+
+    def _valor_en_posiciones_lamports(self) -> int:
+        """Lo que ya esta metido en monedas, en lamports. 0 si no se sabe.
+
+        POR QUE EXISTE. El tamano de compra se pide "el 30% de la CARTERA",
+        y el saldo de la wallet no es la cartera: en cuanto se abre una
+        posicion, ese SOL deja de estar en la wallet y pasa a ser moneda.
+        Calculando sobre el saldo a secas, cada compra sale mas pequena que
+        la anterior (0,30 · 0,21 · 0,15 · 0,10) aunque no se haya perdido
+        nada -- que es justo lo que no se quiere. Sumando lo que hay dentro
+        de las posiciones, la base vuelve a ser la cartera entera y las tres
+        posiciones salen iguales.
+
+        De donde sale el numero: del mismo marcador en disco que ya sirve
+        para retomar las posiciones tras un reinicio. Se prefiere
+        `value_sol` --el valor de AHORA, que refresca `_write_live_status`
+        con cada vuelta-- y si el marcador es recien nacido y todavia no lo
+        tiene, se usa el coste de entrada (`entry_price * amount`).
+
+        NUNCA LEVANTA. Un marcador ilegible no puede impedir una compra: en
+        el peor caso devuelve de menos y se compra mas pequeno, que es el
+        lado seguro del error.
+        """
+        total = 0.0
+        try:
+            paths = self._open_position_paths()
+        except OSError:
+            return 0
+        for path in paths:
+            try:
+                rec = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError, ValueError):
+                continue
+            try:
+                valor = float(rec.get("value_sol") or 0)
+                if valor <= 0:
+                    valor = float(rec.get("entry_price") or 0) * float(
+                        rec.get("amount") or 0
+                    )
+            except (TypeError, ValueError):
+                continue
+            if valor > 0:
+                total += valor
+        return int(total * LAMPORTS_PER_SOL)
 
     async def _run_dextools_mode(self) -> None:
         """Run the DEXTools DEXTboard acquisition loop until interrupted."""
@@ -4672,8 +4717,29 @@ class UniversalTrader:
                     # calculado fuera, dos compras a la vez pedirian cada una el
                     # 70% del mismo saldo y sumarian el 140%.
                     if self.fraccion_saldo > 0:
+                        # SOBRE LA CARTERA ENTERA, no sobre el saldo libre
+                        # (23-sep, pedido: "sobre el portfolio total").
+                        #
+                        # La diferencia no es un matiz. Con el saldo libre,
+                        # cada compra es un porcentaje de lo que SOBRA, asi
+                        # que las posiciones menguan solas: 0,30 · 0,21 ·
+                        # 0,15 · 0,10 · 0,07. La quinta valia la cuarta
+                        # parte que la primera sin que nadie lo pidiera, y
+                        # las ultimas acababan por debajo del suelo donde
+                        # las comisiones se comen la operacion.
+                        #
+                        # Sumando lo que ya esta dentro de las monedas, la
+                        # base es la cartera de verdad y las posiciones
+                        # salen IGUALES. Con el 30% caben tres enteras; la
+                        # cuarta la recorta `fraccion_si_no_llega` con lo
+                        # que quede, y la quinta no se compra por falta de
+                        # saldo. Es lo pedido y hay que saberlo: tres
+                        # posiciones del 30% son el 90% de la cartera
+                        # jugado a la vez.
+                        _dentro = self._valor_en_posiciones_lamports()
+                        cartera = bal + _dentro
                         _importe = max(
-                            0.0, free / LAMPORTS_PER_SOL * self.fraccion_saldo
+                            0.0, cartera / LAMPORTS_PER_SOL * self.fraccion_saldo
                         )
                         if _tope > 0 and _importe > _tope:
                             _importe = _tope
@@ -4681,7 +4747,11 @@ class UniversalTrader:
                             _importe * (1 + self.buy_slippage) * LAMPORTS_PER_SOL
                         ) + self._fee_headroom_lamports
                         logger.info(
-                            "SALDO: %.4f SOL libres -> compra de %.4f (%.0f%%)",
+                            "CARTERA: %.4f SOL (%.4f en wallet + %.4f en "
+                            "monedas) · libres %.4f -> compra de %.4f (%.0f%%)",
+                            cartera / LAMPORTS_PER_SOL,
+                            bal / LAMPORTS_PER_SOL,
+                            _dentro / LAMPORTS_PER_SOL,
                             free / LAMPORTS_PER_SOL,
                             _importe,
                             self.fraccion_saldo * 100,

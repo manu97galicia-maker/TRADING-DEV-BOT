@@ -3,13 +3,20 @@
 HAY DOS MODOS Y SE EXCLUYEN:
 
 * importe FIJO (`buy_amount`), que es lo de ahora: 0,04 SOL por entrada.
-* PORCENTAJE del saldo libre (`fraccion_saldo`), que si es mayor que cero
-  SUSTITUYE al fijo dentro del cerrojo de gasto.
+* PORCENTAJE DE LA CARTERA (`fraccion_saldo`), que si es mayor que cero
+  SUSTITUYE al fijo dentro del cerrojo de gasto. Cartera = el SOL de la
+  wallet MAS lo que ya esta metido en las monedas abiertas (23-sep, pedido:
+  "sobre el portfolio total"). Hasta esa fecha era sobre el saldo LIBRE, y
+  eso hacia que las posiciones menguaran solas.
 
 Se han alternado varias veces en un mismo dia, asi que estos tests estan
 escritos contra `importe()`, que reproduce los dos. Escribirlos contra uno solo
 obligaba a rehacer media docena cada vez que se cambiaba -- y un test que hay
 que reescribir para que pase deja de avisar de nada.
+
+LA CUENTA VIVE EN `tests/modelo_tamano.py`, no aqui. Estaba copiada en tres
+ficheros y el 23-sep dos de las copias se quedaron verdes midiendo la version
+vieja mientras el bot ya hacia otra cosa.
 
 LA TRAMPA QUE VIGILAN: el tope (`tope_compra_sol`) recorta el importe SIN
 dejar rastro en el log de la compra. Si se queda por debajo de lo configurado,
@@ -20,81 +27,16 @@ comisiones de prioridad.
 
 # ruff: noqa: S101, PLR2004, PLC0415
 
-from pathlib import Path
-
-import yaml
-
-CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
-
-
-def _trade() -> dict:
-    return yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["trade"]
-
-
-def importe(libre: float, t: dict | None = None) -> float:
-    """El importe de UNA compra con ese saldo libre, como lo calcula el bot.
-
-    Copia la logica de los DOS modos --importe fijo y porcentaje del saldo--
-    porque se alternan: escribir el test contra uno solo obliga a rehacerlo
-    cada vez que se cambia.
-
-    El tope y el suelo solo se aplican si son MAYORES QUE CERO. Cero significa
-    "sin limite" en toda esta configuracion, y escribir `min(x, tope)` a secas
-    daria 0.
-    """
-    t = t or _trade()
-    frac = t.get("fraccion_saldo", 0)
-    imp = libre * frac if frac > 0 else float(t["buy_amount"])
-    tope = t["tope_compra_sol"]
-    if tope > 0 and imp > tope:
-        imp = tope
-    return max(0.0, imp)
-
-
-def _tamanos(saldo: float, plazas: int | None = None) -> list[float]:
-    """Reproduce la cuenta del trader para un saldo dado.
-
-    `free` = saldo - reserva intocable - lo ya comprometido.
-
-    INCLUYE EL GUARDIAN DEL SALDO, y es lo que mas importa de este helper: no
-    basta con que el importe "quepa", tiene que caber la compra MAS el
-    slippage MAS las comisiones. Sin esa guarda la simulacion se pasaba del
-    saldo y el test acusaba al bot de algo que el bot no hace -- tiene su
-    `if free < need` y se para solo.
-    """
-    t = _trade()
-    libre = saldo - t["min_reserve_sol"]
-    salen: list[float] = []
-    for _ in range(plazas or t["max_posiciones"]):
-        imp = importe(libre, t)
-        suelo = t["compra_minima_sol"]
-        if imp <= 0 or (suelo > 0 and imp < suelo):
-            break
-        necesita = imp * (1 + t["buy_slippage"]) + 0.003
-        # SI NO CABE, EL RECORTE DEL 75%. El bot no se salta la moneda: compra
-        # con esa fraccion de lo que quede libre. Sin esto el helper decia "no
-        # compra" justo donde el bot SI compra, que es el caso de saldo
-        # pequeno -- el mas facil de tener mal y el que mas se consulta.
-        _f = t.get("fraccion_si_no_llega", 0)
-        if necesita > libre and _f > 0 and libre > 0:
-            recorte = libre * _f
-            if t["tope_compra_sol"] > 0:
-                recorte = min(recorte, t["tope_compra_sol"])
-            nec_recorte = recorte * (1 + t["buy_slippage"]) + 0.003
-            bajo_suelo = suelo > 0 and recorte < suelo
-            if recorte > 0 and nec_recorte <= libre and not bajo_suelo:
-                imp, necesita = recorte, nec_recorte
-        if necesita > libre:
-            break
-        salen.append(round(imp, 6))
-        libre -= necesita
-    return salen
+from modelo_tamano import CONFIG, importe
+from modelo_tamano import tamanos as _tamanos
+from modelo_tamano import trade as _trade
 
 
 def test_el_modo_activo_es_el_porcentaje() -> None:
-    """30% del saldo libre por entrada (23-sep, pedido).
+    """30% de la cartera por entrada (23-sep, pedido).
 
-    Historial del tamano: 0,12 fijo -> 25% -> 0,04 fijo -> 15% -> 30%.
+    Historial del tamano: 0,12 fijo -> 25% -> 0,04 fijo -> 15% -> 30% del
+    saldo libre -> 30% de la cartera entera.
 
     Y la regla de siempre: manda UNO de los dos. Un importe fijo distinto de
     cero con el porcentaje encendido es un numero que parece decidir y no
@@ -116,26 +58,44 @@ def test_el_tope_no_recorta_el_importe_configurado() -> None:
     t = _trade()
     frac = t["fraccion_saldo"]
     for saldo in (0.5, 1.0, 2.0, 10.0):
-        libre = saldo - t["min_reserve_sol"]
-        pedido = libre * frac if frac > 0 else t["buy_amount"]
-        assert abs(importe(libre, t) - pedido) < 1e-12, (
+        pedido = saldo * frac if frac > 0 else t["buy_amount"]
+        assert abs(importe(saldo, t) - pedido) < 1e-12, (
             f"con {saldo} SOL el tope ({t['tope_compra_sol']}) recorta la "
             f"compra ({pedido:.3f}) sin avisar"
         )
 
 
-def test_con_el_porcentaje_las_posiciones_menguan() -> None:
-    """LA DIFERENCIA PRACTICA ENTRE LOS DOS MODOS, y conviene tenerla escrita.
+def test_con_el_porcentaje_las_posiciones_son_iguales() -> None:
+    """EL CAMBIO DEL 23-SEP, y es el que hay que tener por escrito.
 
-    Cada compra es el 15% de lo que QUEDA libre, no del saldo inicial: la
-    primera es la mas grande y la quinta la mas pequena. Con importe fijo las
-    cinco valdrian lo mismo. Por eso cinco plazas al 15% no comprometen el 75%
-    de la cartera.
+    ANTES, sobre el saldo libre, cada compra era un porcentaje de lo que
+    SOBRABA: con 1 SOL salian 0,30 · 0,21 · 0,15 · 0,10 · 0,07. La quinta
+    valia la cuarta parte que la primera sin que nadie lo pidiera, y las
+    ultimas caian donde las comisiones fijas se comen la operacion.
+
+    AHORA, sobre la cartera entera, las que caben salen IGUALES. El precio de
+    eso --y por eso el test lo cuenta-- es que con el 30% solo caben TRES
+    enteras: las tres juntas son el 90% de la cartera. La cuarta sale del
+    recorte del 75% de lo que quede, y la quinta no sale.
     """
     tam = _tamanos(1.0)
-    assert len(tam) == 5
-    assert len(set(round(x, 9) for x in tam)) == 5, f"deberian menguar: {tam}"
-    assert tam[0] > tam[-1]
+    frac = _trade()["fraccion_saldo"]
+
+    enteras = tam[:3]
+    assert len(enteras) == 3, f"deberian caber tres del {frac:.0%}: {tam}"
+    assert abs(enteras[0] - frac) < 0.005, f"la primera es el {frac:.0%}: {tam}"
+    # IGUALES, con el margen de las comisiones que si se van de la cartera.
+    # El numero que importa no es "identicas" sino que la tercera no sea la
+    # mitad que la primera, que es lo que pasaba antes: alli era 0,15 de 0,30.
+    assert min(enteras) > 0.95 * max(enteras), (
+        f"las que caben tienen que ser iguales, no menguantes: {tam}"
+    )
+    # La siguiente, si la hay, es el resto: mas pequena a proposito.
+    assert all(x < 0.5 * enteras[0] for x in tam[3:]), f"{tam}"
+    # Y no caben las cinco plazas: el dinero se acaba antes.
+    assert len(tam) < _trade()["max_posiciones"], (
+        f"con el 30% de la cartera no pueden salir 5 posiciones: {tam}"
+    )
 
 
 def test_nunca_se_gasta_mas_de_lo_que_hay() -> None:
@@ -152,12 +112,12 @@ def test_nunca_se_gasta_mas_de_lo_que_hay() -> None:
 def test_sin_suelo_compra_con_lo_que_haya() -> None:
     """EL SUELO SE QUITO el 19-sep, pedido: el bot ya no se para por saldo bajo.
 
-    Con el 15% del saldo y poco dinero, la compra sale diminuta sola.
+    Con el 30% de la cartera y poco dinero, la compra sale diminuta sola.
 
     LO QUE CUESTA, y hay que tenerlo escrito: la comision de prioridad y la
     renta de la cuenta de token NO bajan con el tamano. Con 0,05 SOL de saldo,
-    el 15% de lo libre son ~0,003 SOL: una compra que se deja la mayor parte
-    en entrar y salir, o sea que nace perdiendo. El test no lo impide --es lo
+    el 30% son 0,015 SOL: una compra que se deja buena parte en entrar y
+    salir, o sea que nace casi perdiendo. El test no lo impide --es lo
     pedido-- pero lo deja por escrito, y el dia que moleste lo que hay que
     poner es `compra_minima_sol`.
     """
@@ -166,8 +126,8 @@ def test_sin_suelo_compra_con_lo_que_haya() -> None:
     assert t["fraccion_si_no_llega"] > 0, "sin esto, con poco saldo no compraria"
     assert len(_tamanos(0.10)) >= 1, "con el suelo a 0 tiene que comprar igual"
     assert len(_tamanos(0.05)) >= 1
-    # Con poco saldo la compra sale diminuta: menos de una centesima de SOL.
-    assert max(_tamanos(0.05)) < 0.01
+    # Con poco saldo la compra sale diminuta: menos de dos centesimas de SOL.
+    assert max(_tamanos(0.05)) < 0.02
 
 
 def test_la_reserva_sigue_siendo_intocable() -> None:
@@ -196,3 +156,27 @@ def test_no_quedan_importes_fijos_sueltos() -> None:
     import yaml
     h = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"]["holders"]
     assert h["buy_amount"] == t["buy_amount"]
+
+
+def test_la_cuenta_del_tamano_no_esta_copiada_en_ningun_sitio() -> None:
+    """EL TEST QUE IMPIDE QUE VUELVA A PASAR LO DEL 23-SEP.
+
+    Esta cuenta estaba escrita a mano en TRES ficheros de test. Al cambiar la
+    base del porcentaje --de saldo libre a cartera entera-- se actualizo una y
+    las otras dos siguieron VERDES midiendo el comportamiento viejo. Un test
+    verde sobre algo que el bot ya no hace es peor que no tener test, porque
+    se confia en el; ese mismo fallo ya habia costado tres depuraciones hoy.
+
+    Ahora la cuenta vive en `tests/modelo_tamano.py`, y esto comprueba que los
+    tres ficheros usan ESA y no una copia propia. Se mira de que modulo viene
+    la funcion, no el texto: una comprobacion por texto cazaba de paso los
+    tests que re-derivan el numero a proposito --que es justo su trabajo-- y
+    un test que hay que ir apaciguando con excepciones deja de avisar.
+    """
+    import test_posicion_polvo
+    import test_posiciones_por_saldo
+
+    assert importe.__module__ == "modelo_tamano"
+    assert _tamanos.__module__ == "modelo_tamano"
+    assert test_posiciones_por_saldo.tamanos.__module__ == "modelo_tamano"
+    assert test_posicion_polvo.importe_de_compra.__module__ == "modelo_tamano"

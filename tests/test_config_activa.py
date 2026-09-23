@@ -189,7 +189,11 @@ def test_el_cartel_dice_el_porcentaje_y_no_el_tope() -> None:
     t = _trader(fraccion_saldo=0.25, tope_compra_sol=0.5)
     cartel = t._cartel_de_configuracion()
     assert "25%" in cartel
-    assert "saldo libre" in cartel
+    # "de la cartera", no "del saldo libre": desde el 23-sep el porcentaje se
+    # calcula sobre la cartera entera --saldo mas lo que ya esta en monedas--
+    # y el cartel tiene que decir sobre QUE se calcula, no solo cuanto.
+    assert "de la cartera" in cartel
+    assert "saldo libre" not in cartel
     assert "REALES 0.5000 SOL" not in cartel
 
 

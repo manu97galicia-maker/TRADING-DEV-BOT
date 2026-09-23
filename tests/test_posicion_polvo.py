@@ -19,17 +19,16 @@ La bolsa no se vende ni se pierde: se queda en la wallet.
 
 from pathlib import Path
 
-import yaml
+# LA CUENTA DEL TAMANO NO SE COPIA AQUI. Estaba copiada en tres ficheros de
+# test y el 23-sep, al cambiar la base del porcentaje, dos copias se quedaron
+# verdes midiendo el comportamiento viejo.
+from modelo_tamano import importe as importe_de_compra
+from modelo_tamano import trade as _trade
 
-CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
 FUENTE = Path(__file__).resolve().parent.parent / "src/trading/universal_trader.py"
 #: El precio del SOL que usa el bot para pasar a dolares (_SOL_USD).
 SALDO_REFERENCIA = 1.0
 SOL_USD = 91.24
-
-
-def _trade() -> dict:
-    return yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["trade"]
 
 
 def _fuente() -> str:
@@ -40,37 +39,21 @@ def vale_usd(cantidad: float, precio_sol: float) -> float:
     return cantidad * precio_sol * SOL_USD
 
 
-def importe_de_compra(libre: float, t: dict) -> float:
-    """Lo que compraria el bot con ese saldo libre, en el modo que este puesto.
-
-    Hay DOS modos y se excluyen: importe fijo (`buy_amount`) o porcentaje del
-    saldo (`fraccion_saldo`); el porcentaje, si es mayor que cero, sustituye al
-    fijo dentro del cerrojo de gasto. Esta funcion existe para que los tests no
-    tengan que saber cual esta activo -- cada vez que se cambiaba de modo habia
-    que rehacer media docena de tests.
-
-    El tope y el suelo solo se aplican si son MAYORES QUE CERO: en esta
-    configuracion, cero significa "sin limite".
-    """
-    frac = t.get("fraccion_saldo", 0)
-    imp = libre * frac if frac > 0 else float(t["buy_amount"])
-    tope = t.get("tope_compra_sol", 0)
-    if tope > 0 and imp > tope:
-        imp = tope
-    return max(0.0, imp)
-
-
 def compra_tipica() -> float:
     """Tamano representativo de una posicion, en SOL.
 
-    Desde el 19-sep el importe NO es fijo: es el 25% del saldo libre, asi que
-    "el tamano de la compra" ya no es un numero del yaml. Estos tests necesitan
-    uno concreto, y se toma el de la PRIMERA compra con un saldo de referencia
-    de 1 SOL, que es el caso que interesa mirar (la posicion mas grande que se
-    abre; si la regla del polvo no la suelta a ella, no suelta a ninguna).
+    Desde el 19-sep el importe NO es fijo, asi que "el tamano de la compra" ya
+    no es un numero del yaml. Estos tests necesitan uno concreto, y se toma el
+    de la PRIMERA compra con una cartera de referencia de 1 SOL, que es el
+    caso que interesa mirar (la posicion mas grande que se abre; si la regla
+    del polvo no la suelta a ella, no suelta a ninguna).
+
+    OJO CON LA BASE: desde el 23-sep el porcentaje se calcula sobre la CARTERA
+    entera --saldo mas lo que ya esta en monedas-- y no sobre el saldo libre.
+    Aqui no hay posiciones abiertas, asi que la cartera es el saldo entero y
+    ya NO se descuenta la reserva minima.
     """
-    t = _trade()
-    return importe_de_compra(SALDO_REFERENCIA - t["min_reserve_sol"], t)
+    return importe_de_compra(SALDO_REFERENCIA)
 
 
 def test_el_minimo_es_un_dolar() -> None:

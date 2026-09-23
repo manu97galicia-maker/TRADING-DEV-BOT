@@ -338,22 +338,34 @@ trade:
   # La bolsa NO se vende ni se pierde: se queda en la wallet y la recoge la
   # limpieza de cuentas. 0 desactiva la regla.
   valor_minimo_posicion_usd: 1.0
-  # PORCENTAJE DEL SALDO: 30% (23-sep, pedido). Historial: 0,25 unas horas el
-  # 19-sep -> apagado -> 0,15 -> 0,30.
+  # PORCENTAJE DE LA CARTERA: 30% (23-sep, pedido). Historial: 0,25 unas
+  # horas el 19-sep -> apagado -> 0,15 -> 0,30 sobre el saldo libre -> 0,30
+  # sobre la cartera entera.
   #
   # MANDA ESTE, no el importe fijo de arriba: con cualquier valor mayor que
   # cero, el porcentaje SUSTITUYE al importe fijo dentro del cerrojo de gasto.
   # Los dos no pueden mandar a la vez.
   #
-  # ES SOBRE EL SALDO LIBRE, no sobre el total: se descuentan la reserva
-  # minima y lo ya comprometido por las posiciones abiertas. Por eso con cinco
-  # plazas no se compromete el 75% de la cartera -- cada compra es el 15% de
-  # lo que queda, asi que van menguando solas.
+  # ES SOBRE LA CARTERA ENTERA (23-sep, pedido: "sobre el portfolio total"):
+  # el saldo de la wallet MAS lo que ya esta metido en monedas abiertas. No
+  # sobre el saldo libre, que es lo que era hasta el 23-sep.
   #
-  # OJO CON EL SUELO. A partir de cierto saldo el 15% se queda tan pequeno que
+  # POR QUE SE CAMBIO. Sobre el saldo libre cada compra era un porcentaje de
+  # lo que SOBRABA, asi que las posiciones menguaban solas: con 1 SOL salian
+  # 0,30 · 0,21 · 0,15 · 0,10 · 0,07. La quinta valia la cuarta parte que la
+  # primera sin que nadie lo pidiera. Sobre la cartera salen IGUALES.
+  #
+  # LO QUE HAY QUE SABER, porque es el precio de tenerlas iguales: con el 30%
+  # solo caben TRES posiciones enteras (0,30 · 0,30 · 0,30 = el 90% de la
+  # cartera jugado a la vez). La cuarta la recorta `fraccion_si_no_llega` con
+  # lo que quede y la quinta no se compra por falta de saldo, aunque
+  # `max_posiciones` diga 5. Con el stop en el 40%, cada posicion arriesga el
+  # 12% de la cartera entera.
+  #
+  # OJO CON EL SUELO. A partir de cierto saldo el 30% se queda tan pequeno que
   # los costes fijos --la renta de la cuenta de token y la comision de
   # prioridad, que no bajan con el tamano-- se comen la operacion. Con un
-  # saldo de 0,2 SOL el 15% son 0,03, que ya es territorio de nacer perdiendo.
+  # saldo de 0,1 SOL el 30% son 0,03, que ya es territorio de nacer perdiendo.
   # Si pasa a menudo, lo que hay que poner es `compra_minima_sol`.
   fraccion_saldo: 0.30
   # SIN TOPE DURO (19-sep, pedido por Manu). 0 = no se recorta nada.
@@ -844,8 +856,8 @@ filters:
     # pisaria al global... y aun asi el porcentaje lo volveria a pisar
     # a el dentro del cerrojo de gasto. O sea: poner algo aqui no
     # serviria de nada y confundiria al leerlo.
-    # A CERO: manda el 15% del saldo (`fraccion_saldo`). Ver el comentario del
-    # `buy_amount` global: o importe fijo o porcentaje, nunca los dos.
+    # A CERO: manda el 30% de la cartera (`fraccion_saldo`). Ver el comentario
+    # del `buy_amount` global: o importe fijo o porcentaje, nunca los dos.
     buy_amount: 0
     heartbeat_interval: 300
 
@@ -874,7 +886,7 @@ filters:
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995
-    # A CERO como todos los demas: manda el 15% del saldo (`fraccion_saldo`).
+    # A CERO como todos los demas: manda el 30% de la cartera.
     buy_amount: 0
     # SIN TOPE DE PRUEBA (23-sep). Estaba en "3 compras y si dos salen mal se
     # para sola", que era lo correcto para una prueba acotada -- pero ahora es
