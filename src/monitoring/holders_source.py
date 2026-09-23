@@ -346,6 +346,36 @@ class HoldersSource:
             return False
         return True
 
+    def _el_dinero_acompana(self, mint: str) -> bool:
+        """Que entre mas dinero del que sale, Y que sea dinero de verdad.
+
+        SON DOS COSAS DISTINTAS y hacen falta las dos. La primera mira la
+        PROPORCION: si las ventas aplastan a las compras, la moneda se esta
+        cayendo ahora mismo y el precio es solo la consecuencia. La segunda
+        mira el TAMANO: "entra mas de lo que sale" lo cumple igual de bien una
+        moneda en la que entran dos centimos y sale uno, y una moneda sin
+        dinero detras no se mueve por perfecta que sea la proporcion.
+
+        OJO CON EL CASO SIN DATOS, que ya costo una vez: con la ventana vacia
+        salen 0,00 y 0,00 y la condicion no se cumple. El 10-ago un filtro
+        parecido veto las seis unicas candidatas del dia por ventana vacia, no
+        por ir mal. Se cuenta aparte para que se VEA en el parte si empieza a
+        tumbarlo todo.
+        """
+        if self.presion_seg <= 0:
+            return True
+        comprado, vendido = volumen.presion(mint, self.presion_seg)
+        if comprado <= 0 and vendido <= 0:
+            self._cuenta("sin_datos_presion", mint)
+            return False
+        if comprado <= vendido:
+            self._cuenta("dip", mint)
+            return False
+        if self.volumen_min_sol > 0 and comprado < self.volumen_min_sol:
+            self._cuenta("poco_volumen", mint)
+            return False
+        return True
+
     def _revisar(
         self, mints: list[str], token_callback: Callable[[TokenInfo], Awaitable[None]]
     ) -> None:
@@ -444,24 +474,8 @@ class HoldersSource:
             # por ventana vacia, no por ir mal. Aqui no deberia pasar --el paso
             # 3 ya exige operaciones recientes-- pero se cuenta aparte para que
             # se VEA en el parte de Telegram si empieza a tumbarlo todo.
-            if self.presion_seg > 0:
-                comprado, vendido = volumen.presion(mint, self.presion_seg)
-                if comprado <= 0 and vendido <= 0:
-                    self._cuenta("sin_datos_presion", mint)
-                    continue
-                if comprado <= vendido:
-                    self._cuenta("dip", mint)
-                    continue
-                # Y QUE SEA DINERO DE VERDAD, no solo que el saldo salga bien.
-                #
-                # POR QUE HACE FALTA APARTE: "entra mas de lo que sale" lo
-                # cumple igual de bien una moneda en la que entran dos
-                # centimos y sale uno. La proporcion no dice NADA del tamano,
-                # y una moneda sin dinero detras no se mueve aunque la
-                # proporcion sea perfecta.
-                if self.volumen_min_sol > 0 and comprado < self.volumen_min_sol:
-                    self._cuenta("poco_volumen", mint)
-                    continue
+            if not self._el_dinero_acompana(mint):
+                continue
 
             # SE MARCA DESPUES DE LANZAR, NO ANTES. Si no hay hueco, la
             # moneda NO queda marcada y se vuelve a mirar en la siguiente
