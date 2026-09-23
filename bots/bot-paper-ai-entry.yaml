@@ -189,7 +189,7 @@ trade:
   # 28% (23-sep, pedido). Historial: 18% -> 28%.
   #
   # SOLO MANDA HASTA EL PRIMER PELDANO. En cuanto la moneda toca el TP1
-  # (+25%), el suelo se sube a precio de compra +12% (`margen_stop_tras_tp`)
+  # (+30%), el suelo se sube a precio de compra +5% (`margen_stop_tras_tp`)
   # y este numero deja de usarse en esa posicion. O sea que el 28% es lo que
   # se arriesga ANTES de que la moneda demuestre nada.
   #
@@ -232,7 +232,20 @@ trade:
   # memecoin son segundos, asi que cobrar el TP2 o el TP3 y salir sera
   # lo normal. Es la consecuencia del 12%, no un fallo. Para aflojar,
   # bajar este numero.
-  margen_stop_tras_tp: 0.12
+  # BAJADO DEL 12% AL 5% (23-sep, pedido: "ten mas paciencia con las
+  # monedas"). Es cuanto se sube el suelo por encima del peldano anterior
+  # cada vez que se cobra uno.
+  #
+  # POR QUE APRETABA TANTO. El suelo tras un peldano es el ANTERIOR mas este
+  # margen, asi que cuanto mas alto, menos aire queda entre el suelo y el
+  # peldano que se acaba de tocar. Con el 12% y el TP1 en +30%, el colchon
+  # tras el TP2 era del 2,9%: un respiro normal de memecoin cerraba la
+  # posicion entera justo despues de cobrar.
+  #
+  # QUE SE PIERDE: tras tocar el TP1 el suelo queda en compra +5% en vez de
+  # +12%, o sea que se asegura menos. Sigue siendo verde: la operacion no
+  # puede acabar en perdida una vez tocado el primer peldano.
+  margen_stop_tras_tp: 0.05
   stop_al_tp_tras_tp: false
   trailing_stop_percentage: 0
   anti_rug_ratio: 2.0
@@ -241,16 +254,22 @@ trade:
   # SIN MOVIMIENTO: a los 3 minutos se mira UNA vez. Si no ha hecho al menos
   # un +2%, la moneda esta muerta (una con volumen de verdad se mueve) y se
   # vende entera. Si a esa altura va por encima, se la deja y ya mandan los TP.
-  venta_muerta_seg: 180
+  # 8 MINUTOS (23-sep, antes 3). Mas paciencia: tres minutos es muy poco para
+  # que una moneda arranque, y cerrar ahi era renunciar a las que tardan.
+  venta_muerta_seg: 480
   venta_muerta_gain: 0.02
   # POR DEBAJO DE LA COMPRA 3 MINUTOS SEGUIDOS: fuera, moonbag incluido. El
   # contador se reinicia en cuanto recupera el precio de entrada, asi que
   # exige 180 segundos SIN levantar cabeza, no 180 sueltos.
-  venta_bajo_entrada_seg: 180
+  # 10 MINUTOS SEGUIDOS bajo la compra (23-sep, antes 3). El contador se
+  # reinicia en cuanto recupera la entrada, asi que exige diez minutos SIN
+  # levantar cabeza. Quien corta las que se hunden de verdad es el stop loss,
+  # no este reloj.
+  venta_bajo_entrada_seg: 600
   # SIN RELOJ. 0 = una posicion no se cierra por tiempo. Lo que la saca son
   # las reglas que miran a la MONEDA, que ya cubren el caso de la muerta:
-  #   - venta_muerta_seg: a los 3 min, si no ha hecho ni +2%, fuera
-  #   - venta_bajo_entrada_seg: 3 min seguidos bajo la compra, fuera
+  #   - venta_muerta_seg: a los 8 min, si no ha hecho ni +2%, fuera
+  #   - venta_bajo_entrada_seg: 10 min seguidos bajo la compra, fuera
   #   - stop loss, y stop a la entrada tras el primer TP
   # La que sobrevive a todo eso es una que subio y se mantuvo: justo la que
   # no hay que cortar por reloj. Sin esto, los peldanos de x10 a x100 no se

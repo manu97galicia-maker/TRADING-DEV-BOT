@@ -171,7 +171,7 @@ def test_tocar_el_tp1_cobra_y_asegura() -> None:
     Del 19 al 23-sep el TP1 no vendia nada --era solo un disparador-- y el
     23-sep paso a +30% cobrando un 20%, pedido.
 
-    La moneda sube a +30%, se da la vuelta y cae. Cierra sobre el +12%.
+    La moneda sube a +30%, se da la vuelta y cae. Cierra sobre la compra.
     """
     # Primero: toca el TP1 y se queda ahi. Cobra el 20% y el suelo ya esta
     # en +12%.
@@ -179,37 +179,42 @@ def test_tocar_el_tp1_cobra_y_asegura() -> None:
     assert r["peldanos"] == [1]
     assert not r["paro_por_stop"]
     assert round(r["restante_pct"], 6) == 0.80, "el TP1 cobra un 20%"
-    assert round(r["suelo_final"], 4) == 1.12
+    assert round(r["suelo_final"], 4) == round(1 + _margen(), 4)
 
     # Y ahora la vuelta atras: el stop la cierra en +12%, en verde. Aqui
     # `restante` SI acaba en 0 porque `vender_todo_en_stop` se lleva la
     # posicion entera -- que es lo correcto.
     # Cayendo justo hasta el suelo, se cobra el +12% clavado.
-    r = simula([1.0, 1.20, 1.31, 1.15, 1.12])
+    r = simula([1.0, 1.20, 1.31, 1.15, 1 + _margen()])
     assert r["paro_por_stop"]
-    # Ya no es un 12% clavado: un 20% se cobro a +30%, asi que el conjunto
+    # Ya no es el margen clavado: un 20% se cobro a +30%, asi que el conjunto
     # sale MEJOR que el suelo. Eso es justo lo que se gana al cobrar arriba.
-    assert r["resultado"] > 0.12
+    assert r["resultado"] > _margen()
 
     # Y si el precio se salta el suelo entre dos lecturas, se vende a lo que
     # haya: sigue siendo verde, pero MENOS del 12%. El suelo es una orden, no
     # una garantia de precio -- en una moneda que cae a plomo hay hueco.
-    r = simula([1.0, 1.20, 1.31, 1.15, 1.05])
+    r = simula([1.0, 1.20, 1.31, 1.15, 1 + _margen() / 2])
     assert r["paro_por_stop"]
-    assert 0 < r["resultado"] < 0.12 + 0.20 * 0.30
+    assert 0 < r["resultado"] < _margen() + 0.20 * 0.30
 
 
 def test_los_tres_peldanos_de_cerca_y_vuelta_atras() -> None:
-    """Llega al +80%, cobra 62,9% de la posicion y el suelo queda en +68%.
+    """Llega al +80%, cobra el 58,1% de la posicion y el suelo sube.
 
     El trinquete va un peldano por detras Y con el margen: cobrado el tercero,
-    el suelo sube al precio del SEGUNDO (+50%) mas un 12% -> +68%. Deja sitio
-    para que la moneda respire y aun asi cada cobro asegura lo ya ganado.
+    el suelo sube al precio del SEGUNDO (+50%) mas el margen. Deja sitio para
+    que la moneda respire y aun asi cada cobro asegura lo ya ganado.
+
+    Los precios salen del margen, no escritos a mano: el 23-sep bajo del 12%
+    al 5% y con el recorrido fijo la moneda dejaba de tocar el suelo, asi que
+    el test habria seguido en verde midiendo otra cosa.
     """
-    r = simula([1.0, 1.26, 1.51, 1.81, 1.75, 1.67])
+    suelo = 1.50 * (1 + _margen())
+    r = simula([1.0, 1.31, 1.51, 1.81, suelo + 0.02, suelo - 0.01])
     assert r["peldanos"] == [1, 2, 3]
     assert r["paro_por_stop"]
-    assert round(r["suelo_final"], 4) == 1.68
+    assert round(r["suelo_final"], 4) == round(suelo, 4)
     assert r["resultado"] > 0.5
 
 

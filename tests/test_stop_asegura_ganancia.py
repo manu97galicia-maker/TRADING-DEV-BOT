@@ -82,17 +82,23 @@ def test_el_tp1_de_la_config_vende_y_asegura() -> None:
 # ------------------------------------------------- el suelo asegura ganancia
 
 
-def test_tocar_el_tp1_asegura_un_12_por_ciento() -> None:
-    """Sin vender nada. Es la idea entera: llegar a +25% convierte la
-    operacion en ganadora pase lo que pase despues."""
+def test_tocar_el_tp1_asegura_ganancia() -> None:
+    """Es la idea entera: llegar al primer peldano convierte la operacion en
+    ganadora pase lo que pase despues.
+
+    El margen bajo del 12% al 5% el 23-sep, pedido ("ten mas paciencia con
+    las monedas"): se asegura menos, pero queda mas aire entre el suelo y el
+    peldano siguiente y la posicion no se cierra al primer respiro.
+    """
     tiers, m = _tiers(), _trade()["margen_stop_tras_tp"]
     suelo = stepped_stop_price(ENTRADA, tiers, 0, m)
-    assert abs(suelo - ENTRADA * 1.12) < 1e-9
+    assert abs(suelo - ENTRADA * (1 + m)) < 1e-9
     assert suelo > ENTRADA, "el suelo tiene que estar POR ENCIMA de la compra"
 
 
 def test_el_margen_es_el_pedido() -> None:
-    assert _trade()["margen_stop_tras_tp"] == 0.12
+    """Historial: 12% (19-sep) -> 5% (23-sep, por paciencia)."""
+    assert _trade()["margen_stop_tras_tp"] == 0.05
 
 
 def test_sin_margen_el_suelo_vuelve_a_la_entrada() -> None:
@@ -122,18 +128,17 @@ def test_el_suelo_nunca_alcanza_el_escalon_que_acaba_de_tocarse() -> None:
 
 
 def test_el_colchon_mas_apretado_esta_anotado() -> None:
-    """2,9%: lo que puede caer la moneda tras tocar el TP2 antes de que el
-    suelo la cierre.
+    """9,0%: lo que puede caer la moneda tras tocar el TP2 antes de que el
+    suelo la cierre. Es el mas apretado de los diez.
 
-    SE ESTRECHO EL 23-SEP AL SUBIR EL TP1 DE +25% A +30%, y es la consecuencia
-    que hay que tener escrita: el suelo tras el TP2 es el peldano ANTERIOR mas
-    el 12%, o sea 1,30 x 1,12 = 1,456, y el TP2 dispara en 1,50. Quedan tres
-    puntos. En una memecoin eso se recorre en segundos, asi que tocar el TP2,
-    cobrar el 19,9% y salir con el resto a +45,6% va a ser lo normal.
+    LA HISTORIA DE ESTE NUMERO, porque explica el ajuste entero. Con el margen
+    al 12% y el TP1 en +30%, el suelo tras el TP2 quedaba en 1,30 x 1,12 =
+    1,456 contra un disparo en 1,50: un colchon del 2,9%, que en una memecoin
+    es un respiro normal. La posicion se cerraba justo despues de cobrar.
 
-    NO ES UNA PERDIDA -- se cierra muy en verde-- pero si es salir antes de lo
-    que uno se imagina al leer la escalera. Para aflojarlo hay que separar
-    mas el TP1 del TP2, o bajar `margen_stop_tras_tp`.
+    Bajando el margen al 5% (23-sep, pedido) el suelo pasa a 1,365 y el
+    colchon a un 9%. Se asegura menos y se aguanta mas, que es
+    exactamente lo pedido.
     """
     tiers, m = _tiers(), _trade()["margen_stop_tras_tp"]
     colchones = [
@@ -141,7 +146,7 @@ def test_el_colchon_mas_apretado_esta_anotado() -> None:
         / (ENTRADA * (1 + t.gain))
         for i, t in enumerate(tiers)
     ]
-    assert round(min(colchones) * 100, 1) == 2.9
+    assert round(min(colchones) * 100, 1) == 9.0
 
 
 # ----------------------------------------------------- la escalera completa
@@ -184,8 +189,8 @@ def test_tocar_el_tp1_y_caer_cierra_en_verde() -> None:
     """EL RECORRIDO QUE RESUME LO PEDIDO.
 
     La moneda sube a +30%, cobra el primer peldano (20%), se da la vuelta y
-    cae. El stop la cierra en +12%: la operacion acaba GANANDO entera, tanto
-    lo cobrado arriba como lo que quedaba dentro.
+    cae. El stop la cierra en compra +5%: la operacion acaba GANANDO entera,
+    tanto lo cobrado arriba como lo que quedaba dentro.
     """
     tiers, m = _tiers(), _trade()["margen_stop_tras_tp"]
     sl = ENTRADA * (1 - _trade()["stop_loss_percentage"])
@@ -198,7 +203,7 @@ def test_tocar_el_tp1_y_caer_cierra_en_verde() -> None:
         sl = max(sl, suelo)
 
     assert round(restante, 6) == 0.80, "el TP1 vende el 20% desde el 23-sep"
-    assert abs(sl - ENTRADA * 1.12) < 1e-9
+    assert abs(sl - ENTRADA * (1 + m)) < 1e-9
     # Ahora cae. El resultado de cerrar en el suelo:
     assert sl / ENTRADA - 1 > 0, "tenia que cerrar en verde"
-    assert round((sl / ENTRADA - 1) * 100, 1) == 12.0
+    assert round((sl / ENTRADA - 1) * 100, 1) == round(m * 100, 1)
