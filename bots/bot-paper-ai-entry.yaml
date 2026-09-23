@@ -291,34 +291,46 @@ trade:
   anti_rug_ratio: 3.0
   anti_rug_seg: 4
   anti_rug_min_sol: 12
-  # SIN MOVIMIENTO: a los 3 minutos se mira UNA vez. Si no ha hecho al menos
-  # un +2%, la moneda esta muerta (una con volumen de verdad se mueve) y se
-  # vende entera. Si a esa altura va por encima, se la deja y ya mandan los TP.
-  # 8 MINUTOS (23-sep, antes 3). Mas paciencia: tres minutos es muy poco para
-  # que una moneda arranque, y cerrar ahi era renunciar a las que tardan.
-  venta_muerta_seg: 480
-  venta_muerta_gain: 0.02
-  # POR DEBAJO DE LA COMPRA 3 MINUTOS SEGUIDOS: fuera, moonbag incluido. El
-  # contador se reinicia en cuanto recupera el precio de entrada, asi que
-  # exige 180 segundos SIN levantar cabeza, no 180 sueltos.
-  # 10 MINUTOS SEGUIDOS bajo la compra (23-sep, antes 3). El contador se
-  # reinicia en cuanto recupera la entrada, asi que exige diez minutos SIN
-  # levantar cabeza. Quien corta las que se hunden de verdad es el stop loss,
-  # no este reloj.
-  venta_bajo_entrada_seg: 600
-  # SIN RELOJ. 0 = una posicion no se cierra por tiempo. Lo que la saca son
-  # las reglas que miran a la MONEDA, que ya cubren el caso de la muerta:
-  #   - venta_muerta_seg: a los 8 min, si no ha hecho ni +2%, fuera
+  # TODOS LOS RELOJES APAGADOS (23-sep, pedido: "elimina el hold time, que
+  # venda solo de acuerdo al stop"). Los tres a cero.
+  #
+  # QUE SE QUITA. Eran tres formas de cerrar una posicion MIRANDO EL RELOJ en
+  # vez de mirando el precio:
+  #   - venta_muerta_seg:       a los 8 min, si no habia hecho ni +2%, fuera
   #   - venta_bajo_entrada_seg: 10 min seguidos bajo la compra, fuera
-  #   - stop loss, y stop a la entrada tras el primer TP
-  # La que sobrevive a todo eso es una que subio y se mantuvo: justo la que
-  # no hay que cortar por reloj. Sin esto, los peldanos de x10 a x100 no se
-  # disparaban nunca.
+  #   - max_hold_time:          ya estaba a 0
+  # Historial de los dos primeros: 3 min -> 8 y 10 min -> apagados.
+  #
+  # POR QUE. Un reloj no sabe nada de la moneda. "Ocho minutos sin subir" es
+  # un hecho sobre el reloj, no sobre la moneda: la que tarda diez en arrancar
+  # se cerraba en verde flojo o en rojo justo antes de hacer el movimiento.
+  # Quien tiene que decidir cuando se sale es el PRECIO, y para eso esta el
+  # stop -- que ademas sube solo tras cada peldano, asi que una posicion que ya
+  # ha demostrado algo no puede acabar en perdida por mucho que tarde.
+  #
+  # LO QUE CUESTA, y hay que saberlo porque no es gratis: una moneda que se
+  # queda plana para siempre ya no libera su plaza. Se queda ocupando una de
+  # las 5 hasta que toque el stop (-30%) o un peldano, y mientras tanto gasta
+  # una consulta de precio por segundo. Con cinco planas a la vez el bot deja
+  # de comprar aunque haya saldo. Si eso pasa, se ve en `vigiladas` y la
+  # solucion es volver a encender `venta_muerta_seg`, no subir plazas.
+  #
+  # LO QUE SIGUE SACANDO DE UNA POSICION: los peldanos, el stop loss (con su
+  # subida tras cada peldano), el anti-rug y la regla del polvo. Nada de eso
+  # mira el reloj.
+  venta_muerta_seg: 0
+  venta_muerta_gain: 0.02
+  venta_bajo_entrada_seg: 0
   max_hold_time: 0
   # Tope duro de vigilancia de UNA posicion, para que una moneda invendible
   # (un rug) no retenga un hueco para siempre. Es independiente del de
   # arriba a proposito: estaba atado a el, y poner max_hold_time a 0 hacia
   # que el bot abandonase cada posicion a los 8 MINUTOS.
+  #
+  # NO ES UN RELOJ DE VENTA y por eso sigue puesto con los demas apagados:
+  # esto no vende nada, solo deja de vigilar una posicion que lleva 24 h sin
+  # poder valorarse. Sin el, una moneda invendible retiene su plaza para
+  # siempre.
   abandonar_tras_seg: 86400
   final_target_mc: 0
   # MODO ESTUDIO: NO SE COMPRA NADA NUEVO.
