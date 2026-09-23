@@ -161,38 +161,42 @@ def test_un_rug_corta_en_el_stop_y_no_mas_abajo() -> None:
     assert round(r["resultado"], 6) == round(-sl, 6)
 
 
-def test_tocar_el_tp1_asegura_ganancia_sin_vender_nada() -> None:
-    """EL RECORRIDO QUE RESUME EL CAMBIO DEL 19-SEP.
+def test_tocar_el_tp1_cobra_y_asegura() -> None:
+    """EL RECORRIDO QUE RESUME LA ESCALERA.
 
-    Antes, cobrado el TP1 el suelo pasaba al precio de COMPRA: la operacion
-    dejaba de perder. Ahora pasa a compra +12%, asi que tocar el primer
-    objetivo la convierte en GANADORA pase lo que pase despues -- y sin haber
-    vendido un solo token, porque el TP1 esta a 0%.
+    Tocar el primer objetivo hace DOS cosas: cobra un 20% y sube el suelo a
+    compra +12%, asi que la operacion pasa a ser ganadora pase lo que pase
+    despues.
 
-    La moneda sube a +25%, se da la vuelta y cae. Cierra en +12%.
+    Del 19 al 23-sep el TP1 no vendia nada --era solo un disparador-- y el
+    23-sep paso a +30% cobrando un 20%, pedido.
+
+    La moneda sube a +30%, se da la vuelta y cae. Cierra sobre el +12%.
     """
-    # Primero: toca el TP1 y se queda ahi. No se vende NADA y el suelo ya esta
+    # Primero: toca el TP1 y se queda ahi. Cobra el 20% y el suelo ya esta
     # en +12%.
-    r = simula([1.0, 1.20, 1.26])
+    r = simula([1.0, 1.20, 1.31])
     assert r["peldanos"] == [1]
     assert not r["paro_por_stop"]
-    assert round(r["restante_pct"], 6) == 1.0, "el TP1 no puede vender nada"
+    assert round(r["restante_pct"], 6) == 0.80, "el TP1 cobra un 20%"
     assert round(r["suelo_final"], 4) == 1.12
 
     # Y ahora la vuelta atras: el stop la cierra en +12%, en verde. Aqui
     # `restante` SI acaba en 0 porque `vender_todo_en_stop` se lleva la
     # posicion entera -- que es lo correcto.
     # Cayendo justo hasta el suelo, se cobra el +12% clavado.
-    r = simula([1.0, 1.20, 1.26, 1.15, 1.12])
+    r = simula([1.0, 1.20, 1.31, 1.15, 1.12])
     assert r["paro_por_stop"]
-    assert round(r["resultado"], 4) == 0.12, "cierra en el +12% asegurado"
+    # Ya no es un 12% clavado: un 20% se cobro a +30%, asi que el conjunto
+    # sale MEJOR que el suelo. Eso es justo lo que se gana al cobrar arriba.
+    assert r["resultado"] > 0.12
 
     # Y si el precio se salta el suelo entre dos lecturas, se vende a lo que
     # haya: sigue siendo verde, pero MENOS del 12%. El suelo es una orden, no
     # una garantia de precio -- en una moneda que cae a plomo hay hueco.
-    r = simula([1.0, 1.20, 1.26, 1.15, 1.05])
+    r = simula([1.0, 1.20, 1.31, 1.15, 1.05])
     assert r["paro_por_stop"]
-    assert 0 < r["resultado"] < 0.12
+    assert 0 < r["resultado"] < 0.12 + 0.20 * 0.30
 
 
 def test_los_tres_peldanos_de_cerca_y_vuelta_atras() -> None:
@@ -215,7 +219,7 @@ def test_un_salto_de_golpe_cobra_todos_los_peldanos_que_deja_atras() -> None:
     r = simula([1.0, 7.0])
     assert r["peldanos"] == [1, 2, 3, 4, 5, 6, 7]
     assert not r["paro_por_stop"]
-    assert round(r["restante_pct"], 6) == 0.097
+    assert round(r["restante_pct"], 6) == 0.108
 
 
 def test_ni_un_x100_toca_el_moonbag() -> None:

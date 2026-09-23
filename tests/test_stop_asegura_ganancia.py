@@ -67,10 +67,16 @@ def test_lo_que_no_es_un_numero_se_sigue_descartando() -> None:
     assert build_tiers([(None, 0.2), (0.3, None), (-0.1, 0.2), (0.4, -0.5)]) == []
 
 
-def test_el_tp1_de_la_config_no_vende() -> None:
-    assert _trade()["take_profit_sell_percentage"] == 0
-    assert _tiers()[0].sell == 0.0
-    assert _tiers()[0].gain == 0.25
+def test_el_tp1_de_la_config_vende_y_asegura() -> None:
+    """23-sep: el primer peldano deja de ser un disparador puro.
+
+    Del 19 al 23-sep el TP1 no vendia nada: solo subia el suelo. Ahora hace
+    las dos cosas -- dispara a +30% y cobra un 20%. Sigue moviendo el stop a
+    compra +12%, que es lo que hace que la operacion no pueda perder.
+    """
+    assert _trade()["take_profit_sell_percentage"] == 0.20
+    assert _tiers()[0].sell == 0.20
+    assert _tiers()[0].gain == 0.30
 
 
 # ------------------------------------------------- el suelo asegura ganancia
@@ -116,17 +122,26 @@ def test_el_suelo_nunca_alcanza_el_escalon_que_acaba_de_tocarse() -> None:
 
 
 def test_el_colchon_mas_apretado_esta_anotado() -> None:
-    """6,7%: lo que puede caer la moneda tras tocar el TP2 o el TP3 antes de
-    que cierre. En una memecoin son segundos, asi que cobrar ahi y salir sera
-    lo normal. Si alguien cambia el margen o separa los escalones, este numero
-    se mueve y conviene enterarse."""
+    """2,9%: lo que puede caer la moneda tras tocar el TP2 antes de que el
+    suelo la cierre.
+
+    SE ESTRECHO EL 23-SEP AL SUBIR EL TP1 DE +25% A +30%, y es la consecuencia
+    que hay que tener escrita: el suelo tras el TP2 es el peldano ANTERIOR mas
+    el 12%, o sea 1,30 x 1,12 = 1,456, y el TP2 dispara en 1,50. Quedan tres
+    puntos. En una memecoin eso se recorre en segundos, asi que tocar el TP2,
+    cobrar el 19,9% y salir con el resto a +45,6% va a ser lo normal.
+
+    NO ES UNA PERDIDA -- se cierra muy en verde-- pero si es salir antes de lo
+    que uno se imagina al leer la escalera. Para aflojarlo hay que separar
+    mas el TP1 del TP2, o bajar `margen_stop_tras_tp`.
+    """
     tiers, m = _tiers(), _trade()["margen_stop_tras_tp"]
     colchones = [
         (ENTRADA * (1 + t.gain) - stepped_stop_price(ENTRADA, tiers, i, m))
         / (ENTRADA * (1 + t.gain))
         for i, t in enumerate(tiers)
     ]
-    assert round(min(colchones) * 100, 1) == 6.7
+    assert round(min(colchones) * 100, 1) == 2.9
 
 
 # ----------------------------------------------------- la escalera completa
@@ -139,11 +154,18 @@ def test_se_sigue_vendiendo_el_98_por_ciento() -> None:
     assert abs(moonbag_fraction(tiers) - 0.02) < 1e-9
 
 
-def test_el_reparto_va_del_tercer_escalon_en_adelante() -> None:
-    """El TP2 no se toca (sigue vendiendo el 25%); el reparto empieza en el 3."""
+def test_el_reparto_sale_de_todos_en_proporcion() -> None:
+    """23-sep, elegido al preguntarlo: los 20 puntos que se lleva el TP1 salen
+    de TODOS los demas en proporcion, no de un peldano concreto.
+
+    Y aparte el de +80% cede 12 puntos mas a los lejanos, asi que es el que
+    mas encoge de los tres de abajo.
+    """
     tiers = _tiers()
-    assert tiers[1].sell == 0.25
-    assert tiers[2].sell > 0.327, "el tercero tiene que haber crecido"
+    assert tiers[1].sell == 0.199
+    assert tiers[2].sell == 0.182
+    lejanos = sum(t.sell for t in tiers[3:])
+    assert round(lejanos, 6) == 0.399, "los lejanos tienen que haber crecido"
 
 
 def test_los_diez_escalones_disparan_y_queda_el_moonbag() -> None:
@@ -161,21 +183,21 @@ def test_los_diez_escalones_disparan_y_queda_el_moonbag() -> None:
 def test_tocar_el_tp1_y_caer_cierra_en_verde() -> None:
     """EL RECORRIDO QUE RESUME LO PEDIDO.
 
-    La moneda sube a +25% (no se vende nada), se da la vuelta y cae. El stop
-    la cierra en +12%: la operacion acaba GANANDO sin haber cobrado un solo
-    escalon.
+    La moneda sube a +30%, cobra el primer peldano (20%), se da la vuelta y
+    cae. El stop la cierra en +12%: la operacion acaba GANANDO entera, tanto
+    lo cobrado arriba como lo que quedaba dentro.
     """
     tiers, m = _tiers(), _trade()["margen_stop_tras_tp"]
     sl = ENTRADA * (1 - _trade()["stop_loss_percentage"])
     ejec, restante = [False] * len(tiers), 1.0
 
-    for j in tiers_due(ENTRADA, ENTRADA * 1.25, tiers, ejec):
+    for j in tiers_due(ENTRADA, ENTRADA * 1.30, tiers, ejec):
         ejec[j] = True
         restante -= min(tiers[j].sell, restante)
         suelo = stepped_stop_price(ENTRADA, tiers, j, m)
         sl = max(sl, suelo)
 
-    assert restante == 1.0, "el TP1 no debe vender nada"
+    assert round(restante, 6) == 0.80, "el TP1 vende el 20% desde el 23-sep"
     assert abs(sl - ENTRADA * 1.12) < 1e-9
     # Ahora cae. El resultado de cerrar en el suelo:
     assert sl / ENTRADA - 1 > 0, "tenia que cerrar en verde"

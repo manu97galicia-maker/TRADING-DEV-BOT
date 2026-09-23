@@ -148,12 +148,12 @@ trade:
   # QUE QUEDA": a esa altura quedaba el 55% y la mitad era 27,5. Tras este
   # reparto ya no es la mitad exacta (32,7 de un 65% restante), y es correcto:
   # manda lo pedido ahora.
-  take_profit_percentage: 0.25
-  take_profit_sell_percentage: 0
+  take_profit_percentage: 0.30
+  take_profit_sell_percentage: 0.20
   tp2_gain: 0.50
-  tp2_sell: 0.25
+  tp2_sell: 0.199
   tp3_gain: 0.80
-  tp3_sell: 0.379
+  tp3_sell: 0.182
   # DE AQUI EN ADELANTE, EL RESTO REPARTIDO HASTA x20. Queda el 27,5% de la
   # compra; se deja corriendo el 2% de siempre y los otros 25,5 se reparten
   # en siete peldanos, de mas a menos: llegar a x20 es mucho menos probable
@@ -163,11 +163,11 @@ trade:
   # 1.50 es x2,5 -- no un +150% suelto que se pueda confundir con los de
   # arriba. 19.00 es x20.
   tp4_gain: 1.50   # x2,5
-  tp4_sell: 0.089
+  tp4_sell: 0.101
   tp5_gain: 2.30   # x3,3
-  tp5_sell: 0.075
+  tp5_sell: 0.085
   tp6_gain: 4.00   # x5
-  tp6_sell: 0.061
+  tp6_sell: 0.069
   # PELDANOS LEJANOS. Antes llegaban a x50 y x100; ahora la escalera termina
   # en x20 porque es lo pedido. Consecuencia, dicha en claro: una moneda que
   # pase de x20 ya no tiene peldanos por encima -- lo unico que sigue dentro
@@ -179,13 +179,13 @@ trade:
   # avisa: test_los_peldanos_altos_tienen_tiempo_de_llegar).
   tp_extra:
     - gain: 6.00     # x7
-      sell: 0.049
+      sell: 0.056
     - gain: 9.00     # x10
-      sell: 0.035
+      sell: 0.040
     - gain: 14.00    # x15
-      sell: 0.021
+      sell: 0.024
     - gain: 19.00    # x20
-      sell: 0.021
+      sell: 0.024
   # 28% (23-sep, pedido). Historial: 18% -> 28%.
   #
   # SOLO MANDA HASTA EL PRIMER PELDANO. En cuanto la moneda toca el TP1

@@ -37,16 +37,16 @@ def _peldanos() -> list[tuple[float, float]]:
 
 def test_los_peldanos_son_los_pedidos() -> None:
     assert _peldanos() == [
-        (0.25, 0.0),
-        (0.50, 0.25),
-        (0.80, 0.379),  # sigue siendo ~la mitad de lo que queda a esa altura
-        (1.50, 0.089),  # x2,5
-        (2.30, 0.075),  # x3,3
-        (4.00, 0.061),  # x5
-        (6.00, 0.049),  # x7
-        (9.00, 0.035),  # x10
-        (14.00, 0.021),  # x15
-        (19.00, 0.021),  # x20
+        (0.30, 0.20),  # 23-sep: el primero pasa a +30% y VENDE un 20%
+        (0.50, 0.199),
+        (0.80, 0.182),  # 23-sep: pierde 12 puntos que suben a los lejanos
+        (1.50, 0.101),  # x2,5
+        (2.30, 0.085),  # x3,3
+        (4.00, 0.069),  # x5
+        (6.00, 0.056),  # x7
+        (9.00, 0.040),  # x10
+        (14.00, 0.024),  # x15
+        (19.00, 0.024),  # x20
     ]
 
 
@@ -82,7 +82,7 @@ def test_los_peldanos_lejanos_cobran_una_salida_de_verdad() -> None:
     """Los de arriba son los que cobran cuando una sale de verdad."""
     lejanos = [(g, v) for g, v in _peldanos() if g >= 1.5]
     assert len(lejanos) == 7
-    assert round(sum(v for _, v in lejanos), 6) == 0.351
+    assert round(sum(v for _, v in lejanos), 6) == 0.399
 
 
 def test_la_escalera_termina_en_x20() -> None:
@@ -138,10 +138,15 @@ def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:
 
 
 def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
-    """20% al +25%, 25% al +48%, y al +80% la MITAD DE LO QUE QUEDA."""
+    """23-sep: 20% al +30%, 19,9% al +50% y 18,2% al +80%.
+
+    El primer peldano deja de ser un disparador puro y pasa a cobrar. Los 20
+    puntos que se lleva salen EN PROPORCION de todos los demas --elegido asi
+    al preguntarlo-- y ademas el de +80% cede 12 puntos a los lejanos.
+    """
     cerca = [(g, v) for g, v in _peldanos() if g < 1.5]
-    assert cerca == [(0.25, 0.0), (0.50, 0.25), (0.80, 0.379)]
-    assert round(sum(v for _, v in cerca), 6) == 0.629
+    assert cerca == [(0.30, 0.20), (0.50, 0.199), (0.80, 0.182)]
+    assert round(sum(v for _, v in cerca), 6) == 0.581
 
 
 def test_el_tercer_peldano_sigue_siendo_casi_la_mitad_de_lo_que_queda() -> None:
@@ -153,14 +158,19 @@ def test_el_tercer_peldano_sigue_siendo_casi_la_mitad_de_lo_que_queda() -> None:
     0.50 ahi venderia el 50% de la compra, casi el doble de lo pedido -- ese es
     el error que este test existe para impedir.
 
-    El 19-sep el reparto cambio (diez puntos del primer peldano repartidos del
-    tercero en adelante) y ya no es la mitad EXACTA. Sale casi: 32,7% de un 65%
-    restante es el 50,3%. Se comprueba que sigue en ese entorno, no que sea
-    exacto: si alguien vuelve a poner 0.50 o algo parecido al 65%, salta.
+    YA NO ES LA MITAD, y es deliberado. El 19-sep se repartieron diez puntos
+    del primer peldano; el 23-sep el primero paso a cobrar un 20% y al tercero
+    se le quitaron doce puntos mas para subirlos a los lejanos. A esa altura
+    queda un 60,1% y el tercero vende el 18,2%, o sea el 30,3% de lo que
+    queda.
+
+    Lo que este test sigue impidiendo es el error de traduccion original:
+    poner 0.50 ahi creyendo que es "la mitad de lo que queda" venderia el 50%
+    de la compra entera, mas del triple de lo que toca.
     """
     cerca = _peldanos()[:3]
     queda_antes_del_tercero = 1 - cerca[0][1] - cerca[1][1]
     proporcion = cerca[2][1] / queda_antes_del_tercero
-    assert 0.45 <= proporcion <= 0.55, (
+    assert 0.25 <= proporcion <= 0.35, (
         f"el tercer peldano vende el {proporcion * 100:.1f}% de lo que queda"
     )

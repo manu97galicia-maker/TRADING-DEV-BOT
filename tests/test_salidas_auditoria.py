@@ -58,16 +58,18 @@ def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
 
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
+    # Lo VENDIDO ACUMULADO al llegar a cada multiplo (23-sep: el TP1 pasa a
+    # +30% y cobra un 20%, y el de +80% cede doce puntos a los lejanos).
     esperado = {
-        1.25: 0.0,    # el TP1 ya no vende: solo sube el stop
-        1.50: 0.25,
-        1.80: 0.629,
-        2.50: 0.718,  # x2,5
-        3.30: 0.793,  # x3,3
-        5.0: 0.854,
-        7.0: 0.903,
-        10.0: 0.938,
-        15.0: 0.959,
+        1.30: 0.20,   # el TP1 ya cobra
+        1.50: 0.399,
+        1.80: 0.581,
+        2.50: 0.682,  # x2,5
+        3.30: 0.767,  # x3,3
+        5.0: 0.836,
+        7.0: 0.892,
+        10.0: 0.932,
+        15.0: 0.956,
         20.0: 0.98,   # el ultimo peldano: solo queda el moonbag
     }
     for multiplo, acumulado in esperado.items():
