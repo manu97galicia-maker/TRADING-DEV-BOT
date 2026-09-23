@@ -227,26 +227,28 @@ def test_el_parte_no_lleva_nada_del_env() -> None:
 
 
 def test_las_fuentes_encendidas_son_las_dos_pedidas() -> None:
-    """Titulares y los canales de Telegram, y NADA mas.
+    """La curva al 96% y los canales de Telegram, y NADA mas.
 
-    El 21-sep se volvieron a encender los canales ("anade de nuevo los grupos
-    de telegram y mantenemos la estrategia holder"), asi que este test dejo de
-    afirmar que titulares es la unica. Sigue haciendo su trabajo: cualquier
-    OTRA fuente que se cuele sin querer sale aqui en rojo.
+    HISTORIAL DE ESTA LINEA, que ha cambiado tres veces en tres dias:
+    solo titulares -> titulares + canales (21-sep) -> curva al 96% + canales
+    (23-sep, "cambia la estrategia a las que estan al 96% de migracion").
 
-    No son lo mismo ni de lejos. Titulares exige 23 carteras, menos de 20
-    minutos, las dos ultimas operaciones compras y presion compradora. Un canal
-    no exige nada: cualquier direccion acabada en `pump` que alguien pegue se
-    compra. Y las cinco plazas de `max_posiciones` son COMPARTIDAS.
+    TITULARES SE QUEDA APAGADA PERO ENTERA: toda su configuracion sigue en el
+    yaml y sus tests siguen corriendo, asi que volver es cambiar una linea.
+
+    Y son estrategias OPUESTAS: titulares compraba monedas recien nacidas
+    apostando a que arrancaran; la curva compra las que ya han recorrido casi
+    todo su camino y estan a punto de migrar. La segunda dispara MUCHO menos
+    a menudo, porque la mayoria de las monedas mueren mucho antes de llegar.
     """
     f = _filtros()
     otras = [
         n for n in ("buy_on_dex_paid", "birdeye_trending", "dextools_hotpools",
-                    "curva_96", "presion", "discord_calls", "gmgn_signals")
+                    "holders", "presion", "discord_calls", "gmgn_signals")
         if (f.get(n) or {}).get("enabled")
     ]
     assert not otras, f"hay otras fuentes encendidas: {otras}"
-    assert f["holders"]["enabled"] is True
+    assert f["curva_96"]["enabled"] is True
     assert f["telegram_calls"]["enabled"] is True
 
 

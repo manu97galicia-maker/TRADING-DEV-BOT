@@ -306,23 +306,25 @@ def test_este_regimen_no_toca_a_las_demas_fuentes() -> None:
 
 
 def test_la_config_del_bot_pide_lo_que_se_acordo() -> None:
-    """Los ajustes de la curva, listos para cuando se vuelva a encender.
+    """Los ajustes de la curva, que desde el 23-sep es LA estrategia.
 
-    El 18-sep se apago esta fuente: Manu pidio probar SOLO la de presion
-    compradora, asi que las cuatro que habia se quedaron en false. Los
-    numeros de aqui abajo siguen fijados a proposito -- describen como tiene
-    que quedar la fuente cuando se reactive, y si alguien los cambia mientras
-    esta apagada este test lo dice igual.
+    Historial: encendida, apagada el 18-sep para probar solo la de presion,
+    y encendida otra vez el 23-sep sustituyendo a la de titulares ("cambia la
+    estrategia a las que estan al 96% de migracion").
     """
     cfg = yaml.safe_load(CONFIG.read_text())["filters"]["curva_96"]
-    assert cfg["enabled"] is False  # apagada: solo corre `presion`
-    assert cfg["umbral"] == 0.95
+    assert cfg["enabled"] is True
+    assert cfg["umbral"] == 0.96
     # La ventana de disparo: entre el umbral y el tope. Por encima del tope
     # la moneda ya esta migrando y comprar ahi es tirar la comision.
-    assert cfg["tope"] - cfg["umbral"] > 0.04
-    assert cfg["buy_amount"] == 0.07
-    assert cfg["max_compras"] == 3
-    assert cfg["parar_tras_perdidas"] == 2
+    assert cfg["tope"] > cfg["umbral"]
+    # A cero: manda el 15% del saldo, igual que en todas las demas fuentes.
+    assert cfg["buy_amount"] == 0
+    # SIN TOPE DE PRUEBA. "3 compras y si dos salen mal se para sola" era lo
+    # correcto para una prueba acotada; siendo LA estrategia, dejaria el bot
+    # mudo tras el tercer intento sin que nada lo gritara.
+    assert cfg["max_compras"] == 0
+    assert cfg["parar_tras_perdidas"] == 0
     # Modo flexible: se compran tambien las que no se vieron nacer, pero con
     # el tope de concentracion en cadena mas apretado para compensar.
     assert cfg["exigir_ver_creacion"] is False

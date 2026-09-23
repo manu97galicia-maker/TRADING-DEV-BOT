@@ -92,7 +92,7 @@ if [ "${_c:-0}" -eq 0 ]; then
   # unicamente "PRESIÓN —", de cuando esa era la fuente encendida: desde que
   # se cambio a titulares el contador salia 0 SIEMPRE, pasara lo que pasara.
   # El 21-sep eso hizo creer que la fuente no encontraba nada.
-  _p="$(journalctl -u pump-bot --since '-30 min' --no-pager 2>/dev/null | grep -cE 'TITULARES —|PRESIÓN —|Telegram call' || true)"
+  _p="$(journalctl -u pump-bot --since '-30 min' --no-pager 2>/dev/null | grep -cE 'CURVA AL |TITULARES —|PRESIÓN —|Telegram call' || true)"
   echo "  candidatas de la fuente (30 min): ${_p:-0}"
 
   # LO PRIMERO DE TODO: SI LLEGAN DATOS O NO.

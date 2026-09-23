@@ -128,12 +128,13 @@ journalctl -u pump-bot --since "-2 min" --no-pager 2>/dev/null \
 
 echo
 echo "== QUE FUENTE ESTA COMPRANDO =="
-# Lo que de verdad hay que ver: DOS lineas, "holders" y "telegram". Desde el
-# 21-sep son las dos fuentes pedidas y las dos compran a la vez, asi que ver
-# dos aqui es lo correcto. Ninguna linea significa que el pull no entro y el
-# bot sigue con la configuracion de antes. Una tercera que no sea esas dos si
-# es un aviso: hay una estrategia encendida que nadie pidio.
+# Lo que de verdad hay que ver: DOS lineas, "curva_96" y "telegram". Desde el
+# 23-sep son las dos fuentes pedidas --la curva sustituyo a titulares-- y las
+# dos compran a la vez, asi que ver dos aqui es lo correcto. Ninguna linea
+# significa que el pull no entro y el bot sigue con la configuracion de antes.
+# Una tercera que no sea esas dos si es un aviso: hay una estrategia encendida
+# que nadie pidio.
 journalctl -u pump-bot --since "-2 min" --no-pager 2>/dev/null \
-  | grep -iE "acquisition ENABLED|TITULARES ACTIVA" \
+  | grep -iE "acquisition ENABLED|TITULARES ACTIVA|CURVA AL" \
   | sed 's/^/  /' \
   || echo "  (aun sin lineas; espera un minuto y escribe:  bot)"

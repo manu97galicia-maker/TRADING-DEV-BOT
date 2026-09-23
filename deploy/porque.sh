@@ -30,13 +30,13 @@ cuenta() { log | grep -ciE "$1" || true; }
 # "PRESIÓN —", de cuando esa era la fuente, y desde que se cambio a titulares
 # daba 0 SIEMPRE, pasara lo que pasara. Cero por no mirar y cero por no haber
 # se leen igual, y llevan a sitios opuestos.
-CANDIDATAS='TITULARES —|PRESIÓN —|Telegram call'
+CANDIDATAS='CURVA AL |TITULARES —|PRESIÓN —|Telegram call'
 
 echo "== ULTIMOS ${MIN} MINUTOS =="
 echo
 
 echo "1. ARRANCO LA FUENTE?"
-linea="$(log_entero | grep -E "acquisition ENABLED|TITULARES ACTIVA|PRESIÓN COMPRADORA ACTIVA|Telegram watcher connecting" | tail -5)"
+linea="$(log_entero | grep -E "acquisition ENABLED|TITULARES ACTIVA|CURVA AL|PRESIÓN COMPRADORA ACTIVA|Telegram watcher connecting" | tail -5)"
 if [ -n "$linea" ]; then
   echo "$linea" | sed 's/.*]: /  /'
 else

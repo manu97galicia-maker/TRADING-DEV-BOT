@@ -214,6 +214,7 @@ def test_cuenta_las_candidatas_de_la_fuente_encendida() -> None:
     opuestos. Esto contaba solo "PRESIÓN —", de cuando esa era la fuente: desde
     que se cambio a titulares daba 0 siempre, pasara lo que pasara."""
     s = _porque()
+    assert "CURVA AL " in s, "no cuenta las candidatas de la curva al 96%"
     assert "TITULARES —" in s, "no cuenta las candidatas de la fuente de titulares"
     assert "Telegram call" in s, "no cuenta las que vienen de un canal"
     assert "PRESIÓN —" in s, "se ha perdido la fuente de presion"

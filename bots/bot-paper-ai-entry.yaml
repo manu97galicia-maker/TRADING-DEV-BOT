@@ -772,7 +772,10 @@ filters:
   # condicion de mas que quedaba en el camino y habria descartado monedas sin
   # que ninguna de las dos reglas lo pidiera.
   holders:
-    enabled: true
+    # APAGADA el 23-sep, pedido: "cambia la estrategia a las que estan al 96%
+    # de migracion". Se deja entera y configurada para poder volver con una
+    # sola palabra; lo que decide es esta linea.
+    enabled: false
     # Carteras DISTINTAS que han comprado y no han soltado, contadas del
     # stream (no de un indexador: eso tardaria segundos y a esta edad ni
     # conoce la mitad de las monedas).
@@ -847,7 +850,15 @@ filters:
     heartbeat_interval: 300
 
   curva_96:
-    enabled: false
+    # ENCENDIDA el 23-sep, pedido. Sustituye a la de titulares.
+    #
+    # ES UNA ESTRATEGIA OPUESTA A LA ANTERIOR, y conviene tenerlo claro:
+    # titulares compraba monedas RECIEN NACIDAS apostando a que arrancaran.
+    # Esta compra monedas que ya han recorrido casi toda su curva y estan a
+    # punto de migrar a un DEX. Son pocas al dia --la mayoria de las monedas
+    # mueren mucho antes-- asi que va a comprar MUCHO menos a menudo. Eso no
+    # es que este rota: es lo que hay a ese punto de la curva.
+    enabled: true
     # Punto de la curva en que se compra (0,95 = 95% vendido).
     #
     # Cuanto mas bajo, antes se entra: queda mas curva por llenar, asi que
@@ -858,15 +869,20 @@ filters:
     # Si se quiere bajar mas: a 0,92 quedaria un 8% de curva por llenar, que
     # es mas del doble de recorrido que a 96 -- y bastantes mas monedas que
     # no lo consiguen. Conviene mirar los resultados del 95 antes de bajarlo.
-    umbral: 0.95
+    # 96% (23-sep, pedido). Historial: 0,96 -> 0,95 -> 0,96.
+    umbral: 0.96
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995
-    buy_amount: 0.07
-    # PRUEBA ACOTADA: 3 compras y, si dos salen mal, se para sola. Estos
-    # frenos son SUYOS: no gastan el cupo de las demas fuentes ni al reves.
-    max_compras: 3
-    parar_tras_perdidas: 2
+    # A CERO como todos los demas: manda el 15% del saldo (`fraccion_saldo`).
+    buy_amount: 0
+    # SIN TOPE DE PRUEBA (23-sep). Estaba en "3 compras y si dos salen mal se
+    # para sola", que era lo correcto para una prueba acotada -- pero ahora es
+    # LA estrategia, y un tope de tres la dejaria muda tras el tercer intento
+    # sin que nada lo gritara. Ese tipo de parada silenciosa ya costo dias.
+    # 0 = sin limite.
+    max_compras: 0
+    parar_tras_perdidas: 0
 
     # --- Nada de bundles de pump and dump -------------------------------
     # Un bundle se monta en el bloque de creacion: varias carteras del
