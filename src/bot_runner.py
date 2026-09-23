@@ -157,6 +157,9 @@ async def start_bot(config_path: str):
             buy_amount=cfg["trade"]["buy_amount"],
             buy_slippage=cfg["trade"]["buy_slippage"],
             sell_slippage=cfg["trade"]["sell_slippage"],
+            sell_slippage_proteccion=cfg["trade"].get(
+                "sell_slippage_proteccion", 0
+            ),
             # Extreme fast mode settings
             extreme_fast_mode=cfg["trade"].get("extreme_fast_mode", False),
             extreme_fast_token_amount=cfg["trade"].get("extreme_fast_token_amount", 30),

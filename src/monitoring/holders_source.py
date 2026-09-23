@@ -133,6 +133,8 @@ def build_holders_heartbeat(
         f"  ↳ descartadas por viejas: {embudo.get('viejas', 0)}",
         f"  ↳ con una venta reciente: {embudo.get('venta_reciente', 0)}",
         f"  ↳ cayendo (salía más de lo que entraba): {embudo.get('dip', 0)}",
+        f"  ↳ detrás de una vela verde (ya habían subido): "
+        f"{embudo.get('vela_verde', 0)}",
         f"  ↳ sin datos de presión: {embudo.get('sin_datos_presion', 0)}",
         f"  ↳ sin ver su creación (edad desconocida): {embudo.get('sin_historia', 0)}",
         f"  ↳ <b>comprables: {embudo.get('comprables', 0)}</b>",
@@ -162,6 +164,12 @@ class HoldersSource:
         #: Ventana en la que se compara dinero que entra contra dinero que
         #: sale. 0 = no se mira.
         presion_seg: float = 3.0,
+        #: NO COMPRAR EL ULTIMO ESCALON DE UNA VELA VERDE. Si el precio ha
+        #: subido mas de `max_subida` (tanto por uno) en `subida_seg`
+        #: segundos, la moneda ya ha hecho el movimiento y se deja pasar.
+        #: 0 = no se mira.
+        subida_seg: float = 10.0,
+        max_subida: float = 0.0,
         buy_amount: float = 0.07,
         heartbeat_interval: float = 300,
         paper_mode: bool = False,
@@ -180,6 +188,8 @@ class HoldersSource:
         self.max_edad_seg = float(max_edad_seg)
         self.ultimas_compras = int(ultimas_compras or 0)
         self.presion_seg = float(presion_seg or 0)
+        self.subida_seg = float(subida_seg or 0)
+        self.max_subida = float(max_subida or 0)
         self.buy_amount = float(buy_amount)
         self.heartbeat_interval = float(heartbeat_interval)
         self.paper_mode = bool(paper_mode)
@@ -394,7 +404,28 @@ class HoldersSource:
                 self._cuenta("venta_reciente", mint)
                 continue
 
-            # 4) ENTRA MAS DINERO DEL QUE SALE, AHORA MISMO.
+            # 4) NO COMPRAR EL ULTIMO ESCALON DE UNA VELA VERDE.
+            #
+            # EL CASO QUE LO TRAJO, 23-sep: el bot entro en CATO a 26K de
+            # market cap justo despues de que la moneda subiera de 7,5K a 25K
+            # en medio minuto. Medio minuto mas tarde valia 12,4K. Comprar
+            # detras de una subida vertical es comprar el techo: la gente que
+            # la empujo ya esta dentro y lo siguiente que hace es vender.
+            #
+            # NO ES LO MISMO QUE LA PRESION DE ABAJO. La presion mira si AHORA
+            # entra mas dinero del que sale, y en plena vela verde la presion
+            # es inmejorable -- justo en el peor momento para entrar. Esto
+            # mira el PRECIO, que es lo que ya ha pasado.
+            #
+            # Sin datos no se bloquea: `subida()` devuelve 0 cuando no hay con
+            # que comparar, y no tener datos no es un motivo para descartar.
+            if self.max_subida > 0:
+                _subida = volumen.subida(mint, self.subida_seg)
+                if _subida > self.max_subida:
+                    self._cuenta("vela_verde", mint)
+                    continue
+
+            # 5) ENTRA MAS DINERO DEL QUE SALE, AHORA MISMO.
             #
             # Para no comprar el primer escalon de una caida. El precio es la
             # consecuencia; esto mira la causa --quien esta poniendo dinero-- y

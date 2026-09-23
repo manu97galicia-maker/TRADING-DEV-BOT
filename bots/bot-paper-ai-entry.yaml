@@ -88,7 +88,28 @@ trade:
   buy_amount_tras_sl: 0
   rugs_para_bloquear: 1
   buy_slippage: 0.10
-  sell_slippage: 0.10
+  sell_slippage: 0.1
+  # SLIPPAGE DE LAS VENTAS QUE SALVAN LA POSICION (stop loss, anti-rug,
+  # panico). 23-sep.
+  #
+  # EL FALLO QUE COSTO UN -52% EN CATO. El slippage no es una preferencia: es
+  # un SUELO escrito en la transaccion. Con 0,1 la venta le dice a la cadena
+  # "no aceptes menos del 90% de lo que vale ahora"; si mientras la
+  # transaccion vuela el precio cae mas de ese 10%, la cadena la RECHAZA. En
+  # una moneda que se parte por la mitad en segundos eso significa que el
+  # stop loss dispara a -28%... y la venta no entra. Y no entra la siguiente.
+  # Tras tres fallos el bot espera 20 s antes de reintentar una venta
+  # protectora, y para entonces la moneda esta a -52%.
+  #
+  # Un take profit SI puede permitirse rechazar un mal precio: si no sale hoy
+  # sale manana. Un stop loss no: lo que se pierde por no ejecutarlo es mucho
+  # mayor que lo que cuesta ejecutarlo mal. Por eso aqui el suelo va ancho.
+  #
+  # NO SIGNIFICA QUE SE VENDA UN 50% MAS BARATO: es un suelo, no un objetivo.
+  # Se cobra el precio de mercado, que casi siempre esta muy por encima. El
+  # suelo solo entra en juego cuando el precio de verdad se ha desplomado --
+  # que es exactamente cuando hay que salir aunque duela.
+  sell_slippage_proteccion: 0.50
   exit_strategy: tp_sl
   # ESCALERA. Los porcentajes son de la cantidad ORIGINAL, no de lo que
   # queda: el 10% del primer peldano es el 10% de lo que se compro.
@@ -766,6 +787,24 @@ filters:
     # de hace medio minuto tapa que ahora mismo esta cayendo, que es
     # justo lo que se quiere detectar.
     presion_seg: 3.0
+    # NO COMPRAR EL ULTIMO ESCALON DE UNA VELA VERDE (23-sep, pedido).
+    #
+    # EL CASO QUE LO TRAJO: el bot entro en CATO a 26K de market cap, justo
+    # despues de que la moneda subiera de 7,5K a 25K en medio minuto. Medio
+    # minuto despues valia 12,4K. Comprar detras de una subida vertical es
+    # comprar el techo: la gente que la empujo ya esta dentro, y lo siguiente
+    # que hace es vender.
+    #
+    # NO ES LO MISMO QUE LA PRESION DE ARRIBA, y por eso hacen falta las dos:
+    # la presion mira si AHORA entra mas dinero del que sale, y en plena vela
+    # verde la presion es inmejorable -- justo en el peor momento para entrar.
+    # Esto mira el PRECIO, que es lo que ya ha pasado.
+    #
+    # 1.0 = se descarta si ha DOBLADO en los ultimos 10 segundos. Es el numero
+    # a mover si se ve que descarta de mas (sale en el parte como "detrás de
+    # una vela verde"). 0 = no se mira.
+    subida_seg: 10.0
+    max_subida: 1.0
     # SIN IMPORTE PROPIO (19-sep: "elimina lo del 0.12, solo el
     # porcentaje"). Sin esta clave la fuente no manda importe y decide
     # el 25% del saldo. Si se le pusiera un numero aqui, ese numero

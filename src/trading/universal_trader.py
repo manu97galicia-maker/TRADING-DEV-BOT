@@ -4,6 +4,7 @@ Cleaned up to remove all platform-specific hardcoding.
 """
 
 import asyncio
+import copy
 import json
 import subprocess
 import sys
@@ -352,6 +353,7 @@ class UniversalTrader:
         buy_amount: float,
         buy_slippage: float,
         sell_slippage: float,
+        sell_slippage_proteccion: float = 0.0,
         # Platform configuration
         platform: Platform | str = Platform.PUMP_FUN,
         # Listener configuration
@@ -861,6 +863,11 @@ class UniversalTrader:
         self.buy_amount = buy_amount
         self.buy_slippage = buy_slippage
         self.sell_slippage = sell_slippage
+        #: Suelo de precio para las ventas que existen para limitar perdidas.
+        #: Ver el comentario del yaml: con el suelo estrecho, un stop loss
+        #: puede NO EJECUTARSE en una moneda que se desploma, que es cuando
+        #: mas falta hace. 0 = usar el mismo que el resto.
+        self.sell_slippage_proteccion = float(sell_slippage_proteccion or 0)
         self.max_retries = max_retries
         self.extreme_fast_mode = extreme_fast_mode
         self.extreme_fast_token_amount = extreme_fast_token_amount
@@ -2163,6 +2170,8 @@ class UniversalTrader:
             max_edad_seg=float(cfg.get("max_edad_seg", 300.0)),
             ultimas_compras=int(cfg.get("ultimas_compras", 2)),
             presion_seg=float(cfg.get("presion_seg", 3.0)),
+            subida_seg=float(cfg.get("subida_seg", 10.0)),
+            max_subida=float(cfg.get("max_subida", 0)),
             buy_amount=float(cfg.get("buy_amount", 0.07)),
             heartbeat_interval=float(cfg.get("heartbeat_interval", 300)),
             paper_mode=self.paper_trade or self.paper_engine.enabled,
@@ -5316,7 +5325,7 @@ class UniversalTrader:
                 )
                 amount = real
 
-        _seller = _ctx_seller.get() or self.seller
+        _seller = self._vendedor_para(reason)
         sell_result = await _seller.execute(
             token_info, token_amount=amount, token_price=ref_price
         )
@@ -5351,7 +5360,7 @@ class UniversalTrader:
 
             ok, sig, err = await jupiter_sell(
                 self.wallet.keypair, str(token_info.mint), amount,
-                slippage_bps=int(self.sell_slippage * 10000),
+                slippage_bps=int(self._slippage_para(reason) * 10000),
             )
         except Exception as exc:  # noqa: BLE001
             ok, sig, err = False, None, str(exc)
@@ -5401,6 +5410,40 @@ class UniversalTrader:
             except Exception:  # noqa: BLE001
                 pass
         return False
+
+    def _slippage_para(self, reason: str) -> float:
+        """El suelo de precio que le toca a esta venta.
+
+        Ancho si la venta existe para limitar perdidas; el de siempre si es un
+        take profit. Ver `sell_slippage_proteccion` en el yaml: el suelo
+        estrecho hacia que un stop loss NO SE EJECUTARA justo en la moneda que
+        se estaba desplomando.
+        """
+        # Con `getattr` a proposito: los tests arman traders a medias --sin
+        # pasar por `__init__`-- para poder probar el camino de venta sin
+        # cartera ni nodo, y un atributo que falte no puede tumbar un stop.
+        normal = float(getattr(self, "sell_slippage", 0.1) or 0.1)
+        ancho = float(getattr(self, "sell_slippage_proteccion", 0) or 0)
+        if ancho > 0 and self._es_venta_protectora(reason):
+            return max(normal, ancho)
+        return normal
+
+    def _vendedor_para(self, reason: str):  # noqa: ANN202
+        """El vendedor de siempre, o una copia con el suelo ancho.
+
+        SE COPIA EN VEZ DE CAMBIARLE EL SUELO AL COMPARTIDO: varias posiciones
+        pueden estar vendiendo a la vez, y tocar el objeto de todas para una
+        venta concreta le cambiaria el suelo a las demas a mitad de camino.
+        La copia es superficial -- comparte cliente, cartera y comisiones-- asi
+        que no cuesta nada.
+        """
+        base = _ctx_seller.get() or self.seller
+        slippage = self._slippage_para(reason)
+        if slippage == getattr(base, "slippage", slippage):
+            return base
+        otro = copy.copy(base)
+        otro.slippage = slippage
+        return otro
 
     def _es_venta_protectora(self, reason: str) -> bool:
         """True si esta venta existe para limitar perdidas.

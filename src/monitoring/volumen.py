@@ -94,6 +94,25 @@ _OFFSET_RESERVAS = 105
 #: son las REALES, que sirven para el avance de la curva pero no para el
 #: precio.
 _precio: dict[str, tuple[float, float]] = {}
+
+#: mint -> ultimos precios, para poder ver si la moneda ACABA DE PEGAR UN
+#: SALTO. `_precio` solo guarda el ultimo, y con un solo punto no se puede
+#: saber si el precio de ahora es el de siempre o el de una vela verde
+#: enorme que ya se ha ido.
+#:
+#: POR QUE HACE FALTA, con un caso concreto: el 23-sep el bot entro en CATO a
+#: 26K de market cap, justo despues de que la moneda subiera de 7,5K a 25K en
+#: medio minuto. Comprar el ultimo escalon de una subida vertical es comprar
+#: el techo: medio minuto despues estaba a 12,4K.
+#:
+#: Son 32 puntos por moneda, no un historico: solo interesa lo de hace unos
+#: segundos. Unos 900 bytes por moneda ACTIVA, y solo las que operan tienen.
+_historia_precio: dict[str, deque[tuple[float, float]]] = defaultdict(
+    lambda: deque(maxlen=32)
+)
+#: Con un solo punto no se puede saber si el precio subio o lleva ahi desde
+#: siempre, y bloquear una compra sin saberlo seria inventarse el motivo.
+_MINIMO_PUNTOS_SUBIDA = 2
 _OFFSET_VIRTUALES = 89
 #: Decimales: el SOL va en lamports (9) y el token de pump.fun tiene 6.
 _DEC_TOKEN = 10**6
@@ -272,6 +291,7 @@ def _olvidar(mint: str) -> None:
     # Olvidar el precio no deja ninguna posicion a ciegas: `precio_en_vivo`
     # devuelve None y quien lo use vuelve a preguntar al nodo.
     _precio.pop(mint, None)
+    _historia_precio.pop(mint, None)
     # `_nacimiento` NO se toca aqui, y es lo unico que sobrevive. Sin el, una
     # moneda borrada por falta de sitio miente sobre su edad y queda marcada
     # como "sin historia" de por vida. Ver su comentario mas arriba.
@@ -339,10 +359,9 @@ def registrar_logs(logs: list[str], slot: int | None = None) -> list[str]:
                     "<QQ", cuerpo, _OFFSET_VIRTUALES
                 )
                 if v_tokens > 0:
-                    _precio[mint] = (
-                        ahora,
-                        (v_sol / _LAMPORTS) / (v_tokens / _DEC_TOKEN),
-                    )
+                    _p = (v_sol / _LAMPORTS) / (v_tokens / _DEC_TOKEN)
+                    _precio[mint] = (ahora, _p)
+                    _historia_precio[mint].append((ahora, _p))
                 # Reservas de la curva DESPUES de esta operacion: con ellas se
                 # sabe por que punto de la curva va sin preguntar al nodo.
                 sol_real, tokens_real = struct.unpack_from(
@@ -676,6 +695,32 @@ def titulares(mint: str) -> int:
         if w:
             neto[w] += s if es_compra else -s
     return sum(1 for v in neto.values() if v > 0)
+
+
+def subida(mint: str, segundos: float = 10.0) -> float:
+    """Cuanto ha subido el precio desde su minimo en los ultimos `segundos`.
+
+    Devuelve la subida en tanto por uno (0,8 = ha subido un 80%), o 0 si no
+    hay con que compararlo -- porque no hay datos NO es lo mismo que porque
+    este plana, y bloquear una compra por falta de datos seria inventarse un
+    motivo.
+
+    PARA QUE SIRVE: para no comprar el ultimo escalon de una vela verde. Una
+    moneda que acaba de triplicar en medio minuto ya ha hecho el movimiento;
+    quien entra ahi compra el techo. Pedido el 23-sep tras entrar en CATO a
+    26K justo despues de que subiera de 7,5K a 25K.
+    """
+    puntos = _historia_precio.get(mint)
+    if not puntos:
+        return 0.0
+    corte = time.time() - max(float(segundos), 0.0)
+    recientes = [p for t, p in puntos if t >= corte and p > 0]
+    if len(recientes) < _MINIMO_PUNTOS_SUBIDA:
+        return 0.0
+    suelo = min(recientes)
+    if suelo <= 0:
+        return 0.0
+    return max(0.0, recientes[-1] / suelo - 1.0)
 
 
 def presion(mint: str, segundos: float = 3.0) -> tuple[float, float]:
