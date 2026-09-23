@@ -10,7 +10,7 @@
 #
 # Instalar (una vez):  bash /root/ai-bot/deploy/instalar_comandos.sh
 # Luego, desde donde sea:
-#   devs ver          cazador ver          bot
+#   devs ver          cazador ver          bot          porque_cerro <mint>
 set -euo pipefail
 
 RAIZ=/root/ai-bot
@@ -26,10 +26,27 @@ EOF
   echo "  $nombre  ->  deploy/$guion"
 }
 
+# Los de Python necesitan su propio envoltorio: `_poner` lanza bash, que con
+# un .py da "syntax error near unexpected token". Se usa python3 y no `uv run`
+# a proposito: esto solo LEE un fichero de texto, no necesita el entorno del
+# bot, y `uv run` desde una carpeta cualquiera tarda segundos o falla.
+_poner_py() {
+  local nombre="$1" guion="$2"
+  cat > "$DESTINO/$nombre" <<EOF
+#!/usr/bin/env bash
+exec python3 "$RAIZ/deploy/$guion" "\$@"
+EOF
+  chmod +x "$DESTINO/$nombre"
+  echo "  $nombre  ->  deploy/$guion"
+}
+
 echo "Instalando comandos globales:"
 _poner devs devs.sh
 _poner cazador cazador.sh
 _poner porque porque.sh
+# POR QUE SE CERRO UNA MONEDA CONCRETA. Es la pregunta que mas se repite y
+# hasta ahora pedia inventar un grep distinto cada vez.
+_poner_py porque_cerro porque_cerro.py
 
 # `bot` no envuelve un guion: resume de un vistazo el estado de todo, que es
 # lo que de verdad se quiere saber al entrar.
@@ -150,7 +167,7 @@ else
   echo "  devs medidos: no"
 fi
 echo
-echo "Comandos:  bot  ·  porque  ·  cazador ver  ·  devs ver"
+echo "Comandos:  bot  ·  porque  ·  porque_cerro <mint>  ·  cazador ver  ·  devs ver"
 BOT
 sed -i "s|__RAIZ__|$RAIZ|" "$DESTINO/bot"
 chmod +x "$DESTINO/bot"
