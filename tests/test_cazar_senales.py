@@ -190,10 +190,16 @@ def test_el_script_no_borra_lo_apuntado_al_apagar() -> None:
 
 
 def test_una_que_solo_toca_el_stop_pierde_justo_el_stop() -> None:
-    """El caso mas simple, y el que fija la escala de todo lo demas."""
+    """El caso mas simple, y el que fija la escala de todo lo demas.
+
+    El suelo de la moneda se calcula DESDE el stop configurado, no escrito a
+    mano: el 23-sep paso del 28% al 40% y con el -0,30 fijo la moneda ya no
+    llegaba a tocarlo, asi que el test medira otra cosa sin avisar.
+    """
     an = _modulo("analizar_senales")
     _esc, stop = an._escalera()
-    peor, mejor = an._cuenta([{"pico": 0.0, "suelo": -0.30, "ultimo": -0.30}])
+    suelo = -stop - 0.02
+    peor, mejor = an._cuenta([{"pico": 0.0, "suelo": suelo, "ultimo": suelo}])
     assert peor == -stop
     assert mejor == -stop
 

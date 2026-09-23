@@ -265,7 +265,7 @@ def test_los_dos_numeros_son_los_pedidos() -> None:
     # porque manda el 15% del saldo (`fraccion_saldo`).
     trade = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["trade"]
     assert h["buy_amount"] == trade["buy_amount"] == 0
-    assert trade["fraccion_saldo"] == 0.15
+    assert trade["fraccion_saldo"] == 0.30
 
 
 def test_ningun_filtro_global_puede_descartar_por_su_cuenta() -> None:

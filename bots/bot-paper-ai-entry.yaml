@@ -186,7 +186,7 @@ trade:
       sell: 0.024
     - gain: 19.00    # x20
       sell: 0.024
-  # 28% (23-sep, pedido). Historial: 18% -> 28%.
+  # 40% (23-sep, pedido). Historial: 18% -> 28% -> 40%.
   #
   # SOLO MANDA HASTA EL PRIMER PELDANO. En cuanto la moneda toca el TP1
   # (+30%), el suelo se sube a precio de compra +5% (`margen_stop_tras_tp`)
@@ -197,7 +197,7 @@ trade:
   # normales de una memecoin recien nacida, que con el 18% cerraban en rojo
   # posiciones que luego subian. A cambio, cuando la moneda va de verdad a
   # cero, se pierde un 28% en vez de un 18%.
-  stop_loss_percentage: 0.28
+  stop_loss_percentage: 0.40
   # EL STOP SE LLEVA LA POSICION ENTERA, moonbag incluido.
   #
   # Antes dejaba el 2% corriendo en una moneda que se estaba cayendo a cero:
@@ -338,8 +338,8 @@ trade:
   # La bolsa NO se vende ni se pierde: se queda en la wallet y la recoge la
   # limpieza de cuentas. 0 desactiva la regla.
   valor_minimo_posicion_usd: 1.0
-  # PORCENTAJE DEL SALDO: 15% (23-sep, pedido). Historial: 0,25 unas horas el
-  # 19-sep -> apagado -> 0,15.
+  # PORCENTAJE DEL SALDO: 30% (23-sep, pedido). Historial: 0,25 unas horas el
+  # 19-sep -> apagado -> 0,15 -> 0,30.
   #
   # MANDA ESTE, no el importe fijo de arriba: con cualquier valor mayor que
   # cero, el porcentaje SUSTITUYE al importe fijo dentro del cerrojo de gasto.
@@ -355,7 +355,7 @@ trade:
   # prioridad, que no bajan con el tamano-- se comen la operacion. Con un
   # saldo de 0,2 SOL el 15% son 0,03, que ya es territorio de nacer perdiendo.
   # Si pasa a menudo, lo que hay que poner es `compra_minima_sol`.
-  fraccion_saldo: 0.15
+  fraccion_saldo: 0.30
   # SIN TOPE DURO (19-sep, pedido por Manu). 0 = no se recorta nada.
   #
   # QUE SE PIERDE: era el ultimo freno contra un fallo de calculo. El 12-ago la

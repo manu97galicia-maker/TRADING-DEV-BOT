@@ -92,16 +92,16 @@ def _tamanos(saldo: float, plazas: int | None = None) -> list[float]:
 
 
 def test_el_modo_activo_es_el_porcentaje() -> None:
-    """15% del saldo libre por entrada (23-sep, pedido).
+    """30% del saldo libre por entrada (23-sep, pedido).
 
-    Historial del tamano: 0,12 fijo -> 25% -> 0,04 fijo -> 15%.
+    Historial del tamano: 0,12 fijo -> 25% -> 0,04 fijo -> 15% -> 30%.
 
     Y la regla de siempre: manda UNO de los dos. Un importe fijo distinto de
     cero con el porcentaje encendido es un numero que parece decidir y no
     decide -- justo la clase de cosa que hace buscar el fallo donde no esta.
     """
     t = _trade()
-    assert t["fraccion_saldo"] == 0.15
+    assert t["fraccion_saldo"] == 0.30
     assert t["buy_amount"] == 0, "con el porcentaje encendido el fijo no manda"
 
 
