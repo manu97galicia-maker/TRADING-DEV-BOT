@@ -91,3 +91,66 @@ def test_el_parte_ensena_cuantas_se_descartan_asi() -> None:
     texto = build_holders_heartbeat(23, 0.0, 0.04, {"vela_verde": 7}, paper_mode=False)
     assert "vela verde" in texto
     assert "7" in texto
+
+
+# ---------------------- que haya dinero de verdad, no solo buena proporcion
+
+
+def _fuente_con_volumen(minimo: float) -> HoldersSource:
+    return HoldersSource(
+        "wss://x", SimpleNamespace(), SimpleNamespace(),
+        min_holders=3, max_edad_seg=0.0, ultimas_compras=0, presion_seg=3.0,
+        max_subida=0, volumen_min_sol=minimo, heartbeat_interval=0,
+    )
+
+
+def _pasa(f: HoldersSource, mint: str, compras: list[float]) -> bool:
+    """Deja la moneda cruzando el corte con esas compras y devuelve si pasa.
+
+    `_lanzar` se sustituye por un apuntador: crea una tarea de asyncio y estos
+    tests no tienen bucle -- y lo que se comprueba aqui son los filtros, no la
+    evaluacion contra el nodo.
+    """
+    llegaron: list[str] = []
+    f._lanzar = lambda m, _t, _e, _cb: bool(llegaron.append(m)) or True  # type: ignore[method-assign]
+    ahora = time.time()
+    volumen._historia_precio.pop(mint, None)
+    volumen._ops[mint] = [(ahora, 0.1, True, "a"), (ahora, 0.1, True, "b")]
+    f._revisar([mint], None)  # se la ve por debajo del corte
+    volumen._ops[mint] = [
+        (ahora, s, True, f"w{i}") for i, s in enumerate(compras)
+    ]
+    f._revisar([mint], None)
+    return bool(llegaron)
+
+
+def test_calderilla_no_basta_aunque_la_proporcion_sea_perfecta() -> None:
+    """LA RAZON DE SER DE ESTE FILTRO.
+
+    "Entra mas de lo que sale" lo cumple igual de bien una moneda en la que
+    entran dos centimos y sale uno: la proporcion no dice NADA del tamano. Una
+    moneda sin dinero detras no se mueve por perfecta que sea la proporcion.
+    """
+    f = _fuente_con_volumen(0.5)
+    assert not _pasa(f, "M" + "1" * 30, [0.01, 0.02, 0.01, 0.01, 0.02])
+    assert f._embudo.get("poco_volumen") == 1
+
+
+def test_con_dinero_de_verdad_pasa() -> None:
+    f = _fuente_con_volumen(0.5)
+    assert _pasa(f, "M" + "2" * 30, [0.4, 0.3, 0.5, 0.2, 0.3])
+    assert f._embudo.get("poco_volumen", 0) == 0
+
+
+def test_a_cero_no_se_mira() -> None:
+    """El ajuste nuevo no puede cambiar nada por defecto."""
+    f = _fuente_con_volumen(0)
+    assert _pasa(f, "M" + "3" * 30, [0.01, 0.01, 0.01, 0.01, 0.01])
+
+
+def test_el_parte_ensena_cuantas_se_caen_por_volumen() -> None:
+    texto = build_holders_heartbeat(
+        23, 0.0, 0.04, {"poco_volumen": 12}, paper_mode=False
+    )
+    assert "poco volumen" in texto
+    assert "12" in texto

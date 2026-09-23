@@ -2172,6 +2172,7 @@ class UniversalTrader:
             presion_seg=float(cfg.get("presion_seg", 3.0)),
             subida_seg=float(cfg.get("subida_seg", 10.0)),
             max_subida=float(cfg.get("max_subida", 0)),
+            volumen_min_sol=float(cfg.get("volumen_min_sol", 0)),
             buy_amount=float(cfg.get("buy_amount", 0.07)),
             heartbeat_interval=float(cfg.get("heartbeat_interval", 300)),
             paper_mode=self.paper_trade or self.paper_engine.enabled,

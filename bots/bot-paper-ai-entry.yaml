@@ -824,6 +824,17 @@ filters:
     # una vela verde"). 0 = no se mira.
     subida_seg: 10.0
     max_subida: 1.0
+    # QUE HAYA DINERO DE VERDAD DETRAS (23-sep, pedido). SOL comprados como
+    # minimo en la ventana de presion (los mismos 3 s de arriba).
+    #
+    # POR QUE NO BASTA CON LA PRESION: "entra mas de lo que sale" lo cumple
+    # igual de bien una moneda en la que entran dos centimos y sale uno. La
+    # proporcion no dice NADA del tamano, y una moneda sin dinero detras no
+    # se mueve por mucho que la proporcion sea perfecta.
+    #
+    # 0,5 SOL en 3 segundos es el punto de partida. Sale en el parte como
+    # "con poco volumen": si descarta de mas, bajarlo. 0 = no se mira.
+    volumen_min_sol: 0.5
     # SIN IMPORTE PROPIO (19-sep: "elimina lo del 0.12, solo el
     # porcentaje"). Sin esta clave la fuente no manda importe y decide
     # el 25% del saldo. Si se le pusiera un numero aqui, ese numero

@@ -135,6 +135,8 @@ def build_holders_heartbeat(
         f"  ↳ cayendo (salía más de lo que entraba): {embudo.get('dip', 0)}",
         f"  ↳ detrás de una vela verde (ya habían subido): "
         f"{embudo.get('vela_verde', 0)}",
+        f"  ↳ con poco volumen (entraba calderilla): "
+        f"{embudo.get('poco_volumen', 0)}",
         f"  ↳ sin datos de presión: {embudo.get('sin_datos_presion', 0)}",
         f"  ↳ sin ver su creación (edad desconocida): {embudo.get('sin_historia', 0)}",
         f"  ↳ <b>comprables: {embudo.get('comprables', 0)}</b>",
@@ -170,6 +172,10 @@ class HoldersSource:
         #: 0 = no se mira.
         subida_seg: float = 10.0,
         max_subida: float = 0.0,
+        #: SOL comprados como minimo en la ventana de presion. Sin esto,
+        #: "entra mas de lo que sale" lo cumple una moneda en la que entran
+        #: dos centimos y salen uno. 0 = no se mira.
+        volumen_min_sol: float = 0.0,
         buy_amount: float = 0.07,
         heartbeat_interval: float = 300,
         paper_mode: bool = False,
@@ -190,6 +196,7 @@ class HoldersSource:
         self.presion_seg = float(presion_seg or 0)
         self.subida_seg = float(subida_seg or 0)
         self.max_subida = float(max_subida or 0)
+        self.volumen_min_sol = float(volumen_min_sol or 0)
         self.buy_amount = float(buy_amount)
         self.heartbeat_interval = float(heartbeat_interval)
         self.paper_mode = bool(paper_mode)
@@ -444,6 +451,16 @@ class HoldersSource:
                     continue
                 if comprado <= vendido:
                     self._cuenta("dip", mint)
+                    continue
+                # Y QUE SEA DINERO DE VERDAD, no solo que el saldo salga bien.
+                #
+                # POR QUE HACE FALTA APARTE: "entra mas de lo que sale" lo
+                # cumple igual de bien una moneda en la que entran dos
+                # centimos y sale uno. La proporcion no dice NADA del tamano,
+                # y una moneda sin dinero detras no se mueve aunque la
+                # proporcion sea perfecta.
+                if self.volumen_min_sol > 0 and comprado < self.volumen_min_sol:
+                    self._cuenta("poco_volumen", mint)
                     continue
 
             # SE MARCA DESPUES DE LANZAR, NO ANTES. Si no hay hueco, la
