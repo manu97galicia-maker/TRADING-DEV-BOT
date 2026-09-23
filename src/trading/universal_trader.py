@@ -1512,11 +1512,46 @@ class UniversalTrader:
             f"fuentes: {fuentes}"
         )
 
+    def _cartel_de_salidas(self) -> str:
+        """La escalera y el stop EXACTOS con los que se esta operando.
+
+        POR QUE HACE FALTA, y es una leccion repetida: "no saltan los take
+        profit" es imposible de contestar sin saber que numeros esta usando la
+        maquina. El yaml del repo no sirve de prueba -- el droplet puede estar
+        en otro commit, o con el fichero tocado a mano. Se han ido dias en esa
+        duda.
+        """
+        tiers = getattr(self, "tp_tiers", None) or []
+        peldanos = " · ".join(
+            f"{'+' + format(t.gain * 100, '.0f') + '%' if t.gain < 1 else 'x' + format(1 + t.gain, '.1f')}"
+            f"→{t.sell * 100:.1f}%"
+            for t in tiers
+        )
+        vendido = sum(t.sell for t in tiers)
+        stop = float(getattr(self, "stop_loss_percentage", 0) or 0) * 100
+        margen = float(getattr(self, "margen_stop_tras_tp", 0) or 0) * 100
+        ancho = float(getattr(self, "sell_slippage_proteccion", 0) or 0) * 100
+        return (
+            f"SALIDAS ACTIVAS · stop -{stop:.0f}% · tras cada peldaño el suelo "
+            f"sube al anterior +{margen:.0f}% · suelo de venta protectora "
+            f"{ancho:.0f}% · vendido {vendido * 100:.0f}% en "
+            f"{len(tiers)} peldaños: {peldanos}"
+        )
+
     async def start(self) -> None:
         """Start the trading bot and listen for new tokens."""
         logger.info(f"Starting Universal Trader for {self.platform.value}")
         _cartel = self._cartel_de_configuracion()
         logger.info(_cartel)
+        # LA ESCALERA Y EL STOP, EN LINEA APARTE. El cartel de arriba tiene que
+        # caber en una linea de movil --hay un test que lo exige-- asi que esto
+        # va suelto. Sale una vez por arranque.
+        #
+        # POR QUE EXISTE: "no saltan los take profit" es imposible de contestar
+        # sin saber que numeros esta usando LA MAQUINA. El yaml del repo no
+        # sirve de prueba: el droplet puede estar en otro commit o con el
+        # fichero tocado a mano. Se han ido dias en esa duda.
+        logger.info(self._cartel_de_salidas())
         # Y TAMBIEN A TELEGRAM. El log vive en un droplet que se administra
         # desde un movil: en la practica no lo lee nadie. Manu si lee Telegram,
         # y esta es la linea que contesta "¿ya va en real?" sin escribir ni un

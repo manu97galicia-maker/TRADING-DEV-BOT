@@ -49,13 +49,26 @@ def _metodo(nombre: str) -> str:
 
 
 def test_el_arranque_retoma_en_vez_de_abandonar() -> None:
-    """Lo que decide todo: que `start` llame a retomar."""
+    """Lo que decide todo: que `start` llame a retomar, y ANTES de ponerse a
+    escuchar monedas nuevas.
+
+    SE COMPRUEBA LA POSICION, NO LA DISTANCIA. Antes esto miraba los primeros
+    1.800 caracteres de `start`, y cualquier linea o comentario que se anadiera
+    por delante lo empujaba fuera de la ventana y ponia el test en rojo sin que
+    nada se hubiera roto. Paso el 23-sep al anadir el cartel de salidas. Lo que
+    importa no es lo cerca que este del principio: es que se retomen las
+    posiciones antes de arrancar las fuentes, o una moneda ya comprada pasaria
+    un rato sin stop loss.
+    """
     texto = _fuente()
     inicio = texto.index("async def start(self)")
-    cabecera = texto[inicio : inicio + 1800]
-    assert "await self._reanudar_posiciones()" in cabecera, (
+    cuerpo = texto[inicio:]
+    assert "await self._reanudar_posiciones()" in cuerpo, (
         "el arranque no retoma las posiciones: se quedarian sin stop loss"
     )
+    assert cuerpo.index("await self._reanudar_posiciones()") < cuerpo.index(
+        "acquisition_tasks"
+    ), "se retoman DESPUES de empezar a comprar: habria un hueco sin stop loss"
 
 
 def test_ya_no_se_borra_el_marcador_al_arrancar() -> None:
