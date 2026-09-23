@@ -248,9 +248,31 @@ trade:
   margen_stop_tras_tp: 0.05
   stop_al_tp_tras_tp: false
   trailing_stop_percentage: 0
-  anti_rug_ratio: 2.0
+  # ANTI-RUG: la salida de emergencia. Salta cuando en `anti_rug_seg` segundos
+  # se venden al menos `anti_rug_min_sol` SOL Y las ventas superan a las
+  # compras por `anti_rug_ratio`. Vende la posicion ENTERA, moonbag incluido.
+  #
+  # SUBIDO DE 3 SOL / RATIO 2 A 12 SOL / RATIO 3 (23-sep). Estaba sacando de
+  # monedas que NO se estaban hundiendo.
+  #
+  # EL CASO QUE LO DESTAPO: ManucallsAI, comprada a 39,9k de market cap y
+  # vendida entera 40 segundos despues a +4,8%. La moneda siguio subiendo
+  # hasta 58,2k. Una sola venta --dos transacciones en total-- asi que no fue
+  # ningun peldano del take profit: fue esto.
+  #
+  # POR QUE SALTABA. 3 SOL son unos 660 $. Que en CUATRO SEGUNDOS se vendan
+  # 660 $ y se compren menos de 330 no es un volcado: en una moneda que se
+  # esta moviendo de 40k a 58k es un respiro normal. El corte estaba puesto
+  # para monedas mucho mas grandes.
+  #
+  # QUE SE PIERDE AL SUBIRLO, y hay que saberlo: en un rug que empiece flojo
+  # se sale mas tarde y mas abajo. La red de abajo sigue siendo el stop del
+  # 40%. A cambio deja de cortar las que solo estaban respirando, que es lo
+  # que estaba costando dinero de verdad -- salia en verde flojo de monedas
+  # que luego hacian el movimiento entero sin nosotros.
+  anti_rug_ratio: 3.0
   anti_rug_seg: 4
-  anti_rug_min_sol: 3
+  anti_rug_min_sol: 12
   # SIN MOVIMIENTO: a los 3 minutos se mira UNA vez. Si no ha hecho al menos
   # un +2%, la moneda esta muerta (una con volumen de verdad se mueve) y se
   # vende entera. Si a esa altura va por encima, se la deja y ya mandan los TP.
@@ -367,7 +389,34 @@ trade:
   # prioridad, que no bajan con el tamano-- se comen la operacion. Con un
   # saldo de 0,1 SOL el 30% son 0,03, que ya es territorio de nacer perdiendo.
   # Si pasa a menudo, lo que hay que poner es `compra_minima_sol`.
-  fraccion_saldo: 0.30
+  fraccion_saldo: 0
+  # IMPORTE EN DOLARES: 10 $ POR OPERACION (23-sep, pedido). MANDA ESTE.
+  #
+  # Historial del tamano: 0,12 SOL fijo -> 25% -> 0,04 SOL fijo -> 15% -> 30%
+  # del saldo libre -> 30% de la cartera -> 10 $ fijos.
+  #
+  # LOS TRES MODOS SE EXCLUYEN y el orden es este: si `buy_amount_usd` es
+  # mayor que cero manda el, si no `fraccion_saldo`, si no `buy_amount`. Que
+  # haya dos con numero es la clase de cosa que hace buscar el fallo donde no
+  # esta, asi que un test comprueba que solo hay uno encendido.
+  #
+  # POR QUE EN DOLARES Y NO EN SOL. "10 $" escrito en SOL es un numero que
+  # caduca: con SOL a 220 $ son 0,045 SOL, y el dia que SOL valga 300 esa
+  # misma linea gasta 13,50 $ sin que nadie lo haya decidido. Aqui el bot
+  # divide por el precio de SOL EN VIVO --lo refresca solo desde DexScreener--
+  # asi que la apuesta vale lo mismo todos los dias.
+  #
+  # SI EL PRECIO DE SOL NO SE HA CONFIRMADO, NO COMPRA. El valor escrito a
+  # mano en el codigo es de agosto (91,24 $). Gastar "10 $" a ese cambio con
+  # SOL a 220 serian 24 $ de verdad, en cada compra y sin enterarse. El
+  # refresco reintenta cada 10 segundos, asi que se arregla solo; si el aviso
+  # dura, es que el bot no llega a DexScreener y hay una averia que mirar.
+  #
+  # QUE CAMBIA respecto al 30% de la cartera: el tamano ya no crece con las
+  # ganancias ni encoge con las perdidas, y ya no lo limita el saldo. Con 10 $
+  # por compra caben las cinco plazas de sobra (50 $ en juego). Con el stop en
+  # el 40%, cada posicion arriesga 4 $.
+  buy_amount_usd: 10
   # SIN TOPE DURO (19-sep, pedido por Manu). 0 = no se recorta nada.
   #
   # QUE SE PIERDE: era el ultimo freno contra un fallo de calculo. El 12-ago la

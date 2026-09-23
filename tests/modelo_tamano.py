@@ -23,6 +23,17 @@ CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
 #: Lo que el codigo reserva por posicion: comisiones + renta de la cuenta de
 #: token (`_fee_headroom_lamports` = 3_000_000 lamports).
 COLCHON_POR_POSICION = 0.003
+#: PRECIO DE SOL DE REFERENCIA PARA LOS TESTS, y solo para eso.
+#:
+#: El bot NO usa este numero: divide por `_SOL_USD`, que refresca solo desde
+#: DexScreener cada hora, y si no lo ha podido confirmar no compra. Aqui hace
+#: falta uno fijo porque un test que sale a internet no es un test: daria
+#: distinto cada dia y se pondria rojo por el mercado, no por el codigo.
+#:
+#: Lo que se comprueba con el es la MECANICA --que 10 $ se convierten en los
+#: SOL que toca y que el resto de frenos siguen puestos-- no el numero exacto
+#: de SOL, que cambia cada hora por definicion.
+SOL_USD_REF = 220.0
 
 
 def trade() -> dict:
@@ -32,10 +43,15 @@ def trade() -> dict:
 def importe(cartera: float, t: dict | None = None) -> float:
     """El importe de UNA compra con esa CARTERA, en el modo que este puesto.
 
-    Hay DOS modos y se excluyen: importe fijo (`buy_amount`) o PORCENTAJE
-    (`fraccion_saldo`), que si es mayor que cero sustituye al fijo dentro del
-    cerrojo de gasto. Esta funcion existe para que los tests no tengan que
-    saber cual esta activo: se han alternado varias veces en un mismo dia.
+    Hay TRES modos y se excluyen. El orden es el mismo que en el codigo:
+
+    1. `buy_amount_usd` -- un importe en DOLARES, que se pasa a SOL con el
+       precio de SOL en vivo. Es el que manda hoy: 10 $ por operacion.
+    2. `fraccion_saldo` -- un porcentaje de la cartera.
+    3. `buy_amount` -- un numero de SOL fijo.
+
+    Esta funcion existe para que los tests no tengan que saber cual esta
+    activo: se han alternado varias veces en un mismo dia.
 
     OJO CON EL ARGUMENTO. Desde el 23-sep el porcentaje se calcula sobre la
     CARTERA entera --el saldo de la wallet mas lo que ya esta metido en las
@@ -47,8 +63,14 @@ def importe(cartera: float, t: dict | None = None) -> float:
     daria 0.
     """
     t = t or trade()
+    usd = t.get("buy_amount_usd", 0)
     frac = t.get("fraccion_saldo", 0)
-    imp = cartera * frac if frac > 0 else float(t["buy_amount"])
+    if usd > 0:
+        imp = float(usd) / SOL_USD_REF
+    elif frac > 0:
+        imp = cartera * frac
+    else:
+        imp = float(t["buy_amount"])
     tope = t.get("tope_compra_sol", 0)
     if tope > 0 and imp > tope:
         imp = tope

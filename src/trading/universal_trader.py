@@ -613,6 +613,7 @@ class UniversalTrader:
         # calcula en el momento de comprar y dentro del cerrojo de gasto, asi
         # que sube solo cuando la wallet sube y no hay que reeditar el yaml.
         fraccion_saldo: float = 0.0,
+        buy_amount_usd: float = 0.0,
         fraccion_si_no_llega: float = 0.0,
         # Suelo por debajo del cual NO se compra. Las comisiones de pump.fun y
         # la renta de la cuenta de token son fijas: en una compra de 0,02 SOL
@@ -1187,6 +1188,15 @@ class UniversalTrader:
         #: Fraccion de la CARTERA (saldo + lo que ya esta en monedas) con
         #: la que se compra. 0 = tamano fijo. Ver `_valor_en_posiciones_lamports`.
         self.fraccion_saldo = max(0.0, min(1.0, float(fraccion_saldo or 0)))
+        #: IMPORTE EN DOLARES por compra. 0 = apagado. Si es mayor que cero
+        #: manda el, y los SOL salen de dividir por el precio de SOL EN VIVO
+        #: (`_SOL_USD`, que refresca `_precio_sol_loop` desde DexScreener).
+        #:
+        #: POR QUE EN DOLARES Y NO EN SOL. "10 $ por operacion" en SOL es un
+        #: numero que caduca: escrito 0,045 SOL con SOL a 220 $, el dia que
+        #: SOL valga 300 esa misma compra son 13,50 $ sin que nadie lo haya
+        #: decidido. Aqui la apuesta es la misma todos los dias.
+        self.buy_amount_usd = max(0.0, float(buy_amount_usd or 0))
         #: RED DE SEGURIDAD, no una forma de comprar. Cuando el saldo no
         #: da para el importe entero, en vez de saltarse la moneda se
         #: compra con esta fraccion de lo que quede libre. 0 = apagado,
@@ -1494,6 +1504,19 @@ class UniversalTrader:
             compras = "EN PAUSA (modo estudio, no gasta)"
         elif self.paper_trade or self.paper_engine.enabled:
             compras = "PAPEL (simuladas)"
+        elif getattr(self, "buy_amount_usd", 0) > 0:
+            # EN DOLARES Y EN SOL, los dos. El dolar es lo que se decidio; los
+            # SOL son lo que de verdad va a salir de la wallet, y cual de los
+            # dos esta mal solo se ve si estan los dos escritos. Si el precio
+            # de SOL no se ha refrescado, el cartel lo dice aqui en vez de
+            # dejar que se descubra en la primera compra.
+            _sol = float(_SOL_USD)
+            _sin = _sol == _ARRANQUE_SOL_USD
+            compras = (
+                f"REALES {self.buy_amount_usd:.2f} $ "
+                f"(~{self.buy_amount_usd / _sol:.4f} SOL a {_sol:.2f} $/SOL)"
+                + (" · PRECIO DE SOL SIN CONFIRMAR" if _sin else "")
+            )
         elif self.fraccion_saldo > 0:
             # EL CARTEL TIENE QUE DECIR LO QUE COMPRA, no el tope. La linea de
             # abajo enseñaba `tope_compra_sol`, que desde que manda el
@@ -4716,7 +4739,56 @@ class UniversalTrader:
                     # saldo recien leido y bajo el mismo cerrojo que lo reserva:
                     # calculado fuera, dos compras a la vez pedirian cada una el
                     # 70% del mismo saldo y sumarian el 140%.
-                    if self.fraccion_saldo > 0:
+                    if self.buy_amount_usd > 0:
+                        # IMPORTE EN DOLARES (23-sep, pedido: "10 $ por
+                        # operacion en SOL"). Los SOL salen de dividir por el
+                        # precio de SOL EN VIVO, no por un numero escrito a
+                        # mano: asi la apuesta vale lo mismo hoy que dentro de
+                        # un mes, suba o baje SOL.
+                        #
+                        # SE LEE LA GLOBAL EN CADA COMPRA, no una copia
+                        # guardada al arrancar. `_precio_sol_loop` reescribe
+                        # `_SOL_USD` cada hora y esta lectura recoge el valor
+                        # nuevo; una copia hecha en el constructor se quedaria
+                        # congelada en el de arranque para siempre -- el bot
+                        # funcionando, sin errores, y comprando mal.
+                        _sol_usd = float(_SOL_USD)
+                        # EL PRECIO POR DEFECTO NO VALE PARA ESTO, y aqui esta
+                        # la diferencia entre un aviso y una perdida. El valor
+                        # escrito a mano es 91,24 $ (de agosto). Con SOL a
+                        # 220 $, gastar "10 $" a ese cambio son 0,1096 SOL, o
+                        # sea 24 $ de verdad: 2,4 veces la apuesta acordada,
+                        # en cada compra y sin que nadie se entere.
+                        #
+                        # Mientras el precio no se haya confirmado NO SE
+                        # COMPRA. El refresco reintenta cada 10 segundos hasta
+                        # que acierta, asi que esto se arregla solo en
+                        # segundos; si dura, es que el bot no llega a
+                        # DexScreener y entonces hay una averia que hay que
+                        # ver, no una compra que hacer a ciegas.
+                        if _sol_usd == _ARRANQUE_SOL_USD:
+                            logger.error(
+                                "Compra de %s omitida: el precio de SOL sigue "
+                                "en el valor por defecto (%.2f $) y los "
+                                "importes en dolares estarian mal. Se "
+                                "reintenta en segundos.",
+                                token_info.symbol, _ARRANQUE_SOL_USD,
+                            )
+                            _suelta_moneda(_mint_str)
+                            return
+                        _importe = self.buy_amount_usd / _sol_usd
+                        if _tope > 0 and _importe > _tope:
+                            _importe = _tope
+                        need = int(
+                            _importe * (1 + self.buy_slippage) * LAMPORTS_PER_SOL
+                        ) + self._fee_headroom_lamports
+                        logger.info(
+                            "IMPORTE: %.2f $ a %.2f $/SOL -> compra de %.4f "
+                            "SOL · libres %.4f",
+                            self.buy_amount_usd, _sol_usd, _importe,
+                            free / LAMPORTS_PER_SOL,
+                        )
+                    elif self.fraccion_saldo > 0:
                         # SOBRE LA CARTERA ENTERA, no sobre el saldo libre
                         # (23-sep, pedido: "sobre el portfolio total").
                         #

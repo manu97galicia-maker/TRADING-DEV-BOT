@@ -345,6 +345,7 @@ async def start_bot(config_path: str):
             buy_amount_marcados=cfg["trade"].get("buy_amount_marcados", 0),
             tope_compra_sol=cfg["trade"].get("tope_compra_sol", 0),
             fraccion_saldo=cfg["trade"].get("fraccion_saldo", 0),
+            buy_amount_usd=cfg["trade"].get("buy_amount_usd", 0),
             fraccion_si_no_llega=cfg["trade"].get("fraccion_si_no_llega", 0),
             compra_minima_sol=cfg["trade"].get("compra_minima_sol", 0),
             escala_por_sol_ganado=cfg["trade"].get("escala_por_sol_ganado", 0),

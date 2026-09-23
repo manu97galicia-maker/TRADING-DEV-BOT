@@ -1,13 +1,13 @@
 """De que tamano es cada compra, en el modo que este puesto.
 
-HAY DOS MODOS Y SE EXCLUYEN:
+HAY TRES MODOS Y SE EXCLUYEN. El orden es el mismo que en el codigo:
 
-* importe FIJO (`buy_amount`), que es lo de ahora: 0,04 SOL por entrada.
-* PORCENTAJE DE LA CARTERA (`fraccion_saldo`), que si es mayor que cero
-  SUSTITUYE al fijo dentro del cerrojo de gasto. Cartera = el SOL de la
-  wallet MAS lo que ya esta metido en las monedas abiertas (23-sep, pedido:
-  "sobre el portfolio total"). Hasta esa fecha era sobre el saldo LIBRE, y
-  eso hacia que las posiciones menguaran solas.
+* DOLARES (`buy_amount_usd`), que es lo de ahora: 10 $ por operacion. Los SOL
+  salen de dividir por el precio de SOL EN VIVO, asi que la apuesta vale lo
+  mismo suba o baje SOL.
+* PORCENTAJE DE LA CARTERA (`fraccion_saldo`). Cartera = el SOL de la wallet
+  MAS lo que ya esta metido en las monedas abiertas.
+* importe FIJO en SOL (`buy_amount`).
 
 Se han alternado varias veces en un mismo dia, asi que estos tests estan
 escritos contra `importe()`, que reproduce los dos. Escribirlos contra uno solo
@@ -27,24 +27,31 @@ comisiones de prioridad.
 
 # ruff: noqa: S101, PLR2004, PLC0415
 
-from modelo_tamano import CONFIG, importe
+from modelo_tamano import CONFIG, SOL_USD_REF, importe
 from modelo_tamano import tamanos as _tamanos
 from modelo_tamano import trade as _trade
 
 
-def test_el_modo_activo_es_el_porcentaje() -> None:
-    """30% de la cartera por entrada (23-sep, pedido).
+def test_el_modo_activo_es_el_importe_en_dolares() -> None:
+    """10 $ por operacion (23-sep, pedido).
 
-    Historial del tamano: 0,12 fijo -> 25% -> 0,04 fijo -> 15% -> 30% del
-    saldo libre -> 30% de la cartera entera.
+    Historial del tamano: 0,12 SOL fijo -> 25% -> 0,04 SOL fijo -> 15% -> 30%
+    del saldo libre -> 30% de la cartera -> 10 $.
 
-    Y la regla de siempre: manda UNO de los dos. Un importe fijo distinto de
-    cero con el porcentaje encendido es un numero que parece decidir y no
-    decide -- justo la clase de cosa que hace buscar el fallo donde no esta.
+    Y la regla de siempre: manda UNO de los tres. Dos con numero es un valor
+    que parece decidir y no decide -- justo la clase de cosa que hace buscar
+    el fallo donde no esta.
     """
     t = _trade()
-    assert t["fraccion_saldo"] == 0.30
-    assert t["buy_amount"] == 0, "con el porcentaje encendido el fijo no manda"
+    assert t["buy_amount_usd"] == 10
+    encendidos = [
+        k
+        for k in ("buy_amount_usd", "fraccion_saldo", "buy_amount")
+        if t.get(k, 0) > 0
+    ]
+    assert encendidos == ["buy_amount_usd"], (
+        f"tiene que mandar solo el importe en dolares, y mandan: {encendidos}"
+    )
 
 
 def test_el_tope_no_recorta_el_importe_configurado() -> None:
@@ -56,46 +63,40 @@ def test_el_tope_no_recorta_el_importe_configurado() -> None:
     igual para el dia que se vuelva a poner.
     """
     t = _trade()
-    frac = t["fraccion_saldo"]
     for saldo in (0.5, 1.0, 2.0, 10.0):
-        pedido = saldo * frac if frac > 0 else t["buy_amount"]
+        # Lo que el modo activo pide, SIN pasar por el tope.
+        if t.get("buy_amount_usd", 0) > 0:
+            pedido = t["buy_amount_usd"] / SOL_USD_REF
+        elif t["fraccion_saldo"] > 0:
+            pedido = saldo * t["fraccion_saldo"]
+        else:
+            pedido = t["buy_amount"]
         assert abs(importe(saldo, t) - pedido) < 1e-12, (
             f"con {saldo} SOL el tope ({t['tope_compra_sol']}) recorta la "
-            f"compra ({pedido:.3f}) sin avisar"
+            f"compra ({pedido:.4f}) sin avisar"
         )
 
 
-def test_con_el_porcentaje_las_posiciones_son_iguales() -> None:
-    """EL CAMBIO DEL 23-SEP, y es el que hay que tener por escrito.
+def test_con_un_importe_fijo_las_cinco_posiciones_valen_lo_mismo() -> None:
+    """LO QUE CAMBIA AL VOLVER A UN IMPORTE FIJO, y conviene tenerlo escrito.
 
-    ANTES, sobre el saldo libre, cada compra era un porcentaje de lo que
-    SOBRABA: con 1 SOL salian 0,30 · 0,21 · 0,15 · 0,10 · 0,07. La quinta
-    valia la cuarta parte que la primera sin que nadie lo pidiera, y las
-    ultimas caian donde las comisiones fijas se comen la operacion.
+    CON EL PORCENTAJE (hasta el 23-sep) el tamano dependia del dinero: sobre
+    el saldo libre las posiciones menguaban (0,30 · 0,21 · 0,15...), y sobre
+    la cartera salian iguales pero solo cabian TRES, porque tres del 30% ya
+    son el 90%.
 
-    AHORA, sobre la cartera entera, las que caben salen IGUALES. El precio de
-    eso --y por eso el test lo cuenta-- es que con el 30% solo caben TRES
-    enteras: las tres juntas son el 90% de la cartera. La cuarta sale del
-    recorte del 75% de lo que quede, y la quinta no sale.
+    CON 10 $ FIJOS caben las cinco y todas valen lo mismo, porque el tamano ya
+    no depende de lo que haya en la wallet. Lo que se pierde: la apuesta ya no
+    crece con las ganancias ni encoge con las perdidas -- si la cartera se
+    dobla, se sigue apostando 10 $.
     """
     tam = _tamanos(1.0)
-    frac = _trade()["fraccion_saldo"]
-
-    enteras = tam[:3]
-    assert len(enteras) == 3, f"deberian caber tres del {frac:.0%}: {tam}"
-    assert abs(enteras[0] - frac) < 0.005, f"la primera es el {frac:.0%}: {tam}"
-    # IGUALES, con el margen de las comisiones que si se van de la cartera.
-    # El numero que importa no es "identicas" sino que la tercera no sea la
-    # mitad que la primera, que es lo que pasaba antes: alli era 0,15 de 0,30.
-    assert min(enteras) > 0.95 * max(enteras), (
-        f"las que caben tienen que ser iguales, no menguantes: {tam}"
+    assert len(tam) == _trade()["max_posiciones"], (
+        f"con 10 $ por compra caben las cinco plazas: {tam}"
     )
-    # La siguiente, si la hay, es el resto: mas pequena a proposito.
-    assert all(x < 0.5 * enteras[0] for x in tam[3:]), f"{tam}"
-    # Y no caben las cinco plazas: el dinero se acaba antes.
-    assert len(tam) < _trade()["max_posiciones"], (
-        f"con el 30% de la cartera no pueden salir 5 posiciones: {tam}"
-    )
+    assert len(set(tam)) == 1, f"las cinco tienen que valer lo mismo: {tam}"
+    # Y ese valor es el que toca: 10 $ al precio de referencia.
+    assert abs(tam[0] - _trade()["buy_amount_usd"] / SOL_USD_REF) < 1e-6
 
 
 def test_nunca_se_gasta_mas_de_lo_que_hay() -> None:
@@ -112,14 +113,15 @@ def test_nunca_se_gasta_mas_de_lo_que_hay() -> None:
 def test_sin_suelo_compra_con_lo_que_haya() -> None:
     """EL SUELO SE QUITO el 19-sep, pedido: el bot ya no se para por saldo bajo.
 
-    Con el 30% de la cartera y poco dinero, la compra sale diminuta sola.
+    Con un saldo por debajo de lo que cuesta una compra entera, entra el
+    recorte y se compra con lo que quede.
 
     LO QUE CUESTA, y hay que tenerlo escrito: la comision de prioridad y la
-    renta de la cuenta de token NO bajan con el tamano. Con 0,05 SOL de saldo,
-    el 30% son 0,015 SOL: una compra que se deja buena parte en entrar y
-    salir, o sea que nace casi perdiendo. El test no lo impide --es lo
-    pedido-- pero lo deja por escrito, y el dia que moleste lo que hay que
-    poner es `compra_minima_sol`.
+    renta de la cuenta de token NO bajan con el tamano. Con 0,05 SOL de saldo
+    la compra sale de 0,015 SOL: se deja buena parte en entrar y salir, o sea
+    que nace casi perdiendo. El test no lo impide --es lo pedido-- pero lo
+    deja por escrito, y el dia que moleste lo que hay que poner es
+    `compra_minima_sol`.
     """
     t = _trade()
     assert t["compra_minima_sol"] == 0

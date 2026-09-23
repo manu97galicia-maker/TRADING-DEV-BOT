@@ -66,6 +66,34 @@ else
 fi
 
 echo
+# 1c. EL PRECIO DE SOL, que desde el 23-sep PUEDE PARAR LAS COMPRAS.
+#
+# El importe es de 10 $ por operacion y los SOL salen de dividir por el precio
+# de SOL. Mientras ese precio siga en el valor por defecto del codigo (91,24 $,
+# de agosto) el bot NO COMPRA a proposito: gastar "10 $" a ese cambio con SOL
+# a 220 serian 24 $ de verdad en cada compra.
+#
+# Se reintenta cada 10 segundos, asi que lo normal es que esto no salga nunca.
+# Si sale y no se va, el bot no llega a DexScreener y hay una averia -- y sin
+# esta seccion se veria igual que cualquier otro embudo a cero.
+echo "1c. SABE EL BOT CUANTO VALE SOL?"
+_sinsol="$(cuenta 'precio de SOL sigue en el valor por defecto|PRECIO DE SOL SIN')"
+if [ "${_sinsol:-0}" -gt 0 ]; then
+  echo "  NO. ${_sinsol} avisos en ${MIN} min: el precio de SOL no se ha"
+  echo "  confirmado y las compras estan PARADAS a proposito (los importes en"
+  echo "  dolares estarian 2,4 veces por encima de lo pedido)."
+  echo "  Se reintenta solo cada 10 s. Si no se va, el bot no llega a"
+  echo "  DexScreener: mira la salida a internet del droplet."
+else
+  _cambio="$(log | grep -oE 'IMPORTE: [0-9.]+ \$ a [0-9.]+ \$/SOL' | tail -1)"
+  if [ -n "$_cambio" ]; then
+    echo "  Si: $_cambio"
+  else
+    echo "  Sin avisos. (El cambio exacto sale en la primera compra.)"
+  fi
+fi
+
+echo
 echo "2. EL EMBUDO (cuantas monedas se caen en cada paso)"
 printf '  %-42s %s\n' "candidatas que mando la fuente" "$(cuenta "$CANDIDATAS")"
 printf '  %-42s %s\n' "  descartadas por bundle"        "$(cuenta 'BUNDLE descartado')"
@@ -91,6 +119,7 @@ echo "4. FRENOS DE CARTERA"
 printf '  %-42s %s\n' "max posiciones abiertas" "$(cuenta 'Max posiciones abiertas|max posiciones')"
 printf '  %-42s %s\n' "SOL insuficiente"        "$(cuenta 'SOL insuficiente')"
 printf '  %-42s %s\n' "en PAUSA (modo estudio)" "$(cuenta 'PAUSA ·')"
+printf '  %-42s %s\n' "sin precio de SOL confirmado" "$(cuenta 'precio de SOL sigue en el valor')"
 
 echo
 echo "5. EL PARTE DEL BOT (el embudo con sus propios numeros)"

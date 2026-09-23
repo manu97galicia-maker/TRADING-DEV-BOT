@@ -120,11 +120,18 @@ def test_el_importe_de_canal_coincide_con_el_global() -> None:
     for clave in ("normal_buy_amount", "nitro_buy_amount", "promoted_buy_amount"):
         assert tg[clave] == global_, f"{clave} no coincide con el buy_amount global"
     assert cfg["filters"]["holders"]["buy_amount"] == global_
-    # Desde el 23-sep los cuatro estan a CERO porque manda el 15% del saldo.
-    # Que coincidan sigue importando: el dia que se apague el porcentaje, los
-    # cuatro tienen que volver a la vez o el de la senal pisara al global.
-    assert cfg["trade"]["fraccion_saldo"] > 0 or global_ > 0, (
-        "sin porcentaje y sin importe fijo el bot no compraria nada"
+    # Desde el 23-sep los cuatro estan a CERO porque manda el importe en
+    # dolares. Que coincidan sigue importando: el dia que se apague ese modo,
+    # los cuatro tienen que volver a la vez o el de la senal pisara al global.
+    _t = cfg["trade"]
+    _encendidos = [
+        k
+        for k in ("buy_amount_usd", "fraccion_saldo", "buy_amount")
+        if _t.get(k, 0) > 0
+    ]
+    assert len(_encendidos) == 1, (
+        f"tiene que mandar UNO de los tres modos, y mandan: "
+        f"{_encendidos or 'ninguno: el bot no compraria nada'}"
     )
 
 

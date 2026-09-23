@@ -12,7 +12,9 @@ comerian la reserva global y una venta podria quedarse sin gas.
 
 # ruff: noqa: S101, PLR2004
 
-from modelo_tamano import COLCHON_POR_POSICION, tamanos
+from modelo_tamano import COLCHON_POR_POSICION
+from modelo_tamano import importe as importe_de_compra
+from modelo_tamano import tamanos
 from modelo_tamano import trade as _trade
 
 # Techo configurado de posiciones simultaneas (max_posiciones).
@@ -48,43 +50,44 @@ def test_el_modo_de_tamano_esta_claro() -> None:
     t = _trade()
     # Uno de los dos manda, nunca los dos: el porcentaje, si es >0, SUSTITUYE
     # al importe fijo dentro del cerrojo de gasto. Hoy manda el porcentaje.
-    assert (t["fraccion_saldo"] > 0) != (t["buy_amount"] > 0), (
-        "o importe fijo o porcentaje, no los dos ni ninguno"
+    encendidos = [
+        k
+        for k in ("buy_amount_usd", "fraccion_saldo", "buy_amount")
+        if t.get(k, 0) > 0
+    ]
+    assert len(encendidos) == 1, (
+        f"manda UNO de los tres modos, y hoy mandan: {encendidos or 'ninguno'}"
     )
     # Y el tope no puede recortar lo configurado, o compraria menos de lo
     # pedido sin dejar rastro en el log. Hoy esta a 0 --sin tope-- pero la
     # comprobacion vale igual para el dia que se vuelva a poner.
-    # SOBRE LA CARTERA (1 SOL), no sobre el saldo libre: desde el 23-sep el
-    # porcentaje se calcula sobre el saldo mas lo que ya esta en monedas.
-    pedido = 1.0 * t["fraccion_saldo"] if t["fraccion_saldo"] > 0 else t["buy_amount"]
+    pedido = importe_de_compra(1.0, t)
     tope = t["tope_compra_sol"]
     assert tope == 0 or pedido <= tope, (
         f"el tope ({tope}) recortaria la compra ({pedido:.3f}) sin avisar"
     )
 
 
-def test_el_tamano_ya_no_se_encoge_solo() -> None:
-    """QUE ES LO QUE PROTEGE AHORA, porque ha cambiado y es importante.
+def test_el_tamano_ya_no_depende_del_dinero_que_haya() -> None:
+    """COMO HA IDO CAMBIANDO LO QUE FRENA, que es de lo que mas se ha hablado.
 
-    HASTA EL 23-SEP protegia el propio tamano: cada compra era un porcentaje
-    de lo que QUEDABA libre, asi que se encogia sola y por muchas plazas que
-    hubiera nunca se llegaba a gastar todo. Era un freno automatico, y este
-    fichero lo daba por hecho.
+    HASTA EL 23-SEP (manana) frenaba el propio tamano: cada compra era un
+    porcentaje de lo que QUEDABA libre, asi que se encogia sola.
 
-    DESDE EL 23-SEP ese freno YA NO EXISTE: el 30% se calcula sobre la cartera
-    entera, asi que las compras que caben salen IGUALES y tres seguidas
-    comprometen el 90%. Lo unico que queda impidiendo que se gaste hasta el
-    ultimo lamport es el guardian del saldo (`test_nunca_se_gasta_la_reserva`).
+    EL 23-SEP (tarde) paso a ser el 30% de la cartera entera: las compras
+    dejaron de menguar, pero solo cabian TRES, porque tres del 30% ya son el
+    90%. El freno pasaba a ser el saldo.
 
-    Este test fija el hecho nuevo para que no se vuelva a dar por supuesto el
-    viejo: si alguien devuelve el calculo al saldo libre, las compras vuelven
-    a menguar y esto se pone rojo.
+    AHORA, con 10 $ fijos, el tamano no depende del dinero en absoluto: cinco
+    posiciones iguales y el saldo ni se asoma mientras haya de sobra. Lo unico
+    que frena es el techo de cinco plazas.
     """
+    t = _trade()
     tam = tamanos(1.0)
-    assert len(tam) >= 2
-    assert abs(tam[1] - tam[0]) < 0.05 * tam[0], (
-        f"la segunda compra tiene que valer lo mismo que la primera: {tam}"
-    )
+    assert len(set(tam)) == 1, f"las compras tienen que valer todas lo mismo: {tam}"
+    # Y con el doble de saldo, exactamente las mismas: no depende del dinero.
+    assert tamanos(2.0) == tam, "el tamano no puede depender del saldo"
+    assert len(tam) == t["max_posiciones"]
 
 
 def test_la_reserva_nunca_se_toca() -> None:
@@ -109,35 +112,25 @@ def test_lo_que_queda_cubre_las_ventas_pendientes() -> None:
     assert saldo - gastado >= reserva
 
 
-def test_con_el_30_por_ciento_solo_caben_tres_posiciones_enteras() -> None:
-    """EL PRECIO DE QUE LAS POSICIONES SEAN IGUALES, y hay que tenerlo escrito.
+def test_con_diez_dolares_caben_las_cinco_plazas() -> None:
+    """Con 10 $ por compra el dinero no es el freno: caben las cinco.
 
-    `max_posiciones` dice 5, pero con cada compra pidiendo el 30% de la
-    cartera el dinero se acaba antes: caben TRES enteras --el 90% de la
-    cartera jugado a la vez-- y la cuarta sale del recorte de lo que quede.
-    La quinta plaza no se usa nunca mientras el porcentaje sea el 30%.
-
-    O sea: el techo de cinco ya no es el freno que manda. Manda el saldo. Si
-    algun dia vuelven a salir cinco posiciones, es que alguien bajo el
-    porcentaje, y este test lo dice.
+    Cuando mandaba el 30% de la cartera solo cabian tres, y era importante
+    saberlo. Ahora vuelve a mandar el techo, que es lo que dice el yaml.
     """
-    t = _trade()
     tam = tamanos(1.0)
-    enteras = [x for x in tam if x > 0.9 * t["fraccion_saldo"]]
-    assert len(enteras) == 3, f"deberian caber tres del 30%: {tam}"
-    assert len(tam) < TECHO, f"con el 30% no pueden salir {TECHO}: {tam}"
+    assert len(tam) == TECHO, f"con 10 $ tienen que caber las cinco: {tam}"
     # Y con poco saldo sigue comprando, solo que diminuto: es lo pedido.
     assert len(tamanos(0.05)) >= 1, "con poco saldo compra poco, pero compra"
 
 
-def test_el_techo_de_cinco_sigue_escrito_aunque_hoy_no_se_alcance() -> None:
+def test_el_techo_de_cinco_sigue_mandando() -> None:
     """El techo existe por el NODO, no por el dinero: cada posicion abierta
     consulta su precio cada segundo y el presupuesto de peticiones no es
-    infinito. Hoy no se alcanza porque manda el saldo, pero basta con bajar
-    el porcentaje para que vuelva a mandar el techo.
+    infinito. Por mucho saldo que haya, nunca mas de cinco a la vez.
     """
     assert _trade()["max_posiciones"] == TECHO
-    assert len(tamanos(50.0)) <= TECHO, "el techo no se puede pasar nunca"
+    assert len(tamanos(50.0)) == TECHO, "el techo no se puede pasar nunca"
 
 
 def test_nunca_se_gasta_la_reserva() -> None:

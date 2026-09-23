@@ -174,15 +174,25 @@ def test_ahora_mismo_compra_de_verdad() -> None:
     comprar durante dias sin que nadie lo note (que ya paso en agosto).
     """
     assert _trade()["pausar_compras"] is False
-    # Y EL TAMANO: 30% del saldo libre (23-sep). Ha ido y venido mucho
-    # (0,07 -> 0,12 -> 25% -> 0,04 -> 15% -> 30%), asi que se fija aqui para
-    # que cualquier cambio sea deliberado.
+    # Y EL TAMANO: 10 $ por operacion (23-sep). Ha ido y venido mucho
+    # (0,07 -> 0,12 -> 25% -> 0,04 -> 15% -> 30% del saldo -> 30% de la
+    # cartera -> 10 $), asi que se fija aqui para que cualquier cambio sea
+    # deliberado.
     #
-    # CON PORCENTAJE EL RIESGO ES PROPORCIONAL, que es la diferencia de fondo
-    # con el importe fijo: si la cartera mengua, las compras menguan solas y no
-    # hay que acordarse de bajarlas a mano.
-    assert _trade()["fraccion_saldo"] == 0.30
-    assert _trade()["buy_amount"] == 0, "o porcentaje o fijo, nunca los dos"
+    # CON IMPORTE FIJO EL RIESGO NO ES PROPORCIONAL, que es la diferencia de
+    # fondo con el porcentaje: si la cartera mengua, las compras NO menguan
+    # solas y hay que acordarse de bajarlas a mano. A cambio la apuesta es
+    # siempre la misma y se sabe de memoria lo que se juega.
+    assert _trade()["buy_amount_usd"] == 10
+    _t = _trade()
+    _encendidos = [
+        k
+        for k in ("buy_amount_usd", "fraccion_saldo", "buy_amount")
+        if _t.get(k, 0) > 0
+    ]
+    assert _encendidos == ["buy_amount_usd"], (
+        f"manda UNO de los tres modos, y mandan: {_encendidos}"
+    )
     # El tope duro se quito el 19-sep, pedido. Lo que sigue impidiendo que un
     # fallo vacie la cartera es el guardian del saldo: antes de firmar se lee el
     # saldo REAL y se exige que quepa la compra dejando intacta la reserva.

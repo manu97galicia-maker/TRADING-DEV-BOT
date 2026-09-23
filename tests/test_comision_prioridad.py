@@ -12,7 +12,7 @@ cálculo la recortaba de vuelta y dejaba un `logger.warning` enterrado como
 única pista. Es exactamente la clase de cambio que parece hecho y no lo está.
 """
 
-# ruff: noqa: S101, PLR2004
+# ruff: noqa: S101, PLR2004, PLC0415
 
 import asyncio
 from pathlib import Path
@@ -96,11 +96,13 @@ def test_lo_que_se_va_en_comisiones_por_operacion() -> None:
     compra = _sol(c["priority_fees"]["fixed_amount_compra"], c["compute_units"]["buy"])
     venta = _sol(c["priority_fees"]["fixed_amount"], c["compute_units"]["sell"])
     peldanos = 3 + len(c["trade"]["tp_extra"]) + 3
-    _t = c["trade"]
-    _frac = _t["fraccion_saldo"]
-    posicion = (
-        (1.0 - _t["min_reserve_sol"]) * _frac if _frac > 0 else _t["buy_amount"]
-    )
+    # EL TAMANO SALE DEL MODELO UNICO, no de una copia. Este calculo estaba
+    # escrito a mano aqui y se quedo midiendo el modo viejo dos veces en el
+    # mismo dia: la comision se comparaba contra una posicion que el bot ya no
+    # abria, o sea que la alarma del 8% vigilaba un numero inventado.
+    from modelo_tamano import importe as _importe_de_compra
+
+    posicion = _importe_de_compra(1.0, c["trade"])
     assert posicion > 0
 
     peor = (compra + venta * peldanos) / posicion

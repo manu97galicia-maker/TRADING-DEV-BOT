@@ -118,6 +118,19 @@ if [ "${_c:-0}" -eq 0 ]; then
   else
     echo "  stream de la cadena: OK (sin rechazos del nodo en 15 min)"
   fi
+
+  # EL PRECIO DE SOL PARA LAS COMPRAS, desde el 23-sep. El importe son 10 $ y
+  # los SOL salen de dividir por el precio de SOL; mientras no se confirme, el
+  # bot no compra a proposito. Sin esta linea se veria igual que unos filtros
+  # exigentes -- que es exactamente el error que costo dos dias con el 429.
+  _sinsol="$(journalctl -u pump-bot --since '-15 min' --no-pager 2>/dev/null | grep -c 'precio de SOL sigue en el valor' || true)"
+  if [ "${_sinsol:-0}" -gt 0 ]; then
+    echo
+    echo "  !! EL BOT NO SABE CUANTO VALE SOL !!"
+    echo "     Las compras estan PARADAS a proposito: con el precio sin"
+    echo "     confirmar, 10 \$ por operacion saldrian 2,4 veces mas caros."
+    echo "     Se reintenta cada 10 s; si no se va, no llega a DexScreener."
+  fi
   echo "  -> para saber que las para, escribe:  porque"
 fi
 
