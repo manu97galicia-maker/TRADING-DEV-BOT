@@ -210,70 +210,78 @@ trade:
   # OJO AL FORMATO: de aqui para abajo la ganancia es MULTIPLO MENOS UNO.
   # 1.50 es x2,5 -- no un +150% suelto que se pueda confundir con los de
   # arriba. 19.00 es x20.
-  # LOS PELDANOS LEJANOS YA NO VAN POR PORCENTAJE (24-sep, pedido: "el resto
-  # lo repartes en escalones hasta 500.000"). Iban de x2,5 a x20 sobre el
-  # precio de entrada; ahora van por MARKET CAP, en `mc_take_profit_tiers`.
+  # DE AQUI EN ADELANTE, CADA ESCALON ES UN 35% MAS CARO QUE EL ANTERIOR
+  # (24-sep, pedido: "a partir de las 100 de subida que venda cada 35%
+  # respecto al precio anterior", con el reparto "un 10% y el resto de 12%
+  # hasta 500.000").
   #
-  # POR QUE ES MEJOR ASI PARA ESTA ESTRATEGIA. Un x10 sobre la entrada
-  # significa cosas distintas segun donde se entre: entrando al 90% de la
-  # curva son ~287k de market cap, y entrando al 96% serian ~366k. Los
-  # escalones por market cap son cifras absolutas: 100k es 100k entres donde
-  # entres, y son las que de verdad se miran en la app.
+  # SUSTITUYE A LOS ESCALONES DE MARKET CAP, que estuvieron puestos unas
+  # horas esta misma tarde (100k/130k/165k/200k). `mc_take_profit_tiers`
+  # queda vacio justo debajo.
   #
-  # `tp4_gain`, `tp5_gain` y `tp6_gain` se quitan enteros en vez de ponerlos
-  # a cero: un peldano con `sell: 0` NO desaparece --sigue existiendo y sigue
-  # subiendo el stop-- asi que dejarlos a cero habria metido tres subidas de
-  # suelo fantasma que nadie pidio.
-  tp_extra: []
+  # POR QUE MULTIPLICAR Y NO SUMAR. Los escalones de antes eran cifras fijas
+  # de market cap; estos van sobre el PRECIO ANTERIOR, asi que cada uno pide
+  # el mismo esfuerzo relativo que el de antes. El primero arranca donde
+  # acaba el tercer peldano (x2,00) y va x1,35 cada vez.
+  #
+  # OJO AL FORMATO: la ganancia es MULTIPLO MENOS UNO. 1.70 es x2,70 -- no
+  # un +170% que se pueda confundir con los +25/+55/+100 de arriba. Son lo
+  # mismo en realidad (x2,70 ES un +170%), pero conviene leerlo como
+  # multiplo porque aqui ya no se piensa en porcentajes.
+  #
+  # DONDE CAE CADA UNO, con SOL a 220 $ y entrando al 86,0% de la curva
+  # (market cap de compra ~46,3k):
+  #
+  #   escalon   multiplo   subida    vende   acumulado   market cap
+  #     1        x2,700    +170,0%    10%       85%        ~125k
+  #     2        x3,645    +264,5%     3%       88%        ~169k
+  #     3        x4,921    +392,1%     3%       91%        ~228k
+  #     4        x6,643    +564,3%     3%       94%        ~308k
+  #     5        x8,968    +796,8%     3%       97%        ~416k
+  #
+  # SON CINCO Y NO MAS PORQUE AHI SE ACABA EL 22%: 10 + 3 + 3 + 3 + 3. El
+  # sexto caeria en ~561k, ya por encima de los 500.000 pedidos, asi que el
+  # corte sale solo de la cuenta y no hace falta ponerlo a mano.
+  #
+  # EL PRIMERO SE LLEVA CASI LA MITAD DE LO QUE QUEDA, y es a proposito: es
+  # el unico de los cinco al que llega un numero razonable de monedas. Los
+  # otros cuatro son loteria y por eso valen 3% cada uno.
+  #
+  # EL SUELO SIGUE SUBIENDO con cada uno: tras cobrar el escalon 1 el suelo
+  # pasa a x2,00 x 1,05 = x2,10, tras el 2 a x2,835, y asi. Como cada
+  # escalon dista un 35% del anterior y el margen es del 5%, el suelo nunca
+  # alcanza al escalon que acaba de cobrarse -- que es el fallo que obligo a
+  # mover el TP2 en agosto.
+  tp_extra:
+    - gain: 1.70
+      sell: 0.10
+    - gain: 2.645
+      sell: 0.03
+    - gain: 3.921
+      sell: 0.03
+    - gain: 5.643
+      sell: 0.03
+    - gain: 7.968
+      sell: 0.03
 
-  # ESCALONES POR MARKET CAP, de 100k a 200k (24-sep, pedido: "el resto lo
-  # dejamos correr hasta 200.000, los repartes").
+  # ESCALONES POR MARKET CAP: NINGUNO (24-sep, tarde).
   #
-  # Se arman SOLO cuando ya se han cobrado TODOS los peldanos de porcentaje
-  # (+25%, +55%, +100%), asi que son la continuacion natural de la escalera y
-  # no una via paralela. Si la moneda muere antes del +100%, estos escalones
-  # no llegan a existir y el resto sale por el suelo.
+  # Estuvieron puestos unas horas hoy mismo (100k/130k/165k/200k, repartiendo
+  # el 22%) y los sustituye `tp_extra` de arriba, que hace lo mismo pero en
+  # multiplos del precio de entrada en vez de cifras absolutas.
   #
-  # EL REPARTO, que lo elegi yo. Los tres peldanos de porcentaje venden el
-  # 75% (15 + 40 + 20); queda un 25%. Se deja un 3% de moonbag --que el bot
-  # NO vende nunca, lo vendes tu-- y los otros 22% se reparten en estos
-  # cuatro escalones.
+  # SE DEJA LA LISTA VACIA EN VEZ DE BORRAR LA CLAVE a proposito: asi queda
+  # a la vista que esta via existe y esta apagada. La escalera de market cap
+  # solo se arma cuando se han cobrado TODOS los peldanos de porcentaje, asi
+  # que con ocho peldanos arriba habria sido, en la practica, inalcanzable.
   #
-  # DE MAS A MENOS, Y CUATRO EN VEZ DE TRES. Cuanto mas arriba, menos monedas
-  # llegan, asi que el trozo gordo se cobra pronto. Y al haber ahora un 22%
-  # que repartir en vez de un 12%, tres escalones habrian dejado trozos
-  # demasiado gruesos en los sitios mas dificiles de alcanzar.
-  #
-  # DONDE CAEN DE VERDAD, con SOL a 220 $ y entrando al 86,0% de la curva
-  # (MC de compra ~46,3k, MC al migrar ~90,4k):
-  #
-  #   escalon   subida desde la compra   que es
-  #    100k            +115,8%           justo despues de migrar
-  #    130k            +180,5%
-  #    165k            +256,1%
-  #    200k            +331,6%           x4,3 sobre la compra
-  #
-  # OJO: EL PRIMER ESCALON ESTA MUY CERCA DEL TERCER PELDANO. El +100% cae en
-  # ~92,7k y este escalon en 100k: apenas un 8% entre los dos. Es a proposito
-  # --la idea es cobrar seguido justo despues de migrar, que es donde mas se
-  # vuelcan-- pero significa que los dos se disparan casi a la vez y el bot
-  # vende el 27% de la posicion en un intervalo corto.
-  #
-  # Y ESTOS ESCALONES DEPENDEN DEL PRECIO DEL SOL. El market cap se calcula
-  # como precio x supply x `_SOL_USD`, y ese valor lo refresca el bot desde
-  # DexScreener. Si el refresco falla se queda en los 91,24 $ de arranque y
-  # entonces 100k exige un +420% en vez de un +115%: la escalera de market
-  # cap no se dispararia NUNCA y el 22% se quedaria colgando del suelo. El
-  # bot avisa en el log a los cinco minutos si eso pasa; se ve con `bot`.
-  mc_take_profit_tiers:
-    - target_mc: 100000
-      sell: 0.07
-    - target_mc: 130000
-      sell: 0.06
-    - target_mc: 165000
-      sell: 0.05
-    - target_mc: 200000
-      sell: 0.04
+  # POR QUE SE CAMBIARON. Una cifra fija de market cap significa cosas
+  # distintas segun donde se entre: 100k es un x2,2 entrando al 86% de la
+  # curva y un x1,4 entrando al 96%. Los multiplos no dependen de eso. Lo que
+  # se pierde es que las cifras redondas (100k, 200k) son las que se ven en
+  # la app y las que se piensan de cabeza; queda anotado arriba donde cae
+  # cada escalon en market cap para poder seguirlo igual.
+  mc_take_profit_tiers: []
 
   # 26% (24-sep, pedido). Historial: 18% -> 28% -> 40% -> 30% -> 18% ->
   # 28% -> 15% -> 26%.

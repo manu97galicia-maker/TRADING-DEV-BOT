@@ -227,13 +227,18 @@ def test_los_tres_peldanos_de_cerca_y_vuelta_atras() -> None:
 
 
 def test_un_salto_de_golpe_cobra_todos_los_peldanos_que_deja_atras() -> None:
-    """Si el precio salta a x7 en un tick, no se pierden los siete de abajo:
-    se venden todos, a x7, que es el precio al que se esta vendiendo."""
+    """Si el precio salta por encima del ultimo peldano en un solo tick, no se
+    pierden los de abajo: se venden todos, al precio al que se esta vendiendo.
+
+    EL SALTO SALE DE LA ESCALERA, no escrito a mano. Estaba fijo en x7, y la
+    tarde del 24-sep la escalera paso a llegar hasta x8,968: el test se puso
+    rojo, que es lo correcto, pero por la razon equivocada --no es que el
+    salto no cobre los de abajo, es que x7 ya no los deja todos atras--.
+    """
     t = _tiers()
-    r = simula([1.0, 7.0])
-    # Los que haya, no un numero escrito a mano: desde el 24-sep la escalera
-    # de porcentaje son TRES y el resto va por market cap, que no se mide en
-    # multiplos del precio de entrada y no aparece en esta simulacion.
+    salto = (1 + max(x.gain for x in t)) * 1.1
+    r = simula([1.0, salto])
+    # Los que haya, no un numero escrito a mano.
     assert r["peldanos"] == list(range(1, len(t) + 1))
     assert not r["paro_por_stop"]
     assert round(r["restante_pct"], 6) == round(1 - sum(x.sell for x in t), 6)

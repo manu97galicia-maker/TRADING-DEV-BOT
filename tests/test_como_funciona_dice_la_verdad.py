@@ -97,9 +97,31 @@ def test_la_escalera_de_porcentaje_esta_entera() -> None:
 
 
 def test_los_escalones_de_market_cap_estan_enteros() -> None:
+    """Y si no hay ninguno, que la nota no los prometa.
+
+    La tarde del 24-sep `mc_take_profit_tiers` se quedo vacia y este test se
+    volvio VACUO: el bucle no daba ni una vuelta y se quedaba verde con una
+    nota que seguia listando cuatro escalones de market cap inexistentes.
+    Por eso hay ahora una rama para la lista vacia.
+    """
     texto = _texto()
-    for d in _cfg()["trade"]["mc_take_profit_tiers"]:
+    mc = _cfg()["trade"]["mc_take_profit_tiers"]
+    if not mc:
+        assert "Por market cap" not in texto, (
+            "la nota anuncia una escalera de market cap que ya no existe"
+        )
+        return
+    for d in mc:
         assert f"{d['target_mc'] / 1000:.0f}k" in texto
+
+
+def test_los_peldanos_lejanos_estan_en_la_nota() -> None:
+    """Los de `tp_extra`. Son el 22% de la posicion: quien lea la nota tiene
+    que poder ver donde se vende ese trozo, no solo los tres de cerca."""
+    texto = _texto()
+    for d in _cfg()["trade"].get("tp_extra") or []:
+        multiplo = f"x{1 + d['gain']:.2f}".replace(".", ",")
+        assert multiplo in texto, f"falta el escalon {multiplo}"
 
 
 def test_el_moonbag_es_el_de_verdad() -> None:

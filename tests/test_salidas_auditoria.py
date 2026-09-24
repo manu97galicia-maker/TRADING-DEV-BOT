@@ -25,6 +25,11 @@ from trading.universal_trader import _peldanos_extra
 CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
 ENTRADA = 0.0000001
 
+#: Por debajo de esto un peldano no puede ser "lejano": si "7.968" se leyera
+#: como un +7,968% en vez de como x8,968, el ultimo peldano caeria aqui
+#: debajo. Es el canario del formato `multiplo menos uno`.
+MULTIPLO_MINIMO_LEJANO = 2.0
+
 
 def _tiers() -> list:
     t = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["trade"]
@@ -49,18 +54,23 @@ def test_una_ganancia_de_9_significa_x10_y_no_mas_9_por_ciento() -> None:
     """El error que habria sido caro: con el formato mal leido, un peldaño de
     "gain: 9" se habria disparado a +9% y habria vendido casi todo enseguida.
 
-    DESDE EL 24-SEP NO HAY PELDANOS LEJANOS POR PORCENTAJE --de x2,5 en
-    adelante manda el market cap-- asi que ya no queda ninguno con el formato
-    peligroso. El test se queda porque el formato SIGUE siendo el mismo para
-    los tres que hay: si alguien vuelve a anadir uno lejano y escribe "9"
-    creyendo que es un 9%, esto lo caza.
+    VUELVEN LOS PELDANOS LEJANOS la tarde del 24-sep, en `tp_extra`: cinco,
+    de x2,70 a x8,968, escritos como multiplo menos uno (1.70, 2.645...). O
+    sea que el formato peligroso vuelve a estar en uso y este test vuelve a
+    tener trabajo de verdad, no solo de guardia.
     """
     assert _vendido_hasta(1.09) == 0.0, (
         "a +9% no se vende nada: el primer peldano esta en +25%"
     )
-    # Y un multiplo enorme no vende mas que el ultimo peldano de porcentaje:
-    # de ahi en adelante los escalones son de market cap y no se ven aqui.
-    assert _vendido_hasta(50.0) == _vendido_hasta(2.5)
+    # Pasado el ultimo peldano ya no se vende mas: lo que queda es el moonbag.
+    tope = 1 + max(t.gain for t in _tiers())
+    assert _vendido_hasta(50.0) == _vendido_hasta(tope)
+    assert _vendido_hasta(50.0) < 1.0, "el moonbag no se vende nunca"
+    # Y el mayor de todos sigue leyendose como multiplo, no como porcentaje:
+    # si "7.968" se leyera como +7,968% caeria por debajo del primer peldano.
+    assert tope > MULTIPLO_MINIMO_LEJANO, (
+        "el ultimo peldano tiene que ser un multiplo, no un porcentaje"
+    )
 
 
 def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
@@ -90,17 +100,21 @@ def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
 
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
-    # Lo VENDIDO ACUMULADO al llegar a cada multiplo. Desde el 24-sep (tarde)
-    # hay TRES peldanos por porcentaje: +25%, +55% y +100%. De ahi en adelante
-    # la escalera sigue por market cap (100k a 200k), que no se mide en
-    # multiplos del precio de entrada y por eso no aparece en esta tabla.
+    # Lo VENDIDO ACUMULADO al llegar a cada multiplo. Desde la tarde del
+    # 24-sep son OCHO peldanos: tres de cerca (+25%, +55%, +100%) y cinco
+    # lejanos en `tp_extra`, cada uno un 35% mas caro que el anterior.
     esperado = {
         1.24: 0.0,    # justo por debajo del primero
         1.25: 0.15,
         1.55: 0.55,
         1.99: 0.55,   # el tercero es +100% exacto: a x1,99 todavia no entra
         2.00: 0.75,
-        20.0: 0.75,   # por mucho que suba, aqui ya no queda nada que cobrar
+        2.70: 0.85,   # el primer lejano se lleva 10 de los 22 que quedaban
+        3.645: 0.88,
+        4.921: 0.91,
+        6.643: 0.94,
+        8.968: 0.97,  # los ocho cobrados; queda el 3% de moonbag
+        50.0: 0.97,   # por mucho que suba, aqui ya no queda nada que cobrar
     }
     for multiplo, acumulado in esperado.items():
         assert round(_vendido_hasta(multiplo), 6) == acumulado, f"fallo en x{multiplo}"

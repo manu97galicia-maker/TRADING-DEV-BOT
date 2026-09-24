@@ -170,34 +170,36 @@ def test_el_colchon_mas_apretado_esta_anotado() -> None:
 
 
 def test_se_vende_el_97_por_ciento_entre_las_dos_escaleras() -> None:
-    """HAY QUE SUMAR LAS DOS, y es el error facil desde el 24-sep.
+    """AHORA SE VENDE TODO POR UNA SOLA ESCALERA, y eso simplifica la cuenta.
 
-    Los peldanos de porcentaje (+25%, +55%, +100%) venden el 75%; los
-    escalones de market cap (100k a 200k) el 22%. Juntos, el 97%, y queda un
-    3% de moonbag que el bot no vende nunca.
-
-    MIRANDO SOLO LOS DE PORCENTAJE saldria un moonbag del 25%, y no lo es:
-    es lo que todavia no se ha repartido. `moonbag_fraction` solo conoce los
-    peldanos que se le pasan, asi que devuelve eso -- por eso aqui se suma a
-    mano en vez de fiarse de esa funcion.
+    Durante unas horas del 24-sep hubo dos: los peldanos de porcentaje
+    vendian el 75% y los escalones de market cap el 22% -- y sumar solo la
+    primera daba un moonbag del 25%, que no lo era. Desde la tarde los
+    escalones de market cap estan vacios y los ocho peldanos venden el 97%
+    entre todos, asi que `moonbag_fraction` ya dice la verdad y este test
+    comprueba justamente eso.
     """
     tiers = _tiers()
     por_ciento = sum(t.sell for t in tiers)
     por_mc = sum(d["sell"] for d in _trade().get("mc_take_profit_tiers") or [])
-    assert abs(por_ciento - 0.75) < 1e-9
-    assert abs(por_ciento + por_mc - 0.97) < 1e-9
-    # Y lo que ve `moonbag_fraction` NO es el moonbag de verdad: es lo que
-    # queda pendiente de repartir entre los escalones de market cap.
-    assert abs(moonbag_fraction(tiers) - 0.25) < 1e-9
+    assert por_mc == 0, "si vuelven los escalones de market cap, hay que sumar los dos"
+    assert abs(por_ciento - 0.97) < 1e-9
+    # Con una sola escalera, lo que ve `moonbag_fraction` SI es el moonbag.
+    assert abs(moonbag_fraction(tiers) - 0.03) < 1e-9
 
 
 def test_la_escalera_de_porcentaje_son_tres() -> None:
-    """24-sep, segunda version: tres peldanos (+25%, +55%, +100%).
+    """Los TRES DE CERCA son +25%, +55% y +100%.
 
     Historial del dia: cuatro peldanos (+25/+55/+90/+125, vendiendo
     15-35-30-5) por la manana; por la tarde se pide "el take profit 2 vende
-    un 40%, el siguiente lo ponemos en un 100% pero vende un 20%, y el resto
-    lo dejamos correr hasta 200.000". Se va el cuarto y el tercero sube.
+    un 40%, el siguiente lo ponemos en un 100% pero vende un 20%". Se va el
+    cuarto y el tercero sube.
+
+    DETRAS DE ESTOS TRES HAY CINCO MAS, los de `tp_extra`, que van en
+    multiplos de x1,35. Aqui se miran solo los de cerca --los que caben por
+    debajo de x2,5-- porque son los unicos que una moneda normal recorre;
+    los otros cinco tienen su propio test en test_escalera_actual.py.
 
     EL GRUESO SE COBRA EN MEDIO: 15% - 40% - 20%. El segundo peldano es el
     que de verdad manda, y es el unico de los tres que cae holgadamente
@@ -210,8 +212,8 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     test lo diga, porque es lo que decide cuanto rinde el caso bueno mas
     frecuente: la moneda que llega a migrar y se muere ahi.
     """
-    tiers = _tiers()
-    assert len(tiers) == 3, f"tres peldanos por porcentaje: {tiers}"
+    tiers = [t for t in _tiers() if t.gain <= 1.5]
+    assert len(tiers) == 3, f"tres peldanos de cerca: {tiers}"
     assert [t.sell for t in tiers] == [0.15, 0.40, 0.20]
     assert [t.gain for t in tiers] == [0.25, 0.55, 1.00]
     # El recorrido dentro de la curva entrando donde se entra.

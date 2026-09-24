@@ -6,6 +6,7 @@ tiene que mirar que ganancia gana o pierde antes de seguir.
 
 # ruff: noqa: S101, PLR2004
 
+from itertools import pairwise
 from pathlib import Path
 
 import yaml
@@ -42,32 +43,53 @@ def _peldanos() -> list[tuple[float, float]]:
 def test_los_peldanos_son_los_pedidos() -> None:
     """LA ESCALERA ENTERA, fijada para que cualquier cambio sea deliberado.
 
-    Desde el 24-sep son TRES por porcentaje y el resto por MARKET CAP
-    (`mc_take_profit_tiers`). Los peldanos lejanos por porcentaje --x2,5 a
-    x20-- se quitaron enteros: un x10 sobre la entrada significa cosas
-    distintas segun donde se entre, mientras que 100k es 100k siempre.
+    Tarde del 24-sep: OCHO peldanos, todos por porcentaje. Tres de cerca
+    (+25%, +55%, +100%) y cinco lejanos en `tp_extra`, cada uno un 35% mas
+    caro que el ANTERIOR --no que la entrada-- empezando donde acaba el
+    tercero.
+
+    LOS ESCALONES DE MARKET CAP SE FUERON esa misma tarde, tras unas horas
+    puestos. Una cifra fija de market cap significa cosas distintas segun
+    donde se entre: 100k es un x2,2 entrando al 86% de la curva y un x1,4
+    entrando al 96%. Los multiplos no dependen de eso.
     """
-    assert _peldanos() == [(0.25, 0.15), (0.55, 0.40), (1.00, 0.20)]
-
-
-def test_los_escalones_de_market_cap_son_los_pedidos() -> None:
-    """De 100k a 500k, repartiendo el 19% que queda tras los tres peldanos.
-
-    VAN EN PROGRESION GEOMETRICA y no de 100 en 100 mil: de 100k a 150k hay
-    un 50% de subida y de 400k a 500k solo un 25%. A partes iguales, casi
-    todos los escalones caerian en el tramo mas facil y la moneda que de
-    verdad vuela se vendera entera demasiado pronto.
-    """
-    mc = _trade()["mc_take_profit_tiers"]
-    assert [(d["target_mc"], d["sell"]) for d in mc] == [
-        (100_000, 0.07), (130_000, 0.06), (165_000, 0.05), (200_000, 0.04),
+    assert _peldanos() == [
+        (0.25, 0.15), (0.55, 0.40), (1.00, 0.20),
+        (1.70, 0.10), (2.645, 0.03), (3.921, 0.03), (5.643, 0.03), (7.968, 0.03),
     ]
-    # Ascendentes, o el bot los cobraria en desorden.
-    objetivos = [d["target_mc"] for d in mc]
-    assert objetivos == sorted(objetivos)
-    # Y de mas a menos: llegar a 500k es mucho menos probable que a 100k.
-    ventas = [d["sell"] for d in mc]
-    assert ventas == sorted(ventas, reverse=True)
+
+
+def test_los_lejanos_van_multiplicando_por_135() -> None:
+    """Cada escalon lejano es un 35% mas caro que el anterior, no que la
+    entrada. Es lo pedido ("cada 35% respecto al precio anterior") y es lo
+    que hace que todos pidan el mismo esfuerzo relativo.
+
+    TAMBIEN PROTEGE DE UN FALLO VIEJO: si dos peldanos quedan a menos de un
+    5% uno de otro, el suelo que sube tras cobrar el primero cae encima del
+    segundo y la posicion se cierra sola al tocarlo. Con un 35% de separacion
+    eso no puede pasar.
+    """
+    multiplos = [1 + g for g, _ in _peldanos()][2:]  # desde el tercero (x2,00)
+    saltos = [b / a for a, b in pairwise(multiplos)]
+    for salto in saltos:
+        assert abs(salto - 1.35) < 0.002, f"salto de x{salto:.3f}, se esperaba x1,35"
+    margen = float(_trade()["margen_stop_tras_tp"])
+    assert min(saltos) > 1 + margen, (
+        "dos peldanos mas juntos que el margen: el suelo cerraria la posicion"
+    )
+
+
+def test_no_quedan_escalones_de_market_cap() -> None:
+    """Estuvieron puestos unas horas el 24-sep y los sustituyo `tp_extra`.
+
+    La lista se deja VACIA en vez de borrar la clave, para que se vea que la
+    via existe y esta apagada. Y hay un motivo para que no convivan: la
+    escalera de market cap solo se arma cuando se han cobrado TODOS los
+    peldanos de porcentaje, y con ocho arriba seria inalcanzable en la
+    practica -- estaria puesta sin hacer nada, que es la peor de las dos
+    cosas.
+    """
+    assert _trade()["mc_take_profit_tiers"] == []
 
 
 def test_las_ganancias_van_en_orden_creciente() -> None:
@@ -146,10 +168,10 @@ def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:
 
 
 def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
-    """24-sep: 15% al +25%, 35% al +55%, 30% al +90% y 5% al +125%.
+    """24-sep (tarde): 15% al +25%, 40% al +55% y 20% al +100%.
 
-    Los tres se cobran mientras la moneda todavia se mide en porcentaje sobre
-    la entrada. De ahi en adelante manda el market cap.
+    Son los tres que se cobran mientras la moneda todavia se piensa en
+    porcentajes. De ahi en adelante la escalera sigue, pero ya en multiplos.
 
     TODOS SON FRACCION DE LA COMPRA ORIGINAL, no de lo que queda dentro. Es
     la confusion que ya estuvo a punto de costar dinero con el peldano de "la

@@ -90,14 +90,25 @@ Los dos primeros caben dentro de la curva. **El de +100% no**: entrando al
 86,0% quedan +95,1% hasta migrar, así que ese peldaño solo cobra si la moneda
 migra y **sigue subiendo** ya fuera de pump.fun.
 
-### Por market cap (solo después de cobrar los tres de arriba)
+### Y a partir de ahí, cada venta un 35% más cara que la anterior
 
-| llega a | vende | acumulado | qué es |
-|---|---|---|---|
-| 100k $ | 7% | 82% | justo después de migrar |
-| 130k $ | 6% | 88% | |
-| 165k $ | 5% | 93% | |
-| 200k $ | 4% | 97% | x4,3 sobre la compra |
+No son cifras fijas: cada escalón se calcula **sobre el precio del escalón
+anterior**, no sobre lo que se pagó. Así todos piden el mismo esfuerzo.
+
+| escalón | precio | vende | acumulado | market cap aprox. |
+|---|---|---|---|---|
+| 1 | x2,70 | 10% | 85% | 125k $ |
+| 2 | x3,65 | 3% | 88% | 169k $ |
+| 3 | x4,92 | 3% | 91% | 228k $ |
+| 4 | x6,64 | 3% | 94% | 308k $ |
+| 5 | x8,97 | 3% | 97% | 416k $ |
+
+El primero se lleva casi la mitad de lo que quedaba, y es a propósito: es el
+único de los cinco al que llega un número razonable de monedas. Los otros
+cuatro son lotería.
+
+Son cinco y no más porque ahí se acaba lo que había para repartir. El sexto
+caería sobre los 561k $.
 
 Queda un **3% (el "moonbag")** que el bot **no vende nunca**. Ese lo vende una
 persona a mano, si quiere.
