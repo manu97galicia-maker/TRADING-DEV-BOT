@@ -56,32 +56,35 @@ todas las entradas, venga de donde venga la moneda.
 
 ## 3. Cuánto pone en cada compra
 
-**El 50% de la cartera.** Cartera = todo lo que tienes, el SOL de la wallet
+**El 70% de la cartera.** Cartera = todo lo que tienes, el SOL de la wallet
 más lo que ya vale lo que hay metido en monedas.
 
 Con 1 SOL de saldo salen así:
 
 ```
-0,500 · 0,350 · 0,085 · 0,019     (suma 0,955 = el 95% del saldo)
+0,700 · 0,200 · 0,048     (suma 0,948 = el 95% del saldo)
 ```
 
-**Una compra de verdad y tres restos.** La primera se lleva la mitad de todo
-tu dinero; la segunda, lo que queda; las otras dos son calderilla — la última
-son 4 $, de los que 1,12 $ se van en comisión.
+**Una compra de verdad y dos restos.** La primera se lleva siete décimas de
+todo tu dinero; la segunda, lo que quedaba libre; la tercera son 10 $ de los
+que 1,12 $ se van en comisión.
 
-> **La primera compra se lleva medio patrimonio, y no es la mejor moneda del
-> día: es la primera que pasa los filtros.** El bot no elige entre
+> **La primera compra se lleva el 70% de tu patrimonio, y no es la mejor
+> moneda del día: es la primera que pasa los filtros.** El bot no elige entre
 > candidatas, compra la que llega. Con el stop en el 26%, esa sola posición
-> arriesga el **13% de todo tu dinero**.
+> arriesga el **18% de todo tu dinero**.
 
-Subir del 30% al 50% **no arriesga más dinero en total** — el 95% se
-compromete igual, porque el límite lo pone el saldo, no el porcentaje. Lo que
-cambia es que todo se juega en una sola carta, y con eso **la suerte pesa más
-que la estrategia**.
+Subir el porcentaje **no arriesga más dinero en total** — desde el 25% para
+arriba se compromete siempre el mismo 95%, porque el límite lo pone el saldo,
+no el porcentaje. Lo que cambia es que todo se juega en una sola carta.
+
+Con un 32% de aciertos necesarios y el 70% en una moneda, **el resultado del
+mes lo decide un puñado de operaciones**. La suerte pesa más que la
+estrategia.
 
 Si lo que se busca es concentrar, la forma limpia es bajar el número de
-posiciones a 2: el dinero se reparte entre dos compras parecidas en vez de
-50/35/8/2, y no se pagan comisiones por restos.
+posiciones a 1 o 2: el dinero va entero a una o dos compras y no se pagan
+comisiones por restos de 10 $.
 
 Puede tener **5 posiciones abiertas a la vez**.
 
