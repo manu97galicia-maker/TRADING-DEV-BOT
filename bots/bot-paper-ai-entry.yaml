@@ -616,9 +616,10 @@ trade:
   # 0,30 · 0,21 · 0,15 · 0,10 · 0,07. La quinta valia la cuarta parte que la
   # primera sin que nadie lo pidiera. Sobre la cartera salen IGUALES.
   #
-  # 30% DE LA CARTERA (24-sep, pedido: "pasa al 30% por compra"). Historial
-  # del porcentaje: 30% cartera -> 10 $ fijos -> 25% cartera -> 15% libre ->
-  # 20% libre -> 25% cartera -> 30% cartera.
+  # 50% DE LA CARTERA (24-sep, pedido: "pon 50% del SOL balance por
+  # operacion"). Historial del porcentaje: 30% cartera -> 10 $ fijos -> 25%
+  # cartera -> 15% libre -> 20% libre -> 25% cartera -> 30% cartera -> 50%
+  # cartera.
   #
   # CAMBIAN LAS DOS COSAS A LA VEZ, y la base pesa mas que el numero. Lo dice
   # `fraccion_base`, aqui abajo, que vuelve a "cartera": la base ya no baja
@@ -628,21 +629,36 @@ trade:
   #   modo                 las compras con 1 SOL            suma   del saldo
   #   20% libre            0,194 0,155 0,123 0,098 0,078   0,647      65%
   #   25% cartera          0,250 0,249 0,249 0,160 0,038   0,945      95%
-  #   30% cartera (hoy)    0,300 0,299 0,298 0,048         0,945      95%
+  #   30% cartera          0,300 0,299 0,298 0,048         0,945      95%
+  #   50% cartera (hoy)    0,500 0,350 0,085 0,019         0,955      95%
   #
-  # YA NO SE ABREN CINCO, SE ABREN CUATRO, y es lo que no se ve venir al
-  # subir el numero. Tres del 30% son el 90% del dinero: en la cuarta solo
-  # queda calderilla y para la quinta no queda nada. `max_posiciones: 5`
-  # sigue escrito ahi arriba pero ya no lo alcanza el dinero.
+  # EL RIESGO TOTAL NO SUBE, Y ES LO PRIMERO QUE HAY QUE ENTENDER: del 30%
+  # al 50% se compromete el mismo 95% del saldo, porque el tope no lo pone
+  # el porcentaje sino el saldo libre. Lo que cambia es COMO SE REPARTE.
   #
-  # Y EL RIESGO TOTAL NO SUBE: del 25% al 30% se compromete el mismo 95% del
-  # saldo, porque el tope no lo pone el porcentaje sino el saldo libre. Con
-  # el stop en 26% siguen siendo ~24,6% del dinero en riesgo. Lo que cambia
-  # es el REPARTO: el mismo dinero en menos posiciones y mas gordas.
+  # LA PRIMERA COMPRA SE LLEVA LA MITAD DE LA CARTERA. Y no es la mejor
+  # moneda del dia: es LA PRIMERA que pasa los filtros. El bot no elige
+  # entre candidatas, compra la que llega. Con el stop en 26%, esa primera
+  # posicion arriesga ella sola el 13% de todo el dinero.
   #
-  # MENOS POSICIONES ES MAS VARIANZA, que es el intercambio de verdad: con
-  # tres apuestas de 0,30 un solo rug duele el triple que con cinco de 0,15,
-  # y la suerte pesa mucho mas en el resultado del dia.
+  # LA SEGUNDA SE LLEVA 0,350 --lo que queda-- y las otras dos son restos:
+  # 0,085 y 0,019 SOL. Esa cuarta son ~4,2 $ y la comision de prioridad 1,12
+  # $: el 27% se va antes de que la moneda se mueva. Es dinero tirado.
+  #
+  # DE CINCO PLAZAS QUEDA UNA COMPRA DE VERDAD. Con el 25% habia tres
+  # enteras, con el 30% tres, con el 50% UNA. `max_posiciones: 5` es ya
+  # decorativo: quien decide es el saldo.
+  #
+  # LA VARIANZA SE DISPARA. Un rug en la primera compra cuesta el 13% de la
+  # cartera de golpe; con el 20% del saldo libre costaba un 5%. Haciendo
+  # falta un 38% de aciertos, concentrar asi significa que el resultado del
+  # mes lo deciden un punado de monedas y la suerte pesa mas que la
+  # estrategia -- justo cuando todavia no hay ni una medicion.
+  #
+  # SI LO QUE SE QUIERE ES CONCENTRAR, la forma limpia es bajar
+  # `max_posiciones` a 2: el dinero se reparte entre dos compras parecidas
+  # en vez de 50/35/8/2, y no se pagan comisiones por restos. No se toca
+  # aqui porque no se pidio.
   #
   # Y SE ACABA EL FRENO AUTOMATICO, que es lo importante de este cambio.
   # Sobre el saldo libre, cada compra era un porcentaje de lo que SOBRABA y
@@ -650,15 +666,13 @@ trade:
   # ese freno: lo unico que para al bot es quedarse sin saldo libre, y eso
   # pasa en la cuarta compra.
   #
-  # TRES COMPRAS DE VERDAD Y UNA MIGA. La cuarta sale de 0,048 SOL --unos
-  # 10,5 $-- y la comision de prioridad son 1,12 $: el 11% se va antes de que
-  # la moneda se mueva. Con 0,5 SOL de saldo es peor: solo dos compras
-  # enteras, y la cuarta son 0,029 SOL (6,3 $) con el 18% en comision.
+  # CON 0,5 SOL DE SALDO SALEN TRES: 0,250 · 0,163 · 0,038. Una de verdad y
+  # dos restos. Cuanto mas pequeno es el saldo, peor se porta este modo.
   #
   # LAS DOS PALANCAS SI ESO MOLESTA: `compra_minima_sol`, que se salta las
-  # compras que no llegan a un minimo, o bajar `max_posiciones` a 3 para que
-  # el techo diga la verdad. Ninguna se toca aqui porque no se pidieron.
-  fraccion_saldo: 0.30
+  # compras que no llegan a un minimo, o bajar `max_posiciones`. Ninguna se
+  # toca aqui porque no se pidieron.
+  fraccion_saldo: 0.50
   # SOBRE QUE SE CALCULA EL PORCENTAJE. Es una clave y no una decision
   # escrita en el codigo porque ha ido y venido tres veces en dos dias, y
   # cada vuelta era un commit tocando el camino de compra.

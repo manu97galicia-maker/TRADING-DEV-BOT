@@ -95,8 +95,19 @@ def test_el_tamano_vuelve_a_encogerse_solo() -> None:
     if base_es_libre():
         assert tam[1] < tam[0], f"con base libre tienen que menguar: {tam}"
     else:
-        assert abs(tam[1] - tam[0]) < 0.01 * tam[0], (
-            f"con base cartera las primeras salen iguales: {tam}"
+        # LA PROPIEDAD QUE DE VERDAD DISTINGUE LA BASE "CARTERA": la PRIMERA
+        # compra es la fraccion del saldo ENTERO, sin descontar nada. Con
+        # base "libre" seria la fraccion de lo gastable (saldo - reserva) y
+        # saldria mas pequena.
+        #
+        # Antes aqui se exigia que la primera y la segunda salieran IGUALES.
+        # Era cierto mientras la fraccion era pequena; con el 50% (24-sep) la
+        # segunda ya sale recortada --0,500 y 0,350-- porque no queda saldo
+        # libre para otra entera, y el test se puso rojo describiendo el modo
+        # y no un fallo.
+        frac = float(_trade()["fraccion_saldo"])
+        assert abs(tam[0] - frac * 1.0) < 1e-6, (
+            f"la primera tiene que ser el {frac * 100:.0f}% del saldo entero: {tam}"
         )
         # Y la caida, cuando llega, es de golpe y no gradual.
         assert tam[-1] < 0.5 * tam[0], (
@@ -161,7 +172,18 @@ def test_cuantas_plazas_caben_de_verdad() -> None:
             f"con el 30% de la cartera el dinero no da para las cinco: {tam}"
         )
         assert len(tam) == 4, f"da para cuatro: {tam}"
-        assert len(enteras) == 3, f"y solo tres son compras enteras: {tam}"
+        # CUANTAS SON COMPRAS DE VERDAD SALE DE LA FRACCION, no escrito a
+        # mano. El saldo libre da para ~0,95 del total (el resto es reserva y
+        # colchones), asi que caben `0,95 / fraccion` compras enteras y el
+        # resto son recortes. Con el 25% y el 30% salian tres; con el 50%
+        # (24-sep) sale UNA. El numero a mano fallaba en cada cambio sin
+        # decir por que.
+        frac = float(_trade()["fraccion_saldo"])
+        esperadas = int(0.95 / frac)
+        assert len(enteras) == esperadas, (
+            f"con el {frac * 100:.0f}% de la cartera salen {esperadas} compras "
+            f"enteras, no {len(enteras)}: {tam}"
+        )
         assert tam[-1] < 0.2 * tam[0], f"la ultima es calderilla: {tam}"
     # Y con poco saldo sigue comprando, solo que diminuto: es lo pedido.
     assert len(tamanos(0.05)) >= 1, "con poco saldo compra poco, pero compra"

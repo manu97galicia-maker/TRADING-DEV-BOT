@@ -56,31 +56,32 @@ todas las entradas, venga de donde venga la moneda.
 
 ## 3. Cuánto pone en cada compra
 
-**El 30% de la cartera.** Cartera = todo lo que tienes, el SOL de la wallet
-más lo que ya vale lo que hay metido en monedas. Esa base **no baja al
-comprar** (el dinero cambia de sitio, no desaparece), así que las compras
-salen **iguales**.
+**El 50% de la cartera.** Cartera = todo lo que tienes, el SOL de la wallet
+más lo que ya vale lo que hay metido en monedas.
 
 Con 1 SOL de saldo salen así:
 
 ```
-0,300 · 0,299 · 0,298 · 0,048     (suma 0,945 = el 95% del saldo)
+0,500 · 0,350 · 0,085 · 0,019     (suma 0,955 = el 95% del saldo)
 ```
 
-**Solo se abren cuatro, no cinco** — y de esas, tres son compras de verdad y
-la cuarta es calderilla. No es un fallo: tres del 30% ya son el 90% del
-dinero, y para la quinta no queda nada. El tope de 5 posiciones sigue escrito
-en la configuración, pero **el dinero no llega hasta él**.
+**Una compra de verdad y tres restos.** La primera se lleva la mitad de todo
+tu dinero; la segunda, lo que queda; las otras dos son calderilla — la última
+son 4 $, de los que 1,12 $ se van en comisión.
 
-> **Aquí no hay freno automático.** Antes cada compra era un porcentaje de lo
-> que *sobraba* y menguaban solas, así que nunca se comprometía todo. Ahora lo
-> único que para al bot es quedarse sin saldo. Con el stop en el 26%, las
-> posiciones juntas ponen en riesgo un **25% de tu dinero**.
+> **La primera compra se lleva medio patrimonio, y no es la mejor moneda del
+> día: es la primera que pasa los filtros.** El bot no elige entre
+> candidatas, compra la que llega. Con el stop en el 26%, esa sola posición
+> arriesga el **13% de todo tu dinero**.
 
-Subir del 25% al 30% **no arriesga más dinero** — el 95% se compromete igual,
-porque el límite lo pone el saldo, no el porcentaje. Lo que cambia es el
-reparto: **el mismo dinero en menos apuestas y más gordas**, así que un solo
-rug duele más y la suerte pesa más en el resultado del día.
+Subir del 30% al 50% **no arriesga más dinero en total** — el 95% se
+compromete igual, porque el límite lo pone el saldo, no el porcentaje. Lo que
+cambia es que todo se juega en una sola carta, y con eso **la suerte pesa más
+que la estrategia**.
+
+Si lo que se busca es concentrar, la forma limpia es bajar el número de
+posiciones a 2: el dinero se reparte entre dos compras parecidas en vez de
+50/35/8/2, y no se pagan comisiones por restos.
 
 Puede tener **5 posiciones abiertas a la vez**.
 
