@@ -107,11 +107,15 @@ persona a mano, si quiere.
 Esto es lo más importante de todo el sistema:
 
 ```
-al empezar        el suelo está en -26%   ← si baja de ahí, se vende TODO
-tras cobrar +25%  el suelo sube a +5%     ← ya no puede acabar en pérdida
-tras cobrar +55%  el suelo sube a +25%
-tras cobrar +90%  el suelo sube a +55%
+al empezar        el suelo está en -26%      ← si baja de ahí, se vende TODO
+tras cobrar +25%  el suelo sube a  +5%       ← ya no puede acabar en pérdida
+tras cobrar +55%  el suelo sube a +31,25%
+tras cobrar +90%  el suelo sube a +62,75%
 ```
+
+El suelo se pone un peldaño por detrás del que acabas de cobrar, y un 5% por
+encima de ese. Un 5% *del precio*, no cinco puntos: por eso tras el +55% queda
+en +31,25% y no en +30%.
 
 **En cuanto toca el primer peldaño, la operación ya no puede perder dinero.**
 Ese es el verdadero trabajo del primer escalón — lo que cobra es secundario.

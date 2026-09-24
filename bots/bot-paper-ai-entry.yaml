@@ -240,13 +240,19 @@ trade:
   # ES LA PALANCA QUE MAS PESA DE TODA LA ESTRATEGIA. Entrando al 86,0% de la
   # curva, una moneda que hace todo bien y se muere justo al migrar recorre un
   # +95,1%: cobra los tres primeros peldanos (80% de la posicion) y el 20% que
-  # queda sale en el suelo, que para entonces esta en +60%. Total +62,0%. Lo
-  # que decide si eso compensa es lo que cuesta una que sale mal:
+  # queda sale en el suelo, que para entonces esta en +62,75%. Total +62,6%.
+  # Lo que decide si eso compensa es lo que cuesta una que sale mal:
   #
   #   stop   se pierde   una que migra y muere   aciertos para no perder
-  #    28%     -28,0%          +62,0%                     31%
-  #    26%     -26,0%          +62,0%                     30%   <- aqui
-  #    20%     -20,0%          +62,0%                     24%
+  #    28%     -28,0%          +62,6%                     31%
+  #    26%     -26,0%          +62,6%                     29%   <- aqui
+  #    20%     -20,0%          +62,6%                     24%
+  #
+  # EL MARGEN MULTIPLICA, NO SUMA, y es facil equivocarse (me equivoque al
+  # escribir la primera version de esta tabla). Tras cobrar el peldano i el
+  # suelo es `entrada x (1 + ganancia del peldano i-1) x 1,05`, no
+  # `entrada + ganancia + 5 puntos`. Por eso tras el TP3 queda en +62,75% y
+  # no en +60%. Esta en `stepped_stop_price`, en tiered_exit.py.
   #
   # (La perdida ES el stop entero: desde el 24-sep `vender_todo_en_stop` se
   # lleva tambien el moonbag, asi que ya no hay resto cayendose a cero.)
