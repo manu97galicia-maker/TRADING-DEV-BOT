@@ -635,8 +635,30 @@ priority_fees:
   #
   #   coste_SOL = fixed_amount * compute_units / 1e15
   #
-  # Con 140.000 CU (comprar): 35.714.286 -> ~0,00500 SOL  (~0,58 $)
-  # Con 120.000 CU (vender):   1.000.000 -> ~0,00012 SOL  (~0,01 $)
+  # Con 140.000 CU (comprar): 36.363.637 -> ~0,00509 SOL  (~1,12 $)
+  # Con 120.000 CU (vender):    1.757.576 -> ~0,00021 SOL  (~0,05 $)
+  # Con 120.000 CU (proteger): 42.424.243 -> ~0,00509 SOL  (~1,12 $)
+  #
+  # LOS DOLARES SON CON SOL A 220 $. El comentario anterior decia 0,58 $ para
+  # la compra, que era correcto con el SOL a 116: la comision esta fijada en
+  # microlamports, asi que lo que cuesta en dolares se mueve con el precio del
+  # SOL sin que nadie toque nada. Si el SOL se va a 300, esa compra pasa a
+  # costar 1,53 $.
+  #
+  # LOS TRES SUBEN 2 CENTIMOS DE DOLAR (24-sep, pedido). Dos centimos son
+  # 0,0000909 SOL con el SOL a 220, que repartidos entre las CU de cada
+  # operacion dan +649.351 en la compra y +757.576 en las dos ventas.
+  #
+  # OJO A LO QUE ESO SIGNIFICA EN CADA UNA, porque no es lo mismo:
+  #
+  #   operacion          antes      ahora     cambio
+  #   compra             1,10 $     1,12 $     +1,8%
+  #   venta normal       0,026 $    0,046 $   +75,8%
+  #   venta que protege  1,10 $     1,12 $     +1,8%
+  #
+  # En la compra y en la venta que protege, dos centimos sobre 1,10 $ es un
+  # 1,8%: no va a cambiar el puesto en la cola ni se va a notar. Donde si
+  # cambia algo es en la venta normal --los take profit-- que casi se duplica.
   #
   # El comentario anterior decia "fixed_amount / 1e10" y daba el numero
   # aproximado, pero escondia que depende de las CU.
@@ -646,7 +668,7 @@ priority_fees:
   # rapida en las dos significaria pagarla once veces: ~0,0084 SOL solo en
   # ventas, el 7% de una posicion de 0,12 SOL. Comprar tarde cuesta mucho mas
   # que vender un bloque tarde, asi que la prisa se paga donde hace falta.
-  fixed_amount: 1000000
+  fixed_amount: 1757576
   # LA DE VENDER CUANDO CORRE PRISA: ~0,005 SOL, igual que la de comprar
   # (24-sep, pedido: "los stop loss y take profit se demoran mucho").
   #
@@ -664,7 +686,7 @@ priority_fees:
   # notaba que la venta pagaba 42 veces menos que la compra.
   #
   # Con 120.000 CU (vender): 41.666.667 -> ~0,00500 SOL
-  fixed_amount_venta_proteccion: 41666667
+  fixed_amount_venta_proteccion: 42424243
   # LA DE COMPRAR: ~0,005 SOL (24-sep). Historial: ~0,001 (19-sep) -> ~0,01
   # -> ~0,005, bajado el mismo dia al ver que a 0,01 el primer peldano no
   # cubria el gas.
@@ -696,7 +718,7 @@ priority_fees:
   # por el calculo normal y por tanto NO lo recortaria el `hard_cap`. El bot lo
   # recorta a mano al arrancar para que el tope siga siendo un tope, pero eso
   # significa que subir esto sin subir el `hard_cap` no hace nada.
-  fixed_amount_compra: 35714286
+  fixed_amount_compra: 36363637
   extra_percentage: 0.0
   # EL TOPE. Estaba en 1.000.000, el mismo valor que `fixed_amount`, asi que
   # cualquier intento de subir la comision se recortaba solo y en silencio
