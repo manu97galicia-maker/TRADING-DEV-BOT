@@ -32,25 +32,25 @@ from modelo_tamano import tamanos as _tamanos
 from modelo_tamano import trade as _trade
 
 
-def test_el_modo_activo_es_el_importe_en_dolares() -> None:
-    """10 $ por operacion (23-sep, pedido).
+def test_el_modo_activo_es_el_porcentaje_de_la_cartera() -> None:
+    """25% de la cartera por operacion (24-sep, pedido).
 
     Historial del tamano: 0,12 SOL fijo -> 25% -> 0,04 SOL fijo -> 15% -> 30%
-    del saldo libre -> 30% de la cartera -> 10 $.
+    del saldo libre -> 30% de la cartera -> 10 $ fijos -> 25% de la cartera.
 
     Y la regla de siempre: manda UNO de los tres. Dos con numero es un valor
     que parece decidir y no decide -- justo la clase de cosa que hace buscar
     el fallo donde no esta.
     """
     t = _trade()
-    assert t["buy_amount_usd"] == 10
+    assert t["fraccion_saldo"] == 0.25
     encendidos = [
         k
         for k in ("buy_amount_usd", "fraccion_saldo", "buy_amount")
         if t.get(k, 0) > 0
     ]
-    assert encendidos == ["buy_amount_usd"], (
-        f"tiene que mandar solo el importe en dolares, y mandan: {encendidos}"
+    assert encendidos == ["fraccion_saldo"], (
+        f"tiene que mandar solo el porcentaje, y mandan: {encendidos}"
     )
 
 
@@ -77,26 +77,35 @@ def test_el_tope_no_recorta_el_importe_configurado() -> None:
         )
 
 
-def test_con_un_importe_fijo_las_cinco_posiciones_valen_lo_mismo() -> None:
-    """LO QUE CAMBIA AL VOLVER A UN IMPORTE FIJO, y conviene tenerlo escrito.
+def test_las_posiciones_que_caben_valen_lo_mismo() -> None:
+    """LA DIFERENCIA ENTRE LOS TRES MODOS, y conviene tenerla escrita.
 
-    CON EL PORCENTAJE (hasta el 23-sep) el tamano dependia del dinero: sobre
-    el saldo libre las posiciones menguaban (0,30 · 0,21 · 0,15...), y sobre
-    la cartera salian iguales pero solo cabian TRES, porque tres del 30% ya
-    son el 90%.
+    SOBRE EL SALDO LIBRE (hasta el 23-sep) las posiciones menguaban solas:
+    cada compra era un porcentaje de lo que SOBRABA, asi que con 1 SOL salian
+    0,30 · 0,21 · 0,15 · 0,10 · 0,07.
 
-    CON 10 $ FIJOS caben las cinco y todas valen lo mismo, porque el tamano ya
-    no depende de lo que haya en la wallet. Lo que se pierde: la apuesta ya no
-    crece con las ganancias ni encoge con las perdidas -- si la cartera se
-    dobla, se sigue apostando 10 $.
+    SOBRE LA CARTERA salen iguales, porque la base no baja al comprar -- el
+    dinero cambia de sitio, no desaparece. Con el 25% y 1 SOL: 0,250 · 0,249 ·
+    0,248 · 0,160 · 0,038. Las tres primeras iguales, la cuarta con lo que
+    queda y la quinta ya es calderilla.
+
+    CON UN IMPORTE FIJO (los 10 $ del 23-sep) las cinco valian lo mismo y el
+    saldo no pintaba nada; a cambio la apuesta no crecia con las ganancias.
     """
     tam = _tamanos(1.0)
-    assert len(tam) == _trade()["max_posiciones"], (
-        f"con 10 $ por compra caben las cinco plazas: {tam}"
+    frac = _trade()["fraccion_saldo"]
+
+    enteras = [x for x in tam if x > 0.9 * frac]
+    assert len(enteras) == 3, f"deberian caber tres del {frac:.0%}: {tam}"
+    assert abs(enteras[0] - frac) < 0.005, f"la primera es el {frac:.0%}: {tam}"
+    # IGUALES, con el margen de las comisiones que si se van de la cartera. El
+    # numero que importa no es "identicas" sino que la tercera no sea la mitad
+    # que la primera, que es lo que pasaba sobre el saldo libre.
+    assert min(enteras) > 0.95 * max(enteras), (
+        f"las que caben tienen que ser iguales, no menguantes: {tam}"
     )
-    assert len(set(tam)) == 1, f"las cinco tienen que valer lo mismo: {tam}"
-    # Y ese valor es el que toca: 10 $ al precio de referencia.
-    assert abs(tam[0] - _trade()["buy_amount_usd"] / SOL_USD_REF) < 1e-6
+    # Y las de despues salen del recorte: mas pequenas a proposito.
+    assert all(x < enteras[0] for x in tam[3:]), f"{tam}"
 
 
 def test_nunca_se_gasta_mas_de_lo_que_hay() -> None:

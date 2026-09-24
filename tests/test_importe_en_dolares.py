@@ -14,7 +14,7 @@ DexScreener, pero hasta que acierta usa ese. Gastar "10 $" a 91,24 con SOL a
 Por eso, mientras el precio no este confirmado, NO SE COMPRA.
 """
 
-# ruff: noqa: S101, SLF001, PLR2004, PLC0415, ANN003
+# ruff: noqa: S101, SLF001, PLC0415, ANN003
 
 import types
 from pathlib import Path
@@ -53,17 +53,32 @@ def _trader(**kw) -> UniversalTrader:
 # --------------------------------------------------------- la configuracion
 
 
-def test_son_diez_dolares_y_manda_el() -> None:
-    """Y solo el: dos modos con numero es un valor que parece decidir y no
-    decide, que es la clase de cosa que hace buscar el fallo donde no esta."""
+def test_el_modo_en_dolares_esta_apagado_pero_sigue_entero() -> None:
+    """HOY NO MANDA, y el resto del fichero sigue teniendo sentido.
+
+    El 23-sep mandaba con 10 $ por operacion; el 24-sep se volvio al
+    porcentaje de la cartera. La clave se queda a CERO en vez de borrarse:
+    el modo entero sigue en el codigo y volver a el es escribir un numero.
+
+    POR QUE NO SE BORRAN ESTOS TESTS AL APAGARLO. Lo que vigilan no es la
+    decision --esa cambia cada dia-- sino el MECANISMO: que el precio de SOL
+    se lea en vivo, que sin precio confirmado no se compre, y que el cartel
+    diga los dolares y los SOL. El dia que se vuelva a encender, eso tiene que
+    seguir funcionando; y si se rompe mientras esta apagado, nadie se
+    enteraria hasta la primera compra con dinero de verdad.
+
+    Los tests de abajo construyen su propio trader con `buy_amount_usd = 10`,
+    asi que prueban el mecanismo este el yaml como este.
+    """
     t = _trade()
-    assert t["buy_amount_usd"] == 10
+    assert t["buy_amount_usd"] == 0
+    # Y la regla de siempre: manda UNO de los tres, nunca dos.
     encendidos = [
         k
         for k in ("buy_amount_usd", "fraccion_saldo", "buy_amount")
         if t.get(k, 0) > 0
     ]
-    assert encendidos == ["buy_amount_usd"], f"mandan: {encendidos}"
+    assert len(encendidos) == 1, f"mandan: {encendidos or 'ninguno'}"
 
 
 def test_el_yaml_llega_al_trader() -> None:

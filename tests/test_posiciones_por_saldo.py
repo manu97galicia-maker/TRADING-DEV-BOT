@@ -12,9 +12,8 @@ comerian la reserva global y una venta podria quedarse sin gas.
 
 # ruff: noqa: S101, PLR2004
 
-from modelo_tamano import COLCHON_POR_POSICION
+from modelo_tamano import COLCHON_POR_POSICION, tamanos
 from modelo_tamano import importe as importe_de_compra
-from modelo_tamano import tamanos
 from modelo_tamano import trade as _trade
 
 # Techo configurado de posiciones simultaneas (max_posiciones).
@@ -68,26 +67,27 @@ def test_el_modo_de_tamano_esta_claro() -> None:
     )
 
 
-def test_el_tamano_ya_no_depende_del_dinero_que_haya() -> None:
+def test_el_tamano_ya_no_se_encoge_solo() -> None:
     """COMO HA IDO CAMBIANDO LO QUE FRENA, que es de lo que mas se ha hablado.
 
-    HASTA EL 23-SEP (manana) frenaba el propio tamano: cada compra era un
-    porcentaje de lo que QUEDABA libre, asi que se encogia sola.
+    HASTA EL 23-SEP frenaba el propio tamano: cada compra era un porcentaje de
+    lo que QUEDABA libre, asi que se encogia sola y por muchas plazas que
+    hubiera nunca se llegaba a gastar todo. Era un freno automatico, y este
+    fichero lo daba por hecho.
 
-    EL 23-SEP (tarde) paso a ser el 30% de la cartera entera: las compras
-    dejaron de menguar, pero solo cabian TRES, porque tres del 30% ya son el
-    90%. El freno pasaba a ser el saldo.
+    DESDE QUE SE CALCULA SOBRE LA CARTERA ese freno ya no existe: las compras
+    que caben salen IGUALES. Lo unico que impide gastarlo todo es el guardian
+    del saldo (`test_nunca_se_gasta_la_reserva`).
 
-    AHORA, con 10 $ fijos, el tamano no depende del dinero en absoluto: cinco
-    posiciones iguales y el saldo ni se asoma mientras haya de sobra. Lo unico
-    que frena es el techo de cinco plazas.
+    Este test fija el hecho nuevo para que no se vuelva a dar por supuesto el
+    viejo: si alguien devuelve el calculo al saldo libre, las compras vuelven
+    a menguar y esto se pone rojo.
     """
-    t = _trade()
     tam = tamanos(1.0)
-    assert len(set(tam)) == 1, f"las compras tienen que valer todas lo mismo: {tam}"
-    # Y con el doble de saldo, exactamente las mismas: no depende del dinero.
-    assert tamanos(2.0) == tam, "el tamano no puede depender del saldo"
-    assert len(tam) == t["max_posiciones"]
+    assert len(tam) >= 2
+    assert abs(tam[1] - tam[0]) < 0.05 * tam[0], (
+        f"la segunda compra tiene que valer lo mismo que la primera: {tam}"
+    )
 
 
 def test_la_reserva_nunca_se_toca() -> None:
@@ -112,14 +112,26 @@ def test_lo_que_queda_cubre_las_ventas_pendientes() -> None:
     assert saldo - gastado >= reserva
 
 
-def test_con_diez_dolares_caben_las_cinco_plazas() -> None:
-    """Con 10 $ por compra el dinero no es el freno: caben las cinco.
+def test_caben_tres_enteras_y_dos_de_propina() -> None:
+    """CUANTAS SALEN DE VERDAD CON EL 25%, que no es lo que parece.
 
-    Cuando mandaba el 30% de la cartera solo cabian tres, y era importante
-    saberlo. Ahora vuelve a mandar el techo, que es lo que dice el yaml.
+    Las cinco plazas se llenan, pero no porque quepan cinco compras del 25%
+    --eso serian el 125% de la cartera-- sino porque cuando el 25% ya no cabe
+    en lo que queda libre entra `fraccion_si_no_llega` y compra con el 75% del
+    resto. Con 1 SOL salen 0,250 · 0,249 · 0,248 · 0,160 · 0,038.
+
+    O sea: TRES posiciones de verdad y dos de propina, la ultima ya
+    calderilla. Confundir "salen cinco" con "caben cinco iguales" es lo que
+    haria creer que se esta arriesgando la mitad de lo que se arriesga: las
+    tres primeras juntas ya son el 75% de la cartera.
     """
+    t = _trade()
     tam = tamanos(1.0)
-    assert len(tam) == TECHO, f"con 10 $ tienen que caber las cinco: {tam}"
+    frac = t["fraccion_saldo"]
+    enteras = [x for x in tam if x > 0.9 * frac]
+    assert len(enteras) == 3, f"tres del {frac:.0%} y el resto recortes: {tam}"
+    assert sum(enteras) > 0.7, "las tres enteras son la mayor parte de la cartera"
+    assert all(x < 0.9 * frac for x in tam[3:]), f"las de despues son recortes: {tam}"
     # Y con poco saldo sigue comprando, solo que diminuto: es lo pedido.
     assert len(tamanos(0.05)) >= 1, "con poco saldo compra poco, pero compra"
 

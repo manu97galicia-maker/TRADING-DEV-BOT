@@ -106,14 +106,14 @@ def test_apagado_es_el_comportamiento_de_antes() -> None:
 
 def test_la_config_pide_lo_que_se_pidio() -> None:
     t = _cfg()["trade"]
-    # Manda el importe en dolares: 10 $ por operacion (23-sep). Los otros dos
-    # modos van a cero porque solo uno puede mandar a la vez.
-    assert t["buy_amount_usd"] == 10
-    assert t["fraccion_saldo"] == 0
+    # Manda el porcentaje de la cartera: 25% (24-sep). Los otros dos modos van
+    # a cero porque solo uno puede mandar a la vez.
+    assert t["fraccion_saldo"] == 0.25
+    assert t["buy_amount_usd"] == 0
     assert t["buy_amount"] == 0
-    # EL RECORTE SIGUE IMPORTANDO aunque el importe sea fijo, y no es obvio:
-    # cuando quedan menos de 10 $ libres, el bot compra con el 75% de lo que
-    # haya en vez de saltarse la moneda.
+    # EL RECORTE ES LO QUE HACE QUE SALGAN CUATRO POSICIONES Y NO TRES: cuando
+    # el 25% ya no cabe en lo que queda libre, el bot compra con el 75% del
+    # resto en vez de saltarse la moneda.
     assert t["fraccion_si_no_llega"] == 0.75
 
 

@@ -186,36 +186,37 @@ trade:
       sell: 0.024
     - gain: 19.00    # x20
       sell: 0.024
-  # 30% (23-sep, pedido). Historial: 18% -> 28% -> 40% -> 30%.
+  # 18% (24-sep, pedido). Historial: 18% -> 28% -> 40% -> 30% -> 18%.
+  # Vuelve al numero del principio despues de dar la vuelta entera.
   #
   # SOLO MANDA HASTA EL PRIMER PELDANO. En cuanto la moneda toca el TP1
   # (+30%), el suelo se sube a precio de compra +5% (`margen_stop_tras_tp`)
   # y este numero deja de usarse en esa posicion. O sea que el 30% es lo que
   # se arriesga ANTES de que la moneda demuestre nada.
   #
-  # POR QUE SE BAJO DE 40 A 30. Es la palanca que mas pesa de toda la
-  # estrategia, y se vio al hacer la cuenta de cuanto deja cada final:
+  # ES LA PALANCA QUE MAS PESA DE TODA LA ESTRATEGIA. Entrando al 88,5% de la
+  # curva, una moneda que hace todo bien y se muere justo al migrar recorre un
+  # +75,8%, cobra dos peldanos y deja +36,3% de la posicion. Lo que decide si
+  # eso compensa es lo que cuesta una que sale mal:
   #
   #   stop   se pierde   una que migra y muere   aciertos para no perder
-  #    40%     -39,2%           +9,9%                     80%
-  #    30%     -29,4%           +9,9%                     75%
-  #    25%     -24,5%           +9,9%                     71%
+  #    40%     -39,2%          +36,3%                     52%
+  #    30%     -29,4%          +36,3%                     45%
+  #    18%     -17,6%          +36,3%                     33%   <- aqui
+  #    15%     -14,7%          +36,3%                     29%
   #
-  # (La perdida real no es el stop exacto: el 2% de moonbag no se vende y el
-  # slippage se come algo, por eso -39,2 y no -40.)
+  # (La perdida no es el stop exacto: el 2% de moonbag no se vende.)
   #
-  # EL NUMERO QUE IMPORTA es el de la derecha. Entrando al 94,4% de la curva,
-  # una moneda que hace todo bien y se muere justo al migrar llega a +34% y
-  # deja +9,9% con esta escalera: se cobra el TP1 y el resto sale por el
-  # suelo en compra +5%. Contra una perdida de -39,2%, eso pedia acertar 8 de
-  # cada 10 solo para quedarse igual. Con el stop al 30% baja a 7,5 de cada
-  # 10, que sigue siendo exigente pero es alcanzable.
+  # QUE CUESTA, y es lo que hizo que se subiera en su dia: con el 18% se sale
+  # de los tirones normales de una memecoin. Posiciones que cerraban en rojo y
+  # luego subian -- eso fue lo que llevo el stop de 18 a 28 y despues a 40.
+  # Ahora se vuelve al 18 sabiendo eso, y con dos cosas distintas de entonces:
+  # se entra mucho mas abajo en la curva (88,5% en vez del nacimiento) y el
+  # suelo sube a compra +5% en cuanto se cobra el primer peldano.
   #
-  # QUE CUESTA: se sale antes de las que se hunden y luego se recuperan. Un
-  # stop mas ancho aguanta los tirones normales de una memecoin; con el 18%
-  # cerraban en rojo posiciones que luego subian. Este es el equilibrio
-  # elegido entre las dos cosas.
-  stop_loss_percentage: 0.30
+  # SI VUELVEN A APARECER CIERRES EN ROJO de monedas que luego suben, es este
+  # numero el que hay que subir, no la escalera.
+  stop_loss_percentage: 0.18
   # EL STOP SE LLEVA LA POSICION ENTERA, moonbag incluido.
   #
   # Antes dejaba el 2% corriendo en una moneda que se estaba cayendo a cero:
@@ -310,7 +311,7 @@ trade:
   #
   # LO QUE CUESTA, y hay que saberlo porque no es gratis: una moneda que se
   # queda plana para siempre ya no libera su plaza. Se queda ocupando una de
-  # las 5 hasta que toque el stop (-30%) o un peldano, y mientras tanto gasta
+  # las 5 hasta que toque el stop (-18%) o un peldano, y mientras tanto gasta
   # una consulta de precio por segundo. Con cinco planas a la vez el bot deja
   # de comprar aunque haya saldo. Si eso pasa, se ve en `vigiladas` y la
   # solucion es volver a encender `venta_muerta_seg`, no subir plazas.
@@ -390,9 +391,10 @@ trade:
   # La bolsa NO se vende ni se pierde: se queda en la wallet y la recoge la
   # limpieza de cuentas. 0 desactiva la regla.
   valor_minimo_posicion_usd: 1.0
-  # PORCENTAJE DE LA CARTERA: 30% (23-sep, pedido). Historial: 0,25 unas
-  # horas el 19-sep -> apagado -> 0,15 -> 0,30 sobre el saldo libre -> 0,30
-  # sobre la cartera entera.
+  # PORCENTAJE DE LA CARTERA: 25% (24-sep, pedido: "invierte en cada
+  # operacion el 25%"). Historial: 0,25 unas horas el 19-sep -> apagado ->
+  # 0,15 -> 0,30 sobre el saldo libre -> 0,30 sobre la cartera -> apagado por
+  # los 10 $ fijos -> 0,25 sobre la cartera.
   #
   # MANDA ESTE, no el importe fijo de arriba: con cualquier valor mayor que
   # cero, el porcentaje SUSTITUYE al importe fijo dentro del cerrojo de gasto.
@@ -407,20 +409,27 @@ trade:
   # 0,30 · 0,21 · 0,15 · 0,10 · 0,07. La quinta valia la cuarta parte que la
   # primera sin que nadie lo pidiera. Sobre la cartera salen IGUALES.
   #
-  # LO QUE HAY QUE SABER, porque es el precio de tenerlas iguales: con el 30%
-  # solo caben TRES posiciones enteras (0,30 · 0,30 · 0,30 = el 90% de la
-  # cartera jugado a la vez). La cuarta la recorta `fraccion_si_no_llega` con
-  # lo que quede y la quinta no se compra por falta de saldo, aunque
-  # `max_posiciones` diga 5. Con el stop en el 30%, cada posicion arriesga el
-  # 9% de la cartera entera.
+  # LO QUE HAY QUE SABER, porque es el precio de tenerlas iguales: con el 25%
+  # caben TRES posiciones enteras y media. Con 1 SOL salen 0,250 · 0,249 ·
+  # 0,248 · 0,160 · 0,038: las tres primeras iguales, la cuarta con lo que
+  # queda y la quinta ya es calderilla. Las tres primeras juntas son el 75% de
+  # la cartera jugado a la vez.
   #
-  # OJO CON EL SUELO. A partir de cierto saldo el 30% se queda tan pequeno que
-  # los costes fijos --la renta de la cuenta de token y la comision de
-  # prioridad, que no bajan con el tamano-- se comen la operacion. Con un
-  # saldo de 0,1 SOL el 30% son 0,03, que ya es territorio de nacer perdiendo.
-  # Si pasa a menudo, lo que hay que poner es `compra_minima_sol`.
-  fraccion_saldo: 0
-  # IMPORTE EN DOLARES: 10 $ POR OPERACION (23-sep, pedido). MANDA ESTE.
+  # Con el stop en el 18%, cada posicion entera arriesga el 4,5% de la cartera
+  # y las tres juntas el 13,5%.
+  #
+  # OJO CON EL SUELO. Con poco saldo el 25% se queda tan pequeno que los
+  # costes fijos --la renta de la cuenta de token y la comision de prioridad,
+  # que no bajan con el tamano-- se comen la operacion. Con un saldo de 0,1
+  # SOL el 25% son 0,025, que ya es territorio de nacer perdiendo. Si pasa a
+  # menudo, lo que hay que poner es `compra_minima_sol`.
+  fraccion_saldo: 0.25
+  # IMPORTE EN DOLARES: APAGADO (24-sep). Mandaba el desde ayer con 10 $ por
+  # operacion; ahora manda el porcentaje de la cartera de aqui arriba.
+  #
+  # SE DEJA LA CLAVE A CERO y no se borra a proposito: el modo entero sigue en
+  # el codigo, probado, y volver a el es escribir un numero aqui. Lo que NO se
+  # puede hacer es dejar dos con numero -- un test lo impide.
   #
   # Historial del tamano: 0,12 SOL fijo -> 25% -> 0,04 SOL fijo -> 15% -> 30%
   # del saldo libre -> 30% de la cartera -> 10 $ fijos.
@@ -442,11 +451,11 @@ trade:
   # refresco reintenta cada 10 segundos, asi que se arregla solo; si el aviso
   # dura, es que el bot no llega a DexScreener y hay una averia que mirar.
   #
-  # QUE CAMBIA respecto al 30% de la cartera: el tamano ya no crece con las
-  # ganancias ni encoge con las perdidas, y ya no lo limita el saldo. Con 10 $
-  # por compra caben las cinco plazas de sobra (50 $ en juego). Con el stop en
-  # el 30%, cada posicion arriesga 3 $.
-  buy_amount_usd: 10
+  # QUE SE PIERDE AL VOLVER AL PORCENTAJE: con 10 $ fijos la apuesta era la
+  # misma pasara lo que pasara y se sabia de memoria lo que se jugaba. Con el
+  # porcentaje, el tamano crece con las ganancias y encoge con las perdidas
+  # solo, sin tener que acordarse de tocarlo -- que es lo que se buscaba.
+  buy_amount_usd: 0
   # SIN TOPE DURO (19-sep, pedido por Manu). 0 = no se recorta nada.
   #
   # QUE SE PIERDE: era el ultimo freno contra un fallo de calculo. El 12-ago la
