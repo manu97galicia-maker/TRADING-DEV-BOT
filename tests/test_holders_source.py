@@ -226,30 +226,33 @@ def test_el_parte_no_lleva_nada_del_env() -> None:
 # ---------------------------------------------------- la configuracion real
 
 
-def test_las_fuentes_encendidas_son_las_dos_pedidas() -> None:
-    """La curva al 96% y los canales de Telegram, y NADA mas.
+def test_la_curva_es_la_unica_fuente_encendida() -> None:
+    """Solo la curva. Ninguna otra, ni Telegram.
 
-    HISTORIAL DE ESTA LINEA, que ha cambiado tres veces en tres dias:
-    solo titulares -> titulares + canales (21-sep) -> curva al 96% + canales
-    (23-sep, "cambia la estrategia a las que estan al 96% de migracion").
+    HISTORIAL DE ESTA LINEA, que ha cambiado cuatro veces en cuatro dias:
+    solo titulares -> titulares + canales (21-sep) -> curva + canales
+    (23-sep) -> solo la curva (24-sep, "solo esta estrategia").
 
-    TITULARES SE QUEDA APAGADA PERO ENTERA: toda su configuracion sigue en el
-    yaml y sus tests siguen corriendo, asi que volver es cambiar una linea.
+    POR QUE SE QUEDO UNA SOLA. Las dos puertas tenian criterios
+    incomparables: la curva exige punto de la curva, bundle, compradores y
+    concentracion; Telegram no miraba nada -- cualquier direccion pegada en
+    un canal se compraba. Y se repartian las mismas cinco plazas, asi que
+    ningun resultado del dia se podia atribuir a ninguna de las dos.
 
-    Y son estrategias OPUESTAS: titulares compraba monedas recien nacidas
-    apostando a que arrancaran; la curva compra las que ya han recorrido casi
-    todo su camino y estan a punto de migrar. La segunda dispara MUCHO menos
-    a menudo, porque la mayoria de las monedas mueren mucho antes de llegar.
+    CON UNA SOLA SE PUEDE MEDIR. Es lo que hacia falta despues de dos dias
+    cambiando tres parametros al dia sin una sola medicion.
+
+    LAS APAGADAS SIGUEN ENTERAS: su configuracion sigue en el yaml y sus
+    tests siguen corriendo, asi que volver es cambiar una linea.
     """
     f = _filtros()
-    otras = [
+    encendidas = [
         n for n in ("buy_on_dex_paid", "birdeye_trending", "dextools_hotpools",
-                    "holders", "presion", "discord_calls", "gmgn_signals")
+                    "holders", "presion", "discord_calls", "gmgn_signals",
+                    "telegram_calls", "curva_96")
         if (f.get(n) or {}).get("enabled")
     ]
-    assert not otras, f"hay otras fuentes encendidas: {otras}"
-    assert f["curva_96"]["enabled"] is True
-    assert f["telegram_calls"]["enabled"] is True
+    assert encendidas == ["curva_96"], f"fuentes encendidas: {encendidas}"
 
 
 def test_los_dos_numeros_son_los_pedidos() -> None:

@@ -1134,7 +1134,23 @@ filters:
     # senales de compra. Que el bot TE MANDE mensajes es `avisos_telegram`,
     # mas arriba, y sigue en false: "no quiero avisos, solo quiero que se
     # compre y se venda".
-    enabled: true
+    # APAGADA el 24-sep, pedido: "solo esta estrategia" (la curva).
+    #
+    # POR QUE. Esta puerta no miraba NADA. Sus unicas claves son canales,
+    # importes y sufijos: cualquier direccion que alguien pegara en un canal
+    # se compraba si terminaba en "pump" y no habia migrado. Ni curva, ni
+    # bundle, ni compradores, ni concentracion -- mientras la otra fuente
+    # exigia cinco cosas. Dos puertas con criterios incomparables comiendose
+    # las mismas cinco plazas.
+    #
+    # (Desde hoy los frenos contra rugs son comunes a todas las fuentes, asi
+    # que Telegram ya no entraba del todo a ciegas. Aun asi se apaga: lo
+    # pedido es tener UNA estrategia, y con una sola se puede saber si
+    # funciona. Con dos mezcladas, ningun resultado dice nada.)
+    #
+    # Los canales se quedan escritos abajo: volver a encenderla es cambiar
+    # este false.
+    enabled: false
     session_name: moontok_watcher
     # A CERO los tres, igual que el `buy_amount` global: desde el 23-sep manda
     # el 15% del saldo. TIENEN QUE COINCIDIR con el global: el importe de la

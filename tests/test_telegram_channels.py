@@ -135,18 +135,28 @@ def test_el_importe_de_canal_coincide_con_el_global() -> None:
     )
 
 
-def test_los_canales_estan_encendidos_pero_los_avisos_no() -> None:
+def test_los_canales_estan_apagados_y_los_avisos_tambien() -> None:
     """Dos cosas distintas con el mismo nombre, y es facil deshacer una al
     tocar la otra.
 
-    Los CANALES son de donde el bot lee senales de compra. Los AVISOS son los
-    mensajes que el bot te manda, y siguen apagados a peticion: "no quiero
-    avisos, solo quiero que se compre y se venda". El parte de por que no se
-    compra se lee en el log desde el 19-sep, asi que apagarlos no deja a ciegas.
+    Los CANALES son de donde el bot lee senales de compra: apagados el 24-sep
+    ("solo esta estrategia", la curva). Los AVISOS son los mensajes que el bot
+    te manda, y llevan apagados desde antes por otro motivo distinto: "no
+    quiero avisos, solo quiero que se compre y se venda".
+
+    QUE ESTEN LOS DOS EN FALSE NO SIGNIFICA QUE SEAN LO MISMO. El dia que se
+    vuelvan a encender los canales, los avisos tienen que seguir apagados --
+    y al reves. Por eso se comprueban juntos y por separado.
+
+    El resto de la configuracion de Telegram --los cinco canales, los
+    importes, los sufijos-- sigue entera en el yaml: volver a encenderla es
+    cambiar un false.
     """
     cfg = _config()
-    assert cfg["filters"]["telegram_calls"]["enabled"] is True
+    assert cfg["filters"]["telegram_calls"]["enabled"] is False
     assert cfg["avisos_telegram"] is False
+    # Y la configuracion no se ha borrado al apagarla.
+    assert len(cfg["filters"]["telegram_calls"]["channels"]) >= 1
 
 
 def test_solo_monedas_de_pumpfun() -> None:
