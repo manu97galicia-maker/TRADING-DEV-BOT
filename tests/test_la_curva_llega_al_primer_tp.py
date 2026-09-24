@@ -112,18 +112,43 @@ def test_no_se_entra_tan_abajo_que_deje_de_ser_esta_estrategia() -> None:
     cuanto mas abajo se entra, mas se parece a comprar una moneda cualquiera y
     mas de ellas se quedan a medias sin migrar nunca.
 
-    EL SUELO SE BAJO DE 0,90 A 0,85 el 24-sep, al pedirse la entrada al 88,5%.
-    Conviene tener claro lo que es y lo que no: aquel 0,90 lo puse yo al
-    escribir el test, no salio de ninguna medicion ni de ninguna propiedad de
-    la curva. Era un criterio --"por debajo del 90% esto ya no es la curva casi
-    llena"-- y el dueno del bot decidio cruzarlo a sabiendas. Un test no puede
-    vetar una decision; lo que si puede es seguir avisando de cuando se esta
-    yendo lejos.
+    ESTE SUELO HA SIDO TRES NUMEROS Y NINGUNO SALIO DE UNA MEDICION. Empezo
+    en 0,90 --lo puse yo al escribir el test--, bajo a 0,85 el 24-sep al
+    pedirse la entrada al 88,5%, y esa misma noche se cruzo otra vez al
+    pedirse el 84%. Un test no puede vetar una decision del dueno del bot;
+    repetir el mismo veto con un numero cada vez mas bajo tampoco informa de
+    nada.
 
-    Por eso el suelo nuevo tampoco es una ley: es el punto en el que "casi
-    llena" dejaria de significar nada. Al 0,85 faltan mas de 30 SOL para
-    migrar, o sea mas de un tercio de la curva.
+    ASI QUE LA PREGUNTA CAMBIA, y esta vez por un motivo de fondo y no para
+    dejar pasar el cambio. Con la escalera de siete peldanos, entrar abajo
+    era malo porque los peldanos altos se quedaban sin cobrar. Con UN SOLO
+    take profit eso no aplica: lo unico que decide es si el objetivo se puede
+    cobrar dentro de la curva, y entrar mas abajo lo hace MAS facil, no
+    menos. Al 90% habia que llegar al 98,9% de curva para cobrar el +55,13%;
+    al 84% basta con el 94,1%.
+
+    LO QUE SE COMPRUEBA AHORA es eso, que es lo que de verdad puede romperse:
+    que el objetivo quede dentro del recorrido con holgura, y que el umbral
+    siga siendo un punto avanzado de la curva y no una moneda cualquiera. El
+    suelo absoluto se deja en 0,70 como tope de cordura -- por debajo de ahi
+    esto ya no es "la curva casi llena" bajo ninguna lectura.
     """
     c = _cfg()["filters"]["curva_96"]
-    assert c["umbral"] >= 0.85, "por debajo del 85% esto ya no es la curva casi llena"
     assert c["umbral"] < c["tope"] <= 1.0
+    assert c["umbral"] >= 0.70, (
+        "por debajo del 70% esto ya no es comprar una curva avanzada: es "
+        "comprar una moneda cualquiera, y los filtros de esta fuente no "
+        "estan pensados para eso"
+    )
+    # Y LO QUE DE VERDAD DECIDE: que el take profit se cobre dentro de la
+    # curva. Se calcula a que punto de curva equivale el objetivo; si cae por
+    # encima del 100%, no se puede cobrar sin migrar.
+    t = _cfg()["trade"]
+    objetivo = float(t["take_profit_percentage"])
+    vt_compra = 1073e6 - 793.1e6 * c["umbral"]
+    vt_objetivo = vt_compra / (1 + objetivo) ** 0.5
+    curva_objetivo = (1073e6 - vt_objetivo) / 793.1e6
+    assert curva_objetivo < 0.99, (
+        f"para cobrar el +{objetivo * 100:.1f}% habria que llegar al "
+        f"{curva_objetivo * 100:.1f}% de curva: practicamente migrar"
+    )

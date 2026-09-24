@@ -19,10 +19,10 @@ casi toda la curva y están cerca de conseguirlo, porque para llegar ahí han
 tenido que pasar por mucha gente.
 
 ```
-nace ───────────────────────────────▶ 90,0% ──────▶ migra
-                                        ▲
-                                   aquí compra
-                               (le faltan ~25 SOL)
+nace ─────────────────────────────▶ 84,0% ──────────▶ migra
+                                      ▲
+                                 aquí compra
+                            (le faltan ~36 SOL)
 ```
 
 Son pocas al día: la mayoría de las monedas mueren mucho antes de llegar. Que
@@ -36,7 +36,7 @@ Todo esto, sin saltarse nada:
 
 | | |
 |---|---|
-| **Punto de la curva** | entre el 90,0% y el 99,5% (pasado eso ya está migrando) |
+| **Punto de la curva** | entre el 84,0% y el 99,5% (pasado eso ya está migrando) |
 | **Gente de verdad** | mínimo **30 carteras distintas** la han comprado |
 | **Sin bundle** | como mucho 3 carteras en su bloque de nacimiento, y máximo 2 SOL |
 | **Sin concentración** | los mayores tenedores no pueden tener más del 50% |
@@ -122,10 +122,19 @@ Dos escaleras, una detrás de la otra.
 Eso es todo. No hay escalones, no hay moonbag: o la moneda llega al +55% y se
 vende entera, o no llega.
 
-**Por qué el +55% y no otro número.** Entrando al 90% de la curva quedan
-+64,7% hasta migrar. El objetivo entra por 9,6 puntos. Si se pusiera más
-arriba —por ejemplo en 150k, que sería un x2,73— solo se cobraría *después*
-de migrar, y con un único peldaño eso no es cobrar menos: es no cobrar.
+**Lo que de verdad decide si se cobra no es el +55%, sino a qué punto de la
+curva equivale.** La curva acelera, así que el mismo +55% queda más lejos
+cuanto más arriba se compra:
+
+| se compra al | para cobrar hay que llegar al |
+|---|---|
+| **84%** | **94,1% de curva** |
+| 88% | 97,3% |
+| 90% | 98,9% ← casi migrar |
+| 92% | imposible |
+
+Por eso se compra al 84%: el objetivo pasa de pedir *casi migrar* a pedir un
+94%, por donde pasan muchas más monedas.
 
 ### Lo que cuesta tener un solo objetivo
 
