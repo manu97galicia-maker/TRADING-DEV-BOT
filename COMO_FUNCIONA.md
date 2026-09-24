@@ -19,10 +19,10 @@ casi toda la curva y están cerca de conseguirlo, porque para llegar ahí han
 tenido que pasar por mucha gente.
 
 ```
-nace ──────────────────────────────▶ 87,0% ─────────▶ migra
-                                       ▲
-                                  aquí compra
-                             (le faltan ~31 SOL)
+nace ────────────────────────────────▶ 93,0% ───▶ migra
+                                         ▲
+                                    aquí compra
+                                (le faltan ~19 SOL)
 ```
 
 Son pocas al día: la mayoría de las monedas mueren mucho antes de llegar. Que
@@ -36,7 +36,7 @@ Todo esto, sin saltarse nada:
 
 | | |
 |---|---|
-| **Punto de la curva** | entre el 87,0% y el 99,5% (pasado eso ya está migrando) |
+| **Punto de la curva** | entre el 93,0% y el 99,5% (pasado eso ya está migrando) |
 | **Gente de verdad** | mínimo **30 carteras distintas** la han comprado |
 | **Sin bundle** | como mucho 3 carteras en su bloque de nacimiento, y máximo 2 SOL |
 | **Sin concentración** | los mayores tenedores no pueden tener más del 50% |
@@ -89,9 +89,16 @@ Dos escaleras, una detrás de la otra.
 | +55% | 40% | 55% |
 | +100% | 20% | 75% |
 
-Los dos primeros caben dentro de la curva. **El de +100% no**: entrando al
-87,0% quedan +87,2% hasta migrar, así que ese peldaño solo cobra si la moneda
-migra y **sigue subiendo** ya fuera de pump.fun.
+**Solo el primero cabe dentro de la curva.** Entrando al 93,0% quedan +43,6%
+hasta migrar, y el segundo peldaño está en +55%: del segundo en adelante, la
+moneda tiene que haber migrado **y seguir subiendo** ya fuera de pump.fun.
+
+> Eso tiene una consecuencia que conviene entender antes de mirar los números:
+> una moneda que llega a migrar y se muere ahí solo deja **+8%**, porque el 85%
+> de la posición sale por el suelo (+5%). Para que la estrategia no pierda
+> dinero harían falta **3 aciertos de cada 4**. Está puesto así a petición;
+> la forma de arreglarlo sin tocar la entrada es bajar el segundo peldaño por
+> debajo del +43,6%.
 
 ### Y a partir de ahí, cada venta un 35% más cara que la anterior
 

@@ -202,15 +202,23 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     los otros cinco tienen su propio test en test_escalera_actual.py.
 
     EL GRUESO SE COBRA EN MEDIO: 15% - 40% - 20%. El segundo peldano es el
-    que de verdad manda, y es el unico de los tres que cae holgadamente
-    dentro de la curva (+55% contra un recorrido de +87,2% hasta migrar).
+    que de verdad manda: vende el 40% de la posicion.
 
-    EL TERCERO YA NO CABE EN LA CURVA. Al +100% la moneda tiene que haber
-    migrado: entrando al 87,0% quedan +87,2% hasta migrar, asi que el tercer
-    peldano esta 4,9 puntos por encima de ese punto. Esto esta puesto a
-    sabiendas --queda la cuenta entera en el yaml-- pero conviene que un
-    test lo diga, porque es lo que decide cuanto rinde el caso bueno mas
-    frecuente: la moneda que llega a migrar y se muere ahi.
+    Y AL 93,0% DE CURVA SE QUEDA FUERA. Quedan +43,6% hasta migrar y el
+    peldano esta en +55%, o sea 11,4 puntos por encima del punto de
+    migracion. De los ocho peldanos solo el PRIMERO cae dentro de la curva,
+    asi que la moneda que migra y se muere deja +8,0% en vez de +39,8% y
+    hacen falta un 76% de aciertos para no perder en vez de un 40%.
+
+    ESTE TEST DEJO DE SER UN GUARDIAN Y PASO A SER UN TESTIGO, y conviene
+    saber la diferencia. Hasta la tarde del 24-sep exigia que el segundo
+    peldano cupiera en la curva --y se puso rojo al subir la entrada al 93%,
+    que era exactamente su trabajo--. La entrada se subio igual, a
+    proposito. Lo que hace ahora es dejar ESCRITO cuantos peldanos caben, de
+    modo que cualquier cambio futuro en la entrada o en la escalera lo mueva
+    y haya que mirarlo. Si vuelve a caber mas de uno, este test se pone rojo
+    y lo que hay que hacer es rehacer las cuentas del yaml, no subir el
+    numero de aqui.
     """
     tiers = [t for t in _tiers() if t.gain <= 1.5]
     assert len(tiers) == 3, f"tres peldanos de cerca: {tiers}"
@@ -220,9 +228,20 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     umbral = yaml.safe_load(CONFIG.read_text())["filters"]["curva_96"]["umbral"]
     vt = lambda a: 1073e6 - 793.1e6 * a  # noqa: E731
     recorrido = (vt(umbral) / vt(1.0)) ** 2 - 1
-    assert tiers[1].gain < recorrido, "el segundo peldano tiene que caber en la curva"
-    assert tiers[2].gain > recorrido, (
-        "si el tercero vuelve a caber en la curva, la cuenta del yaml esta vieja"
+    dentro = [t for t in _tiers() if t.gain <= recorrido]
+    assert len(dentro) == 1, (
+        f"al {umbral * 100:.1f}% de curva cabe UN peldano, no {len(dentro)}: "
+        f"si esto cambia, las cuentas del yaml hay que rehacerlas"
+    )
+    assert dentro[0].gain == 0.25
+    # Y lo que eso significa, escrito en numeros para que no se pierda:
+    # el 85% de la posicion sale por el suelo, que tras el TP1 esta en
+    # compra + margen.
+    margen = float(_trade()["margen_stop_tras_tp"])
+    resto = 1 - dentro[0].sell
+    bruto = dentro[0].sell * (1 + dentro[0].gain) + resto * (1 + margen)
+    assert abs(bruto - 1.08) < 0.005, (
+        f"la que migra y muere deja {(bruto - 1) * 100:.1f}%, no +8,0%"
     )
 
 
