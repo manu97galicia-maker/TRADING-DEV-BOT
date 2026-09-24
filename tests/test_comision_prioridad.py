@@ -64,10 +64,36 @@ def _sol(fixed: int, unidades: int) -> float:
 
 
 def test_comprar_cuesta_lo_pedido() -> None:
-    """~0,001 SOL, pedido por Manu el 19-sep."""
+    """~0,01 SOL (24-sep, pedido: "sube el gas de las compras para que sea
+    mas rapido"). Historial: ~0,001 (19-sep) -> ~0,01.
+
+    Se pidio 0,03 y se bajo a 0,01 al ver la cuenta: a 0,03 el gas se llevaba
+    el 20,6% de la primera compra y el 40,3% de la quinta.
+    """
     c = _cfg()
     coste = _sol(c["priority_fees"]["fixed_amount_compra"], c["compute_units"]["buy"])
-    assert 0.0008 < coste < 0.0015, f"la compra cuesta {coste:.5f} SOL"
+    assert 0.009 < coste < 0.011, f"la compra cuesta {coste:.5f} SOL"
+
+
+def test_el_tope_no_recorta_la_comision_en_silencio() -> None:
+    """EL NO-OP QUE YA PASO UNA VEZ. La comision de compra va por
+    `priority_fee_override`, que no pasa por el calculo normal; el bot le
+    aplica el tope a mano al arrancar. O sea que subir la comision sin subir
+    el `hard_cap` NO HACE NADA, y el unico aviso es un `logger.warning`
+    enterrado entre miles de lineas.
+
+    Desde el movil eso se lee como "he subido el gas y sigue igual de lento".
+    """
+    c = _cfg()["priority_fees"]
+    assert c["fixed_amount_compra"] <= c["hard_cap"], (
+        f"el tope ({c['hard_cap']}) recortaria la comision de compra "
+        f"({c['fixed_amount_compra']}) sin que se note"
+    )
+    # Y el tope no puede ser el valor de trabajo: existe para cazar una errata
+    # de un cero de mas. Si coinciden, deja de proteger de nada.
+    assert c["hard_cap"] > c["fixed_amount_compra"], (
+        "el tope tiene que dejar margen, o no es un tope"
+    )
 
 
 def test_lo_que_se_va_en_comisiones_por_operacion() -> None:
@@ -106,13 +132,51 @@ def test_lo_que_se_va_en_comisiones_por_operacion() -> None:
     assert posicion > 0
 
     peor = (compra + venta * peldanos) / posicion
-    assert peor < 0.08, (
+    assert peor < 0.09, (
         f"ida y vuelta con la escalera entera se lleva el {peor * 100:.1f}% "
         f"de una posicion de {posicion} SOL"
     )
     # Y el caso normal, que es el que de verdad se repite.
     normal = (compra + venta * 3) / posicion
-    assert normal < 0.05, f"una operacion tipica se deja el {normal * 100:.1f}%"
+    assert normal < 0.08, f"una operacion tipica se deja el {normal * 100:.1f}%"
+
+
+def test_el_gas_se_come_el_primer_peldano() -> None:
+    """UN HECHO INCOMODO, apuntado a proposito para que no se "descubra"
+    dentro de un mes como si fuera un fallo.
+
+    Con la comision de compra rapida (0,01 SOL, 24-sep), una operacion normal
+    se deja un 7,1% de la posicion en gas. El primer peldano cobra el 20% a
+    un +30%, o sea un 6,0% de la posicion.
+
+    COBRAR EL TP1 NO CUBRE EL GAS. No es un fallo: es el precio de entrar
+    rapido, y se acepto con la cuenta delante. Lo que significa en la
+    practica es que el primer peldano ya no es "ganar algo", es solo subir el
+    suelo -- el dinero esta del segundo en adelante.
+
+    SI ESTO MOLESTA hay dos palancas, y ninguna es bajar el gas otra vez:
+    que el TP1 venda mas (el 25% de un +30% ya cubriria), o posiciones mas
+    grandes, porque la comision es FIJA y pesa el doble en una posicion
+    mitad de grande.
+
+    El test no lo impide --es una decision tomada-- pero exige que el
+    desajuste no CREZCA: si el gas llega a doblar lo que paga el TP1, la
+    estrategia deja de tener sentido y hay que rehacer los numeros.
+    """
+    from modelo_tamano import tamanos
+
+    c = _cfg()
+    t = c["trade"]
+    compra = _sol(c["priority_fees"]["fixed_amount_compra"], c["compute_units"]["buy"])
+    venta = _sol(c["priority_fees"]["fixed_amount"], c["compute_units"]["sell"])
+    posicion = tamanos(1.0)[0]
+    gas = (compra + venta * 3) / posicion
+    paga_tp1 = t["take_profit_percentage"] * t["take_profit_sell_percentage"]
+
+    assert gas < paga_tp1 * 2, (
+        f"el gas ({gas * 100:.1f}% de la posicion) dobla lo que paga el "
+        f"primer peldano ({paga_tp1 * 100:.1f}%): la escalera no se sostiene"
+    )
 
 
 def test_vender_es_mas_barato_que_comprar() -> None:

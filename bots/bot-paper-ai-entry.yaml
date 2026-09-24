@@ -523,8 +523,8 @@ priority_fees:
   #
   #   coste_SOL = fixed_amount * compute_units / 1e15
   #
-  # Con 140.000 CU (comprar):  7.000.000 -> ~0,00098 SOL  (~0,22 $)
-  # Con 120.000 CU (vender):   1.000.000 -> ~0,00012 SOL  (~0,03 $)
+  # Con 140.000 CU (comprar): 71.428.571 -> ~0,01000 SOL  (~1,15 $)
+  # Con 120.000 CU (vender):   1.000.000 -> ~0,00012 SOL  (~0,01 $)
   #
   # El comentario anterior decia "fixed_amount / 1e10" y daba el numero
   # aproximado, pero escondia que depende de las CU.
@@ -535,19 +535,46 @@ priority_fees:
   # ventas, el 7% de una posicion de 0,12 SOL. Comprar tarde cuesta mucho mas
   # que vender un bloque tarde, asi que la prisa se paga donde hace falta.
   fixed_amount: 1000000
-  # LA DE COMPRAR (19-sep, pedida por Manu: ~0,001 SOL). Si se quita esta
-  # linea, comprar y vender vuelven a pagar lo mismo.
+  # LA DE COMPRAR: ~0,01 SOL (24-sep, pedido: "sube el gas de las compras
+  # para que sea mas rapido"). Historial: ~0,001 (19-sep) -> ~0,01.
+  # Si se quita esta linea, comprar y vender vuelven a pagar lo mismo.
+  #
+  # LO QUE CUESTA, con el 15% del saldo libre y 1 SOL de saldo:
+  #
+  #   compra      % de la 1a (0,1455)   % de la 5a (0,0745)
+  #   0,00098            0,7%                  1,3%
+  #   0,01000            6,9%                 13,4%   <- aqui
+  #   0,03000           20,6%                 40,3%
+  #
+  # El 0,03 que se pidio primero se descarto con esta misma tabla: a ese
+  # precio el primer peldano (+30%) no cubre ni el gas de entrar y salir.
+  # Con 0,01 ya es caro --en la quinta compra se lleva uno de cada siete
+  # euros-- pero cabe dentro de la escalera.
+  #
+  # SI LAS POSICIONES SE HACEN PEQUENAS, ESTO APRIETA MAS. La comision es
+  # FIJA: no baja con el tamano. El dia que el saldo sea la mitad, este mismo
+  # numero pesara el doble, y lo que hay que mirar entonces es
+  # `compra_minima_sol`, no seguir subiendo la prisa.
   #
   # OJO SI SE TOCA: esta comision va por `priority_fee_override`, que NO pasa
   # por el calculo normal y por tanto NO lo recortaria el `hard_cap`. El bot lo
   # recorta a mano al arrancar para que el tope siga siendo un tope, pero eso
   # significa que subir esto sin subir el `hard_cap` no hace nada.
-  fixed_amount_compra: 7000000
+  fixed_amount_compra: 71428571
   extra_percentage: 0.0
   # EL TOPE. Estaba en 1.000.000, el mismo valor que `fixed_amount`, asi que
   # cualquier intento de subir la comision se recortaba solo y en silencio
   # (con un `logger.warning` enterrado como unica pista).
-  hard_cap: 10000000
+  #
+  # SUBE CON LA COMISION DE COMPRA (24-sep) porque si no la recortaria: el
+  # bot aplica este tope a mano a `fixed_amount_compra`, asi que subir la
+  # comision sin subir el tope no hace absolutamente nada -- y el unico aviso
+  # seria una linea de warning en el log.
+  #
+  # Se deja un poco por encima y no igual: el tope existe para cazar una
+  # errata de un cero de mas (712 millones en vez de 71), no para ser el
+  # valor de trabajo. Si algun dia coinciden, deja de proteger de nada.
+  hard_cap: 75000000
 
 retries:
   max_attempts: 2
