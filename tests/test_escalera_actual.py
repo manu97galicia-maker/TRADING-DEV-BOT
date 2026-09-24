@@ -23,31 +23,52 @@ def _peldanos() -> list[tuple[float, float]]:
         (t["take_profit_percentage"], t["take_profit_sell_percentage"]),
         (t["tp2_gain"], t["tp2_sell"]),
         (t["tp3_gain"], t["tp3_sell"]),
-        (t["tp4_gain"], t["tp4_sell"]),
-        (t["tp5_gain"], t["tp5_sell"]),
-        (t["tp6_gain"], t["tp6_sell"]),
+        # CON `.get`, no con corchetes: desde el 24-sep los peldanos lejanos
+        # van por market cap y estas claves ya NO estan en el yaml. Con
+        # corchetes esto reventaba con KeyError, que es un rojo que no dice
+        # que ha cambiado sino solo que falta una clave.
+        (t.get("tp4_gain"), t.get("tp4_sell")),
+        (t.get("tp5_gain"), t.get("tp5_sell")),
+        (t.get("tp6_gain"), t.get("tp6_sell")),
         *((e["gain"], e["sell"]) for e in t.get("tp_extra") or []),
     ]
     # SE ACEPTA `v == 0`, igual que `build_tiers`. Este helper filtraba
     # `v > 0` y con el TP1 a 0% se dejaba fuera el primer escalon, asi que los
     # tests miraban una escalera distinta de la que corre. Un escalon que no
     # vende SI existe: dispara la subida del stop.
-    return [(g, v) for g, v in pares if g > 0 and v >= 0]
+    return [(g, v) for g, v in pares if g is not None and v is not None and g > 0 and v >= 0]
 
 
 def test_los_peldanos_son_los_pedidos() -> None:
-    assert _peldanos() == [
-        (0.15, 0.20),  # 24-sep: el primero baja a +15% (ver abajo)
-        (0.50, 0.199),
-        (0.80, 0.182),  # 23-sep: pierde 12 puntos que suben a los lejanos
-        (1.50, 0.101),  # x2,5
-        (2.30, 0.085),  # x3,3
-        (4.00, 0.069),  # x5
-        (6.00, 0.056),  # x7
-        (9.00, 0.040),  # x10
-        (14.00, 0.024),  # x15
-        (19.00, 0.024),  # x20
+    """LA ESCALERA ENTERA, fijada para que cualquier cambio sea deliberado.
+
+    Desde el 24-sep son TRES por porcentaje y el resto por MARKET CAP
+    (`mc_take_profit_tiers`). Los peldanos lejanos por porcentaje --x2,5 a
+    x20-- se quitaron enteros: un x10 sobre la entrada significa cosas
+    distintas segun donde se entre, mientras que 100k es 100k siempre.
+    """
+    assert _peldanos() == [(0.25, 0.15), (0.50, 0.30), (0.85, 0.33)]
+
+
+def test_los_escalones_de_market_cap_son_los_pedidos() -> None:
+    """De 100k a 500k, repartiendo el 19% que queda tras los tres peldanos.
+
+    VAN EN PROGRESION GEOMETRICA y no de 100 en 100 mil: de 100k a 150k hay
+    un 50% de subida y de 400k a 500k solo un 25%. A partes iguales, casi
+    todos los escalones caerian en el tramo mas facil y la moneda que de
+    verdad vuela se vendera entera demasiado pronto.
+    """
+    mc = _trade()["mc_take_profit_tiers"]
+    assert [(d["target_mc"], d["sell"]) for d in mc] == [
+        (100_000, 0.06), (150_000, 0.05), (225_000, 0.04),
+        (335_000, 0.025), (500_000, 0.015),
     ]
+    # Ascendentes, o el bot los cobraria en desorden.
+    objetivos = [d["target_mc"] for d in mc]
+    assert objetivos == sorted(objetivos)
+    # Y de mas a menos: llegar a 500k es mucho menos probable que a 100k.
+    ventas = [d["sell"] for d in mc]
+    assert ventas == sorted(ventas, reverse=True)
 
 
 def test_las_ganancias_van_en_orden_creciente() -> None:
@@ -62,9 +83,17 @@ def test_nunca_se_vende_mas_del_100() -> None:
 
 
 def test_queda_moonbag_corriendo() -> None:
-    """Ese 2% es el que Manu vende a mano: el bot no lo toca."""
-    vendido = sum(v for _, v in _peldanos())
-    assert round(1 - vendido, 6) == 0.02
+    """Ese 3% es el que Manu vende a mano: el bot no lo toca.
+
+    HAY QUE SUMAR LAS DOS ESCALERAS, y es el error facil desde el 24-sep. Los
+    peldanos de porcentaje venden el 78% y los escalones de market cap el
+    19%. Mirando solo los primeros saldria un moonbag del 22%, que no es el
+    moonbag: es lo que aun no se ha repartido.
+    """
+    t = _trade()
+    por_ciento = sum(v for _, v in _peldanos())
+    por_mc = sum(d["sell"] for d in t.get("mc_take_profit_tiers") or [])
+    assert round(1 - por_ciento - por_mc, 6) == 0.03
 
 
 def test_el_stop_sube_a_la_entrada_tras_el_primer_tp() -> None:
@@ -76,33 +105,6 @@ def test_no_se_cierra_ninguna_posicion_por_reloj() -> None:
     """0 = sin reloj. Con 7200 los peldanos de x10 a x20 no se disparaban
     nunca: el reloj vendia antes de que la moneda llegara."""
     assert _trade()["max_hold_time"] == 0
-
-
-def test_los_peldanos_lejanos_cobran_una_salida_de_verdad() -> None:
-    """Los de arriba son los que cobran cuando una sale de verdad."""
-    lejanos = [(g, v) for g, v in _peldanos() if g >= 1.5]
-    assert len(lejanos) == 7
-    assert round(sum(v for _, v in lejanos), 6) == 0.399
-
-
-def test_la_escalera_termina_en_x20() -> None:
-    """Lo pedido: el resto repartido en escalones HASTA x20.
-
-    Antes subia hasta x100. La consecuencia de cortar ahi hay que tenerla
-    escrita: una moneda que pase de x20 ya no tiene peldanos por encima, y
-    lo unico que sigue dentro es el 2% del moonbag.
-    """
-    ganancias = [g for g, _ in _peldanos()]
-    assert max(ganancias) == 19.00
-
-
-def test_los_peldanos_altos_tienen_tiempo_de_llegar() -> None:
-    """Si vuelve a ponerse un reloj corto, los peldanos de x10 a x20 dejan
-    de tener sentido y este test avisa."""
-    t = _trade()
-    hay_altos = any(g >= 9.0 for g, _ in _peldanos())
-    assert hay_altos
-    assert t["max_hold_time"] == 0 or t["max_hold_time"] >= 43200
 
 
 def test_el_abandono_no_depende_del_reloj_de_posicion() -> None:
@@ -145,39 +147,39 @@ def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:
 
 
 def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
-    """23-sep: 20% al +30%, 19,9% al +50% y 18,2% al +80%.
+    """24-sep: 15% al +25%, 30% al +50% y 33% al +85%.
 
-    El primer peldano deja de ser un disparador puro y pasa a cobrar. Los 20
-    puntos que se lleva salen EN PROPORCION de todos los demas --elegido asi
-    al preguntarlo-- y ademas el de +80% cede 12 puntos a los lejanos.
+    Los tres se cobran mientras la moneda todavia se mide en porcentaje sobre
+    la entrada. De ahi en adelante manda el market cap.
+
+    EL TERCERO SE PIDIO COMO "el 60% de lo que queda". Aqui va 0,33 porque la
+    escalera vende fraccion de la COMPRA ORIGINAL: tras el 15% y el 30% queda
+    un 55%, y el 60% de ese 55% es el 33% del original.
     """
     cerca = [(g, v) for g, v in _peldanos() if g < 1.5]
-    assert cerca == [(0.15, 0.20), (0.50, 0.199), (0.80, 0.182)]
-    assert round(sum(v for _, v in cerca), 6) == 0.581
+    assert cerca == [(0.25, 0.15), (0.50, 0.30), (0.85, 0.33)]
+    assert round(sum(v for _, v in cerca), 6) == 0.78
 
 
-def test_el_tercer_peldano_sigue_siendo_casi_la_mitad_de_lo_que_queda() -> None:
+def test_el_tercer_peldano_vende_el_60_de_lo_que_queda() -> None:
     """LA TRADUCCION QUE SE PUEDE EQUIVOCAR, y por eso esta fijada aqui.
 
-    El tercer peldano nacio de "al +80% vende la mitad de lo que queda". El bot
-    no sabe vender fracciones de lo que queda: TODOS sus peldanos son fraccion
-    de la compra ORIGINAL. Entonces quedaba el 55% y la mitad era 27,5%. Poner
-    0.50 ahi venderia el 50% de la compra, casi el doble de lo pedido -- ese es
-    el error que este test existe para impedir.
+    Se pidio "al +85% vende el 60% de lo que queda". El bot NO sabe vender
+    fracciones de lo que queda: todos sus peldanos son fraccion de la compra
+    ORIGINAL. Tras el 15% y el 30% queda un 55%, y el 60% de ese 55% es el
+    33% del original.
 
-    YA NO ES LA MITAD, y es deliberado. El 19-sep se repartieron diez puntos
-    del primer peldano; el 23-sep el primero paso a cobrar un 20% y al tercero
-    se le quitaron doce puntos mas para subirlos a los lejanos. A esa altura
-    queda un 60,1% y el tercero vende el 18,2%, o sea el 30,3% de lo que
-    queda.
+    PONER 0.60 AHI seria vender el 60% de la compra entera, casi el doble de
+    lo pedido. Ese es exactamente el error que este test existe para impedir,
+    y ya se cometio una vez con el peldano de "la mitad de lo que queda".
 
-    Lo que este test sigue impidiendo es el error de traduccion original:
-    poner 0.50 ahi creyendo que es "la mitad de lo que queda" venderia el 50%
-    de la compra entera, mas del triple de lo que toca.
+    SI SE CAMBIAN TP1 O TP2 HAY QUE REHACER ESTA CUENTA A MANO: el 0,33 no se
+    recalcula solo, y este test se pondra rojo para recordarlo.
     """
     cerca = _peldanos()[:3]
     queda_antes_del_tercero = 1 - cerca[0][1] - cerca[1][1]
     proporcion = cerca[2][1] / queda_antes_del_tercero
-    assert 0.25 <= proporcion <= 0.35, (
-        f"el tercer peldano vende el {proporcion * 100:.1f}% de lo que queda"
+    assert abs(proporcion - 0.60) < 0.01, (
+        f"el tercer peldano vende el {proporcion * 100:.1f}% de lo que queda, "
+        "y se pidio el 60%"
     )

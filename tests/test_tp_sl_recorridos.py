@@ -164,28 +164,31 @@ def test_un_rug_corta_en_el_stop_y_no_mas_abajo() -> None:
 def test_tocar_el_tp1_cobra_y_asegura() -> None:
     """EL RECORRIDO QUE RESUME LA ESCALERA.
 
-    Tocar el primer objetivo hace DOS cosas: cobra un 20% y sube el suelo a
-    compra +12%, asi que la operacion pasa a ser ganadora pase lo que pase
-    despues.
+    Tocar el primer objetivo hace DOS cosas: cobra su fraccion y sube el
+    suelo a compra +5%, asi que la operacion pasa a ser ganadora pase lo que
+    pase despues.
 
-    Del 19 al 23-sep el TP1 no vendia nada --era solo un disparador-- y el
-    23-sep paso a +30% cobrando un 20%, pedido.
-
-    La moneda sube a +30%, se da la vuelta y cae. Cierra sobre la compra.
+    Historial del TP1: no vendia nada (19-sep) -> +30%/20% -> +15%/20% ->
+    +25%/15% (24-sep). Lo que no cambia en ninguna version es la segunda
+    parte, que es la que de verdad importa.
     """
-    # Primero: toca el TP1 y se queda ahi. Cobra el 20% y el suelo ya esta
-    # en +12%.
-    r = simula([1.0, 1.20, 1.31])
+    # LOS PRECIOS SALEN DE LOS PELDANOS, no escritos a mano. Estaban fijos
+    # en 1,20 y 1,31 contra un TP1 de +30%; al moverse el peldano el test
+    # habria seguido en verde midiendo un recorrido que ya no toca nada.
+    t1 = _tiers()[0]
+    justo_debajo, justo_encima = 1 + t1.gain - 0.05, 1 + t1.gain + 0.01
+
+    r = simula([1.0, justo_debajo, justo_encima])
     assert r["peldanos"] == [1]
     assert not r["paro_por_stop"]
-    assert round(r["restante_pct"], 6) == 0.80, "el TP1 cobra un 20%"
+    assert round(r["restante_pct"], 6) == round(1 - t1.sell, 6)
     assert round(r["suelo_final"], 4) == round(1 + _margen(), 4)
 
     # Y ahora la vuelta atras: el stop la cierra en +12%, en verde. Aqui
     # `restante` SI acaba en 0 porque `vender_todo_en_stop` se lleva la
     # posicion entera -- que es lo correcto.
     # Cayendo justo hasta el suelo, se cobra el +12% clavado.
-    r = simula([1.0, 1.20, 1.31, 1.15, 1 + _margen()])
+    r = simula([1.0, justo_debajo, justo_encima, 1.05, 1 + _margen()])
     assert r["paro_por_stop"]
     # Ya no es el margen clavado: un 20% se cobro a +30%, asi que el conjunto
     # sale MEJOR que el suelo. Eso es justo lo que se gana al cobrar arriba.
@@ -194,13 +197,13 @@ def test_tocar_el_tp1_cobra_y_asegura() -> None:
     # Y si el precio se salta el suelo entre dos lecturas, se vende a lo que
     # haya: sigue siendo verde, pero MENOS del 12%. El suelo es una orden, no
     # una garantia de precio -- en una moneda que cae a plomo hay hueco.
-    r = simula([1.0, 1.20, 1.31, 1.15, 1 + _margen() / 2])
+    r = simula([1.0, justo_debajo, justo_encima, 1.05, 1 + _margen() / 2])
     assert r["paro_por_stop"]
-    assert 0 < r["resultado"] < _margen() + 0.20 * 0.30
+    assert 0 < r["resultado"] < _margen() + t1.sell * t1.gain
 
 
 def test_los_tres_peldanos_de_cerca_y_vuelta_atras() -> None:
-    """Llega al +80%, cobra el 58,1% de la posicion y el suelo sube.
+    """Llega al tercer peldano, cobra el 78% de la posicion y el suelo sube.
 
     El trinquete va un peldano por detras Y con el margen: cobrado el tercero,
     el suelo sube al precio del SEGUNDO (+50%) mas el margen. Deja sitio para
@@ -210,21 +213,30 @@ def test_los_tres_peldanos_de_cerca_y_vuelta_atras() -> None:
     al 5% y con el recorrido fijo la moneda dejaba de tocar el suelo, asi que
     el test habria seguido en verde midiendo otra cosa.
     """
-    suelo = 1.50 * (1 + _margen())
-    r = simula([1.0, 1.31, 1.51, 1.81, suelo + 0.02, suelo - 0.01])
+    t = _tiers()
+    # Todos los precios salen de los peldanos: se toca cada uno por poco y
+    # despues se cae al suelo que deja el tercero (el precio del SEGUNDO mas
+    # el margen).
+    toques = [1 + x.gain + 0.01 for x in t[:3]]
+    suelo = (1 + t[1].gain) * (1 + _margen())
+    r = simula([1.0, *toques, suelo + 0.02, suelo - 0.01])
     assert r["peldanos"] == [1, 2, 3]
     assert r["paro_por_stop"]
     assert round(r["suelo_final"], 4) == round(suelo, 4)
-    assert r["resultado"] > 0.5
+    assert r["resultado"] > 0.4
 
 
 def test_un_salto_de_golpe_cobra_todos_los_peldanos_que_deja_atras() -> None:
     """Si el precio salta a x7 en un tick, no se pierden los siete de abajo:
     se venden todos, a x7, que es el precio al que se esta vendiendo."""
+    t = _tiers()
     r = simula([1.0, 7.0])
-    assert r["peldanos"] == [1, 2, 3, 4, 5, 6, 7]
+    # Los que haya, no un numero escrito a mano: desde el 24-sep la escalera
+    # de porcentaje son TRES y el resto va por market cap, que no se mide en
+    # multiplos del precio de entrada y no aparece en esta simulacion.
+    assert r["peldanos"] == list(range(1, len(t) + 1))
     assert not r["paro_por_stop"]
-    assert round(r["restante_pct"], 6) == 0.108
+    assert round(r["restante_pct"], 6) == round(1 - sum(x.sell for x in t), 6)
 
 
 def test_ni_un_x100_toca_el_moonbag() -> None:
@@ -254,7 +266,10 @@ def test_el_moonbag_solo_sobrevive_si_no_salta_el_stop() -> None:
     tiers = _tiers()
     r = simula([1.0, *[ENTRADA * (1 + t.gain) for t in tiers]])
     assert not r["paro_por_stop"]
-    assert round(r["restante_pct"], 6) == 0.02
+    # Lo que queda tras la escalera de PORCENTAJE. No es el moonbag final
+    # (3%): el 19% de en medio lo reparten los escalones de market cap, que
+    # esta simulacion no recorre porque van en dolares y no en multiplos.
+    assert round(r["restante_pct"], 6) == round(1 - sum(x.sell for x in tiers), 6)
 
 
 # -------------------------------------------------------------- el trinquete

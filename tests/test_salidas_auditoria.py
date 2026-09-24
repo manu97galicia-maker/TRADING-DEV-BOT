@@ -46,11 +46,21 @@ def _vendido_hasta(multiplo: float) -> float:
 
 
 def test_una_ganancia_de_9_significa_x10_y_no_mas_9_por_ciento() -> None:
-    """El error que habria sido caro: con el formato mal leido, el peldaño
-    de x10 se habria disparado a +9% y habria vendido casi todo enseguida.
+    """El error que habria sido caro: con el formato mal leido, un peldaño de
+    "gain: 9" se habria disparado a +9% y habria vendido casi todo enseguida.
+
+    DESDE EL 24-SEP NO HAY PELDANOS LEJANOS POR PORCENTAJE --de x2,5 en
+    adelante manda el market cap-- asi que ya no queda ninguno con el formato
+    peligroso. El test se queda porque el formato SIGUE siendo el mismo para
+    los tres que hay: si alguien vuelve a anadir uno lejano y escribe "9"
+    creyendo que es un 9%, esto lo caza.
     """
-    assert _vendido_hasta(1.09) == 0.0
-    assert _vendido_hasta(10.0) > _vendido_hasta(7.0)
+    assert _vendido_hasta(1.09) == 0.0, (
+        "a +9% no se vende nada: el primer peldano esta en +25%"
+    )
+    # Y un multiplo enorme no vende mas que el ultimo peldano de porcentaje:
+    # de ahi en adelante los escalones son de market cap y no se ven aqui.
+    assert _vendido_hasta(50.0) == _vendido_hasta(2.0)
 
 
 def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
@@ -80,19 +90,16 @@ def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
 
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
-    # Lo VENDIDO ACUMULADO al llegar a cada multiplo (23-sep: el TP1 pasa a
-    # +30% y cobra un 20%, y el de +80% cede doce puntos a los lejanos).
+    # Lo VENDIDO ACUMULADO al llegar a cada multiplo. Desde el 24-sep solo
+    # hay TRES peldanos por porcentaje: +25%, +50% y +85%. De ahi en adelante
+    # la escalera sigue por market cap (100k a 500k), que no se mide en
+    # multiplos del precio de entrada y por eso no aparece en esta tabla.
     esperado = {
-        1.30: 0.20,   # el TP1 ya cobra
-        1.50: 0.399,
-        1.80: 0.581,
-        2.50: 0.682,  # x2,5
-        3.30: 0.767,  # x3,3
-        5.0: 0.836,
-        7.0: 0.892,
-        10.0: 0.932,
-        15.0: 0.956,
-        20.0: 0.98,   # el ultimo peldano: solo queda el moonbag
+        1.24: 0.0,    # justo por debajo del primero
+        1.25: 0.15,
+        1.50: 0.45,
+        1.85: 0.78,   # los tres cobrados; el resto va por market cap
+        20.0: 0.78,   # por mucho que suba, aqui ya no queda nada que cobrar
     }
     for multiplo, acumulado in esperado.items():
         assert round(_vendido_hasta(multiplo), 6) == acumulado, f"fallo en x{multiplo}"

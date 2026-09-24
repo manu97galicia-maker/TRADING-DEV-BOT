@@ -71,20 +71,19 @@ def test_el_tp1_de_la_config_vende_y_asegura() -> None:
     """El primer peldano hace DOS cosas, y la segunda es la que importa.
 
     Historial: del 19 al 23-sep no vendia nada, solo subia el suelo; el
-    23-sep paso a +30% cobrando un 20%; el 24-sep bajo a +15%.
+    23-sep paso a +30% cobrando un 20%; el 24-sep a +15%/20% y luego a
+    +25%/15%.
 
-    POR QUE BAJO. El TP1 no esta ahi para cobrar --vendiendo el 20% de un
-    +15% se lleva un 3% de la posicion, menos que el gas-- sino para APAGAR
-    EL STOP: en cuanto se toca, el suelo sube a compra +5% y la operacion ya
-    no puede acabar en perdida. Cuanto antes se toque, mas perdedoras se
-    convierten en ganadoras pequenas.
+    LO QUE NO CAMBIA EN NINGUNA VERSION: en cuanto se toca, el suelo sube a
+    compra +5% y la operacion ya no puede acabar en perdida. Ese es el
+    trabajo principal del primer peldano; lo que cobra es secundario.
 
     Los dos numeros salen del yaml a proposito: ya paso que un test fijara el
     peldano a mano y se quedara verde midiendo el de dos versiones atras.
     """
     t = _trade()
-    assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 0.20
-    assert _tiers()[0].gain == t["take_profit_percentage"] == 0.15
+    assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 0.15
+    assert _tiers()[0].gain == t["take_profit_percentage"] == 0.25
 
 
 # ------------------------------------------------- el suelo asegura ganancia
@@ -170,25 +169,42 @@ def test_el_colchon_mas_apretado_esta_anotado() -> None:
 # ----------------------------------------------------- la escalera completa
 
 
-def test_se_sigue_vendiendo_el_98_por_ciento() -> None:
-    """El 10% que dejo de vender el TP1 se reparte, no se pierde."""
-    tiers = _tiers()
-    assert abs(sum(t.sell for t in tiers) - 0.98) < 1e-9
-    assert abs(moonbag_fraction(tiers) - 0.02) < 1e-9
+def test_se_vende_el_97_por_ciento_entre_las_dos_escaleras() -> None:
+    """HAY QUE SUMAR LAS DOS, y es el error facil desde el 24-sep.
 
+    Los peldanos de porcentaje (+25%, +50%, +85%) venden el 78%; los
+    escalones de market cap (100k a 500k) el 19%. Juntos, el 97%, y queda un
+    3% de moonbag que el bot no vende nunca.
 
-def test_el_reparto_sale_de_todos_en_proporcion() -> None:
-    """23-sep, elegido al preguntarlo: los 20 puntos que se lleva el TP1 salen
-    de TODOS los demas en proporcion, no de un peldano concreto.
-
-    Y aparte el de +80% cede 12 puntos mas a los lejanos, asi que es el que
-    mas encoge de los tres de abajo.
+    MIRANDO SOLO LOS DE PORCENTAJE saldria un moonbag del 22%, y no lo es:
+    es lo que todavia no se ha repartido. `moonbag_fraction` solo conoce los
+    peldanos que se le pasan, asi que devuelve eso -- por eso aqui se suma a
+    mano en vez de fiarse de esa funcion.
     """
     tiers = _tiers()
-    assert tiers[1].sell == 0.199
-    assert tiers[2].sell == 0.182
-    lejanos = sum(t.sell for t in tiers[3:])
-    assert round(lejanos, 6) == 0.399, "los lejanos tienen que haber crecido"
+    por_ciento = sum(t.sell for t in tiers)
+    por_mc = sum(d["sell"] for d in _trade().get("mc_take_profit_tiers") or [])
+    assert abs(por_ciento - 0.78) < 1e-9
+    assert abs(por_ciento + por_mc - 0.97) < 1e-9
+    # Y lo que ve `moonbag_fraction` NO es el moonbag de verdad: es lo que
+    # queda pendiente de repartir entre los escalones de market cap.
+    assert abs(moonbag_fraction(tiers) - 0.22) < 1e-9
+
+
+def test_la_escalera_de_porcentaje_son_tres_y_crecen() -> None:
+    """24-sep: tres peldanos por porcentaje y cada uno vende mas que el
+    anterior (15%, 30%, 33%).
+
+    VA AL REVES QUE ANTES a proposito. La escalera vieja vendia mucho abajo y
+    poco arriba, repartiendo entre diez peldanos hasta x20. Esta concentra la
+    venta en el tramo que la moneda SI recorre --lo pedido fue "cuando suba
+    un 85 vender un 60% de lo que queda"-- y deja solo un 19% para los
+    escalones de market cap, que son los improbables.
+    """
+    tiers = _tiers()
+    assert len(tiers) == 3, f"tres peldanos por porcentaje: {tiers}"
+    assert [t.sell for t in tiers] == [0.15, 0.30, 0.33]
+    assert [t.gain for t in tiers] == [0.25, 0.50, 0.85]
 
 
 def test_los_diez_escalones_disparan_y_queda_el_moonbag() -> None:
@@ -206,21 +222,26 @@ def test_los_diez_escalones_disparan_y_queda_el_moonbag() -> None:
 def test_tocar_el_tp1_y_caer_cierra_en_verde() -> None:
     """EL RECORRIDO QUE RESUME LO PEDIDO.
 
-    La moneda sube a +30%, cobra el primer peldano (20%), se da la vuelta y
+    La moneda sube hasta tocar el primer peldano, lo cobra, se da la vuelta y
     cae. El stop la cierra en compra +5%: la operacion acaba GANANDO entera,
     tanto lo cobrado arriba como lo que quedaba dentro.
+
+    EL PRECIO SALE DEL PRIMER PELDANO, no escrito a mano: estaba fijado en
+    1,30 y al bajar el TP1 a +25% habria seguido en verde midiendo un
+    recorrido que ya no es el primero.
     """
     tiers, m = _tiers(), _trade()["margen_stop_tras_tp"]
     sl = ENTRADA * (1 - _trade()["stop_loss_percentage"])
     ejec, restante = [False] * len(tiers), 1.0
+    _toca_el_tp1 = ENTRADA * (1 + tiers[0].gain)
 
-    for j in tiers_due(ENTRADA, ENTRADA * 1.30, tiers, ejec):
+    for j in tiers_due(ENTRADA, _toca_el_tp1, tiers, ejec):
         ejec[j] = True
         restante -= min(tiers[j].sell, restante)
         suelo = stepped_stop_price(ENTRADA, tiers, j, m)
         sl = max(sl, suelo)
 
-    assert round(restante, 6) == 0.80, "el TP1 vende el 20% desde el 23-sep"
+    assert round(restante, 6) == round(1 - tiers[0].sell, 6)
     assert abs(sl - ENTRADA * (1 + m)) < 1e-9
     # Ahora cae. El resultado de cerrar en el suelo:
     assert sl / ENTRADA - 1 > 0, "tenia que cerrar en verde"

@@ -167,12 +167,17 @@ trade:
   # gas de la operacion es un 3,7%. El TP1 NO cubre el gas por si solo, y da
   # igual -- lo que aporta es el suelo, y eso ya esta contado en la cuenta de
   # arriba.
-  take_profit_percentage: 0.15
-  take_profit_sell_percentage: 0.20
+  take_profit_percentage: 0.25
+  take_profit_sell_percentage: 0.15
   tp2_gain: 0.50
-  tp2_sell: 0.199
-  tp3_gain: 0.80
-  tp3_sell: 0.182
+  tp2_sell: 0.30
+  # +85% VENDIENDO EL 60% DE LO QUE QUEDA (24-sep, pedido). Aqui va el 33%,
+  # que es lo mismo: la escalera vende siempre fraccion de la COMPRA
+  # ORIGINAL, no de lo que queda dentro. Tras el 15% y el 30% queda un 55%,
+  # y el 60% de ese 55% es el 33% del original. Si algun dia se cambian TP1
+  # o TP2 hay que rehacer esta cuenta a mano.
+  tp3_gain: 0.85
+  tp3_sell: 0.33
   # DE AQUI EN ADELANTE, EL RESTO REPARTIDO HASTA x20. Queda el 27,5% de la
   # compra; se deja corriendo el 2% de siempre y los otros 25,5 se reparten
   # en siete peldanos, de mas a menos: llegar a x20 es mucho menos probable
@@ -181,31 +186,50 @@ trade:
   # OJO AL FORMATO: de aqui para abajo la ganancia es MULTIPLO MENOS UNO.
   # 1.50 es x2,5 -- no un +150% suelto que se pueda confundir con los de
   # arriba. 19.00 es x20.
-  tp4_gain: 1.50   # x2,5
-  tp4_sell: 0.101
-  tp5_gain: 2.30   # x3,3
-  tp5_sell: 0.085
-  tp6_gain: 4.00   # x5
-  tp6_sell: 0.069
-  # PELDANOS LEJANOS. Antes llegaban a x50 y x100; ahora la escalera termina
-  # en x20 porque es lo pedido. Consecuencia, dicha en claro: una moneda que
-  # pase de x20 ya no tiene peldanos por encima -- lo unico que sigue dentro
-  # es el 2% que se vende a mano.
+  # LOS PELDANOS LEJANOS YA NO VAN POR PORCENTAJE (24-sep, pedido: "el resto
+  # lo repartes en escalones hasta 500.000"). Iban de x2,5 a x20 sobre el
+  # precio de entrada; ahora van por MARKET CAP, en `mc_take_profit_tiers`.
   #
-  # Estos SI pueden dispararse: `max_hold_time` esta a 0, o sea que una
-  # posicion ya no se cierra por reloj. Si alguien vuelve a ponerle un
-  # reloj corto, estos peldanos dejan de tener sentido (hay un test que
-  # avisa: test_los_peldanos_altos_tienen_tiempo_de_llegar).
-  tp_extra:
-    - gain: 6.00     # x7
-      sell: 0.056
-    - gain: 9.00     # x10
-      sell: 0.040
-    - gain: 14.00    # x15
-      sell: 0.024
-    - gain: 19.00    # x20
-      sell: 0.024
-  # 15% (24-sep). Historial: 18% -> 28% -> 40% -> 30% -> 18% -> 28% -> 15%.
+  # POR QUE ES MEJOR ASI PARA ESTA ESTRATEGIA. Un x10 sobre la entrada
+  # significa cosas distintas segun donde se entre: entrando al 90% de la
+  # curva son ~287k de market cap, y entrando al 96% serian ~366k. Los
+  # escalones por market cap son cifras absolutas: 100k es 100k entres donde
+  # entres, y son las que de verdad se miran en la app.
+  #
+  # `tp4_gain`, `tp5_gain` y `tp6_gain` se quitan enteros en vez de ponerlos
+  # a cero: un peldano con `sell: 0` NO desaparece --sigue existiendo y sigue
+  # subiendo el stop-- asi que dejarlos a cero habria metido tres subidas de
+  # suelo fantasma que nadie pidio.
+  tp_extra: []
+
+  # ESCALONES POR MARKET CAP, de 100k a 500k (24-sep, pedido).
+  #
+  # Se arman SOLO cuando ya se han cobrado los tres peldanos de porcentaje
+  # (+25%, +50%, +85%), asi que son la continuacion natural de la escalera,
+  # no una via paralela.
+  #
+  # EL REPARTO. Tras vender 15% + 30% + 33% queda un 22%; se deja un 3% de
+  # moonbag --que el bot NO vende nunca, lo vendes tu-- y los otros 19% se
+  # reparten aqui, de mas a menos: llegar a 500k es mucho menos probable que
+  # llegar a 100k, asi que se cobra mas abajo.
+  #
+  # Van en progresion geometrica y no de 100 en 100 mil: de 100k a 150k hay
+  # un 50% de subida, de 400k a 500k solo un 25%. Repartir a partes iguales
+  # pondria casi todos los escalones en el tramo mas facil.
+  mc_take_profit_tiers:
+    - target_mc: 100000
+      sell: 0.06
+    - target_mc: 150000
+      sell: 0.05
+    - target_mc: 225000
+      sell: 0.04
+    - target_mc: 335000
+      sell: 0.025
+    - target_mc: 500000
+      sell: 0.015
+
+  # 26% (24-sep, pedido). Historial: 18% -> 28% -> 40% -> 30% -> 18% ->
+  # 28% -> 15% -> 26%.
   #
   # SALE DE LA MISMA BUSQUEDA QUE EL TP1, y los dos van juntos: el stop
   # estrecho solo es sensato porque el TP1 bajo lo apaga pronto en las que
@@ -245,7 +269,7 @@ trade:
   # TP1 (+30%) el suelo pasa a compra +5% y este numero deja de usarse en esa
   # posicion. Lo que se arriesga de verdad es esto ANTES de que la moneda
   # demuestre nada.
-  stop_loss_percentage: 0.15
+  stop_loss_percentage: 0.26
   # EL STOP SE LLEVA LA POSICION ENTERA, moonbag incluido.
   #
   # Antes dejaba el 2% corriendo en una moneda que se estaba cayendo a cero:
