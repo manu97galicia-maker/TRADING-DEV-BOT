@@ -582,6 +582,24 @@ priority_fees:
   # ventas, el 7% de una posicion de 0,12 SOL. Comprar tarde cuesta mucho mas
   # que vender un bloque tarde, asi que la prisa se paga donde hace falta.
   fixed_amount: 1000000
+  # LA DE VENDER CUANDO CORRE PRISA: ~0,005 SOL, igual que la de comprar
+  # (24-sep, pedido: "los stop loss y take profit se demoran mucho").
+  #
+  # SOLO PARA LAS VENTAS QUE PROTEGEN: stop loss, anti-rug, trailing, panico
+  # y las manuales. Los take profit siguen pagando `fixed_amount` de arriba.
+  #
+  # POR QUE NO SE SUBE LA DE TODAS. Una posicion se compra UNA vez y se vende
+  # hasta SIETE --cuatro peldanos de porcentaje y tres escalones de market
+  # cap-- asi que la comision rapida en todas seria pagarla siete veces por
+  # posicion: 0,035 SOL, mas del 20% de una compra de 0,146.
+  #
+  # Y NO HACE FALTA: un take profit puede esperar. Si no sale en esta vuelta
+  # sale en la siguiente y la moneda sigue arriba. Un stop loss no: cada
+  # segundo de cola es precio que se pierde, y ahi es donde de verdad se
+  # notaba que la venta pagaba 42 veces menos que la compra.
+  #
+  # Con 120.000 CU (vender): 41.666.667 -> ~0,00500 SOL
+  fixed_amount_venta_proteccion: 41666667
   # LA DE COMPRAR: ~0,005 SOL (24-sep). Historial: ~0,001 (19-sep) -> ~0,01
   # -> ~0,005, bajado el mismo dia al ver que a 0,01 el primer peldano no
   # cubria el gas.

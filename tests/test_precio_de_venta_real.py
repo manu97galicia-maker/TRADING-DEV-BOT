@@ -74,8 +74,12 @@ def test_la_venta_por_la_curva_ya_apuntaba_el_precio_ejecutado() -> None:
     """LO QUE NO HABIA QUE TOCAR. Ese camino siempre estuvo bien: apunta
     `sell_result.price`. El test esta para que el arreglo del otro camino no
     se lo lleve por delante de rebote."""
+    # LA VENTANA SE MIDE HASTA EL FALLBACK, no con un numero de caracteres.
+    # Estaba en 1200 y se quedo corta en cuanto se anadio la comision rapida
+    # en medio: el test se puso rojo por la longitud del comentario, no por
+    # el codigo. Anclarlo a algo del propio programa no caduca al escribir.
     trozo = FUENTE[FUENTE.index("_seller = self._vendedor_para(reason)"):]
-    trozo = trozo[:1200]
+    trozo = trozo[: trozo.index("trying Jupiter fallback")]
     assert "sell_result.price," in trozo
     assert "self._ultimo_cobro = sell_result.amount * sell_result.price" in trozo
 

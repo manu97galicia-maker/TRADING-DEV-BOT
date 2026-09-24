@@ -213,9 +213,17 @@ class _VendedorQueFalla:
 
     def __init__(self) -> None:
         self.intentos = 0
+        self.comisiones: list[int | None] = []
 
-    async def execute(self, _token, token_amount=0.0, token_price=0.0):
+    async def execute(
+        self, _token, token_amount=0.0, token_price=0.0,
+        priority_fee_override=None,
+    ):
         self.intentos += 1
+        # Se APUNTA la comision, no solo se acepta. Un doble que traga el
+        # argumento y lo tira deja el test verde sin comprobar nada de lo que
+        # el argumento existe para hacer.
+        self.comisiones.append(priority_fee_override)
         return SimpleNamespace(
             success=False, price=0.0,
             error_message="6003 TooLittleSolReceived",
@@ -299,7 +307,14 @@ def test_de_verdad_el_stop_loss_espera_menos_que_un_take_profit() -> None:
 def test_de_verdad_una_venta_buena_borra_el_freno() -> None:
     """Si no, una moneda que se recupera arrastraria su castigo."""
     class _VendedorQueFunciona:
-        async def execute(self, _token, token_amount=0.0, token_price=0.0):
+        def __init__(self) -> None:
+            self.comisiones: list[int | None] = []
+
+        async def execute(
+            self, _token, token_amount=0.0, token_price=0.0,
+            priority_fee_override=None,
+        ):
+            self.comisiones.append(priority_fee_override)
             return SimpleNamespace(
                 success=True, price=0.000002, tx_signature="s",
                 amount=token_amount,
@@ -322,3 +337,87 @@ def test_de_verdad_el_anti_rug_llega_al_vendedor() -> None:
     t = _trader_minimo(v)
     asyncio.run(t._sell_amount(_moneda(), 10.0, 0.000001, "anti_rug"))
     assert v.intentos == 1
+
+
+# ------------------------------------------------- la prisa donde hace falta
+
+
+class _VendedorQueApunta:
+    """Un vendedor que funciona y APUNTA con que comision le llamaron."""
+
+    def __init__(self) -> None:
+        self.comisiones: list[int | None] = []
+
+    async def execute(
+        self, _token, token_amount=0.0, token_price=0.0,
+        priority_fee_override=None,
+    ):
+        self.comisiones.append(priority_fee_override)
+        return SimpleNamespace(
+            success=True, price=0.000002, tx_signature="s", amount=token_amount,
+        )
+
+
+def _trader_con_prisa(vendedor: object, fee: int = 41_666_667) -> UniversalTrader:
+    t = _trader_minimo(vendedor)
+    t.fee_venta_proteccion = fee
+    return t
+
+
+def test_el_stop_loss_paga_la_comision_rapida() -> None:
+    """EL ARREGLO DEL 24-SEP, pedido: "los stop loss y take profit se demoran
+    mucho".
+
+    La comision de venta normal era 42 veces menor que la de compra (0,00012
+    contra 0,005 SOL). Con la red cargada eso son segundos de cola -- justo
+    mientras la moneda se cae, que es cuando cada segundo es precio perdido.
+
+    Se comprueba que la comision LLEGA AL VENDEDOR, no solo que este en el
+    yaml. Entre la configuracion y la transaccion hay tres saltos, y ya paso
+    una vez que una comision se quedara por el camino: la de compra la
+    recortaba el `hard_cap` en silencio y subirla no hacia nada.
+    """
+    v = _VendedorQueApunta()
+    t = _trader_con_prisa(v)
+    asyncio.run(t._sell_amount(_moneda(), 100.0, 0.000002, "stop_loss"))
+    assert v.comisiones == [41_666_667]
+
+
+def test_un_take_profit_no_la_paga() -> None:
+    """LA OTRA MITAD, y es la que hace que esto no salga caro.
+
+    Una posicion se compra UNA vez y se vende hasta SIETE --cuatro peldanos
+    de porcentaje y tres escalones de market cap--. Si la comision rapida
+    fuera para todas, se pagaria siete veces por posicion: 0,035 SOL, mas del
+    20% de una compra de 0,146.
+
+    Un take profit puede esperar: si no sale en esta vuelta sale en la
+    siguiente y la moneda sigue arriba.
+    """
+    v = _VendedorQueApunta()
+    t = _trader_con_prisa(v)
+    asyncio.run(t._sell_amount(_moneda(), 100.0, 0.000002, "tp_tier1_+25%"))
+    assert v.comisiones == [None], "un take profit paga la comision de siempre"
+
+
+def test_todos_los_motivos_protectores_llevan_prisa() -> None:
+    """La lista sale de `MOTIVOS_PROTECTORES`, no escrita a mano aqui.
+
+    Es la misma que decide el suelo de venta ancho, asi que las dos
+    protecciones se activan siempre juntas. Copiarla a mano aqui haria que
+    anadir un motivo nuevo al codigo dejara este test verde sin cubrirlo.
+    """
+    for motivo in UniversalTrader.MOTIVOS_PROTECTORES:
+        v = _VendedorQueApunta()
+        t = _trader_con_prisa(v)
+        asyncio.run(t._sell_amount(_moneda(), 100.0, 0.000002, motivo))
+        assert v.comisiones == [41_666_667], f"{motivo} tendria que llevar prisa"
+
+
+def test_a_cero_se_apaga_y_todas_pagan_igual() -> None:
+    """Cero significa apagado, como en toda esta configuracion. Si significara
+    "comision cero" la venta se quedaria sin prioridad ninguna."""
+    v = _VendedorQueApunta()
+    t = _trader_con_prisa(v, fee=0)
+    asyncio.run(t._sell_amount(_moneda(), 100.0, 0.000002, "stop_loss"))
+    assert v.comisiones == [None]

@@ -435,6 +435,7 @@ class UniversalTrader:
         #: tiempo se convierte, multiplicada por diez, en un mordisco real
         #: a la ganancia.
         fixed_priority_fee_compra: int = 0,
+        fixed_priority_fee_venta_proteccion: int = 0,
         extra_priority_fee: float = 0.0,
         hard_cap_prior_fee: int = 200_000,
         # Retry and timeout settings
@@ -755,6 +756,27 @@ class UniversalTrader:
         #: el `hard_cap`. Se recorta aqui a mano: un tope que se puede saltar
         #: por una puerta lateral no es un tope, y este existe para que una
         #: errata de un cero de mas no vacie la cartera en comisiones.
+        #: COMISION RAPIDA SOLO PARA LAS VENTAS QUE PROTEGEN (24-sep).
+        #:
+        #: POR QUE NO SE SUBE LA DE TODAS LAS VENTAS. Una posicion se compra
+        #: UNA vez y se vende hasta siete --cuatro peldanos de porcentaje y
+        #: tres escalones de market cap-- asi que poner la comision rapida en
+        #: todas seria pagarla siete veces por posicion.
+        #:
+        #: Y NO HACE FALTA: un take profit puede esperar. Si no sale en esta
+        #: vuelta sale en la siguiente y la moneda sigue arriba. Un stop loss
+        #: no puede esperar: cada segundo de cola es precio que se pierde, y
+        #: la comision de venta normal es 42 veces menor que la de compra.
+        #:
+        #: Se aplica a los motivos de `MOTIVOS_PROTECTORES`, los mismos que ya
+        #: llevan el suelo de venta ancho. 0 = apagado, todas pagan igual.
+        self.fee_venta_proteccion = int(fixed_priority_fee_venta_proteccion or 0)
+        if self.fee_venta_proteccion > hard_cap_prior_fee > 0:
+            logger.warning(
+                "La comision de venta protectora (%d) pasa del tope (%d); se "
+                "recorta.", self.fee_venta_proteccion, hard_cap_prior_fee,
+            )
+            self.fee_venta_proteccion = int(hard_cap_prior_fee)
         self.fee_compra = int(fixed_priority_fee_compra or 0)
         if self.fee_compra > hard_cap_prior_fee > 0:
             logger.warning(
@@ -5654,7 +5676,10 @@ class UniversalTrader:
 
         _seller = self._vendedor_para(reason)
         sell_result = await _seller.execute(
-            token_info, token_amount=amount, token_price=ref_price
+            token_info,
+            token_amount=amount,
+            token_price=ref_price,
+            priority_fee_override=self._fee_de_venta_para(reason),
         )
         if sell_result.success:
             self._fallos_venta.pop(mint, None)
@@ -5790,6 +5815,27 @@ class UniversalTrader:
         otro = copy.copy(base)
         otro.slippage = slippage
         return otro
+
+    def _fee_de_venta_para(self, reason: str) -> int | None:
+        """La comision de prioridad que le toca a esta venta, o None.
+
+        LA PRISA SE PAGA DONDE HACE FALTA. Un take profit puede esperar: si no
+        sale en esta vuelta sale en la siguiente y la moneda sigue arriba. Un
+        stop loss no -- cada segundo de cola es precio perdido, y la comision
+        de venta normal es 42 veces menor que la de compra.
+
+        None = la de siempre. Se devuelve None y no un cero porque cero
+        significaria "sin prioridad ninguna", que es lo contrario.
+
+        Con `getattr` a proposito, igual que `_slippage_para`: los tests arman
+        traders a medias --sin pasar por `__init__`-- para poder probar el
+        camino de venta sin cartera ni nodo, y un atributo que falte no puede
+        tumbar un stop.
+        """
+        rapida = int(getattr(self, "fee_venta_proteccion", 0) or 0)
+        if rapida > 0 and self._es_venta_protectora(reason):
+            return rapida
+        return None
 
     def _es_venta_protectora(self, reason: str) -> bool:
         """True si esta venta existe para limitar perdidas.

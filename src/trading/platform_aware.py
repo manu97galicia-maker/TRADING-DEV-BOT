@@ -492,7 +492,11 @@ class PlatformAwareSeller(Trader):
         self.compute_units = compute_units or {}
 
     async def execute(
-        self, token_info: TokenInfo, token_amount: float, token_price: float
+        self,
+        token_info: TokenInfo,
+        token_amount: float,
+        token_price: float,
+        priority_fee_override: int | None = None,
     ) -> TradeResult:
         """Execute sell operation using platform-specific implementations.
 
@@ -502,6 +506,13 @@ class PlatformAwareSeller(Trader):
                          RPC balance query delays.
             token_price: Token price in SOL (from buy result). Required to avoid
                         RPC pool state query delays.
+            priority_fee_override: comision de prioridad SOLO para esta venta.
+                Existe porque las ventas NO son todas iguales: un take profit
+                puede esperar --si no sale ahora sale en la vuelta siguiente--
+                pero un stop loss no. La comision de venta normal es 42 veces
+                menor que la de compra, y con la red cargada eso son segundos
+                de cola justo cuando la moneda se esta cayendo. Quien llama
+                pone aqui la comision rapida solo en las ventas que protegen.
 
         Returns:
             TradeResult with operation outcome
@@ -635,8 +646,12 @@ class PlatformAwareSeller(Trader):
                 self.wallet.keypair,
                 skip_preflight=False,
                 max_retries=self.max_retries,
-                priority_fee=await self.priority_fee_manager.calculate_priority_fee(
-                    priority_accounts
+                priority_fee=(
+                    priority_fee_override
+                    if priority_fee_override
+                    else await self.priority_fee_manager.calculate_priority_fee(
+                        priority_accounts
+                    )
                 ),
                 compute_unit_limit=instruction_builder.get_sell_compute_unit_limit(
                     self._get_cu_override("sell", token_info.platform)

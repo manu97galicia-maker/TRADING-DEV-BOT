@@ -243,6 +243,9 @@ async def start_bot(config_path: str):
             fixed_priority_fee_compra=cfg.get("priority_fees", {}).get(
                 "fixed_amount_compra", 0
             ),
+            fixed_priority_fee_venta_proteccion=cfg.get("priority_fees", {}).get(
+                "fixed_amount_venta_proteccion", 0
+            ),
             # Retry and timeout settings
             max_retries=cfg.get("retries", {}).get("max_attempts", 10),
             wait_time_after_creation=cfg.get("retries", {}).get(
