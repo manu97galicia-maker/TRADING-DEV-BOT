@@ -186,37 +186,40 @@ trade:
       sell: 0.024
     - gain: 19.00    # x20
       sell: 0.024
-  # 18% (24-sep, pedido). Historial: 18% -> 28% -> 40% -> 30% -> 18%.
-  # Vuelve al numero del principio despues de dar la vuelta entera.
+  # 28% (24-sep, pedido). Historial: 18% -> 28% -> 40% -> 30% -> 18% -> 28%.
+  # Ha dado la vuelta entera dos veces; este es el segundo paso por el 28.
   #
   # SOLO MANDA HASTA EL PRIMER PELDANO. En cuanto la moneda toca el TP1
   # (+30%), el suelo se sube a precio de compra +5% (`margen_stop_tras_tp`)
   # y este numero deja de usarse en esa posicion. O sea que el 30% es lo que
   # se arriesga ANTES de que la moneda demuestre nada.
   #
-  # ES LA PALANCA QUE MAS PESA DE TODA LA ESTRATEGIA. Entrando al 88,5% de la
+  # ES LA PALANCA QUE MAS PESA DE TODA LA ESTRATEGIA. Entrando al 87,5% de la
   # curva, una moneda que hace todo bien y se muere justo al migrar recorre un
-  # +75,8%, cobra dos peldanos y deja +36,3% de la posicion. Lo que decide si
+  # +83,4%, cobra tres peldanos y deja +52,5% de la posicion. Lo que decide si
   # eso compensa es lo que cuesta una que sale mal:
   #
   #   stop   se pierde   una que migra y muere   aciertos para no perder
-  #    40%     -39,2%          +36,3%                     52%
-  #    30%     -29,4%          +36,3%                     45%
-  #    18%     -17,6%          +36,3%                     33%   <- aqui
-  #    15%     -14,7%          +36,3%                     29%
+  #    40%     -39,2%          +52,5%                     43%
+  #    30%     -29,4%          +52,5%                     36%
+  #    28%     -27,4%          +52,5%                     34%   <- aqui
+  #    18%     -17,6%          +52,5%                     25%
   #
   # (La perdida no es el stop exacto: el 2% de moonbag no se vende.)
   #
-  # QUE CUESTA, y es lo que hizo que se subiera en su dia: con el 18% se sale
-  # de los tirones normales de una memecoin. Posiciones que cerraban en rojo y
-  # luego subian -- eso fue lo que llevo el stop de 18 a 28 y despues a 40.
-  # Ahora se vuelve al 18 sabiendo eso, y con dos cosas distintas de entonces:
-  # se entra mucho mas abajo en la curva (88,5% en vez del nacimiento) y el
-  # suelo sube a compra +5% en cuanto se cobra el primer peldano.
+  # POR QUE SE SUBE DEL 18 AL 28. Con el 18% se sale de los tirones normales
+  # de una memecoin: posiciones que cierran en rojo y luego suben. Eso ya paso
+  # --fue lo que llevo el stop de 18 a 28 y despues a 40-- asi que volver al
+  # 28 es volver al punto en el que aquello dejo de pasar.
   #
-  # SI VUELVEN A APARECER CIERRES EN ROJO de monedas que luego suben, es este
-  # numero el que hay que subir, no la escalera.
-  stop_loss_percentage: 0.18
+  # LO QUE CUESTA: cada fallo cuesta 10 puntos mas (-27,4% en vez de -17,6%),
+  # y el liston sube de 1 acierto de cada 4 a 1 de cada 3.
+  #
+  # SIGUE MANDANDO SOLO HASTA EL PRIMER PELDANO: en cuanto la moneda toca el
+  # TP1 (+30%) el suelo pasa a compra +5% y este numero deja de usarse en esa
+  # posicion. Lo que se arriesga de verdad es esto ANTES de que la moneda
+  # demuestre nada.
+  stop_loss_percentage: 0.28
   # EL STOP SE LLEVA LA POSICION ENTERA, moonbag incluido.
   #
   # Antes dejaba el 2% corriendo en una moneda que se estaba cayendo a cero:
@@ -311,7 +314,7 @@ trade:
   #
   # LO QUE CUESTA, y hay que saberlo porque no es gratis: una moneda que se
   # queda plana para siempre ya no libera su plaza. Se queda ocupando una de
-  # las 5 hasta que toque el stop (-18%) o un peldano, y mientras tanto gasta
+  # las 5 hasta que toque el stop (-28%) o un peldano, y mientras tanto gasta
   # una consulta de precio por segundo. Con cinco planas a la vez el bot deja
   # de comprar aunque haya saldo. Si eso pasa, se ve en `vigiladas` y la
   # solucion es volver a encender `venta_muerta_seg`, no subir plazas.
@@ -415,8 +418,8 @@ trade:
   # queda y la quinta ya es calderilla. Las tres primeras juntas son el 75% de
   # la cartera jugado a la vez.
   #
-  # Con el stop en el 18%, cada posicion entera arriesga el 4,5% de la cartera
-  # y las tres juntas el 13,5%.
+  # Con el stop en el 28%, cada posicion entera arriesga el 7,0% de la cartera
+  # y las tres juntas el 21,0%.
   #
   # OJO CON EL SUELO. Con poco saldo el 25% se queda tan pequeno que los
   # costes fijos --la renta de la cuenta de token y la comision de prioridad,
@@ -961,8 +964,9 @@ filters:
     enabled: true
     # Punto de la curva en que se compra (0,95 = 95% vendido).
     #
-    # 87,5% (24-sep, pedido: "baja otro 1%"). Historial:
-    # 0,96 -> 0,95 -> 0,96 -> 0,944 -> 0,929 -> 0,92 -> 0,885 -> 0,875.
+    # 86,0% (24-sep, pedido: "baja la entrada un 1,5% menos de la curva").
+    # Historial: 0,96 -> 0,95 -> 0,96 -> 0,944 -> 0,929 -> 0,92 -> 0,885 ->
+    # 0,875 -> 0,86.
     #
     # LO QUE SE DESCUBRIO AL HACER LA CUENTA, y es lo importante de este
     # cambio. La curva de pump.fun es un producto constante, asi que el precio
@@ -970,13 +974,13 @@ filters:
     # llena. Entrar "1,6 puntos antes" NO es entrar un 1,6% mas barato:
     #
     #   curva   SOL dentro   falta   precio    subida hasta migrar
-    #   85,0%      50,7       34,3   -13,4%         +103,1%   <- el suelo del test
-    #   87,5%      54,9       30,1    -4,1%          +83,4%   <- aqui
-    #   88,5%      56,7       28,3     0,0%          +75,8%   <- antes
-    #   92,0%      63,8       21,2   +16,8%          +50,5%
-    #   96,0%      73,3       11,7   +41,7%          +24,0%
+    #   85,0%      50,7       34,3    -3,9%         +103,1%   <- el suelo del test
+    #   86,0%      52,3       32,7     0,0%          +95,1%   <- aqui
+    #   87,5%      54,9       30,1    +6,4%          +83,4%   <- antes
+    #   92,0%      63,8       21,2   +24,3%          +50,5%
+    #   96,0%      73,3       11,7   +50,8%          +24,0%
     #
-    # (85 SOL es lo que hace falta para migrar. "Precio" es respecto al 88,5%.)
+    # (85 SOL es lo que hace falta para migrar. "Precio" es respecto al 86,0%.)
     #
     # EL FALLO QUE ARREGLO BAJAR DE 96 A 94,4. Al 96% quedaba un +24% de
     # recorrido hasta migrar y el primer take profit esta en +30%: la escalera
@@ -989,31 +993,35 @@ filters:
     # moneda que hace todo bien y se muere justo al migrar recorre lo que dice
     # la ultima columna, y la escalera cobra los peldanos que quepan ahi:
     #
-    #   entrada   recorrido   peldanos   deja      aciertos para no perder
-    #    92,0%      +50,5%      2 (justo)  +36,3%          33%
-    #    88,5%      +75,8%      2          +36,3%          33%
-    #    87,5%      +83,4%      3 (justo)  +52,5%          25%
+    #   entrada   recorrido   peldanos     deja    aciertos para no perder
+    #    92,0%      +50,5%      2 (justo)  +36,3%          41%
+    #    88,5%      +75,8%      2          +36,3%          43%
+    #    87,5%      +83,4%      3 (justo)  +52,5%          34%
+    #    86,0%      +95,1%      3          +52,5%          34%
     #
-    # EL TP3 SE CRUZA POR 3,4 PUNTOS, asi que el tercer peldano es probable
-    # pero NO seguro: si la moneda se queda un poco corta, el resultado vuelve
-    # a ser el de dos peldanos (+36,3%). Lo mismo que pasaba con el TP2 al
-    # 92%, que se cruzaba por medio punto. Cuenta con dos y celebra el
-    # tercero.
+    # QUE GANA ESTE PASO. El numero no sube --siguen siendo tres peldanos y
+    # +52,5%, porque el cuarto esta en +150% y queda lejos-- pero el tercero
+    # deja de estar pillado con pinzas. Al 87,5% el TP3 (+80%) se cruzaba por
+    # 3,4 puntos; al 86% se cruza por 15,1. Es la misma historia que con el
+    # TP2 al 92%: la mejora esta en la FIABILIDAD, no en la cifra.
     #
-    # LO QUE SI CRECE CADA PASO: se entra mas abajo (un 4,1% por debajo del
-    # 88,5%), asi que todo lo que venga DESPUES de migrar cuenta desde mas
-    # lejos; y entran mas candidatas, porque la ventana de disparo pasa de
-    # 11,0 a 12,0 puntos de curva.
+    # Y se entra un 6% mas abajo, asi que todo lo que venga DESPUES de migrar
+    # cuenta desde mas lejos. La ventana de disparo pasa de 12,0 a 13,5
+    # puntos de curva.
     #
     # QUE CUESTA: mas monedas se quedan a medias y no llegan nunca a migrar.
     # Cuanto mas abajo se entra, menos se parece esto a "comprar la que ya casi
-    # lo ha conseguido" y mas a comprar una moneda cualquiera. Al 87,5% faltan
-    # 30,1 SOL para migrar, o sea mas de un tercio de la curva entera: ya NO
-    # es una moneda a punto de migrar. Si el ritmo de aciertos empeora, esta
-    # es la primera palanca que hay que devolver hacia arriba.
+    # lo ha conseguido" y mas a comprar una moneda cualquiera. Al 86% faltan
+    # 32,7 SOL para migrar: mas de un tercio de la curva entera. Esto ya no es
+    # "la que esta a punto de migrar", es una moneda que va por dos tercios y
+    # a la que todavia le queda casi doblar el precio para llegar. Si el ritmo
+    # de aciertos empeora, esta es la primera palanca que hay que devolver
+    # hacia arriba.
     #
-    # Y QUEDA POCO MARGEN: el suelo del test esta en 0,85, o sea a 2,5 puntos.
-    umbral: 0.875
+    # SE ACABO EL MARGEN: el suelo del test esta en 0,85, a UN punto. El
+    # siguiente paso ya no es "un ajuste mas", es cambiar de estrategia, y hay
+    # que decidirlo como tal en vez de bajarlo otra vez por costumbre.
+    umbral: 0.86
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995
