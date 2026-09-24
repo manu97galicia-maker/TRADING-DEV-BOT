@@ -64,7 +64,7 @@ MIN_OPERACIONES = 5
 #: comprueba que TP3 sigue siendo el del yaml: sin el, este script mediria un
 #: objetivo que el bot ya no tiene y los informes dirian cosas que no pasaron.
 TP1, TP2, TP3 = 0.18, 0.38, 0.5513
-STOP = -0.26
+STOP = -0.35
 #: Cada cuanto se imprime una linea de estado.
 AVISO_SEG = 30
 

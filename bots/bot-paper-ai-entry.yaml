@@ -344,8 +344,32 @@ trade:
   # cada escalon en market cap para poder seguirlo igual.
   mc_take_profit_tiers: []
 
-  # 26% (24-sep, pedido). Historial: 18% -> 28% -> 40% -> 30% -> 18% ->
-  # 28% -> 15% -> 26%.
+  # 35% (24-sep, pedido: "SL al 35%"). Historial: 18% -> 28% -> 40% -> 30%
+  # -> 18% -> 28% -> 15% -> 26% -> 35%.
+  #
+  # CON UN SOLO TAKE PROFIT, ESTE NUMERO PESA EL DOBLE. Ya no hay peldano
+  # pequeno que apague el stop: el stop manda durante TODA la vida de la
+  # posicion, hasta que se toca el +55,13% y se vende entera. Antes dejaba de
+  # usarse en cuanto la moneda subia un 18%.
+  #
+  #   stop   se pierde   aciertos para no perder   riesgo de la 1a posicion
+  #    20%      -20%              27%                      14,0%
+  #    26%      -26%              32%                      18,2%
+  #    35%      -35%              39%    <- aqui           24,5%
+  #    40%      -40%              42%                      28,0%
+  #
+  # SUBIR EL STOP SUBE LOS ACIERTOS QUE HACEN FALTA, de 32% a 39%. Lo que se
+  # compra a cambio --y no esta medido-- es salirse de menos tirones normales:
+  # una moneda que cae un 30% y luego se dispara se pierde con el stop en 26%
+  # y se aguanta con el de 35%.
+  #
+  # LO QUE CUESTA EN DINERO, con el 70% de la cartera en una sola moneda:
+  # una perdida pasa de 0,182 a 0,245 SOL por cada SOL de cartera (de 40 a
+  # 54 $ con SOL a 220). Y TRES perdidas seguidas se llevan la mitad de la
+  # cuenta, donde antes hacian falta cuatro.
+  #
+  # NO HAY FRENO QUE PARE ESO: `parar_tras_perdidas` esta a 0 desde el
+  # 23-sep. El bot seguiria comprando despues de la tercera.
   #
   # SALE DE LA MISMA BUSQUEDA QUE EL TP1, y los dos van juntos: el stop
   # estrecho solo es sensato porque el TP1 bajo lo apaga pronto en las que
@@ -405,7 +429,7 @@ trade:
   # SI VUELVEN LOS CIERRES EN ROJO de monedas que luego suben, la palanca es
   # subir este numero -- pero entonces hay que subir el TP1 con el.
   #
-  stop_loss_percentage: 0.26
+  stop_loss_percentage: 0.35
   # EL STOP SE LLEVA LA POSICION ENTERA, moonbag incluido.
   #
   # Antes dejaba el 2% corriendo en una moneda que se estaba cayendo a cero:

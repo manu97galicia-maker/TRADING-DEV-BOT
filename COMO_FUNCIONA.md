@@ -71,8 +71,8 @@ que 1,12 $ se van en comisión.
 
 > **La primera compra se lleva el 70% de tu patrimonio, y no es la mejor
 > moneda del día: es la primera que pasa los filtros.** El bot no elige entre
-> candidatas, compra la que llega. Con el stop en el 26%, esa sola posición
-> arriesga el **18% de todo tu dinero**.
+> candidatas, compra la que llega. Con el stop en el 35%, esa sola posición
+> arriesga el **24,5% de todo tu dinero**.
 
 Subir el porcentaje **no arriesga más dinero en total** — desde el 25% para
 arriba se compromete siempre el mismo 95%, porque el límite lo pone el saldo,
@@ -137,10 +137,10 @@ Sin él, todo lo que no llegue al objetivo cuesta el stop entero:
 
 | la moneda llega a | con la escalera de antes | con un solo TP |
 |---|---|---|
-| +20% | +6,3% | **−26,0%** |
-| +30% | +6,3% | **−26,0%** |
-| +45% | +25,4% | **−26,0%** |
-| +54% | +25,4% | **−26,0%** |
+| +20% | +6,3% | **−35,0%** |
+| +30% | +6,3% | **−35,0%** |
+| +45% | +25,4% | **−35,0%** |
+| +54% | +25,4% | **−35,0%** |
 | +55% | +42,7% | +55,1% |
 | x2,73 | +75,6% | +55,1% |
 | x7,29 | +213,5% | +55,1% |
@@ -150,7 +150,12 @@ Sin él, todo lo que no llegue al objetivo cuesta el stop entero:
 > la mayoría debería llegar al objetivo y los finales intermedios importan
 > poco. **Esa es la apuesta, y todavía no está medida.**
 
-**Hacen falta 32 aciertos de cada 100** para no perder dinero.
+**Hacen falta 39 aciertos de cada 100** para no perder dinero.
+
+> El stop está en −35%. Cuanto más ancho, más aciertos hacen falta — pero
+> también te sales de menos sustos normales. Con el 70% en una sola moneda,
+> **tres pérdidas seguidas se llevan la mitad de la cuenta**, y no hay ningún
+> freno que las pare.
 
 ### Lo que se ahorra
 
@@ -163,17 +168,17 @@ Cada venta paga 0,046 $ de comisión. Siete ventas eran 0,32 $ y una es
 Esto es lo más importante de todo el sistema:
 
 ```
-al empezar        el suelo está en -26%
+al empezar        el suelo está en -35%
 si llega al +55%  se vende TODO y se acabó
 ```
 
 **Ya no hay suelo que suba.** Con un único objetivo no hay nada que proteger
 a mitad de camino: mientras la posición está abierta, lo único que la cierra
-es el stop en −26% o el objetivo en +55%.
+es el stop en −35% o el objetivo en +55%.
 
 Si algún día quieres recuperar esa protección sin volver a la escalera
 entera, basta **una venta más**: un peldaño al +18% que venda el 5%. Cuesta
-0,046 $ y convierte ese −26% en +5,6% en todo el tramo del +18% al +54%.
+0,046 $ y convierte ese −35% en +5,6% en todo el tramo del +18% al +54%.
 
 El suelo se pone un peldaño por detrás del que acabas de cobrar, y un 5% por
 encima de ese. Un 5% *del precio*, no cinco puntos: por eso tras el +38% queda
