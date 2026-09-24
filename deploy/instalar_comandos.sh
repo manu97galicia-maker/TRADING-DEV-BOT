@@ -47,6 +47,9 @@ _poner porque porque.sh
 # POR QUE SE CERRO UNA MONEDA CONCRETA. Es la pregunta que mas se repite y
 # hasta ahora pedia inventar un grep distinto cada vez.
 _poner_py porque_cerro porque_cerro.py
+# DE CUANTO ESTA COMPRANDO DE VERDAD. "Me parece que compra de mas" es una
+# sospecha razonable y comprobarla pedia tres grep distintos desde el movil.
+_poner_py cuanto_compra cuanto_compra.py
 
 # `bot` no envuelve un guion: resume de un vistazo el estado de todo, que es
 # lo que de verdad se quiere saber al entrar.
@@ -167,7 +170,7 @@ else
   echo "  devs medidos: no"
 fi
 echo
-echo "Comandos:  bot  ·  porque  ·  porque_cerro <mint>  ·  cazador ver  ·  devs ver"
+echo "Comandos:  bot · porque · porque_cerro <mint> · cuanto_compra · cazador ver"
 BOT
 sed -i "s|__RAIZ__|$RAIZ|" "$DESTINO/bot"
 chmod +x "$DESTINO/bot"
