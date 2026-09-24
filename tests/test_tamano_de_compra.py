@@ -35,18 +35,19 @@ from modelo_tamano import trade as _trade
 
 
 def test_el_modo_activo_es_el_porcentaje_del_saldo_libre() -> None:
-    """15% del SALDO LIBRE por operacion (24-sep, pedido).
+    """20% del SALDO LIBRE por operacion (24-sep, pedido: "si es un 15, por
+    un 20").
 
     Historial del tamano: 0,12 SOL fijo -> 25% -> 0,04 SOL fijo -> 15% -> 30%
     del saldo libre -> 30% de la cartera -> 10 $ fijos -> 25% de la cartera
-    -> 15% del saldo libre.
+    -> 15% del saldo libre -> 20% del saldo libre.
 
     Y la regla de siempre: manda UNO de los tres. Dos con numero es un valor
     que parece decidir y no decide -- justo la clase de cosa que hace buscar
     el fallo donde no esta.
     """
     t = _trade()
-    assert t["fraccion_saldo"] == 0.15
+    assert t["fraccion_saldo"] == 0.20
     # LA BASE ES PARTE DEL MODO. "15%" no dice nada sin ella: el 15% del
     # saldo libre y el 15% de la cartera son numeros distintos y menguan
     # distinto.
@@ -89,16 +90,23 @@ def test_sobre_el_saldo_libre_las_posiciones_menguan() -> None:
     para elegirla en vez de estar escrita en el codigo.
 
     SOBRE EL SALDO LIBRE (lo de ahora) cada compra es un porcentaje de lo que
-    SOBRA, asi que menguan solas: con 1 SOL salen 0,146 · 0,123 · 0,104 ·
-    0,088 · 0,075. Eso NO es un defecto, es el freno automatico -- por muchas
-    plazas que haya nunca se compromete la cartera entera.
+    SOBRA, asi que menguan solas: con 1 SOL y el 20% salen 0,194 · 0,155 ·
+    0,123 · 0,098 · 0,078. Eso NO es un defecto, es el freno automatico -- por
+    muchas plazas que haya nunca se compromete la cartera entera.
 
     SOBRE LA CARTERA salen iguales, porque la base no baja al comprar: el
     dinero cambia de sitio, no desaparece. A cambio tres del 25% comprometian
     el 75% del dinero de golpe.
 
-    CABEN LAS CINCO PLAZAS, que es lo pedido: con el 15% las cinco juntas se
-    quedan en torno a la mitad del saldo.
+    CABEN LAS CINCO PLAZAS, que es lo pedido.
+
+    EL TOPE DE LAS CINCO JUNTAS ESTA EN EL 70% Y NO ES DECORATIVO. Estuvo en
+    el 60% mientras el porcentaje era del 15% (las cinco se llevaban el 54%);
+    al subir al 20% se van al 65% y el test se puso rojo. Se sube el tope a
+    0,70 --que sigue dejando casi un tercio del saldo sin comprometer-- y no
+    mas: por encima de ahi el freno automatico deja de frenar, que es lo
+    unico que este numero vigila. Con el 25% las cinco juntas pasarian del
+    75% y habria que decidirlo a proposito, no de rebote.
     """
     from modelo_tamano import base_es_libre
 
@@ -111,7 +119,7 @@ def test_sobre_el_saldo_libre_las_posiciones_menguan() -> None:
     for antes, despues in pairwise(tam):
         assert despues < antes, f"cada una mas pequena que la anterior: {tam}"
     # Y nunca se compromete todo: queda saldo despues de las cinco.
-    assert sum(tam) < 0.6, f"las cinco juntas no pueden llevarse la cartera: {tam}"
+    assert sum(tam) < 0.70, f"las cinco juntas no pueden llevarse la cartera: {tam}"
 
 
 def test_nunca_se_gasta_mas_de_lo_que_hay() -> None:

@@ -542,21 +542,40 @@ trade:
   # 0,30 · 0,21 · 0,15 · 0,10 · 0,07. La quinta valia la cuarta parte que la
   # primera sin que nadie lo pidiera. Sobre la cartera salen IGUALES.
   #
+  # 20% (24-sep, pedido: "si es un 15, por un 20"). Historial del porcentaje:
+  # 30% cartera -> 10 $ fijos -> 25% cartera -> 15% libre -> 20% libre.
+  #
   # SOBRE QUE SE CALCULA lo dice `fraccion_base`, aqui abajo. Con "libre" las
   # compras MENGUAN solas: cada una es un porcentaje de lo que SOBRA, asi que
-  # con 1 SOL salen 0,145 · 0,123 · 0,105 · 0,089 · 0,076.
+  # con 1 SOL salen 0,194 · 0,155 · 0,123 · 0,098 · 0,078.
   #
   # ESO NO ES UN DEFECTO: es el freno automatico. Por muchas plazas que haya
-  # nunca se llega a comprometer la cartera entera, y con el 15% las cinco
-  # juntas se quedan en torno a la mitad del saldo. Con el stop en el 28%,
-  # la primera posicion arriesga un 4,1% del saldo libre y la quinta un 2,1%.
+  # nunca se llega a comprometer la cartera entera. Lo que cambia al subir
+  # del 15% al 20%:
   #
-  # OJO CON EL SUELO, y con el 15% aprieta mas que con el 25%. Los costes
-  # fijos --la renta de la cuenta de token y la comision de prioridad-- no
-  # bajan con el tamano. Con un saldo de 0,3 SOL la quinta compra sale de
-  # 0,023 SOL, que ya es territorio de nacer perdiendo. Si pasa a menudo, lo
-  # que hay que poner es `compra_minima_sol`.
-  fraccion_saldo: 0.15
+  #   %     las cinco compras con 1 SOL                suma    del saldo
+  #   15%   0,146 0,123 0,104 0,088 0,075              0,536      54%
+  #   20%   0,194 0,155 0,123 0,098 0,078              0,647      65%
+  #
+  # SE ARRIESGA UN TERCIO MAS. Con el stop en 26%, la primera posicion pasa
+  # de arriesgar un 3,8% del saldo a un 5,0%, y las cinco juntas de un 13,9%
+  # a un 16,8%. No es "cinco puntos mas": es un 33% mas de dinero en juego.
+  #
+  # Y LA QUINTA SIGUE SIENDO LA MITAD QUE LA PRIMERA (0,078 contra 0,194).
+  # Eso no lo arregla subir el porcentaje --subirlo lo empeora, porque cada
+  # compra se lleva mas de lo que queda para la siguiente--; lo arregla
+  # cambiar `fraccion_base` a "cartera".
+  #
+  # OJO CON EL SUELO, y este es el numero incomodo. Los costes fijos --la
+  # comision de prioridad, que hoy son 1,12 $ por compra-- no bajan con el
+  # tamano. Con un saldo de 0,3 SOL las cinco compras salen 0,054 · 0,043 ·
+  # 0,034 · 0,026 · 0,020 SOL; la quinta son 4,5 $ y la comision se lleva el
+  # 25% de ella antes de que la moneda se mueva.
+  #
+  # SUBIR EL PORCENTAJE NO ARREGLA ESO: la quinta compra sigue siendo
+  # pequena porque la base ha menguado cuatro veces. Lo que lo arregla es
+  # `compra_minima_sol` (que se salte las que no llegan) o menos plazas.
+  fraccion_saldo: 0.20
   # SOBRE QUE SE CALCULA EL PORCENTAJE. Es una clave y no una decision
   # escrita en el codigo porque ha ido y venido tres veces en dos dias, y
   # cada vuelta era un commit tocando el camino de compra.

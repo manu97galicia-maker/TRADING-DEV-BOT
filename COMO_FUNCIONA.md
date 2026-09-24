@@ -56,19 +56,22 @@ todas las entradas, venga de donde venga la moneda.
 
 ## 3. Cuánto pone en cada compra
 
-**El 15% del SOL libre.** Libre = lo que hay en la cartera menos una reserva
-intocable de 0,03 SOL (hace falta para poder *vender* después) y menos lo ya
-comprometido.
+**El 20% del SOL libre.** Ojo, **libre no es lo mismo que la cartera**: es lo
+que hay en la wallet menos una reserva intocable de 0,03 SOL (hace falta para
+poder *vender* después) y menos lo que ya está metido en monedas.
 
 Con 1 SOL de saldo salen cinco compras así:
 
 ```
-0,146 · 0,123 · 0,104 · 0,088 · 0,075
+0,194 · 0,155 · 0,123 · 0,098 · 0,078     (suma 0,647 = el 65% del saldo)
 ```
 
-**Menguan a propósito.** Cada una es el 15% de lo que *sobra*, no del total.
+**Menguan a propósito.** Cada una es el 20% de lo que *sobra*, no del total.
 Eso es un freno automático: por muchas posiciones que se abran, nunca se
-compromete la cartera entera. Las cinco juntas se quedan en torno a la mitad.
+compromete la cartera entera. Las cinco juntas se quedan en el 65% del saldo.
+
+Con el stop en el 26%, la primera posición arriesga un 5% del saldo y las
+cinco juntas un 17%.
 
 Puede tener **5 posiciones abiertas a la vez**.
 

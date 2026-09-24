@@ -183,7 +183,7 @@ def test_ahora_mismo_compra_de_verdad() -> None:
     # LA BASE IMPORTA TANTO COMO EL PORCENTAJE: sobre el saldo libre las
     # compras menguan solas y el tamano se frena; sobre la cartera salen
     # iguales y tres seguidas comprometen tres cuartos del dinero.
-    assert _trade()["fraccion_saldo"] == 0.15
+    assert _trade()["fraccion_saldo"] == 0.20
     assert _trade()["fraccion_base"] == "libre"
     _t = _trade()
     _encendidos = [
