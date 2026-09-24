@@ -35,8 +35,8 @@ from modelo_tamano import trade as _trade
 
 
 def test_el_modo_activo_es_el_porcentaje_del_saldo_libre() -> None:
-    """25% de la CARTERA ENTERA por operacion (24-sep, pedido: "compra el 25%
-    del total del balance").
+    """30% de la CARTERA ENTERA por operacion (24-sep, pedido: "pasa al 30%
+    por compra").
 
     LA BASE VUELVE A "CARTERA" y es el cambio que mas pesa de los dos: no es
     solo que el porcentaje suba de 20 a 25, es que se calcula sobre otra
@@ -46,14 +46,14 @@ def test_el_modo_activo_es_el_porcentaje_del_saldo_libre() -> None:
 
     Historial del tamano: 0,12 SOL fijo -> 25% -> 0,04 SOL fijo -> 15% -> 30%
     del saldo libre -> 30% de la cartera -> 10 $ fijos -> 25% de la cartera
-    -> 15% del saldo libre -> 20% del saldo libre -> 25% de la cartera.
+    -> 15% libre -> 20% libre -> 25% cartera -> 30% cartera.
 
     Y la regla de siempre: manda UNO de los tres. Dos con numero es un valor
     que parece decidir y no decide -- justo la clase de cosa que hace buscar
     el fallo donde no esta.
     """
     t = _trade()
-    assert t["fraccion_saldo"] == 0.25
+    assert t["fraccion_saldo"] == 0.30
     # LA BASE ES PARTE DEL MODO. "15%" no dice nada sin ella: el 15% del
     # saldo libre y el 15% de la cartera son numeros distintos y menguan
     # distinto.
@@ -118,7 +118,10 @@ def test_sobre_el_saldo_libre_las_posiciones_menguan() -> None:
     from modelo_tamano import base_es_libre
 
     tam = _tamanos(1.0)
-    assert len(tam) == _trade()["max_posiciones"], f"caben las cinco: {tam}"
+    # CUANTAS CABEN LO DECIDE EL DINERO, no `max_posiciones`: con el 30% de
+    # la cartera el saldo se acaba en la cuarta. Lo fija en detalle
+    # test_posiciones_por_saldo.py; aqui basta con no darlo por hecho.
+    assert 1 <= len(tam) <= _trade()["max_posiciones"], f"nunca mas del techo: {tam}"
     for antes, despues in pairwise(tam):
         assert despues <= antes + 1e-9, f"nunca crecen: {tam}"
     if base_es_libre():
@@ -132,7 +135,9 @@ def test_sobre_el_saldo_libre_las_posiciones_menguan() -> None:
         # Base "cartera": salen IGUALES hasta que se agota el saldo libre.
         assert abs(tam[1] - tam[0]) < 0.01 * tam[0], f"salen iguales: {tam}"
         # Y AQUI NO HAY FRENO AUTOMATICO, que es lo que hay que saber: con el
-        # 25% las cinco juntas se llevan el 95% del saldo. Lo unico que para
+        # 25% o con el 30% se llevan el mismo 95% del saldo -- el tope lo
+        # pone el saldo libre, no el porcentaje. Subirlo no arriesga mas
+        # dinero: reparte el mismo en menos posiciones y mas gordas. Lo unico que para
         # es el guardian del saldo libre, no el tamano de la compra. El tope
         # se deja en 0,97 --que es lo que queda tras la reserva y los
         # colchones-- porque poner uno mas bajo seria fingir un freno que no

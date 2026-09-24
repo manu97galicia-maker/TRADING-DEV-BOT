@@ -56,28 +56,31 @@ todas las entradas, venga de donde venga la moneda.
 
 ## 3. Cuánto pone en cada compra
 
-**El 25% de la cartera.** Cartera = todo lo que tienes, el SOL de la wallet
+**El 30% de la cartera.** Cartera = todo lo que tienes, el SOL de la wallet
 más lo que ya vale lo que hay metido en monedas. Esa base **no baja al
 comprar** (el dinero cambia de sitio, no desaparece), así que las compras
 salen **iguales**.
 
-Con 1 SOL de saldo salen cinco compras así:
+Con 1 SOL de saldo salen así:
 
 ```
-0,250 · 0,249 · 0,249 · 0,160 · 0,038     (suma 0,945 = el 95% del saldo)
+0,300 · 0,299 · 0,298 · 0,048     (suma 0,945 = el 95% del saldo)
 ```
 
-**Tres compras de verdad, una recortada y una que es calderilla.** No es un
-fallo, es aritmética: cuatro del 25% ya son el 100% del dinero. A partir de
-la cuarta, lo que compra es lo que quedaba libre.
+**Solo se abren cuatro, no cinco** — y de esas, tres son compras de verdad y
+la cuarta es calderilla. No es un fallo: tres del 30% ya son el 90% del
+dinero, y para la quinta no queda nada. El tope de 5 posiciones sigue escrito
+en la configuración, pero **el dinero no llega hasta él**.
 
 > **Aquí no hay freno automático.** Antes cada compra era un porcentaje de lo
 > que *sobraba* y menguaban solas, así que nunca se comprometía todo. Ahora lo
 > único que para al bot es quedarse sin saldo. Con el stop en el 26%, las
-> cinco juntas ponen en riesgo un **25% de tu dinero**.
+> posiciones juntas ponen en riesgo un **25% de tu dinero**.
 
-La quinta compra sale de unos 8 $, y la comisión de prioridad son 1,12 $: un
-13% se va antes de que la moneda se mueva.
+Subir del 25% al 30% **no arriesga más dinero** — el 95% se compromete igual,
+porque el límite lo pone el saldo, no el porcentaje. Lo que cambia es el
+reparto: **el mismo dinero en menos apuestas y más gordas**, así que un solo
+rug duele más y la suerte pesa más en el resultado del día.
 
 Puede tener **5 posiciones abiertas a la vez**.
 

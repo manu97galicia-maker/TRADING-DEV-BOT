@@ -126,39 +126,43 @@ def test_lo_que_queda_cubre_las_ventas_pendientes() -> None:
     assert saldo - gastado >= reserva
 
 
-def test_caben_las_cinco_plazas() -> None:
-    """LAS CINCO SALEN, que es lo pedido ("puede haber multiples posiciones").
+def test_cuantas_plazas_caben_de_verdad() -> None:
+    """CUANTAS SE ABREN DE VERDAD, que no es lo mismo que `max_posiciones`.
 
-    PERO NO LAS CINCO ENTERAS, y ese es el precio del 25% de la cartera
-    (24-sep, tarde). Con 1 SOL salen 0,250 · 0,249 · 0,249 · 0,160 · 0,038:
-    tres compras de verdad, una recortada y una que es calderilla. Es
-    aritmetica, no un fallo -- cuatro del 25% ya son el 100% del dinero.
+    El techo son cinco y lo pedido fue "puede haber multiples posiciones".
+    Pero quien decide de verdad es el DINERO, y con el 30% de la cartera
+    (24-sep, tarde) no llega para cinco: con 1 SOL salen 0,300 · 0,299 ·
+    0,298 · 0,048 y se acabo. Tres del 30% ya son el 90% del saldo.
 
-    ESTE TEST LLEVABA EL LIMITE EN "la ultima pasa del 40% de la primera" y
-    se puso rojo con este cambio, que era su trabajo. No se ha bajado el
-    limite para que pase: se ha partido en dos, porque con base "cartera" la
-    pregunta correcta no es si la ultima es grande --no lo va a ser nunca--
-    sino CUANTAS son compras de verdad.
+    ESTE TEST SE LLAMABA `test_caben_las_cinco_plazas` y exigia cinco. Se
+    puso rojo al pasar del 25% al 30%, que era su trabajo. No se ha bajado
+    la exigencia: se ha cambiado la PREGUNTA, porque "caben cinco" dejo de
+    ser cierto y seguir afirmandolo era el tipo de test verde que miente.
+    Ahora fija cuantas caben en cada modo, y cualquier cambio de tamano
+    vuelve a moverlo.
 
-    LA QUINTA COMPRA SALE DE ~8 $ con 1 SOL de saldo, y la comision de
-    prioridad son 1,12 $: el 13% se va antes de que la moneda se mueva. Si
-    eso molesta, las palancas son `compra_minima_sol` (que se salte las que
-    no llegan) o bajar `max_posiciones` a 4.
+    EL TECHO DEJA DE MANDAR, y conviene saberlo al leer un dia de
+    operaciones: ver cuatro posiciones y no cinco NO es un fallo del bot.
+    Si se quiere que el techo diga la verdad, la palanca es bajar
+    `max_posiciones` a 3; si se quiere que no haya migas,
+    `compra_minima_sol`. Ninguna se toca sin pedirlo.
     """
-    tam = tamanos(1.0)
-    assert len(tam) == TECHO, f"tienen que caber las cinco: {tam}"
     from modelo_tamano import base_es_libre
 
+    tam = tamanos(1.0)
     enteras = [x for x in tam if x > 0.9 * tam[0]]
     if base_es_libre():
-        # Menguan suaves: la ultima sigue siendo una compra decente.
+        # Menguan suaves: caben las cinco y la ultima sigue siendo decente.
+        assert len(tam) == TECHO, f"con base libre caben las cinco: {tam}"
         assert tam[-1] > 0.4 * tam[0], f"la ultima no puede ser una miga: {tam}"
     else:
-        # Iguales hasta que se acaba el saldo. Con el 25% son tres enteras.
-        assert len(enteras) == 3, f"con el 25% de la cartera salen tres enteras: {tam}"
-        assert tam[-1] < 0.2 * tam[0], (
-            f"y la quinta es calderilla, que es el coste conocido: {tam}"
+        # Base "cartera": iguales hasta que se agota el saldo libre.
+        assert len(tam) < TECHO, (
+            f"con el 30% de la cartera el dinero no da para las cinco: {tam}"
         )
+        assert len(tam) == 4, f"da para cuatro: {tam}"
+        assert len(enteras) == 3, f"y solo tres son compras enteras: {tam}"
+        assert tam[-1] < 0.2 * tam[0], f"la ultima es calderilla: {tam}"
     # Y con poco saldo sigue comprando, solo que diminuto: es lo pedido.
     assert len(tamanos(0.05)) >= 1, "con poco saldo compra poco, pero compra"
 
