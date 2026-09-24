@@ -1366,63 +1366,56 @@ filters:
     enabled: true
     # Punto de la curva en que se compra (0,95 = 95% vendido).
     #
-    # 84,0% (24-sep, pedido: "baja un 6 la curva"). Venia del 90,0%.
+    # 79,0% (24-sep, pedido: "baja la curva otro 5%"). Venia del 84,0%, que
+    # venia del 90,0% media hora antes.
     # Historial: 0,96 -> 0,95 -> 0,96 -> 0,944 -> 0,929 -> 0,92 -> 0,885 ->
     # 0,875 -> 0,86 -> 0,93 -> 0,90 -> 0,875 -> 0,86 -> 0,87 -> 0,93 -> 0,91
-    # -> 0,925 -> 0,935 -> 0,90 -> 0,84.
+    # -> 0,925 -> 0,935 -> 0,90 -> 0,84 -> 0,79.
     #
-    # LA CUENTA QUE IMPORTA DESDE QUE HAY UN SOLO TAKE PROFIT. El objetivo es
-    # +55,13% sobre el precio de compra, y lo que decide si se cobra no es
-    # ese porcentaje sino A QUE PUNTO DE CURVA equivale. La curva acelera,
-    # asi que cuanto mas arriba se compra, mas lejos queda el mismo +55%:
+    # ESTO YA NO ES "LA CURVA CASI LLENA", y conviene decirlo con el nombre
+    # del fichero delante: la fuente se llama `curva_96` porque nacio el
+    # 23-sep comprando al 96%. Al 79% faltan 42,9 SOL para migrar, o sea la
+    # MITAD de la curva. Se compran monedas a medio camino, no monedas a
+    # punto de conseguirlo. Es una estrategia distinta con los mismos
+    # filtros.
     #
-    #   entrada   para cobrar el TP hay que llegar a   margen hasta migrar
-    #    84,0%              94,1% de curva                  56 puntos
-    #    86,0%              95,7%                           40
-    #    88,0%              97,3%                           24
-    #    90,0%              98,9%                           10   <- antes
-    #    92,0%             100,5% (imposible)               -5
+    # LA CUENTA QUE SIGUE MANDANDO. Con un solo take profit, lo que decide si
+    # se cobra es a que punto de curva equivale el +55,13%:
     #
-    # AL 90% EL OBJETIVO PEDIA CASI MIGRAR: habia que llegar al 98,9% de la
-    # curva para cobrarlo, o sea casi todo el recorrido que quedaba. Al 84%
-    # basta con el 94,1%, por donde pasan muchas mas.
+    #   entrada   para cobrar el TP hay que llegar a   MC de compra   ventana
+    #    79,0%              90,1% de curva                35,5k        20,5p
+    #    84,0%              94,1%                         42,8k        15,5p   <- antes
+    #    90,0%              98,9%                         54,9k         9,5p
     #
-    # ESO NO SE VE MIRANDO EL PORCENTAJE. "+55%" suena igual de lejos se
-    # entre donde se entre, y no lo es. Es el motivo de fondo de este cambio.
+    # El objetivo sigue siendo mas facil cuanto mas abajo se entra: ahora
+    # basta con que la moneda llegue al 90,1% de su curva.
     #
     #   curva   SOL dentro   falta   precio    subida hasta migrar
-    #   84,0%      49,1       35,9   -22,0%         +111,2%   <- aqui
-    #   85,0%      50,7       34,3   -18,9%         +103,1%
-    #   87,0%      54,0       31,0   -12,0%          +87,2%
-    #   90,0%      59,6       25,4     0,0%          +64,7%   <- antes
-    #   93,5%      67,1       17,9   +15,9%          +40,2%
+    #   79,0%      42,1       42,9   -17,0%         +154,4%   <- aqui
+    #   84,0%      49,1       35,9     0,0%         +111,2%   <- antes
+    #   90,0%      59,6       25,4   +28,2%          +64,7%
     #
-    # ("Precio" es respecto al 90,0%, que es de donde se viene.)
+    # ("Precio" es respecto al 84,0%.)
     #
-    # LO DEMAS QUE CAMBIA:
-    #   - la ventana de disparo pasa de 9,5 a 15,5 puntos: ~60% mas
-    #     candidatas, y con ellas la posibilidad de medir algo antes;
-    #   - se entra un 22,0% mas barato (MC de compra 42,8k contra 54,9k);
-    #   - el objetivo cae en ~66,4k de market cap en vez de ~85,1k.
+    # LO QUE SE GANA: la ventana pasa de 15,5 a 20,5 puntos y se entra un 17%
+    # mas barato. Mas candidatas y antes.
     #
-    # LO QUE CUESTA, Y NO ESTA MEDIDO: al 84% faltan 35,9 SOL para migrar
-    # contra 25,4. La moneda esta menos probada y mas se quedaran por el
-    # camino. Cuantas mas, nadie lo sabe.
+    # LO QUE SE PIERDE, Y AQUI YA NO ES UN MATIZ: al 79% la moneda ha
+    # demostrado la mitad de lo que demostraba al 90%. La premisa entera de
+    # esta fuente --"si ha llegado hasta aqui es que ha pasado por mucha
+    # gente"-- se debilita a cada punto que se baja. Cuanto, no esta medido.
     #
-    # OJO AL FILTRO DE COMPRADORES, QUE VA EN DIRECCION CONTRARIA. Una moneda
-    # al 84% ha pasado por MENOS gente que una al 90%, y `min_compradores`
-    # pide 30 vistos. El embudo ya estaba atascado justo ahi (0 compras esta
-    # tarde), asi que bajar la entrada lo aprieta un poco mas. Si tras una
-    # ventana de observacion sigue sin comprar, ESE es el numero a mirar --
-    # pero solo despues de confirmar que el stream de la cadena esta sano,
-    # porque con el websocket caido ese contador sale mal pase lo que pase.
+    # Y EL FILTRO DE COMPRADORES SE APRIETA MAS. `min_compradores` pide 30
+    # vistos y una moneda al 79% ha tenido menos compradores que una al 84%,
+    # que a su vez tenia menos que una al 90%. El embudo ya estaba atascado
+    # exactamente ahi esta tarde (0 compras en dos horas). Bajar la entrada
+    # es, de los dos numeros, el que NO arregla eso.
     #
-    # EL SUELO DEL TEST ESTABA EN 0,85 Y ESTE CAMBIO LO CRUZA. No se ha
-    # bajado en silencio: la comprobacion se ha reescrito para mirar lo que
-    # de verdad decide ahora --que el objetivo se pueda cobrar dentro de la
-    # curva y con margen-- en vez de un numero redondo heredado de cuando
-    # habia escalera de siete peldanos.
-    umbral: 0.84
+    # EL SUELO ABSOLUTO DEL TEST ESTA EN 0,70, a nueve puntos. Ahi se para,
+    # y no por elegancia: los filtros de esta fuente --sin bundle, 30
+    # compradores, concentracion de titulares-- estan pensados para monedas
+    # avanzadas. Aplicados a una moneda a medio camino no dicen lo mismo.
+    umbral: 0.79
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995

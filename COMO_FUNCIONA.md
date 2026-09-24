@@ -19,10 +19,10 @@ casi toda la curva y están cerca de conseguirlo, porque para llegar ahí han
 tenido que pasar por mucha gente.
 
 ```
-nace ─────────────────────────────▶ 84,0% ──────────▶ migra
-                                      ▲
-                                 aquí compra
-                            (le faltan ~36 SOL)
+nace ───────────────────────────▶ 79,0% ─────────────▶ migra
+                                    ▲
+                               aquí compra
+                          (le faltan ~43 SOL, media curva)
 ```
 
 Son pocas al día: la mayoría de las monedas mueren mucho antes de llegar. Que
@@ -36,7 +36,7 @@ Todo esto, sin saltarse nada:
 
 | | |
 |---|---|
-| **Punto de la curva** | entre el 84,0% y el 99,5% (pasado eso ya está migrando) |
+| **Punto de la curva** | entre el 79,0% y el 99,5% (pasado eso ya está migrando) |
 | **Gente de verdad** | mínimo **30 carteras distintas** la han comprado |
 | **Sin bundle** | como mucho 3 carteras en su bloque de nacimiento, y máximo 2 SOL |
 | **Sin concentración** | los mayores tenedores no pueden tener más del 50% |
@@ -128,13 +128,19 @@ cuanto más arriba se compra:
 
 | se compra al | para cobrar hay que llegar al |
 |---|---|
-| **84%** | **94,1% de curva** |
-| 88% | 97,3% |
+| **79%** | **90,1% de curva** |
+| 84% | 94,1% |
 | 90% | 98,9% ← casi migrar |
 | 92% | imposible |
 
-Por eso se compra al 84%: el objetivo pasa de pedir *casi migrar* a pedir un
-94%, por donde pasan muchas más monedas.
+Por eso se compra abajo: el objetivo pasa de pedir *casi migrar* a pedir un
+90%, por donde pasan muchas más monedas.
+
+> **Pero ojo con el nombre.** Esta estrategia se llamaba "la curva casi
+> llena" y nació comprando al 96%. Al 79% le faltan **43 SOL para migrar —
+> media curva**. Ya no son monedas a punto de conseguirlo: son monedas a
+> medio camino. La premisa original ("si ha llegado hasta aquí es que ha
+> pasado por mucha gente") se debilita a cada punto que se baja.
 
 ### Lo que cuesta tener un solo objetivo
 

@@ -314,7 +314,7 @@ def test_la_config_del_bot_pide_lo_que_se_acordo() -> None:
     """
     cfg = yaml.safe_load(CONFIG.read_text())["filters"]["curva_96"]
     assert cfg["enabled"] is True
-    assert cfg["umbral"] == 0.84
+    assert cfg["umbral"] == 0.79
     # La ventana de disparo: entre el umbral y el tope. Por encima del tope
     # la moneda ya esta migrando y comprar ahi es tirar la comision.
     assert cfg["tope"] > cfg["umbral"]
