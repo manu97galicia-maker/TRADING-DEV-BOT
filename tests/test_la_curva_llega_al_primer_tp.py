@@ -110,9 +110,20 @@ def test_no_se_entra_tan_abajo_que_deje_de_ser_esta_estrategia() -> None:
 
     La idea de esta fuente es comprar monedas que ya casi lo han conseguido:
     cuanto mas abajo se entra, mas se parece a comprar una moneda cualquiera y
-    mas de ellas se quedan a medias sin migrar nunca. Por debajo del 90% ya no
-    es "casi llena" y habria que llamarla otra cosa.
+    mas de ellas se quedan a medias sin migrar nunca.
+
+    EL SUELO SE BAJO DE 0,90 A 0,85 el 24-sep, al pedirse la entrada al 88,5%.
+    Conviene tener claro lo que es y lo que no: aquel 0,90 lo puse yo al
+    escribir el test, no salio de ninguna medicion ni de ninguna propiedad de
+    la curva. Era un criterio --"por debajo del 90% esto ya no es la curva casi
+    llena"-- y el dueno del bot decidio cruzarlo a sabiendas. Un test no puede
+    vetar una decision; lo que si puede es seguir avisando de cuando se esta
+    yendo lejos.
+
+    Por eso el suelo nuevo tampoco es una ley: es el punto en el que "casi
+    llena" dejaria de significar nada. Al 0,85 faltan mas de 30 SOL para
+    migrar, o sea mas de un tercio de la curva.
     """
     c = _cfg()["filters"]["curva_96"]
-    assert c["umbral"] >= 0.90, "por debajo del 90% esto ya no es la curva casi llena"
+    assert c["umbral"] >= 0.85, "por debajo del 85% esto ya no es la curva casi llena"
     assert c["umbral"] < c["tope"] <= 1.0
