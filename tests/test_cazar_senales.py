@@ -143,15 +143,26 @@ def test_las_que_nunca_arrancan_se_olvidan() -> None:
     assert "vieja" not in c.pendientes
 
 
-def test_los_peldanos_medidos_son_los_de_la_escalera_real() -> None:
-    """Si la escalera cambia y esto no, se estaria midiendo otra cosa."""
+def test_el_tp_de_verdad_esta_entre_los_niveles_medidos() -> None:
+    """Si el objetivo cambia y el cazador no, se estaria midiendo otra cosa.
+
+    EL CAZADOR MIDE TRES NIVELES Y LA CONFIGURACION TIENE UNO. No es un
+    descuadre: saber cuantas monedas se quedaron por debajo del objetivo es
+    lo que permite decidir si ese objetivo esta bien puesto. Lo que si tiene
+    que cumplirse es que el objetivo REAL sea uno de los medidos, y que los
+    otros queden por debajo -- si no, el informe no dice nada sobre la
+    configuracion que corre.
+    """
     cz = _modulo("cazar_senales")
     t = yaml.safe_load(
         (RAIZ / "bots/bot-paper-ai-entry.yaml").read_text(encoding="utf-8")
     )["trade"]
-    assert cz.TP1 == t["take_profit_percentage"]
-    assert cz.TP2 == t["tp2_gain"]
-    assert cz.TP3 == t["tp3_gain"]
+    niveles = [cz.TP1, cz.TP2, cz.TP3]
+    assert t["take_profit_percentage"] in niveles, (
+        f"el take profit del yaml ({t['take_profit_percentage']}) no esta "
+        f"entre los niveles que mide el cazador ({niveles})"
+    )
+    assert niveles == sorted(niveles), "los niveles tienen que ir de menor a mayor"
     assert cz.STOP == -t["stop_loss_percentage"]
 
 
@@ -244,12 +255,19 @@ def test_la_punta_peor_nunca_supera_a_la_mejor() -> None:
 def test_lo_que_queda_dentro_no_se_valora_al_pico() -> None:
     """Valorar el resto al pico seria hacer trampa: ese precio ya paso.
 
-    Una moneda que sube a +100% y se cae a -50% no vale +100% al final. Si se
+    Una moneda que sube a +40% y se cae a -50% no vale +40% al final. Si se
     contara asi, cualquier filtro pareceria rentable.
+
+    EL PICO TIENE QUE QUEDAR POR DEBAJO DEL TAKE PROFIT. Estaba en +100% y,
+    al quedarse la configuracion en un solo tp que vende el 100% al +55,13%,
+    los dos casos daban lo MISMO: con la posicion ya vendida entera da igual
+    lo que haga el precio despues, y la comparacion se quedaba en 0,5513
+    contra 0,5513. El test tiene que mirar una moneda que NO llego al
+    objetivo, que es donde la pregunta existe.
     """
     an = _modulo("analizar_senales")
-    subio_y_cayo = [{"pico": 1.0, "suelo": -0.10, "ultimo": -0.50}]
-    se_quedo_arriba = [{"pico": 1.0, "suelo": -0.10, "ultimo": 1.0}]
+    subio_y_cayo = [{"pico": 0.40, "suelo": -0.10, "ultimo": -0.50}]
+    se_quedo_arriba = [{"pico": 0.40, "suelo": -0.10, "ultimo": 0.40}]
     assert an._cuenta(subio_y_cayo)[1] < an._cuenta(se_quedo_arriba)[1]
 
 

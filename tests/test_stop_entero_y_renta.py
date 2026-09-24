@@ -48,27 +48,34 @@ def test_con_el_stop_entero_no_queda_nada_que_retener() -> None:
     assert "keep = 0.0 if self.vender_todo_en_stop else original_qty * moonbag" in texto
 
 
-def test_el_moonbag_de_las_ganadoras_sigue_intacto() -> None:
-    """Lo que NO cambia: una moneda que recorre la escalera deja su 2% para
-    vender a mano. El stop solo se lo lleva cuando salta."""
+def test_ya_no_queda_moonbag_porque_el_tp_vende_todo() -> None:
+    """YA NO HAY MOONBAG, y este test pasa a vigilar que siga sin haberlo.
+
+    Hasta la noche del 24-sep la escalera dejaba un resto --primero un 2%,
+    luego un 3%-- que el bot no vendia nunca y que Manu vendia a mano. Al
+    quedarse la configuracion en UN SOLO take profit que se lleva el 100%,
+    ese resto desaparece.
+
+    POR QUE IMPORTA QUE UN TEST LO MIRE: un resto sin dueno es lo peor de los
+    dos mundos. Ni lo vende el bot ni nadie sabe que esta ahi, y ocupa la
+    cuenta de token --y su renta-- hasta que alguien la cierra a mano. Si
+    alguien baja el take profit por debajo del 100% sin pensarlo, esto salta.
+
+    Se suma CON `.get` lo que haya: las claves de los peldanos que ya no
+    existen darian KeyError, que es un rojo que dice "falta una clave" en vez
+    de "lo que se vende ha cambiado".
+    """
     t = _cfg()["trade"]
-    # LAS DOS ESCALERAS, y es el error facil desde el 24-sep: los peldanos de
-    # porcentaje venden el 78% y los escalones de market cap el 19%. Sumando
-    # solo los primeros saldria un moonbag del 22%, que no es el moonbag sino
-    # lo que aun no se ha repartido.
-    #
-    # Con `.get` y sumando lo que haya: `tp4_sell` y compania ya no existen,
-    # y un KeyError aqui seria un rojo que dice "falta una clave" en vez de
-    # "el moonbag ha cambiado".
     vendido = (
         t["take_profit_sell_percentage"]
-        + t["tp2_sell"]
-        + t["tp3_sell"]
-        + sum(t.get(f"tp{i}_sell") or 0 for i in (4, 5, 6))
+        + sum(t.get(f"tp{i}_sell") or 0 for i in (2, 3, 4, 5, 6))
         + sum(e["sell"] for e in t.get("tp_extra") or [])
         + sum(d["sell"] for d in t.get("mc_take_profit_tiers") or [])
     )
-    assert round(1 - vendido, 6) == 0.03
+    assert round(vendido, 6) == 1.0, (
+        f"se vende el {vendido * 100:.1f}% y queda un {100 - vendido * 100:.1f}% "
+        f"sin dueno: ni lo vende el bot ni nadie sabe que esta ahi"
+    )
 
 
 # ------------------------------------------------------- recuperar la renta

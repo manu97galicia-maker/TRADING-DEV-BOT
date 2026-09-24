@@ -167,68 +167,63 @@ trade:
   # gas de la operacion es un 3,7%. El TP1 NO cubre el gas por si solo, y da
   # igual -- lo que aporta es el suelo, y eso ya esta contado en la cuenta de
   # arriba.
-  # ESCALERA REHECHA PARA DEJAR CORRER (24-sep, noche, pedido: "que corra a
-  # 150, 200 mil, que no se frene en los 40, y adapta el TP a eso").
+  # UN SOLO TAKE PROFIT (24-sep, noche, pedido: "lo que quiero es pagar pocas
+  # comisiones, solo quiero un tp y un sl"). Se va la escalera entera.
   #
-  # ES UN CAMBIO DE IDEA, NO UN AJUSTE. Hasta esta tarde la escalera estaba
-  # pensada para recuperar la inversion cuanto antes; ahora esta pensada para
-  # que las que se disparan no se frenen.
+  #   antes                              ahora
+  #   +18% vende 10%                     +55,13% vende 100%
+  #   +38% vende 15%                     (nada mas)
+  #   +55,13% vende 15%
+  #   x2,733 (150k) vende 20%
+  #   x3,644 (200k) vende 17%
+  #   x5,466 (300k) vende 12%
+  #   x7,288 (400k) vende 8%
+  #   3% de moonbag                      no queda moonbag
   #
-  #   peldano      vende    multiplo    market cap (entrando al 90%)
-  #   TP1           10%     x1,18            ~65k
-  #   TP2           15%     x1,38            ~76k
-  #   TP3           15%     x1,551           ~85k
-  #   lejano 1      20%     x2,733           150k
-  #   lejano 2      17%     x3,644           200k
-  #   lejano 3      12%     x5,466           300k
-  #   lejano 4       8%     x7,288           400k
-  #   moonbag        3%     nunca se vende
+  # LO QUE SE AHORRA, con las cifras reales: cada venta paga 0,046 $ de
+  # comision de prioridad. Siete ventas son 0,32 $ y una es 0,046 $, asi que
+  # se ahorran 0,28 $ por posicion. Sobre una posicion de 110 $ eso es el
+  # 0,25%. La comision de COMPRA --1,12 $-- no cambia: las siete ventas
+  # juntas costaban menos de un tercio de lo que cuesta abrir la posicion.
   #
-  # LOS TRES DE CERCA VAN EN PORCENTAJE y los cuatro lejanos en CIFRAS DE
-  # MARKET CAP. Son dos cosas distintas a proposito: los de cerca marcan el
-  # recorrido que la moneda hace dentro de la curva y no dependen de nada
-  # externo; los lejanos son las cifras que se miran en la app, y por eso
-  # sus multiplos hay que rehacerlos cada vez que se mueve la entrada.
+  # LO QUE CUESTA, Y ES MUCHO MAS QUE LO QUE AHORRA. El peldano pequeno no
+  # estaba para cobrar: estaba para APAGAR EL STOP. Al tocarlo, el suelo
+  # subia a compra +5% y la operacion ya no podia acabar en perdida. Sin el,
+  # todo lo que no llegue al objetivo cuesta el stop entero:
   #
-  # LO QUE CAMBIA DE VERDAD: ANTES DE MIGRAR SE VENDE EL 25%, NO EL 60%. Esa
-  # es la frase "que no se frene en los 40": el recorrido dentro de la curva
-  # es +40,2%, y hasta hoy la escalera se llevaba ahi el 60% de la posicion.
-  # Las monedas que iban a dispararse llegaban a los 150k con el 13% dentro.
+  #   la moneda llega a    con escalera    con 1 TP
+  #          +20%             +6,3%         -26,0%
+  #          +30%             +6,3%         -26,0%
+  #          +45%            +25,4%         -26,0%
+  #          +54%            +25,4%         -26,0%
+  #          +55%            +42,7%         +55,1%
+  #          x2,73           +75,6%         +55,1%
+  #          x7,29          +213,5%         +55,1%
   #
-  # LOS LEJANOS YA NO SON UNA CADENA GEOMETRICA sino las CIFRAS que se miran
-  # en la app: 150k, 200k, 300k y 400k. Se quita el quinto porque con el
-  # reparto nuevo el 97% se agota en el cuarto.
+  # SE ELIGIO A SABIENDAS, con esa tabla delante, y el motivo dado fue que
+  # "buscamos proyectos con mucha presion compradora y que se disparen": si
+  # la mayoria de las compradas llega al objetivo, los finales intermedios
+  # importan poco. Esa es la apuesta, y no esta medida.
   #
-  #   escenario              antes     ahora
-  #   salta el stop         -26,0%    -26,0%
-  #   sube +22% y se cae     +7,6%     +6,3%
-  #   migra y muere         +28,4%    +25,4%
-  #   llega a 100k          +38,4%    +42,7%
-  #   llega a 150k          +44,7%    +67,5%
-  #   llega a 200k          +54,5%   +111,3%
-  #   llega a 400k          +72,3%   +175,2%
-  #   aciertos para no perder  48%       51%
+  # ACIERTOS PARA NO PERDER: 32% (26 / (55,13 + 26)). Con la escalera hacian
+  # falta 38%, pero no son comparables: alli "acertar" era llegar a migrar y
+  # aqui es llegar al +55,13%.
   #
-  # SE PAGA EN LAS QUE NO SE DISPARAN: la que migra y se muere deja 3 puntos
-  # menos y el umbral de aciertos sube de 48% a 51%. Se cobra en las que si:
-  # a 200k se dobla el resultado y a 400k se multiplica por 2,4. Es el
-  # intercambio pedido, y es el contrario del que se pidio esta misma tarde
-  # ("recuperar rapido la inversion") -- queda anotado para que se vea que
-  # son dos objetivos opuestos y no se pueden tener los dos.
+  # POR QUE EL OBJETIVO EN +55,13%: es el unico numero que la curva decide.
+  # Entrando al 90% quedan +64,7% hasta migrar, asi que entra por 9,6 puntos.
+  # Por encima de +64,7% el objetivo solo se cobraria despues de migrar, y
+  # con un solo peldano eso no es cobrar menos, es no cobrar. Hay test.
   #
-  # OJO: LOS MULTIPLOS DEPENDEN DE DONDE SE ENTRE. En el yaml van como
-  # multiplos del precio de compra porque es lo unico que el bot sabe mirar,
-  # pero "150k" es un x2,33 entrando al 93,5% (MC de compra ~64,5k) y seria
-  # un x2,61 entrando al 91% (~57,4k). Mover la entrada descoloca estos
-  # escalones SIN TOCARLOS. Hay test que lo comprueba y se pone rojo solo.
+  # EN MARKET CAP el objetivo cae sobre los 85k (compra ~54,9k con SOL a
+  # 220 $). Si se quisiera cobrar a 150k habria que ponerlo en x2,733, pero
+  # eso queda fuera de la curva: solo se cobraria si la moneda migra y sigue
+  # subiendo, y todo lo demas seria -26%.
   #
-  # EL STOP SIGUE EN 26% y sigue sin poder decidirse con la aritmetica. Pero
-  # ahora importa mas: vendiendo solo el 25% antes de migrar, perder el TP2
-  # --su corte esta a 0,33 puntos de curva-- deja la moneda que migra y se
-  # muere en +6,3% y el umbral de aciertos en 80%. Cuanto menos se cobra
-  # pronto, mas caro sale que se caiga un peldano.
-  take_profit_percentage: 0.18
-  take_profit_sell_percentage: 0.10
+  # SI SE QUIERE RECUPERAR LA PROTECCION sin volver a la escalera entera,
+  # basta UNA venta mas: un peldano al +18% que venda el 5%. Cuesta 0,046 $
+  # y convierte ese -26% en +5,6% en todo el tramo del +18% al +54%.
+  take_profit_percentage: 0.5513
+  take_profit_sell_percentage: 1.00
   # +53% Y NO +55% (24-sep, pedido: "sube dentro de la curva dos puntos").
   # Dos puntos NO de ganancia sino de MARGEN: entrando al 91,0% quedan
   # +57,5% hasta migrar, asi que el peldano pasa de entrar por 2,5 puntos a
@@ -238,10 +233,6 @@ trade:
   # de +39,8% a +39,0% y los aciertos necesarios siguen en 40%. Lo que se
   # compra son los 2 puntos, y este es el peldano que vende el 40% de la
   # posicion: es el que no puede quedarse fuera.
-  tp2_gain: 0.38
-  tp2_sell: 0.15
-  tp3_gain: 0.5513
-  tp3_sell: 0.15
   # SE QUITA EL CUARTO PELDANO POR PORCENTAJE (24-sep, pedido: "el siguiente
   # lo ponemos en un 100%, pero vende un 20%, y el resto lo dejamos correr
   # hasta 200.000"). Estaba en +125% y vendia el 5%.
@@ -332,15 +323,7 @@ trade:
   # escalon dista un 35% del anterior y el margen es del 5%, el suelo nunca
   # alcanza al escalon que acaba de cobrarse -- que es el fallo que obligo a
   # mover el TP2 en agosto.
-  tp_extra:
-    - gain: 1.7330
-      sell: 0.20
-    - gain: 2.6440
-      sell: 0.17
-    - gain: 4.4661
-      sell: 0.12
-    - gain: 6.2881
-      sell: 0.08
+  tp_extra: []
 
   # ESCALONES POR MARKET CAP: NINGUNO (24-sep, tarde).
   #

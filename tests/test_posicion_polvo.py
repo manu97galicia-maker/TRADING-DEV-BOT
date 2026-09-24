@@ -27,6 +27,8 @@ from modelo_tamano import trade as _trade
 
 FUENTE = Path(__file__).resolve().parent.parent / "src/trading/universal_trader.py"
 #: El precio del SOL que usa el bot para pasar a dolares (_SOL_USD).
+#: Margen para comparar fracciones con cero sin que la coma flotante enganie.
+CERO = 1e-9
 SALDO_REFERENCIA = 1.0
 SOL_USD = 91.24
 
@@ -108,6 +110,14 @@ def test_hasta_donde_llega_la_escalera_con_el_tamano_de_compra_de_hoy() -> None:
     ultimo_gestionado = None
     for ganancia, vende in escalera:
         queda -= vende
+        # SALIDA COMPLETA NO ES POLVO, y esta distincion faltaba. Si el
+        # peldano se lleva TODO lo que queda, la posicion esta cerrada: no
+        # hay nada que gestionar porque no queda nada, no porque se haya
+        # vuelto calderilla. Sin este caso, la configuracion de un solo take
+        # profit al 100% (24-sep, noche) daba "la escalera no gestiona nada".
+        if queda <= CERO:
+            ultimo_gestionado = ganancia
+            break
         # Al cobrar este peldano el precio esta a (1 + ganancia) de la entrada.
         if queda * valor * (1 + ganancia) < minimo:
             break

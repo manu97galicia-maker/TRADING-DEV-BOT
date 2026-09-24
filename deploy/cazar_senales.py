@@ -52,13 +52,17 @@ SEGUIMIENTO = 300.0
 VENTANA_OLA = 5.0
 #: Sin esto se llenaria el fichero de monedas que nadie toco.
 MIN_OPERACIONES = 5
-#: Los peldanos de la escalera de hoy, para poder preguntar directamente
-#: "cuantas habrian cobrado el TP1". Si cambia la escalera, cambiar aqui.
+#: TRES NIVELES DE MEDIDA, y el ultimo es el take profit de verdad.
 #:
-#: Hay un test (`test_los_peldanos_medidos_son_los_de_la_escalera_real`) que
-#: compara estos numeros con el yaml y salta si se desincronizan: sin el, este
-#: script mediria una escalera que el bot ya no tiene y los informes dirian
-#: cosas que no pasaron.
+#: Desde la noche del 24-sep la configuracion tiene UN SOLO take profit
+#: (+55,13%). Aqui se siguen midiendo tres niveles a proposito: saber cuantas
+#: monedas se quedaron en el +18% o el +38% es justo lo que hace falta para
+#: decidir si ese take profit unico esta bien puesto o si habria que bajarlo.
+#: Medir solo el nivel que se cobra no contestaria esa pregunta.
+#:
+#: Hay un test (`test_el_tp_de_verdad_esta_entre_los_niveles_medidos`) que
+#: comprueba que TP3 sigue siendo el del yaml: sin el, este script mediria un
+#: objetivo que el bot ya no tiene y los informes dirian cosas que no pasaron.
 TP1, TP2, TP3 = 0.18, 0.38, 0.5513
 STOP = -0.26
 #: Cada cuanto se imprime una linea de estado.

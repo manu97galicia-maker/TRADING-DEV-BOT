@@ -23,12 +23,13 @@ def _peldanos() -> list[tuple[float, float]]:
     t = _trade()
     pares = [
         (t["take_profit_percentage"], t["take_profit_sell_percentage"]),
-        (t["tp2_gain"], t["tp2_sell"]),
-        (t["tp3_gain"], t["tp3_sell"]),
-        # CON `.get`, no con corchetes: desde el 24-sep los peldanos lejanos
-        # van por market cap y estas claves ya NO estan en el yaml. Con
-        # corchetes esto reventaba con KeyError, que es un rojo que no dice
-        # que ha cambiado sino solo que falta una clave.
+        # CON `.get` EN TODOS, no con corchetes. Cada vez que un peldano se
+        # quita del yaml, leerlo con corchetes revienta con KeyError -- un
+        # rojo que solo dice "falta una clave", no "la escalera ha cambiado".
+        # Paso con tp4/tp5/tp6 el 24-sep por la manana y con tp2/tp3 esa
+        # misma noche, al quedarse la configuracion en UN SOLO take profit.
+        (t.get("tp2_gain"), t.get("tp2_sell")),
+        (t.get("tp3_gain"), t.get("tp3_sell")),
         (t.get("tp4_gain"), t.get("tp4_sell")),
         (t.get("tp5_gain"), t.get("tp5_sell")),
         (t.get("tp6_gain"), t.get("tp6_sell")),
@@ -54,10 +55,7 @@ def test_los_peldanos_son_los_pedidos() -> None:
     donde se entre: 100k es un x2,2 entrando al 86% de la curva y un x1,4
     entrando al 96%. Los multiplos no dependen de eso.
     """
-    assert _peldanos() == [
-        (0.18, 0.10), (0.38, 0.15), (0.5513, 0.15),
-        (1.7330, 0.20), (2.6440, 0.17), (4.4661, 0.12), (6.2881, 0.08),
-    ]
+    assert _peldanos() == [(0.5513, 1.00)]
 
 
 def _mc_de_compra() -> float:
@@ -79,37 +77,28 @@ def _mc_de_compra() -> float:
     return precio * 1e9 * SOL_USD_REF
 
 
-def test_los_lejanos_caen_en_las_cifras_de_market_cap_pedidas() -> None:
-    """Los cuatro escalones lejanos apuntan a 150k, 200k, 300k y 400k.
+def test_no_quedan_peldanos_lejanos() -> None:
+    """La noche del 24-sep la escalera se quedo en UN SOLO take profit.
 
-    CAMBIO DE IDEA DEL 24-SEP POR LA NOCHE: "que corra a 150, 200 mil, que no
-    se frene en los 40". Hasta entonces los lejanos eran una cadena
-    geometrica (cada uno un 35% mas caro que el anterior) que no miraba
-    ninguna cifra concreta; ahora son las cifras que se ven en la app.
+    Hasta esa tarde habia cuatro escalones lejanos apuntando a 150k, 200k,
+    300k y 400k de market cap. Se quitaron al pedirse "solo quiero un tp y un
+    sl" para pagar menos comisiones de venta.
 
-    OJO, Y ES EL MOTIVO DE QUE ESTE TEST EXISTA: en el yaml estan escritos
-    como MULTIPLOS del precio de compra, porque es lo unico que el bot sabe
-    mirar. Y el multiplo que corresponde a "150k" DEPENDE DE DONDE SE ENTRE:
-    al 93,5% de curva se compra a ~64,5k y 150k es un x2,33; al 91% se
-    compraria a ~57,4k y 150k seria un x2,61. O sea que mover la entrada
-    descoloca estos escalones sin tocarlos, y este test se pone rojo -- que
-    es exactamente lo que tiene que pasar.
+    ESTE TEST SUSTITUYE AL QUE COMPROBABA QUE CAIAN EN ESAS CIFRAS. No se
+    borra sin mas: si alguien vuelve a anadir peldanos lejanos, lo que hay
+    que recuperar es aquel test --que comprobaba el market cap al que caen
+    calculandolo desde la curva-- y no solo meter numeros en el yaml. Queda
+    en el historial de git, en el commit que los quito.
     """
-    mc = _mc_de_compra()
-    lejanos = [(1 + g) * mc for g, _ in _peldanos()[3:]]
-    for real, pedido in zip(lejanos, (150_000, 200_000, 300_000, 400_000), strict=True):
-        assert abs(real - pedido) / pedido < 0.02, (
-            f"un escalon cae en {real:,.0f} $ y se penso para {pedido:,.0f} $: "
-            f"si se ha movido la entrada, hay que rehacer los multiplos"
+    assert _trade().get("tp_extra") in (None, []), (
+        "han vuelto los peldanos lejanos: hay que recuperar la comprobacion "
+        "de que caen en las cifras de market cap pedidas"
+    )
+    for clave in ("tp2_gain", "tp3_gain", "tp4_gain", "tp5_gain", "tp6_gain"):
+        assert clave not in _trade(), (
+            f"{clave} ha vuelto al yaml. Si es a proposito, hay que volver a "
+            f"comprobar que cabe en la curva y que el suelo no lo alcanza"
         )
-    # LOS TRES DE CERCA NO SE COMPRUEBAN AQUI, y no es un olvido. Van en
-    # PORCENTAJE sobre el precio de compra, no en cifras de market cap: son
-    # el recorrido que la moneda hace dentro de la curva. Durante unas horas
-    # del 24-sep el tercero coincidio con los 100k --porque se entraba al
-    # 93,5%-- y estuvo aqui comprobado como si fuera parte de la serie; al
-    # bajar la entrada al 90% dejo de coincidir, que es lo normal. Lo que
-    # tiene que cumplir el tercero esta en test_stop_asegura_ganancia.py:
-    # caber dentro de la curva.
 
 
 def test_el_suelo_nunca_alcanza_al_peldano_que_acaba_de_cobrarse() -> None:
@@ -159,19 +148,20 @@ def test_nunca_se_vende_mas_del_100() -> None:
     assert sum(v for _, v in _peldanos()) <= 1.0
 
 
-def test_queda_moonbag_corriendo() -> None:
-    """Ese 3% es el que Manu vende a mano: el bot no lo toca.
+def test_ya_no_queda_moonbag() -> None:
+    """El TP unico vende el 100%: no queda nada corriendo.
 
-    HAY QUE SUMAR LAS DOS ESCALERAS, y es el error facil desde el 24-sep. Los
-    peldanos de porcentaje venden el 78% y los escalones de market cap el
-    19%. Mirando solo los primeros saldria un moonbag del 22%, que no es el
-    moonbag: es lo que aun no se ha repartido.
+    Hasta la noche del 24-sep se dejaba un 3% que el bot no vendia nunca y
+    que Manu vendia a mano. Con un solo take profit que se lleva la posicion
+    entera, ese resto desaparece -- y es coherente con lo pedido: menos
+    ventas, menos comisiones y nada pendiente de gestionar a mano.
     """
-    t = _trade()
-    por_ciento = sum(v for _, v in _peldanos())
-    por_mc = sum(d["sell"] for d in t.get("mc_take_profit_tiers") or [])
-    assert round(1 - por_ciento - por_mc, 6) == 0.03
-
+    peldanos = _peldanos()
+    assert len(peldanos) == 1, f"un solo take profit: {peldanos}"
+    assert round(sum(v for _, v in peldanos), 6) == 1.0, (
+        "el TP unico tiene que vender el 100%, o quedaria un resto sin dueno "
+        "que ni el bot vende ni nadie sabe que esta ahi"
+    )
 
 def test_el_stop_sube_a_la_entrada_tras_el_primer_tp() -> None:
     """Es lo que hace que despues del primer TP ya no se pueda perder."""
@@ -196,53 +186,59 @@ def test_el_abandono_no_depende_del_reloj_de_posicion() -> None:
     assert (t["max_hold_time"] or 120) * 3 + 120 < t["abandonar_tras_seg"]
 
 
-def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:
-    """AVISO PERMANENTE: un ganador que solo llega al primer peldano no cubre
-    a un perdedor, ni de lejos.
+def test_con_un_solo_tp_el_ganador_si_cubre_al_perdedor() -> None:
+    """SE DIO LA VUELTA LA PROPIEDAD, y por eso este test cambia de nombre.
 
-    LOS NUMEROS DE HOY (23-sep). El TP1 cobra el 20% de un +30%, o sea +6% de
-    la posicion. Despues el suelo sube a compra +5%, asi que si la moneda se
-    da la vuelta ahi mismo el resto sale en +5%: la operacion entera deja
-    alrededor de +10%. Un perdedor cuesta -29,4% (el stop del 30%, menos el
-    2% de moonbag que no se vende).
+    Mientras hubo escalera, el aviso permanente era el contrario: un ganador
+    que solo llegaba al primer peldano NO cubria a un perdedor ni de lejos
+    (el TP1 cobraba un 6% de la posicion contra un stop del 26%), y hacian
+    falta unos tres aciertos por fallo solo para empatar.
 
-    O SEA QUE HACEN FALTA UNOS TRES ACIERTOS POR CADA FALLO solo para
-    empatar, contando que los aciertos se queden en el primer peldano.
+    CON UN SOLO TAKE PROFIT ESO DESAPARECE. No hay ganadores a medias: o la
+    moneda llega al objetivo y deja la ganancia entera, o no llega y cuesta
+    el stop entero. El ganador (+55,1%) cubre al perdedor (-26%) con holgura
+    y bastan ~32 aciertos de cada 100 para no perder.
 
-    Esto NO es un fallo: el reparto esta echado adelante a proposito y la
-    ganancia de verdad esta en los peldanos de +50% para arriba, donde una
-    sola moneda paga varias perdidas. El test esta para que nadie lo de por
-    supuesto sin verlo escrito, y para que salte el dia que alguien ponga un
-    primer peldano tan gordo que parezca que la estrategia se sostiene sola.
-
-    (La cuenta completa --cuanto deja cada final y cuantos aciertos pide--
-    esta en el comentario de `stop_loss_percentage` del yaml.)
+    LO QUE SE PAGA A CAMBIO, Y NO LO MIDE ESTE TEST: los finales intermedios
+    dejan de existir. Una moneda que sube un +54% y se da la vuelta valia
+    +5,6% con el peldano pequeno puesto y ahora vale -26%. Esta escrito en
+    el yaml, en el comentario del take profit.
     """
     t = _trade()
-    g, v = _peldanos()[0]
-    assert g * v < t["stop_loss_percentage"]
+    peldanos = _peldanos()
+    assert len(peldanos) == 1, f"este test describe la configuracion de UN tp: {peldanos}"
+    g, v = peldanos[0]
+    assert v == 1.0, "el tp unico vende la posicion entera"
+    assert g > t["stop_loss_percentage"], (
+        f"el ganador deja +{g * 100:.1f}% y el perdedor cuesta "
+        f"-{t['stop_loss_percentage'] * 100:.0f}%: si esto se invierte, la "
+        f"configuracion no puede ganar dinero ni acertando la mitad"
+    )
 
 
-def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
-    """24-sep (noche): 10% al +18%, 15% al +38% y 15% al +55,1% (=100k).
+def test_el_tp_unico_cabe_dentro_de_la_curva() -> None:
+    """Lo unico que el take profit tiene que cumplir ahora.
 
-    Son los tres que se cobran mientras la moneda todavia se piensa en
-    porcentajes. De ahi en adelante la escalera sigue, pero ya en multiplos.
+    Si el objetivo cae por encima del recorrido que queda hasta migrar, no
+    se cobra mientras la moneda esta en pump.fun: hace falta que migre Y siga
+    subiendo. Con un solo peldano eso no es "cobrar menos", es no cobrar.
 
-    TODOS SON FRACCION DE LA COMPRA ORIGINAL, no de lo que queda dentro. Es
-    la confusion que ya estuvo a punto de costar dinero con el peldano de "la
-    mitad de lo que queda": 0,30 aqui es el 30% de la compra, no el 30% del
-    resto.
+    Entrando al 90% quedan +64,7% y el objetivo esta en +55,1%: entra por
+    9,6 puntos.
     """
-    # Los de cerca son los TRES del yaml, leidos por su clave. El filtro
-    # viejo era "los que bajan de x2,5" y empezo a colar el primer lejano en
-    # cuanto la cadena arranco en x2,07.
-    _t = _trade()
-    _claves = {_t["take_profit_percentage"], _t["tp2_gain"], _t["tp3_gain"]}
-    cerca = [(g, v) for g, v in _peldanos() if g in _claves]
-    assert cerca == [(0.18, 0.10), (0.38, 0.15), (0.5513, 0.15)]
-    assert round(sum(v for _, v in cerca), 6) == 0.40
-
+    c = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"]["curva_96"]
+    vt = 1073e6 - 793.1e6 * c["umbral"]
+    recorrido = (vt / (1073e6 - 793.1e6)) ** 2 - 1
+    objetivo = _peldanos()[0][0]
+    assert objetivo < recorrido, (
+        f"el take profit (+{objetivo * 100:.1f}%) no cabe en lo que queda de "
+        f"curva (+{recorrido * 100:.1f}%): solo cobraria despues de migrar"
+    )
+    margen = recorrido - objetivo
+    assert margen > 0.05, (
+        f"entra por solo {margen * 100:.1f} puntos; con tan poco margen "
+        f"depende de que la moneda llegue practicamente a migrar"
+    )
 
 def test_todos_los_peldanos_son_fraccion_de_la_compra_original() -> None:
     """LA CONFUSION QUE YA ESTUVO A PUNTO DE COSTAR DINERO.

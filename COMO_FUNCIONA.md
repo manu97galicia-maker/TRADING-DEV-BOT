@@ -91,92 +91,67 @@ Puede tener **5 posiciones abiertas a la vez**.
 
 Dos escaleras, una detrás de la otra.
 
-### Por porcentaje de subida
+### Un solo objetivo
 
-| sube | vende | acumulado | market cap aprox. |
-|---|---|---|---|
-| +18% | 10% | 10% | 65k $ |
-| +38% | 15% | 25% | 76k $ |
-| +55% | 15% | 40% | 85k $ |
-
-**Antes de migrar solo se vende el 25%**, y es a propósito. Hasta el 24 de
-septiembre se vendía el 60% ahí mismo: las monedas que iban a dispararse se
-frenaban justo antes de empezar.
-
-El primer peldaño es el más importante y **no por lo que cobra**. En cuanto se
-toca el +18%, el suelo sube a +5% y la operación ya no puede acabar en
-pérdida. Cuanto más bajo, más monedas llegan a activar esa protección.
-
-**Entrando al 90,0% caben los tres.** Quedan +64,7% hasta migrar y el último
-está en +55%, así que entra con 9,6 puntos de margen.
-
-### Hasta dónde puede subir la entrada
-
-Esta es la tabla más importante de la nota, y hay que mirarla **antes** de
-tocar el punto de entrada. Cada peldaño deja de caber a partir de cierta
-altura de curva:
-
-| peldaño | deja de caber por encima de | vende |
+| sube | vende | market cap aprox. |
 |---|---|---|
-| +18% | 96,96% | 10% |
-| +38% | 93,83% | 15% |
-| **+55%** | **91,34%** ← el acantilado | **15%** |
+| +55% | 100% | 85k $ |
 
-Se compra al **90,0%**, o sea **1,34 puntos por debajo del acantilado**.
+Eso es todo. No hay escalones, no hay moonbag: o la moneda llega al +55% y se
+vende entera, o no llega.
 
-> **Lo importante de esta tabla:** entre el 85% y el 91,34% caben los tres
-> peldaños y el resultado es **idéntico** — lo único que cambia es cuántas
-> monedas entran. Pasado el 91,34% el sistema se rompe a escalones:
->
-> | dónde se compra | dentro de la curva | migra y muere | aciertos |
-> |---|---|---|---|
-> | 85% – 91,3% | los tres | +42,7% | **38%** |
-> | 91,4% – 93,8% | dos | +25,4% | 51% |
-> | por encima de 93,8% | uno | +6,3% | **80%** |
->
-> Por eso se compra al 90% y no al 91%: **el mismo resultado, con margen.**
+**Por qué el +55% y no otro número.** Entrando al 90% de la curva quedan
++64,7% hasta migrar. El objetivo entra por 9,6 puntos. Si se pusiera más
+arriba —por ejemplo en 150k, que sería un x2,73— solo se cobraría *después*
+de migrar, y con un único peldaño eso no es cobrar menos: es no cobrar.
 
-### Y a partir de ahí, cada venta un 35% más cara que la anterior
+### Lo que cuesta tener un solo objetivo
 
-No son cifras fijas: cada escalón se calcula **sobre el precio del escalón
-anterior**, no sobre lo que se pagó. Así todos piden el mismo esfuerzo.
+Antes había un peldaño pequeño al +18%. **No estaba para cobrar: estaba para
+apagar el stop.** Al tocarlo, el suelo subía a +5% y la operación ya no podía
+acabar en pérdida.
 
-| escalón | market cap | precio | vende | acumulado |
-|---|---|---|---|---|
-| 1 | **150k $** | x2,73 | 20% | 60% |
-| 2 | **200k $** | x3,64 | 17% | 77% |
-| 3 | 300k $ | x5,47 | 12% | 89% |
-| 4 | 400k $ | x7,29 | 8% | 97% |
+Sin él, todo lo que no llegue al objetivo cuesta el stop entero:
 
-**Aquí es donde está ahora el grueso de la venta.** Más de la mitad de la
-posición se cobra entre 150k y 400k, en vez de antes de migrar.
+| la moneda llega a | con la escalera de antes | con un solo TP |
+|---|---|---|
+| +20% | +6,3% | **−26,0%** |
+| +30% | +6,3% | **−26,0%** |
+| +45% | +25,4% | **−26,0%** |
+| +54% | +25,4% | **−26,0%** |
+| +55% | +42,7% | +55,1% |
+| x2,73 | +75,6% | +55,1% |
+| x7,29 | +213,5% | +55,1% |
 
-> En el fichero estos escalones están escritos como **múltiplos** del precio
-> de compra, porque es lo único que el bot sabe mirar. Y el múltiplo que
-> corresponde a "150k" **depende de dónde se entre**: al 90% se compra sobre
-> 54,9k y 150k es un x2,73; al 93,5% se compraría sobre 64,5k y 150k sería un
-> x2,33. Si se mueve la entrada hay que rehacerlos — hay un test que lo
-> comprueba y salta solo.
+> Está elegido así a propósito, con esa tabla delante. El razonamiento fue:
+> *buscamos proyectos con mucha presión compradora y que se disparen*, así que
+> la mayoría debería llegar al objetivo y los finales intermedios importan
+> poco. **Esa es la apuesta, y todavía no está medida.**
 
-Queda un **3% (el "moonbag")** que el bot **no vende nunca**. Ese lo vende una
-persona a mano, si quiere.
+**Hacen falta 32 aciertos de cada 100** para no perder dinero.
 
-> Los porcentajes son sobre la **compra original**, no sobre lo que queda
-> dentro. Es la confusión que más caro puede salir aquí: "vender el 30%"
-> significa el 30% de todo lo que se compró.
+### Lo que se ahorra
+
+Cada venta paga 0,046 $ de comisión. Siete ventas eran 0,32 $ y una es
+0,046 $: **se ahorran 0,28 $ por posición**, el 0,25% de una posición de
+110 $. La comisión de *comprar* —1,12 $— no cambia.
 
 ### Y el suelo que sube
 
 Esto es lo más importante de todo el sistema:
 
 ```
-al empezar        el suelo está en -26%      ← si baja de ahí, se vende TODO
-tras cobrar +18%  el suelo sube a  +5%       ← ya no puede acabar en pérdida
-tras cobrar +38%  el suelo sube a +23,9%
-tras cobrar +55%  el suelo sube a +44,9%
-tras cobrar 150k  el suelo sube a +62,9%
-tras cobrar 200k  el suelo sube a +186,9%
+al empezar        el suelo está en -26%
+si llega al +55%  se vende TODO y se acabó
 ```
+
+**Ya no hay suelo que suba.** Con un único objetivo no hay nada que proteger
+a mitad de camino: mientras la posición está abierta, lo único que la cierra
+es el stop en −26% o el objetivo en +55%.
+
+Si algún día quieres recuperar esa protección sin volver a la escalera
+entera, basta **una venta más**: un peldaño al +18% que venda el 5%. Cuesta
+0,046 $ y convierte ese −26% en +5,6% en todo el tramo del +18% al +54%.
 
 El suelo se pone un peldaño por detrás del que acabas de cobrar, y un 5% por
 encima de ese. Un 5% *del precio*, no cinco puntos: por eso tras el +38% queda

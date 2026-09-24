@@ -202,40 +202,52 @@ def test_tocar_el_tp1_cobra_y_asegura() -> None:
     assert 0 < r["resultado"] < _margen() + t1.sell * t1.gain
 
 
-def test_los_tres_peldanos_de_cerca_y_vuelta_atras() -> None:
-    """Llega al tercer peldano, cobra el 78% de la posicion y el suelo sube.
+def test_el_tp_unico_cobra_entero_y_cierra_la_posicion() -> None:
+    """Se toca el objetivo, se vende el 100% y no queda nada que gestionar.
 
-    El trinquete va un peldano por detras Y con el margen: cobrado el tercero,
-    el suelo sube al precio del SEGUNDO (+50%) mas el margen. Deja sitio para
-    que la moneda respire y aun asi cada cobro asegura lo ya ganado.
+    ESTE TEST SUSTITUYE A `test_los_tres_peldanos_de_cerca_y_vuelta_atras`,
+    que simulaba tocar tres peldanos y caer al suelo que dejaba el tercero.
+    Con un solo take profit (24-sep, noche) no hay trinquete que recorrer: o
+    se cobra entero o no se cobra.
 
-    Los precios salen del margen, no escritos a mano: el 23-sep bajo del 12%
-    al 5% y con el recorrido fijo la moneda dejaba de tocar el suelo, asi que
-    el test habria seguido en verde midiendo otra cosa.
+    LO QUE SI SIGUE IMPORTANDO, y es lo que se comprueba aqui: que al tocar
+    el objetivo se venda TODO. Si quedara un resto, el bot seguiria vigilando
+    una posicion que ya no tiene, y la cuenta de token quedaria abierta con
+    su renta dentro.
     """
     t = _tiers()
-    # Todos los precios salen de los peldanos: se toca cada uno por poco y
-    # despues se cae al suelo que deja el tercero (el precio del SEGUNDO mas
-    # el margen).
-    toques = [1 + x.gain + 0.01 for x in t[:3]]
-    suelo = (1 + t[1].gain) * (1 + _margen())
-    r = simula([1.0, *toques, suelo + 0.02, suelo - 0.01])
-    assert r["peldanos"] == [1, 2, 3]
-    assert r["paro_por_stop"]
-    assert round(r["suelo_final"], 4) == round(suelo, 4)
-    # EL RESULTADO SALE DE LA ESCALERA, no de un 0,4 escrito a mano. Ese 0,4
-    # se puso cuando los peldanos eran +25/+53/+100; al bajarlos a
-    # +18/+38/+53 el recorrido rinde 0,39 y el test se puso rojo sin que
-    # nada estuviera mal. Un umbral a mano sobre una escalera que cambia
-    # cada dia solo avisa de que ha cambiado, que ya lo dicen otros tests.
-    esperado = sum((1 + x.gain + 0.01) * x.sell for x in t[:3])
-    esperado += (1 - sum(x.sell for x in t[:3])) * suelo
-    assert abs(r["resultado"] - (esperado - 1)) < 0.02, (
-        f"el recorrido deja {r['resultado']:.4f} y la escalera dice {esperado - 1:.4f}"
+    assert len(t) == 1, f"este test describe la configuracion de UN tp: {t}"
+    r = simula([1.0, 1 + t[0].gain + 0.01])
+    assert r["peldanos"] == [1]
+    assert not r["paro_por_stop"], "no deberia saltar el stop: se cobro el objetivo"
+    assert round(r["restante_pct"], 6) == 0.0, (
+        f"tiene que quedar la posicion a cero y queda {r['restante_pct']:.4f}"
     )
-    # Y que sea ganancia: tocar los tres peldanos no puede acabar en rojo.
     assert r["resultado"] > 0
 
+
+def test_por_debajo_del_objetivo_manda_el_stop_entero() -> None:
+    """EL PRECIO DE TENER UN SOLO TAKE PROFIT, escrito para que no sorprenda.
+
+    Sin un peldano pequeno que apague el stop, una moneda que sube casi hasta
+    el objetivo y se da la vuelta cuesta el stop ENTERO. No hay medias
+    tintas: con la escalera de antes, un pico del +54% dejaba +5,6%; ahora
+    deja -26%.
+
+    Esta puesto a sabiendas --se pidio "solo un tp y un sl" para pagar menos
+    comisiones-- y esta calculado en el comentario del yaml. El test existe
+    para que nadie descubra esto mirando una operacion en rojo.
+    """
+    t = _tiers()
+    objetivo = t[0].gain
+    stop = float(_trade()["stop_loss_percentage"])
+    # Sube hasta justo por debajo del objetivo y se cae hasta el stop.
+    r = simula([1.0, 1 + objetivo - 0.01, 1 - stop])
+    assert r["peldanos"] == [], "no se cobra nada: no se llego al objetivo"
+    assert r["paro_por_stop"]
+    assert r["resultado"] < 0, (
+        "una moneda que se queda a un punto del objetivo cuesta el stop entero"
+    )
 
 def test_un_salto_de_golpe_cobra_todos_los_peldanos_que_deja_atras() -> None:
     """Si el precio salta por encima del ultimo peldano en un solo tick, no se

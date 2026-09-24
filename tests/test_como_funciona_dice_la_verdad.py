@@ -95,16 +95,43 @@ def test_la_escalera_de_porcentaje_esta_entera() -> None:
     # Y que la nota no liste peldanos que ya no existen: el cuarto (+125%) se
     # quito el 24-sep y la tabla se quedo con el una version entera.
     #
-    # SOLO EN LAS FILAS DE LA TABLA, no en el texto suelto. La primera version
-    # buscaba la cifra en toda la nota y se puso roja por un "+31,25% y no en
-    # +30%" de un parrafo explicativo, que es justo lo contrario de lo que
-    # hay que avisar. Un peldano de la escalera siempre aparece como "| +X% |".
+    # SOLO DENTRO DE LA TABLA DE PELDANOS, que se localiza por su cabecera.
+    # Dos versiones anteriores de esta comprobacion dieron falso positivo:
+    #   1. buscando la cifra en TODA la nota, por un "+31,25% y no en +30%"
+    #      de un parrafo explicativo;
+    #   2. buscando filas "| +X% |" en cualquier tabla, porque la nota tiene
+    #      ahora una segunda tabla --la de "que pasa si la moneda llega a
+    #      +30%"-- cuya primera columna tiene la misma forma.
+    # Un falso positivo aqui manda a corregir una tabla que esta bien, que es
+    # peor que no avisar.
+    tabla = _tabla_de_peldanos(texto)
     vivos = [f"| +{g * 100:.0f}% |" for g, _ in peldanos]
-    for muerto in ("+125%", "+90%", "+85%", "+50%", "+30%", "+15%"):
+    for muerto in ("+125%", "+90%", "+85%", "+50%", "+38%", "+30%", "+18%", "+15%"):
         fila = f"| {muerto} |"
-        assert fila in vivos or fila not in texto, (
-            f"la tabla de la nota sigue listando el peldano {muerto}"
+        assert fila in vivos or fila not in tabla, (
+            f"la tabla de peldanos de la nota sigue listando {muerto}"
         )
+
+
+def _tabla_de_peldanos(texto: str) -> str:
+    """El bloque de la tabla que lista los peldanos, y solo ese.
+
+    Se localiza por su cabecera --la fila que empieza por "| sube |"-- y
+    acaba en la primera linea en blanco. Si la nota deja de tener esa
+    cabecera, este helper devuelve cadena vacia y la comprobacion de arriba
+    pasa a no comprobar nada, asi que tambien se exige que exista.
+    """
+    lineas = texto.splitlines()
+    ini = next(
+        (i for i, linea in enumerate(lineas) if linea.startswith("| sube |")),
+        None,
+    )
+    assert ini is not None, (
+        "la nota ya no tiene la tabla de peldanos (cabecera '| sube |'): "
+        "si ha cambiado de formato, hay que actualizar este test"
+    )
+    fin = next((i for i in range(ini, len(lineas)) if not lineas[i].strip()), len(lineas))
+    return "\n".join(lineas[ini:fin])
 
 
 def test_los_escalones_de_market_cap_estan_enteros() -> None:

@@ -65,12 +65,23 @@ def test_una_ganancia_de_9_significa_x10_y_no_mas_9_por_ciento() -> None:
     # Pasado el ultimo peldano ya no se vende mas: lo que queda es el moonbag.
     tope = 1 + max(t.gain for t in _tiers())
     assert _vendido_hasta(50.0) == _vendido_hasta(tope)
-    assert _vendido_hasta(50.0) < 1.0, "el moonbag no se vende nunca"
+    # YA NO SE COMPRUEBA QUE QUEDE MOONBAG: desde la noche del 24-sep el take
+    # profit unico vende el 100%. Que no quede resto lo vigila
+    # test_stop_entero_y_renta.py, que es donde importa (un resto sin dueno
+    # deja la cuenta de token abierta y su renta bloqueada).
     # Y el mayor de todos sigue leyendose como multiplo, no como porcentaje:
     # si "7.968" se leyera como +7,968% caeria por debajo del primer peldano.
-    assert tope > MULTIPLO_MINIMO_LEJANO, (
-        "el ultimo peldano tiene que ser un multiplo, no un porcentaje"
-    )
+    # SOLO CUANDO HAY PELDANOS LEJANOS. Desde la noche del 24-sep hay uno
+    # solo, al +55,13%, y escribirlo como "0.5513" es correcto: es un
+    # porcentaje de verdad, no un multiplo mal puesto. La trampa que vigila
+    # este test --escribir "9" queriendo decir 9% y disparar a x10-- solo
+    # existe cuando hay peldanos lejanos, asi que se comprueba cuando los
+    # hay. Si vuelven, vuelve la vigilancia sola.
+    hay_lejanos = len(_tiers()) > 1
+    if hay_lejanos:
+        assert tope > MULTIPLO_MINIMO_LEJANO, (
+            "el ultimo peldano tiene que ser un multiplo, no un porcentaje"
+        )
 
 
 def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
@@ -101,20 +112,18 @@ def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
     # Lo VENDIDO ACUMULADO al llegar a cada multiplo. Desde la tarde del
-    # 24-sep (noche) son SIETE peldanos: tres de cerca (+18%, +38%, +55,1%)
-    # y cuatro
+    # 24-sep (noche): UN SOLO peldano, al +55,13%, que vende el 100%. Antes
+    # eran siete. Esta tabla es ahora casi trivial, y esa es justo la
+    # informacion: no hay medias tintas -- o se cobra todo o no se cobra
+    # nada. Se dejan los niveles viejos (+18%, +38%) para que se vea que ahi
+    # ya no se vende
     # lejanos en `tp_extra`, cada uno un 35% mas caro que el anterior.
     esperado = {
-        1.17: 0.0,    # justo por debajo del primero
-        1.18: 0.10,
-        1.38: 0.25,   # hasta aqui solo se ha vendido un cuarto: no frena
-        1.5513: 0.40,  # el tercero de cerca
-        2.7329: 0.40,  # el de 150k es x2,7330: a x2,7329 no entra aun
-        2.7330: 0.60,  # 150k
-        3.6440: 0.77,  # 200k
-        5.4661: 0.89,  # 300k
-        7.2881: 0.97,  # 400k; los siete cobrados y queda el 3% de moonbag
-        50.0: 0.97,   # por mucho que suba, aqui ya no queda nada que cobrar
+        1.18: 0.0,    # el TP1 de antes: hoy aqui no se vende nada
+        1.38: 0.0,
+        1.5512: 0.0,  # justo por debajo del objetivo
+        1.5513: 1.0,  # el take profit unico: se vende la posicion entera
+        50.0: 1.0,    # por mucho que suba, ya no queda nada que cobrar
     }
     for multiplo, acumulado in esperado.items():
         assert round(_vendido_hasta(multiplo), 6) == acumulado, f"fallo en x{multiplo}"
