@@ -90,17 +90,17 @@ def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
 
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
-    # Lo VENDIDO ACUMULADO al llegar a cada multiplo. Desde el 24-sep hay
-    # CUATRO peldanos por porcentaje: +25%, +55%, +90% y +125%. De ahi en adelante
-    # la escalera sigue por market cap (100k a 500k), que no se mide en
+    # Lo VENDIDO ACUMULADO al llegar a cada multiplo. Desde el 24-sep (tarde)
+    # hay TRES peldanos por porcentaje: +25%, +55% y +100%. De ahi en adelante
+    # la escalera sigue por market cap (100k a 200k), que no se mide en
     # multiplos del precio de entrada y por eso no aparece en esta tabla.
     esperado = {
         1.24: 0.0,    # justo por debajo del primero
         1.25: 0.15,
-        1.55: 0.50,
-        1.90: 0.80,
-        2.25: 0.85,   # los cuatro cobrados; el resto va por market cap
-        20.0: 0.85,   # por mucho que suba, aqui ya no queda nada que cobrar
+        1.55: 0.55,
+        1.99: 0.55,   # el tercero es +100% exacto: a x1,99 todavia no entra
+        2.00: 0.75,
+        20.0: 0.75,   # por mucho que suba, aqui ya no queda nada que cobrar
     }
     for multiplo, acumulado in esperado.items():
         assert round(_vendido_hasta(multiplo), 6) == acumulado, f"fallo en x{multiplo}"

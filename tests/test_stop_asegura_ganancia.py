@@ -172,11 +172,11 @@ def test_el_colchon_mas_apretado_esta_anotado() -> None:
 def test_se_vende_el_97_por_ciento_entre_las_dos_escaleras() -> None:
     """HAY QUE SUMAR LAS DOS, y es el error facil desde el 24-sep.
 
-    Los peldanos de porcentaje (+25%, +55%, +90%, +125%) venden el 85%; los
-    escalones de market cap (100k a 200k) el 12%. Juntos, el 97%, y queda un
+    Los peldanos de porcentaje (+25%, +55%, +100%) venden el 75%; los
+    escalones de market cap (100k a 200k) el 22%. Juntos, el 97%, y queda un
     3% de moonbag que el bot no vende nunca.
 
-    MIRANDO SOLO LOS DE PORCENTAJE saldria un moonbag del 15%, y no lo es:
+    MIRANDO SOLO LOS DE PORCENTAJE saldria un moonbag del 25%, y no lo es:
     es lo que todavia no se ha repartido. `moonbag_fraction` solo conoce los
     peldanos que se le pasan, asi que devuelve eso -- por eso aqui se suma a
     mano en vez de fiarse de esa funcion.
@@ -184,26 +184,44 @@ def test_se_vende_el_97_por_ciento_entre_las_dos_escaleras() -> None:
     tiers = _tiers()
     por_ciento = sum(t.sell for t in tiers)
     por_mc = sum(d["sell"] for d in _trade().get("mc_take_profit_tiers") or [])
-    assert abs(por_ciento - 0.85) < 1e-9
+    assert abs(por_ciento - 0.75) < 1e-9
     assert abs(por_ciento + por_mc - 0.97) < 1e-9
     # Y lo que ve `moonbag_fraction` NO es el moonbag de verdad: es lo que
     # queda pendiente de repartir entre los escalones de market cap.
-    assert abs(moonbag_fraction(tiers) - 0.15) < 1e-9
+    assert abs(moonbag_fraction(tiers) - 0.25) < 1e-9
 
 
-def test_la_escalera_de_porcentaje_son_cuatro() -> None:
-    """24-sep: cuatro peldanos por porcentaje (+25%, +55%, +90%, +125%).
+def test_la_escalera_de_porcentaje_son_tres() -> None:
+    """24-sep, segunda version: tres peldanos (+25%, +55%, +100%).
 
-    EL GRUESO SE COBRA EN MEDIO, no abajo ni arriba: 15% - 35% - 30% - 5%. La
-    escalera vieja repartia entre diez peldanos hasta x20 y vendia mucho
-    abajo; esta concentra la venta en el tramo que la moneda SI recorre y
-    deja solo un 12% para los escalones de market cap, que son los
-    improbables.
+    Historial del dia: cuatro peldanos (+25/+55/+90/+125, vendiendo
+    15-35-30-5) por la manana; por la tarde se pide "el take profit 2 vende
+    un 40%, el siguiente lo ponemos en un 100% pero vende un 20%, y el resto
+    lo dejamos correr hasta 200.000". Se va el cuarto y el tercero sube.
+
+    EL GRUESO SE COBRA EN MEDIO: 15% - 40% - 20%. El segundo peldano es el
+    que de verdad manda, y es el unico de los tres que cae holgadamente
+    dentro de la curva (+55% contra un recorrido de +95,1% hasta migrar).
+
+    EL TERCERO YA NO CABE EN LA CURVA. Al +100% la moneda tiene que haber
+    migrado: entrando al 86,0% quedan +95,1% hasta migrar, asi que el tercer
+    peldano esta 4,9 puntos por encima de ese punto. Esto esta puesto a
+    sabiendas --queda la cuenta entera en el yaml-- pero conviene que un
+    test lo diga, porque es lo que decide cuanto rinde el caso bueno mas
+    frecuente: la moneda que llega a migrar y se muere ahi.
     """
     tiers = _tiers()
-    assert len(tiers) == 4, f"cuatro peldanos por porcentaje: {tiers}"
-    assert [t.sell for t in tiers] == [0.15, 0.35, 0.30, 0.05]
-    assert [t.gain for t in tiers] == [0.25, 0.55, 0.90, 1.25]
+    assert len(tiers) == 3, f"tres peldanos por porcentaje: {tiers}"
+    assert [t.sell for t in tiers] == [0.15, 0.40, 0.20]
+    assert [t.gain for t in tiers] == [0.25, 0.55, 1.00]
+    # El recorrido dentro de la curva entrando donde se entra.
+    umbral = yaml.safe_load(CONFIG.read_text())["filters"]["curva_96"]["umbral"]
+    vt = lambda a: 1073e6 - 793.1e6 * a  # noqa: E731
+    recorrido = (vt(umbral) / vt(1.0)) ** 2 - 1
+    assert tiers[1].gain < recorrido, "el segundo peldano tiene que caber en la curva"
+    assert tiers[2].gain > recorrido, (
+        "si el tercero vuelve a caber en la curva, la cuenta del yaml esta vieja"
+    )
 
 
 def test_los_diez_escalones_disparan_y_queda_el_moonbag() -> None:

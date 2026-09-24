@@ -170,15 +170,38 @@ trade:
   take_profit_percentage: 0.25
   take_profit_sell_percentage: 0.15
   tp2_gain: 0.55
-  tp2_sell: 0.35
-  tp3_gain: 0.90
-  tp3_sell: 0.30
-  # CUARTO PELDANO POR PORCENTAJE (24-sep, pedido: "lo que reste a un 125%").
-  # Vuelve `tp4_gain`, que se habia quitado esta misma manana al pasar los
-  # lejanos a market cap: aqui no es un peldano lejano sino el ultimo del
-  # tramo que la moneda todavia recorre en porcentaje.
-  tp4_gain: 1.25
-  tp4_sell: 0.05
+  tp2_sell: 0.40
+  tp3_gain: 1.00
+  tp3_sell: 0.20
+  # SE QUITA EL CUARTO PELDANO POR PORCENTAJE (24-sep, pedido: "el siguiente
+  # lo ponemos en un 100%, pero vende un 20%, y el resto lo dejamos correr
+  # hasta 200.000"). Estaba en +125% y vendia el 5%.
+  #
+  # SE QUITA ENTERO, no se pone `tp4_sell: 0`. Un peldano con `sell: 0` NO
+  # desaparece: sigue existiendo y sigue subiendo el suelo, asi que dejarlo a
+  # cero habria metido una subida de suelo fantasma que nadie pidio.
+  #
+  # OJO AL TERCER PELDANO, Y ESTO ES LO IMPORTANTE DE ESTE CAMBIO. El +100%
+  # cae FUERA de la curva: entrando al 86,0% quedan +95,1% hasta migrar, asi
+  # que el tercer peldano esta 4,9 puntos POR ENCIMA del punto de migracion.
+  # Solo cobra si la moneda migra Y sigue subiendo en PumpSwap, que es otro
+  # mercado y otra liquidez.
+  #
+  # Hace veinte minutos la entrada se bajo a 86,0% precisamente para que el
+  # tercer peldano (entonces +90%) cupiera dentro de la curva por 5,1 puntos.
+  # Subirlo a +100% deshace eso. Queda anotado porque es el tipo de cosa que
+  # no se ve al mirar solo este numero:
+  #
+  #   escenario                        antes (+90%/30%)   ahora (+100%/20%)
+  #   muere justo al migrar                  +62,6%             +39,8%
+  #   llega a 100k de market cap             +65,2%             +61,4%
+  #   llega a 200k                           +86,9%             +85,2%
+  #   aciertos para no perder (stop 26%)        29%                40%
+  #
+  # O sea: se cobra parecido en las que siguen corriendo despues de migrar, y
+  # bastante menos en la que se muere justo al migrar -- que es el caso bueno
+  # mas frecuente. Si eso no es lo buscado, hay dos palancas: devolver el
+  # tercer peldano a +90%, o bajar la entrada por debajo del 85%.
   # DE AQUI EN ADELANTE, EL RESTO REPARTIDO HASTA x20. Queda el 27,5% de la
   # compra; se deja corriendo el 2% de siempre y los otros 25,5 se reparten
   # en siete peldanos, de mas a menos: llegar a x20 es mucho menos probable
@@ -203,27 +226,54 @@ trade:
   # suelo fantasma que nadie pidio.
   tp_extra: []
 
-  # ESCALONES POR MARKET CAP, de 100k a 200k (24-sep, pedido).
+  # ESCALONES POR MARKET CAP, de 100k a 200k (24-sep, pedido: "el resto lo
+  # dejamos correr hasta 200.000, los repartes").
   #
-  # Se arman SOLO cuando ya se han cobrado los tres peldanos de porcentaje
-  # (+25%, +50%, +85%), asi que son la continuacion natural de la escalera,
-  # no una via paralela.
+  # Se arman SOLO cuando ya se han cobrado TODOS los peldanos de porcentaje
+  # (+25%, +55%, +100%), asi que son la continuacion natural de la escalera y
+  # no una via paralela. Si la moneda muere antes del +100%, estos escalones
+  # no llegan a existir y el resto sale por el suelo.
   #
-  # EL REPARTO. Los cuatro peldanos de porcentaje venden el 85% (15 + 35 +
-  # 30 + 5); se deja un 3% de moonbag --que el bot NO vende nunca, lo vendes
-  # tu-- y los otros 12% se reparten aqui, de mas a menos: llegar a 200k es
-  # menos probable que llegar a 100k, asi que se cobra mas abajo.
+  # EL REPARTO, que lo elegi yo. Los tres peldanos de porcentaje venden el
+  # 75% (15 + 40 + 20); queda un 25%. Se deja un 3% de moonbag --que el bot
+  # NO vende nunca, lo vendes tu-- y los otros 22% se reparten en estos
+  # cuatro escalones.
   #
-  # Van en progresion y no a partes iguales: de 100k a 140k hay un 40% de
-  # subida y de 140k a 200k otro 43%. A partes iguales casi todos los
-  # escalones caerian en el tramo mas facil.
+  # DE MAS A MENOS, Y CUATRO EN VEZ DE TRES. Cuanto mas arriba, menos monedas
+  # llegan, asi que el trozo gordo se cobra pronto. Y al haber ahora un 22%
+  # que repartir en vez de un 12%, tres escalones habrian dejado trozos
+  # demasiado gruesos en los sitios mas dificiles de alcanzar.
+  #
+  # DONDE CAEN DE VERDAD, con SOL a 220 $ y entrando al 86,0% de la curva
+  # (MC de compra ~46,3k, MC al migrar ~90,4k):
+  #
+  #   escalon   subida desde la compra   que es
+  #    100k            +115,8%           justo despues de migrar
+  #    130k            +180,5%
+  #    165k            +256,1%
+  #    200k            +331,6%           x4,3 sobre la compra
+  #
+  # OJO: EL PRIMER ESCALON ESTA MUY CERCA DEL TERCER PELDANO. El +100% cae en
+  # ~92,7k y este escalon en 100k: apenas un 8% entre los dos. Es a proposito
+  # --la idea es cobrar seguido justo despues de migrar, que es donde mas se
+  # vuelcan-- pero significa que los dos se disparan casi a la vez y el bot
+  # vende el 27% de la posicion en un intervalo corto.
+  #
+  # Y ESTOS ESCALONES DEPENDEN DEL PRECIO DEL SOL. El market cap se calcula
+  # como precio x supply x `_SOL_USD`, y ese valor lo refresca el bot desde
+  # DexScreener. Si el refresco falla se queda en los 91,24 $ de arranque y
+  # entonces 100k exige un +420% en vez de un +115%: la escalera de market
+  # cap no se dispararia NUNCA y el 22% se quedaria colgando del suelo. El
+  # bot avisa en el log a los cinco minutos si eso pasa; se ve con `bot`.
   mc_take_profit_tiers:
     - target_mc: 100000
+      sell: 0.07
+    - target_mc: 130000
+      sell: 0.06
+    - target_mc: 165000
       sell: 0.05
-    - target_mc: 140000
-      sell: 0.04
     - target_mc: 200000
-      sell: 0.03
+      sell: 0.04
 
   # 26% (24-sep, pedido). Historial: 18% -> 28% -> 40% -> 30% -> 18% ->
   # 28% -> 15% -> 26%.
@@ -239,14 +289,21 @@ trade:
   #
   # ES LA PALANCA QUE MAS PESA DE TODA LA ESTRATEGIA. Entrando al 86,0% de la
   # curva, una moneda que hace todo bien y se muere justo al migrar recorre un
-  # +95,1%: cobra los tres primeros peldanos (80% de la posicion) y el 20% que
-  # queda sale en el suelo, que para entonces esta en +62,75%. Total +62,6%.
-  # Lo que decide si eso compensa es lo que cuesta una que sale mal:
+  # +95,1%. Con la escalera de la tarde del 24-sep cobra solo los DOS primeros
+  # peldanos --el tercero esta en +100% y no cabe-- o sea el 55% de la
+  # posicion; el 45% que queda sale en el suelo, que para entonces esta en
+  # +31,25%. Total +39,8%. Lo que decide si eso compensa es lo que cuesta una
+  # que sale mal:
   #
   #   stop   se pierde   una que migra y muere   aciertos para no perder
-  #    28%     -28,0%          +62,6%                     31%
-  #    26%     -26,0%          +62,6%                     29%   <- aqui
-  #    20%     -20,0%          +62,6%                     24%
+  #    28%     -28,0%          +39,8%                     41%
+  #    26%     -26,0%          +39,8%                     39%   <- aqui
+  #    20%     -20,0%          +39,8%                     33%
+  #
+  # SUBIO DIEZ PUNTOS ESTA TARDE, y es lo que mas pesa de todo el cambio de
+  # escalera: por la manana hacia falta acertar un 29% y ahora un 39%. La
+  # causa no es el stop --sigue en 26%-- sino que el tercer peldano se fue a
+  # +100% y dejo de caber en la curva. Con el tercero en +90% vuelve a 29%.
   #
   # EL MARGEN MULTIPLICA, NO SUMA, y es facil equivocarse (me equivoque al
   # escribir la primera version de esta tabla). Tras cobrar el peldano i el

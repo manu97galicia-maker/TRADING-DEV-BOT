@@ -47,7 +47,7 @@ def test_los_peldanos_son_los_pedidos() -> None:
     x20-- se quitaron enteros: un x10 sobre la entrada significa cosas
     distintas segun donde se entre, mientras que 100k es 100k siempre.
     """
-    assert _peldanos() == [(0.25, 0.15), (0.55, 0.35), (0.90, 0.30), (1.25, 0.05)]
+    assert _peldanos() == [(0.25, 0.15), (0.55, 0.40), (1.00, 0.20)]
 
 
 def test_los_escalones_de_market_cap_son_los_pedidos() -> None:
@@ -60,7 +60,7 @@ def test_los_escalones_de_market_cap_son_los_pedidos() -> None:
     """
     mc = _trade()["mc_take_profit_tiers"]
     assert [(d["target_mc"], d["sell"]) for d in mc] == [
-        (100_000, 0.05), (140_000, 0.04), (200_000, 0.03),
+        (100_000, 0.07), (130_000, 0.06), (165_000, 0.05), (200_000, 0.04),
     ]
     # Ascendentes, o el bot los cobraria en desorden.
     objetivos = [d["target_mc"] for d in mc]
@@ -157,8 +157,8 @@ def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
     resto.
     """
     cerca = [(g, v) for g, v in _peldanos() if g < 1.5]
-    assert cerca == [(0.25, 0.15), (0.55, 0.35), (0.90, 0.30), (1.25, 0.05)]
-    assert round(sum(v for _, v in cerca), 6) == 0.85
+    assert cerca == [(0.25, 0.15), (0.55, 0.40), (1.00, 0.20)]
+    assert round(sum(v for _, v in cerca), 6) == 0.75
 
 
 def test_todos_los_peldanos_son_fraccion_de_la_compra_original() -> None:

@@ -56,18 +56,44 @@ def test_el_stop_es_el_de_verdad() -> None:
     assert f"+{t['margen_stop_tras_tp'] * 100:.0f}%" in _texto()
 
 
+def _peldanos_de_porcentaje(t: dict) -> list[tuple[float, float]]:
+    """Los peldanos que HAYA, sin dar por hecho cuantos son.
+
+    La primera version de esto pedia `tp4_gain` a mano. El 24-sep se quito el
+    cuarto peldano y el test se cayo con un KeyError -- que avisa, si, pero
+    del fichero equivocado: parecia un fallo de la nota cuando lo que habia
+    cambiado era la escalera. Leyendo los que existan, quitar o anadir un
+    peldano sigue poniendo el test en rojo (la nota ya no los lista todos),
+    pero el error senala la tabla de la nota, que es donde hay que mirar.
+    """
+    pares = [(t["take_profit_percentage"], t["take_profit_sell_percentage"])]
+    for i in range(2, 10):
+        if f"tp{i}_gain" not in t:
+            break
+        pares.append((t[f"tp{i}_gain"], t[f"tp{i}_sell"]))
+    return pares
+
+
 def test_la_escalera_de_porcentaje_esta_entera() -> None:
     t = _cfg()["trade"]
     texto = _texto()
-    peldanos = [
-        (t["take_profit_percentage"], t["take_profit_sell_percentage"]),
-        (t["tp2_gain"], t["tp2_sell"]),
-        (t["tp3_gain"], t["tp3_sell"]),
-        (t["tp4_gain"], t["tp4_sell"]),
-    ]
+    peldanos = _peldanos_de_porcentaje(t)
     for g, v in peldanos:
         assert f"+{g * 100:.0f}%" in texto, f"falta el peldano +{g * 100:.0f}%"
         assert f"| {v * 100:.0f}% |" in texto, f"falta que vende {v * 100:.0f}%"
+    # Y que la nota no liste peldanos que ya no existen: el cuarto (+125%) se
+    # quito el 24-sep y la tabla se quedo con el una version entera.
+    #
+    # SOLO EN LAS FILAS DE LA TABLA, no en el texto suelto. La primera version
+    # buscaba la cifra en toda la nota y se puso roja por un "+31,25% y no en
+    # +30%" de un parrafo explicativo, que es justo lo contrario de lo que
+    # hay que avisar. Un peldano de la escalera siempre aparece como "| +X% |".
+    vivos = [f"| +{g * 100:.0f}% |" for g, _ in peldanos]
+    for muerto in ("+125%", "+90%", "+85%", "+50%", "+30%", "+15%"):
+        fila = f"| {muerto} |"
+        assert fila in vivos or fila not in texto, (
+            f"la tabla de la nota sigue listando el peldano {muerto}"
+        )
 
 
 def test_los_escalones_de_market_cap_estan_enteros() -> None:
@@ -80,9 +106,9 @@ def test_el_moonbag_es_el_de_verdad() -> None:
     """Lo que el bot NO vende. Quien lea la nota tiene que saber que ese resto
     se queda en la cartera esperando a que alguien lo venda a mano."""
     t = _cfg()["trade"]
-    vendido = sum(
-        [t["take_profit_sell_percentage"], t["tp2_sell"], t["tp3_sell"], t["tp4_sell"]]
-    ) + sum(d["sell"] for d in t["mc_take_profit_tiers"])
+    vendido = sum(v for _, v in _peldanos_de_porcentaje(t)) + sum(
+        d["sell"] for d in t["mc_take_profit_tiers"]
+    )
     assert f"{(1 - vendido) * 100:.0f}%" in _texto()
 
 

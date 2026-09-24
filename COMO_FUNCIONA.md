@@ -83,17 +83,21 @@ Dos escaleras, una detrás de la otra.
 | sube | vende | acumulado |
 |---|---|---|
 | +25% | 15% | 15% |
-| +55% | 35% | 50% |
-| +90% | 30% | 80% |
-| +125% | 5% | 85% |
+| +55% | 40% | 55% |
+| +100% | 20% | 75% |
 
-### Por market cap (solo después de cobrar los cuatro de arriba)
+Los dos primeros caben dentro de la curva. **El de +100% no**: entrando al
+86,0% quedan +95,1% hasta migrar, así que ese peldaño solo cobra si la moneda
+migra y **sigue subiendo** ya fuera de pump.fun.
 
-| llega a | vende | acumulado |
-|---|---|---|
-| 100k $ | 5% | 90% |
-| 140k $ | 4% | 94% |
-| 200k $ | 3% | 97% |
+### Por market cap (solo después de cobrar los tres de arriba)
+
+| llega a | vende | acumulado | qué es |
+|---|---|---|---|
+| 100k $ | 7% | 82% | justo después de migrar |
+| 130k $ | 6% | 88% | |
+| 165k $ | 5% | 93% | |
+| 200k $ | 4% | 97% | x4,3 sobre la compra |
 
 Queda un **3% (el "moonbag")** que el bot **no vende nunca**. Ese lo vende una
 persona a mano, si quiere.
@@ -107,10 +111,10 @@ persona a mano, si quiere.
 Esto es lo más importante de todo el sistema:
 
 ```
-al empezar        el suelo está en -26%      ← si baja de ahí, se vende TODO
-tras cobrar +25%  el suelo sube a  +5%       ← ya no puede acabar en pérdida
-tras cobrar +55%  el suelo sube a +31,25%
-tras cobrar +90%  el suelo sube a +62,75%
+al empezar         el suelo está en -26%      ← si baja de ahí, se vende TODO
+tras cobrar +25%   el suelo sube a  +5%       ← ya no puede acabar en pérdida
+tras cobrar +55%   el suelo sube a +31,25%
+tras cobrar +100%  el suelo sube a +62,75%
 ```
 
 El suelo se pone un peldaño por detrás del que acabas de cobrar, y un 5% por
