@@ -223,7 +223,18 @@ def test_los_tres_peldanos_de_cerca_y_vuelta_atras() -> None:
     assert r["peldanos"] == [1, 2, 3]
     assert r["paro_por_stop"]
     assert round(r["suelo_final"], 4) == round(suelo, 4)
-    assert r["resultado"] > 0.4
+    # EL RESULTADO SALE DE LA ESCALERA, no de un 0,4 escrito a mano. Ese 0,4
+    # se puso cuando los peldanos eran +25/+53/+100; al bajarlos a
+    # +18/+38/+53 el recorrido rinde 0,39 y el test se puso rojo sin que
+    # nada estuviera mal. Un umbral a mano sobre una escalera que cambia
+    # cada dia solo avisa de que ha cambiado, que ya lo dicen otros tests.
+    esperado = sum((1 + x.gain + 0.01) * x.sell for x in t[:3])
+    esperado += (1 - sum(x.sell for x in t[:3])) * suelo
+    assert abs(r["resultado"] - (esperado - 1)) < 0.02, (
+        f"el recorrido deja {r['resultado']:.4f} y la escalera dice {esperado - 1:.4f}"
+    )
+    # Y que sea ganancia: tocar los tres peldanos no puede acabar en rojo.
+    assert r["resultado"] > 0
 
 
 def test_un_salto_de_golpe_cobra_todos_los_peldanos_que_deja_atras() -> None:

@@ -83,7 +83,8 @@ def test_el_tp1_de_la_config_vende_y_asegura() -> None:
     """
     t = _trade()
     assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 0.20
-    assert _tiers()[0].gain == t["take_profit_percentage"] == 0.25
+    assert _tiers()[0].gain == t["take_profit_percentage"] == 0.18
+    assert _tiers()[0].gain == t["take_profit_percentage"] == 0.18
 
 
 # ------------------------------------------------- el suelo asegura ganancia
@@ -189,12 +190,13 @@ def test_se_vende_el_97_por_ciento_entre_las_dos_escaleras() -> None:
 
 
 def test_la_escalera_de_porcentaje_son_tres() -> None:
-    """Los TRES DE CERCA son +25%, +53% y +100%, vendiendo 20-50-15.
+    """Los TRES DE CERCA son +18%, +38% y +53%, vendiendo 20-40-20.
 
-    Historial del dia: cuatro peldanos (+25/+55/+90/+125, vendiendo
-    15-35-30-5) por la manana; por la tarde se pide "el take profit 2 vende
-    un 40%, el siguiente lo ponemos en un 100% pero vende un 20%". Se va el
-    cuarto y el tercero sube.
+    Historial del dia: cuatro peldanos (+25/+55/+90/+125) por la manana;
+    luego +25/+53/+100 vendiendo 20-50-15; y al final del dia, al pedirse
+    "arregla los TP y los SL", se rehace entera para la entrada al 91%:
+    +18/+38/+53, que es la primera version en que los TRES caben dentro de
+    la curva.
 
     DETRAS DE ESTOS TRES HAY CINCO MAS, los de `tp_extra`, que van en
     multiplos de x1,35. Aqui se miran solo los de cerca --los que caben por
@@ -203,7 +205,8 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
 
     EL GRUESO SE COBRA EN MEDIO: 20% - 50% - 15%. El segundo peldano es el
     que de verdad manda: vende la MITAD de la posicion, y con el vuelve la
-    inversion entera (20% x 1,25 + 50% x 1,53 = 101,5% de lo que se puso).
+    inversion vuelve en el TERCERO (20% x 1,18 + 40% x 1,38 + 20% x 1,53 =
+    109,4% de lo que se puso), y ese tercero cae dentro de la curva.
 
     Y AL 91,0% DE CURVA CABE POR 4,5 PUNTOS. Quedan +57,5% hasta migrar y
     el peldano esta en +53%. Entraba por 2,5 con el TP2 en +55%; se bajo dos
@@ -222,35 +225,52 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     salta, lo que hay que hacer es rehacer las cuentas del yaml -- no
     cambiar el numero de aqui para que pase.
     """
-    tiers = [t for t in _tiers() if t.gain <= 1.5]
+    # LOS DE CERCA SON LOS TRES DEL YAML, no "los que bajan de x2,5". Ese
+    # filtro por multiplo se puso cuando el tercero estaba en +100% y el
+    # primer lejano en x2,70; al bajar el TP3 a +53% los lejanos arrancan en
+    # x2,07 y el filtro empezo a colar uno de ellos. Se leen del yaml por su
+    # clave, que es lo que de verdad los distingue.
+    _cerca = {
+        _trade()["take_profit_percentage"],
+        _trade()["tp2_gain"],
+        _trade()["tp3_gain"],
+    }
+    tiers = [t for t in _tiers() if t.gain in _cerca]
     assert len(tiers) == 3, f"tres peldanos de cerca: {tiers}"
-    assert [t.sell for t in tiers] == [0.20, 0.50, 0.15]
-    assert [t.gain for t in tiers] == [0.25, 0.53, 1.00]
+    assert [t.sell for t in tiers] == [0.20, 0.40, 0.20]
+    assert [t.gain for t in tiers] == [0.18, 0.38, 0.53]
     # El recorrido dentro de la curva entrando donde se entra.
     umbral = yaml.safe_load(CONFIG.read_text())["filters"]["curva_96"]["umbral"]
     vt = lambda a: 1073e6 - 793.1e6 * a  # noqa: E731
     recorrido = (vt(umbral) / vt(1.0)) ** 2 - 1
     dentro = [t for t in _tiers() if t.gain <= recorrido]
-    assert len(dentro) == 2, (
-        f"al {umbral * 100:.1f}% de curva caben DOS peldanos, no {len(dentro)}: "
+    assert len(dentro) == 3, (
+        f"al {umbral * 100:.1f}% de curva caben TRES peldanos, no {len(dentro)}: "
         f"si esto cambia, las cuentas del yaml hay que rehacerlas"
     )
-    assert [t.gain for t in dentro] == [0.25, 0.53]
+    assert [t.gain for t in dentro] == [0.18, 0.38, 0.53]
     # EL MARGEN DEL SEGUNDO, que es lo fragil. Se deja escrito el numero para
     # que se vea de un vistazo lo cerca que esta del corte.
-    margen_tp2 = recorrido - dentro[1].gain
+    margen_tp2 = recorrido - dentro[-1].gain
     assert 0.03 < margen_tp2 < 0.07, (
         f"el TP2 entra por {margen_tp2 * 100:.1f} puntos; si esto cambia mucho, "
         f"la tabla de margenes del yaml esta vieja"
     )
-    # Y lo que deja la que migra y se muere: los dos peldanos cobrados y el
-    # resto por el suelo, que tras el TP2 esta en TP1 x (1 + margen).
+    # Y lo que deja la que migra y se muere: los peldanos que caben, cobrados,
+    # y el resto por el suelo.
+    #
+    # EL SUELO ES EL PELDANO ANTERIOR AL ULTIMO COBRADO, por el margen. Esto
+    # estaba escrito como `dentro[0]` --correcto mientras cabian DOS, porque
+    # entonces el anterior al ultimo ERA el primero-- y al caber tres empezo
+    # a calcular el suelo un peldano mas abajo de lo que toca. El test lo
+    # cazo porque la cifra final esta fijada a mano; si solo comprobara "sale
+    # un numero", habria seguido verde midiendo mal.
     m = float(_trade()["margen_stop_tras_tp"])
     vendido = sum(t.sell for t in dentro)
-    suelo = (1 + dentro[0].gain) * (1 + m) - 1
+    suelo = (1 + dentro[-2].gain) * (1 + m) - 1
     bruto = sum((1 + t.gain) * t.sell for t in dentro) + (1 - vendido) * (1 + suelo)
-    assert abs(bruto - 1.409) < 0.005, (
-        f"la que migra y muere deja {(bruto - 1) * 100:.1f}%, no +40,9%"
+    assert abs(bruto - 1.384) < 0.005, (
+        f"la que migra y muere deja {(bruto - 1) * 100:.1f}%, no +38,4%"
     )
 
 

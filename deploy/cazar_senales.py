@@ -59,7 +59,7 @@ MIN_OPERACIONES = 5
 #: compara estos numeros con el yaml y salta si se desincronizan: sin el, este
 #: script mediria una escalera que el bot ya no tiene y los informes dirian
 #: cosas que no pasaron.
-TP1, TP2, TP3 = 0.25, 0.53, 1.00
+TP1, TP2, TP3 = 0.18, 0.38, 0.53
 STOP = -0.26
 #: Cada cuanto se imprime una linea de estado.
 AVISO_SEG = 30

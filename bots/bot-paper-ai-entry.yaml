@@ -167,37 +167,57 @@ trade:
   # gas de la operacion es un 3,7%. El TP1 NO cubre el gas por si solo, y da
   # igual -- lo que aporta es el suelo, y eso ya esta contado en la cuenta de
   # arriba.
-  # EL REPARTO CAMBIA A 20-50-15 (24-sep, pedido: "centrate en recuperar
-  # rapido mi inversion"). Era 15-40-20.
+  # ESCALERA REHECHA ENTERA PARA LA ENTRADA AL 91% (24-sep, pedido: "arregla
+  # los TP y los SL"). Era +25/+53/+100 vendiendo 20-50-15.
   #
-  # LO QUE SE BUSCA, y es una cuenta concreta y no una sensacion: que el
-  # dinero puesto vuelva en un peldano que este DENTRO de la curva.
+  #   peldano   antes          ahora         margen hasta migrar (+57,5%)
+  #   TP1       +25% / 20%     +18% / 20%           39,5 puntos
+  #   TP2       +53% / 50%     +38% / 40%           19,5 puntos
+  #   TP3      +100% / 15%     +53% / 20%            4,5 puntos
+  #   lejanos   12%            17%                  fuera, tras migrar
   #
-  #   reparto      dinero recuperado tras cada peldano      vuelve en
-  #   15-40-20     18,8%  ->  80,0%  ->  120,0%             +100%  (fuera)
-  #   20-50-15     25,0%  -> 101,5%  ->  131,3%             +53%   (dentro)
+  # LOS TRES CABEN DENTRO DE LA CURVA. El +100% estaba 42,5 puntos por
+  # encima del punto de migracion: solo cobraba si la moneda migraba Y
+  # seguia subiendo. Ahora el tercero entra por 4,5 puntos.
   #
-  # CON EL REPARTO ANTERIOR, una moneda que migraba y se moria NO devolvia
-  # nunca el 100% por la escalera: se quedaba en el 80% y el resto salia por
-  # el suelo. Ahora el segundo peldano --que esta dentro de la curva-- cierra
-  # la inversion entera, y a partir de ahi todo es ganancia limpia.
+  # EL TP1 BAJA A +18%, Y ES EL CAMBIO QUE MAS PESA. Su trabajo nunca fue
+  # cobrar --vende el 20%-- sino APAGAR EL STOP: en cuanto se toca, el suelo
+  # sube a compra +5% y la operacion ya no puede acabar en perdida. Cuanto
+  # mas bajo, mas monedas llegan a activar esa proteccion. En la moneda que
+  # sube un +22% y se cae --que es de lo mas comun que hay-- la diferencia
+  # es esta:
   #
-  # QUE CUESTA, y es real: se vende mas abajo, asi que queda menos posicion
-  # para las que vuelan.
+  #   escenario           +25/+53/+100    +18/+38/+53
+  #   sube +22% y se cae      -26,0%          +7,6%
+  #   sube +45% y se cae       +9,0%         +28,4%
+  #   migra y muere (+57,5%)  +40,9%         +38,4%
+  #   sigue a x2,70           +66,0%         +49,3%
+  #   llega a x8,97          +102,0%        +100,5%
+  #   aciertos para no perder  38,9%          40,4%
   #
-  #   escenario                  15-40-20   20-50-15
-  #   salta el stop                -26,0%     -26,0%
-  #   muere al +40% (no migra)      +8,0%      +9,0%
-  #   migra y muere (+57,5%)       +39,0%     +40,9%
-  #   sigue hasta x2,70            +78,5%     +66,0%
-  #   llega a x8,97               +140,4%    +102,3%
-  #   aciertos para no perder         40%        39%
+  # Mucho mejor en lo que pasa a menudo, casi igual en lo raro, y peor solo
+  # en el tramo x2,70. El umbral de aciertos sube 1,5 puntos y a cambio deja
+  # de haber un -26% en el caso mas frecuente de todos.
   #
-  # O SEA: mejor en todo lo frecuente y peor solo en las que se van a x3 o
-  # mas. Es exactamente el intercambio que se pidio --cobrar antes-- y
-  # conviene saber que el precio se paga en los aciertos grandes, que son
-  # los que hacen el ano en una estrategia de memecoins.
-  take_profit_percentage: 0.25
+  # POR QUE EL TP3 EN +53% Y NO EN +55%, que rendiria algo mas: porque el
+  # SUELO que sube tras cobrarlo queda en TP2 x 1,05 = x1,449, y el peldano
+  # en x1,53. Son 5,6% de holgura. Con el TP2 en +41% --que da 1,1 puntos
+  # mejor de aciertos-- la holgura cae a 3,3%, y una caida del 3,3% justo al
+  # migrar es casi segura: cerraria el 17% restante de golpe. Se elige el
+  # margen sobre el punto, igual que con el tercer peldano esta manana.
+  #
+  # LA INVERSION VUELVE EN EL TERCER PELDANO (20% x 1,18 + 40% x 1,38 + 20%
+  # x 1,53 = 109,4%), y ese peldano esta DENTRO de la curva. Era lo pedido
+  # antes ("recuperar rapido la inversion") y se mantiene.
+  #
+  # EL STOP NO SE TOCA Y ES A PROPOSITO. Se queda en 26%. Es el unico numero
+  # de toda esta configuracion que la aritmetica no puede decidir: bajarlo a
+  # 20% bajaria los aciertos necesarios de 40% a 34%, pero tambien cerraria
+  # en rojo monedas que luego habrian tocado el TP1 -- y cuantas, NO SE
+  # SABE. Ya fue de 18 a 28 a 40 y de vuelta por ese motivo. Mover a ciegas
+  # el unico numero que no se puede calcular es como se pierden los dias.
+  # Con 20-30 operaciones anotadas, `optimizar_escalera.py` lo contesta.
+  take_profit_percentage: 0.18
   take_profit_sell_percentage: 0.20
   # +53% Y NO +55% (24-sep, pedido: "sube dentro de la curva dos puntos").
   # Dos puntos NO de ganancia sino de MARGEN: entrando al 91,0% quedan
@@ -208,10 +228,10 @@ trade:
   # de +39,8% a +39,0% y los aciertos necesarios siguen en 40%. Lo que se
   # compra son los 2 puntos, y este es el peldano que vende el 40% de la
   # posicion: es el que no puede quedarse fuera.
-  tp2_gain: 0.53
-  tp2_sell: 0.50
-  tp3_gain: 1.00
-  tp3_sell: 0.15
+  tp2_gain: 0.38
+  tp2_sell: 0.40
+  tp3_gain: 0.53
+  tp3_sell: 0.20
   # SE QUITA EL CUARTO PELDANO POR PORCENTAJE (24-sep, pedido: "el siguiente
   # lo ponemos en un 100%, pero vende un 20%, y el resto lo dejamos correr
   # hasta 200.000"). Estaba en +125% y vendia el 5%.
@@ -267,15 +287,24 @@ trade:
   # mismo en realidad (x2,70 ES un +170%), pero conviene leerlo como
   # multiplo porque aqui ya no se piensa en porcentajes.
   #
+  # LA CADENA ARRANCA EN EL TERCER PELDANO, no en un multiplo fijo. Antes
+  # arrancaba en x2,00 porque el TP3 estaba en +100%; al bajar el TP3 a +53%
+  # la cadena tiene que arrancar en x1,53, o si no queda un salto de x1,76
+  # entre el TP3 y el primer lejano, que rompe justo la regla pedida ("cada
+  # 35% respecto al precio anterior"). Hay test que lo comprueba.
+  #
   # DONDE CAE CADA UNO, con SOL a 220 $ y entrando al 91,0% de la curva
   # (market cap de compra ~57,4k):
   #
   #   escalon   multiplo   subida    vende   acumulado   market cap
-  #     1        x2,700    +170,0%    10%       85%        ~155k
-  #     2        x3,645    +264,5%     3%       88%        ~209k
-  #     3        x4,921    +392,1%     3%       91%        ~282k
-  #     4        x6,643    +564,3%     3%       94%        ~381k
-  #     5        x8,968    +796,8%     3%       97%        ~515k
+  #     1        x2,066    +106,6%     7%       87%        ~119k
+  #     2        x2,788    +178,8%     4%       91%        ~160k
+  #     3        x3,764    +276,4%     3%       94%        ~216k
+  #     4        x5,082    +408,2%     2%       96%        ~292k
+  #     5        x6,861    +586,1%     1%       97%        ~394k
+  #
+  # SIGUEN SIENDO CINCO: el sexto caeria en x9,262, o sea ~532k, por encima
+  # de los 500.000 pedidos. El corte vuelve a salir de la cuenta.
   #
   # EL MARKET CAP DE ESTA TABLA SE MUEVE CON LA ENTRADA; los multiplos no.
   # Y ESTA TABLA SE QUEDO VIEJA DOS VECES EL 24-SEP: se rehizo al pasar al
@@ -284,13 +313,9 @@ trade:
   # porque el bot no mira estas cifras --mira los multiplos-- y por eso hace
   # falta acordarse a mano: cada punto de curva las mueve un ~4%.
   #
-  # SON CINCO Y NO MAS PORQUE AHI SE ACABA EL 22%: 10 + 3 + 3 + 3 + 3. El
-  # sexto caeria en ~561k, ya por encima de los 500.000 pedidos, asi que el
-  # corte sale solo de la cuenta y no hace falta ponerlo a mano.
-  #
-  # EL PRIMERO SE LLEVA CASI LA MITAD DE LO QUE QUEDA, y es a proposito: es
-  # el unico de los cinco al que llega un numero razonable de monedas. Los
-  # otros cuatro son loteria y por eso valen 3% cada uno.
+  # EL REPARTO ES 7-4-3-2-1 (17% en total). De mas a menos, porque cuanto
+  # mas arriba menos monedas llegan: al primero --x2,07, que es poco mas
+  # del doble-- llega un numero razonable; el quinto es loteria.
   #
   # EL SUELO SIGUE SUBIENDO con cada uno: tras cobrar el escalon 1 el suelo
   # pasa a x2,00 x 1,05 = x2,10, tras el 2 a x2,835, y asi. Como cada
@@ -298,15 +323,15 @@ trade:
   # alcanza al escalon que acaba de cobrarse -- que es el fallo que obligo a
   # mover el TP2 en agosto.
   tp_extra:
-    - gain: 1.70
-      sell: 0.05
-    - gain: 2.645
+    - gain: 1.0655
+      sell: 0.07
+    - gain: 1.7884
+      sell: 0.04
+    - gain: 2.7644
       sell: 0.03
-    - gain: 3.921
+    - gain: 4.0819
       sell: 0.02
-    - gain: 5.643
-      sell: 0.01
-    - gain: 7.968
+    - gain: 5.8606
       sell: 0.01
 
   # ESCALONES POR MARKET CAP: NINGUNO (24-sep, tarde).

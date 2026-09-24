@@ -94,24 +94,27 @@ Dos escaleras, una detrás de la otra.
 
 | sube | vende | acumulado | dinero recuperado |
 |---|---|---|---|
-| +25% | 20% | 20% | 25% de lo que pusiste |
-| +53% | 50% | 70% | **101%** ← aquí ya has recuperado todo |
-| +100% | 15% | 85% | 131% |
+| +18% | 20% | 20% | 24% de lo que pusiste |
+| +38% | 40% | 60% | 79% |
+| +53% | 20% | 80% | **109%** ← aquí ya has recuperado todo |
 
-**El segundo peldaño te devuelve la inversión entera**, y cae dentro de la
-curva. A partir de ahí todo lo que la moneda haga es ganancia limpia: aunque
+**Los tres caben dentro de la curva**, y el tercero te devuelve la inversión
+entera. A partir de ahí todo lo que la moneda haga es ganancia limpia: aunque
 se fuera a cero, no pierdes dinero.
 
-**Los dos primeros caben dentro de la curva, el segundo con poco margen.**
-Entrando al 91,0% quedan +57,5% hasta migrar y el segundo peldaño está en
-+53%: entra por **4,5 puntos**. Del tercero en adelante la moneda tiene que
-haber migrado **y seguir subiendo** ya fuera de pump.fun.
+El primer peldaño es el más importante y **no por lo que cobra**. En cuanto se
+toca el +18%, el suelo sube a +5% y la operación ya no puede acabar en
+pérdida. Cuanto más bajo, más monedas llegan a activar esa protección.
 
-> Ese margen es el número más delicado de todo el sistema. El corte está en
-> el 91,64% de curva: seis décimas más arriba y el segundo peldaño deja de
-> existir — y es el que vende el 40% de la posición. Cuando eso pasó (con la
-> entrada al 93%), la moneda que migra y se muere pasaba de dejar +39,8% a
-> dejar +8%.
+Entrando al 91,0% quedan **+57,5% hasta migrar**, así que los tres caben: el
+último, el de +53%, entra por 4,5 puntos. De ahí en adelante la moneda tiene
+que haber migrado **y seguir subiendo** ya fuera de pump.fun.
+
+> Ese margen de 4,5 puntos es el número más delicado de todo el sistema. Si la
+> entrada sube por encima del 92,4%, el tercer peldaño deja de caber; por
+> encima del 91,6%, el segundo tampoco. Cuando eso llegó a pasar (con la
+> entrada al 93% y la escalera vieja), la moneda que migra y se muere pasaba
+> de dejar +39,8% a dejar +8%.
 
 ### Y a partir de ahí, cada venta un 35% más cara que la anterior
 
@@ -120,16 +123,18 @@ anterior**, no sobre lo que se pagó. Así todos piden el mismo esfuerzo.
 
 | escalón | precio | vende | acumulado | market cap aprox. |
 |---|---|---|---|---|
-| 1 | x2,70 | 5% | 90% | 155k $ |
-| 2 | x3,65 | 3% | 93% | 209k $ |
-| 3 | x4,92 | 2% | 95% | 282k $ |
-| 4 | x6,64 | 1% | 96% | 381k $ |
-| 5 | x8,97 | 1% | 97% | 515k $ |
+| 1 | x2,07 | 7% | 87% | 119k $ |
+| 2 | x2,79 | 4% | 91% | 160k $ |
+| 3 | x3,76 | 3% | 94% | 216k $ |
+| 4 | x5,08 | 2% | 96% | 292k $ |
+| 5 | x6,86 | 1% | 97% | 394k $ |
 
-Aquí queda poco porque casi todo se ha cobrado antes. **Es el precio de
-recuperar la inversión pronto**: si una moneda se va a x9, te llevas +102% en
-vez de +140%. A cambio, en las que solo llegan a migrar recuperas tu dinero
-entero en vez de quedarte al 80%.
+La cadena arranca **donde acaba el tercer peldaño** (x1,53), no en un número
+fijo. Si no, quedaría un salto distinto entre el último peldaño y el primer
+escalón, que es justo lo contrario de "cada 35% sobre el anterior".
+
+Son cinco porque el sexto caería sobre los 532k $, ya por encima de los
+500.000. El corte sale de la cuenta, no está puesto a mano.
 
 Queda un **3% (el "moonbag")** que el bot **no vende nunca**. Ese lo vende una
 persona a mano, si quiere.
@@ -143,15 +148,15 @@ persona a mano, si quiere.
 Esto es lo más importante de todo el sistema:
 
 ```
-al empezar         el suelo está en -26%      ← si baja de ahí, se vende TODO
-tras cobrar +25%   el suelo sube a  +5%       ← ya no puede acabar en pérdida
-tras cobrar +53%   el suelo sube a +31,25%
-tras cobrar +100%  el suelo sube a +60,65%
+al empezar        el suelo está en -26%      ← si baja de ahí, se vende TODO
+tras cobrar +18%  el suelo sube a  +5%       ← ya no puede acabar en pérdida
+tras cobrar +38%  el suelo sube a +23,9%
+tras cobrar +53%  el suelo sube a +44,9%
 ```
 
 El suelo se pone un peldaño por detrás del que acabas de cobrar, y un 5% por
-encima de ese. Un 5% *del precio*, no cinco puntos: por eso tras el +53% queda
-en +31,25% y no en +30%.
+encima de ese. Un 5% *del precio*, no cinco puntos: por eso tras el +38% queda
+en +23,9% y no en +23%.
 
 **En cuanto toca el primer peldaño, la operación ya no puede perder dinero.**
 Ese es el verdadero trabajo del primer escalón — lo que cobra es secundario.

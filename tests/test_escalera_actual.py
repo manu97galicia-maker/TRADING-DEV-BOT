@@ -44,7 +44,7 @@ def test_los_peldanos_son_los_pedidos() -> None:
     """LA ESCALERA ENTERA, fijada para que cualquier cambio sea deliberado.
 
     Tarde del 24-sep: OCHO peldanos, todos por porcentaje. Tres de cerca
-    (+25%, +53%, +100%) y cinco lejanos en `tp_extra`, cada uno un 35% mas
+    (+18%, +38%, +53%) y cinco lejanos en `tp_extra`, cada uno un 35% mas
     caro que el ANTERIOR --no que la entrada-- empezando donde acaba el
     tercero.
 
@@ -54,8 +54,8 @@ def test_los_peldanos_son_los_pedidos() -> None:
     entrando al 96%. Los multiplos no dependen de eso.
     """
     assert _peldanos() == [
-        (0.25, 0.20), (0.53, 0.50), (1.00, 0.15),
-        (1.70, 0.05), (2.645, 0.03), (3.921, 0.02), (5.643, 0.01), (7.968, 0.01),
+        (0.18, 0.20), (0.38, 0.40), (0.53, 0.20),
+        (1.0655, 0.07), (1.7884, 0.04), (2.7644, 0.03), (4.0819, 0.02), (5.8606, 0.01),
     ]
 
 
@@ -69,7 +69,12 @@ def test_los_lejanos_van_multiplicando_por_135() -> None:
     segundo y la posicion se cierra sola al tocarlo. Con un 35% de separacion
     eso no puede pasar.
     """
-    multiplos = [1 + g for g, _ in _peldanos()][2:]  # desde el tercero (x2,00)
+    # Desde el TERCER peldano, que es donde arranca la cadena. No es un
+    # indice caprichoso: la cadena tiene que empezar en el ultimo peldano de
+    # cerca, o queda un salto distinto entre ese y el primer lejano. Paso el
+    # 24-sep al bajar el TP3 de +100% a +53% sin mover los lejanos: el salto
+    # fue de x1,765 y este test lo cazo.
+    multiplos = [1 + g for g, _ in _peldanos()][2:]
     saltos = [b / a for a, b in pairwise(multiplos)]
     for salto in saltos:
         assert abs(salto - 1.35) < 0.002, f"salto de x{salto:.3f}, se esperaba x1,35"
@@ -168,7 +173,7 @@ def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:
 
 
 def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
-    """24-sep (tarde, 2a version): 20% al +25%, 50% al +53% y 15% al +100%.
+    """24-sep (tarde, 3a version): 20% al +18%, 40% al +38% y 20% al +53%.
 
     Son los tres que se cobran mientras la moneda todavia se piensa en
     porcentajes. De ahi en adelante la escalera sigue, pero ya en multiplos.
@@ -178,9 +183,14 @@ def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
     mitad de lo que queda": 0,30 aqui es el 30% de la compra, no el 30% del
     resto.
     """
-    cerca = [(g, v) for g, v in _peldanos() if g < 1.5]
-    assert cerca == [(0.25, 0.20), (0.53, 0.50), (1.00, 0.15)]
-    assert round(sum(v for _, v in cerca), 6) == 0.85
+    # Los de cerca son los TRES del yaml, leidos por su clave. El filtro
+    # viejo era "los que bajan de x2,5" y empezo a colar el primer lejano en
+    # cuanto la cadena arranco en x2,07.
+    _t = _trade()
+    _claves = {_t["take_profit_percentage"], _t["tp2_gain"], _t["tp3_gain"]}
+    cerca = [(g, v) for g, v in _peldanos() if g in _claves]
+    assert cerca == [(0.18, 0.20), (0.38, 0.40), (0.53, 0.20)]
+    assert round(sum(v for _, v in cerca), 6) == 0.80
 
 
 def test_todos_los_peldanos_son_fraccion_de_la_compra_original() -> None:
