@@ -1052,9 +1052,9 @@ filters:
     enabled: true
     # Punto de la curva en que se compra (0,95 = 95% vendido).
     #
-    # 93,0% (24-sep, pedido: "que compre al 93% de la bonding curve").
+    # 90,0% (24-sep, pedido: "baja el 3% la entrada de la curva").
     # Historial: 0,96 -> 0,95 -> 0,96 -> 0,944 -> 0,929 -> 0,92 -> 0,885 ->
-    # 0,875 -> 0,86 -> 0,93.
+    # 0,875 -> 0,86 -> 0,93 -> 0,90.
     #
     # SUBE despues de FUCKETHAN, y es el primer paso hacia arriba del dia. Va
     # en la direccion correcta: cuanto mas llena esta la curva, menos tiempo
@@ -1067,12 +1067,12 @@ filters:
     # llena. Entrar "1,6 puntos antes" NO es entrar un 1,6% mas barato:
     #
     #   curva   SOL dentro   falta   precio    subida hasta migrar
-    #   86,0%      52,3       32,7   -26,4%          +95,1%   <- antes
-    #   92,0%      63,8       21,2    -8,5%          +50,5%
-    #   93,0%      66,0       19,0     0,0%          +43,6%   <- aqui
-    #   96,0%      73,3       11,7   +11,1%          +24,0%
+    #   85,0%      50,7       34,3   -18,9%         +103,1%   <- el suelo del test
+    #   90,0%      59,6       25,4     0,0%          +64,7%   <- aqui
+    #   93,0%      66,0       19,0   +14,7%          +43,6%   <- antes
+    #   96,0%      73,3       11,7   +27,4%          +24,0%
     #
-    # (85 SOL es lo que hace falta para migrar. "Precio" es respecto al 93,0%.)
+    # (85 SOL es lo que hace falta para migrar. "Precio" es respecto al 90,0%.)
     #
     # EL FALLO QUE ARREGLO BAJAR DE 96 A 94,4. Al 96% quedaba un +24% de
     # recorrido hasta migrar y el primer take profit esta en +30%: la escalera
@@ -1086,37 +1086,33 @@ filters:
     # la ultima columna, y la escalera cobra los peldanos que quepan ahi:
     #
     #   entrada   recorrido   peldanos     deja    aciertos para no perder
-    #    86,0%      +95,1%      3          +52,5%          34%
-    #    92,0%      +50,5%      2 (justo)  +36,3%          41%
-    #    93,0%      +43,6%      1          + 9,9%          73%   <- aqui
+    #    93,0%      +43,6%     1          + 9,9%          73%   <- antes
+    #    90,0%      +64,7%     2          +36,3%          43%   <- aqui
+    #    85,0%     +103,1%     3          +52,5%          34%
     #
-    # LO QUE CUESTA ESTE PASO, y es mucho: al 93% solo queda un +43,6% hasta
-    # migrar, asi que la escalera SOLO alcanza el primer peldano (+30%). El
-    # segundo esta en +50% y ya no cabe. Una moneda que hace todo bien y se
-    # muere justo al migrar pasa de dejar +52,5% de la posicion a dejar
-    # +9,9%, y el liston pasa de 1 acierto de cada 3 a 3 de cada 4.
+    # QUE GANA ESTE PASO, y es el mayor salto de toda la tabla. Al 93% la
+    # curva solo daba para el primer peldano (+30%): el segundo esta en +50%
+    # y no cabia en un recorrido de +43,6%. Al 90% el recorrido es +64,7% y
+    # el TP2 entra con 14,7 puntos de margen.
     #
-    # SE ACEPTA A SABIENDAS, porque lo que se compra a cambio es otra cosa:
-    # una moneda al 93% ha tenido que pasar por mucha mas gente para llegar
-    # ahi y esta menos tiempo expuesta. Despues de FUCKETHAN --cinco
-    # titulares, -91,9% en cuarenta segundos-- esa es la palanca que se
-    # eligio mover.
+    # En numeros: una moneda que hace todo bien y se muere justo al migrar
+    # pasa de dejar +9,9% de la posicion a dejar +36,3%, y el liston baja de
+    # 3 aciertos de cada 4 a menos de 1 de cada 2. Es el cambio que mas mueve
+    # la cuenta de todos los de hoy.
     #
-    # SI LA CUENTA NO SALE, hay dos formas de arreglarla sin volver a bajar
-    # la entrada: bajar el TP1 por debajo del +43,6% que da la curva, o
-    # aceptar que el dinero de esta estrategia esta DESPUES de migrar y no
-    # dentro de la curva.
+    # La ventana de disparo pasa de 6,5 a 9,5 puntos de curva, asi que
+    # tambien entraran bastantes mas candidatas.
     #
     # QUE CUESTA: mas monedas se quedan a medias y no llegan nunca a migrar.
     # Cuanto mas abajo se entra, menos se parece esto a "comprar la que ya casi
-    # lo ha conseguido" y mas a comprar una moneda cualquiera. Al 93% faltan
-    # 19 SOL para migrar: la moneda ya ha recorrido casi toda su curva, que es
-    # el planteamiento original de esta estrategia.
+    # lo ha conseguido" y mas a comprar una moneda cualquiera. Al 90% faltan
+    # 25,4 SOL para migrar, o sea que a la moneda todavia le queda subir un
+    # 65% solo para llegar. Mas de ellas se quedaran por el camino.
     #
-    # La ventana de disparo se estrecha de 13,5 a 6,5 puntos de curva, asi que
-    # entraran BASTANTES MENOS candidatas. Eso no es que este rota: es lo que
-    # hay a ese punto de la curva.
-    umbral: 0.93
+    # El 90% es el punto en el que la cuenta de la escalera y el
+    # planteamiento de la estrategia se cruzan: por encima no caben dos
+    # peldanos, por debajo deja de ser "la curva casi llena".
+    umbral: 0.90
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995
