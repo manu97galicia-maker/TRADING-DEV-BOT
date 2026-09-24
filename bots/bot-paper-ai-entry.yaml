@@ -174,15 +174,21 @@ trade:
   # pensada para recuperar la inversion cuanto antes; ahora esta pensada para
   # que las que se disparan no se frenen.
   #
-  #   peldano        antes          ahora        market cap al que cae
-  #   TP1         +18% / 20%     +18% / 10%            ~76k
-  #   TP2         +38% / 40%     +38% / 15%            ~89k
-  #   TP3         +53% / 20%     +55,1% / 15%          100k
-  #   lejano 1    x2,07 /  7%    x2,327 / 20%          150k
-  #   lejano 2    x2,79 /  4%    x3,103 / 17%          200k
-  #   lejano 3    x3,76 /  3%    x4,654 / 12%          300k
-  #   lejano 4    x5,08 /  2%    x6,205 /  8%          400k
-  #   lejano 5    x6,86 /  1%    (se quita)
+  #   peldano      vende    multiplo    market cap (entrando al 90%)
+  #   TP1           10%     x1,18            ~65k
+  #   TP2           15%     x1,38            ~76k
+  #   TP3           15%     x1,551           ~85k
+  #   lejano 1      20%     x2,733           150k
+  #   lejano 2      17%     x3,644           200k
+  #   lejano 3      12%     x5,466           300k
+  #   lejano 4       8%     x7,288           400k
+  #   moonbag        3%     nunca se vende
+  #
+  # LOS TRES DE CERCA VAN EN PORCENTAJE y los cuatro lejanos en CIFRAS DE
+  # MARKET CAP. Son dos cosas distintas a proposito: los de cerca marcan el
+  # recorrido que la moneda hace dentro de la curva y no dependen de nada
+  # externo; los lejanos son las cifras que se miran en la app, y por eso
+  # sus multiplos hay que rehacerlos cada vez que se mueve la entrada.
   #
   # LO QUE CAMBIA DE VERDAD: ANTES DE MIGRAR SE VENDE EL 25%, NO EL 60%. Esa
   # es la frase "que no se frene en los 40": el recorrido dentro de la curva
@@ -327,13 +333,13 @@ trade:
   # alcanza al escalon que acaba de cobrarse -- que es el fallo que obligo a
   # mover el TP2 en agosto.
   tp_extra:
-    - gain: 1.3270
+    - gain: 1.7330
       sell: 0.20
-    - gain: 2.1026
+    - gain: 2.6440
       sell: 0.17
-    - gain: 3.6539
+    - gain: 4.4661
       sell: 0.12
-    - gain: 5.2052
+    - gain: 6.2881
       sell: 0.08
 
   # ESCALONES POR MARKET CAP: NINGUNO (24-sep, tarde).
@@ -1425,7 +1431,7 @@ filters:
     # no se entre demasiado TARDE, porque hasta hoy el riesgo iba solo en una
     # direccion. El que cumple ese papel ahora es el test que comprueba que
     # el primer peldano llega dentro de la curva.
-    umbral: 0.935
+    umbral: 0.90
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995

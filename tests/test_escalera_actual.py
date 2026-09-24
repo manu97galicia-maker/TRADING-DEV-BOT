@@ -56,7 +56,7 @@ def test_los_peldanos_son_los_pedidos() -> None:
     """
     assert _peldanos() == [
         (0.18, 0.10), (0.38, 0.15), (0.5513, 0.15),
-        (1.3270, 0.20), (2.1026, 0.17), (3.6539, 0.12), (5.2052, 0.08),
+        (1.7330, 0.20), (2.6440, 0.17), (4.4661, 0.12), (6.2881, 0.08),
     ]
 
 
@@ -102,8 +102,14 @@ def test_los_lejanos_caen_en_las_cifras_de_market_cap_pedidas() -> None:
             f"un escalon cae en {real:,.0f} $ y se penso para {pedido:,.0f} $: "
             f"si se ha movido la entrada, hay que rehacer los multiplos"
         )
-    # Y el tercer peldano de cerca apunta a 100k, que es el primero de la serie.
-    assert abs((1 + _peldanos()[2][0]) * mc - 100_000) / 100_000 < 0.02
+    # LOS TRES DE CERCA NO SE COMPRUEBAN AQUI, y no es un olvido. Van en
+    # PORCENTAJE sobre el precio de compra, no en cifras de market cap: son
+    # el recorrido que la moneda hace dentro de la curva. Durante unas horas
+    # del 24-sep el tercero coincidio con los 100k --porque se entraba al
+    # 93,5%-- y estuvo aqui comprobado como si fuera parte de la serie; al
+    # bajar la entrada al 90% dejo de coincidir, que es lo normal. Lo que
+    # tiene que cumplir el tercero esta en test_stop_asegura_ganancia.py:
+    # caber dentro de la curva.
 
 
 def test_el_suelo_nunca_alcanza_al_peldano_que_acaba_de_cobrarse() -> None:

@@ -108,12 +108,12 @@ def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
         1.17: 0.0,    # justo por debajo del primero
         1.18: 0.10,
         1.38: 0.25,   # hasta aqui solo se ha vendido un cuarto: no frena
-        1.5513: 0.40,  # 100k de market cap
-        2.3269: 0.40,  # el de 150k es x2,3270: a x2,3269 no entra aun
-        2.3270: 0.60,  # 150k
-        3.1026: 0.77,  # 200k
-        4.6539: 0.89,  # 300k
-        6.2052: 0.97,  # 400k; los siete cobrados y queda el 3% de moonbag
+        1.5513: 0.40,  # el tercero de cerca
+        2.7329: 0.40,  # el de 150k es x2,7330: a x2,7329 no entra aun
+        2.7330: 0.60,  # 150k
+        3.6440: 0.77,  # 200k
+        5.4661: 0.89,  # 300k
+        7.2881: 0.97,  # 400k; los siete cobrados y queda el 3% de moonbag
         50.0: 0.97,   # por mucho que suba, aqui ya no queda nada que cobrar
     }
     for multiplo, acumulado in esperado.items():
