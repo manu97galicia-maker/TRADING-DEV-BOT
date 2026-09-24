@@ -19,10 +19,10 @@ casi toda la curva y están cerca de conseguirlo, porque para llegar ahí han
 tenido que pasar por mucha gente.
 
 ```
-nace ───────────────────────────────▶ 91,0% ─────▶ migra
-                                        ▲
-                                   aquí compra
-                               (le faltan ~23 SOL)
+nace ────────────────────────────────▶ 92,5% ───▶ migra
+                                         ▲
+                                    aquí compra
+                                (le faltan ~20 SOL)
 ```
 
 Son pocas al día: la mayoría de las monedas mueren mucho antes de llegar. Que
@@ -36,7 +36,7 @@ Todo esto, sin saltarse nada:
 
 | | |
 |---|---|
-| **Punto de la curva** | entre el 91,0% y el 99,5% (pasado eso ya está migrando) |
+| **Punto de la curva** | entre el 92,5% y el 99,5% (pasado eso ya está migrando) |
 | **Gente de verdad** | mínimo **30 carteras distintas** la han comprado |
 | **Sin bundle** | como mucho 3 carteras en su bloque de nacimiento, y máximo 2 SOL |
 | **Sin concentración** | los mayores tenedores no pueden tener más del 50% |
@@ -96,25 +96,35 @@ Dos escaleras, una detrás de la otra.
 |---|---|---|---|
 | +18% | 20% | 20% | 24% de lo que pusiste |
 | +38% | 40% | 60% | 79% |
-| +53% | 20% | 80% | **109%** ← aquí ya has recuperado todo |
-
-**Los tres caben dentro de la curva**, y el tercero te devuelve la inversión
-entera. A partir de ahí todo lo que la moneda haga es ganancia limpia: aunque
-se fuera a cero, no pierdes dinero.
+| +53% | 20% | 80% | **109%** ← aquí ya has recuperado todo (fuera de la curva) |
 
 El primer peldaño es el más importante y **no por lo que cobra**. En cuanto se
 toca el +18%, el suelo sube a +5% y la operación ya no puede acabar en
 pérdida. Cuanto más bajo, más monedas llegan a activar esa protección.
 
-Entrando al 91,0% quedan **+57,5% hasta migrar**, así que los tres caben: el
-último, el de +53%, entra por 4,5 puntos. De ahí en adelante la moneda tiene
-que haber migrado **y seguir subiendo** ya fuera de pump.fun.
+**Entrando al 92,5% solo caben los dos primeros.** Quedan +47,0% hasta migrar
+y el tercer peldaño está en +53%, así que ese solo cobra si la moneda migra
+**y sigue subiendo** ya fuera de pump.fun. Se recupera la inversión al 79%
+dentro de la curva, no al 109%.
 
-> Ese margen de 4,5 puntos es el número más delicado de todo el sistema. Si la
-> entrada sube por encima del 92,4%, el tercer peldaño deja de caber; por
-> encima del 91,6%, el segundo tampoco. Cuando eso llegó a pasar (con la
-> entrada al 93% y la escalera vieja), la moneda que migra y se muere pasaba
-> de dejar +39,8% a dejar +8%.
+### Hasta dónde puede subir la entrada
+
+Esta es la tabla que hay que mirar **antes** de tocar el punto de entrada.
+Cada peldaño deja de caber a partir de cierta altura de curva:
+
+| peldaño | deja de caber por encima de | vende |
+|---|---|---|
+| +18% | 96,96% | 20% |
+| +38% | 93,83% | 40% |
+| +53% | **91,64%** | 20% |
+
+Entrando al **92,5%** ya se ha pasado el tercero. Y el segundo —que se lleva
+el 40% de la posición— tiene su corte a solo **1,3 puntos** de curva por
+encima de donde se compra hoy.
+
+> Cada peldaño que se cae se lleva su trozo. Perder el tercero baja la moneda
+> que migra y se muere de +38,4% a **+28,4%**, y sube los aciertos necesarios
+> de 40% a **48%**. Perder el segundo sería mucho peor.
 
 ### Y a partir de ahí, cada venta un 35% más cara que la anterior
 

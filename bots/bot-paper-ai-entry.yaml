@@ -1315,53 +1315,55 @@ filters:
     enabled: true
     # Punto de la curva en que se compra (0,95 = 95% vendido).
     #
-    # 91,0% (24-sep, pedido: "dejalo en 91").
+    # 92,5% (24-sep, pedido: "sube la entrada en la curva un 1,5%").
     # Historial: 0,96 -> 0,95 -> 0,96 -> 0,944 -> 0,929 -> 0,92 -> 0,885 ->
-    # 0,875 -> 0,86 -> 0,93 -> 0,90 -> 0,875 -> 0,86 -> 0,87 -> 0,93 -> 0,91.
+    # 0,875 -> 0,86 -> 0,93 -> 0,90 -> 0,875 -> 0,86 -> 0,87 -> 0,93 -> 0,91
+    # -> 0,925.
     #
-    # RECUPERA EL SEGUNDO PELDANO, que es lo que habia roto el paso al 93%.
-    # Al 91,0% quedan +57,5% hasta migrar y el TP2 esta en +53%: vuelve a
-    # caber, y con el vuelve el 40% de la posicion que se estaba dejando de
-    # cobrar.
+    # #################################################################
+    # ESTE PASO SACA EL TERCER PELDANO DE LA CURVA.
+    # #################################################################
     #
-    #   entrada   recorrido   dentro        vendido   migra y muere   aciertos
-    #    93,0%      +43,6%    solo +25%        15%         +8,0%         76%
-    #    91,0%      +57,5%    +25% y +53%      55%        +39,0%         40%
-    #    87,0%      +87,2%    +25% y +53%      55%        +39,0%         40%
+    # Al 92,5% quedan +47,0% hasta migrar y el TP3 esta en +53%. El corte
+    # exacto de ese peldano cae en el 91,64% de curva, o sea que ya se pasa.
     #
-    # Y CABE POR 4,5 PUNTOS, tras bajar el TP2 de +55% a +53% en el mismo
-    # dia. Entraba por 2,5 y ese era el peldano que vende el 40% de la
-    # posicion: si la moneda se quedaba a medio punto de migrar, no se
-    # cobraba nada de ese 40%. Al 87,0% ese mismo peldano entraba por 34,2
-    # puntos, asi que 4,5 sigue siendo poco -- es lo que cuesta entrar tan
-    # arriba.
+    #   entrada   recorrido   dentro              vendido   migra y muere   aciertos
+    #    91,0%      +57,5%    +18%, +38% y +53%      80%        +38,4%         40%
+    #    92,5%      +47,0%    +18% y +38%            60%        +28,4%         48%
     #
-    # EL CORTE ESTA AHORA EN EL 91,64% DE CURVA (era el 90,9%). Seis decimas
-    # y media por encima de donde se entra. Subir la entrada de aqui roza
-    # otra vez el precipicio: al 93,0% este peldano se cae y los aciertos
-    # necesarios pasan de 40% a 76%.
+    # LOS CORTES DE CADA PELDANO, que es la tabla que hay que mirar antes de
+    # tocar este numero:
     #
-    # LA ESCALERA SIGUE SIN ESTAR DEL TODO AJUSTADA A ESTA ENTRADA. Ajustada
-    # seria TP2 +40% y TP3 +52%, que con el mismo reparto 15/40/20 da +41,9%
-    # en vez de +39,0%, baja los aciertos de 40% a 38% y mete el TERCER
-    # peldano dentro de la curva (hoy se queda fuera por 42,5 puntos). Queda
-    # anotado para que se pueda pedir sabiendo lo que da.
+    #   peldano        deja de caber por encima de
+    #   TP1 (+18%)            96,96% de curva
+    #   TP2 (+38%)            93,83% de curva
+    #   TP3 (+53%)            91,64% de curva   <- ya pasado
     #
-    # EL TERCER PELDANO (+100%) sigue fuera por 42,5 puntos y a esta altura
-    # de curva ya no hay forma de meterlo dentro: el recorrido entero es
-    # +57,5%. Solo cobra si la moneda migra y sigue subiendo en PumpSwap.
+    # LA ESCALERA NO SE AJUSTA porque lo pedido fue mover la entrada. Y
+    # ajustarla aqui no es un cambio de un numero: el suelo que sube tras
+    # cobrar el TP3 vale TP2 x 1,05 = x1,449, asi que con el TP2 en +38% el
+    # TP3 no puede bajar de +44,9% sin quedar POR DEBAJO de su propio suelo
+    # --la posicion se cerraria en el instante de tocarlo--. Para meter los
+    # tres dentro al 92,5% hay que bajar los dos: algo como +18/+30/+42, que
+    # da +31,3% en la que migra y muere y un 45% de aciertos.
     #
-    # Es el decimoquinto cambio de la entrada en dos dias y el quinto de hoy.
+    # O SEA QUE NINGUNA DE LAS DOS OPCIONES LLEGA AL 40% DE ACIERTOS QUE HAY
+    # AL 91,0%. Subir la entrada por encima del 91,64% cuesta el tercer
+    # peldano, y recuperarlo bajando la escalera cuesta casi lo mismo,
+    # porque lo que de verdad se ha encogido es el recorrido.
+    #
+    # Es el decimosexto cambio de la entrada en dos dias y el sexto de hoy.
     # Sigue sin haber una sola medicion detras de ninguno.
     #
     #   curva   SOL dentro   falta   precio    subida hasta migrar
     #   85,0%      50,7       34,3    -9,7%         +103,1%   <- el suelo del test
     #   87,0%      54,0       31,0    -2,1%          +87,2%
-    #   87,5%      54,9       30,1     0,0%          +83,4%
     #   90,0%      59,6       25,4   +11,3%          +64,7%
-    #   90,9%      61,4       23,6   +14,8%          +58,2%   <- el corte del TP2
-    #   91,0%      61,6       23,4   +15,3%          +57,5%   <- aqui
-    #   93,0%      66,0       19,0   +27,7%          +43,6%   <- antes
+    #   91,0%      61,6       23,4   +15,3%          +57,5%   <- antes
+    #   91,64%     62,8       22,2   +18,2%          +53,0%   <- el corte del TP3
+    #   92,5%      64,8       20,2   +23,5%          +47,0%   <- aqui
+    #   93,0%      66,0       19,0   +27,7%          +43,6%
+    #   93,83%     67,9       17,1   +34,4%          +38,0%   <- el corte del TP2
     #
     # (85 SOL es lo que hace falta para migrar. "Precio" es respecto al 87,5%.)
     #
@@ -1422,7 +1424,7 @@ filters:
     # no se entre demasiado TARDE, porque hasta hoy el riesgo iba solo en una
     # direccion. El que cumple ese papel ahora es el test que comprueba que
     # el primer peldano llega dentro de la curva.
-    umbral: 0.91
+    umbral: 0.925
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995

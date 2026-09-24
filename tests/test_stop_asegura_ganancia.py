@@ -208,17 +208,22 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     inversion vuelve en el TERCERO (20% x 1,18 + 40% x 1,38 + 20% x 1,53 =
     109,4% de lo que se puso), y ese tercero cae dentro de la curva.
 
-    Y AL 91,0% DE CURVA CABE POR 4,5 PUNTOS. Quedan +57,5% hasta migrar y
-    el peldano esta en +53%. Entraba por 2,5 con el TP2 en +55%; se bajo dos
-    puntos esa misma tarde para comprar margen, y lo que se cobra apenas
-    cambio (+39,0% en vez de +39,8%). Al 87,0% entraria por 34,2.
+    Y AL 92,5% DE CURVA EL TERCERO YA NO CABE. Quedan +47,0% hasta migrar y
+    el peldano esta en +53%: se pasa por 6 puntos. Cabia al 91,0%, donde
+    quedaban +57,5%, y el corte exacto esta en el 91,64% de curva.
 
-    ESE MARGEN ES EL NUMERO MAS SENSIBLE DE TODA LA CONFIGURACION. El corte
-    --donde el recorrido cruza el +53%-- cae en el 91,64% de curva; seis
-    decimas por encima de donde se entra, y ahi este peldano deja de
-    existir con el 40% de la posicion que se lleva. Ya paso esa misma
-    tarde: al 93,0% se quedo fuera y la moneda que migra y se muere paso de
-    +39,8% a +8,0%, subiendo los aciertos necesarios de 40% a 76%.
+    LOS CORTES DE CADA PELDANO, que es lo que hay que mirar antes de tocar
+    la entrada, y lo que este test deja fijado:
+
+      TP1 (+18%)   deja de caber por encima del 96,96% de curva
+      TP2 (+38%)   deja de caber por encima del 93,83%
+      TP3 (+53%)   deja de caber por encima del 91,64%   <- ya pasado
+
+    CADA PELDANO QUE SE CAE SE LLEVA SU TROZO: el tercero vende el 20% de
+    la posicion, asi que la moneda que migra y se muere pasa de +38,4% a
+    +28,4% y los aciertos necesarios de 40% a 48%. Con el segundo seria
+    mucho peor -- vende el 40%-- y su corte esta a 1,3 puntos de curva de
+    donde se entra hoy.
 
     POR ESO ESTE TEST FIJA CUANTOS PELDANOS CABEN, no si caben. Cualquier
     cambio en la entrada o en la escalera lo mueve y obliga a mirarlo. Si
@@ -244,15 +249,15 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     vt = lambda a: 1073e6 - 793.1e6 * a  # noqa: E731
     recorrido = (vt(umbral) / vt(1.0)) ** 2 - 1
     dentro = [t for t in _tiers() if t.gain <= recorrido]
-    assert len(dentro) == 3, (
-        f"al {umbral * 100:.1f}% de curva caben TRES peldanos, no {len(dentro)}: "
+    assert len(dentro) == 2, (
+        f"al {umbral * 100:.1f}% de curva caben DOS peldanos, no {len(dentro)}: "
         f"si esto cambia, las cuentas del yaml hay que rehacerlas"
     )
-    assert [t.gain for t in dentro] == [0.18, 0.38, 0.53]
+    assert [t.gain for t in dentro] == [0.18, 0.38]
     # EL MARGEN DEL SEGUNDO, que es lo fragil. Se deja escrito el numero para
     # que se vea de un vistazo lo cerca que esta del corte.
     margen_tp2 = recorrido - dentro[-1].gain
-    assert 0.03 < margen_tp2 < 0.07, (
+    assert 0.07 < margen_tp2 < 0.12, (
         f"el TP2 entra por {margen_tp2 * 100:.1f} puntos; si esto cambia mucho, "
         f"la tabla de margenes del yaml esta vieja"
     )
@@ -269,8 +274,8 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     vendido = sum(t.sell for t in dentro)
     suelo = (1 + dentro[-2].gain) * (1 + m) - 1
     bruto = sum((1 + t.gain) * t.sell for t in dentro) + (1 - vendido) * (1 + suelo)
-    assert abs(bruto - 1.384) < 0.005, (
-        f"la que migra y muere deja {(bruto - 1) * 100:.1f}%, no +38,4%"
+    assert abs(bruto - 1.284) < 0.005, (
+        f"la que migra y muere deja {(bruto - 1) * 100:.1f}%, no +28,4%"
     )
 
 
