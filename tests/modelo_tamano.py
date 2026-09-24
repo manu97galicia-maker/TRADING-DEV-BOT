@@ -40,6 +40,17 @@ def trade() -> dict:
     return yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["trade"]
 
 
+def base_es_libre(t: dict | None = None) -> bool:
+    """True si el porcentaje se calcula sobre el saldo LIBRE.
+
+    La base ha ido y venido tres veces en dos dias, asi que se lee del yaml
+    en vez de darse por supuesta: darla por supuesta es como dos copias de
+    esta misma cuenta se quedaron verdes midiendo el modo viejo.
+    """
+    t = t or trade()
+    return str(t.get("fraccion_base", "cartera")).strip().lower() == "libre"
+
+
 def importe(cartera: float, t: dict | None = None) -> float:
     """El importe de UNA compra con esa CARTERA, en el modo que este puesto.
 
@@ -68,6 +79,9 @@ def importe(cartera: float, t: dict | None = None) -> float:
     if usd > 0:
         imp = float(usd) / SOL_USD_REF
     elif frac > 0:
+        # `cartera` es el nombre historico del argumento; con
+        # `fraccion_base: libre` quien llama pasa aqui el saldo LIBRE. La
+        # cuenta es la misma, lo que cambia es sobre que se hace.
         imp = cartera * frac
     else:
         imp = float(t["buy_amount"])
@@ -109,11 +123,12 @@ def tamanos(
     dentro = 0.0
     salen: list[float] = []
     suelo = t.get("compra_minima_sol", 0)
+    sobre_libre = base_es_libre(t)
     for _ in range(plazas or t["max_posiciones"]):
         libre = wallet - t["min_reserve_sol"]
         if libre <= 0:
             break
-        imp = importe(wallet + dentro, t)
+        imp = importe(libre if sobre_libre else wallet + dentro, t)
         if imp <= 0 or (suelo > 0 and imp < suelo):
             break
         necesita = imp * (1 + t["buy_slippage"]) + COLCHON_POR_POSICION

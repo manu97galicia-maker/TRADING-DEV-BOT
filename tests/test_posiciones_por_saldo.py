@@ -10,7 +10,7 @@ cuenta de token. Sin el, con varias posiciones abiertas las rentas se
 comerian la reserva global y una venta podria quedarse sin gas.
 """
 
-# ruff: noqa: S101, PLR2004
+# ruff: noqa: S101, PLR2004, PLC0415
 
 from modelo_tamano import COLCHON_POR_POSICION, tamanos
 from modelo_tamano import importe as importe_de_compra
@@ -67,27 +67,24 @@ def test_el_modo_de_tamano_esta_claro() -> None:
     )
 
 
-def test_el_tamano_ya_no_se_encoge_solo() -> None:
-    """COMO HA IDO CAMBIANDO LO QUE FRENA, que es de lo que mas se ha hablado.
+def test_el_tamano_vuelve_a_encogerse_solo() -> None:
+    """QUE ES LO QUE FRENA, que ha cambiado tres veces y conviene tenerlo fijo.
 
     HASTA EL 23-SEP frenaba el propio tamano: cada compra era un porcentaje de
-    lo que QUEDABA libre, asi que se encogia sola y por muchas plazas que
-    hubiera nunca se llegaba a gastar todo. Era un freno automatico, y este
-    fichero lo daba por hecho.
+    lo que QUEDABA libre. El 23-sep la base paso a la cartera y ese freno
+    desaparecio -- las compras dejaron de menguar y tres seguidas del 25%
+    comprometian el 75% del dinero. El 24-sep se volvio al saldo libre.
 
-    DESDE QUE SE CALCULA SOBRE LA CARTERA ese freno ya no existe: las compras
-    que caben salen IGUALES. Lo unico que impide gastarlo todo es el guardian
-    del saldo (`test_nunca_se_gasta_la_reserva`).
-
-    Este test fija el hecho nuevo para que no se vuelva a dar por supuesto el
-    viejo: si alguien devuelve el calculo al saldo libre, las compras vuelven
-    a menguar y esto se pone rojo.
+    Con la base "libre" el freno existe otra vez, y este test lo fija: si
+    alguien devuelve la base a "cartera" sin decirlo, las compras dejan de
+    menguar y esto se pone rojo.
     """
+    from modelo_tamano import base_es_libre
+
+    assert base_es_libre()
     tam = tamanos(1.0)
     assert len(tam) >= 2
-    assert abs(tam[1] - tam[0]) < 0.05 * tam[0], (
-        f"la segunda compra tiene que valer lo mismo que la primera: {tam}"
-    )
+    assert tam[1] < tam[0], f"la segunda tiene que ser menor que la primera: {tam}"
 
 
 def test_la_reserva_nunca_se_toca() -> None:
@@ -112,26 +109,17 @@ def test_lo_que_queda_cubre_las_ventas_pendientes() -> None:
     assert saldo - gastado >= reserva
 
 
-def test_caben_tres_enteras_y_dos_de_propina() -> None:
-    """CUANTAS SALEN DE VERDAD CON EL 25%, que no es lo que parece.
+def test_caben_las_cinco_plazas() -> None:
+    """LAS CINCO SALEN, que es lo pedido ("puede haber multiples posiciones").
 
-    Las cinco plazas se llenan, pero no porque quepan cinco compras del 25%
-    --eso serian el 125% de la cartera-- sino porque cuando el 25% ya no cabe
-    en lo que queda libre entra `fraccion_si_no_llega` y compra con el 75% del
-    resto. Con 1 SOL salen 0,250 · 0,249 · 0,248 · 0,160 · 0,038.
-
-    O sea: TRES posiciones de verdad y dos de propina, la ultima ya
-    calderilla. Confundir "salen cinco" con "caben cinco iguales" es lo que
-    haria creer que se esta arriesgando la mitad de lo que se arriesga: las
-    tres primeras juntas ya son el 75% de la cartera.
+    Y salen de verdad, no de propina: con el 15% del saldo libre las cinco son
+    compras normales que menguan, no recortes de lo que quedaba. Con el 25% de
+    la cartera solo cabian tres enteras y las dos ultimas eran sobras.
     """
-    t = _trade()
     tam = tamanos(1.0)
-    frac = t["fraccion_saldo"]
-    enteras = [x for x in tam if x > 0.9 * frac]
-    assert len(enteras) == 3, f"tres del {frac:.0%} y el resto recortes: {tam}"
-    assert sum(enteras) > 0.7, "las tres enteras son la mayor parte de la cartera"
-    assert all(x < 0.9 * frac for x in tam[3:]), f"las de despues son recortes: {tam}"
+    assert len(tam) == TECHO, f"tienen que caber las cinco: {tam}"
+    # Ninguna es calderilla: la ultima pasa del 40% de la primera.
+    assert tam[-1] > 0.4 * tam[0], f"la ultima no puede ser una miga: {tam}"
     # Y con poco saldo sigue comprando, solo que diminuto: es lo pedido.
     assert len(tamanos(0.05)) >= 1, "con poco saldo compra poco, pero compra"
 

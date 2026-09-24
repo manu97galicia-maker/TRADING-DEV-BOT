@@ -349,6 +349,7 @@ async def start_bot(config_path: str):
             subida_seg_global=cfg["filters"].get("subida_seg_global", 10),
             min_compradores_global=cfg["filters"].get("min_compradores_global", 0),
             buy_amount_usd=cfg["trade"].get("buy_amount_usd", 0),
+            fraccion_base=cfg["trade"].get("fraccion_base", "cartera"),
             fraccion_si_no_llega=cfg["trade"].get("fraccion_si_no_llega", 0),
             compra_minima_sol=cfg["trade"].get("compra_minima_sol", 0),
             escala_por_sol_ganado=cfg["trade"].get("escala_por_sol_ganado", 0),

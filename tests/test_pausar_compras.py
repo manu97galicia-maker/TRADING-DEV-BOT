@@ -174,16 +174,17 @@ def test_ahora_mismo_compra_de_verdad() -> None:
     comprar durante dias sin que nadie lo note (que ya paso en agosto).
     """
     assert _trade()["pausar_compras"] is False
-    # Y EL TAMANO: 25% de la cartera (24-sep). Ha ido y venido mucho
+    # Y EL TAMANO: 15% del SALDO LIBRE (24-sep). Ha ido y venido mucho
     # (0,07 -> 0,12 -> 25% -> 0,04 -> 15% -> 30% del saldo -> 30% de la
-    # cartera -> 10 $ fijos -> 25% de la cartera), asi que se fija aqui para
-    # que cualquier cambio sea deliberado.
+    # cartera -> 10 $ fijos -> 25% de la cartera -> 15% del saldo libre), asi
+    # que se fijan aqui los DOS numeros --el porcentaje y sobre que se
+    # calcula-- para que cualquier cambio sea deliberado.
     #
-    # CON PORCENTAJE EL RIESGO ES PROPORCIONAL, que es la diferencia de fondo
-    # con el importe fijo: si la cartera mengua, las compras menguan solas y
-    # no hay que acordarse de bajarlas a mano. A cambio la apuesta deja de ser
-    # un numero que se sepa de memoria.
-    assert _trade()["fraccion_saldo"] == 0.25
+    # LA BASE IMPORTA TANTO COMO EL PORCENTAJE: sobre el saldo libre las
+    # compras menguan solas y el tamano se frena; sobre la cartera salen
+    # iguales y tres seguidas comprometen tres cuartos del dinero.
+    assert _trade()["fraccion_saldo"] == 0.15
+    assert _trade()["fraccion_base"] == "libre"
     _t = _trade()
     _encendidos = [
         k

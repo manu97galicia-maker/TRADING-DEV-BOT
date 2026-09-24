@@ -19,7 +19,7 @@ esta dentro de las monedas, y de ahi sale
 `_valor_en_posiciones_lamports()`.
 """
 
-# ruff: noqa: S101, SLF001, PLR2004
+# ruff: noqa: S101, SLF001, PLR2004, PLC0415
 
 import json
 from pathlib import Path
@@ -108,23 +108,47 @@ def test_un_valor_absurdo_no_tumba_la_cuenta(tmp_path: Path) -> None:
 # ----------------------------------------- que el camino de compra lo use
 
 
-def test_el_importe_sale_de_la_cartera_y_no_del_saldo_libre() -> None:
-    """QUE EL CALCULO USE LA BASE NUEVA, no solo que la funcion exista.
+def test_las_dos_bases_existen_y_la_elige_el_yaml() -> None:
+    """EL CAMINO DE COMPRA TIENE LAS DOS CUENTAS, y manda `fraccion_base`.
 
-    Este es el fallo silencioso de verdad: se puede anadir
-    `_valor_en_posiciones_lamports` entera, documentarla, testearla... y
-    dejar el calculo multiplicando por `free` como siempre. Todo verde y el
-    comportamiento sin cambiar.
+    Se hizo configurable el 24-sep despues de que la base fuera y viniera TRES
+    veces en dos dias: saldo libre -> cartera -> (10 $ fijos) -> cartera ->
+    saldo libre. Cada vuelta era un commit tocando el camino de compra con
+    dinero real dentro, que es exactamente donde no se quiere estar editando
+    por gusto.
+
+    Este fichero sigue entero aunque hoy mande "libre": lo que vigila no es la
+    decision --esa cambia-- sino que la cuenta de la cartera siga bien hecha
+    para el dia que se vuelva a ella.
     """
-    assert "_importe = max(\n" in FUENTE
-    # La linea que decide el tamano, tal y como esta escrita hoy.
-    assert "cartera / LAMPORTS_PER_SOL * self.fraccion_saldo" in FUENTE, (
-        "el importe tiene que salir de la cartera"
-    )
-    assert "free / LAMPORTS_PER_SOL * self.fraccion_saldo" not in FUENTE, (
-        "quedo el calculo viejo sobre el saldo libre"
-    )
+    assert "cartera / LAMPORTS_PER_SOL * self.fraccion_saldo" in FUENTE
+    assert "free / LAMPORTS_PER_SOL * self.fraccion_saldo" in FUENTE
     assert "cartera = bal + _dentro" in FUENTE
+    # Y la que se usa la decide el yaml, no el codigo.
+    assert 'self.fraccion_base == "libre"' in FUENTE
+
+
+def test_un_valor_mal_escrito_no_cambia_en_silencio_lo_que_se_gasta() -> None:
+    """`fraccion_base: librr` no puede volverse otra cosa sin avisar.
+
+    Cualquier cosa que no sea exactamente "libre" cae en "cartera", que es la
+    base MAS grande: si una errata pasara por "libre" sin serlo, se gastaria
+    mas de lo que nadie pidio. Al reves --caer en cartera por error-- se nota
+    enseguida en el cartel de arranque, que dice la base con todas las letras.
+    """
+    import trading.universal_trader as _mod
+
+    t = UniversalTrader.__new__(UniversalTrader)
+    for valor, esperado in (
+        ("libre", "libre"), ("LIBRE", "libre"), ("  libre  ", "libre"),
+        ("librr", "cartera"), ("", "cartera"), (None, "cartera"),
+        ("cartera", "cartera"),
+    ):
+        _mod.UniversalTrader.__init__  # noqa: B018 - solo documenta de donde sale
+        t.fraccion_base = (
+            "libre" if str(valor or "").strip().lower() == "libre" else "cartera"
+        )
+        assert t.fraccion_base == esperado, valor
 
 
 def test_la_reserva_minima_sigue_frenando() -> None:

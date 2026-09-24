@@ -394,10 +394,11 @@ trade:
   # La bolsa NO se vende ni se pierde: se queda en la wallet y la recoge la
   # limpieza de cuentas. 0 desactiva la regla.
   valor_minimo_posicion_usd: 1.0
-  # PORCENTAJE DE LA CARTERA: 25% (24-sep, pedido: "invierte en cada
-  # operacion el 25%"). Historial: 0,25 unas horas el 19-sep -> apagado ->
-  # 0,15 -> 0,30 sobre el saldo libre -> 0,30 sobre la cartera -> apagado por
-  # los 10 $ fijos -> 0,25 sobre la cartera.
+  # PORCENTAJE DEL SALDO LIBRE: 15% (24-sep, pedido: "cada compra sera del
+  # 15% del total de sol libre"). Historial: 0,25 unas horas el 19-sep ->
+  # apagado -> 0,15 -> 0,30 sobre el saldo libre -> 0,30 sobre la cartera ->
+  # apagado por los 10 $ fijos -> 0,25 sobre la cartera -> 0,15 sobre el
+  # saldo libre.
   #
   # MANDA ESTE, no el importe fijo de arriba: con cualquier valor mayor que
   # cero, el porcentaje SUSTITUYE al importe fijo dentro del cerrojo de gasto.
@@ -412,21 +413,35 @@ trade:
   # 0,30 · 0,21 · 0,15 · 0,10 · 0,07. La quinta valia la cuarta parte que la
   # primera sin que nadie lo pidiera. Sobre la cartera salen IGUALES.
   #
-  # LO QUE HAY QUE SABER, porque es el precio de tenerlas iguales: con el 25%
-  # caben TRES posiciones enteras y media. Con 1 SOL salen 0,250 · 0,249 ·
-  # 0,248 · 0,160 · 0,038: las tres primeras iguales, la cuarta con lo que
-  # queda y la quinta ya es calderilla. Las tres primeras juntas son el 75% de
-  # la cartera jugado a la vez.
+  # SOBRE QUE SE CALCULA lo dice `fraccion_base`, aqui abajo. Con "libre" las
+  # compras MENGUAN solas: cada una es un porcentaje de lo que SOBRA, asi que
+  # con 1 SOL salen 0,145 · 0,123 · 0,105 · 0,089 · 0,076.
   #
-  # Con el stop en el 28%, cada posicion entera arriesga el 7,0% de la cartera
-  # y las tres juntas el 21,0%.
+  # ESO NO ES UN DEFECTO: es el freno automatico. Por muchas plazas que haya
+  # nunca se llega a comprometer la cartera entera, y con el 15% las cinco
+  # juntas se quedan en torno a la mitad del saldo. Con el stop en el 28%,
+  # la primera posicion arriesga un 4,1% del saldo libre y la quinta un 2,1%.
   #
-  # OJO CON EL SUELO. Con poco saldo el 25% se queda tan pequeno que los
-  # costes fijos --la renta de la cuenta de token y la comision de prioridad,
-  # que no bajan con el tamano-- se comen la operacion. Con un saldo de 0,1
-  # SOL el 25% son 0,025, que ya es territorio de nacer perdiendo. Si pasa a
-  # menudo, lo que hay que poner es `compra_minima_sol`.
-  fraccion_saldo: 0.25
+  # OJO CON EL SUELO, y con el 15% aprieta mas que con el 25%. Los costes
+  # fijos --la renta de la cuenta de token y la comision de prioridad-- no
+  # bajan con el tamano. Con un saldo de 0,3 SOL la quinta compra sale de
+  # 0,023 SOL, que ya es territorio de nacer perdiendo. Si pasa a menudo, lo
+  # que hay que poner es `compra_minima_sol`.
+  fraccion_saldo: 0.15
+  # SOBRE QUE SE CALCULA EL PORCENTAJE. Es una clave y no una decision
+  # escrita en el codigo porque ha ido y venido tres veces en dos dias, y
+  # cada vuelta era un commit tocando el camino de compra.
+  #
+  #   libre    el SOL gastable: saldo - reserva minima - lo comprometido.
+  #            Mengua con cada posicion abierta, asi que las compras salen
+  #            cada vez mas pequenas y el tamano se frena solo.
+  #   cartera  saldo MAS lo que ya vale lo que hay en monedas. La base no
+  #            baja al comprar, asi que las compras salen IGUALES -- y tres
+  #            del 25% comprometian el 75% de la cartera de golpe.
+  #
+  # Cualquier cosa que no sea "libre" se trata como "cartera": un valor mal
+  # escrito no puede cambiar en silencio cuanto se gasta.
+  fraccion_base: libre
   # IMPORTE EN DOLARES: APAGADO (24-sep). Mandaba el desde ayer con 10 $ por
   # operacion; ahora manda el porcentaje de la cartera de aqui arriba.
   #

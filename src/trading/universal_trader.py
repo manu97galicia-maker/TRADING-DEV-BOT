@@ -618,6 +618,7 @@ class UniversalTrader:
         # que sube solo cuando la wallet sube y no hay que reeditar el yaml.
         fraccion_saldo: float = 0.0,
         buy_amount_usd: float = 0.0,
+        fraccion_base: str = "cartera",
         fraccion_si_no_llega: float = 0.0,
         # Suelo por debajo del cual NO se compra. Las comisiones de pump.fun y
         # la renta de la cuenta de token son fijas: en una compra de 0,02 SOL
@@ -1208,6 +1209,23 @@ class UniversalTrader:
         #: SOL valga 300 esa misma compra son 13,50 $ sin que nadie lo haya
         #: decidido. Aqui la apuesta es la misma todos los dias.
         self.buy_amount_usd = max(0.0, float(buy_amount_usd or 0))
+        #: SOBRE QUE se calcula `fraccion_saldo`. Es configurable y no una
+        #: decision escrita en el codigo porque ha ido y venido tres veces en
+        #: dos dias, y cada vuelta era un commit tocando el camino de compra.
+        #:
+        #:   "libre"   -> el SOL gastable: saldo menos la reserva minima menos
+        #:                lo ya comprometido. Como mengua con cada posicion
+        #:                abierta, las compras salen cada vez mas pequenas.
+        #:   "cartera" -> saldo MAS lo que ya vale lo que hay en monedas. La
+        #:                base no baja al comprar --el dinero cambia de sitio,
+        #:                no desaparece-- asi que las compras salen iguales.
+        #:
+        #: Cualquier cosa que no sea "libre" se trata como "cartera": un valor
+        #: mal escrito no puede cambiar en silencio cuanto se gasta.
+        self.fraccion_base = (
+            "libre" if str(fraccion_base or "").strip().lower() == "libre"
+            else "cartera"
+        )
         #: RED DE SEGURIDAD, no una forma de comprar. Cuando el saldo no
         #: da para el importe entero, en vez de saltarse la moneda se
         #: compra con esta fraccion de lo que quede libre. 0 = apagado,
@@ -1535,8 +1553,16 @@ class UniversalTrader:
             # "REALES 0.5000 SOL" comprando 0,24. Es la linea que se mira al
             # arrancar para confirmar la configuracion, asi que mentir aqui es
             # exactamente lo que no puede pasar.
+            # LA BASE VA EN EL CARTEL, no solo el porcentaje. "15%" no dice
+            # nada sin saber de que: el 15% del saldo libre y el 15% de la
+            # cartera son numeros distintos y menguan distinto.
+            _base = (
+                "del saldo libre"
+                if getattr(self, "fraccion_base", "cartera") == "libre"
+                else "de la cartera"
+            )
             compras = (
-                f"REALES {self.fraccion_saldo * 100:.0f}% de la cartera "
+                f"REALES {self.fraccion_saldo * 100:.0f}% {_base} "
                 f"(tope {self.tope_compra_sol:.4f} SOL)"
             )
         else:
@@ -4882,6 +4908,34 @@ class UniversalTrader:
                             "SOL · libres %.4f",
                             self.buy_amount_usd, _sol_usd, _importe,
                             free / LAMPORTS_PER_SOL,
+                        )
+                    elif self.fraccion_saldo > 0 and self.fraccion_base == "libre":
+                        # SOBRE EL SALDO LIBRE (24-sep, pedido: "cada compra
+                        # sera del 15% del total de sol libre").
+                        #
+                        # `free` es lo gastable: saldo menos la reserva minima
+                        # menos lo comprometido por las compras en curso. Como
+                        # mengua con cada posicion abierta, las compras salen
+                        # cada vez mas pequenas -- con 1 SOL: 0,145 · 0,123 ·
+                        # 0,105 · 0,089 · 0,076.
+                        #
+                        # ESO NO ES UN DEFECTO, es lo que hace esta base: el
+                        # tamano se frena solo y nunca se llega a comprometer
+                        # la cartera entera. Es el freno automatico que se
+                        # perdio al pasar a la base "cartera" el 23-sep.
+                        _importe = max(
+                            0.0, free / LAMPORTS_PER_SOL * self.fraccion_saldo
+                        )
+                        if _tope > 0 and _importe > _tope:
+                            _importe = _tope
+                        need = int(
+                            _importe * (1 + self.buy_slippage) * LAMPORTS_PER_SOL
+                        ) + self._fee_headroom_lamports
+                        logger.info(
+                            "LIBRE: %.4f SOL gastables -> compra de %.4f (%.0f%%)",
+                            free / LAMPORTS_PER_SOL,
+                            _importe,
+                            self.fraccion_saldo * 100,
                         )
                     elif self.fraccion_saldo > 0:
                         # SOBRE LA CARTERA ENTERA, no sobre el saldo libre

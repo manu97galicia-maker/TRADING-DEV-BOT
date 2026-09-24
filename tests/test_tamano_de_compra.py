@@ -27,23 +27,30 @@ comisiones de prioridad.
 
 # ruff: noqa: S101, PLR2004, PLC0415
 
+from itertools import pairwise
+
 from modelo_tamano import CONFIG, SOL_USD_REF, importe
 from modelo_tamano import tamanos as _tamanos
 from modelo_tamano import trade as _trade
 
 
-def test_el_modo_activo_es_el_porcentaje_de_la_cartera() -> None:
-    """25% de la cartera por operacion (24-sep, pedido).
+def test_el_modo_activo_es_el_porcentaje_del_saldo_libre() -> None:
+    """15% del SALDO LIBRE por operacion (24-sep, pedido).
 
     Historial del tamano: 0,12 SOL fijo -> 25% -> 0,04 SOL fijo -> 15% -> 30%
-    del saldo libre -> 30% de la cartera -> 10 $ fijos -> 25% de la cartera.
+    del saldo libre -> 30% de la cartera -> 10 $ fijos -> 25% de la cartera
+    -> 15% del saldo libre.
 
     Y la regla de siempre: manda UNO de los tres. Dos con numero es un valor
     que parece decidir y no decide -- justo la clase de cosa que hace buscar
     el fallo donde no esta.
     """
     t = _trade()
-    assert t["fraccion_saldo"] == 0.25
+    assert t["fraccion_saldo"] == 0.15
+    # LA BASE ES PARTE DEL MODO. "15%" no dice nada sin ella: el 15% del
+    # saldo libre y el 15% de la cartera son numeros distintos y menguan
+    # distinto.
+    assert t["fraccion_base"] == "libre"
     encendidos = [
         k
         for k in ("buy_amount_usd", "fraccion_saldo", "buy_amount")
@@ -77,35 +84,34 @@ def test_el_tope_no_recorta_el_importe_configurado() -> None:
         )
 
 
-def test_las_posiciones_que_caben_valen_lo_mismo() -> None:
-    """LA DIFERENCIA ENTRE LOS TRES MODOS, y conviene tenerla escrita.
+def test_sobre_el_saldo_libre_las_posiciones_menguan() -> None:
+    """LA DIFERENCIA ENTRE LAS DOS BASES, y es el motivo de que haya una clave
+    para elegirla en vez de estar escrita en el codigo.
 
-    SOBRE EL SALDO LIBRE (hasta el 23-sep) las posiciones menguaban solas:
-    cada compra era un porcentaje de lo que SOBRABA, asi que con 1 SOL salian
-    0,30 · 0,21 · 0,15 · 0,10 · 0,07.
+    SOBRE EL SALDO LIBRE (lo de ahora) cada compra es un porcentaje de lo que
+    SOBRA, asi que menguan solas: con 1 SOL salen 0,146 · 0,123 · 0,104 ·
+    0,088 · 0,075. Eso NO es un defecto, es el freno automatico -- por muchas
+    plazas que haya nunca se compromete la cartera entera.
 
-    SOBRE LA CARTERA salen iguales, porque la base no baja al comprar -- el
-    dinero cambia de sitio, no desaparece. Con el 25% y 1 SOL: 0,250 · 0,249 ·
-    0,248 · 0,160 · 0,038. Las tres primeras iguales, la cuarta con lo que
-    queda y la quinta ya es calderilla.
+    SOBRE LA CARTERA salen iguales, porque la base no baja al comprar: el
+    dinero cambia de sitio, no desaparece. A cambio tres del 25% comprometian
+    el 75% del dinero de golpe.
 
-    CON UN IMPORTE FIJO (los 10 $ del 23-sep) las cinco valian lo mismo y el
-    saldo no pintaba nada; a cambio la apuesta no crecia con las ganancias.
+    CABEN LAS CINCO PLAZAS, que es lo pedido: con el 15% las cinco juntas se
+    quedan en torno a la mitad del saldo.
     """
-    tam = _tamanos(1.0)
-    frac = _trade()["fraccion_saldo"]
+    from modelo_tamano import base_es_libre
 
-    enteras = [x for x in tam if x > 0.9 * frac]
-    assert len(enteras) == 3, f"deberian caber tres del {frac:.0%}: {tam}"
-    assert abs(enteras[0] - frac) < 0.005, f"la primera es el {frac:.0%}: {tam}"
-    # IGUALES, con el margen de las comisiones que si se van de la cartera. El
-    # numero que importa no es "identicas" sino que la tercera no sea la mitad
-    # que la primera, que es lo que pasaba sobre el saldo libre.
-    assert min(enteras) > 0.95 * max(enteras), (
-        f"las que caben tienen que ser iguales, no menguantes: {tam}"
-    )
-    # Y las de despues salen del recorte: mas pequenas a proposito.
-    assert all(x < enteras[0] for x in tam[3:]), f"{tam}"
+    assert base_es_libre(), "este test describe la base 'libre'"
+    tam = _tamanos(1.0)
+    assert len(tam) == _trade()["max_posiciones"], f"caben las cinco: {tam}"
+    # Menguan, y de forma clara: la ultima no llega ni a tres cuartos de la
+    # primera. Si alguien devuelve la base a "cartera", esto se pone rojo.
+    assert tam[-1] < 0.75 * tam[0], f"deberian menguar: {tam}"
+    for antes, despues in pairwise(tam):
+        assert despues < antes, f"cada una mas pequena que la anterior: {tam}"
+    # Y nunca se compromete todo: queda saldo despues de las cinco.
+    assert sum(tam) < 0.6, f"las cinco juntas no pueden llevarse la cartera: {tam}"
 
 
 def test_nunca_se_gasta_mas_de_lo_que_hay() -> None:
