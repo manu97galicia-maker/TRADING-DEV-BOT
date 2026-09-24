@@ -56,22 +56,28 @@ todas las entradas, venga de donde venga la moneda.
 
 ## 3. Cuánto pone en cada compra
 
-**El 20% del SOL libre.** Ojo, **libre no es lo mismo que la cartera**: es lo
-que hay en la wallet menos una reserva intocable de 0,03 SOL (hace falta para
-poder *vender* después) y menos lo que ya está metido en monedas.
+**El 25% de la cartera.** Cartera = todo lo que tienes, el SOL de la wallet
+más lo que ya vale lo que hay metido en monedas. Esa base **no baja al
+comprar** (el dinero cambia de sitio, no desaparece), así que las compras
+salen **iguales**.
 
 Con 1 SOL de saldo salen cinco compras así:
 
 ```
-0,194 · 0,155 · 0,123 · 0,098 · 0,078     (suma 0,647 = el 65% del saldo)
+0,250 · 0,249 · 0,249 · 0,160 · 0,038     (suma 0,945 = el 95% del saldo)
 ```
 
-**Menguan a propósito.** Cada una es el 20% de lo que *sobra*, no del total.
-Eso es un freno automático: por muchas posiciones que se abran, nunca se
-compromete la cartera entera. Las cinco juntas se quedan en el 65% del saldo.
+**Tres compras de verdad, una recortada y una que es calderilla.** No es un
+fallo, es aritmética: cuatro del 25% ya son el 100% del dinero. A partir de
+la cuarta, lo que compra es lo que quedaba libre.
 
-Con el stop en el 26%, la primera posición arriesga un 5% del saldo y las
-cinco juntas un 17%.
+> **Aquí no hay freno automático.** Antes cada compra era un porcentaje de lo
+> que *sobraba* y menguaban solas, así que nunca se comprometía todo. Ahora lo
+> único que para al bot es quedarse sin saldo. Con el stop en el 26%, las
+> cinco juntas ponen en riesgo un **25% de tu dinero**.
+
+La quinta compra sale de unos 8 $, y la comisión de prioridad son 1,12 $: un
+13% se va antes de que la moneda se mueva.
 
 Puede tener **5 posiciones abiertas a la vez**.
 
@@ -83,11 +89,15 @@ Dos escaleras, una detrás de la otra.
 
 ### Por porcentaje de subida
 
-| sube | vende | acumulado |
-|---|---|---|
-| +25% | 15% | 15% |
-| +53% | 40% | 55% |
-| +100% | 20% | 75% |
+| sube | vende | acumulado | dinero recuperado |
+|---|---|---|---|
+| +25% | 20% | 20% | 25% de lo que pusiste |
+| +53% | 50% | 70% | **101%** ← aquí ya has recuperado todo |
+| +100% | 15% | 85% | 131% |
+
+**El segundo peldaño te devuelve la inversión entera**, y cae dentro de la
+curva. A partir de ahí todo lo que la moneda haga es ganancia limpia: aunque
+se fuera a cero, no pierdes dinero.
 
 **Los dos primeros caben dentro de la curva, el segundo con poco margen.**
 Entrando al 91,0% quedan +57,5% hasta migrar y el segundo peldaño está en
@@ -107,18 +117,16 @@ anterior**, no sobre lo que se pagó. Así todos piden el mismo esfuerzo.
 
 | escalón | precio | vende | acumulado | market cap aprox. |
 |---|---|---|---|---|
-| 1 | x2,70 | 10% | 85% | 155k $ |
-| 2 | x3,65 | 3% | 88% | 209k $ |
-| 3 | x4,92 | 3% | 91% | 282k $ |
-| 4 | x6,64 | 3% | 94% | 381k $ |
-| 5 | x8,97 | 3% | 97% | 515k $ |
+| 1 | x2,70 | 5% | 90% | 155k $ |
+| 2 | x3,65 | 3% | 93% | 209k $ |
+| 3 | x4,92 | 2% | 95% | 282k $ |
+| 4 | x6,64 | 1% | 96% | 381k $ |
+| 5 | x8,97 | 1% | 97% | 515k $ |
 
-El primero se lleva casi la mitad de lo que quedaba, y es a propósito: es el
-único de los cinco al que llega un número razonable de monedas. Los otros
-cuatro son lotería.
-
-Son cinco y no más porque ahí se acaba lo que había para repartir. El sexto
-caería sobre los 695k $.
+Aquí queda poco porque casi todo se ha cobrado antes. **Es el precio de
+recuperar la inversión pronto**: si una moneda se va a x9, te llevas +102% en
+vez de +140%. A cambio, en las que solo llegan a migrar recuperas tu dinero
+entero en vez de quedarte al 80%.
 
 Queda un **3% (el "moonbag")** que el bot **no vende nunca**. Ese lo vende una
 persona a mano, si quiere.

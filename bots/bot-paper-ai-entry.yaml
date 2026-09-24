@@ -167,8 +167,38 @@ trade:
   # gas de la operacion es un 3,7%. El TP1 NO cubre el gas por si solo, y da
   # igual -- lo que aporta es el suelo, y eso ya esta contado en la cuenta de
   # arriba.
+  # EL REPARTO CAMBIA A 20-50-15 (24-sep, pedido: "centrate en recuperar
+  # rapido mi inversion"). Era 15-40-20.
+  #
+  # LO QUE SE BUSCA, y es una cuenta concreta y no una sensacion: que el
+  # dinero puesto vuelva en un peldano que este DENTRO de la curva.
+  #
+  #   reparto      dinero recuperado tras cada peldano      vuelve en
+  #   15-40-20     18,8%  ->  80,0%  ->  120,0%             +100%  (fuera)
+  #   20-50-15     25,0%  -> 101,5%  ->  131,3%             +53%   (dentro)
+  #
+  # CON EL REPARTO ANTERIOR, una moneda que migraba y se moria NO devolvia
+  # nunca el 100% por la escalera: se quedaba en el 80% y el resto salia por
+  # el suelo. Ahora el segundo peldano --que esta dentro de la curva-- cierra
+  # la inversion entera, y a partir de ahi todo es ganancia limpia.
+  #
+  # QUE CUESTA, y es real: se vende mas abajo, asi que queda menos posicion
+  # para las que vuelan.
+  #
+  #   escenario                  15-40-20   20-50-15
+  #   salta el stop                -26,0%     -26,0%
+  #   muere al +40% (no migra)      +8,0%      +9,0%
+  #   migra y muere (+57,5%)       +39,0%     +40,9%
+  #   sigue hasta x2,70            +78,5%     +66,0%
+  #   llega a x8,97               +140,4%    +102,3%
+  #   aciertos para no perder         40%        39%
+  #
+  # O SEA: mejor en todo lo frecuente y peor solo en las que se van a x3 o
+  # mas. Es exactamente el intercambio que se pidio --cobrar antes-- y
+  # conviene saber que el precio se paga en los aciertos grandes, que son
+  # los que hacen el ano en una estrategia de memecoins.
   take_profit_percentage: 0.25
-  take_profit_sell_percentage: 0.15
+  take_profit_sell_percentage: 0.20
   # +53% Y NO +55% (24-sep, pedido: "sube dentro de la curva dos puntos").
   # Dos puntos NO de ganancia sino de MARGEN: entrando al 91,0% quedan
   # +57,5% hasta migrar, asi que el peldano pasa de entrar por 2,5 puntos a
@@ -179,9 +209,9 @@ trade:
   # compra son los 2 puntos, y este es el peldano que vende el 40% de la
   # posicion: es el que no puede quedarse fuera.
   tp2_gain: 0.53
-  tp2_sell: 0.40
+  tp2_sell: 0.50
   tp3_gain: 1.00
-  tp3_sell: 0.20
+  tp3_sell: 0.15
   # SE QUITA EL CUARTO PELDANO POR PORCENTAJE (24-sep, pedido: "el siguiente
   # lo ponemos en un 100%, pero vende un 20%, y el resto lo dejamos correr
   # hasta 200.000"). Estaba en +125% y vendia el 5%.
@@ -269,15 +299,15 @@ trade:
   # mover el TP2 en agosto.
   tp_extra:
     - gain: 1.70
-      sell: 0.10
+      sell: 0.05
     - gain: 2.645
       sell: 0.03
     - gain: 3.921
-      sell: 0.03
+      sell: 0.02
     - gain: 5.643
-      sell: 0.03
+      sell: 0.01
     - gain: 7.968
-      sell: 0.03
+      sell: 0.01
 
   # ESCALONES POR MARKET CAP: NINGUNO (24-sep, tarde).
   #
@@ -553,40 +583,39 @@ trade:
   # 0,30 · 0,21 · 0,15 · 0,10 · 0,07. La quinta valia la cuarta parte que la
   # primera sin que nadie lo pidiera. Sobre la cartera salen IGUALES.
   #
-  # 20% (24-sep, pedido: "si es un 15, por un 20"). Historial del porcentaje:
-  # 30% cartera -> 10 $ fijos -> 25% cartera -> 15% libre -> 20% libre.
+  # 25% DE LA CARTERA (24-sep, pedido: "compra el 25% del total del
+  # balance"). Historial del porcentaje: 30% cartera -> 10 $ fijos -> 25%
+  # cartera -> 15% libre -> 20% libre -> 25% cartera.
   #
-  # SOBRE QUE SE CALCULA lo dice `fraccion_base`, aqui abajo. Con "libre" las
-  # compras MENGUAN solas: cada una es un porcentaje de lo que SOBRA, asi que
-  # con 1 SOL salen 0,194 · 0,155 · 0,123 · 0,098 · 0,078.
+  # CAMBIAN LAS DOS COSAS A LA VEZ, y la base pesa mas que el numero. Lo dice
+  # `fraccion_base`, aqui abajo, que vuelve a "cartera": la base ya no baja
+  # al comprar --el dinero cambia de sitio, no desaparece-- asi que las
+  # compras salen IGUALES en vez de menguar.
   #
-  # ESO NO ES UN DEFECTO: es el freno automatico. Por muchas plazas que haya
-  # nunca se llega a comprometer la cartera entera. Lo que cambia al subir
-  # del 15% al 20%:
+  #   modo                las cinco compras con 1 SOL          suma   del saldo
+  #   20% libre (antes)   0,194 0,155 0,123 0,098 0,078       0,647      65%
+  #   25% cartera (hoy)   0,250 0,249 0,249 0,160 0,038       0,945      95%
   #
-  #   %     las cinco compras con 1 SOL                suma    del saldo
-  #   15%   0,146 0,123 0,104 0,088 0,075              0,536      54%
-  #   20%   0,194 0,155 0,123 0,098 0,078              0,647      65%
+  # SE COMPROMETE EL 95% DEL SALDO. Con el stop en 26%, las cinco juntas
+  # ponen en riesgo un 24,6% del dinero (antes 16,8%). No es "cinco puntos
+  # mas de porcentaje": es casi un 50% mas de dinero expuesto.
   #
-  # SE ARRIESGA UN TERCIO MAS. Con el stop en 26%, la primera posicion pasa
-  # de arriesgar un 3,8% del saldo a un 5,0%, y las cinco juntas de un 13,9%
-  # a un 16,8%. No es "cinco puntos mas": es un 33% mas de dinero en juego.
+  # Y SE ACABA EL FRENO AUTOMATICO, que es lo importante de este cambio.
+  # Sobre el saldo libre, cada compra era un porcentaje de lo que SOBRABA y
+  # por eso nunca se llegaba a comprometer todo. Sobre la cartera no existe
+  # ese freno: lo unico que para al bot es quedarse sin saldo libre, y eso
+  # pasa en la cuarta compra.
   #
-  # Y LA QUINTA SIGUE SIENDO LA MITAD QUE LA PRIMERA (0,078 contra 0,194).
-  # Eso no lo arregla subir el porcentaje --subirlo lo empeora, porque cada
-  # compra se lleva mas de lo que queda para la siguiente--; lo arregla
-  # cambiar `fraccion_base` a "cartera".
+  # TRES COMPRAS DE VERDAD, UNA RECORTADA Y UNA MIGA. Cuatro del 25% ya son
+  # el 100% del dinero, asi que la cuarta sale de lo que quedaba (0,160) y la
+  # quinta es calderilla (0,038 SOL, unos 8,3 $). La comision de prioridad
+  # son 1,12 $: el 13% de esa quinta compra se va antes de que la moneda se
+  # mueva. Es aritmetica, no un fallo, y hay test que lo fija.
   #
-  # OJO CON EL SUELO, y este es el numero incomodo. Los costes fijos --la
-  # comision de prioridad, que hoy son 1,12 $ por compra-- no bajan con el
-  # tamano. Con un saldo de 0,3 SOL las cinco compras salen 0,054 · 0,043 ·
-  # 0,034 · 0,026 · 0,020 SOL; la quinta son 4,5 $ y la comision se lleva el
-  # 25% de ella antes de que la moneda se mueva.
-  #
-  # SUBIR EL PORCENTAJE NO ARREGLA ESO: la quinta compra sigue siendo
-  # pequena porque la base ha menguado cuatro veces. Lo que lo arregla es
-  # `compra_minima_sol` (que se salte las que no llegan) o menos plazas.
-  fraccion_saldo: 0.20
+  # LAS DOS PALANCAS SI ESO MOLESTA: `compra_minima_sol`, que se salta las
+  # compras que no llegan a un minimo, o bajar `max_posiciones` a 4. Ninguna
+  # de las dos se toca aqui porque no se pidieron.
+  fraccion_saldo: 0.25
   # SOBRE QUE SE CALCULA EL PORCENTAJE. Es una clave y no una decision
   # escrita en el codigo porque ha ido y venido tres veces en dos dias, y
   # cada vuelta era un commit tocando el camino de compra.
@@ -600,7 +629,7 @@ trade:
   #
   # Cualquier cosa que no sea "libre" se trata como "cartera": un valor mal
   # escrito no puede cambiar en silencio cuanto se gasta.
-  fraccion_base: libre
+  fraccion_base: cartera
   # IMPORTE EN DOLARES: APAGADO (24-sep). Mandaba el desde ayer con 10 $ por
   # operacion; ahora manda el porcentaje de la cartera de aqui arriba.
   #

@@ -43,8 +43,19 @@ def test_el_punto_de_entrada_es_el_de_verdad() -> None:
 
 
 def test_el_tamano_de_compra_es_el_de_verdad() -> None:
+    """EL PORCENTAJE Y SU BASE, porque uno sin la otra no dice nada.
+
+    "El 25%" significa cosas muy distintas segun sobre que se calcule: el 25%
+    del saldo LIBRE mengua con cada compra y el 25% de la CARTERA no. La nota
+    tiene que decir las dos cosas, y el test las saca del yaml para que no se
+    puedan separar.
+    """
     t = _cfg()["trade"]
-    assert f"{t['fraccion_saldo'] * 100:.0f}% del SOL libre" in _texto()
+    base = str(t.get("fraccion_base", "cartera")).strip().lower()
+    etiqueta = "del SOL libre" if base == "libre" else "de la cartera"
+    assert f"{t['fraccion_saldo'] * 100:.0f}% {etiqueta}" in _texto(), (
+        f"la nota tiene que decir '{t['fraccion_saldo'] * 100:.0f}% {etiqueta}'"
+    )
     assert f"{t['max_posiciones']} posiciones abiertas" in _texto()
 
 

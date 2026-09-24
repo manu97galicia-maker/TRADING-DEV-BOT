@@ -54,8 +54,8 @@ def test_los_peldanos_son_los_pedidos() -> None:
     entrando al 96%. Los multiplos no dependen de eso.
     """
     assert _peldanos() == [
-        (0.25, 0.15), (0.53, 0.40), (1.00, 0.20),
-        (1.70, 0.10), (2.645, 0.03), (3.921, 0.03), (5.643, 0.03), (7.968, 0.03),
+        (0.25, 0.20), (0.53, 0.50), (1.00, 0.15),
+        (1.70, 0.05), (2.645, 0.03), (3.921, 0.02), (5.643, 0.01), (7.968, 0.01),
     ]
 
 
@@ -168,7 +168,7 @@ def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:
 
 
 def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
-    """24-sep (tarde): 15% al +25%, 40% al +53% y 20% al +100%.
+    """24-sep (tarde, 2a version): 20% al +25%, 50% al +53% y 15% al +100%.
 
     Son los tres que se cobran mientras la moneda todavia se piensa en
     porcentajes. De ahi en adelante la escalera sigue, pero ya en multiplos.
@@ -179,8 +179,8 @@ def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
     resto.
     """
     cerca = [(g, v) for g, v in _peldanos() if g < 1.5]
-    assert cerca == [(0.25, 0.15), (0.53, 0.40), (1.00, 0.20)]
-    assert round(sum(v for _, v in cerca), 6) == 0.75
+    assert cerca == [(0.25, 0.20), (0.53, 0.50), (1.00, 0.15)]
+    assert round(sum(v for _, v in cerca), 6) == 0.85
 
 
 def test_todos_los_peldanos_son_fraccion_de_la_compra_original() -> None:

@@ -82,7 +82,7 @@ def test_el_tp1_de_la_config_vende_y_asegura() -> None:
     peldano a mano y se quedara verde midiendo el de dos versiones atras.
     """
     t = _trade()
-    assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 0.15
+    assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 0.20
     assert _tiers()[0].gain == t["take_profit_percentage"] == 0.25
 
 
@@ -189,7 +189,7 @@ def test_se_vende_el_97_por_ciento_entre_las_dos_escaleras() -> None:
 
 
 def test_la_escalera_de_porcentaje_son_tres() -> None:
-    """Los TRES DE CERCA son +25%, +53% y +100%.
+    """Los TRES DE CERCA son +25%, +53% y +100%, vendiendo 20-50-15.
 
     Historial del dia: cuatro peldanos (+25/+55/+90/+125, vendiendo
     15-35-30-5) por la manana; por la tarde se pide "el take profit 2 vende
@@ -201,8 +201,9 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     debajo de x2,5-- porque son los unicos que una moneda normal recorre;
     los otros cinco tienen su propio test en test_escalera_actual.py.
 
-    EL GRUESO SE COBRA EN MEDIO: 15% - 40% - 20%. El segundo peldano es el
-    que de verdad manda: vende el 40% de la posicion.
+    EL GRUESO SE COBRA EN MEDIO: 20% - 50% - 15%. El segundo peldano es el
+    que de verdad manda: vende la MITAD de la posicion, y con el vuelve la
+    inversion entera (20% x 1,25 + 50% x 1,53 = 101,5% de lo que se puso).
 
     Y AL 91,0% DE CURVA CABE POR 4,5 PUNTOS. Quedan +57,5% hasta migrar y
     el peldano esta en +53%. Entraba por 2,5 con el TP2 en +55%; se bajo dos
@@ -223,7 +224,7 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     """
     tiers = [t for t in _tiers() if t.gain <= 1.5]
     assert len(tiers) == 3, f"tres peldanos de cerca: {tiers}"
-    assert [t.sell for t in tiers] == [0.15, 0.40, 0.20]
+    assert [t.sell for t in tiers] == [0.20, 0.50, 0.15]
     assert [t.gain for t in tiers] == [0.25, 0.53, 1.00]
     # El recorrido dentro de la curva entrando donde se entra.
     umbral = yaml.safe_load(CONFIG.read_text())["filters"]["curva_96"]["umbral"]
@@ -248,8 +249,8 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     vendido = sum(t.sell for t in dentro)
     suelo = (1 + dentro[0].gain) * (1 + m) - 1
     bruto = sum((1 + t.gain) * t.sell for t in dentro) + (1 - vendido) * (1 + suelo)
-    assert abs(bruto - 1.390) < 0.005, (
-        f"la que migra y muere deja {(bruto - 1) * 100:.1f}%, no +39,0%"
+    assert abs(bruto - 1.409) < 0.005, (
+        f"la que migra y muere deja {(bruto - 1) * 100:.1f}%, no +40,9%"
     )
 
 

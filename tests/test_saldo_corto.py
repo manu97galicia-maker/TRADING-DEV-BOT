@@ -108,8 +108,8 @@ def test_la_config_pide_lo_que_se_pidio() -> None:
     t = _cfg()["trade"]
     # Manda el porcentaje del saldo libre: 15% (24-sep). Los otros dos modos
     # van a cero porque solo uno puede mandar a la vez.
-    assert t["fraccion_saldo"] == 0.20
-    assert t["fraccion_base"] == "libre"
+    assert t["fraccion_saldo"] == 0.25
+    assert t["fraccion_base"] == "cartera"
     assert t["buy_amount_usd"] == 0
     assert t["buy_amount"] == 0
     # EL RECORTE ES LO QUE HACE QUE SALGAN CUATRO POSICIONES Y NO TRES: cuando

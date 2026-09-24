@@ -105,14 +105,14 @@ def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
     # lejanos en `tp_extra`, cada uno un 35% mas caro que el anterior.
     esperado = {
         1.24: 0.0,    # justo por debajo del primero
-        1.25: 0.15,
-        1.53: 0.55,
-        1.99: 0.55,   # el tercero es +100% exacto: a x1,99 todavia no entra
-        2.00: 0.75,
-        2.70: 0.85,   # el primer lejano se lleva 10 de los 22 que quedaban
-        3.645: 0.88,
-        4.921: 0.91,
-        6.643: 0.94,
+        1.25: 0.20,
+        1.53: 0.70,   # el segundo se lleva la mitad: aqui ya vuelve la inversion
+        1.99: 0.70,   # el tercero es +100% exacto: a x1,99 todavia no entra
+        2.00: 0.85,
+        2.70: 0.90,
+        3.645: 0.93,
+        4.921: 0.95,
+        6.643: 0.96,
         8.968: 0.97,  # los ocho cobrados; queda el 3% de moonbag
         50.0: 0.97,   # por mucho que suba, aqui ya no queda nada que cobrar
     }

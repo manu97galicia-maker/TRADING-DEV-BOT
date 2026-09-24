@@ -35,23 +35,29 @@ from modelo_tamano import trade as _trade
 
 
 def test_el_modo_activo_es_el_porcentaje_del_saldo_libre() -> None:
-    """20% del SALDO LIBRE por operacion (24-sep, pedido: "si es un 15, por
-    un 20").
+    """25% de la CARTERA ENTERA por operacion (24-sep, pedido: "compra el 25%
+    del total del balance").
+
+    LA BASE VUELVE A "CARTERA" y es el cambio que mas pesa de los dos: no es
+    solo que el porcentaje suba de 20 a 25, es que se calcula sobre otra
+    cosa. Con "libre" cada compra era un porcentaje de lo que SOBRABA y
+    menguaban solas; con "cartera" la base no baja al comprar, asi que salen
+    iguales hasta que se acaba el saldo.
 
     Historial del tamano: 0,12 SOL fijo -> 25% -> 0,04 SOL fijo -> 15% -> 30%
     del saldo libre -> 30% de la cartera -> 10 $ fijos -> 25% de la cartera
-    -> 15% del saldo libre -> 20% del saldo libre.
+    -> 15% del saldo libre -> 20% del saldo libre -> 25% de la cartera.
 
     Y la regla de siempre: manda UNO de los tres. Dos con numero es un valor
     que parece decidir y no decide -- justo la clase de cosa que hace buscar
     el fallo donde no esta.
     """
     t = _trade()
-    assert t["fraccion_saldo"] == 0.20
+    assert t["fraccion_saldo"] == 0.25
     # LA BASE ES PARTE DEL MODO. "15%" no dice nada sin ella: el 15% del
     # saldo libre y el 15% de la cartera son numeros distintos y menguan
     # distinto.
-    assert t["fraccion_base"] == "libre"
+    assert t["fraccion_base"] == "cartera"
     encendidos = [
         k
         for k in ("buy_amount_usd", "fraccion_saldo", "buy_amount")
@@ -98,28 +104,44 @@ def test_sobre_el_saldo_libre_las_posiciones_menguan() -> None:
     dinero cambia de sitio, no desaparece. A cambio tres del 25% comprometian
     el 75% del dinero de golpe.
 
-    CABEN LAS CINCO PLAZAS, que es lo pedido.
+    CABEN LAS CINCO PLAZAS, que es lo pedido, pero no salen iguales de
+    utiles en los dos modos: con "cartera" las tres primeras son compras de
+    verdad y las dos ultimas son lo que quedaba.
 
-    EL TOPE DE LAS CINCO JUNTAS ESTA EN EL 70% Y NO ES DECORATIVO. Estuvo en
-    el 60% mientras el porcentaje era del 15% (las cinco se llevaban el 54%);
-    al subir al 20% se van al 65% y el test se puso rojo. Se sube el tope a
-    0,70 --que sigue dejando casi un tercio del saldo sin comprometer-- y no
-    mas: por encima de ahi el freno automatico deja de frenar, que es lo
-    unico que este numero vigila. Con el 25% las cinco juntas pasarian del
-    75% y habria que decidirlo a proposito, no de rebote.
+    EL TOPE DE LAS CINCO JUNTAS fue subiendo con el porcentaje: 60% con el
+    15%, 70% con el 20%. Con el 25% de la CARTERA se van al 95%, y ahi ese
+    numero deja de ser un freno y pasa a ser la constatacion de que no queda
+    freno. Por eso el test se parte en dos: con base "libre" sigue exigiendo
+    que quede casi un tercio sin comprometer; con base "cartera" exige lo
+    contrario, que este escrito que se compromete casi todo.
     """
     from modelo_tamano import base_es_libre
 
-    assert base_es_libre(), "este test describe la base 'libre'"
     tam = _tamanos(1.0)
     assert len(tam) == _trade()["max_posiciones"], f"caben las cinco: {tam}"
-    # Menguan, y de forma clara: la ultima no llega ni a tres cuartos de la
-    # primera. Si alguien devuelve la base a "cartera", esto se pone rojo.
-    assert tam[-1] < 0.75 * tam[0], f"deberian menguar: {tam}"
     for antes, despues in pairwise(tam):
-        assert despues < antes, f"cada una mas pequena que la anterior: {tam}"
-    # Y nunca se compromete todo: queda saldo despues de las cinco.
-    assert sum(tam) < 0.70, f"las cinco juntas no pueden llevarse la cartera: {tam}"
+        assert despues <= antes + 1e-9, f"nunca crecen: {tam}"
+    if base_es_libre():
+        # Menguan suave y siempre: la ultima no llega a tres cuartos de la
+        # primera, y nunca se compromete todo.
+        assert tam[-1] < 0.75 * tam[0], f"deberian menguar: {tam}"
+        for antes, despues in pairwise(tam):
+            assert despues < antes, f"cada una mas pequena que la anterior: {tam}"
+        assert sum(tam) < 0.70, f"las cinco juntas no pueden llevarse todo: {tam}"
+    else:
+        # Base "cartera": salen IGUALES hasta que se agota el saldo libre.
+        assert abs(tam[1] - tam[0]) < 0.01 * tam[0], f"salen iguales: {tam}"
+        # Y AQUI NO HAY FRENO AUTOMATICO, que es lo que hay que saber: con el
+        # 25% las cinco juntas se llevan el 95% del saldo. Lo unico que para
+        # es el guardian del saldo libre, no el tamano de la compra. El tope
+        # se deja en 0,97 --que es lo que queda tras la reserva y los
+        # colchones-- porque poner uno mas bajo seria fingir un freno que no
+        # existe en este modo.
+        assert sum(tam) < 0.97, f"no se puede gastar mas de lo que hay: {tam}"
+        assert sum(tam) > 0.90, (
+            f"con el 25% de la cartera se compromete casi todo, y conviene "
+            f"que este escrito: {tam}"
+        )
 
 
 def test_nunca_se_gasta_mas_de_lo_que_hay() -> None:
