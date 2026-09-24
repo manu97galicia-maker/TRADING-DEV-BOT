@@ -182,26 +182,25 @@ trade:
   # cero habria metido una subida de suelo fantasma que nadie pidio.
   #
   # OJO AL TERCER PELDANO, Y ESTO ES LO IMPORTANTE DE ESTE CAMBIO. El +100%
-  # cae FUERA de la curva: entrando al 86,0% quedan +95,1% hasta migrar, asi
-  # que el tercer peldano esta 4,9 puntos POR ENCIMA del punto de migracion.
+  # cae FUERA de la curva: entrando al 87,0% quedan +87,2% hasta migrar, asi
+  # que el tercer peldano esta 12,8 puntos POR ENCIMA del punto de migracion.
   # Solo cobra si la moneda migra Y sigue subiendo en PumpSwap, que es otro
   # mercado y otra liquidez.
   #
-  # Hace veinte minutos la entrada se bajo a 86,0% precisamente para que el
-  # tercer peldano (entonces +90%) cupiera dentro de la curva por 5,1 puntos.
-  # Subirlo a +100% deshace eso. Queda anotado porque es el tipo de cosa que
-  # no se ve al mirar solo este numero:
+  # NO SE ARREGLA MOVIENDO LA ENTRADA. Con el tercero en +90% si dependia de
+  # ella (al 86,0% cabia por 5,1 puntos); con el en +100% se queda fuera
+  # tambien al 85,0%, que es el suelo del test. La unica palanca que lo
+  # devuelve dentro es bajar el peldano.
   #
-  #   escenario                        antes (+90%/30%)   ahora (+100%/20%)
-  #   muere justo al migrar                  +62,6%             +39,8%
-  #   llega a 100k de market cap             +65,2%             +61,4%
-  #   llega a 200k                           +86,9%             +85,2%
-  #   aciertos para no perder (stop 26%)        29%                40%
+  #   escenario                        con +90%/30%   con +100%/20% (hoy)
+  #   muere justo al migrar                +62,6%           +39,8%
+  #   llega a x2,7                         +65,2%           +61,4%
+  #   aciertos para no perder (stop 26%)      29%              40%
   #
   # O sea: se cobra parecido en las que siguen corriendo despues de migrar, y
   # bastante menos en la que se muere justo al migrar -- que es el caso bueno
-  # mas frecuente. Si eso no es lo buscado, hay dos palancas: devolver el
-  # tercer peldano a +90%, o bajar la entrada por debajo del 85%.
+  # mas frecuente. Esta puesto a sabiendas; la palanca para volver es devolver
+  # el tercer peldano a +90%.
   # DE AQUI EN ADELANTE, EL RESTO REPARTIDO HASTA x20. Queda el 27,5% de la
   # compra; se deja corriendo el 2% de siempre y los otros 25,5 se reparten
   # en siete peldanos, de mas a menos: llegar a x20 es mucho menos probable
@@ -229,15 +228,20 @@ trade:
   # mismo en realidad (x2,70 ES un +170%), pero conviene leerlo como
   # multiplo porque aqui ya no se piensa en porcentajes.
   #
-  # DONDE CAE CADA UNO, con SOL a 220 $ y entrando al 86,0% de la curva
-  # (market cap de compra ~46,3k):
+  # DONDE CAE CADA UNO, con SOL a 220 $ y entrando al 87,0% de la curva
+  # (market cap de compra ~48,3k):
   #
   #   escalon   multiplo   subida    vende   acumulado   market cap
-  #     1        x2,700    +170,0%    10%       85%        ~125k
-  #     2        x3,645    +264,5%     3%       88%        ~169k
-  #     3        x4,921    +392,1%     3%       91%        ~228k
-  #     4        x6,643    +564,3%     3%       94%        ~308k
-  #     5        x8,968    +796,8%     3%       97%        ~416k
+  #     1        x2,700    +170,0%    10%       85%        ~130k
+  #     2        x3,645    +264,5%     3%       88%        ~176k
+  #     3        x4,921    +392,1%     3%       91%        ~238k
+  #     4        x6,643    +564,3%     3%       94%        ~321k
+  #     5        x8,968    +796,8%     3%       97%        ~433k
+  #
+  # EL MARKET CAP DE ESTA TABLA SE MUEVE CON LA ENTRADA; los multiplos no.
+  # Subir la entrada un punto de curva sube todas estas cifras un 4,2%, y por
+  # eso hay que rehacerla cada vez que se toca el umbral. Los multiplos de la
+  # izquierda, que son lo que el bot mira de verdad, no cambian.
   #
   # SON CINCO Y NO MAS PORQUE AHI SE ACABA EL 22%: 10 + 3 + 3 + 3 + 3. El
   # sexto caeria en ~561k, ya por encima de los 500.000 pedidos, asi que el
@@ -295,9 +299,9 @@ trade:
   # y este numero deja de usarse en esa posicion. O sea que el 26% es lo que
   # se arriesga ANTES de que la moneda demuestre nada.
   #
-  # ES LA PALANCA QUE MAS PESA DE TODA LA ESTRATEGIA. Entrando al 86,0% de la
+  # ES LA PALANCA QUE MAS PESA DE TODA LA ESTRATEGIA. Entrando al 87,0% de la
   # curva, una moneda que hace todo bien y se muere justo al migrar recorre un
-  # +95,1%. Con la escalera de la tarde del 24-sep cobra solo los DOS primeros
+  # +87,2%. Con la escalera de la tarde del 24-sep cobra solo los DOS primeros
   # peldanos --el tercero esta en +100% y no cabe-- o sea el 55% de la
   # posicion; el 45% que queda sale en el suelo, que para entonces esta en
   # +31,25%. Total +39,8%. Lo que decide si eso compensa es lo que cuesta una
@@ -312,6 +316,11 @@ trade:
   # escalera: por la manana hacia falta acertar un 29% y ahora un 39%. La
   # causa no es el stop --sigue en 26%-- sino que el tercer peldano se fue a
   # +100% y dejo de caber en la curva. Con el tercero en +90% vuelve a 29%.
+  #
+  # Y NO LA MUEVE LA ENTRADA: al subir la curva de 86,0% a 87,0% esta tabla
+  # se queda igual, porque los peldanos que caben dentro siguen siendo los
+  # mismos dos. Mover la entrada cambia cuantas monedas llegan, no cuanto
+  # dejan las que llegan.
   #
   # EL MARGEN MULTIPLICA, NO SUMA, y es facil equivocarse (me equivoque al
   # escribir la primera version de esta tabla). Tras cobrar el peldano i el
@@ -1212,15 +1221,21 @@ filters:
     enabled: true
     # Punto de la curva en que se compra (0,95 = 95% vendido).
     #
-    # 86,0% (24-sep, pedido: "bajas un 1,5% la entrada").
+    # 87,0% (24-sep, pedido: "sube 1% la curva").
     # Historial: 0,96 -> 0,95 -> 0,96 -> 0,944 -> 0,929 -> 0,92 -> 0,885 ->
-    # 0,875 -> 0,86 -> 0,93 -> 0,90 -> 0,875 -> 0,86.
+    # 0,875 -> 0,86 -> 0,93 -> 0,90 -> 0,875 -> 0,86 -> 0,87.
     #
-    # ES EL DUODECIMO CAMBIO DE ESTE NUMERO Y VUELVE A UN SITIO DONDE YA
-    # ESTUVO. Eso no lo hace malo --la cuenta de abajo lo respalda-- pero si
-    # significa que ninguna de las doce configuraciones ha operado lo bastante
-    # como para ensenar nada. Sigue sin haber UNA sola medicion detras de esta
-    # palanca, que es la que mas pesa de la estrategia.
+    # ES EL DECIMOTERCER CAMBIO DE ESTE NUMERO EN DOS DIAS, y el tercero de
+    # hoy. Ninguna de las trece configuraciones ha operado lo bastante como
+    # para ensenar nada: sigue sin haber UNA sola medicion detras de la
+    # palanca que mas pesa de la estrategia.
+    #
+    # ESTE PASO NO CAMBIA LO QUE SE COBRA, y conviene saberlo antes de
+    # esperar algo: los peldanos que caben dentro de la curva siguen siendo
+    # los mismos dos (+25% y +55%), asi que la moneda que migra y se muere
+    # deja +39,8% igual que al 86,0%. Lo que cambia es el riesgo -- hacen
+    # falta 1,7 SOL menos para llegar a migrar -- y que se entra un 4,2% mas
+    # caro.
     #
     # LO QUE SE DESCUBRIO AL HACER LA CUENTA, y es lo importante de este
     # cambio. La curva de pump.fun es un producto constante, asi que el precio
@@ -1229,8 +1244,9 @@ filters:
     #
     #   curva   SOL dentro   falta   precio    subida hasta migrar
     #   85,0%      50,7       34,3    -9,7%         +103,1%   <- el suelo del test
-    #   86,0%      52,3       32,7    -6,0%          +95,1%   <- aqui
-    #   87,5%      54,9       30,1     0,0%          +83,4%   <- antes
+    #   86,0%      52,3       32,7    -6,0%          +95,1%   <- antes
+    #   87,0%      54,0       31,0    -2,1%          +87,2%   <- aqui
+    #   87,5%      54,9       30,1     0,0%          +83,4%
     #   90,0%      59,6       25,4   +11,3%          +64,7%
     #   93,0%      66,0       19,0   +27,7%          +43,6%
     #
@@ -1252,46 +1268,46 @@ filters:
     # quepan en ese recorrido:
     #
     #   entrada   recorrido   peldanos que entran        vendido
-    #    90,0%      +64,7%    +25% y +55%                  50%
-    #    87,5%      +83,4%    +25% y +55%                  50%
-    #    86,0%      +95,1%    +25%, +55% y +90%            80%   <- aqui
-    #    85,0%     +103,1%    +25%, +55% y +90%            80%
+    #    90,0%      +64,7%    +25% y +55%                  55%
+    #    87,0%      +87,2%    +25% y +55%                  55%   <- aqui
+    #    86,0%      +95,1%    +25% y +55%                  55%
+    #    85,0%     +103,1%    +25% y +55%                  55%
     #
-    # ESTE PASO SI ANADE PELDANO, y es la primera vez que uno de estos ajustes
-    # cambia algo de verdad en vez de mover un numero: el tercero (+90%) ya no
-    # se queda fuera. Una moneda que hace todo bien y se muere justo al migrar
-    # pasa de vender el 50% a vender el 80%.
+    # LA TABLA ES PLANA AHORA, y eso es informacion. Con la escalera de la
+    # manana (tercer peldano en +90%) bajar la entrada SI anadia un peldano
+    # dentro de la curva; con el tercero en +100% no lo anade en ninguna de
+    # las cuatro filas. O sea que mover la entrada ya no cambia lo que se
+    # cobra de la moneda que migra y se muere: solo cambia cuantas llegan.
     #
-    # PERO ENTRA POR 5,1 PUNTOS, y eso hay que decirlo entero. El recorrido es
-    # +95,1% y el peldano esta en +90%: cabe, pero con el margen mas estrecho
-    # de toda la tabla. Al 85% ese mismo peldano entra por 13,1 puntos. O sea
-    # que el tercero solo cobra si la moneda llega PRACTICAMENTE a migrar, y
-    # contar con el como si fuera seguro es exactamente el "pillado con
-    # pinzas" que ya engano dos veces. El que sigue mandando es el segundo,
-    # que entra por 40,1 puntos.
+    # EL SEGUNDO PELDANO ES EL QUE MANDA, y al 87,0% sigue entrando con
+    # holgura: el recorrido es +87,2% y el peldano esta en +55%, o sea 32,2
+    # puntos de margen. El tercero (+100%) se queda fuera por 12,8 puntos, y
+    # eso ya no depende de la entrada: al 85%, que es el suelo del test,
+    # tambien se quedaria fuera.
     #
-    # Se entra ademas un 6% mas abajo que al 87,5%, asi que todo lo que venga
-    # DESPUES de migrar cuenta desde mas lejos.
+    # DEL 86,0% AL 87,0% SE ENTRA UN 4,2% MAS CARO. Ese 4,2% se descuenta de
+    # todo lo que venga despues, migracion incluida.
     #
     # QUE CUESTA: mas monedas se quedan a medias y no llegan nunca a migrar.
     # Cuanto mas abajo se entra, menos se parece esto a "comprar la que ya casi
-    # lo ha conseguido" y mas a comprar una moneda cualquiera. Al 86,0% faltan
-    # 32,7 SOL para migrar, o sea casi un 40% de la curva: a la moneda le
-    # queda subir un 95% solo para llegar. Mas de ellas se quedaran por el
-    # camino, y la ventana de disparo pasa de 12 a 13,5 puntos, asi que
-    # entraran mas candidatas.
+    # lo ha conseguido" y mas a comprar una moneda cualquiera. Al 87,0% faltan
+    # 31,0 SOL para migrar, o sea mas de un tercio de la curva: a la moneda le
+    # queda subir un 87% solo para llegar.
     #
-    # ESE ES EL PRECIO DEL TERCER PELDANO, y es un intercambio real, no una
-    # mejora gratis: se cobra mas de las que llegan a cambio de que lleguen
-    # menos. Cual de las dos cosas pesa mas NO se sabe, porque hace falta
-    # saber que fraccion de las que se compran acaba migrando y esa cifra no
-    # esta medida. Con 20-30 operaciones anotadas, `optimizar_escalera.py` la
-    # contesta.
+    # ESTE PASO VA EN LA DIRECCION CONTRARIA AL DE HACE UN RATO, y es lo unico
+    # que hace: se entra mas arriba, hacen falta 1,7 SOL menos para migrar y
+    # mas de las compradas deberian llegar. A cambio la ventana de disparo se
+    # estrecha de 13,5 a 12,5 puntos --entraran menos candidatas-- y se paga
+    # un 4,2% mas por la misma moneda.
     #
-    # EL SUELO DEL TEST ESTA EN 0,85, a un solo punto. Por debajo de ahi esto
+    # CUAL DE LAS DOS COSAS PESA MAS NO SE SABE. Hace falta saber que fraccion
+    # de las compradas acaba migrando, y esa cifra no esta medida. Con 20-30
+    # operaciones anotadas, `optimizar_escalera.py` la contesta.
+    #
+    # EL SUELO DEL TEST ESTA EN 0,85, a dos puntos. Por debajo de ahi esto
     # deja de ser "la curva casi llena" -- seria una decision de estrategia,
     # no un ajuste mas.
-    umbral: 0.86
+    umbral: 0.87
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995

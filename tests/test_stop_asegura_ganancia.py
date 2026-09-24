@@ -203,10 +203,10 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
 
     EL GRUESO SE COBRA EN MEDIO: 15% - 40% - 20%. El segundo peldano es el
     que de verdad manda, y es el unico de los tres que cae holgadamente
-    dentro de la curva (+55% contra un recorrido de +95,1% hasta migrar).
+    dentro de la curva (+55% contra un recorrido de +87,2% hasta migrar).
 
     EL TERCERO YA NO CABE EN LA CURVA. Al +100% la moneda tiene que haber
-    migrado: entrando al 86,0% quedan +95,1% hasta migrar, asi que el tercer
+    migrado: entrando al 87,0% quedan +87,2% hasta migrar, asi que el tercer
     peldano esta 4,9 puntos por encima de ese punto. Esto esta puesto a
     sabiendas --queda la cuenta entera en el yaml-- pero conviene que un
     test lo diga, porque es lo que decide cuanto rinde el caso bueno mas

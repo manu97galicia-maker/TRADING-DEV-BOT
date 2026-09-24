@@ -19,10 +19,10 @@ casi toda la curva y están cerca de conseguirlo, porque para llegar ahí han
 tenido que pasar por mucha gente.
 
 ```
-nace ─────────────────────────────▶ 86,0% ──────────▶ migra
-                                      ▲
-                                 aquí compra
-                            (le faltan ~33 SOL)
+nace ──────────────────────────────▶ 87,0% ─────────▶ migra
+                                       ▲
+                                  aquí compra
+                             (le faltan ~31 SOL)
 ```
 
 Son pocas al día: la mayoría de las monedas mueren mucho antes de llegar. Que
@@ -36,7 +36,7 @@ Todo esto, sin saltarse nada:
 
 | | |
 |---|---|
-| **Punto de la curva** | entre el 86,0% y el 99,5% (pasado eso ya está migrando) |
+| **Punto de la curva** | entre el 87,0% y el 99,5% (pasado eso ya está migrando) |
 | **Gente de verdad** | mínimo **30 carteras distintas** la han comprado |
 | **Sin bundle** | como mucho 3 carteras en su bloque de nacimiento, y máximo 2 SOL |
 | **Sin concentración** | los mayores tenedores no pueden tener más del 50% |
@@ -87,7 +87,7 @@ Dos escaleras, una detrás de la otra.
 | +100% | 20% | 75% |
 
 Los dos primeros caben dentro de la curva. **El de +100% no**: entrando al
-86,0% quedan +95,1% hasta migrar, así que ese peldaño solo cobra si la moneda
+87,0% quedan +87,2% hasta migrar, así que ese peldaño solo cobra si la moneda
 migra y **sigue subiendo** ya fuera de pump.fun.
 
 ### Y a partir de ahí, cada venta un 35% más cara que la anterior
@@ -97,18 +97,18 @@ anterior**, no sobre lo que se pagó. Así todos piden el mismo esfuerzo.
 
 | escalón | precio | vende | acumulado | market cap aprox. |
 |---|---|---|---|---|
-| 1 | x2,70 | 10% | 85% | 125k $ |
-| 2 | x3,65 | 3% | 88% | 169k $ |
-| 3 | x4,92 | 3% | 91% | 228k $ |
-| 4 | x6,64 | 3% | 94% | 308k $ |
-| 5 | x8,97 | 3% | 97% | 416k $ |
+| 1 | x2,70 | 10% | 85% | 130k $ |
+| 2 | x3,65 | 3% | 88% | 176k $ |
+| 3 | x4,92 | 3% | 91% | 238k $ |
+| 4 | x6,64 | 3% | 94% | 321k $ |
+| 5 | x8,97 | 3% | 97% | 433k $ |
 
 El primero se lleva casi la mitad de lo que quedaba, y es a propósito: es el
 único de los cinco al que llega un número razonable de monedas. Los otros
 cuatro son lotería.
 
 Son cinco y no más porque ahí se acaba lo que había para repartir. El sexto
-caería sobre los 561k $.
+caería sobre los 584k $.
 
 Queda un **3% (el "moonbag")** que el bot **no vende nunca**. Ese lo vende una
 persona a mano, si quiere.
