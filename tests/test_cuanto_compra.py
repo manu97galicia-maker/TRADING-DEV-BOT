@@ -13,7 +13,7 @@ compra con la suya y no con la de otra, que marque las que se pasan, y que NO
 invente un porcentaje donde no significa nada.
 """
 
-# ruff: noqa: S101, PLR2004
+# ruff: noqa: S101, PLR2004, SLF001
 
 import importlib.util
 from pathlib import Path
