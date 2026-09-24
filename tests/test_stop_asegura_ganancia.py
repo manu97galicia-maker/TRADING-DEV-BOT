@@ -204,21 +204,20 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     EL GRUESO SE COBRA EN MEDIO: 15% - 40% - 20%. El segundo peldano es el
     que de verdad manda: vende el 40% de la posicion.
 
-    Y AL 93,0% DE CURVA SE QUEDA FUERA. Quedan +43,6% hasta migrar y el
-    peldano esta en +55%, o sea 11,4 puntos por encima del punto de
-    migracion. De los ocho peldanos solo el PRIMERO cae dentro de la curva,
-    asi que la moneda que migra y se muere deja +8,0% en vez de +39,8% y
-    hacen falta un 76% de aciertos para no perder en vez de un 40%.
+    Y AL 91,0% DE CURVA CABE POR LOS PELOS. Quedan +57,5% hasta migrar y el
+    peldano esta en +55%: entra por 2,5 puntos. Al 87,0% entraba por 32,2.
 
-    ESTE TEST DEJO DE SER UN GUARDIAN Y PASO A SER UN TESTIGO, y conviene
-    saber la diferencia. Hasta la tarde del 24-sep exigia que el segundo
-    peldano cupiera en la curva --y se puso rojo al subir la entrada al 93%,
-    que era exactamente su trabajo--. La entrada se subio igual, a
-    proposito. Lo que hace ahora es dejar ESCRITO cuantos peldanos caben, de
-    modo que cualquier cambio futuro en la entrada o en la escalera lo mueva
-    y haya que mirarlo. Si vuelve a caber mas de uno, este test se pone rojo
-    y lo que hay que hacer es rehacer las cuentas del yaml, no subir el
-    numero de aqui.
+    ESE MARGEN ES EL NUMERO MAS SENSIBLE DE TODA LA CONFIGURACION. El corte
+    --donde el recorrido cruza el +55%-- cae en el 90,9% de curva; un decimo
+    de punto mas arriba y este peldano deja de existir, con el 40% de la
+    posicion que se lleva. Ya paso esa misma tarde: al 93,0% se quedo fuera
+    y la moneda que migra y se muere paso de +39,8% a +8,0%, subiendo los
+    aciertos necesarios de 40% a 76%.
+
+    POR ESO ESTE TEST FIJA CUANTOS PELDANOS CABEN, no si caben. Cualquier
+    cambio en la entrada o en la escalera lo mueve y obliga a mirarlo. Si
+    salta, lo que hay que hacer es rehacer las cuentas del yaml -- no
+    cambiar el numero de aqui para que pase.
     """
     tiers = [t for t in _tiers() if t.gain <= 1.5]
     assert len(tiers) == 3, f"tres peldanos de cerca: {tiers}"
@@ -229,19 +228,26 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     vt = lambda a: 1073e6 - 793.1e6 * a  # noqa: E731
     recorrido = (vt(umbral) / vt(1.0)) ** 2 - 1
     dentro = [t for t in _tiers() if t.gain <= recorrido]
-    assert len(dentro) == 1, (
-        f"al {umbral * 100:.1f}% de curva cabe UN peldano, no {len(dentro)}: "
+    assert len(dentro) == 2, (
+        f"al {umbral * 100:.1f}% de curva caben DOS peldanos, no {len(dentro)}: "
         f"si esto cambia, las cuentas del yaml hay que rehacerlas"
     )
-    assert dentro[0].gain == 0.25
-    # Y lo que eso significa, escrito en numeros para que no se pierda:
-    # el 85% de la posicion sale por el suelo, que tras el TP1 esta en
-    # compra + margen.
-    margen = float(_trade()["margen_stop_tras_tp"])
-    resto = 1 - dentro[0].sell
-    bruto = dentro[0].sell * (1 + dentro[0].gain) + resto * (1 + margen)
-    assert abs(bruto - 1.08) < 0.005, (
-        f"la que migra y muere deja {(bruto - 1) * 100:.1f}%, no +8,0%"
+    assert [t.gain for t in dentro] == [0.25, 0.55]
+    # EL MARGEN DEL SEGUNDO, que es lo fragil. Se deja escrito el numero para
+    # que se vea de un vistazo lo cerca que esta del corte.
+    margen_tp2 = recorrido - dentro[1].gain
+    assert 0 < margen_tp2 < 0.05, (
+        f"el TP2 entra por {margen_tp2 * 100:.1f} puntos; si esto cambia mucho, "
+        f"la tabla de margenes del yaml esta vieja"
+    )
+    # Y lo que deja la que migra y se muere: los dos peldanos cobrados y el
+    # resto por el suelo, que tras el TP2 esta en TP1 x (1 + margen).
+    m = float(_trade()["margen_stop_tras_tp"])
+    vendido = sum(t.sell for t in dentro)
+    suelo = (1 + dentro[0].gain) * (1 + m) - 1
+    bruto = sum((1 + t.gain) * t.sell for t in dentro) + (1 - vendido) * (1 + suelo)
+    assert abs(bruto - 1.398) < 0.005, (
+        f"la que migra y muere deja {(bruto - 1) * 100:.1f}%, no +39,8%"
     )
 
 

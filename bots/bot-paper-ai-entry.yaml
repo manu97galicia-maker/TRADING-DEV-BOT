@@ -1240,58 +1240,48 @@ filters:
     enabled: true
     # Punto de la curva en que se compra (0,95 = 95% vendido).
     #
-    # 93,0% (24-sep, pedido: "sube la curva mas al 93%").
+    # 91,0% (24-sep, pedido: "dejalo en 91").
     # Historial: 0,96 -> 0,95 -> 0,96 -> 0,944 -> 0,929 -> 0,92 -> 0,885 ->
-    # 0,875 -> 0,86 -> 0,93 -> 0,90 -> 0,875 -> 0,86 -> 0,87 -> 0,93.
+    # 0,875 -> 0,86 -> 0,93 -> 0,90 -> 0,875 -> 0,86 -> 0,87 -> 0,93 -> 0,91.
     #
-    # #################################################################
-    # ESTE PASO DEJA EL SEGUNDO PELDANO FUERA DE LA CURVA, y es con mucha
-    # diferencia el cambio mas grande que ha tenido esta configuracion.
-    # #################################################################
+    # RECUPERA EL SEGUNDO PELDANO, que es lo que habia roto el paso al 93%.
+    # Al 91,0% quedan +57,5% hasta migrar y el TP2 esta en +55%: vuelve a
+    # caber, y con el vuelve el 40% de la posicion que se estaba dejando de
+    # cobrar.
     #
-    # Al 93,0% quedan +43,6% hasta migrar y el segundo peldano esta en +55%.
-    # O sea que de los ocho peldanos solo el PRIMERO (+25%, que vende el 15%)
-    # cae dentro de la curva. Todo lo demas necesita que la moneda migre Y
-    # siga subiendo en PumpSwap.
+    #   entrada   recorrido   dentro        vendido   migra y muere   aciertos
+    #    93,0%      +43,6%    solo +25%        15%         +8,0%         76%
+    #    91,0%      +57,5%    +25% y +55%      55%        +39,8%         40%
+    #    87,0%      +87,2%    +25% y +55%      55%        +39,8%         40%
     #
-    #   entrada   recorrido   peldanos dentro   vendido   migra y muere
-    #    87,0%      +87,2%    +25% y +55%          55%        +39,8%
-    #    93,0%      +43,6%    solo +25%            15%         +8,0%
+    # PERO CABE POR 2,5 PUNTOS, y eso hay que decirlo entero porque es el
+    # peldano que vende el 40% de la posicion. Al 87,0% ese mismo peldano
+    # entraba por 32,5 puntos. Aqui entra por 2,5: la moneda tiene que llegar
+    # practicamente a migrar para cobrarlo, y si se queda a medio punto no
+    # se cobra nada de ese 40%.
     #
-    # LA MONEDA QUE HACE TODO BIEN Y SE MUERE AL MIGRAR PASA DE +39,8% A
-    # +8,0%. El 85% de la posicion sale por el suelo, que tras el TP1 esta en
-    # compra +5%. Y el umbral de aciertos para no perder, con el stop en 26%:
+    # LA ESCALERA NO ESTA AJUSTADA A ESTA ENTRADA, y se deja asi a proposito
+    # (se pidio mover la entrada, no los peldanos). Ajustada seria TP2 +40% y
+    # TP3 +52%, que con el mismo reparto 15/40/20 da +42,5% en vez de +39,8%
+    # y baja los aciertos de 40% a 38% -- pero sobre todo pone 17,5 y 5,5
+    # puntos de margen donde ahora hay 2,5 y ninguno. Es UN cambio de dos
+    # numeros; queda anotado aqui para que se pueda pedir sabiendo que da.
     #
-    #   entrada   la que migra y muere   aciertos para no perder
-    #    87,0%          +39,8%                    40%
-    #    93,0%           +8,0%                    76%
+    # EL TERCER PELDANO (+100%) sigue fuera por 42,5 puntos y a esta altura
+    # de curva ya no hay forma de meterlo dentro: el recorrido entero es
+    # +57,5%. Solo cobra si la moneda migra y sigue subiendo en PumpSwap.
     #
-    # HACE FALTA ACERTAR 3 DE CADA 4. Eso no es un ajuste fino: es pedirle a
-    # la estrategia un acierto que ninguna medicion respalda y que, por lo
-    # que se ve en pump.fun, no se parece a lo que pasa. Queda puesto porque
-    # se pidio, pero esta escrito aqui para que se pueda deshacer sabiendo
-    # exactamente que se estaba comprando.
-    #
-    # LA PALANCA QUE LO ARREGLA SIN MOVER LA ENTRADA es bajar el segundo
-    # peldano por debajo del +43,6%. Con el TP2 en +35% (vendiendo el mismo
-    # 40%) los dos vuelven a caber: la que migra y muere deja +31,8% y el
-    # umbral baja de 76% a 45%.
-    #
-    # Es el decimocuarto cambio de este numero en dos dias y el cuarto de
-    # hoy. Sigue sin haber UNA sola medicion detras de ninguno.
-    #
-    # LO QUE SE DESCUBRIO AL HACER LA CUENTA, y es lo importante de este
-    # cambio. La curva de pump.fun es un producto constante, asi que el precio
-    # va como 1/(tokens_virtuales)^2 y sube cada vez mas rapido segun se
-    # llena. Entrar "1,6 puntos antes" NO es entrar un 1,6% mas barato:
+    # Es el decimoquinto cambio de la entrada en dos dias y el quinto de hoy.
+    # Sigue sin haber una sola medicion detras de ninguno.
     #
     #   curva   SOL dentro   falta   precio    subida hasta migrar
     #   85,0%      50,7       34,3    -9,7%         +103,1%   <- el suelo del test
-    #   86,0%      52,3       32,7    -6,0%          +95,1%
-    #   87,0%      54,0       31,0    -2,1%          +87,2%   <- antes
+    #   87,0%      54,0       31,0    -2,1%          +87,2%
     #   87,5%      54,9       30,1     0,0%          +83,4%
     #   90,0%      59,6       25,4   +11,3%          +64,7%
-    #   93,0%      66,0       19,0   +27,7%          +43,6%   <- aqui
+    #   90,9%      61,4       23,6   +14,8%          +58,2%   <- el corte del TP2
+    #   91,0%      61,6       23,4   +15,3%          +57,5%   <- aqui
+    #   93,0%      66,0       19,0   +27,7%          +43,6%   <- antes
     #
     # (85 SOL es lo que hace falta para migrar. "Precio" es respecto al 87,5%.)
     #
@@ -1310,19 +1300,20 @@ filters:
     # moneda que hace todo bien y se muere justo al migrar cobra los que
     # quepan en ese recorrido:
     #
-    #   entrada   recorrido   peldanos que entran        vendido
-    #    93,0%      +43,6%    solo +25%                    15%   <- aqui
-    #    90,0%      +64,7%    +25% y +55%                  55%
-    #    87,0%      +87,2%    +25% y +55%                  55%
-    #    86,0%      +95,1%    +25% y +55%                  55%
-    #    85,0%     +103,1%    +25% y +55%                  55%
+    #   entrada   recorrido   peldanos que entran        vendido   margen TP2
+    #    93,0%      +43,6%    solo +25%                    15%      -11,4p
+    #    91,0%      +57,5%    +25% y +55%                  55%       +2,5p  <- aqui
+    #    90,0%      +64,7%    +25% y +55%                  55%       +9,7p
+    #    87,0%      +87,2%    +25% y +55%                  55%      +32,2p
+    #    85,0%     +103,1%    +25% y +55%                  55%      +48,1p
     #
-    # DONDE SE PARTE LA TABLA. Entre el 87% y el 90% no pasa nada --los dos
-    # peldanos caben en las dos-- pero entre el 90% y el 93% se cae el
-    # segundo, y el segundo es el que vende el 40% de la posicion. El corte
-    # exacto esta donde el recorrido cruza el +55%, o sea en el 90,9% de
-    # curva: por encima de ahi la estrategia vende el 15% y espera; por
-    # debajo vende el 55%.
+    # DONDE SE PARTE LA TABLA, y el 91,0% esta justo al borde. El corte
+    # exacto --donde el recorrido cruza el +55% del TP2-- cae en el 90,9% de
+    # curva. Un decimo de punto mas arriba y el segundo peldano deja de
+    # existir, con el 40% de la posicion que se lleva. Es el numero mas
+    # sensible de toda la configuracion y no hay ningun aviso automatico de
+    # que se este cerca: por eso esta escrito aqui y hay un test que fija
+    # cuantos peldanos caben.
     #
     # EL SEGUNDO PELDANO ERA EL QUE MANDABA --vende el 40% de la posicion-- y
     # al 93,0% se queda fuera por 11,4 puntos. Lo que queda dentro es el TP1,
@@ -1351,7 +1342,7 @@ filters:
     # no se entre demasiado TARDE, porque hasta hoy el riesgo iba solo en una
     # direccion. El que cumple ese papel ahora es el test que comprueba que
     # el primer peldano llega dentro de la curva.
-    umbral: 0.93
+    umbral: 0.91
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995

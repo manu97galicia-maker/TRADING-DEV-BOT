@@ -19,10 +19,10 @@ casi toda la curva y están cerca de conseguirlo, porque para llegar ahí han
 tenido que pasar por mucha gente.
 
 ```
-nace ────────────────────────────────▶ 93,0% ───▶ migra
-                                         ▲
-                                    aquí compra
-                                (le faltan ~19 SOL)
+nace ───────────────────────────────▶ 91,0% ─────▶ migra
+                                        ▲
+                                   aquí compra
+                               (le faltan ~23 SOL)
 ```
 
 Son pocas al día: la mayoría de las monedas mueren mucho antes de llegar. Que
@@ -36,7 +36,7 @@ Todo esto, sin saltarse nada:
 
 | | |
 |---|---|
-| **Punto de la curva** | entre el 93,0% y el 99,5% (pasado eso ya está migrando) |
+| **Punto de la curva** | entre el 91,0% y el 99,5% (pasado eso ya está migrando) |
 | **Gente de verdad** | mínimo **30 carteras distintas** la han comprado |
 | **Sin bundle** | como mucho 3 carteras en su bloque de nacimiento, y máximo 2 SOL |
 | **Sin concentración** | los mayores tenedores no pueden tener más del 50% |
@@ -89,16 +89,16 @@ Dos escaleras, una detrás de la otra.
 | +55% | 40% | 55% |
 | +100% | 20% | 75% |
 
-**Solo el primero cabe dentro de la curva.** Entrando al 93,0% quedan +43,6%
-hasta migrar, y el segundo peldaño está en +55%: del segundo en adelante, la
-moneda tiene que haber migrado **y seguir subiendo** ya fuera de pump.fun.
+**Los dos primeros caben dentro de la curva, el segundo por muy poco.**
+Entrando al 91,0% quedan +57,5% hasta migrar y el segundo peldaño está en
++55%: entra por **2,5 puntos**. Del tercero en adelante la moneda tiene que
+haber migrado **y seguir subiendo** ya fuera de pump.fun.
 
-> Eso tiene una consecuencia que conviene entender antes de mirar los números:
-> una moneda que llega a migrar y se muere ahí solo deja **+8%**, porque el 85%
-> de la posición sale por el suelo (+5%). Para que la estrategia no pierda
-> dinero harían falta **3 aciertos de cada 4**. Está puesto así a petición;
-> la forma de arreglarlo sin tocar la entrada es bajar el segundo peldaño por
-> debajo del +43,6%.
+> Ese margen de 2,5 puntos es el número más delicado de todo el sistema. El
+> corte está en el 91,0% justo: un poco más arriba y el segundo peldaño deja
+> de existir — y es el que vende el 40% de la posición. Cuando eso pasó (con
+> la entrada al 93%), la moneda que migra y se muere pasaba de dejar +39,8% a
+> dejar +8%.
 
 ### Y a partir de ahí, cada venta un 35% más cara que la anterior
 
