@@ -47,7 +47,7 @@ def test_los_peldanos_son_los_pedidos() -> None:
     x20-- se quitaron enteros: un x10 sobre la entrada significa cosas
     distintas segun donde se entre, mientras que 100k es 100k siempre.
     """
-    assert _peldanos() == [(0.25, 0.15), (0.50, 0.30), (0.85, 0.33)]
+    assert _peldanos() == [(0.25, 0.15), (0.55, 0.35), (0.90, 0.30), (1.25, 0.05)]
 
 
 def test_los_escalones_de_market_cap_son_los_pedidos() -> None:
@@ -60,8 +60,7 @@ def test_los_escalones_de_market_cap_son_los_pedidos() -> None:
     """
     mc = _trade()["mc_take_profit_tiers"]
     assert [(d["target_mc"], d["sell"]) for d in mc] == [
-        (100_000, 0.06), (150_000, 0.05), (225_000, 0.04),
-        (335_000, 0.025), (500_000, 0.015),
+        (100_000, 0.05), (140_000, 0.04), (200_000, 0.03),
     ]
     # Ascendentes, o el bot los cobraria en desorden.
     objetivos = [d["target_mc"] for d in mc]
@@ -147,39 +146,40 @@ def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:
 
 
 def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
-    """24-sep: 15% al +25%, 30% al +50% y 33% al +85%.
+    """24-sep: 15% al +25%, 35% al +55%, 30% al +90% y 5% al +125%.
 
     Los tres se cobran mientras la moneda todavia se mide en porcentaje sobre
     la entrada. De ahi en adelante manda el market cap.
 
-    EL TERCERO SE PIDIO COMO "el 60% de lo que queda". Aqui va 0,33 porque la
-    escalera vende fraccion de la COMPRA ORIGINAL: tras el 15% y el 30% queda
-    un 55%, y el 60% de ese 55% es el 33% del original.
+    TODOS SON FRACCION DE LA COMPRA ORIGINAL, no de lo que queda dentro. Es
+    la confusion que ya estuvo a punto de costar dinero con el peldano de "la
+    mitad de lo que queda": 0,30 aqui es el 30% de la compra, no el 30% del
+    resto.
     """
     cerca = [(g, v) for g, v in _peldanos() if g < 1.5]
-    assert cerca == [(0.25, 0.15), (0.50, 0.30), (0.85, 0.33)]
-    assert round(sum(v for _, v in cerca), 6) == 0.78
+    assert cerca == [(0.25, 0.15), (0.55, 0.35), (0.90, 0.30), (1.25, 0.05)]
+    assert round(sum(v for _, v in cerca), 6) == 0.85
 
 
-def test_el_tercer_peldano_vende_el_60_de_lo_que_queda() -> None:
-    """LA TRADUCCION QUE SE PUEDE EQUIVOCAR, y por eso esta fijada aqui.
+def test_todos_los_peldanos_son_fraccion_de_la_compra_original() -> None:
+    """LA CONFUSION QUE YA ESTUVO A PUNTO DE COSTAR DINERO.
 
-    Se pidio "al +85% vende el 60% de lo que queda". El bot NO sabe vender
-    fracciones de lo que queda: todos sus peldanos son fraccion de la compra
-    ORIGINAL. Tras el 15% y el 30% queda un 55%, y el 60% de ese 55% es el
-    33% del original.
+    El bot NO sabe vender fracciones de lo que queda dentro: todos sus
+    peldanos son fraccion de la COMPRA ORIGINAL. Cuando el 24-sep se pidio
+    "al +85% vende el 60% de lo que queda", eso se tradujo a 0,33 -- poner
+    0,60 habria vendido el 60% de la compra entera, casi el doble.
 
-    PONER 0.60 AHI seria vender el 60% de la compra entera, casi el doble de
-    lo pedido. Ese es exactamente el error que este test existe para impedir,
-    y ya se cometio una vez con el peldano de "la mitad de lo que queda".
-
-    SI SE CAMBIAN TP1 O TP2 HAY QUE REHACER ESTA CUENTA A MANO: el 0,33 no se
-    recalcula solo, y este test se pondra rojo para recordarlo.
+    Ahora los peldanos se piden ya como fraccion del original, asi que no hay
+    traduccion que hacer. Lo que este test impide es que vuelva a colarse una:
+    si la suma de las ventas pasara de 1, alguien habria escrito fracciones
+    del resto creyendo que eran del original.
     """
-    cerca = _peldanos()[:3]
-    queda_antes_del_tercero = 1 - cerca[0][1] - cerca[1][1]
-    proporcion = cerca[2][1] / queda_antes_del_tercero
-    assert abs(proporcion - 0.60) < 0.01, (
-        f"el tercer peldano vende el {proporcion * 100:.1f}% de lo que queda, "
-        "y se pidio el 60%"
+    suma = sum(v for _, v in _peldanos())
+    assert suma <= 1.0, (
+        f"los peldanos suman {suma * 100:.0f}% de la compra: alguien ha "
+        "escrito fracciones de lo que QUEDA como si fueran del original"
     )
+    # Y con los escalones de market cap tampoco puede pasar de 1.
+    t = _trade()
+    suma += sum(d["sell"] for d in t.get("mc_take_profit_tiers") or [])
+    assert suma <= 1.0

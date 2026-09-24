@@ -60,7 +60,7 @@ def test_una_ganancia_de_9_significa_x10_y_no_mas_9_por_ciento() -> None:
     )
     # Y un multiplo enorme no vende mas que el ultimo peldano de porcentaje:
     # de ahi en adelante los escalones son de market cap y no se ven aqui.
-    assert _vendido_hasta(50.0) == _vendido_hasta(2.0)
+    assert _vendido_hasta(50.0) == _vendido_hasta(2.5)
 
 
 def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
@@ -90,16 +90,17 @@ def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
 
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
-    # Lo VENDIDO ACUMULADO al llegar a cada multiplo. Desde el 24-sep solo
-    # hay TRES peldanos por porcentaje: +25%, +50% y +85%. De ahi en adelante
+    # Lo VENDIDO ACUMULADO al llegar a cada multiplo. Desde el 24-sep hay
+    # CUATRO peldanos por porcentaje: +25%, +55%, +90% y +125%. De ahi en adelante
     # la escalera sigue por market cap (100k a 500k), que no se mide en
     # multiplos del precio de entrada y por eso no aparece en esta tabla.
     esperado = {
         1.24: 0.0,    # justo por debajo del primero
         1.25: 0.15,
-        1.50: 0.45,
-        1.85: 0.78,   # los tres cobrados; el resto va por market cap
-        20.0: 0.78,   # por mucho que suba, aqui ya no queda nada que cobrar
+        1.55: 0.50,
+        1.90: 0.80,
+        2.25: 0.85,   # los cuatro cobrados; el resto va por market cap
+        20.0: 0.85,   # por mucho que suba, aqui ya no queda nada que cobrar
     }
     for multiplo, acumulado in esperado.items():
         assert round(_vendido_hasta(multiplo), 6) == acumulado, f"fallo en x{multiplo}"

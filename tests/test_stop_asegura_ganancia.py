@@ -172,11 +172,11 @@ def test_el_colchon_mas_apretado_esta_anotado() -> None:
 def test_se_vende_el_97_por_ciento_entre_las_dos_escaleras() -> None:
     """HAY QUE SUMAR LAS DOS, y es el error facil desde el 24-sep.
 
-    Los peldanos de porcentaje (+25%, +50%, +85%) venden el 78%; los
-    escalones de market cap (100k a 500k) el 19%. Juntos, el 97%, y queda un
+    Los peldanos de porcentaje (+25%, +55%, +90%, +125%) venden el 85%; los
+    escalones de market cap (100k a 200k) el 12%. Juntos, el 97%, y queda un
     3% de moonbag que el bot no vende nunca.
 
-    MIRANDO SOLO LOS DE PORCENTAJE saldria un moonbag del 22%, y no lo es:
+    MIRANDO SOLO LOS DE PORCENTAJE saldria un moonbag del 15%, y no lo es:
     es lo que todavia no se ha repartido. `moonbag_fraction` solo conoce los
     peldanos que se le pasan, asi que devuelve eso -- por eso aqui se suma a
     mano en vez de fiarse de esa funcion.
@@ -184,27 +184,26 @@ def test_se_vende_el_97_por_ciento_entre_las_dos_escaleras() -> None:
     tiers = _tiers()
     por_ciento = sum(t.sell for t in tiers)
     por_mc = sum(d["sell"] for d in _trade().get("mc_take_profit_tiers") or [])
-    assert abs(por_ciento - 0.78) < 1e-9
+    assert abs(por_ciento - 0.85) < 1e-9
     assert abs(por_ciento + por_mc - 0.97) < 1e-9
     # Y lo que ve `moonbag_fraction` NO es el moonbag de verdad: es lo que
     # queda pendiente de repartir entre los escalones de market cap.
-    assert abs(moonbag_fraction(tiers) - 0.22) < 1e-9
+    assert abs(moonbag_fraction(tiers) - 0.15) < 1e-9
 
 
-def test_la_escalera_de_porcentaje_son_tres_y_crecen() -> None:
-    """24-sep: tres peldanos por porcentaje y cada uno vende mas que el
-    anterior (15%, 30%, 33%).
+def test_la_escalera_de_porcentaje_son_cuatro() -> None:
+    """24-sep: cuatro peldanos por porcentaje (+25%, +55%, +90%, +125%).
 
-    VA AL REVES QUE ANTES a proposito. La escalera vieja vendia mucho abajo y
-    poco arriba, repartiendo entre diez peldanos hasta x20. Esta concentra la
-    venta en el tramo que la moneda SI recorre --lo pedido fue "cuando suba
-    un 85 vender un 60% de lo que queda"-- y deja solo un 19% para los
-    escalones de market cap, que son los improbables.
+    EL GRUESO SE COBRA EN MEDIO, no abajo ni arriba: 15% - 35% - 30% - 5%. La
+    escalera vieja repartia entre diez peldanos hasta x20 y vendia mucho
+    abajo; esta concentra la venta en el tramo que la moneda SI recorre y
+    deja solo un 12% para los escalones de market cap, que son los
+    improbables.
     """
     tiers = _tiers()
-    assert len(tiers) == 3, f"tres peldanos por porcentaje: {tiers}"
-    assert [t.sell for t in tiers] == [0.15, 0.30, 0.33]
-    assert [t.gain for t in tiers] == [0.25, 0.50, 0.85]
+    assert len(tiers) == 4, f"cuatro peldanos por porcentaje: {tiers}"
+    assert [t.sell for t in tiers] == [0.15, 0.35, 0.30, 0.05]
+    assert [t.gain for t in tiers] == [0.25, 0.55, 0.90, 1.25]
 
 
 def test_los_diez_escalones_disparan_y_queda_el_moonbag() -> None:

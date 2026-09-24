@@ -169,15 +169,16 @@ trade:
   # arriba.
   take_profit_percentage: 0.25
   take_profit_sell_percentage: 0.15
-  tp2_gain: 0.50
-  tp2_sell: 0.30
-  # +85% VENDIENDO EL 60% DE LO QUE QUEDA (24-sep, pedido). Aqui va el 33%,
-  # que es lo mismo: la escalera vende siempre fraccion de la COMPRA
-  # ORIGINAL, no de lo que queda dentro. Tras el 15% y el 30% queda un 55%,
-  # y el 60% de ese 55% es el 33% del original. Si algun dia se cambian TP1
-  # o TP2 hay que rehacer esta cuenta a mano.
-  tp3_gain: 0.85
-  tp3_sell: 0.33
+  tp2_gain: 0.55
+  tp2_sell: 0.35
+  tp3_gain: 0.90
+  tp3_sell: 0.30
+  # CUARTO PELDANO POR PORCENTAJE (24-sep, pedido: "lo que reste a un 125%").
+  # Vuelve `tp4_gain`, que se habia quitado esta misma manana al pasar los
+  # lejanos a market cap: aqui no es un peldano lejano sino el ultimo del
+  # tramo que la moneda todavia recorre en porcentaje.
+  tp4_gain: 1.25
+  tp4_sell: 0.05
   # DE AQUI EN ADELANTE, EL RESTO REPARTIDO HASTA x20. Queda el 27,5% de la
   # compra; se deja corriendo el 2% de siempre y los otros 25,5 se reparten
   # en siete peldanos, de mas a menos: llegar a x20 es mucho menos probable
@@ -202,31 +203,27 @@ trade:
   # suelo fantasma que nadie pidio.
   tp_extra: []
 
-  # ESCALONES POR MARKET CAP, de 100k a 500k (24-sep, pedido).
+  # ESCALONES POR MARKET CAP, de 100k a 200k (24-sep, pedido).
   #
   # Se arman SOLO cuando ya se han cobrado los tres peldanos de porcentaje
   # (+25%, +50%, +85%), asi que son la continuacion natural de la escalera,
   # no una via paralela.
   #
-  # EL REPARTO. Tras vender 15% + 30% + 33% queda un 22%; se deja un 3% de
-  # moonbag --que el bot NO vende nunca, lo vendes tu-- y los otros 19% se
-  # reparten aqui, de mas a menos: llegar a 500k es mucho menos probable que
-  # llegar a 100k, asi que se cobra mas abajo.
+  # EL REPARTO. Los cuatro peldanos de porcentaje venden el 85% (15 + 35 +
+  # 30 + 5); se deja un 3% de moonbag --que el bot NO vende nunca, lo vendes
+  # tu-- y los otros 12% se reparten aqui, de mas a menos: llegar a 200k es
+  # menos probable que llegar a 100k, asi que se cobra mas abajo.
   #
-  # Van en progresion geometrica y no de 100 en 100 mil: de 100k a 150k hay
-  # un 50% de subida, de 400k a 500k solo un 25%. Repartir a partes iguales
-  # pondria casi todos los escalones en el tramo mas facil.
+  # Van en progresion y no a partes iguales: de 100k a 140k hay un 40% de
+  # subida y de 140k a 200k otro 43%. A partes iguales casi todos los
+  # escalones caerian en el tramo mas facil.
   mc_take_profit_tiers:
     - target_mc: 100000
-      sell: 0.06
-    - target_mc: 150000
       sell: 0.05
-    - target_mc: 225000
+    - target_mc: 140000
       sell: 0.04
-    - target_mc: 335000
-      sell: 0.025
-    - target_mc: 500000
-      sell: 0.015
+    - target_mc: 200000
+      sell: 0.03
 
   # 26% (24-sep, pedido). Historial: 18% -> 28% -> 40% -> 30% -> 18% ->
   # 28% -> 15% -> 26%.
