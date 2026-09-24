@@ -101,12 +101,12 @@ def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
     # Lo VENDIDO ACUMULADO al llegar a cada multiplo. Desde la tarde del
-    # 24-sep son OCHO peldanos: tres de cerca (+25%, +55%, +100%) y cinco
+    # 24-sep son OCHO peldanos: tres de cerca (+25%, +53%, +100%) y cinco
     # lejanos en `tp_extra`, cada uno un 35% mas caro que el anterior.
     esperado = {
         1.24: 0.0,    # justo por debajo del primero
         1.25: 0.15,
-        1.55: 0.55,
+        1.53: 0.55,
         1.99: 0.55,   # el tercero es +100% exacto: a x1,99 todavia no entra
         2.00: 0.75,
         2.70: 0.85,   # el primer lejano se lleva 10 de los 22 que quedaban

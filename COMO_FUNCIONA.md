@@ -86,18 +86,18 @@ Dos escaleras, una detrás de la otra.
 | sube | vende | acumulado |
 |---|---|---|
 | +25% | 15% | 15% |
-| +55% | 40% | 55% |
+| +53% | 40% | 55% |
 | +100% | 20% | 75% |
 
-**Los dos primeros caben dentro de la curva, el segundo por muy poco.**
+**Los dos primeros caben dentro de la curva, el segundo con poco margen.**
 Entrando al 91,0% quedan +57,5% hasta migrar y el segundo peldaño está en
-+55%: entra por **2,5 puntos**. Del tercero en adelante la moneda tiene que
++53%: entra por **4,5 puntos**. Del tercero en adelante la moneda tiene que
 haber migrado **y seguir subiendo** ya fuera de pump.fun.
 
-> Ese margen de 2,5 puntos es el número más delicado de todo el sistema. El
-> corte está en el 91,0% justo: un poco más arriba y el segundo peldaño deja
-> de existir — y es el que vende el 40% de la posición. Cuando eso pasó (con
-> la entrada al 93%), la moneda que migra y se muere pasaba de dejar +39,8% a
+> Ese margen es el número más delicado de todo el sistema. El corte está en
+> el 91,64% de curva: seis décimas más arriba y el segundo peldaño deja de
+> existir — y es el que vende el 40% de la posición. Cuando eso pasó (con la
+> entrada al 93%), la moneda que migra y se muere pasaba de dejar +39,8% a
 > dejar +8%.
 
 ### Y a partir de ahí, cada venta un 35% más cara que la anterior
@@ -107,18 +107,18 @@ anterior**, no sobre lo que se pagó. Así todos piden el mismo esfuerzo.
 
 | escalón | precio | vende | acumulado | market cap aprox. |
 |---|---|---|---|---|
-| 1 | x2,70 | 10% | 85% | 130k $ |
-| 2 | x3,65 | 3% | 88% | 176k $ |
-| 3 | x4,92 | 3% | 91% | 238k $ |
-| 4 | x6,64 | 3% | 94% | 321k $ |
-| 5 | x8,97 | 3% | 97% | 433k $ |
+| 1 | x2,70 | 10% | 85% | 155k $ |
+| 2 | x3,65 | 3% | 88% | 209k $ |
+| 3 | x4,92 | 3% | 91% | 282k $ |
+| 4 | x6,64 | 3% | 94% | 381k $ |
+| 5 | x8,97 | 3% | 97% | 515k $ |
 
 El primero se lleva casi la mitad de lo que quedaba, y es a propósito: es el
 único de los cinco al que llega un número razonable de monedas. Los otros
 cuatro son lotería.
 
 Son cinco y no más porque ahí se acaba lo que había para repartir. El sexto
-caería sobre los 584k $.
+caería sobre los 695k $.
 
 Queda un **3% (el "moonbag")** que el bot **no vende nunca**. Ese lo vende una
 persona a mano, si quiere.
@@ -134,12 +134,12 @@ Esto es lo más importante de todo el sistema:
 ```
 al empezar         el suelo está en -26%      ← si baja de ahí, se vende TODO
 tras cobrar +25%   el suelo sube a  +5%       ← ya no puede acabar en pérdida
-tras cobrar +55%   el suelo sube a +31,25%
-tras cobrar +100%  el suelo sube a +62,75%
+tras cobrar +53%   el suelo sube a +31,25%
+tras cobrar +100%  el suelo sube a +60,65%
 ```
 
 El suelo se pone un peldaño por detrás del que acabas de cobrar, y un 5% por
-encima de ese. Un 5% *del precio*, no cinco puntos: por eso tras el +55% queda
+encima de ese. Un 5% *del precio*, no cinco puntos: por eso tras el +53% queda
 en +31,25% y no en +30%.
 
 **En cuanto toca el primer peldaño, la operación ya no puede perder dinero.**

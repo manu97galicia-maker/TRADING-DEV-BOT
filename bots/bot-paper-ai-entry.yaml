@@ -169,7 +169,16 @@ trade:
   # arriba.
   take_profit_percentage: 0.25
   take_profit_sell_percentage: 0.15
-  tp2_gain: 0.55
+  # +53% Y NO +55% (24-sep, pedido: "sube dentro de la curva dos puntos").
+  # Dos puntos NO de ganancia sino de MARGEN: entrando al 91,0% quedan
+  # +57,5% hasta migrar, asi que el peldano pasa de entrar por 2,5 puntos a
+  # entrar por 4,5.
+  #
+  # LO QUE SE COBRA NO CAMBIA CASI NADA: la moneda que migra y se muere pasa
+  # de +39,8% a +39,0% y los aciertos necesarios siguen en 40%. Lo que se
+  # compra son los 2 puntos, y este es el peldano que vende el 40% de la
+  # posicion: es el que no puede quedarse fuera.
+  tp2_gain: 0.53
   tp2_sell: 0.40
   tp3_gain: 1.00
   tp3_sell: 0.20
@@ -228,20 +237,22 @@ trade:
   # mismo en realidad (x2,70 ES un +170%), pero conviene leerlo como
   # multiplo porque aqui ya no se piensa en porcentajes.
   #
-  # DONDE CAE CADA UNO, con SOL a 220 $ y entrando al 87,0% de la curva
-  # (market cap de compra ~48,3k):
+  # DONDE CAE CADA UNO, con SOL a 220 $ y entrando al 91,0% de la curva
+  # (market cap de compra ~57,4k):
   #
   #   escalon   multiplo   subida    vende   acumulado   market cap
-  #     1        x2,700    +170,0%    10%       85%        ~130k
-  #     2        x3,645    +264,5%     3%       88%        ~176k
-  #     3        x4,921    +392,1%     3%       91%        ~238k
-  #     4        x6,643    +564,3%     3%       94%        ~321k
-  #     5        x8,968    +796,8%     3%       97%        ~433k
+  #     1        x2,700    +170,0%    10%       85%        ~155k
+  #     2        x3,645    +264,5%     3%       88%        ~209k
+  #     3        x4,921    +392,1%     3%       91%        ~282k
+  #     4        x6,643    +564,3%     3%       94%        ~381k
+  #     5        x8,968    +796,8%     3%       97%        ~515k
   #
   # EL MARKET CAP DE ESTA TABLA SE MUEVE CON LA ENTRADA; los multiplos no.
-  # Subir la entrada un punto de curva sube todas estas cifras un 4,2%, y por
-  # eso hay que rehacerla cada vez que se toca el umbral. Los multiplos de la
-  # izquierda, que son lo que el bot mira de verdad, no cambian.
+  # Y ESTA TABLA SE QUEDO VIEJA DOS VECES EL 24-SEP: se rehizo al pasar al
+  # 87,0% y no se toco al subir al 93,0% ni al bajar al 91,0%, asi que
+  # durante un rato dijo ~130k donde de verdad son ~155k. Nadie lo nota
+  # porque el bot no mira estas cifras --mira los multiplos-- y por eso hace
+  # falta acordarse a mano: cada punto de curva las mueve un ~4%.
   #
   # SON CINCO Y NO MAS PORQUE AHI SE ACABA EL 22%: 10 + 3 + 3 + 3 + 3. El
   # sexto caeria en ~561k, ya por encima de los 500.000 pedidos, asi que el
@@ -1245,27 +1256,32 @@ filters:
     # 0,875 -> 0,86 -> 0,93 -> 0,90 -> 0,875 -> 0,86 -> 0,87 -> 0,93 -> 0,91.
     #
     # RECUPERA EL SEGUNDO PELDANO, que es lo que habia roto el paso al 93%.
-    # Al 91,0% quedan +57,5% hasta migrar y el TP2 esta en +55%: vuelve a
+    # Al 91,0% quedan +57,5% hasta migrar y el TP2 esta en +53%: vuelve a
     # caber, y con el vuelve el 40% de la posicion que se estaba dejando de
     # cobrar.
     #
     #   entrada   recorrido   dentro        vendido   migra y muere   aciertos
     #    93,0%      +43,6%    solo +25%        15%         +8,0%         76%
-    #    91,0%      +57,5%    +25% y +55%      55%        +39,8%         40%
-    #    87,0%      +87,2%    +25% y +55%      55%        +39,8%         40%
+    #    91,0%      +57,5%    +25% y +53%      55%        +39,0%         40%
+    #    87,0%      +87,2%    +25% y +53%      55%        +39,0%         40%
     #
-    # PERO CABE POR 2,5 PUNTOS, y eso hay que decirlo entero porque es el
-    # peldano que vende el 40% de la posicion. Al 87,0% ese mismo peldano
-    # entraba por 32,5 puntos. Aqui entra por 2,5: la moneda tiene que llegar
-    # practicamente a migrar para cobrarlo, y si se queda a medio punto no
-    # se cobra nada de ese 40%.
+    # Y CABE POR 4,5 PUNTOS, tras bajar el TP2 de +55% a +53% en el mismo
+    # dia. Entraba por 2,5 y ese era el peldano que vende el 40% de la
+    # posicion: si la moneda se quedaba a medio punto de migrar, no se
+    # cobraba nada de ese 40%. Al 87,0% ese mismo peldano entraba por 34,2
+    # puntos, asi que 4,5 sigue siendo poco -- es lo que cuesta entrar tan
+    # arriba.
     #
-    # LA ESCALERA NO ESTA AJUSTADA A ESTA ENTRADA, y se deja asi a proposito
-    # (se pidio mover la entrada, no los peldanos). Ajustada seria TP2 +40% y
-    # TP3 +52%, que con el mismo reparto 15/40/20 da +42,5% en vez de +39,8%
-    # y baja los aciertos de 40% a 38% -- pero sobre todo pone 17,5 y 5,5
-    # puntos de margen donde ahora hay 2,5 y ninguno. Es UN cambio de dos
-    # numeros; queda anotado aqui para que se pueda pedir sabiendo que da.
+    # EL CORTE ESTA AHORA EN EL 91,64% DE CURVA (era el 90,9%). Seis decimas
+    # y media por encima de donde se entra. Subir la entrada de aqui roza
+    # otra vez el precipicio: al 93,0% este peldano se cae y los aciertos
+    # necesarios pasan de 40% a 76%.
+    #
+    # LA ESCALERA SIGUE SIN ESTAR DEL TODO AJUSTADA A ESTA ENTRADA. Ajustada
+    # seria TP2 +40% y TP3 +52%, que con el mismo reparto 15/40/20 da +41,9%
+    # en vez de +39,0%, baja los aciertos de 40% a 38% y mete el TERCER
+    # peldano dentro de la curva (hoy se queda fuera por 42,5 puntos). Queda
+    # anotado para que se pueda pedir sabiendo lo que da.
     #
     # EL TERCER PELDANO (+100%) sigue fuera por 42,5 puntos y a esta altura
     # de curva ya no hay forma de meterlo dentro: el recorrido entero es
@@ -1302,13 +1318,13 @@ filters:
     #
     #   entrada   recorrido   peldanos que entran        vendido   margen TP2
     #    93,0%      +43,6%    solo +25%                    15%      -11,4p
-    #    91,0%      +57,5%    +25% y +55%                  55%       +2,5p  <- aqui
-    #    90,0%      +64,7%    +25% y +55%                  55%       +9,7p
-    #    87,0%      +87,2%    +25% y +55%                  55%      +32,2p
-    #    85,0%     +103,1%    +25% y +55%                  55%      +48,1p
+    #    91,0%      +57,5%    +25% y +53%                  55%       +4,5p  <- aqui
+    #    90,0%      +64,7%    +25% y +53%                  55%      +11,7p
+    #    87,0%      +87,2%    +25% y +53%                  55%      +34,2p
+    #    85,0%     +103,1%    +25% y +53%                  55%      +50,1p
     #
     # DONDE SE PARTE LA TABLA, y el 91,0% esta justo al borde. El corte
-    # exacto --donde el recorrido cruza el +55% del TP2-- cae en el 90,9% de
+    # exacto --donde el recorrido cruza el +53% del TP2-- cae en el 91,64% de
     # curva. Un decimo de punto mas arriba y el segundo peldano deja de
     # existir, con el 40% de la posicion que se lleva. Es el numero mas
     # sensible de toda la configuracion y no hay ningun aviso automatico de
