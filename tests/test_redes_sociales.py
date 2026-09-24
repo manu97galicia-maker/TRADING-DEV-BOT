@@ -15,6 +15,8 @@ la apuesta una vez y ya.
 import json
 from pathlib import Path
 
+from modelo_tamano import importe
+
 from monitoring.dexpaid_source import EXTRA_REDES_NUEVAS, importe_por_senal
 from monitoring.redes_sociales import RedesVistas
 
@@ -142,9 +144,18 @@ def test_el_extra_no_se_salta_el_tope_por_compra() -> None:
     mayor = importe_por_senal(999, pago_y_boost=True) + EXTRA_REDES_NUEVAS
     assert mayor > 0
     # Quien manda de verdad es el tope duro, que recorta CUALQUIER via justo
-    # antes de firmar la compra. Se comprueba que el caso mayor posible queda
-    # recortado a el y no se cuela ni un lamport de mas.
-    assert min(mayor, tope) == tope
+    # antes de firmar la compra.
+    #
+    # ANTES SE EXIGIA `min(mayor, tope) == tope`, o sea que el tope recortara
+    # este caso. Se puso rojo al subir el tope a 2 SOL el 24-sep, y por una
+    # razon que es buena noticia: el caso mayor de esta via son 0,568 SOL y
+    # ya no llega al tope, asi que no hay nada que recortar. Exigir que
+    # recorte era exigir que el tope fuera PEQUENO, que es lo contrario de
+    # lo que este test deberia vigilar.
+    #
+    # Lo que importa es que ninguna via se cuele por encima del tope.
+    assert min(mayor, tope) <= tope
+    assert importe(mayor, {"fraccion_saldo": 0, "buy_amount": mayor, "tope_compra_sol": tope}) <= tope
 
 
 def test_el_extra_de_redes_ya_no_cambia_nada_por_otro_motivo() -> None:

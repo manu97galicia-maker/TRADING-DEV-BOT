@@ -68,27 +68,60 @@ def test_el_modo_activo_es_el_porcentaje_del_saldo_libre() -> None:
     )
 
 
-def test_el_tope_no_recorta_el_importe_configurado() -> None:
-    """EL TEST QUE IMPIDE EL NO-OP.
+def _pedido_sin_tope(t: dict, saldo: float) -> float:
+    """Lo que el modo activo pide, SIN pasar por `tope_compra_sol`."""
+    if t.get("buy_amount_usd", 0) > 0:
+        return t["buy_amount_usd"] / SOL_USD_REF
+    if t["fraccion_saldo"] > 0:
+        return saldo * t["fraccion_saldo"]
+    return t["buy_amount"]
 
-    El tope recorta SIN dejar rastro en el log de la compra, asi que si alguien
-    lo deja por debajo del 25% el porcentaje deja de aplicarse y desde fuera
-    parece que el ajuste no hace nada. Hoy esta a 0 (sin tope) y el test vale
-    igual para el dia que se vuelva a poner.
+
+def test_el_tope_solo_muerde_donde_toca() -> None:
+    """EL TEST QUE IMPIDE EL NO-OP, ahora que el tope vuelve a existir.
+
+    El 24-sep se puso `tope_compra_sol: 2.0` ("maximo dos SOL por
+    operacion"). Antes estaba a 0 y este test exigia que NUNCA recortara,
+    porque un tope por debajo del porcentaje lo anula en silencio: el
+    porcentaje deja de aplicarse y desde fuera parece que el ajuste no hace
+    nada.
+
+    LO QUE SE COMPRUEBA AHORA es el punto exacto en que empieza a mandar, que
+    sale de dividir el tope entre la fraccion. Con el 70% y un tope de 2, ese
+    punto esta en 2,86 SOL de cartera: por debajo manda el porcentaje, por
+    encima manda el tope. Si alguien baja el tope por debajo de lo que pide
+    el porcentaje con el saldo de trabajo, este test se pone rojo.
     """
     t = _trade()
-    for saldo in (0.5, 1.0, 2.0, 10.0):
-        # Lo que el modo activo pide, SIN pasar por el tope.
-        if t.get("buy_amount_usd", 0) > 0:
-            pedido = t["buy_amount_usd"] / SOL_USD_REF
-        elif t["fraccion_saldo"] > 0:
-            pedido = saldo * t["fraccion_saldo"]
-        else:
-            pedido = t["buy_amount"]
-        assert abs(importe(saldo, t) - pedido) < 1e-12, (
-            f"con {saldo} SOL el tope ({t['tope_compra_sol']}) recorta la "
-            f"compra ({pedido:.4f}) sin avisar"
+    tope = float(t.get("tope_compra_sol", 0) or 0)
+    if tope <= 0:
+        for saldo in (0.5, 1.0, 2.0, 10.0):
+            assert abs(importe(saldo, t) - _pedido_sin_tope(t, saldo)) < 1e-12
+        return
+
+    frac = float(t["fraccion_saldo"])
+    assert frac > 0, "este test describe el modo porcentaje"
+    corte = tope / frac
+    # Por debajo del corte el tope no puede tocar nada.
+    for saldo in (corte * 0.5, corte * 0.99):
+        assert abs(importe(saldo, t) - _pedido_sin_tope(t, saldo)) < 1e-12, (
+            f"con {saldo:.2f} SOL de cartera el tope ({tope}) ya recorta, y el "
+            f"corte deberia estar en {corte:.2f}"
         )
+    # Por encima manda el tope, y ni un lamport mas.
+    for saldo in (corte * 1.01, corte * 5):
+        assert importe(saldo, t) == tope, (
+            f"con {saldo:.2f} SOL de cartera tendria que recortar a {tope}"
+        )
+    # Y EL RECORTE NO ES MUDO: el trader avisa en el log cuando pasa. Sin
+    # esto, una compra recortada es indistinguible de una compra normal.
+    fuente = (
+        CONFIG.parent.parent / "src/trading/universal_trader.py"
+    ).read_text(encoding="utf-8")
+    assert "TOPE: se iba a comprar" in fuente, (
+        "el trader ya no avisa al recortar por tope: un recorte silencioso "
+        "hace que el porcentaje parezca no aplicarse"
+    )
 
 
 def test_sobre_el_saldo_libre_las_posiciones_menguan() -> None:

@@ -86,6 +86,25 @@ Si lo que se busca es concentrar, la forma limpia es bajar el número de
 posiciones a 1 o 2: el dinero va entero a una o dos compras y no se pagan
 comisiones por restos de 10 $.
 
+### Y un techo de 2 SOL por compra
+
+Pase lo que pase, una compra **nunca pasa de 2 SOL**.
+
+Con la cartera de hoy eso no cambia nada — el 70% de 1 SOL son 0,70. El techo
+empieza a mandar cuando la cartera pasa de **2,86 SOL**:
+
+| cartera | el 70% sería | se compra |
+|---|---|---|
+| 1 SOL | 0,70 | 0,70 |
+| 2 SOL | 1,40 | 1,40 |
+| 3 SOL | 2,10 | **2,00** |
+| 10 SOL | 7,00 | **2,00** |
+
+Está por dos motivos. Uno: si la cuenta crece, el porcentaje efectivo baja
+solo (2 de 10 es un 20%). Y dos, el que importa: es el último freno contra un
+fallo de cálculo. El 12 de agosto la cadena registró compras de 0,25 y 0,30
+SOL con 0,15 configurado, y nunca se supo por qué.
+
 Puede tener **5 posiciones abiertas a la vez**.
 
 ---

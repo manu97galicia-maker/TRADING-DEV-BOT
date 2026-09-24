@@ -705,19 +705,38 @@ trade:
   # porcentaje, el tamano crece con las ganancias y encoge con las perdidas
   # solo, sin tener que acordarse de tocarlo -- que es lo que se buscaba.
   buy_amount_usd: 0
-  # SIN TOPE DURO (19-sep, pedido por Manu). 0 = no se recorta nada.
+  # TOPE DURO DE 2 SOL POR COMPRA (24-sep, pedido: "maximo dos SOL por
+  # operacion"). Estuvo a 0 --sin tope-- desde el 19-sep.
   #
-  # QUE SE PIERDE: era el ultimo freno contra un fallo de calculo. El 12-ago la
-  # cadena registro compras de 0,25 y 0,30 SOL con `buy_amount: 0.15`
-  # configurado, y nunca se supo por que; este tope es lo que se puso entonces
-  # para que no volviera a pasar.
+  # CUANDO MUERDE DE VERDAD. El importe es el 70% de la cartera, asi que este
+  # tope no hace nada mientras la cartera no pase de 2,86 SOL. Por debajo de
+  # eso manda el porcentaje y este numero no se nota:
   #
-  # QUE SIGUE PROTEGIENDO: el guardian del saldo. Antes de firmar, el bot lee
-  # el saldo REAL y exige que quepa la compra mas el slippage mas las
-  # comisiones, dejando intacta la reserva de 0,03. Eso no se puede saltar, asi
-  # que un fallo no puede vaciar la cartera -- como mucho gastaria de mas
-  # dentro de lo que hay.
-  tope_compra_sol: 0
+  #   cartera    70% seria    se compra    muerde el tope?
+  #    1 SOL       0,70         0,70            no
+  #    2 SOL       1,40         1,40            no
+  #    3 SOL       2,10         2,00            SI
+  #    5 SOL       3,50         2,00            SI
+  #   10 SOL       7,00         2,00            SI
+  #
+  # O SEA QUE ES UN TECHO, NO UN CAMBIO DE TAMANO. Con la cartera de hoy no
+  # altera ni una compra; empieza a mandar si la cartera crece, y a partir de
+  # ahi el porcentaje efectivo baja solo (con 10 SOL, 2 de 10 es un 20%).
+  #
+  # PARA QUE SIRVE ADEMAS. Era el ultimo freno contra un fallo de calculo: el
+  # 12-ago la cadena registro compras de 0,25 y 0,30 SOL con `buy_amount:
+  # 0.15` configurado, y nunca se supo por que. Volver a ponerlo cierra esa
+  # puerta.
+  #
+  # NO ES EL UNICO FRENO. Antes de firmar, el bot lee el saldo REAL y exige
+  # que quepa la compra mas el slippage mas las comisiones, dejando intacta
+  # la reserva de 0,03. Eso no se puede saltar; el tope es la segunda capa.
+  #
+  # OJO: `priority_fee_override` se salta el `hard_cap` de comisiones y el
+  # trader lo reaplica a mano. Esto es otra cosa --el tope del IMPORTE-- y se
+  # aplica dentro del cerrojo de gasto, justo antes de calcular el coste con
+  # slippage. Hay test.
+  tope_compra_sol: 2.0
   # SI NO LLEGA EL SALDO, SE COMPRA CON EL 75% DE LO QUE QUEDE en vez de
   # saltarse la moneda. Pedido el 19-sep.
   #
