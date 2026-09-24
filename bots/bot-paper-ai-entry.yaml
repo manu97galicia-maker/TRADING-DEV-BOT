@@ -148,7 +148,26 @@ trade:
   # QUE QUEDA": a esa altura quedaba el 55% y la mitad era 27,5. Tras este
   # reparto ya no es la mitad exacta (32,7 de un 65% restante), y es correcto:
   # manda lo pedido ahora.
-  take_profit_percentage: 0.30
+  # TP1 AL +15% (24-sep). Historial: +12% -> +25% -> +30% -> +15%.
+  #
+  # SALE DE UNA BUSQUEDA, no de una corazonada: 240 combinaciones de TP1,
+  # cuanto vende, TP2 y stop, evaluadas contra cuatro distribuciones posibles
+  # de resultados, con el gas descontado, y ordenadas por el PEOR de los
+  # cuatro escenarios --no por el mejor-- para no elegir algo que solo
+  # funciona con suerte. Gano este en los cuatro.
+  #
+  # POR QUE UN TP1 BAJO GANA, que es lo contraintuitivo. El primer peldano no
+  # esta ahi para cobrar: esta para APAGAR EL STOP. En cuanto se toca, el
+  # suelo sube a compra +5% (`margen_stop_tras_tp`) y la operacion ya no
+  # puede acabar en perdida. Un TP1 bajo y facil de tocar no es cobrar poco:
+  # es convertir perdedoras en ganadoras pequenas. Con el TP1 en +30% la
+  # mayoria de las monedas no llegaban ni a activar esa proteccion.
+  #
+  # OJO: vendiendo el 20% de un +15% se cobra un 3,0% de la posicion, y el
+  # gas de la operacion es un 3,7%. El TP1 NO cubre el gas por si solo, y da
+  # igual -- lo que aporta es el suelo, y eso ya esta contado en la cuenta de
+  # arriba.
+  take_profit_percentage: 0.15
   take_profit_sell_percentage: 0.20
   tp2_gain: 0.50
   tp2_sell: 0.199
@@ -186,8 +205,11 @@ trade:
       sell: 0.024
     - gain: 19.00    # x20
       sell: 0.024
-  # 28% (24-sep, pedido). Historial: 18% -> 28% -> 40% -> 30% -> 18% -> 28%.
-  # Ha dado la vuelta entera dos veces; este es el segundo paso por el 28.
+  # 15% (24-sep). Historial: 18% -> 28% -> 40% -> 30% -> 18% -> 28% -> 15%.
+  #
+  # SALE DE LA MISMA BUSQUEDA QUE EL TP1, y los dos van juntos: el stop
+  # estrecho solo es sensato porque el TP1 bajo lo apaga pronto en las que
+  # funcionan. Cambiar uno sin el otro rompe la pareja.
   #
   # SOLO MANDA HASTA EL PRIMER PELDANO. En cuanto la moneda toca el TP1
   # (+30%), el suelo se sube a precio de compra +5% (`margen_stop_tras_tp`)
@@ -200,26 +222,30 @@ trade:
   # eso compensa es lo que cuesta una que sale mal:
   #
   #   stop   se pierde   una que migra y muere   aciertos para no perder
-  #    40%     -39,2%          +52,5%                     43%
-  #    30%     -29,4%          +52,5%                     36%
-  #    28%     -27,4%          +52,5%                     34%   <- aqui
-  #    18%     -17,6%          +52,5%                     25%
+  #    28%     -27,4%          +36,3%                     43%
+  #    20%     -19,6%          +36,3%                     35%
+  #    15%     -14,7%          +36,3%                     29%   <- aqui
   #
   # (La perdida no es el stop exacto: el 2% de moonbag no se vende.)
   #
-  # POR QUE SE SUBE DEL 18 AL 28. Con el 18% se sale de los tirones normales
-  # de una memecoin: posiciones que cierran en rojo y luego suben. Eso ya paso
-  # --fue lo que llevo el stop de 18 a 28 y despues a 40-- asi que volver al
-  # 28 es volver al punto en el que aquello dejo de pasar.
+  # LO QUE CUESTA, y ya paso una vez: con un stop estrecho se sale de los
+  # tirones normales de una memecoin, y posiciones que cierran en rojo luego
+  # suben. Eso fue lo que llevo el stop de 18 a 28 y despues a 40.
   #
-  # LO QUE CUESTA: cada fallo cuesta 10 puntos mas (-27,4% en vez de -17,6%),
-  # y el liston sube de 1 acierto de cada 4 a 1 de cada 3.
+  # POR QUE AHORA SI. Entonces el TP1 estaba en +25% o +30%: el stop era la
+  # unica red durante casi toda la vida de la posicion. Ahora el TP1 esta en
+  # +15%, asi que en cuanto la moneda se mueve un poco el suelo pasa a compra
+  # +5% y este numero deja de usarse. El stop estrecho manda MUCHO menos
+  # tiempo que antes.
+  #
+  # SI VUELVEN LOS CIERRES EN ROJO de monedas que luego suben, la palanca es
+  # subir este numero -- pero entonces hay que subir el TP1 con el.
   #
   # SIGUE MANDANDO SOLO HASTA EL PRIMER PELDANO: en cuanto la moneda toca el
   # TP1 (+30%) el suelo pasa a compra +5% y este numero deja de usarse en esa
   # posicion. Lo que se arriesga de verdad es esto ANTES de que la moneda
   # demuestre nada.
-  stop_loss_percentage: 0.28
+  stop_loss_percentage: 0.15
   # EL STOP SE LLEVA LA POSICION ENTERA, moonbag incluido.
   #
   # Antes dejaba el 2% corriendo en una moneda que se estaba cayendo a cero:

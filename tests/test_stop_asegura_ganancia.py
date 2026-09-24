@@ -68,15 +68,23 @@ def test_lo_que_no_es_un_numero_se_sigue_descartando() -> None:
 
 
 def test_el_tp1_de_la_config_vende_y_asegura() -> None:
-    """23-sep: el primer peldano deja de ser un disparador puro.
+    """El primer peldano hace DOS cosas, y la segunda es la que importa.
 
-    Del 19 al 23-sep el TP1 no vendia nada: solo subia el suelo. Ahora hace
-    las dos cosas -- dispara a +30% y cobra un 20%. Sigue moviendo el stop a
-    compra +12%, que es lo que hace que la operacion no pueda perder.
+    Historial: del 19 al 23-sep no vendia nada, solo subia el suelo; el
+    23-sep paso a +30% cobrando un 20%; el 24-sep bajo a +15%.
+
+    POR QUE BAJO. El TP1 no esta ahi para cobrar --vendiendo el 20% de un
+    +15% se lleva un 3% de la posicion, menos que el gas-- sino para APAGAR
+    EL STOP: en cuanto se toca, el suelo sube a compra +5% y la operacion ya
+    no puede acabar en perdida. Cuanto antes se toque, mas perdedoras se
+    convierten en ganadoras pequenas.
+
+    Los dos numeros salen del yaml a proposito: ya paso que un test fijara el
+    peldano a mano y se quedara verde midiendo el de dos versiones atras.
     """
-    assert _trade()["take_profit_sell_percentage"] == 0.20
-    assert _tiers()[0].sell == 0.20
-    assert _tiers()[0].gain == 0.30
+    t = _trade()
+    assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 0.20
+    assert _tiers()[0].gain == t["take_profit_percentage"] == 0.15
 
 
 # ------------------------------------------------- el suelo asegura ganancia
@@ -128,17 +136,23 @@ def test_el_suelo_nunca_alcanza_el_escalon_que_acaba_de_tocarse() -> None:
 
 
 def test_el_colchon_mas_apretado_esta_anotado() -> None:
-    """9,0%: lo que puede caer la moneda tras tocar el TP2 antes de que el
-    suelo la cierre. Es el mas apretado de los diez.
+    """Lo que puede caer la moneda tras tocar un peldano antes de que el suelo
+    la cierre. Se mide el mas apretado de los diez.
 
     LA HISTORIA DE ESTE NUMERO, porque explica el ajuste entero. Con el margen
     al 12% y el TP1 en +30%, el suelo tras el TP2 quedaba en 1,30 x 1,12 =
     1,456 contra un disparo en 1,50: un colchon del 2,9%, que en una memecoin
     es un respiro normal. La posicion se cerraba justo despues de cobrar.
 
-    Bajando el margen al 5% (23-sep, pedido) el suelo pasa a 1,365 y el
-    colchon a un 9%. Se asegura menos y se aguanta mas, que es
-    exactamente lo pedido.
+    Bajando el margen al 5% (23-sep) subio al 9%. Al bajar el TP1 a +15% el
+    24-sep queda en 8,7%: el hueco entre el TP1 y el TP2 es mayor, asi que el
+    punto apretado se mueve a otro peldano.
+
+    NO SE FIJA EL NUMERO EXACTO sino un minimo. Un test que exige "8,7" se
+    pone rojo cada vez que alguien mueve un peldano por un motivo que no
+    tiene nada que ver, y a la tercera se actualiza sin leerlo. Lo que de
+    verdad importa es que ningun colchon baje de un respiro normal de
+    memecoin, que es de donde vino el problema.
     """
     tiers, m = _tiers(), _trade()["margen_stop_tras_tp"]
     colchones = [
@@ -146,7 +160,11 @@ def test_el_colchon_mas_apretado_esta_anotado() -> None:
         / (ENTRADA * (1 + t.gain))
         for i, t in enumerate(tiers)
     ]
-    assert round(min(colchones) * 100, 1) == 9.0
+    assert min(colchones) > 0.05, (
+        f"el colchon mas apretado es del {min(colchones) * 100:.1f}%: por "
+        "debajo del 5% un respiro normal cierra la posicion justo despues "
+        "de cobrar el peldano"
+    )
 
 
 # ----------------------------------------------------- la escalera completa

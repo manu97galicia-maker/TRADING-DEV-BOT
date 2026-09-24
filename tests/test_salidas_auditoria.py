@@ -54,7 +54,29 @@ def test_una_ganancia_de_9_significa_x10_y_no_mas_9_por_ciento() -> None:
 
 
 def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
-    assert _vendido_hasta(1.24) == 0.0
+    """EL PRECIO SALE DE LA CONFIG, no escrito a mano.
+
+    Estaba fijado en 1,24 --justo por debajo del TP1 de entonces, +25%-- y
+    siguio en verde cuando el peldano se movio a +30%: comprobaba que no se
+    vende a +24% con el corte en +30%, o sea nada. Al bajar el TP1 a +15% se
+    puso rojo por fin, que es como se descubrio.
+
+    Un precio escrito a mano en un test de escalera caduca en cuanto alguien
+    toca la escalera, y no avisa: se queda verde midiendo un hueco vacio.
+    """
+    import yaml
+
+    tp1 = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["trade"][
+        "take_profit_percentage"
+    ]
+    justo_debajo = 1 + tp1 - 0.01
+    assert _vendido_hasta(justo_debajo) == 0.0, (
+        f"a +{(justo_debajo - 1) * 100:.0f}% no puede haberse vendido nada: "
+        f"el primer peldano esta en +{tp1 * 100:.0f}%"
+    )
+    # Y justo por encima SI vende: si no, el test de arriba pasaria tambien
+    # con una escalera apagada.
+    assert _vendido_hasta(1 + tp1 + 0.01) > 0
 
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:

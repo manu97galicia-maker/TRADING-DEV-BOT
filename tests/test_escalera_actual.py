@@ -37,7 +37,7 @@ def _peldanos() -> list[tuple[float, float]]:
 
 def test_los_peldanos_son_los_pedidos() -> None:
     assert _peldanos() == [
-        (0.30, 0.20),  # 23-sep: el primero pasa a +30% y VENDE un 20%
+        (0.15, 0.20),  # 24-sep: el primero baja a +15% (ver abajo)
         (0.50, 0.199),
         (0.80, 0.182),  # 23-sep: pierde 12 puntos que suben a los lejanos
         (1.50, 0.101),  # x2,5
@@ -152,7 +152,7 @@ def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
     al preguntarlo-- y ademas el de +80% cede 12 puntos a los lejanos.
     """
     cerca = [(g, v) for g, v in _peldanos() if g < 1.5]
-    assert cerca == [(0.30, 0.20), (0.50, 0.199), (0.80, 0.182)]
+    assert cerca == [(0.15, 0.20), (0.50, 0.199), (0.80, 0.182)]
     assert round(sum(v for _, v in cerca), 6) == 0.581
 
 
