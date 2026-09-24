@@ -92,19 +92,23 @@ Dos escaleras, una detrás de la otra.
 
 ### Por porcentaje de subida
 
-| sube | vende | acumulado | dinero recuperado |
+| sube | vende | acumulado | market cap aprox. |
 |---|---|---|---|
-| +18% | 20% | 20% | 24% de lo que pusiste |
-| +38% | 40% | 60% | 79% |
-| +53% | 20% | 80% | **109%** ← aquí ya has recuperado todo (fuera de la curva) |
+| +18% | 10% | 10% | 76k $ |
+| +38% | 15% | 25% | 89k $ |
+| +55% | 15% | 40% | 100k $ |
+
+**Antes de migrar solo se vende el 25%**, y es a propósito. Hasta el 24 de
+septiembre se vendía el 60% ahí mismo: las monedas que iban a dispararse se
+frenaban justo antes de empezar.
 
 El primer peldaño es el más importante y **no por lo que cobra**. En cuanto se
 toca el +18%, el suelo sube a +5% y la operación ya no puede acabar en
 pérdida. Cuanto más bajo, más monedas llegan a activar esa protección.
 
 **Entrando al 93,5% solo caben los dos primeros.** Quedan +40,2% hasta migrar
-y el tercer peldaño está en +53%, así que ese solo cobra si la moneda migra **y
-sigue subiendo** ya fuera de pump.fun.
+y el tercero está en +55%, así que ese solo cobra si la moneda migra **y sigue
+subiendo** ya fuera de pump.fun.
 
 ### Hasta dónde puede subir la entrada
 
@@ -114,43 +118,45 @@ altura de curva:
 
 | peldaño | deja de caber por encima de | vende |
 |---|---|---|
-| +18% | 96,96% | 20% |
-| **+38%** | **93,83%** | **40%** |
-| +53% | 91,64% | 20% |
+| +18% | 96,96% | 10% |
+| **+38%** | **93,83%** | **15%** |
+| +55% | 91,34% | 15% |
 
-Se compra al **93,5%**. El tercero ya se pasó. Y el segundo —el que vende el
-40% de la posición— tiene su corte a **0,33 puntos** de ahí.
+Se compra al **93,5%**. El tercero ya se pasó. Y el segundo tiene su corte a
+**0,33 puntos** de ahí.
 
 > **Ese tercio de punto vale mucho.** Si el segundo peldaño se cae, dentro de
-> la curva solo queda el primero:
+> la curva solo queda el primero con su 10%:
 >
 > | dentro de la curva | migra y muere | aciertos para no perder |
 > |---|---|---|
-> | +18% y +38% (hoy) | +28,4% | 48% |
-> | solo +18% | +7,6% | **77%** |
+> | +18% y +38% (hoy) | +25,4% | 51% |
+> | solo +18% | +6,3% | **80%** |
 >
-> No es un escalón más de la misma escalera: es pasar de necesitar **uno de
-> cada dos** aciertos a **tres de cada cuatro**.
+> Y cuanto menos se vende pronto, **más caro sale perder un peldaño**. Las dos
+> decisiones están atadas.
 
 ### Y a partir de ahí, cada venta un 35% más cara que la anterior
 
 No son cifras fijas: cada escalón se calcula **sobre el precio del escalón
 anterior**, no sobre lo que se pagó. Así todos piden el mismo esfuerzo.
 
-| escalón | precio | vende | acumulado | market cap aprox. |
+| escalón | market cap | precio | vende | acumulado |
 |---|---|---|---|---|
-| 1 | x2,07 | 7% | 87% | 119k $ |
-| 2 | x2,79 | 4% | 91% | 160k $ |
-| 3 | x3,76 | 3% | 94% | 216k $ |
-| 4 | x5,08 | 2% | 96% | 292k $ |
-| 5 | x6,86 | 1% | 97% | 394k $ |
+| 1 | **150k $** | x2,33 | 20% | 60% |
+| 2 | **200k $** | x3,10 | 17% | 77% |
+| 3 | 300k $ | x4,65 | 12% | 89% |
+| 4 | 400k $ | x6,21 | 8% | 97% |
 
-La cadena arranca **donde acaba el tercer peldaño** (x1,53), no en un número
-fijo. Si no, quedaría un salto distinto entre el último peldaño y el primer
-escalón, que es justo lo contrario de "cada 35% sobre el anterior".
+**Aquí es donde está ahora el grueso de la venta.** Más de la mitad de la
+posición se cobra entre 150k y 400k, en vez de antes de migrar.
 
-Son cinco porque el sexto caería sobre los 532k $, ya por encima de los
-500.000. El corte sale de la cuenta, no está puesto a mano.
+> En el fichero estos escalones están escritos como **múltiplos** del precio
+> de compra, porque es lo único que el bot sabe mirar. Y el múltiplo que
+> corresponde a "150k" **depende de dónde se entre**: al 93,5% se compra sobre
+> 64,5k y 150k es un x2,33; al 91% se compraría sobre 57,4k y 150k sería un
+> x2,61. Si se mueve la entrada hay que rehacerlos — hay un test que lo
+> comprueba y salta solo.
 
 Queda un **3% (el "moonbag")** que el bot **no vende nunca**. Ese lo vende una
 persona a mano, si quiere.
@@ -167,7 +173,9 @@ Esto es lo más importante de todo el sistema:
 al empezar        el suelo está en -26%      ← si baja de ahí, se vende TODO
 tras cobrar +18%  el suelo sube a  +5%       ← ya no puede acabar en pérdida
 tras cobrar +38%  el suelo sube a +23,9%
-tras cobrar +53%  el suelo sube a +44,9%
+tras cobrar +55%  el suelo sube a +44,9%
+tras cobrar 150k  el suelo sube a +62,9%
+tras cobrar 200k  el suelo sube a +144,3%
 ```
 
 El suelo se pone un peldaño por detrás del que acabas de cobrar, y un 5% por

@@ -82,7 +82,7 @@ def test_el_tp1_de_la_config_vende_y_asegura() -> None:
     peldano a mano y se quedara verde midiendo el de dos versiones atras.
     """
     t = _trade()
-    assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 0.20
+    assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 0.10
     assert _tiers()[0].gain == t["take_profit_percentage"] == 0.18
     assert _tiers()[0].gain == t["take_profit_percentage"] == 0.18
 
@@ -190,7 +190,7 @@ def test_se_vende_el_97_por_ciento_entre_las_dos_escaleras() -> None:
 
 
 def test_la_escalera_de_porcentaje_son_tres() -> None:
-    """Los TRES DE CERCA son +18%, +38% y +53%, vendiendo 20-40-20.
+    """Los TRES DE CERCA son +18%, +38% y +55,1%, vendiendo 10-15-15.
 
     Historial del dia: cuatro peldanos (+25/+55/+90/+125) por la manana;
     luego +25/+53/+100 vendiendo 20-50-15; y al final del dia, al pedirse
@@ -215,15 +215,17 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     LOS CORTES DE CADA PELDANO, que es lo que hay que mirar antes de tocar
     la entrada, y lo que este test deja fijado:
 
-      TP1 (+18%)   deja de caber por encima del 96,96% de curva
-      TP2 (+38%)   deja de caber por encima del 93,83%   <- a 0,33 puntos
-      TP3 (+53%)   deja de caber por encima del 91,64%   <- ya pasado
+      TP1 (+18%)     deja de caber por encima del 96,96% de curva
+      TP2 (+38%)     deja de caber por encima del 93,83%   <- a 0,33 puntos
+      TP3 (+55,1%)   deja de caber por encima del 91,34%   <- ya pasado
 
-    LO QUE ESTA EN JUEGO EN ESOS 0,33 PUNTOS. El TP2 vende el 40% de la
-    posicion. Si se cae, dentro de la curva solo queda el TP1, que vende el
-    20%: la moneda que migra y se muere pasa de +28,4% a +7,6% y los
-    aciertos necesarios de 48% a 77%. No es un escalon mas de la misma
-    escalera -- es pasar de necesitar uno de cada dos a tres de cada cuatro.
+    LO QUE ESTA EN JUEGO EN ESOS 0,33 PUNTOS. Desde la noche del 24-sep la
+    escalera vende MUY POCO antes de migrar --un 25% entre los dos primeros
+    peldanos, a proposito, para que las buenas no se frenen-- asi que perder
+    el TP2 deja dentro de la curva solo el TP1 con su 10%. La moneda que
+    migra y se muere pasa de +25,4% a +6,3%, y los aciertos necesarios de
+    51% a 80%. Cuanto menos se vende pronto, MAS caro sale perder un
+    peldano: las dos decisiones estan atadas.
 
     POR ESO EL MARGEN ESTA FIJADO AQUI y no solo el numero de peldanos: si
     la entrada se mueve un poco mas, este test salta antes de que el efecto
@@ -246,8 +248,8 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     }
     tiers = [t for t in _tiers() if t.gain in _cerca]
     assert len(tiers) == 3, f"tres peldanos de cerca: {tiers}"
-    assert [t.sell for t in tiers] == [0.20, 0.40, 0.20]
-    assert [t.gain for t in tiers] == [0.18, 0.38, 0.53]
+    assert [t.sell for t in tiers] == [0.10, 0.15, 0.15]
+    assert [t.gain for t in tiers] == [0.18, 0.38, 0.5513]
     # El recorrido dentro de la curva entrando donde se entra.
     umbral = yaml.safe_load(CONFIG.read_text())["filters"]["curva_96"]["umbral"]
     vt = lambda a: 1073e6 - 793.1e6 * a  # noqa: E731
@@ -278,8 +280,8 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     vendido = sum(t.sell for t in dentro)
     suelo = (1 + dentro[-2].gain) * (1 + m) - 1
     bruto = sum((1 + t.gain) * t.sell for t in dentro) + (1 - vendido) * (1 + suelo)
-    assert abs(bruto - 1.284) < 0.005, (
-        f"la que migra y muere deja {(bruto - 1) * 100:.1f}%, no +28,4%"
+    assert abs(bruto - 1.254) < 0.005, (
+        f"la que migra y muere deja {(bruto - 1) * 100:.1f}%, no +25,4%"
     )
 
 

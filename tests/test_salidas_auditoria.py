@@ -101,19 +101,19 @@ def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
     # Lo VENDIDO ACUMULADO al llegar a cada multiplo. Desde la tarde del
-    # 24-sep son OCHO peldanos: tres de cerca (+18%, +38%, +53%) y cinco
+    # 24-sep (noche) son SIETE peldanos: tres de cerca (+18%, +38%, +55,1%)
+    # y cuatro
     # lejanos en `tp_extra`, cada uno un 35% mas caro que el anterior.
     esperado = {
         1.17: 0.0,    # justo por debajo del primero
-        1.18: 0.20,
-        1.38: 0.60,
-        1.53: 0.80,   # los tres de cerca; aqui ya volvio la inversion entera
-        2.0654: 0.80,  # el primer lejano es x2,0655: a x2,0654 no entra aun
-        2.0655: 0.87,
-        2.7884: 0.91,
-        3.7644: 0.94,
-        5.0819: 0.96,
-        5.8606 + 1: 0.97,  # los ocho cobrados; queda el 3% de moonbag
+        1.18: 0.10,
+        1.38: 0.25,   # hasta aqui solo se ha vendido un cuarto: no frena
+        1.5513: 0.40,  # 100k de market cap
+        2.3269: 0.40,  # el de 150k es x2,3270: a x2,3269 no entra aun
+        2.3270: 0.60,  # 150k
+        3.1026: 0.77,  # 200k
+        4.6539: 0.89,  # 300k
+        6.2052: 0.97,  # 400k; los siete cobrados y queda el 3% de moonbag
         50.0: 0.97,   # por mucho que suba, aqui ya no queda nada que cobrar
     }
     for multiplo, acumulado in esperado.items():

@@ -10,6 +10,7 @@ from itertools import pairwise
 from pathlib import Path
 
 import yaml
+from modelo_tamano import SOL_USD_REF
 
 CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
 
@@ -54,34 +55,78 @@ def test_los_peldanos_son_los_pedidos() -> None:
     entrando al 96%. Los multiplos no dependen de eso.
     """
     assert _peldanos() == [
-        (0.18, 0.20), (0.38, 0.40), (0.53, 0.20),
-        (1.0655, 0.07), (1.7884, 0.04), (2.7644, 0.03), (4.0819, 0.02), (5.8606, 0.01),
+        (0.18, 0.10), (0.38, 0.15), (0.5513, 0.15),
+        (1.3270, 0.20), (2.1026, 0.17), (3.6539, 0.12), (5.2052, 0.08),
     ]
 
 
-def test_los_lejanos_van_multiplicando_por_135() -> None:
-    """Cada escalon lejano es un 35% mas caro que el anterior, no que la
-    entrada. Es lo pedido ("cada 35% respecto al precio anterior") y es lo
-    que hace que todos pidan el mismo esfuerzo relativo.
+def _mc_de_compra() -> float:
+    """El market cap al que se compra, con la curva del yaml y SOL a 220 $.
 
-    TAMBIEN PROTEGE DE UN FALLO VIEJO: si dos peldanos quedan a menos de un
-    5% uno de otro, el suelo que sube tras cobrar el primero cae encima del
-    segundo y la posicion se cierra sola al tocarlo. Con un 35% de separacion
-    eso no puede pasar.
+    La curva de pump.fun es un producto constante: con `avance` vendido, los
+    tokens virtuales valen 1073e6 - 793,1e6 x avance, y el precio es
+    k/vt^2 con k = 30 x 1073e6. El market cap es precio x supply x precio
+    del SOL.
+
+    EL PRECIO DEL SOL ES FIJO AQUI (220 $) y el bot usa el de verdad, que
+    refresca desde DexScreener. Un test que saliera a internet daria
+    distinto cada dia. Lo que se comprueba es que los peldanos APUNTAN a
+    donde se penso, no el dolar exacto.
     """
-    # Desde el TERCER peldano, que es donde arranca la cadena. No es un
-    # indice caprichoso: la cadena tiene que empezar en el ultimo peldano de
-    # cerca, o queda un salto distinto entre ese y el primer lejano. Paso el
-    # 24-sep al bajar el TP3 de +100% a +53% sin mover los lejanos: el salto
-    # fue de x1,765 y este test lo cazo.
-    multiplos = [1 + g for g, _ in _peldanos()][2:]
-    saltos = [b / a for a, b in pairwise(multiplos)]
-    for salto in saltos:
-        assert abs(salto - 1.35) < 0.002, f"salto de x{salto:.3f}, se esperaba x1,35"
+    avance = yaml.safe_load(CONFIG.read_text())["filters"]["curva_96"]["umbral"]
+    vt = 1073e6 - 793.1e6 * avance
+    precio = (30 * 1073e6 / vt) / vt
+    return precio * 1e9 * SOL_USD_REF
+
+
+def test_los_lejanos_caen_en_las_cifras_de_market_cap_pedidas() -> None:
+    """Los cuatro escalones lejanos apuntan a 150k, 200k, 300k y 400k.
+
+    CAMBIO DE IDEA DEL 24-SEP POR LA NOCHE: "que corra a 150, 200 mil, que no
+    se frene en los 40". Hasta entonces los lejanos eran una cadena
+    geometrica (cada uno un 35% mas caro que el anterior) que no miraba
+    ninguna cifra concreta; ahora son las cifras que se ven en la app.
+
+    OJO, Y ES EL MOTIVO DE QUE ESTE TEST EXISTA: en el yaml estan escritos
+    como MULTIPLOS del precio de compra, porque es lo unico que el bot sabe
+    mirar. Y el multiplo que corresponde a "150k" DEPENDE DE DONDE SE ENTRE:
+    al 93,5% de curva se compra a ~64,5k y 150k es un x2,33; al 91% se
+    compraria a ~57,4k y 150k seria un x2,61. O sea que mover la entrada
+    descoloca estos escalones sin tocarlos, y este test se pone rojo -- que
+    es exactamente lo que tiene que pasar.
+    """
+    mc = _mc_de_compra()
+    lejanos = [(1 + g) * mc for g, _ in _peldanos()[3:]]
+    for real, pedido in zip(lejanos, (150_000, 200_000, 300_000, 400_000), strict=True):
+        assert abs(real - pedido) / pedido < 0.02, (
+            f"un escalon cae en {real:,.0f} $ y se penso para {pedido:,.0f} $: "
+            f"si se ha movido la entrada, hay que rehacer los multiplos"
+        )
+    # Y el tercer peldano de cerca apunta a 100k, que es el primero de la serie.
+    assert abs((1 + _peldanos()[2][0]) * mc - 100_000) / 100_000 < 0.02
+
+
+def test_el_suelo_nunca_alcanza_al_peldano_que_acaba_de_cobrarse() -> None:
+    """EL FALLO DE AGOSTO, que ahora vigila su propio test.
+
+    Si dos peldanos quedan a menos de un `margen_stop_tras_tp` uno de otro,
+    el suelo que sube tras cobrar el primero cae ENCIMA del segundo y la
+    posicion se cierra sola en el instante de tocar su objetivo. Paso con el
+    margen al 12% y obligo a subir el TP2 de +40% a +50%.
+
+    Estaba metido dentro del test de la cadena geometrica --que daba un 35%
+    de separacion de regalo-- y al cambiar los lejanos a cifras de market cap
+    esa garantia desaparecio. Por eso se saca aparte: es una propiedad que
+    tiene que cumplirse siempre, venga la escalera de donde venga.
+    """
     margen = float(_trade()["margen_stop_tras_tp"])
-    assert min(saltos) > 1 + margen, (
-        "dos peldanos mas juntos que el margen: el suelo cerraria la posicion"
-    )
+    peldanos = _peldanos()
+    for (g_antes, _), (g_ahora, _) in pairwise(peldanos):
+        suelo = (1 + g_antes) * (1 + margen)
+        assert suelo < 1 + g_ahora, (
+            f"tras cobrar el peldano de x{1 + g_ahora:.3f} el suelo queda en "
+            f"x{suelo:.3f}, por encima: la posicion se cerraria sola"
+        )
 
 
 def test_no_quedan_escalones_de_market_cap() -> None:
@@ -173,7 +218,7 @@ def test_el_ganador_minimo_no_llega_a_cubrir_al_perdedor() -> None:
 
 
 def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
-    """24-sep (tarde, 3a version): 20% al +18%, 40% al +38% y 20% al +53%.
+    """24-sep (noche): 10% al +18%, 15% al +38% y 15% al +55,1% (=100k).
 
     Son los tres que se cobran mientras la moneda todavia se piensa en
     porcentajes. De ahi en adelante la escalera sigue, pero ya en multiplos.
@@ -189,8 +234,8 @@ def test_los_peldanos_de_cerca_son_los_pedidos() -> None:
     _t = _trade()
     _claves = {_t["take_profit_percentage"], _t["tp2_gain"], _t["tp3_gain"]}
     cerca = [(g, v) for g, v in _peldanos() if g in _claves]
-    assert cerca == [(0.18, 0.20), (0.38, 0.40), (0.53, 0.20)]
-    assert round(sum(v for _, v in cerca), 6) == 0.80
+    assert cerca == [(0.18, 0.10), (0.38, 0.15), (0.5513, 0.15)]
+    assert round(sum(v for _, v in cerca), 6) == 0.40
 
 
 def test_todos_los_peldanos_son_fraccion_de_la_compra_original() -> None:
