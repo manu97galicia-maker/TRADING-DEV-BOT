@@ -208,22 +208,26 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     inversion vuelve en el TERCERO (20% x 1,18 + 40% x 1,38 + 20% x 1,53 =
     109,4% de lo que se puso), y ese tercero cae dentro de la curva.
 
-    Y AL 92,5% DE CURVA EL TERCERO YA NO CABE. Quedan +47,0% hasta migrar y
-    el peldano esta en +53%: se pasa por 6 puntos. Cabia al 91,0%, donde
-    quedaban +57,5%, y el corte exacto esta en el 91,64% de curva.
+    Y AL 93,5% DE CURVA SOLO CABEN DOS, CON EL SEGUNDO AL BORDE. Quedan
+    +40,2% hasta migrar y el TP2 esta en +38%: entra por 2,2 puntos. El
+    tercero (+53%) se paso hace dos cambios, al subir por encima del 91,64%.
 
     LOS CORTES DE CADA PELDANO, que es lo que hay que mirar antes de tocar
     la entrada, y lo que este test deja fijado:
 
       TP1 (+18%)   deja de caber por encima del 96,96% de curva
-      TP2 (+38%)   deja de caber por encima del 93,83%
+      TP2 (+38%)   deja de caber por encima del 93,83%   <- a 0,33 puntos
       TP3 (+53%)   deja de caber por encima del 91,64%   <- ya pasado
 
-    CADA PELDANO QUE SE CAE SE LLEVA SU TROZO: el tercero vende el 20% de
-    la posicion, asi que la moneda que migra y se muere pasa de +38,4% a
-    +28,4% y los aciertos necesarios de 40% a 48%. Con el segundo seria
-    mucho peor -- vende el 40%-- y su corte esta a 1,3 puntos de curva de
-    donde se entra hoy.
+    LO QUE ESTA EN JUEGO EN ESOS 0,33 PUNTOS. El TP2 vende el 40% de la
+    posicion. Si se cae, dentro de la curva solo queda el TP1, que vende el
+    20%: la moneda que migra y se muere pasa de +28,4% a +7,6% y los
+    aciertos necesarios de 48% a 77%. No es un escalon mas de la misma
+    escalera -- es pasar de necesitar uno de cada dos a tres de cada cuatro.
+
+    POR ESO EL MARGEN ESTA FIJADO AQUI y no solo el numero de peldanos: si
+    la entrada se mueve un poco mas, este test salta antes de que el efecto
+    aparezca en las operaciones.
 
     POR ESO ESTE TEST FIJA CUANTOS PELDANOS CABEN, no si caben. Cualquier
     cambio en la entrada o en la escalera lo mueve y obliga a mirarlo. Si
@@ -257,7 +261,7 @@ def test_la_escalera_de_porcentaje_son_tres() -> None:
     # EL MARGEN DEL SEGUNDO, que es lo fragil. Se deja escrito el numero para
     # que se vea de un vistazo lo cerca que esta del corte.
     margen_tp2 = recorrido - dentro[-1].gain
-    assert 0.07 < margen_tp2 < 0.12, (
+    assert 0.01 < margen_tp2 < 0.04, (
         f"el TP2 entra por {margen_tp2 * 100:.1f} puntos; si esto cambia mucho, "
         f"la tabla de margenes del yaml esta vieja"
     )

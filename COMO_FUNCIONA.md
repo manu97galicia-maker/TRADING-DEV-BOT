@@ -19,10 +19,10 @@ casi toda la curva y están cerca de conseguirlo, porque para llegar ahí han
 tenido que pasar por mucha gente.
 
 ```
-nace ────────────────────────────────▶ 92,5% ───▶ migra
-                                         ▲
-                                    aquí compra
-                                (le faltan ~20 SOL)
+nace ─────────────────────────────────▶ 93,5% ──▶ migra
+                                          ▲
+                                     aquí compra
+                                 (le faltan ~18 SOL)
 ```
 
 Son pocas al día: la mayoría de las monedas mueren mucho antes de llegar. Que
@@ -36,7 +36,7 @@ Todo esto, sin saltarse nada:
 
 | | |
 |---|---|
-| **Punto de la curva** | entre el 92,5% y el 99,5% (pasado eso ya está migrando) |
+| **Punto de la curva** | entre el 93,5% y el 99,5% (pasado eso ya está migrando) |
 | **Gente de verdad** | mínimo **30 carteras distintas** la han comprado |
 | **Sin bundle** | como mucho 3 carteras en su bloque de nacimiento, y máximo 2 SOL |
 | **Sin concentración** | los mayores tenedores no pueden tener más del 50% |
@@ -102,29 +102,35 @@ El primer peldaño es el más importante y **no por lo que cobra**. En cuanto se
 toca el +18%, el suelo sube a +5% y la operación ya no puede acabar en
 pérdida. Cuanto más bajo, más monedas llegan a activar esa protección.
 
-**Entrando al 92,5% solo caben los dos primeros.** Quedan +47,0% hasta migrar
-y el tercer peldaño está en +53%, así que ese solo cobra si la moneda migra
-**y sigue subiendo** ya fuera de pump.fun. Se recupera la inversión al 79%
-dentro de la curva, no al 109%.
+**Entrando al 93,5% solo caben los dos primeros.** Quedan +40,2% hasta migrar
+y el tercer peldaño está en +53%, así que ese solo cobra si la moneda migra **y
+sigue subiendo** ya fuera de pump.fun.
 
 ### Hasta dónde puede subir la entrada
 
-Esta es la tabla que hay que mirar **antes** de tocar el punto de entrada.
-Cada peldaño deja de caber a partir de cierta altura de curva:
+Esta es la tabla más importante de la nota, y hay que mirarla **antes** de
+tocar el punto de entrada. Cada peldaño deja de caber a partir de cierta
+altura de curva:
 
 | peldaño | deja de caber por encima de | vende |
 |---|---|---|
 | +18% | 96,96% | 20% |
-| +38% | 93,83% | 40% |
-| +53% | **91,64%** | 20% |
+| **+38%** | **93,83%** | **40%** |
+| +53% | 91,64% | 20% |
 
-Entrando al **92,5%** ya se ha pasado el tercero. Y el segundo —que se lleva
-el 40% de la posición— tiene su corte a solo **1,3 puntos** de curva por
-encima de donde se compra hoy.
+Se compra al **93,5%**. El tercero ya se pasó. Y el segundo —el que vende el
+40% de la posición— tiene su corte a **0,33 puntos** de ahí.
 
-> Cada peldaño que se cae se lleva su trozo. Perder el tercero baja la moneda
-> que migra y se muere de +38,4% a **+28,4%**, y sube los aciertos necesarios
-> de 40% a **48%**. Perder el segundo sería mucho peor.
+> **Ese tercio de punto vale mucho.** Si el segundo peldaño se cae, dentro de
+> la curva solo queda el primero:
+>
+> | dentro de la curva | migra y muere | aciertos para no perder |
+> |---|---|---|
+> | +18% y +38% (hoy) | +28,4% | 48% |
+> | solo +18% | +7,6% | **77%** |
+>
+> No es un escalón más de la misma escalera: es pasar de necesitar **uno de
+> cada dos** aciertos a **tres de cada cuatro**.
 
 ### Y a partir de ahí, cada venta un 35% más cara que la anterior
 
