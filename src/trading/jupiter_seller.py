@@ -139,6 +139,19 @@ async def _simular(s: aiohttp.ClientSession, rpc: str, raw: bytes) -> str | None
     return json.dumps(err) if err else None
 
 
+def _sol_de(quote: dict) -> float:
+    """Los SOL que la cotizacion dice que entran, o 0 si no se puede leer.
+
+    Cero significa "no se sabe", y quien llama lo trata como tal: se queda
+    con el precio de referencia en vez de apuntar un cobro de cero, que
+    falsearia el P&L en la direccion contraria.
+    """
+    try:
+        return int(quote.get("outAmount") or 0) / 1e9
+    except (TypeError, ValueError, AttributeError):
+        return 0.0
+
+
 async def jupiter_sell(
     keypair: object,
     mint: str,
@@ -146,7 +159,7 @@ async def jupiter_sell(
     decimals: int = 6,
     slippage_bps: int = 2500,
     rpc: str | None = None,
-) -> tuple[bool, str | None, str | None]:
+) -> tuple[bool, str | None, str | None, float]:
     """Sell ``ui_amount`` of ``mint`` to SOL via Jupiter.
 
     Tries the full amount first and falls back to smaller slices when the route
@@ -163,16 +176,26 @@ async def jupiter_sell(
         rpc: RPC endpoint (defaults to SOLANA_NODE_RPC_ENDPOINT).
 
     Returns:
-        ``(ok, signature, error)``. On success the signature is confirmed to
+        ``(ok, signature, error, sol_out)``. ``sol_out`` son los SOL que la
+        cotizacion de Jupiter dice que entran en la wallet -- NO el precio de
+        referencia de quien llama. Se devuelve porque sin el, el registro de
+        operaciones apuntaba el precio de ANTES de vender, que en un desplome
+        es mucho mejor que el real: el 24-sep una venta ejecutada a -92% quedo
+        apuntada como -60%, y con esos numeros la estrategia parece mejor de
+        lo que es. Es la cotizacion, no la liquidacion definitiva, asi que
+        puede quedarse corta por el slippage -- pero se equivoca por
+        muchisimo menos.
+
+        On success the signature is confirmed to
         have simulated cleanly; the caller should still treat a partial sale as
         possible, since a fallback slice sells less than requested.
     """
     rpc = rpc or os.getenv("SOLANA_NODE_RPC_ENDPOINT")
     if not rpc:
-        return False, None, "RPC no configurado"
+        return False, None, "RPC no configurado", 0.0
     total = int(ui_amount * (10**decimals))
     if total <= 0:
-        return False, None, "cantidad cero"
+        return False, None, "cantidad cero", 0.0
 
     motivos: list[str] = []
     try:
@@ -222,13 +245,17 @@ async def jupiter_sell(
                         "Jupiter: vendido solo el %s de %s (%s)",
                         etiqueta, mint, "; ".join(motivos),
                     )
-                return True, str(sig), None
+                # LOS SOL QUE ENTRAN, segun la cotizacion recien firmada.
+                # Sin esto quien llama apuntaba el precio de ANTES de vender,
+                # y el registro salia optimista justo en las ventas que peor
+                # van -- que son las unicas que hay que mirar.
+                return True, str(sig), None, _sol_de(quote)
     except (aiohttp.ClientError, TimeoutError) as exc:
-        return False, None, f"Jupiter API: {exc}"
+        return False, None, f"Jupiter API: {exc}", 0.0
     except Exception as exc:  # noqa: BLE001 -- surface any signing/send failure
-        return False, None, f"firma/envio: {exc}"
+        return False, None, f"firma/envio: {exc}", 0.0
 
-    return False, None, "sin variante viable -> " + "; ".join(motivos)
+    return False, None, "sin variante viable -> " + "; ".join(motivos), 0.0
 
 
 async def jupiter_buy(

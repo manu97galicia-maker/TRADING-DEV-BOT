@@ -5631,19 +5631,38 @@ class UniversalTrader:
         try:
             from trading.jupiter_seller import jupiter_sell
 
-            ok, sig, err = await jupiter_sell(
+            ok, sig, err, _sol_out = await jupiter_sell(
                 self.wallet.keypair, str(token_info.mint), amount,
                 slippage_bps=int(self._slippage_para(reason) * 10000),
             )
         except Exception as exc:  # noqa: BLE001
-            ok, sig, err = False, None, str(exc)
+            ok, sig, err, _sol_out = False, None, str(exc), 0.0
         if ok:
             self._fallos_venta.pop(mint, None)
             self._bloqueada_hasta.pop(mint, None)
-            logger.info("Sold %s via Jupiter (%s) tx=%s", token_info.symbol, reason, sig)
+            # EL PRECIO QUE SE APUNTA ES EL DE LA VENTA, no el de antes de
+            # venderla, y esto costo un diagnostico entero el 24-sep.
+            #
+            # `ref_price` es el ultimo precio VISTO, o sea el de la vuelta
+            # anterior del vigilante. En una venta normal se parecen; en un
+            # desplome no tienen nada que ver. FUCKETHAN se ejecuto a -92% y
+            # quedo apuntada como -60%, asi que `porque_cerro` y todas las
+            # mediciones daban una estrategia mejor de la que hay -- y encima
+            # el error era siempre a favor, que es como no enterarse nunca.
+            #
+            # `_sol_out` es lo que la cotizacion de Jupiter dice que entra. No
+            # es la liquidacion definitiva --el slippage puede recortarla--
+            # pero se equivoca por muchisimo menos. Si viene a cero (una
+            # version vieja, o una cotizacion ilegible) se usa el de antes:
+            # un numero flojo es mejor que ninguno.
+            _precio = (_sol_out / amount) if (_sol_out > 0 and amount > 0) else ref_price
+            logger.info(
+                "Sold %s via Jupiter (%s) @ %.8f SOL tx=%s",
+                token_info.symbol, reason, _precio, sig,
+            )
             self._anota_firma(str(token_info.mint), sig)
-            self._log_trade("sell", token_info, ref_price, amount, sig, reason)
-            self._ultimo_cobro = amount * ref_price
+            self._log_trade("sell", token_info, _precio, amount, sig, reason)
+            self._ultimo_cobro = amount * _precio
             return True
 
         fallos = self._fallos_venta.get(mint, 0) + 1

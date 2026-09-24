@@ -134,11 +134,15 @@ class ManualTrader:
         # Fallback: migrated token -> sell via Jupiter (any DEX).
         from trading.jupiter_seller import jupiter_sell
 
-        ok, sig, err = await jupiter_sell(
+        ok, sig, err, _sol_out = await jupiter_sell(
             self._wallet.keypair, str(ti.mint), amount,
             slippage_bps=int(DEFAULT_SLIPPAGE * 10000),
         )
         if ok:
-            _log_trade("sell", str(ti.mint), ti.symbol, price, amount, sig)
+            # El precio de la venta, no el de antes de venderla: `price` es el
+            # ultimo visto y en un desplome no se parecen. Ver el comentario
+            # largo en `universal_trader._sell_amount`.
+            _p = (_sol_out / amount) if (_sol_out > 0 and amount > 0) else price
+            _log_trade("sell", str(ti.mint), ti.symbol, _p, amount, sig)
             return {"ok": True, "signature": sig, "sold": amount, "pct": pct, "via": "jupiter"}
         return {"ok": False, "error": f"curva: {res.error_message} · jupiter: {err}"}
