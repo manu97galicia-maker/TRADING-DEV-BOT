@@ -19,10 +19,10 @@ casi toda la curva y están cerca de conseguirlo, porque para llegar ahí han
 tenido que pasar por mucha gente.
 
 ```
-nace ──────────────────────────────▶ 87,5% ────────▶ migra
-                                       ▲
-                                  aquí compra
-                             (le faltan ~30 SOL)
+nace ─────────────────────────────▶ 86,0% ──────────▶ migra
+                                      ▲
+                                 aquí compra
+                            (le faltan ~33 SOL)
 ```
 
 Son pocas al día: la mayoría de las monedas mueren mucho antes de llegar. Que
@@ -36,7 +36,7 @@ Todo esto, sin saltarse nada:
 
 | | |
 |---|---|
-| **Punto de la curva** | entre el 87,5% y el 99,5% (pasado eso ya está migrando) |
+| **Punto de la curva** | entre el 86,0% y el 99,5% (pasado eso ya está migrando) |
 | **Gente de verdad** | mínimo **30 carteras distintas** la han comprado |
 | **Sin bundle** | como mucho 3 carteras en su bloque de nacimiento, y máximo 2 SOL |
 | **Sin concentración** | los mayores tenedores no pueden tener más del 50% |
