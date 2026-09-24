@@ -608,6 +608,46 @@ filters:
   # feo: una sola cartera con una septima parte del supply.
   max_holder_pct: 0
   min_holders: 0
+  # ---- FRENOS CONTRA RUGS, COMUNES A TODAS LAS FUENTES -------------------
+  #
+  # POR QUE ESTAN AQUI ARRIBA Y NO DENTRO DE UNA FUENTE. Estas dos
+  # protecciones se pidieron el 23-sep y se pusieron dentro del bloque
+  # `holders`. Cuando ese mismo dia la estrategia paso a la curva, `holders`
+  # se apago... y las protecciones se apagaron con el, sin que nada lo dijera.
+  # La curva y Telegram llevaban desde entonces comprando sin ellas.
+  #
+  # LO QUE COSTO: FUCKETHAN, el 24-sep a las 05:18. CINCO titulares, comprada
+  # en la punta de una vela vertical que fue de 20k a 43k de market cap, y
+  # cerrada a -91,9% cuarenta segundos despues. 45,6 $ de una cartera de 76.
+  # Un pump and dump de manual, y los dos frenos que lo habrian parado
+  # estaban escritos... en la estrategia apagada.
+  #
+  # LA REGLA QUE SALE DE AHI: un freno contra rugs no puede vivir en una
+  # fuente. Las fuentes deciden QUE mirar; esto decide que no se compra pase
+  # lo que pase y venga de donde venga.
+
+  # NO SE ENTRA DETRAS DE UNA VELA VERDE ENORME (23-sep, pedido: "evita
+  # comprar cuando el grafico de un segundo es una vela verde enorme").
+  # 1.0 = se descarta si ha DOBLADO en los ultimos 10 segundos. Justo cuando
+  # una moneda acaba de doblar, la presion compradora parece inmejorable --
+  # y eso YA ha pasado; lo que queda por delante es la vuelta.
+  # 0 = no se mira.
+  max_subida_global: 1.0
+  subida_seg_global: 10.0
+
+  # POCA GENTE DISTINTA = no hay demanda, hay un grupo empujando. Cuenta las
+  # carteras compradoras vistas en el stream, la misma cuenta que usa la
+  # curva, para que las dos puertas midan LO MISMO.
+  #
+  # VA MAS BAJO QUE EL DE LA CURVA (30) a proposito: este es un suelo minimo
+  # para TODAS las fuentes, incluida Telegram, no el corte fino de una
+  # estrategia. Con 12 ya no lo mueve un bundle de cuatro carteras, y no
+  # aprieta tanto como para dejar mudo al bot mientras el stream se llena
+  # despues de cada reinicio.
+  #
+  # OJO CON EL REINICIO: cuenta lo visto DESDE QUE ARRANCO el bot, asi que
+  # recien reiniciado descarta de mas. Es el lado seguro del error.
+  min_compradores_global: 12
   min_curve_sol: 0
   min_entry_mc: 0
   max_entry_mc: 0

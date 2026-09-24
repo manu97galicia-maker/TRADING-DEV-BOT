@@ -33,6 +33,7 @@ from core.wallet import Wallet
 from core.wallet_pool import WalletPool
 from dexscreener import DexScreenerFilter
 from interfaces.core import Platform, TokenInfo
+from monitoring import volumen
 from monitoring.dev_blocklist import any_dev_blocked
 from monitoring.listener_factory import ListenerFactory
 from monitoring.volumen import precio_en_vivo
@@ -371,6 +372,9 @@ class UniversalTrader:
         # sumar al recuento del fichero: este constructor ya tiene 19
         # iguales y siempre se llama con nombre desde bot_runner.
         pausar_compras: bool = False,  # noqa: FBT001, FBT002
+        max_subida_global: float = 0.0,
+        subida_seg_global: float = 10.0,
+        min_compradores_global: int = 0,
         resumen_descartes_seg: float = 300.0,
         precio_stream_seg: float = 0.0,
         tick_stream_seg: float = 0.25,
@@ -883,6 +887,13 @@ class UniversalTrader:
         #: su stop loss y su escalera -- parar el bot entero seria lo que las
         #: dejaria a ciegas.
         self.pausar_compras = bool(pausar_compras)
+        #: FRENOS CONTRA RUGS COMUNES A TODAS LAS FUENTES. Ver
+        #: `_pasa_los_frenos_de_rug`: viven aqui y no en cada fuente porque el
+        #: 24-sep se descubrio que al cambiar de estrategia se quedaron en la
+        #: que se apagaba, y la curva y Telegram compraron sin ellos.
+        self.max_subida_global = max(0.0, float(max_subida_global or 0))
+        self.subida_seg_global = max(1.0, float(subida_seg_global or 10))
+        self.min_compradores_global = max(0, int(min_compradores_global or 0))
         #: Cada cuanto se manda el parte de descartes. 0 lo apaga.
         self.resumen_descartes_seg = float(resumen_descartes_seg or 0)
         self.precio_stream_seg = float(precio_stream_seg or 0)
@@ -3489,6 +3500,68 @@ class UniversalTrader:
         self._descartes.clear()
         self._compras_del_resumen = 0
 
+    async def _pasa_los_frenos_de_rug(self, token_info: TokenInfo) -> bool:
+        """False si la moneda cae por uno de los frenos comunes contra rugs.
+
+        Son dos, y los dos se pidieron el 23-sep para la estrategia de
+        titulares. Al cambiar de estrategia se quedaron alli y dejaron de
+        aplicarse; ahora valen para TODAS las fuentes, incluida Telegram, que
+        hasta hoy no miraba absolutamente nada.
+
+        NUNCA LEVANTA. Un fallo aqui no puede impedir una compra buena ni
+        dejar pasar una mala en silencio: ante la duda se compra, que es el
+        comportamiento de antes, y queda escrito en el log.
+        """
+        mint = str(token_info.mint)
+
+        # 1. DETRAS DE UNA VELA VERDE ENORME no se entra. Lo pidio Manu el
+        #    23-sep: "evita comprar cuando el grafico de un segundo es una
+        #    vela verde enorme". Cuando una moneda acaba de doblar en
+        #    segundos, la presion compradora parece inmejorable justo en el
+        #    peor momento para entrar -- eso ya lo ha pasado, y lo que queda
+        #    por delante es la vuelta.
+        if self.max_subida_global > 0:
+            try:
+                _sub = volumen.subida(mint, self.subida_seg_global)
+            except Exception:  # noqa: BLE001
+                _sub = 0.0
+            if _sub > self.max_subida_global:
+                logger.info(
+                    "Evitado %s: +%.0f%% en %.0fs, se compraria detras de una "
+                    "vela verde enorme",
+                    token_info.symbol, _sub * 100, self.subida_seg_global,
+                )
+                self._descarta(token_info, "detrás de una vela verde")
+                return False
+
+        # 2. POCA GENTE DISTINTA. Una moneda que ha movido su curva con cuatro
+        #    carteras no tiene demanda: tiene un grupo empujando para
+        #    soltartela. La curva ya lo miraba por su cuenta; Telegram no.
+        if self.min_compradores_global > 0:
+            try:
+                # La misma cuenta que usa la curva (`_poca_gente`), para que
+                # las dos puertas midan LO MISMO. Dos formas de contar
+                # compradores daria dos veredictos distintos sobre la misma
+                # moneda segun por donde entrara, que es justo el lio que se
+                # esta arreglando.
+                _gente = int(
+                    volumen.metricas_segunda_ola(mint).get("compradores", 0) or 0
+                )
+            except Exception:  # noqa: BLE001
+                _gente = -1
+            # -1 = no se pudo contar. NO se descarta por eso: quedarse sin
+            # dato no es lo mismo que tener un dato malo, y bloquear a ciegas
+            # apagaria el bot entero el dia que falle el contador.
+            if 0 <= _gente < self.min_compradores_global:
+                logger.info(
+                    "Evitado %s: solo %d compradores distintos (hacen falta %d)",
+                    token_info.symbol, _gente, self.min_compradores_global,
+                )
+                self._descarta(token_info, "pocos compradores distintos")
+                return False
+
+        return True
+
     async def _handle_token(self, token_info: TokenInfo) -> None:
         """Handle a new token creation event."""
         try:
@@ -3504,6 +3577,28 @@ class UniversalTrader:
                 logger.info(
                     f"Evitado {token_info.symbol}: ya comprada antes (no repetir)"
                 )
+                return
+
+            # ---- FRENOS CONTRA RUGS, PARA TODAS LAS FUENTES -----------------
+            #
+            # POR QUE ESTAN AQUI Y NO EN CADA FUENTE, que es el fallo que
+            # arreglan. `_handle_token` es la unica puerta por la que pasan
+            # TODAS las compras; cada fuente tiene ademas sus propios filtros.
+            # Cuando el 23-sep la estrategia paso de titulares a la curva, dos
+            # protecciones que se habian pedido expresamente se quedaron en el
+            # bloque de titulares, que quedo apagado -- y la curva y Telegram
+            # empezaron a comprar sin ellas sin que nada lo dijera.
+            #
+            # LO QUE COSTO: FUCKETHAN, el 24-sep a las 05:18. Cinco titulares,
+            # comprada en la punta de una vela vertical de 20k a 43k de market
+            # cap, cerrada a -91,9% cuarenta segundos despues. Se llevo el 60%
+            # de la cartera. Era exactamente lo que estos dos frenos existen
+            # para evitar, y estaban puestos... en la estrategia apagada.
+            #
+            # La regla que sale de ahi: un freno contra rugs no puede vivir en
+            # una fuente. Las fuentes deciden QUE mirar; esto decide que no se
+            # compra pase lo que pase.
+            if not await self._pasa_los_frenos_de_rug(token_info):
                 return
 
             _dev_user = str(token_info.user)
