@@ -64,15 +64,15 @@ def _sol(fixed: int, unidades: int) -> float:
 
 
 def test_comprar_cuesta_lo_pedido() -> None:
-    """~0,01 SOL (24-sep, pedido: "sube el gas de las compras para que sea
-    mas rapido"). Historial: ~0,001 (19-sep) -> ~0,01.
+    """~0,005 SOL (24-sep). Historial: ~0,001 (19-sep) -> ~0,01 -> ~0,005.
 
-    Se pidio 0,03 y se bajo a 0,01 al ver la cuenta: a 0,03 el gas se llevaba
-    el 20,6% de la primera compra y el 40,3% de la quinta.
+    Se pidio 0,03, se bajo a 0,01 al ver que el gas se llevaba el 20,6% de la
+    primera compra, y de 0,01 a 0,005 al ver que a ese precio el primer
+    peldano no cubria ni el gas de entrar y salir.
     """
     c = _cfg()
     coste = _sol(c["priority_fees"]["fixed_amount_compra"], c["compute_units"]["buy"])
-    assert 0.009 < coste < 0.011, f"la compra cuesta {coste:.5f} SOL"
+    assert 0.004 < coste < 0.006, f"la compra cuesta {coste:.5f} SOL"
 
 
 def test_el_tope_no_recorta_la_comision_en_silencio() -> None:
