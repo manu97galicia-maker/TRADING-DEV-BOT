@@ -35,8 +35,8 @@ from modelo_tamano import trade as _trade
 
 
 def test_el_modo_activo_es_el_porcentaje_del_saldo_libre() -> None:
-    """80% de la CARTERA ENTERA por operacion (24-sep, pedido: "compra un 80%
-    del SOL balance").
+    """50% de la CARTERA ENTERA por operacion (24-sep, pedido: "pon 50 por
+    ciento"). Vuelve al numero que estuvo puesto dos horas antes.
 
     LA BASE VUELVE A "CARTERA" y es el cambio que mas pesa de los dos: no es
     solo que el porcentaje suba de 20 a 25, es que se calcula sobre otra
@@ -46,14 +46,14 @@ def test_el_modo_activo_es_el_porcentaje_del_saldo_libre() -> None:
 
     Historial del tamano: 0,12 SOL fijo -> 25% -> 0,04 SOL fijo -> 15% -> 30%
     del saldo libre -> 30% de la cartera -> 10 $ fijos -> 25% de la cartera
-    -> 15% libre -> 20% libre -> 25% cartera -> 30% -> 50% -> 70% -> 80%.
+    -> 15% libre -> 20% libre -> 25% -> 30% -> 50% -> 70% -> 80% -> 50%.
 
     Y la regla de siempre: manda UNO de los tres. Dos con numero es un valor
     que parece decidir y no decide -- justo la clase de cosa que hace buscar
     el fallo donde no esta.
     """
     t = _trade()
-    assert t["fraccion_saldo"] == 0.80
+    assert t["fraccion_saldo"] == 0.50
     # LA BASE ES PARTE DEL MODO. "15%" no dice nada sin ella: el 15% del
     # saldo libre y el 15% de la cartera son numeros distintos y menguan
     # distinto.

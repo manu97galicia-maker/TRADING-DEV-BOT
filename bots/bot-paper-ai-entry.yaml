@@ -623,9 +623,14 @@ trade:
   # 0,30 · 0,21 · 0,15 · 0,10 · 0,07. La quinta valia la cuarta parte que la
   # primera sin que nadie lo pidiera. Sobre la cartera salen IGUALES.
   #
-  # 80% DE LA CARTERA (24-sep, pedido: "compra un 80% del SOL balance").
-  # Historial: 30% cartera -> 10 $ fijos -> 25% cartera -> 15% libre -> 20%
-  # libre -> 25% cartera -> 30% -> 50% -> 70% -> 80% cartera.
+  # 50% DE LA CARTERA (24-sep, pedido: "pon 50 por ciento"). Se vuelve al
+  # numero que estuvo puesto hace dos horas. Historial: 30% cartera -> 10 $
+  # fijos -> 25% cartera -> 15% libre -> 20% libre -> 25% -> 30% -> 50% ->
+  # 70% -> 80% -> 50% cartera.
+  #
+  # QUINTO CAMBIO DE ESTE NUMERO EN UNA TARDE, y vuelve a un sitio donde ya
+  # estuvo. Ninguna de las cinco configuraciones ha operado: el bot lleva sin
+  # comprar desde antes de la primera.
   #
   # CAMBIAN LAS DOS COSAS A LA VEZ, y la base pesa mas que el numero. Lo dice
   # `fraccion_base`, aqui abajo, que vuelve a "cartera": la base ya no baja
@@ -638,23 +643,25 @@ trade:
   #   30% cartera          0,300 0,299 0,298 0,048         0,945      95%
   #   50% cartera          0,500 0,350 0,085 0,019         0,955      95%
   #   70% cartera          0,700 0,200 0,048               0,948      95%
-  #   80% cartera (hoy)    0,800 0,125 0,029               0,954      95%
+  #   80% cartera          0,800 0,125 0,029               0,954      95%
+  #   50% cartera (hoy)    0,500 0,350 0,085 0,019         0,955      95%
   #
   # EL RIESGO TOTAL NO SUBE, Y ES LO PRIMERO QUE HAY QUE ENTENDER: desde el
   # 25% para arriba se compromete SIEMPRE el mismo ~95% del saldo, porque el
   # tope no lo pone el porcentaje sino el saldo libre. Lo que cambia es COMO
   # SE REPARTE.
   #
-  # LA PRIMERA COMPRA SE LLEVA EL 80% DE LA CARTERA. Y no es la mejor moneda
+  # LA PRIMERA COMPRA SE LLEVA LA MITAD DE LA CARTERA. Y no es la mejor moneda
   # del dia: es LA PRIMERA que pasa los filtros. El bot no elige entre
   # candidatas, compra la que llega. Con el stop en 26%, esa primera
-  # posicion arriesga ella sola el 28,0% de todo el dinero -- y eso con el
-  # stop en 35%, no en 26%. Con el 50% y el stop viejo eran el 13,0%; con el
-  # 20% del saldo libre, un 5,0%. Se ha multiplicado por cinco en una tarde.
+  # posicion arriesga ella sola el 17,5% de todo el dinero. Ojo a la cuenta:
+  # el porcentaje vuelve a ser el de hace dos horas pero el riesgo NO, porque
+  # el stop paso de 26% a 35% por el camino. Mismo 50%, 17,5% en vez de
+  # 13,0%. Con el 20% del saldo libre eran un 5,0%.
   #
-  # LA SEGUNDA SE LLEVA 0,125 --lo que quedaba libre-- y la tercera 0,029,
-  # que son ~6,4 $ de los que la comision de prioridad se lleva 1,12 $: el
-  # 18% antes de que la moneda se mueva.
+  # LA SEGUNDA SE LLEVA 0,350 --lo que quedaba libre-- y las otras dos son
+  # restos: 0,085 y 0,019 SOL. Esa ultima son ~4,2 $ de los que la comision
+  # de prioridad se lleva 1,12 $: el 27% antes de que la moneda se mueva.
   #
   # DE CINCO PLAZAS QUEDA UNA COMPRA DE VERDAD, igual que con el 50%. La
   # cuenta es `0,95 / fraccion`: con el 25% y el 30% salian tres, del 50% en
@@ -683,7 +690,7 @@ trade:
   # LAS DOS PALANCAS SI ESO MOLESTA: `compra_minima_sol`, que se salta las
   # compras que no llegan a un minimo, o bajar `max_posiciones`. Ninguna se
   # toca aqui porque no se pidieron.
-  fraccion_saldo: 0.80
+  fraccion_saldo: 0.50
   # SOBRE QUE SE CALCULA EL PORCENTAJE. Es una clave y no una decision
   # escrita en el codigo porque ha ido y venido tres veces en dos dias, y
   # cada vuelta era un commit tocando el camino de compra.
