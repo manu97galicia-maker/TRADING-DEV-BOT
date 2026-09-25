@@ -48,18 +48,25 @@ def test_con_el_stop_entero_no_queda_nada_que_retener() -> None:
     assert "keep = 0.0 if self.vender_todo_en_stop else original_qty * moonbag" in texto
 
 
-def test_el_moonbag_vuelve_a_existir_y_es_del_10_por_ciento() -> None:
-    """YA NO HAY MOONBAG, y este test pasa a vigilar que siga sin haberlo.
+def test_no_queda_ningun_resto_sin_dueno() -> None:
+    """TODO LO COMPRADO TIENE UN ESCALON QUE LO VENDE (25-sep).
 
-    Hasta la noche del 24-sep la escalera dejaba un resto --primero un 2%,
-    luego un 3%-- que el bot no vendia nunca y que Manu vendia a mano. Al
-    quedarse la configuracion en UN SOLO take profit que se lleva el 100%,
-    ese resto desaparece.
+    Historial de este test, que ha ido y venido con la escalera: vigilaba un
+    resto del 2%, luego del 3%, luego que NO hubiera ninguno (take profit
+    unico al 100%), luego que fuera del 10% (escalera de dos peldanos). Ahora
+    vuelve a cero, pero por otro motivo: los tres peldanos de porcentaje
+    venden el 85% y los cuatro escalones de market cap reparten el 15%
+    restante hasta 80k.
 
     POR QUE IMPORTA QUE UN TEST LO MIRE: un resto sin dueno es lo peor de los
     dos mundos. Ni lo vende el bot ni nadie sabe que esta ahi, y ocupa la
-    cuenta de token --y su renta-- hasta que alguien la cierra a mano. Si
-    alguien baja el take profit por debajo del 100% sin pensarlo, esto salta.
+    cuenta de token --y su renta-- hasta que alguien la cierra a mano.
+
+    OJO A LO QUE ESTE TEST NO DICE: que la suma de vender cubra el 100% no
+    garantiza que se venda el 100% en cada moneda. Los escalones de market
+    cap solo se cobran si el market cap llega, y con SOL por debajo de 195 $
+    los 80k caen fuera de la curva (esta calculado en el yaml). Esto fija la
+    CONFIGURACION, no el resultado.
 
     Se suma CON `.get` lo que haya: las claves de los peldanos que ya no
     existen darian KeyError, que es un rojo que dice "falta una clave" en vez
@@ -72,9 +79,9 @@ def test_el_moonbag_vuelve_a_existir_y_es_del_10_por_ciento() -> None:
         + sum(e["sell"] for e in t.get("tp_extra") or [])
         + sum(d["sell"] for d in t.get("mc_take_profit_tiers") or [])
     )
-    assert round(1 - vendido, 6) == 0.10, (
-        f"el moonbag tiene que ser el 10% que sobra de 60 + 30, y sobra un "
-        f"{(1 - vendido) * 100:.1f}%"
+    assert round(1 - vendido, 6) == 0.0, (
+        f"todo lo comprado tiene que tener un escalon que lo venda, y sobra "
+        f"un {(1 - vendido) * 100:.1f}% sin dueno"
     )
 
 

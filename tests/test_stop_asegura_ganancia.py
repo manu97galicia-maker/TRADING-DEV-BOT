@@ -71,19 +71,24 @@ def test_el_tp1_de_la_config_vende_y_asegura() -> None:
     """El primer peldano hace DOS cosas, y la segunda es la que importa.
 
     Historial: del 19 al 23-sep no vendia nada, solo subia el suelo; el
-    23-sep paso a +30% cobrando un 20%; el 24-sep a +15%/20% y luego a
-    +25%/15%.
+    23-sep paso a +30% cobrando un 20%; el 24-sep a +15%/20%, luego a
+    +25%/15%, luego a +30%/60%; el 25-sep a +25% cobrando un 20%.
 
     LO QUE NO CAMBIA EN NINGUNA VERSION: en cuanto se toca, el suelo sube a
     compra +5% y la operacion ya no puede acabar en perdida. Ese es el
     trabajo principal del primer peldano; lo que cobra es secundario.
 
+    Y AHORA SE NOTA MAS QUE NUNCA: vendiendo solo el 20%, una moneda que toca
+    el +25% y se da la vuelta deja +9,0% en vez del +20,0% que dejaba
+    cobrando el 60%. El peldano sigue haciendo su trabajo --convertir una
+    perdedora en ganadora pequena-- pero la ganancia pequena es mas pequena.
+
     Los dos numeros salen del yaml a proposito: ya paso que un test fijara el
     peldano a mano y se quedara verde midiendo el de dos versiones atras.
     """
     t = _trade()
-    assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 0.60
-    assert _tiers()[0].gain == t["take_profit_percentage"] == 0.30
+    assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 0.20
+    assert _tiers()[0].gain == t["take_profit_percentage"] == 0.25
 
 
 # ------------------------------------------------- el suelo asegura ganancia
@@ -169,27 +174,40 @@ def test_el_colchon_mas_apretado_esta_anotado() -> None:
 # ----------------------------------------------------- la escalera completa
 
 
-def test_dos_peldanos_y_un_moonbag_de_lo_que_sobra() -> None:
-    """LA ESCALERA DE LA NOCHE DEL 24-SEP: +30% vende 60%, +60% vende 30%,
-    y el 10% que sobra se queda corriendo ("lo que sobre").
+def test_tres_peldanos_y_una_cola_de_market_cap() -> None:
+    """LA ESCALERA DEL 25-SEP: +25% vende 20%, +60% vende 40%, +100% vende
+    25%, y el 15% que sobra lo reparten cuatro escalones de market cap hasta
+    80k ("el restante lo repartes hasta los 80k").
 
-    ESTE TEST HA CAMBIADO DE FORMA TRES VECES HOY, con la escalera: sumaba
-    dos escaleras (porcentaje + market cap) para llegar al 97%; luego exigia
-    un solo peldano vendiendo el 100%; ahora dos y un resto. Se reescribe
-    cada vez en vez de aflojarse, porque lo que fija --cuanto se vende y
-    cuanto sobra-- es justo lo que no puede quedar a medias.
+    ESTE TEST HA CAMBIADO DE FORMA CUATRO VECES, con la escalera: sumaba dos
+    escaleras (porcentaje + market cap) para llegar al 97%; luego exigia un
+    solo peldano vendiendo el 100%; luego dos y un resto de 10%; ahora tres y
+    una cola. Se reescribe cada vez en vez de aflojarse, porque lo que fija
+    --cuanto se vende y cuanto sobra-- es justo lo que no puede quedar a
+    medias.
 
-    LO QUE IMPORTA DEL MOONBAG: mientras exista, la cuenta de token sigue
-    abierta con su renta dentro y el bot sigue vigilando una posicion casi
-    vacia. Es una decision tomada, no un descuido.
+    LA DIFERENCIA CON LA VERSION ANTERIOR: entonces el resto era un moonbag
+    que no se vendia nunca; ahora esta todo asignado a la cola de market cap,
+    asi que `moonbag_fraction` sigue dando 15% --solo mira los peldanos de
+    porcentaje-- pero el trader le resta los escalones de market cap y queda
+    en cero. Esa resta esta en `universal_trader.py` y existe por WIW, que el
+    18-ago dejo media posicion sin vender al saltar el stop.
     """
     tiers = _tiers()
-    assert len(tiers) == 2, f"dos peldanos: {tiers}"
-    assert [t.gain for t in tiers] == [0.30, 0.60]
-    assert [t.sell for t in tiers] == [0.60, 0.30]
-    assert abs(moonbag_fraction(tiers) - 0.10) < 1e-9
-    assert not (_trade().get("tp_extra") or [])
-    assert not (_trade().get("mc_take_profit_tiers") or [])
+    trade = _trade()
+    assert len(tiers) == 3, f"tres peldanos: {tiers}"
+    assert [t.gain for t in tiers] == [0.25, 0.60, 1.00]
+    assert [t.sell for t in tiers] == [0.20, 0.40, 0.25]
+    assert abs(moonbag_fraction(tiers) - 0.15) < 1e-9
+    assert not (trade.get("tp_extra") or [])
+    cola = sum(d["sell"] for d in trade.get("mc_take_profit_tiers") or [])
+    assert abs(cola - 0.15) < 1e-9, (
+        f"la cola de market cap tiene que recoger el 15% que sobra, y "
+        f"reparte el {cola:.0%}"
+    )
+    # Lo que ve el trader de verdad: moonbag menos la cola = nada corriendo.
+    assert abs(max(0.0, moonbag_fraction(tiers) - cola)) < 1e-9
+
 
 def test_los_diez_escalones_disparan_y_queda_el_moonbag() -> None:
     """Recorrido completo con la config real."""

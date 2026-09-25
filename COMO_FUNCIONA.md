@@ -122,65 +122,94 @@ Lo que cuesta: todo el dinero está en dos monedas. Si una se va al stop, son
 
 Dos escaleras, una detrás de la otra.
 
-### Dos peldaños
+### Por porcentaje: tres peldaños
 
-| sube | vende | acumulado | market cap aprox. |
+Lo que sube la moneda **desde el precio al que la compró el bot**.
+
+| sube | vende | acumulado | hay que llegar al |
 |---|---|---|---|
-| +30% | 60% | 60% | 35k $ |
-| +60% | 30% | 90% | 44k $ |
+| +25% | 20% | 20% | 77,8% de la curva |
+| +60% | 40% | 60% | 84,5% de la curva |
+| +100% | 25% | 85% | 89,8% de la curva |
 
-El **10% que sobra** se queda corriendo. El bot no lo vende nunca: solo sale
-si el precio se da la vuelta y toca el suelo.
+**Los tres caben dentro de la curva, y esto es nuevo.** Comprando al 71% queda
+un +232% hasta que la moneda migra, así que hasta el tercero entra con diez
+puntos de sobra. En la versión de ayer el tercer peldaño se quedaba *fuera*:
+sólo cobraba si la moneda migraba y además seguía subiendo en otro mercado.
 
-Los dos caben de sobra dentro de la curva: comprando al 71% queda un +232%
-hasta migrar, y para cobrar el segundo basta con que la moneda llegue al
-84,5% de su curva.
+### Por market cap: el 15% que queda
+
+Cuando se han cobrado **los tres** de arriba, se arma la segunda escalera. Ésta
+no mira lo que ha subido, sino la cifra de market cap que ves en la app:
+
+| market cap | vende | acumulado |
+|---|---|---|
+| 50k $ | 5% | 90% |
+| 60k $ | 4% | 94% |
+| 70k $ | 3% | 97% |
+| 80k $ | 3% | 100% |
+
+Si llega a 80k, **la posición se cierra entera**. No queda nada corriendo.
+
+> **Ojo con los 80k.** La curva de pump.fun topa en 410,9 **SOL** de market
+> cap, no en una cifra de dólares — así que el techo en dólares se mueve con el
+> precio de SOL. Con SOL a 220 $ la moneda migra sobre los 90k y los 80k caen
+> dentro de la curva. **Con SOL por debajo de 195 $ los 80k quedan fuera**, y
+> ese último escalón sólo se cobra si la moneda migra y sigue subiendo después.
+> No está roto: si no se llega, ese 15% se queda dentro protegido por el suelo.
 
 ### El primer peldaño es el que importa, y no por lo que cobra
 
-En cuanto toca el **+30%**, el suelo sube de −35% a **+5%** y la operación ya
+En cuanto toca el **+25%**, el suelo sube de −35% a **+5%** y la operación ya
 no puede acabar en pérdida.
 
-Durante unas horas de hoy esto no existía — había un solo objetivo al +55% y
-nada más. La diferencia en las monedas que se quedan a medio camino es enorme:
+Ahora bien, vendiendo sólo un 20% ese rescate es más pequeño que antes:
 
-| la moneda llega a | con un solo TP | con estos dos peldaños |
+| la moneda llega a | escalera de ayer | esta escalera |
 |---|---|---|
-| +20% | −35,0% | −35,0% |
-| +29% | −35,0% | −35,0% |
-| **+30%** | **−35,0%** | **+20,0%** |
-| **+45%** | **−35,0%** | **+20,0%** |
-| +55% | +55,1% | +20,0% |
-| +60% | +55,1% | +39,7% |
-| x3 | +55,1% | +39,7% |
+| +24% | −35,0% | −35,0% |
+| +25% | −35,0% | +9,0% |
+| +45% | +20,0% | +9,0% |
+| +59% | +20,0% | +9,0% |
+| +60% | +39,7% | +41,5% |
+| +99% | +39,7% | +41,5% |
+| +100% | +39,7% | +64,2% |
 
-**Mejor en el tramo que más ocurre, peor arriba.** Una moneda que sube un 45%
-y se da la vuelta pasaba de costarte un 35% a dejarte un 20%.
+**Se cobra menos de las medianas y mucho más de las que corren.** El tramo que
+pierde es el de +30% a +59%, que es el que más ocurre. A cambio, una moneda que
+dobla pasa de dejar un +39,7% a dejar un **+64,2%**.
 
+Dicho de otra forma — cuántas tienen que salir bien para no perder dinero,
+contando que una que sale mal cuesta el 35%:
 
-### Lo que se ahorra
+```
+si sólo tocan el +25%     hacen falta 80% de aciertos
+si tocan el +60%          hacen falta 46% de aciertos
+si tocan el +100%         hacen falta 35% de aciertos
+```
 
-Cada venta paga 0,046 $ de comisión. Siete ventas eran 0,32 $ y una es
-0,046 $: **se ahorran 0,28 $ por posición**, el 0,25% de una posición de
-110 $. La comisión de *comprar* —1,12 $— no cambia.
+Esta escalera **no se sostiene con monedas que sólo tocan el primer peldaño**.
+Necesita que una parte llegue arriba. El +25% está ahí por el suelo que arma,
+no por lo que cobra.
 
 ### Y el suelo que sube
 
 Esto es lo más importante de todo el sistema:
 
 ```
-al empezar        el suelo está en -35%
-tras cobrar +30%  el suelo sube a  +5%     ← ya no puede acabar en pérdida
-tras cobrar +60%  el suelo sube a +36,5%
+al empezar         el suelo está en -35%
+tras cobrar +25%   el suelo sube a   +5%     ← ya no puede acabar en pérdida
+tras cobrar +60%   el suelo sube a  +31,25%
+tras cobrar +100%  el suelo sube a  +68%
 ```
 
-**El suelo vuelve a subir**, después de unas horas en las que no lo hacía.
-Y el 10% de moonbag es lo que queda enganchado a él: mientras el precio esté
-por encima del suelo se queda dentro; si baja, sale con el resto.
+El suelo se pone un peldaño **por detrás** del que acabas de cobrar, y un 5%
+por encima de ese. Un 5% *del precio*, no cinco puntos: por eso tras el +25%
+queda en +31,25% y no en +30%.
 
-El suelo se pone un peldaño por detrás del que acabas de cobrar, y un 5% por
-encima de ese. Un 5% *del precio*, no cinco puntos: por eso tras el +38% queda
-en +23,9% y no en +23%.
+Eso deja entre 19 y 22 puntos de aire entre cada suelo y el peldaño siguiente.
+Ese hueco importa: si un suelo alcanzara al peldaño que lo armó, la posición se
+cerraría sola en el mismo instante en que cumple su objetivo. Pasó en agosto.
 
 **En cuanto toca el primer peldaño, la operación ya no puede perder dinero.**
 Ese es el verdadero trabajo del primer escalón — lo que cobra es secundario.

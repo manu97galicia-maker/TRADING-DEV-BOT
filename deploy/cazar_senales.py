@@ -52,18 +52,24 @@ SEGUIMIENTO = 300.0
 VENTANA_OLA = 5.0
 #: Sin esto se llenaria el fichero de monedas que nadie toco.
 MIN_OPERACIONES = 5
-#: TRES NIVELES DE MEDIDA, y el ultimo es el take profit de verdad.
+#: LOS TRES NIVELES DE MEDIDA SON LOS TRES PELDANOS DE LA ESCALERA (25-sep).
 #:
-#: Desde la noche del 24-sep la configuracion tiene UN SOLO take profit
-#: (+55,13%). Aqui se siguen midiendo tres niveles a proposito: saber cuantas
-#: monedas se quedaron en el +18% o el +38% es justo lo que hace falta para
-#: decidir si ese take profit unico esta bien puesto o si habria que bajarlo.
-#: Medir solo el nivel que se cobra no contestaria esa pregunta.
+#: Hasta hoy no coincidian: la configuracion tenia uno o dos peldanos y aqui
+#: se median tres niveles inventados, para poder ver cuantas monedas se
+#: quedaban por debajo del objetivo. Con la escalera de tres peldanos
+#: (+25%/+60%/+100%) esa necesidad desaparece: medir los peldanos de verdad
+#: contesta la misma pregunta y ademas dice cuanto se cobro.
 #:
-#: Hay un test (`test_el_tp_de_verdad_esta_entre_los_niveles_medidos`) que
-#: comprueba que TP3 sigue siendo el del yaml: sin el, este script mediria un
-#: objetivo que el bot ya no tiene y los informes dirian cosas que no pasaron.
-TP1, TP2, TP3 = 0.15, 0.30, 0.60
+#: LO QUE SE PIERDE AL IGUALARLOS, y conviene saberlo: ya no hay un nivel
+#: intermedio por debajo del primer peldano, asi que el informe no dira
+#: cuantas monedas se quedaron entre el +15% y el +25%. Si hiciera falta esa
+#: pregunta, la forma correcta es anadir un cuarto nivel de medida, NO bajar
+#: el take profit del bot para que cuadre con el medidor.
+#:
+#: `test_los_niveles_medidos_son_los_peldanos_del_bot` comprueba que siguen
+#: coincidiendo: sin el, este script mediria objetivos que el bot ya no tiene
+#: y los informes dirian cosas que no pasaron.
+TP1, TP2, TP3 = 0.25, 0.60, 1.00
 STOP = -0.35
 #: Cada cuanto se imprime una linea de estado.
 AVISO_SEG = 30
@@ -161,7 +167,9 @@ class Cazador:
 
     def cerrar_las_vencidas(self) -> None:
         ahora = time.time()
-        for mint in [m for m, d in self.siguiendo.items() if ahora - d["t"] >= SEGUIMIENTO]:
+        for mint in [
+            m for m, d in self.siguiendo.items() if ahora - d["t"] >= SEGUIMIENTO
+        ]:
             d = self.siguiendo.pop(mint)
             d.update(_desenlace(mint, d["precio"]))
             # Los peldanos de la escalera actual, para poder preguntar
@@ -187,13 +195,21 @@ async def _escuchar(wss: str, minutos: float) -> None:
     fin = time.time() + minutos * 60 if minutos > 0 else 0.0
     ultimo_aviso = 0.0
     async with websockets.connect(wss, ping_interval=20) as ws:
-        await ws.send(json.dumps({
-            "jsonrpc": "2.0", "id": 1, "method": "logsSubscribe",
-            "params": [{"mentions": [PUMP]}, {"commitment": "processed"}],
-        }))
+        await ws.send(
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "logsSubscribe",
+                    "params": [{"mentions": [PUMP]}, {"commitment": "processed"}],
+                }
+            )
+        )
         await ws.recv()
-        print(f"Escuchando pump.fun. Foto a los {EDAD_DECISION:.0f}s, "
-              f"seguimiento {SEGUIMIENTO / 60:.0f} min.")
+        print(
+            f"Escuchando pump.fun. Foto a los {EDAD_DECISION:.0f}s, "
+            f"seguimiento {SEGUIMIENTO / 60:.0f} min."
+        )
         print(f"Se va escribiendo en {SALIDA}. Ctrl+C para parar.\n")
         while True:
             if fin and time.time() >= fin:
@@ -216,9 +232,12 @@ async def _escuchar(wss: str, minutos: float) -> None:
             cazador.limpiar()
             if time.time() - ultimo_aviso >= AVISO_SEG:
                 ultimo_aviso = time.time()
-                print(f"  {cazador.escritas} monedas apuntadas · "
-                      f"{len(cazador.siguiendo)} en seguimiento · "
-                      f"{len(cazador.pendientes)} esperando", flush=True)
+                print(
+                    f"  {cazador.escritas} monedas apuntadas · "
+                    f"{len(cazador.siguiendo)} en seguimiento · "
+                    f"{len(cazador.pendientes)} esperando",
+                    flush=True,
+                )
 
 
 def main() -> None:

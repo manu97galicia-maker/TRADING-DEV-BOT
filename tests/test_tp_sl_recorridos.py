@@ -202,21 +202,27 @@ def test_tocar_el_tp1_cobra_y_asegura() -> None:
     assert 0 < r["resultado"] < _margen() + t1.sell * t1.gain
 
 
-def test_los_dos_peldanos_cobran_y_queda_el_moonbag() -> None:
-    """Se tocan los dos objetivos, se vende el 90% y queda el 10% corriendo.
+def test_los_tres_peldanos_cobran_y_el_resto_pasa_a_la_cola() -> None:
+    """Se tocan los tres objetivos, se vende el 85% y el 15% pasa a la cola.
 
-    ESTE TEST SUSTITUYE A `test_el_tp_unico_cobra_entero_y_cierra_la_posicion`,
-    que exigia que la posicion quedara a CERO. Era cierto mientras el take
-    profit unico vendia el 100%; con la escalera de la noche del 24-sep
-    sobra un 10% a proposito.
+    ESTE TEST SE HA REESCRITO TRES VECES con la escalera: exigia que la
+    posicion quedara a CERO (take profit unico al 100%), luego que sobrara un
+    10% (dos peldanos), y ahora que sobre el 15% que recogen los escalones de
+    market cap.
+
+    LO QUE SE COMPRUEBA AQUI es solo el tramo de PORCENTAJE: que los tres
+    peldanos disparan en orden y dejan dentro exactamente lo que dice
+    `moonbag_fraction`. Lo que pasa despues --la cola de market cap-- depende
+    del precio de SOL y del market cap, y se fija en test_escalera_actual.py.
     """
     t = _tiers()
-    assert len(t) == 2, f"este test describe la escalera de dos peldanos: {t}"
-    r = simula([1.0, 1 + t[0].gain + 0.01, 1 + t[1].gain + 0.01])
-    assert r["peldanos"] == [1, 2]
-    assert not r["paro_por_stop"], "no deberia saltar el stop: se cobraron los dos"
+    assert len(t) == 3, f"este test describe la escalera de tres peldanos: {t}"
+    r = simula([1.0, *(1 + x.gain + 0.01 for x in t)])
+    assert r["peldanos"] == [1, 2, 3]
+    assert not r["paro_por_stop"], "no deberia saltar el stop: se cobraron los tres"
     assert round(r["restante_pct"], 6) == round(moonbag_fraction(t), 6)
     assert r["resultado"] > 0
+
 
 def test_por_debajo_del_objetivo_manda_el_stop_entero() -> None:
     """EL PRECIO DE TENER UN SOLO TAKE PROFIT, escrito para que no sorprenda.
@@ -240,6 +246,7 @@ def test_por_debajo_del_objetivo_manda_el_stop_entero() -> None:
     assert r["resultado"] < 0, (
         "una moneda que se queda a un punto del objetivo cuesta el stop entero"
     )
+
 
 def test_un_salto_de_golpe_cobra_todos_los_peldanos_que_deja_atras() -> None:
     """Si el precio salta por encima del ultimo peldano en un solo tick, no se
@@ -311,7 +318,6 @@ def test_el_suelo_solo_sube() -> None:
     assert r["suelo_final"] >= 1.0
     tiers = _tiers()
     suelos = [
-        stepped_stop_price(ENTRADA, tiers, i, _margen())
-        for i in range(len(tiers))
+        stepped_stop_price(ENTRADA, tiers, i, _margen()) for i in range(len(tiers))
     ]
     assert suelos == sorted(suelos)

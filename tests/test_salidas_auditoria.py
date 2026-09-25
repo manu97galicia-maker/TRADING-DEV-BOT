@@ -129,24 +129,38 @@ def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
 
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
-    # Lo VENDIDO ACUMULADO al llegar a cada multiplo. Desde la tarde del
-    # 24-sep (noche, 2a version): DOS peldanos, +30% vendiendo el 60% y +60%
-    # vendiendo el 30%. El 10% que sobra es moonbag y no se vende nunca --
-    # por eso la ultima fila se queda en 0,90 por mucho que suba
-    # lejanos en `tp_extra`, cada uno un 35% mas caro que el anterior.
+    """Lo VENDIDO ACUMULADO al llegar a cada multiplo (25-sep).
+
+    TRES peldanos de porcentaje: +25% vende 20%, +60% vende 40%, +100% vende
+    25%. El 15% que queda NO se vende por porcentaje -- se lo reparten los
+    escalones de market cap, que son otra escalera y no se miden aqui: esta
+    funcion solo recorre los peldanos de porcentaje.
+
+    POR ESO LA ULTIMA FILA SE QUEDA EN 0,85 por mucho que suba el multiplo.
+    No significa que sobre un 15%: significa que ese 15% sale por la otra
+    puerta, y esa puerta depende del market cap en dolares, no del multiplo.
+    """
     esperado = {
-        1.29: 0.0,    # justo por debajo del primero
-        1.30: 0.60,   # el primero se lleva el grueso
-        1.59: 0.60,
-        1.60: 0.90,   # los dos cobrados
-        50.0: 0.90,   # el 10% de moonbag no se vende por mucho que suba
+        1.24: 0.0,  # justo por debajo del primero
+        1.25: 0.20,  # el primero cobra poco: esta ahi por el suelo que arma
+        1.59: 0.20,
+        1.60: 0.60,  # el segundo es el que se lleva el grueso
+        1.99: 0.60,
+        2.00: 0.85,  # los tres cobrados
+        50.0: 0.85,  # el resto lo cobra la cola de market cap, no esta
     }
     for multiplo, acumulado in esperado.items():
         assert round(_vendido_hasta(multiplo), 6) == acumulado, f"fallo en x{multiplo}"
 
 
-def test_ni_un_x500_vende_el_moonbag() -> None:
-    """Ese resto es el que Manu vende a mano: la escalera no lo toca."""
+def test_ni_un_x500_vende_lo_que_va_por_market_cap() -> None:
+    """La escalera de PORCENTAJE no toca el 15% de la cola, suba lo que suba.
+
+    Antes este test se llamaba `test_ni_un_x500_vende_el_moonbag` y describia
+    un resto que Manu vendia a mano. Ya no hay resto a mano: lo vende la cola
+    de market cap. Lo que sigue siendo cierto --y es lo que fija-- es que los
+    peldanos de porcentaje no pueden tocarlo.
+    """
     assert round(1 - _vendido_hasta(500.0), 6) == round(moonbag_fraction(_tiers()), 6)
 
 

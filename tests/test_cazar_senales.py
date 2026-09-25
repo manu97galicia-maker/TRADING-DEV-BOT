@@ -35,12 +35,22 @@ def _modulo(nombre: str):
 
 def _fila(**kw) -> dict:
     base = {
-        "presion": 1.0, "ola_compradores": 0, "compradores": 0,
-        "velocidad_sol_s": 0.0, "ola_neto_sol": 0.0, "avance_curva": 0.0,
-        "titulares": 0, "carteras_primer_bloque": 0, "sol_primer_bloque": 0.0,
-        "venta_creador_sol": 0.0, "mayor_compra_sol": 0.0,
-        "pico": 0.0, "suelo": 0.0,
-        "llego_tp1": False, "llego_tp2": False, "llego_tp3": False,
+        "presion": 1.0,
+        "ola_compradores": 0,
+        "compradores": 0,
+        "velocidad_sol_s": 0.0,
+        "ola_neto_sol": 0.0,
+        "avance_curva": 0.0,
+        "titulares": 0,
+        "carteras_primer_bloque": 0,
+        "sol_primer_bloque": 0.0,
+        "venta_creador_sol": 0.0,
+        "mayor_compra_sol": 0.0,
+        "pico": 0.0,
+        "suelo": 0.0,
+        "llego_tp1": False,
+        "llego_tp2": False,
+        "llego_tp3": False,
         "toco_stop": False,
     }
     base.update(kw)
@@ -105,8 +115,10 @@ def test_una_linea_rota_no_tumba_el_analisis(tmp_path: Path, monkeypatch) -> Non
     an = _modulo("analizar_senales")
     f = tmp_path / "senales.jsonl"
     f.write_text(
-        json.dumps(_fila(llego_tp1=True)) + "\n{esto no es json\n"
-        + json.dumps(_fila()) + "\n",
+        json.dumps(_fila(llego_tp1=True))
+        + "\n{esto no es json\n"
+        + json.dumps(_fila())
+        + "\n",
         encoding="utf-8",
     )
     monkeypatch.setattr(an, "ENTRADA", f)
@@ -143,24 +155,31 @@ def test_las_que_nunca_arrancan_se_olvidan() -> None:
     assert "vieja" not in c.pendientes
 
 
-def test_el_tp_de_verdad_esta_entre_los_niveles_medidos() -> None:
-    """Si el objetivo cambia y el cazador no, se estaria midiendo otra cosa.
+def test_los_niveles_medidos_son_los_peldanos_del_bot() -> None:
+    """Si la escalera cambia y el cazador no, se estaria midiendo otra cosa.
 
-    EL CAZADOR MIDE TRES NIVELES Y LA CONFIGURACION TIENE UNO. No es un
-    descuadre: saber cuantas monedas se quedaron por debajo del objetivo es
-    lo que permite decidir si ese objetivo esta bien puesto. Lo que si tiene
-    que cumplirse es que el objetivo REAL sea uno de los medidos, y que los
-    otros queden por debajo -- si no, el informe no dice nada sobre la
-    configuracion que corre.
+    ANTES NO COINCIDIAN A PROPOSITO: la configuracion tenia uno o dos
+    peldanos y el cazador media tres niveles inventados, para saber cuantas
+    monedas se quedaban por debajo del objetivo. Desde el 25-sep la escalera
+    tiene tres peldanos y los tres niveles son esos tres, asi que el test
+    puede exigir igualdad exacta en vez de "el de verdad esta entre ellos".
+
+    ES MAS ESTRICTO QUE ANTES, no menos: antes bastaba con que el TP1 del
+    yaml apareciera en la lista; ahora los tres tienen que cuadrar.
     """
     cz = _modulo("cazar_senales")
     t = yaml.safe_load(
         (RAIZ / "bots/bot-paper-ai-entry.yaml").read_text(encoding="utf-8")
     )["trade"]
     niveles = [cz.TP1, cz.TP2, cz.TP3]
-    assert t["take_profit_percentage"] in niveles, (
-        f"el take profit del yaml ({t['take_profit_percentage']}) no esta "
-        f"entre los niveles que mide el cazador ({niveles})"
+    peldanos = [
+        t["take_profit_percentage"],
+        t.get("tp2_gain"),
+        t.get("tp3_gain"),
+    ]
+    assert niveles == peldanos, (
+        f"el cazador mide {niveles} y el bot cobra en {peldanos}: los "
+        f"informes dirian cosas que no pasaron"
     )
     assert niveles == sorted(niveles), "los niveles tienen que ir de menor a mayor"
     assert cz.STOP == -t["stop_loss_percentage"]
@@ -172,9 +191,7 @@ def test_el_tp_de_verdad_esta_entre_los_niveles_medidos() -> None:
 def test_el_servicio_lanza_el_cazador_y_no_el_bot() -> None:
     """Un copy-paste mal hecho aqui arrancaria el bot por duplicado, con dos
     procesos comprando con la misma wallet."""
-    unidad = (RAIZ / "deploy" / "pump-bot-cazador.service").read_text(
-        encoding="utf-8"
-    )
+    unidad = (RAIZ / "deploy" / "pump-bot-cazador.service").read_text(encoding="utf-8")
     assert "deploy/cazar_senales.py" in unidad
     assert "bot_runner" not in unidad
     assert "pump_bot" not in unidad
@@ -183,9 +200,7 @@ def test_el_servicio_lanza_el_cazador_y_no_el_bot() -> None:
 def test_el_servicio_vuelve_solo_si_se_corta_el_websocket() -> None:
     """Medir bien son horas. Perder un rato de escucha no rompe nada --cada
     moneda es una linea suelta-- pero perder la tarde entera si."""
-    unidad = (RAIZ / "deploy" / "pump-bot-cazador.service").read_text(
-        encoding="utf-8"
-    )
+    unidad = (RAIZ / "deploy" / "pump-bot-cazador.service").read_text(encoding="utf-8")
     assert "Restart=always" in unidad
 
 
@@ -244,8 +259,11 @@ def test_la_punta_peor_nunca_supera_a_la_mejor() -> None:
     an = _modulo("analizar_senales")
     rng = random.Random(5)
     filas = [
-        {"pico": rng.random() * 3, "suelo": -rng.random() * 0.5,
-         "ultimo": rng.random() * 2 - 1}
+        {
+            "pico": rng.random() * 3,
+            "suelo": -rng.random() * 0.5,
+            "ultimo": rng.random() * 2 - 1,
+        }
         for _ in range(300)
     ]
     peor, mejor = an._cuenta(filas)

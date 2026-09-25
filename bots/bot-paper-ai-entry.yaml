@@ -192,47 +192,67 @@ trade:
   # gas de la operacion es un 3,7%. El TP1 NO cubre el gas por si solo, y da
   # igual -- lo que aporta es el suelo, y eso ya esta contado en la cuenta de
   # arriba.
-  # DOS PELDANOS (24-sep, noche, pedido: "un take profit al 30% vendemos un
-  # 60, al 60 un 30, y lo que sobre"). Vuelve una escalera corta despues de
-  # unas horas con un solo take profit.
+  # TRES PELDANOS Y UNA COLA DE MARKET CAP (25-sep, pedido: "take profit uno
+  # sube un 25 vendes un 20, sube un 60 vendes un 40%, 100% 25, y el restante
+  # lo repartes hasta los 80k").
   #
-  #   peldano   vende   market cap   hay que llegar al   suelo tras cobrarlo
-  #    +30%      60%      ~35,4k      78,9% de curva       compra +5%
-  #    +60%      30%      ~43,6k      84,5% de curva       compra +36,5%
-  #    resto     10%      no se vende nunca
+  #   peldano   vende   hay que llegar al   suelo tras cobrarlo   holgura
+  #    +25%      20%      77,8% de curva       compra  +5,00%      +19,0%
+  #    +60%      40%      84,5% de curva       compra +31,25%      +21,9%
+  #   +100%      25%      89,8% de curva       compra +68,00%      +19,0%
+  #    resto     15%      escalones de market cap, abajo
   #
-  # LOS DOS CABEN DE SOBRA: entrando al 71% quedan +231,9% hasta migrar.
+  # LOS TRES CABEN DENTRO DE LA CURVA, y esto es nuevo. Entrando al 71%
+  # quedan +231,9% hasta migrar, asi que el +100% cae al 89,8% de curva con
+  # diez puntos de sobra. En la escalera del 24-sep el tercer peldano estaba
+  # FUERA --entrando al 87% se iba 12,8 puntos por encima de la migracion-- y
+  # solo cobraba si la moneda migraba y seguia subiendo en PumpSwap. Bajar la
+  # entrada al 71% es lo que lo ha metido dentro.
   #
-  # VUELVE EL PELDANO QUE APAGA EL STOP, y es lo que mas cambia. Con el take
-  # profit unico, una moneda que subia un 45% y se daba la vuelta costaba el
-  # stop entero. Ahora el +30% cobra el 60% de la posicion y sube el suelo a
-  # compra +5%: esa misma moneda deja +20%.
+  # LA HOLGURA ES LO QUE HAY QUE MIRAR AL TOCAR ESTO. El suelo que arma cada
+  # peldano tiene que quedar por DEBAJO del peldano que lo armo, o la
+  # posicion se cierra sola en el instante en que cumple su objetivo. Con el
+  # margen del 5% los tres tienen 19-22 puntos de aire. Acercar dos peldanos
+  # entre si se come esa holgura: es el fallo que obligo a mover el TP2 en
+  # agosto.
   #
-  #   la moneda llega a    con 1 TP (+55,13%)    con esta escalera
-  #        +20%                  -35,0%               -35,0%
-  #        +29%                  -35,0%               -35,0%
-  #        +30%                  -35,0%               +20,0%
-  #        +45%                  -35,0%               +20,0%
-  #        +55%                  +55,1%               +20,0%
-  #        +60%                  +55,1%               +39,7%
-  #        x3                    +55,1%               +39,7%
+  # SE COBRA MENOS PRONTO Y MAS TARDE que la escalera de anoche, y conviene
+  # verlo antes de que pase:
   #
-  # MEJOR EN EL TRAMO QUE MAS PASA (+30% a +55%) Y PEOR ARRIBA. El umbral de
-  # aciertos sube de 39% a 47% si se mide contra el caso bueno, pero esa
-  # comparacion enganha: con un solo TP "acertar" era llegar al +55,13% y
-  # aqui basta con llegar al +30% para no perder dinero.
+  #   la moneda llega a    escalera de anoche    esta escalera
+  #        +24%                  -35,0%              -35,0%
+  #        +25%                  -35,0%               +9,0%
+  #        +30%                  +20,0%               +9,0%
+  #        +45%                  +20,0%               +9,0%
+  #        +59%                  +20,0%               +9,0%
+  #        +60%                  +39,7%              +41,5%
+  #        +99%                  +39,7%              +41,5%
+  #       +100%                  +39,7%              +64,2%
   #
-  # EL 10% QUE SOBRA NO SE VENDE NUNCA. Es el moonbag: se queda en la
-  # cartera hasta que salte el suelo o se venda a mano. Vuelve a existir
-  # despues de unas horas sin el, asi que vuelve tambien lo que arrastra:
-  # la cuenta de token sigue abierta con su renta dentro.
+  # EL TRAMO QUE PIERDE ES +30% A +59%, y es el que mas pasa. Anoche el
+  # primer peldano vendia el 60% de la posicion y dejaba +20%; ahora vende el
+  # 20% y deja +9%. A cambio, una que llega al +100% pasa de +39,7% a +64,2%.
+  # Es la apuesta pedida: menos de las medianas, mucho mas de las que corren.
   #
-  # LA HOLGURA DEL SUELO ES DE +17,2%: tras cobrar el +60% el suelo queda en
-  # x1,365 y el peldano esta en x1,60. Sitio de sobra para que respire.
-  take_profit_percentage: 0.30
-  take_profit_sell_percentage: 0.60
+  # ACIERTOS QUE HACEN FALTA para no perder, contra una que se va al stop:
+  #     si solo toca el +25%     gana  +9,0%  ->  80% de aciertos
+  #     si toca el +60%          gana +41,5%  ->  46% de aciertos
+  #     si toca el +100%         gana +64,2%  ->  35% de aciertos
+  # O sea que esta escalera NO se sostiene con monedas que solo tocan el
+  # primer peldano: necesita que una parte llegue al +60% y al +100%. El +25%
+  # esta ahi por el SUELO que arma (compra +5%), no por lo que cobra.
+  #
+  # NO QUEDA MOONBAG PERPETUO. Anoche sobraba un 10% que no se vendia nunca;
+  # aqui el 15% que queda esta todo asignado a los escalones de market cap,
+  # asi que una moneda que llegue a 80k cierra ENTERA. Lo bueno: no quedan
+  # cuentas de token abiertas con su renta dentro. Lo que cuesta: si una hace
+  # x10 despues de los 80k, no queda nada dentro para cogerlo.
+  take_profit_percentage: 0.25
+  take_profit_sell_percentage: 0.20
   tp2_gain: 0.60
-  tp2_sell: 0.30
+  tp2_sell: 0.40
+  tp3_gain: 1.00
+  tp3_sell: 0.25
   # +53% Y NO +55% (24-sep, pedido: "sube dentro de la curva dos puntos").
   # Dos puntos NO de ganancia sino de MARGEN: entrando al 91,0% quedan
   # +57,5% hasta migrar, asi que el peldano pasa de entrar por 2,5 puntos a
@@ -334,24 +354,78 @@ trade:
   # mover el TP2 en agosto.
   tp_extra: []
 
-  # ESCALONES POR MARKET CAP: NINGUNO (24-sep, tarde).
+  # ESCALONES POR MARKET CAP: EL 15% QUE SOBRA, REPARTIDO HASTA 80k
+  # (25-sep, pedido: "el restante lo repartes hasta los 80k").
   #
-  # Estuvieron puestos unas horas hoy mismo (100k/130k/165k/200k, repartiendo
-  # el 22%) y los sustituye `tp_extra` de arriba, que hace lo mismo pero en
-  # multiplos del precio de entrada en vez de cifras absolutas.
+  #   market cap   vende   acumulado
+  #      50k         5%       90%
+  #      60k         4%       94%
+  #      70k         3%       97%
+  #      80k         3%      100%   <- cierra entera
   #
-  # SE DEJA LA LISTA VACIA EN VEZ DE BORRAR LA CLAVE a proposito: asi queda
-  # a la vista que esta via existe y esta apagada. La escalera de market cap
-  # solo se arma cuando se han cobrado TODOS los peldanos de porcentaje, asi
-  # que con ocho peldanos arriba habria sido, en la practica, inalcanzable.
+  # DE MAS A MENOS porque cuanta mas subida, menos monedas llegan: el trozo
+  # gordo se cobra pronto.
   #
-  # POR QUE SE CAMBIARON. Una cifra fija de market cap significa cosas
-  # distintas segun donde se entre: 100k es un x2,2 entrando al 86% de la
-  # curva y un x1,4 entrando al 96%. Los multiplos no dependen de eso. Lo que
-  # se pierde es que las cifras redondas (100k, 200k) son las que se ven en
-  # la app y las que se piensan de cabeza; queda anotado arriba donde cae
-  # cada escalon en market cap para poder seguirlo igual.
-  mc_take_profit_tiers: []
+  # ESTOS ESCALONES NO SE ARMAN HASTA QUE SE HAN COBRADO LOS TRES DE ARRIBA.
+  # Esta en el codigo: `if tiers and all(executed) and mc_tiers`. O sea que
+  # una moneda que llegue a 80k de market cap pero que solo haya subido un
+  # 80% desde la compra NO vende nada por aqui -- le falta el peldano de
+  # +100%. Son una COLA de la escalera de porcentaje, no una via paralela.
+  #
+  # ---- LO QUE HAY QUE SABER DE LOS 80k, Y ES LO IMPORTANTE --------------
+  #
+  # LA CURVA TOPA EN 410,9 SOL DE MARKET CAP. Eso es una cantidad de SOL,
+  # no de dolares, asi que en dolares el techo se mueve con el precio de SOL:
+  #
+  #     SOL a  91 $   ->  migra en   37,5k    (80k INALCANZABLE en la curva)
+  #     SOL a 150 $   ->  migra en   61,6k    (80k INALCANZABLE en la curva)
+  #     SOL a 195 $   ->  migra en   80,1k    (80k justo en la migracion)
+  #     SOL a 220 $   ->  migra en   90,4k    (80k al 97,8% de curva)
+  #     SOL a 250 $   ->  migra en  102,7k    (80k al 95,3% de curva)
+  #
+  # O SEA: LOS 80k SOLO CAEN DENTRO DE LA CURVA SI SOL PASA DE 195 $. Por
+  # debajo de eso, el ultimo escalon --y segun el precio tambien el tercero y
+  # el segundo-- solo se cobran si la moneda MIGRA y sigue subiendo en
+  # PumpSwap, que es otro mercado y otra liquidez. El bot sabe vender ahi
+  # (sale por Jupiter), pero es un escenario bastante menos frecuente.
+  #
+  # NO ES UN FALLO NI HACE FALTA ARREGLARLO: si los escalones no se alcanzan,
+  # el 15% se queda dentro protegido por el suelo, que tras el +100% esta en
+  # compra +68%. Lo que NO hay que hacer es dar por hecho que se cobran.
+  #
+  # EL BOT LEE EL PRECIO DE SOL EN VIVO (`_SOL_USD`, refrescado cada hora
+  # desde DexScreener), asi que estas cifras no hay que tocarlas cuando SOL
+  # se mueva: 80k son los 80k que se ven en la pantalla de pump.fun. Lo que
+  # cambia es DONDE de la curva caen, que es la tabla de aqui arriba.
+  #
+  # ---- POR QUE CIFRAS ABSOLUTAS Y NO MULTIPLOS -------------------------
+  #
+  # Esta misma via se quito el 24-sep y se sustituyo por `tp_extra`, que
+  # trabaja en multiplos del precio de compra. El argumento entonces fue
+  # bueno y sigue siendo cierto: una cifra fija de market cap significa cosas
+  # distintas segun donde se entre. Entrando al 71% los 80k son un x7,1 (con
+  # SOL a 91 $) o un x2,9 (con SOL a 220 $); entrando al 90% son bastante
+  # menos.
+  #
+  # SE USAN IGUAL PORQUE ES LO PEDIDO Y PORQUE TIENE SENTIDO PARA LEERLO: son
+  # las cifras que se ven en la app y las que se piensan de cabeza. El precio
+  # que se paga es el de arriba: hay que mirar a cuanto esta SOL para saber si
+  # el ultimo escalon es alcanzable.
+  #
+  # OJO AL CASO DE ENTRADA ALTA. Si una moneda se compra ya al 90% de curva,
+  # el +100% la deja muy por encima de los 80k y los cuatro escalones se
+  # cobran de golpe en el mismo instante. No rompe nada --se vende el 15% al
+  # precio de ese momento, que es mejor que 80k-- pero explica por que a
+  # veces se vera la posicion cerrarse entera de una vez.
+  mc_take_profit_tiers:
+    - target_mc: 50000
+      sell: 0.05
+    - target_mc: 60000
+      sell: 0.04
+    - target_mc: 70000
+      sell: 0.03
+    - target_mc: 80000
+      sell: 0.03
 
   # 35% (24-sep, pedido: "SL al 35%"). Historial: 18% -> 28% -> 40% -> 30%
   # -> 18% -> 28% -> 15% -> 26% -> 35%.
