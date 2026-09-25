@@ -1438,9 +1438,13 @@ filters:
     # cayendose en el mismo sitio.
     #
     # Y VA EN CONTRA: una moneda al 71% ha pasado por menos gente que una al
-    # 79%, que pasaba por menos que una al 90%. `min_compradores: 30` se
-    # vuelve mas dificil a cada bajada. De los dos numeros, este es el que
-    # NO abre el embudo.
+    # 79%, que pasaba por menos que una al 90%. `min_compradores` se vuelve
+    # mas dificil a cada bajada. De los dos numeros, este es el que NO abre
+    # el embudo.
+    #
+    # RESUELTO EL 25-sep: el problema no era bajar la entrada, era que
+    # `min_compradores` se quedo en el 30 del 96% mientras la entrada bajaba
+    # 25 puntos. Reescalado a 14 ahi abajo, con la cuenta escrita.
     umbral: 0.71
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
@@ -1468,7 +1472,39 @@ filters:
     max_sol_primer_bloque: 2.0
     # Compradores distintos en toda su vida. Una curva al 96% que solo
     # tocaron cuatro carteras no es demanda, es un grupo empujando.
-    min_compradores: 30
+    #
+    # ESTE NUMERO ERA EL QUE TENIA AL BOT MUDO (25-sep). El 30 se calibro
+    # cuando se entraba al 96% de la curva -- de ahi el nombre `curva_96`.
+    # La entrada ha bajado hasta el 71% y este numero NO se movio con ella,
+    # asi que llevaba dias pidiendo la demanda de una moneda casi migrada a
+    # monedas que van por un tercio del camino. El embudo lo decia en claro:
+    # 14 monedas llegaron al umbral, 0 se compraron, y las que se caian lo
+    # hacian aqui ("solo 1 compradores distintos (min 30)").
+    #
+    # COMO SE REESCALA, para que se pueda repetir si la entrada vuelve a
+    # moverse. Lo que mide este numero es cuanta gente ha pasado por la
+    # moneda, y eso va con el SOL que hay DENTRO de la curva:
+    #
+    #   curva   SOL dentro   el 30 reescalado
+    #    96%       73,3            30
+    #    90%       59,6            24
+    #    79%       42,1            17
+    #    71%       33,1            14   <- aqui
+    #
+    # O sea: 30 x (SOL dentro al umbral / 73,3). Lo vigila
+    # `test_la_puerta_de_gente_va_con_la_entrada`, que se pone rojo si
+    # alguien vuelve a mover la entrada sin mover esto.
+    #
+    # LO QUE CUESTA, dicho claro: 14 carteras distintas es menos prueba de
+    # demanda que 30. Un grupo de quince monederos puede fabricarlo. Lo que
+    # sigue tapando ese hueco son los tres frenos de bundle de aqui abajo
+    # (carteras en el bloque de creacion, SOL cargado ahi, y la
+    # concentracion EN CADENA de los mayores titulares, que no depende de
+    # haber visto nacer la moneda).
+    #
+    # Y SIGUE POR ENCIMA DEL SUELO GLOBAL (12), que es lo correcto: aquel es
+    # el minimo para todas las fuentes, este es el corte de esta estrategia.
+    min_compradores: 14
     # Freno EN CADENA, este no depende de haber visto nacer la moneda: si
     # los mayores titulares concentran mas de esto del supply, es un
     # bundle aunque el bloque de creacion pareciera limpio. Va mas alto

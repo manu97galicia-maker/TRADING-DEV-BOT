@@ -37,7 +37,7 @@ Todo esto, sin saltarse nada:
 | | |
 |---|---|
 | **Punto de la curva** | entre el 71,0% y el 99,5% (pasado eso ya está migrando) |
-| **Gente de verdad** | mínimo **30 carteras distintas** la han comprado |
+| **Gente de verdad** | mínimo **14 carteras distintas** la han comprado |
 | **Sin bundle** | como mucho 3 carteras en su bloque de nacimiento, y máximo 2 SOL |
 | **Sin concentración** | los mayores tenedores no pueden tener más del 50% |
 | **Sin vela verde** | si ha **doblado de precio en 10 segundos**, no entra |
