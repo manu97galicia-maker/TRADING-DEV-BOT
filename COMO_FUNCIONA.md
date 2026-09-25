@@ -56,65 +56,91 @@ todas las entradas, venga de donde venga la moneda.
 
 ## 3. Cuánto pone en cada compra
 
-**El 50% de la cartera.** Cartera = todo lo que tienes, el SOL de la wallet
+**El 25% de la cartera.** Cartera = todo lo que tienes, el SOL de la wallet
 más lo que ya vale lo que hay metido en monedas.
 
 Con 1 SOL de saldo salen así:
 
 ```
-0,500 · 0,350 · 0,085 · 0,019     (suma 0,955 = el 95% del saldo)
+0,250 · 0,249     y se para
 ```
 
-**Una compra de verdad y tres restos.** La primera se lleva la mitad de todo
-tu dinero; la segunda, lo que quedaba libre; las otras dos son calderilla — la
-última son 4,2 $ de los que 1,12 $ se van en comisión, el 27%.
+**Dos compras iguales.** No se para porque se acabe el dinero — se para porque
+sólo hay **2 plazas**. Y ahí está lo que hay que entender de este número:
 
-> **La primera compra se lleva medio patrimonio, y no es la mejor moneda del
-> día: es la primera que pasa los filtros.** El bot no elige entre
-> candidatas, compra la que llega. Con el stop en el 30%, esa sola posición
-> arriesga el **17,5% de todo tu dinero**.
+> **25% × 2 plazas = 50% de la cartera. La otra mitad no opera nunca.**
 
-Subir el porcentaje **no arriesga más dinero en total** — desde el 25% para
-arriba se compromete siempre el mismo 95%, porque el límite lo pone el saldo,
-no el porcentaje. Lo que cambia es que todo se juega en una sola carta.
+No es un fallo, es una elección. Ese dinero quieto no puede perderse y está ahí
+si mañana quieres subir el tamaño o el número de plazas. Pero no lo confundas
+con "estoy arriesgando el 25%": se arriesga el 25% *por operación*, y sólo la
+mitad del dinero opera.
 
-Con un 32% de aciertos necesarios y el 70% en una moneda, **el resultado del
-mes lo decide un puñado de operaciones**. La suerte pesa más que la
-estrategia.
+Si quisieras usarla entera, las dos palancas son subir las plazas a 4, o subir
+otra vez este porcentaje. Ninguna está tocada.
 
-Si lo que se busca es concentrar, la forma limpia es bajar el número de
-posiciones a 1 o 2: el dinero va entero a una o dos compras y no se pagan
-comisiones por restos de 10 $.
+### Lo que se arriesga
+
+Con el stop en el 30%:
+
+| | una posición al stop | las dos a la vez |
+|---|---|---|
+| con el 50% (ayer) | −15,0% de la cartera | −30,0% |
+| **con el 25% (hoy)** | **−7,5%** | **−15,0%** |
+
+El riesgo por operación se parte por la mitad.
+
+> **La primera compra no es la mejor moneda del día: es la primera que pasa
+> los filtros.** El bot no elige entre candidatas, compra la que llega. Eso no
+> cambia con el tamaño — pero se aguanta mucho mejor arriesgando un 7,5% que
+> un 17,5%.
+
+### Lo que cuesta: la comisión pesa el doble
+
+La comisión es **fija** (unos 0,93 $ entre comprar y vender), así que cuanto
+más pequeña la compra, más muerde:
+
+| cartera | con el 50% | con el 25% |
+|---|---|---|
+| 0,50 SOL | 22,8 $ → 4,1% | 11,4 $ → **8,1%** |
+| 0,83 SOL | 37,9 $ → 2,5% | 18,9 $ → 4,9% |
+| 1,00 SOL | 45,6 $ → 2,0% | 22,8 $ → 4,1% |
+| 2,00 SOL | 91,2 $ → 1,0% | 45,6 $ → 2,0% |
+
+Con la cartera pequeña hay que ganar un **8% sólo para empatar**. Es la misma
+cuenta que llevó a bajar las plazas de 5 a 2 — no pagar comisiones por compras
+pequeñas — y el 25% va justo en sentido contrario. Por encima de 1 SOL de
+cartera deja de importar.
 
 ### Y un techo de 2 SOL por compra
 
 Pase lo que pase, una compra **nunca pasa de 2 SOL**.
 
-Con la cartera de hoy eso no cambia nada — el 70% de 1 SOL son 0,70. El techo
-empieza a mandar cuando la cartera pasa de **2,86 SOL**:
+Con el 25%, ese techo no manda hasta que la cartera pasa de **8 SOL**:
 
-| cartera | el 70% sería | se compra |
+| cartera | el 25% sería | se compra |
 |---|---|---|
-| 1 SOL | 0,70 | 0,70 |
-| 2 SOL | 1,40 | 1,40 |
-| 3 SOL | 2,10 | **2,00** |
-| 10 SOL | 7,00 | **2,00** |
+| 1 SOL | 0,25 | 0,25 |
+| 4 SOL | 1,00 | 1,00 |
+| 8 SOL | 2,00 | 2,00 |
+| 20 SOL | 5,00 | **2,00** |
 
-Está por dos motivos. Uno: si la cuenta crece, el porcentaje efectivo baja
-solo (2 de 10 es un 20%). Y dos, el que importa: es el último freno contra un
-fallo de cálculo. El 12 de agosto la cadena registró compras de 0,25 y 0,30
-SOL con 0,15 configurado, y nunca se supo por qué.
+Está por dos motivos. Uno: si la cuenta crece, el porcentaje efectivo baja solo.
+Y dos, el que importa: es el último freno contra un fallo de cálculo. El 12 de
+agosto la cadena registró compras de 0,25 y 0,30 SOL con 0,15 configurado, y
+nunca se supo por qué.
 
-Puede tener **2 posiciones abiertas a la vez**, y con el 50% de la cartera por
-compra eso es justo lo que el dinero da de sí: dos compras enteras y se para.
+### Dos posiciones a la vez
 
-Antes el techo eran 5, pero era mentira: la tercera y la cuarta salían de 8 $ y
-1,7 $, y la comisión de prioridad se llevaba el 12% y el 54% de ellas antes de
-que la moneda se moviera. Eso no es diversificar, es pagar por tener una
-posición que no puede ganar nada.
+Puede tener **2 posiciones abiertas** como mucho, y con el 25% por compra eso
+es lo que decide cuánto dinero trabaja: dos cuartos, o sea media cartera.
 
-Lo que cuesta: todo el dinero está en dos monedas. Si una se va al stop, son
-15,0% de la cartera; las dos a la vez, el 30%.
+Antes el techo eran 5, pero era mentira: con el 50% por compra, la tercera y la
+cuarta salían de 8 $ y 1,7 $, y la comisión se llevaba el 12% y el 54% de ellas
+antes de que la moneda se moviera. Eso no es diversificar, es pagar por tener
+una posición que no puede ganar nada.
+
+Con el 25% las dos salen **iguales** (0,250 y 0,249), que es diversificación de
+verdad: dos posiciones del mismo tamaño, no una grande y una a medias.
 
 ---
 

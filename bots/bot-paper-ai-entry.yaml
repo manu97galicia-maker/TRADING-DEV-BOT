@@ -77,10 +77,14 @@ trade:
   # que la moneda se mueva. No era diversificar: era pagar por tener una
   # posicion que no puede ganar nada.
   #
-  # LO QUE CUESTA, dicho claro: con dos plazas todo el dinero esta en dos
-  # monedas. Una que se hunda al stop cuesta el 15,0% de la cartera (50% de
-  # la cartera con el stop al 30%), y dos a la vez el 30%. Concentrar y
-  # diversificar son lo mismo mirado del reves, y esto es concentrar.
+  # LO QUE CUESTA, dicho claro: con dos plazas el dinero que opera esta en
+  # dos monedas. Con el 25% de la cartera por compra y el stop al 30%, una
+  # que se hunda cuesta el 7,5% de la cartera y las dos a la vez el 15,0%.
+  # Concentrar y diversificar son lo mismo mirado del reves, y esto es
+  # concentrar -- aunque el 25% del 25-sep lo suaviza bastante.
+  #
+  # Y OJO AL OTRO LADO DE ESO: 25% x 2 plazas = 50% de la cartera. La otra
+  # mitad no opera nunca. Esta contado en `fraccion_saldo`.
   #
   # Y DE REGALO, MENOS CARGA EN EL NODO: cinco posiciones consultaban precio
   # cinco veces por segundo, dos lo hacen dos veces. Con los 429 que salen
@@ -704,74 +708,78 @@ trade:
   # 0,30 · 0,21 · 0,15 · 0,10 · 0,07. La quinta valia la cuarta parte que la
   # primera sin que nadie lo pidiera. Sobre la cartera salen IGUALES.
   #
-  # 50% DE LA CARTERA (24-sep, pedido: "pon 50 por ciento"). Se vuelve al
-  # numero que estuvo puesto hace dos horas. Historial: 30% cartera -> 10 $
-  # fijos -> 25% cartera -> 15% libre -> 20% libre -> 25% -> 30% -> 50% ->
-  # 70% -> 80% -> 50% cartera.
+  # 25% DE LA CARTERA (25-sep, pedido: "compra mejor un 25% del portfolio de
+  # sol por operacion"). Historial: 30% cartera -> 10 $ fijos -> 25% cartera
+  # -> 15% libre -> 20% libre -> 25% -> 30% -> 50% -> 70% -> 80% -> 50% ->
+  # 25% cartera.
   #
-  # QUINTO CAMBIO DE ESTE NUMERO EN UNA TARDE, y vuelve a un sitio donde ya
-  # estuvo. Ninguna de las cinco configuraciones ha operado: el bot lleva sin
-  # comprar desde antes de la primera.
+  # ES EL PRIMER CAMBIO DE TAMANO CON EL BOT OPERANDO DE VERDAD. Los cinco
+  # de ayer se hicieron a ciegas: ninguna de aquellas configuraciones llego a
+  # comprar nada, porque `min_compradores` tenia al bot mudo. Hoy el panel
+  # cuenta 16 intentos de compra en 6 horas, asi que a partir de ahora los
+  # cambios de este numero SI tienen datos detras -- y conviene esperar a
+  # verlos antes de volver a moverlo.
   #
   # CAMBIAN LAS DOS COSAS A LA VEZ, y la base pesa mas que el numero. Lo dice
   # `fraccion_base`, aqui abajo, que vuelve a "cartera": la base ya no baja
   # al comprar --el dinero cambia de sitio, no desaparece-- asi que las
   # compras salen IGUALES en vez de menguar.
   #
-  #   modo                 las compras con 1 SOL            suma   del saldo
-  #   20% libre            0,194 0,155 0,123 0,098 0,078   0,647      65%
-  #   25% cartera          0,250 0,249 0,249 0,160 0,038   0,945      95%
-  #   30% cartera          0,300 0,299 0,298 0,048         0,945      95%
-  #   50% cartera          0,500 0,350 0,085 0,019         0,955      95%
-  #   70% cartera          0,700 0,200 0,048               0,948      95%
-  #   80% cartera          0,800 0,125 0,029               0,954      95%
-  #   50% cartera (hoy)    0,500 0,350 0,085 0,019         0,955      95%
+  #   modo                las compras con 1 SOL y 2 plazas    de la cartera
+  #   20% libre           0,194  0,155                              35%
+  #   25% cartera (hoy)   0,250  0,249                              50%
+  #   30% cartera         0,300  0,299                              60%
+  #   50% cartera         0,500  0,350                              85%
+  #   70% cartera         0,700  0,200                              90%
   #
-  # EL RIESGO TOTAL NO SUBE, Y ES LO PRIMERO QUE HAY QUE ENTENDER: desde el
-  # 25% para arriba se compromete SIEMPRE el mismo ~95% del saldo, porque el
-  # tope no lo pone el porcentaje sino el saldo libre. Lo que cambia es COMO
-  # SE REPARTE.
+  # LA TABLA ES DE DOS COLUMNAS DESDE QUE `max_posiciones` ES 2. Antes tenia
+  # cinco y todas acababan igual --un ~95% comprometido-- porque el freno lo
+  # ponia el saldo libre, ya con las migas compradas. Ahora el freno es el
+  # TECHO, asi que el porcentaje SI decide cuanto dinero se pone a trabajar.
   #
-  # LA PRIMERA COMPRA SE LLEVA LA MITAD DE LA CARTERA. Y no es la mejor moneda
-  # del dia: es LA PRIMERA que pasa los filtros. El bot no elige entre
-  # candidatas, compra la que llega. Con el stop en 26%, esa primera
-  # posicion arriesga ella sola el 15,0% de todo el dinero. Ojo a la cuenta:
-  # el porcentaje vuelve a ser el de hace dos horas pero el riesgo NO, porque
-  # el stop paso de 26% a 35% y luego a 30% por el camino. Mismo 50%, 15,0%
-  # en vez de 13,0%. Con el 20% del saldo libre eran un 5,0%.
+  # MEDIA CARTERA SE QUEDA QUIETA, y es la consecuencia del 25% que hay que
+  # tener delante: 25% x 2 plazas = 50%. La otra mitad no se usa nunca.
   #
-  # LA SEGUNDA SE LLEVA 0,350 --lo que quedaba libre-- y las otras dos son
-  # restos: 0,085 y 0,019 SOL. Esa ultima son ~4,2 $ de los que la comision
-  # de prioridad se lleva 1,12 $: el 27% antes de que la moneda se mueva.
+  # NO ES UN FALLO, ES UNA ELECCION, y tiene su lado bueno: es dinero que no
+  # puede perderse y que esta ahi si manana se quiere subir el tamano o el
+  # numero de plazas. Pero conviene no confundirlo con "estoy arriesgando el
+  # 25%": se arriesga el 25% POR OPERACION, y solo la mitad del dinero opera.
   #
-  # CUANTAS COMPRAS DE VERDAD SALEN. La cuenta es `0,95 / fraccion`: con el
-  # 25% y el 30% salian tres, del 50% en adelante salen dos y el resto eran
-  # migas. Por eso `max_posiciones` bajo a 2 el 25-sep: el techo ahora dice
-  # la verdad en vez de prometer cinco plazas que el dinero no llenaba.
+  # SI LO QUE SE QUIERE ES USARLA ENTERA, las dos palancas son subir
+  # `max_posiciones` a 4 (cuatro compras del 25%) o volver a subir este
+  # porcentaje. Ninguna se toca aqui porque no se pidio.
   #
-  # LA VARIANZA ES YA CASI TODA LA ESTRATEGIA. Con el 70% en una sola moneda
-  # y un 32% de aciertos necesarios, el resultado del mes lo decide un
-  # punado de operaciones. Y sigue sin haber UNA sola medicion.
+  # LAS DOS COMPRAS SALEN IGUALES: 0,250 y 0,249. Con el 50% no lo eran --la
+  # segunda salia recortada a 0,350 porque ya no quedaba saldo libre para
+  # otra entera-- asi que esto es diversificacion de verdad entre dos
+  # posiciones del mismo tamano, no una grande y una a medias.
   #
-  # SE CONCENTRO POR AHI, que era la forma limpia: `max_posiciones` a 2, el
-  # dinero entero en dos compras y sin pagar comisiones por restos de 10 $.
-  # Pedido el 25-sep.
+  # LO QUE SE ARRIESGA. Con el stop en 30%, una posicion que se hunde cuesta
+  # el 7,5% de la cartera (era el 15,0% con el 50%) y las dos a la vez el
+  # 15,0% (era el 30%). El riesgo por operacion se parte por la mitad.
   #
-  # Y SE ACABA EL FRENO AUTOMATICO, que es lo importante de este cambio.
-  # Sobre el saldo libre, cada compra era un porcentaje de lo que SOBRABA y
-  # por eso nunca se llegaba a comprometer todo. Sobre la cartera no existe
-  # ese freno: lo unico que para al bot es quedarse sin saldo libre, y eso
-  # pasa en la cuarta compra.
+  # LO QUE CUESTA: LA COMISION PESA EL DOBLE. Es fija (~0,93 $ ida y vuelta),
+  # asi que cuanto mas pequena la compra, mas muerde:
   #
-  # CON 0,5 SOL DE SALDO SALEN TRES: 0,350 · 0,088 · 0,020. Una de verdad y
-  # dos restos, y el ultimo son 4,3 $ con 1,12 $ de comision. Cuanto mas
-  # pequeno es el saldo, peor se porta este modo.
+  #   cartera     con el 50%          con el 25%
+  #   0,50 SOL    22,8 $ -> 4,1%      11,4 $ -> 8,1%   <- aqui duele
+  #   0,83 SOL    37,9 $ -> 2,5%      18,9 $ -> 4,9%
+  #   1,00 SOL    45,6 $ -> 2,0%      22,8 $ -> 4,1%
+  #   2,00 SOL    91,2 $ -> 1,0%      45,6 $ -> 2,0%
   #
-  # LAS DOS PALANCAS SI ESO MOLESTA: `compra_minima_sol`, que se salta las
-  # compras que no llegan a un minimo, o bajar `max_posiciones`. La segunda
-  # se uso el 25-sep (5 -> 2) y es la que corta las migas de raiz;
-  # `compra_minima_sol` sigue sin tocarse porque ya no hace falta.
-  fraccion_saldo: 0.50
+  # O sea que con la cartera pequena hay que ganar un 8% solo para empatar.
+  # Es la misma cuenta que llevo a bajar `max_posiciones` a 2 --no pagar
+  # comisiones por compras pequenas-- y el 25% va justo en sentido
+  # contrario. Con la cartera por encima de 1 SOL deja de importar.
+  #
+  # LA PRIMERA COMPRA NO ES LA MEJOR MONEDA DEL DIA: es LA PRIMERA que pasa
+  # los filtros. El bot no elige entre candidatas, compra la que llega. Eso
+  # no cambia con el tamano, pero se aguanta mejor con el 25% que con el 70%.
+  #
+  # LA VARIANZA SIGUE SIENDO CASI TODA LA ESTRATEGIA, aunque baja: con dos
+  # posiciones iguales del 25% el resultado del mes lo deciden mas
+  # operaciones que con una del 70%. Y sigue sin haber UNA sola medicion.
+  fraccion_saldo: 0.25
   # SOBRE QUE SE CALCULA EL PORCENTAJE. Es una clave y no una decision
   # escrita en el codigo porque ha ido y venido tres veces en dos dias, y
   # cada vuelta era un commit tocando el camino de compra.
