@@ -35,8 +35,9 @@ trade:
   # cuenta de token, asi que la reserva global (min_reserve_sol) NO se va en
   # rentas y siempre queda gas para VENDER lo que esta abierto.
   #
-  # OJO: poner 5 aqui no hace que haya 5. Lo que hace falta en la cartera
-  # para que quepan las cinco, contando la reserva de 0,03:
+  # OJO: el numero de aqui es un TECHO, no una promesa. Lo que hace falta
+  # en la cartera para que quepan las que se pidan, contando la reserva de
+  # 0,03:
   #     compra 0,12 (el tope de hoy)   -> 0,645 SOL
   #     compra 0,26 (curva 96%)        -> 1,345 SOL
   #     compra 0,495 (el tope de ago)  -> 2,52 SOL
@@ -56,12 +57,36 @@ trade:
   # sentidos contrarios. Si lo que se quiere son las 5, la palanca es bajar
   # tope_compra_sol, no subirlo.
   #
-  # Por que 5 y no mas: cada posicion abierta consulta su precio CADA
-  # SEGUNDO (price_check_interval: 1) y el nodo esta limitado a 15 por
-  # segundo (node.max_rps). Pasadas ~7 las consultas se encolan y el stop
-  # loss reacciona tarde, que es justo cuando mas duele. Con 5 hay margen.
-  # Si algun dia quieres mas, sube price_check_interval ANTES que esto.
-  max_posiciones: 5
+  # Por que no mas: cada posicion abierta consulta su precio CADA SEGUNDO
+  # (price_check_interval: 1) y el nodo tiene su limite (node.max_rps).
+  # Pasadas unas cuantas las consultas se encolan y el stop loss reacciona
+  # tarde, que es justo cuando mas duele. Si algun dia quieres mas, sube
+  # price_check_interval ANTES que esto.
+  #
+  # DOS, PEDIDO EL 25-sep ("maximo dos operaciones simultaneas"). Estaba en
+  # 5 y era DECORATIVO: con el 50% de la cartera por compra, de las cinco
+  # plazas solo salian dos compras de verdad y el resto eran migas. La
+  # cuenta es `0,95 / fraccion`, y esta escrita mas abajo en `fraccion_saldo`.
+  #
+  # LO QUE SE DEJABA DE VERDAD, con 1 SOL de saldo:
+  #     1a  0,500 SOL   45,6 $   comision ida y vuelta  2,0%
+  #     2a  0,350 SOL   31,9 $                          2,9%
+  #     3a  0,085 SOL    7,8 $                         12,0%   <- miga
+  #     4a  0,019 SOL    1,7 $                         53,6%   <- miga
+  # La cuarta se come la mitad del dinero en comision de prioridad antes de
+  # que la moneda se mueva. No era diversificar: era pagar por tener una
+  # posicion que no puede ganar nada.
+  #
+  # LO QUE CUESTA, dicho claro: con dos plazas todo el dinero esta en dos
+  # monedas. Una que se hunda al stop cuesta el 17,5% de la cartera (50% de
+  # la cartera con el stop al 35%), y dos a la vez el 35%. Concentrar y
+  # diversificar son lo mismo mirado del reves, y esto es concentrar.
+  #
+  # Y DE REGALO, MENOS CARGA EN EL NODO: cinco posiciones consultaban precio
+  # cinco veces por segundo, dos lo hacen dos veces. Con los 429 que salen
+  # en el embudo, tres consultas por segundo menos ayudan -- no arreglan el
+  # 429, pero no estorban.
+  max_posiciones: 2
   # Tope de por vida de compras reales. Empieza en 1 a proposito: el camino
   # de compra de mints EXISTENTES nunca se ha ejecutado contra una compra de
   # verdad (hay avisos en token_builder.py y en las tres fuentes). Con 1 se ve
@@ -647,19 +672,18 @@ trade:
   # restos: 0,085 y 0,019 SOL. Esa ultima son ~4,2 $ de los que la comision
   # de prioridad se lleva 1,12 $: el 27% antes de que la moneda se mueva.
   #
-  # DE CINCO PLAZAS QUEDA UNA COMPRA DE VERDAD, igual que con el 50%. La
-  # cuenta es `0,95 / fraccion`: con el 25% y el 30% salian tres, del 50% en
-  # adelante sale una. `max_posiciones: 5` es decorativo desde hace dos
-  # cambios.
+  # CUANTAS COMPRAS DE VERDAD SALEN. La cuenta es `0,95 / fraccion`: con el
+  # 25% y el 30% salian tres, del 50% en adelante salen dos y el resto eran
+  # migas. Por eso `max_posiciones` bajo a 2 el 25-sep: el techo ahora dice
+  # la verdad en vez de prometer cinco plazas que el dinero no llenaba.
   #
   # LA VARIANZA ES YA CASI TODA LA ESTRATEGIA. Con el 70% en una sola moneda
   # y un 32% de aciertos necesarios, el resultado del mes lo decide un
   # punado de operaciones. Y sigue sin haber UNA sola medicion.
   #
-  # SI LO QUE SE QUIERE ES CONCENTRAR, la forma limpia es bajar
-  # `max_posiciones` a 1 o 2: el dinero va entero a una o dos compras y no se
-  # pagan comisiones por restos de 10 $. No se toca aqui porque no se pidio.
-  # aqui porque no se pidio.
+  # SE CONCENTRO POR AHI, que era la forma limpia: `max_posiciones` a 2, el
+  # dinero entero en dos compras y sin pagar comisiones por restos de 10 $.
+  # Pedido el 25-sep.
   #
   # Y SE ACABA EL FRENO AUTOMATICO, que es lo importante de este cambio.
   # Sobre el saldo libre, cada compra era un porcentaje de lo que SOBRABA y
@@ -672,8 +696,9 @@ trade:
   # pequeno es el saldo, peor se porta este modo.
   #
   # LAS DOS PALANCAS SI ESO MOLESTA: `compra_minima_sol`, que se salta las
-  # compras que no llegan a un minimo, o bajar `max_posiciones`. Ninguna se
-  # toca aqui porque no se pidieron.
+  # compras que no llegan a un minimo, o bajar `max_posiciones`. La segunda
+  # se uso el 25-sep (5 -> 2) y es la que corta las migas de raiz;
+  # `compra_minima_sol` sigue sin tocarse porque ya no hace falta.
   fraccion_saldo: 0.50
   # SOBRE QUE SE CALCULA EL PORCENTAJE. Es una clave y no una decision
   # escrita en el codigo porque ha ido y venido tres veces en dos dias, y
@@ -1228,11 +1253,15 @@ filters:
   #     con >=12                            25,8%   (+11,4 puntos)
   #
   # POR QUE 12 Y NO 3, QUE ACIERTA MAS. Por el RITMO. Con >=3 caen unas 3
-  # monedas por minuto y con 5 plazas el bot se llena en dos minutos con las
+  # monedas por minuto y el bot se llena en menos de un minuto con las
   # PRIMERAS que pasen, no con las mejores: a partir de ahi elige el reloj y
   # no el filtro. Con >=12 caen unas 0,7 por minuto, que es el ritmo al que
-  # las cinco plazas de verdad eligen. Se pierden 1,6 puntos de acierto y se
-  # gana poder elegir.
+  # las plazas de verdad eligen. Se pierden 1,6 puntos de acierto y se gana
+  # poder elegir.
+  #
+  # Y APRIETA MAS DESDE EL 25-sep, con `max_posiciones` en 2: cuantas menos
+  # plazas hay, mas cara sale cada una y menos se puede dejar que las llene
+  # el reloj.
   #
   # AVISO QUE NO HAY QUE OLVIDAR: con la escalera actual la cuenta sale
   # NEGATIVA incluso con este filtro (el TP1 cobra +5% de la posicion contra
@@ -1591,8 +1620,9 @@ filters:
     # las condiciones de titulares --ni 23 carteras, ni edad, ni presion
     # compradora--. Cualquier direccion que acabe en `pump` y que alguien
     # pegue se compra si la curva se puede leer y la moneda no ha migrado.
-    # Ademas las cinco plazas de `max_posiciones` son COMPARTIDAS, asi que un
-    # canal movido puede ocupar huecos que queria titulares.
+    # Ademas las plazas de `max_posiciones` son COMPARTIDAS --y desde el
+    # 25-sep son solo DOS--, asi que un canal movido puede quedarse con toda
+    # la cartera antes de que la otra fuente vea nada.
     #
     # OJO: los nombres tienen que ser el @usuario exacto del canal y tu
     # cuenta tiene que estar dentro. Un nombre que Telegram no resuelva se

@@ -1,13 +1,21 @@
-"""Cuantas posiciones caben: techo de 5, y por debajo manda el SALDO.
+"""Cuantas posiciones caben: un techo de 2, y por debajo manda el SALDO.
 
-Son dos frenos y gana el que se quede corto. El techo son 5; el otro es el
-guardian del saldo, que antes de cada compra exige:
+Son dos frenos y gana el que se quede corto. El techo son 2 (25-sep, pedido:
+"maximo dos operaciones simultaneas"); el otro es el guardian del saldo, que
+antes de cada compra exige:
 
     saldo - reserva_global - lo_ya_comprometido >= compra + colchon
 
 El colchon por posicion (0,003 SOL) cubre sus comisiones y la renta de la
 cuenta de token. Sin el, con varias posiciones abiertas las rentas se
 comerian la reserva global y una venta podria quedarse sin gas.
+
+CUAL DE LOS DOS MANDA SE HA INVERTIDO, y es lo que este fichero fija ahora.
+Con techo de 5 y el 50% de la cartera por compra mandaba el saldo: se abrian
+dos compras de verdad y dos migas, y el techo era decorativo. Con el techo en
+2 manda el TECHO: se abren dos compras enteras y se para, con cartera de
+sobra sin comprometer. Ver cuatro posiciones ya no es posible, y ver dos con
+saldo de sobra no es un fallo -- es el techo haciendo su trabajo.
 """
 
 # ruff: noqa: S101, PLR2004, PLC0415
@@ -17,7 +25,7 @@ from modelo_tamano import importe as importe_de_compra
 from modelo_tamano import trade as _trade
 
 # Techo configurado de posiciones simultaneas (max_posiciones).
-TECHO = 5
+TECHO = 2
 
 
 def caben(saldo: float, reserva: float, compra: float) -> int:
@@ -28,8 +36,13 @@ def caben(saldo: float, reserva: float, compra: float) -> int:
     return min(int(libre // (compra + COLCHON_POR_POSICION)), TECHO)
 
 
-def test_el_techo_son_cinco_posiciones() -> None:
-    """Lo pedido: maximo 5 a la vez, si da el capital."""
+def test_el_techo_son_dos_posiciones() -> None:
+    """Lo pedido el 25-sep: maximo dos operaciones simultaneas.
+
+    ESTE TEST SE LLAMABA `test_el_techo_son_cinco_posiciones`. No se ha
+    relajado: el numero pedido cambio y el test lo sigue clavando. Subirlo
+    otra vez sin pedirlo se ve aqui en rojo.
+    """
     assert _trade()["max_posiciones"] == TECHO
 
 
@@ -50,9 +63,7 @@ def test_el_modo_de_tamano_esta_claro() -> None:
     # Uno de los dos manda, nunca los dos: el porcentaje, si es >0, SUSTITUYE
     # al importe fijo dentro del cerrojo de gasto. Hoy manda el porcentaje.
     encendidos = [
-        k
-        for k in ("buy_amount_usd", "fraccion_saldo", "buy_amount")
-        if t.get(k, 0) > 0
+        k for k in ("buy_amount_usd", "fraccion_saldo", "buy_amount") if t.get(k, 0) > 0
     ]
     assert len(encendidos) == 1, (
         f"manda UNO de los tres modos, y hoy mandan: {encendidos or 'ninguno'}"
@@ -109,9 +120,21 @@ def test_el_tamano_vuelve_a_encogerse_solo() -> None:
         assert abs(tam[0] - frac * 1.0) < 1e-6, (
             f"la primera tiene que ser el {frac * 100:.0f}% del saldo entero: {tam}"
         )
-        # Y la caida, cuando llega, es de golpe y no gradual.
-        assert tam[-1] < 0.5 * tam[0], (
-            f"con base cartera las ultimas son recortes del saldo libre: {tam}"
+        # Y LA SEGUNDA SALE RECORTADA, pero ya no es una miga. Aqui se
+        # exigia `tam[-1] < 0.5 * tam[0]` -- "la ultima es calderilla" --, y
+        # era cierto mientras el techo dejaba llegar a la cuarta y la quinta.
+        # Con el techo en 2 la ultima ES la segunda: 0,500 y 0,350, un 70% de
+        # la primera. Seguir exigiendo calderilla seria exigir justo lo que
+        # se quito.
+        #
+        # Lo que se fija ahora es que TODAS las que salen valgan la pena. El
+        # corte esta en 0,15 SOL (~14 $): por debajo de ahi la comision de
+        # prioridad de ida y vuelta (~0,93 $) pasa del 7% de la compra.
+        assert tam[-1] < tam[0], (
+            f"con base cartera la ultima es un recorte del saldo libre: {tam}"
+        )
+        assert min(tam) > 0.15, (
+            f"con el techo en {TECHO} no puede salir ninguna miga: {tam}"
         )
 
 
@@ -138,67 +161,57 @@ def test_lo_que_queda_cubre_las_ventas_pendientes() -> None:
 
 
 def test_cuantas_plazas_caben_de_verdad() -> None:
-    """CUANTAS SE ABREN DE VERDAD, que no es lo mismo que `max_posiciones`.
+    """CUANTAS SE ABREN DE VERDAD, y quien de los dos frenos manda.
 
-    El techo son cinco y lo pedido fue "puede haber multiples posiciones".
-    Pero quien decide de verdad es el DINERO, y con el 30% de la cartera
-    (24-sep, tarde) no llega para cinco: con 1 SOL salen 0,300 · 0,299 ·
-    0,298 · 0,048 y se acabo. Tres del 30% ya son el 90% del saldo.
+    HISTORIA DE ESTE TEST, porque es la historia del error que arregla. Se
+    llamaba `test_caben_las_cinco_plazas` y exigia cinco. Se puso rojo al
+    pasar del 25% al 30%, que era su trabajo: "caben cinco" habia dejado de
+    ser cierto. Se cambio entonces la PREGUNTA --cuantas caben en cada
+    modo-- en vez de bajar la exigencia, y quedo escrito que el techo era
+    decorativo y que ver cuatro posiciones no era un fallo.
 
-    ESTE TEST SE LLAMABA `test_caben_las_cinco_plazas` y exigia cinco. Se
-    puso rojo al pasar del 25% al 30%, que era su trabajo. No se ha bajado
-    la exigencia: se ha cambiado la PREGUNTA, porque "caben cinco" dejo de
-    ser cierto y seguir afirmandolo era el tipo de test verde que miente.
-    Ahora fija cuantas caben en cada modo, y cualquier cambio de tamano
-    vuelve a moverlo.
+    EL 25-sep SE ARREGLO POR EL OTRO LADO: `max_posiciones` bajo de 5 a 2,
+    o sea que el techo dejo de ser decorativo y paso a ser EL freno. Con el
+    50% de la cartera y 1 SOL salen 0,500 y 0,350 y se acaba -- no porque el
+    dinero se agote (queda un 15% sin comprometer) sino porque no hay mas
+    plazas.
 
-    EL TECHO DEJA DE MANDAR, y conviene saberlo al leer un dia de
-    operaciones: ver cuatro posiciones y no cinco NO es un fallo del bot.
-    Si se quiere que el techo diga la verdad, la palanca es bajar
-    `max_posiciones` a 3; si se quiere que no haya migas,
-    `compra_minima_sol`. Ninguna se toca sin pedirlo.
+    LO QUE FIJA AHORA: que manda el techo y no el saldo. Si alguien sube
+    `max_posiciones` sin bajar la fraccion, vuelven las migas y esto se pone
+    rojo; si baja la fraccion sin tocar el techo, deja de mandar el techo y
+    tambien se pone rojo. Los dos numeros son un solo mando.
     """
     from modelo_tamano import base_es_libre
 
     tam = tamanos(1.0)
-    enteras = [x for x in tam if x > 0.9 * tam[0]]
+    frac = float(_trade()["fraccion_saldo"])
     if base_es_libre():
-        # Menguan suaves: caben las cinco y la ultima sigue siendo decente.
-        assert len(tam) == TECHO, f"con base libre caben las cinco: {tam}"
+        # Menguan suaves: se llenan las plazas y la ultima sigue siendo decente.
+        assert len(tam) == TECHO, f"con base libre se llenan las plazas: {tam}"
         assert tam[-1] > 0.4 * tam[0], f"la ultima no puede ser una miga: {tam}"
     else:
-        # Base "cartera": iguales hasta que se agota el saldo libre.
-        assert len(tam) < TECHO, (
-            f"con el 30% de la cartera el dinero no da para las cinco: {tam}"
+        # Base "cartera": iguales hasta que se agota el saldo libre... salvo
+        # que el techo llegue antes, que es lo que pasa ahora.
+        assert len(tam) == TECHO, (
+            f"con el {frac * 100:.0f}% de la cartera el techo de {TECHO} llega "
+            f"antes que el saldo, asi que se llenan todas las plazas: {tam}"
         )
-        # CUANTAS SE ABREN EN TOTAL no es un invariante util: depende de
-        # cuantos restos quepan despues de la compra entera, y eso cambia con
-        # cada decimal de la fraccion. Estuvo fijado a 4 y se puso rojo al
-        # pasar del 50% al 70% (salen 3) sin que nada fuera mal. Lo que si
-        # tiene que cumplirse es que no se llegue al techo: si se llegara,
-        # `max_posiciones` volveria a mandar y esta rama no aplicaria.
-        assert len(tam) < TECHO, f"con esta fraccion no se llega al techo: {tam}"
-        # CUANTAS SON COMPRAS DE VERDAD SALE DE LA FRACCION, no escrito a
-        # mano. El saldo libre da para ~0,95 del total (el resto es reserva y
-        # colchones), asi que caben `0,95 / fraccion` compras enteras y el
-        # resto son recortes. Con el 25% y el 30% salian tres; con el 50%
-        # (24-sep) sale UNA. El numero a mano fallaba en cada cambio sin
-        # decir por que.
-        frac = float(_trade()["fraccion_saldo"])
-        esperadas = int(0.95 / frac)
-        assert len(enteras) == esperadas, (
-            f"con el {frac * 100:.0f}% de la cartera salen {esperadas} compras "
-            f"enteras, no {len(enteras)}: {tam}"
+        # LA PRUEBA DE QUE MANDA EL TECHO Y NO EL DINERO: si mandara el saldo,
+        # el bot habria seguido comprando restos hasta agotarlo. Queda cartera
+        # sin comprometer, o sea que lo que le paro fue el techo.
+        assert sum(tam) < 0.90, (
+            f"si el techo manda tiene que sobrar cartera sin comprometer: {tam}"
         )
-        assert tam[-1] < 0.2 * tam[0], f"la ultima es calderilla: {tam}"
+        # Y NINGUNA ES UNA MIGA, que es el motivo por el que se bajo el techo.
+        assert min(tam) > 0.15, f"ninguna compra puede ser calderilla: {tam}"
     # Y con poco saldo sigue comprando, solo que diminuto: es lo pedido.
     assert len(tamanos(0.05)) >= 1, "con poco saldo compra poco, pero compra"
 
 
-def test_el_techo_de_cinco_sigue_mandando() -> None:
+def test_el_techo_sigue_mandando_por_mucho_saldo_que_haya() -> None:
     """El techo existe por el NODO, no por el dinero: cada posicion abierta
     consulta su precio cada segundo y el presupuesto de peticiones no es
-    infinito. Por mucho saldo que haya, nunca mas de cinco a la vez.
+    infinito. Por mucho saldo que haya, nunca mas de las plazas que hay.
     """
     assert _trade()["max_posiciones"] == TECHO
     assert len(tamanos(50.0)) == TECHO, "el techo no se puede pasar nunca"

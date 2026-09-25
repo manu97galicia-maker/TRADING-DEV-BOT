@@ -59,9 +59,7 @@ def test_el_modo_activo_es_el_porcentaje_del_saldo_libre() -> None:
     # distinto.
     assert t["fraccion_base"] == "cartera"
     encendidos = [
-        k
-        for k in ("buy_amount_usd", "fraccion_saldo", "buy_amount")
-        if t.get(k, 0) > 0
+        k for k in ("buy_amount_usd", "fraccion_saldo", "buy_amount") if t.get(k, 0) > 0
     ]
     assert encendidos == ["fraccion_saldo"], (
         f"tiene que mandar solo el porcentaje, y mandan: {encendidos}"
@@ -115,9 +113,9 @@ def test_el_tope_solo_muerde_donde_toca() -> None:
         )
     # Y EL RECORTE NO ES MUDO: el trader avisa en el log cuando pasa. Sin
     # esto, una compra recortada es indistinguible de una compra normal.
-    fuente = (
-        CONFIG.parent.parent / "src/trading/universal_trader.py"
-    ).read_text(encoding="utf-8")
+    fuente = (CONFIG.parent.parent / "src/trading/universal_trader.py").read_text(
+        encoding="utf-8"
+    )
     assert "TOPE: se iba a comprar" in fuente, (
         "el trader ya no avisa al recortar por tope: un recorte silencioso "
         "hace que el porcentaje parezca no aplicarse"
@@ -171,18 +169,29 @@ def test_sobre_el_saldo_libre_las_posiciones_menguan() -> None:
         # la fraccion es pequena; con el 50% ya sale recortada.
         frac = float(_trade()["fraccion_saldo"])
         assert abs(tam[0] - frac) < 1e-6, f"la primera es el {frac:.0%}: {tam}"
-        # Y AQUI NO HAY FRENO AUTOMATICO, que es lo que hay que saber: con el
-        # 25% o con el 30% se llevan el mismo 95% del saldo -- el tope lo
-        # pone el saldo libre, no el porcentaje. Subirlo no arriesga mas
-        # dinero: reparte el mismo en menos posiciones y mas gordas. Lo unico que para
-        # es el guardian del saldo libre, no el tamano de la compra. El tope
-        # se deja en 0,97 --que es lo que queda tras la reserva y los
-        # colchones-- porque poner uno mas bajo seria fingir un freno que no
-        # existe en este modo.
+        # EL PORCENTAJE NO FRENA NADA EN ESTE MODO, y hay que tenerlo escrito:
+        # sobre "cartera" la base no baja al comprar, asi que subir la
+        # fraccion no arriesga mas dinero -- reparte el MISMO en menos
+        # posiciones y mas gordas. Lo unico que paraba era el guardian del
+        # saldo libre, ya con las migas compradas.
+        #
+        # QUIEN FRENA AHORA ES EL TECHO DE POSICIONES (25-sep, `max_posiciones`
+        # de 5 a 2). Con dos plazas el bot se para despues de dos compras de
+        # verdad en vez de seguir bajando hasta restos de 1,7 $, y por eso NO
+        # se compromete la cartera entera: queda un resto sin gastar.
+        #
+        # Ese resto es la prueba de que el techo manda. Si alguien vuelve a
+        # subir `max_posiciones` sin tocar la fraccion, el resto desaparece y
+        # este test se pone rojo -- que es justo lo que se quiere que pase.
         assert sum(tam) < 0.97, f"no se puede gastar mas de lo que hay: {tam}"
-        assert sum(tam) > 0.90, (
-            f"con el 25% de la cartera se compromete casi todo, y conviene "
-            f"que este escrito: {tam}"
+        assert len(tam) == _trade()["max_posiciones"], (
+            f"con el {frac:.0%} el techo de posiciones es lo que para al bot, "
+            f"asi que tienen que salir exactamente las plazas que hay: {tam}"
+        )
+        sobra = 1.0 - sum(tam)
+        assert sobra > 0.10, (
+            f"con solo {_trade()['max_posiciones']} plazas del {frac:.0%} "
+            f"tiene que quedar cartera SIN comprometer: sobran {sobra:.1%}"
         )
 
 
@@ -243,6 +252,7 @@ def test_no_quedan_importes_fijos_sueltos() -> None:
     # Y el de la fuente tiene que decir lo mismo que el global, porque el
     # importe de la SENAL pisa al global. Ya paso una vez que no coincidian.
     import yaml
+
     h = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"]["holders"]
     assert h["buy_amount"] == t["buy_amount"]
 

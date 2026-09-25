@@ -105,7 +105,16 @@ solo (2 de 10 es un 20%). Y dos, el que importa: es el último freno contra un
 fallo de cálculo. El 12 de agosto la cadena registró compras de 0,25 y 0,30
 SOL con 0,15 configurado, y nunca se supo por qué.
 
-Puede tener **5 posiciones abiertas a la vez**.
+Puede tener **2 posiciones abiertas a la vez**, y con el 50% de la cartera por
+compra eso es justo lo que el dinero da de sí: dos compras enteras y se para.
+
+Antes el techo eran 5, pero era mentira: la tercera y la cuarta salían de 8 $ y
+1,7 $, y la comisión de prioridad se llevaba el 12% y el 54% de ellas antes de
+que la moneda se moviera. Eso no es diversificar, es pagar por tener una
+posición que no puede ganar nada.
+
+Lo que cuesta: todo el dinero está en dos monedas. Si una se va al stop, son
+17,5% de la cartera; las dos a la vez, el 35%.
 
 ---
 
