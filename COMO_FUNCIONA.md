@@ -71,7 +71,7 @@ tu dinero; la segunda, lo que quedaba libre; las otras dos son calderilla — la
 
 > **La primera compra se lleva medio patrimonio, y no es la mejor moneda del
 > día: es la primera que pasa los filtros.** El bot no elige entre
-> candidatas, compra la que llega. Con el stop en el 35%, esa sola posición
+> candidatas, compra la que llega. Con el stop en el 30%, esa sola posición
 > arriesga el **17,5% de todo tu dinero**.
 
 Subir el porcentaje **no arriesga más dinero en total** — desde el 25% para
@@ -114,7 +114,7 @@ que la moneda se moviera. Eso no es diversificar, es pagar por tener una
 posición que no puede ganar nada.
 
 Lo que cuesta: todo el dinero está en dos monedas. Si una se va al stop, son
-17,5% de la cartera; las dos a la vez, el 35%.
+15,0% de la cartera; las dos a la vez, el 30%.
 
 ---
 
@@ -160,14 +160,14 @@ Si llega a 80k, **la posición se cierra entera**. No queda nada corriendo.
 
 ### El primer peldaño es el que importa, y no por lo que cobra
 
-En cuanto toca el **+25%**, el suelo sube de −35% a **+5%** y la operación ya
+En cuanto toca el **+25%**, el suelo sube de −30% a **+5%** y la operación ya
 no puede acabar en pérdida.
 
 Ahora bien, vendiendo sólo un 20% ese rescate es más pequeño que antes:
 
 | la moneda llega a | escalera de ayer | esta escalera |
 |---|---|---|
-| +24% | −35,0% | −35,0% |
+| +24% | −35,0% | −30,0% |
 | +25% | −35,0% | +9,0% |
 | +45% | +20,0% | +9,0% |
 | +59% | +20,0% | +9,0% |
@@ -180,12 +180,12 @@ pierde es el de +30% a +59%, que es el que más ocurre. A cambio, una moneda que
 dobla pasa de dejar un +39,7% a dejar un **+64,2%**.
 
 Dicho de otra forma — cuántas tienen que salir bien para no perder dinero,
-contando que una que sale mal cuesta el 35%:
+contando que una que sale mal cuesta el 30%:
 
 ```
-si sólo tocan el +25%     hacen falta 80% de aciertos
-si tocan el +60%          hacen falta 46% de aciertos
-si tocan el +100%         hacen falta 35% de aciertos
+si sólo tocan el +25%     hacen falta 77% de aciertos
+si tocan el +60%          hacen falta 42% de aciertos
+si tocan el +100%         hacen falta 32% de aciertos
 ```
 
 Esta escalera **no se sostiene con monedas que sólo tocan el primer peldaño**.
@@ -197,7 +197,7 @@ no por lo que cobra.
 Esto es lo más importante de todo el sistema:
 
 ```
-al empezar         el suelo está en -35%
+al empezar         el suelo está en -30%
 tras cobrar +25%   el suelo sube a   +5%     ← ya no puede acabar en pérdida
 tras cobrar +60%   el suelo sube a  +31,25%
 tras cobrar +100%  el suelo sube a  +68%

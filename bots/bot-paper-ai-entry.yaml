@@ -78,8 +78,8 @@ trade:
   # posicion que no puede ganar nada.
   #
   # LO QUE CUESTA, dicho claro: con dos plazas todo el dinero esta en dos
-  # monedas. Una que se hunda al stop cuesta el 17,5% de la cartera (50% de
-  # la cartera con el stop al 35%), y dos a la vez el 35%. Concentrar y
+  # monedas. Una que se hunda al stop cuesta el 15,0% de la cartera (50% de
+  # la cartera con el stop al 30%), y dos a la vez el 30%. Concentrar y
   # diversificar son lo mismo mirado del reves, y esto es concentrar.
   #
   # Y DE REGALO, MENOS CARGA EN EL NODO: cinco posiciones consultaban precio
@@ -460,59 +460,57 @@ trade:
   #
   # SOLO MANDA HASTA EL PRIMER PELDANO. En cuanto la moneda toca el TP1
   # (+25%), el suelo se sube a precio de compra +5% (`margen_stop_tras_tp`)
-  # y este numero deja de usarse en esa posicion. O sea que el 26% es lo que
+  # y este numero deja de usarse en esa posicion. O sea que el 30% es lo que
   # se arriesga ANTES de que la moneda demuestre nada.
   #
-  # ES LA PALANCA QUE MAS PESA DE TODA LA ESTRATEGIA. Entrando al 87,0% de la
-  # curva, una moneda que hace todo bien y se muere justo al migrar recorre un
-  # +87,2%. Con la escalera de la tarde del 24-sep cobra solo los DOS primeros
-  # peldanos --el tercero esta en +100% y no cabe-- o sea el 55% de la
-  # posicion; el 45% que queda sale en el suelo, que para entonces esta en
-  # +31,25%. Total +39,8%. Lo que decide si eso compensa es lo que cuesta una
-  # que sale mal:
+  # 30% (25-sep, pedido: "reduce el stop loss un poco"). Estuvo en 35% unas
+  # horas. Historial completo:
+  #   18 -> 28 -> 40 -> 30 -> 18 -> 28 -> 15 -> 26 -> 35 -> 30.
   #
-  #   stop   se pierde   una que migra y muere   aciertos para no perder
-  #    28%     -28,0%          +39,8%                     41%
-  #    26%     -26,0%          +39,8%                     39%   <- aqui
-  #    20%     -20,0%          +39,8%                     33%
+  # ES LA PALANCA QUE MAS PESA DE TODA LA ESTRATEGIA, porque decide cuantas
+  # tienen que salir bien. Con la escalera de tres peldanos:
   #
-  # SUBIO DIEZ PUNTOS ESTA TARDE, y es lo que mas pesa de todo el cambio de
-  # escalera: por la manana hacia falta acertar un 29% y ahora un 39%. La
-  # causa no es el stop --sigue en 26%-- sino que el tercer peldano se fue a
-  # +100% y dejo de caber en la curva. Con el tercero en +90% vuelve a 29%.
+  #   stop   riesgo de 1 posicion   aciertos para no perder, si la moneda
+  #          (50% de la cartera)     toca +25%   toca +60%   toca +100%
+  #    35%         17,5%               80%         46%          35%
+  #    32%         16,0%               78%         44%          33%
+  #    30%         15,0%               77%         42%          32%   <- aqui
+  #    26%         13,0%               74%         39%          29%
   #
-  # Y NO LA MUEVE LA ENTRADA: al subir la curva de 86,0% a 87,0% esta tabla
-  # se queda igual, porque los peldanos que caben dentro siguen siendo los
-  # mismos dos. Mover la entrada cambia cuantas monedas llegan, no cuanto
-  # dejan las que llegan.
+  # LO QUE SE GANA BAJANDOLO: menos hace falta acertar y menos se arriesga
+  # por operacion. Con dos posiciones abiertas del 50% cada una, dos stops a
+  # la vez pasan de llevarse el 35% de la cartera al 30%.
+  #
+  # LO QUE CUESTA, Y YA PASO UNA VEZ: con un stop mas estrecho se sale de los
+  # tirones normales de una memecoin, y posiciones que cierran en rojo luego
+  # suben. Eso fue exactamente lo que llevo el stop de 18 a 28 y despues a 40
+  # en agosto. Una moneda que cae un 32% y luego se dispara se aguantaba con
+  # el 35% y se pierde con el 30%.
+  #
+  # POR QUE SE PUEDE BAJAR AHORA. Porque el TP1 esta en +25% y su trabajo no
+  # es cobrar --se lleva solo el 20%-- sino APAGAR EL STOP: en cuanto la
+  # moneda sube un 25%, el suelo pasa a compra +5% y este numero deja de
+  # usarse en esa posicion. El stop estrecho y el TP1 bajo son una pareja;
+  # cambiar uno sin el otro la rompe.
   #
   # EL MARGEN MULTIPLICA, NO SUMA, y es facil equivocarse (me equivoque al
   # escribir la primera version de esta tabla). Tras cobrar el peldano i el
   # suelo es `entrada x (1 + ganancia del peldano i-1) x 1,05`, no
-  # `entrada + ganancia + 5 puntos`. Por eso tras el TP3 queda en +62,75% y
-  # no en +60%. Esta en `stepped_stop_price`, en tiered_exit.py.
+  # `entrada + ganancia + 5 puntos`. Por eso tras el TP2 queda en +31,25% y
+  # no en +30%. Esta en `stepped_stop_price`, en tiered_exit.py.
   #
   # (La perdida ES el stop entero: desde el 24-sep `vender_todo_en_stop` se
-  # lleva tambien el moonbag, asi que ya no hay resto cayendose a cero.)
+  # lleva tambien lo que quede dentro, asi que no hay resto cayendose a cero.)
   #
   # LA TABLA NO ES UNA PROMESA. Dice cuanto hace falta acertar, no cuanto se
-  # acierta: ese dato --que fraccion de las compradas llega a migrar-- no esta
-  # medido todavia en ninguna parte.
-  #
-  # LO QUE CUESTA, y ya paso una vez: con un stop estrecho se sale de los
-  # tirones normales de una memecoin, y posiciones que cierran en rojo luego
-  # suben. Eso fue lo que llevo el stop de 18 a 28 y despues a 40.
-  #
-  # POR QUE AHORA SI. Entonces la escalera empezaba mas arriba y el stop era
-  # la unica red durante casi toda la vida de la posicion. Ahora el TP1 esta
-  # en +25% y vende solo el 15%: su trabajo no es cobrar, es APAGAR EL STOP
-  # cuanto antes. En cuanto la moneda se mueve, el suelo pasa a compra +5% y
-  # este numero deja de usarse.
+  # acierta: ese dato --que fraccion de las compradas llega a cada peldano--
+  # sigue sin estar medido en ninguna parte. Lo mediria `cazar_senales.py`,
+  # que desde hoy mide exactamente estos tres peldanos.
   #
   # SI VUELVEN LOS CIERRES EN ROJO de monedas que luego suben, la palanca es
   # subir este numero -- pero entonces hay que subir el TP1 con el.
   #
-  stop_loss_percentage: 0.35
+  stop_loss_percentage: 0.30
   # EL STOP SE LLEVA LA POSICION ENTERA, moonbag incluido.
   #
   # Antes dejaba el 2% corriendo en una moneda que se estaba cayendo a cero:
@@ -737,10 +735,10 @@ trade:
   # LA PRIMERA COMPRA SE LLEVA LA MITAD DE LA CARTERA. Y no es la mejor moneda
   # del dia: es LA PRIMERA que pasa los filtros. El bot no elige entre
   # candidatas, compra la que llega. Con el stop en 26%, esa primera
-  # posicion arriesga ella sola el 17,5% de todo el dinero. Ojo a la cuenta:
+  # posicion arriesga ella sola el 15,0% de todo el dinero. Ojo a la cuenta:
   # el porcentaje vuelve a ser el de hace dos horas pero el riesgo NO, porque
-  # el stop paso de 26% a 35% por el camino. Mismo 50%, 17,5% en vez de
-  # 13,0%. Con el 20% del saldo libre eran un 5,0%.
+  # el stop paso de 26% a 35% y luego a 30% por el camino. Mismo 50%, 15,0%
+  # en vez de 13,0%. Con el 20% del saldo libre eran un 5,0%.
   #
   # LA SEGUNDA SE LLEVA 0,350 --lo que quedaba libre-- y las otras dos son
   # restos: 0,085 y 0,019 SOL. Esa ultima son ~4,2 $ de los que la comision
