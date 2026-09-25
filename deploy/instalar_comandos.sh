@@ -152,6 +152,44 @@ if [ "${_c:-0}" -eq 0 ]; then
     echo "     Se reintenta cada 10 s; si no se va, no llega a DexScreener."
   fi
   echo "  -> para saber que las para, escribe:  porque"
+else
+  # SI HUBO INTENTOS, DECIR EN QUE QUEDARON.
+  #
+  # EL HUECO QUE TAPA, del 25-sep. El panel contaba "intentos de compra
+  # (6 h): 16" y ahi se callaba: todo el detalle estaba en la rama del CERO.
+  # O sea que en el unico caso en que el bot SI esta operando --con dinero
+  # real-- no se podia saber si alguno de esos 16 habia entrado, si habian
+  # fallado todos, ni por que. "Intento" no es "compra": la transaccion
+  # puede no confirmarse.
+  #
+  # Es el mismo fallo de siempre en este panel, y van tres: decir una cosa
+  # cierta y dejar creyendo otra.
+  _ok="$(journalctl -u pump-bot --since '-6 hours' --no-pager 2>/dev/null | grep -c 'Successfully bought' || true)"
+  _ko="$(journalctl -u pump-bot --since '-6 hours' --no-pager 2>/dev/null | grep -c 'Failed to buy' || true)"
+  echo "  compras que entraron:    ${_ok:-0}"
+  echo "  compras que no entraron: ${_ko:-0}"
+  if [ "${_ko:-0}" -gt 0 ] && [ "${_ok:-0}" -eq 0 ]; then
+    echo
+    echo "  !! LO INTENTA Y NO ENTRA NINGUNA !!"
+    echo "     No es cosa de los filtros: la moneda paso todas las puertas y"
+    echo "     la transaccion es la que falla. Motivo mas repetido:"
+    journalctl -u pump-bot --since "-6 hours" --no-pager 2>/dev/null \
+      | grep "Failed to buy" | sed "s/.*Failed to buy //" \
+      | sort | uniq -c | sort -rn | head -3 | sed "s/^/       /"
+    echo "     Si habla de slippage, saldo o blockhash, es otra cosa cada una."
+  fi
+  # LAS QUE SIGUEN ABIERTAS. Sin esto no se sabe si el dinero esta fuera o
+  # dentro, que con el 50% de la cartera por compra es la pregunta cara.
+  #
+  # SON FICHEROS SUELTOS EN LA RAIZ, no una lista dentro de un json: el bot
+  # deja un marcador `open_position*.json` por posicion (`_open_position_paths`
+  # en universal_trader.py) y es lo que sobrevive a un reinicio. La primera
+  # version de esta linea buscaba un `trades/posiciones.json` que no existe,
+  # asi que habria dicho "0 posiciones abiertas" para siempre -- otra vez el
+  # mismo fallo que este bloque venia a arreglar.
+  _abiertas="$(ls open_position*.json 2>/dev/null | wc -l)"
+  echo "  posiciones abiertas ahora: ${_abiertas:-0}"
+  echo "  -> el resultado del dia:  uv run deploy/resumen_dia.py"
 fi
 
 echo
