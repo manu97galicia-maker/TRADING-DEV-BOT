@@ -623,10 +623,9 @@ trade:
   # 0,30 · 0,21 · 0,15 · 0,10 · 0,07. La quinta valia la cuarta parte que la
   # primera sin que nadie lo pidiera. Sobre la cartera salen IGUALES.
   #
-  # 70% DE LA CARTERA (24-sep, pedido: "sube al 70% del SOL total por
-  # operacion"). Historial: 30% cartera -> 10 $ fijos -> 25% cartera -> 15%
-  # libre -> 20% libre -> 25% cartera -> 30% cartera -> 50% cartera -> 70%
-  # cartera.
+  # 80% DE LA CARTERA (24-sep, pedido: "compra un 80% del SOL balance").
+  # Historial: 30% cartera -> 10 $ fijos -> 25% cartera -> 15% libre -> 20%
+  # libre -> 25% cartera -> 30% -> 50% -> 70% -> 80% cartera.
   #
   # CAMBIAN LAS DOS COSAS A LA VEZ, y la base pesa mas que el numero. Lo dice
   # `fraccion_base`, aqui abajo, que vuelve a "cartera": la base ya no baja
@@ -638,22 +637,24 @@ trade:
   #   25% cartera          0,250 0,249 0,249 0,160 0,038   0,945      95%
   #   30% cartera          0,300 0,299 0,298 0,048         0,945      95%
   #   50% cartera          0,500 0,350 0,085 0,019         0,955      95%
-  #   70% cartera (hoy)    0,700 0,200 0,048               0,948      95%
+  #   70% cartera          0,700 0,200 0,048               0,948      95%
+  #   80% cartera (hoy)    0,800 0,125 0,029               0,954      95%
   #
   # EL RIESGO TOTAL NO SUBE, Y ES LO PRIMERO QUE HAY QUE ENTENDER: desde el
   # 25% para arriba se compromete SIEMPRE el mismo ~95% del saldo, porque el
   # tope no lo pone el porcentaje sino el saldo libre. Lo que cambia es COMO
   # SE REPARTE.
   #
-  # LA PRIMERA COMPRA SE LLEVA EL 70% DE LA CARTERA. Y no es la mejor moneda
+  # LA PRIMERA COMPRA SE LLEVA EL 80% DE LA CARTERA. Y no es la mejor moneda
   # del dia: es LA PRIMERA que pasa los filtros. El bot no elige entre
   # candidatas, compra la que llega. Con el stop en 26%, esa primera
-  # posicion arriesga ella sola el 18,2% de todo el dinero (con el 50% eran
-  # el 13,0%; con el 20% del saldo libre, un 5,0%).
+  # posicion arriesga ella sola el 28,0% de todo el dinero -- y eso con el
+  # stop en 35%, no en 26%. Con el 50% y el stop viejo eran el 13,0%; con el
+  # 20% del saldo libre, un 5,0%. Se ha multiplicado por cinco en una tarde.
   #
-  # LA SEGUNDA SE LLEVA 0,200 --lo que quedaba libre-- y la tercera 0,048,
-  # que son ~10,5 $ de los que la comision de prioridad se lleva 1,12 $: el
-  # 11% antes de que la moneda se mueva.
+  # LA SEGUNDA SE LLEVA 0,125 --lo que quedaba libre-- y la tercera 0,029,
+  # que son ~6,4 $ de los que la comision de prioridad se lleva 1,12 $: el
+  # 18% antes de que la moneda se mueva.
   #
   # DE CINCO PLAZAS QUEDA UNA COMPRA DE VERDAD, igual que con el 50%. La
   # cuenta es `0,95 / fraccion`: con el 25% y el 30% salian tres, del 50% en
@@ -682,7 +683,7 @@ trade:
   # LAS DOS PALANCAS SI ESO MOLESTA: `compra_minima_sol`, que se salta las
   # compras que no llegan a un minimo, o bajar `max_posiciones`. Ninguna se
   # toca aqui porque no se pidieron.
-  fraccion_saldo: 0.70
+  fraccion_saldo: 0.80
   # SOBRE QUE SE CALCULA EL PORCENTAJE. Es una clave y no una decision
   # escrita en el codigo porque ha ido y venido tres veces en dos dias, y
   # cada vuelta era un commit tocando el camino de compra.
@@ -1015,7 +1016,46 @@ filters:
   max_entry_mc: 0
   min_volumen_sol: 0
   max_volumen_sol: 0
+  # PRESION COMPRADORA EN LA ENTRADA: PEDIDA EL 24-SEP Y NO APLICADA
+  # TODAVIA, a proposito. Se deja en 0 y aqui queda escrito por que.
+  #
+  # ENCENDER ESTO SOLO NO HACE NADA. El filtro se comprueba DENTRO de la
+  # ventana de espera del bucle de compra, y esa ventana --`max_buy_age`--
+  # esta en 0: el bot compra al instante y nunca entra en el bucle. Poner
+  # 1,5 aqui seria un numero que parece decidir y no decide. Lo caza
+  # `test_los_filtros_del_bucle_estan_apagados`, que existe justo para eso.
+  #
+  # PARA QUE FUNCIONE hay que poner ademas `max_buy_age` en algo como 15-20
+  # segundos, y eso SI cambia el comportamiento: el bot dejaria de comprar
+  # al instante y se quedaria mirando la moneda hasta que la presion cuadre
+  # o se agote la ventana. Es lo contrario de lo pedido toda la tarde --el
+  # gas de compra se subio dos veces para entrar ANTES-- asi que no se hace
+  # sin decirlo.
+  #
+  # QUE MIDE: cuantas veces mas SOL se COMPRAN que se VENDEN en los ultimos
+  # `presion_seg` segundos. Con 1,5 se exige que entre un 50% mas dinero del
+  # que sale. El volumen solo dice que hay movimiento; esto dice hacia donde
+  # va, y evita entrar justo en la primera vela roja de un dump.
+  #
+  # POR QUE AHORA Y NO ANTES. Esta tarde la entrada bajo del 90% al 71%, y
+  # una moneda al 71% ha demostrado mucho menos que una al 90%: le faltan
+  # 51,9 SOL para migrar contra 25,4. El filtro que daba calidad era el punto
+  # de la curva, y al bajarlo se ha ido. Esto lo sustituye por otra via: en
+  # vez de "ha llegado lejos", "ahora mismo esta entrando dinero".
+  #
+  # SIN DATOS NO ES LO MISMO QUE CAYENDO, y el codigo ya lo distingue: si la
+  # ventana esta vacia (0,00 compras y 0,00 ventas) se deja pasar. Se midio
+  # el 10-ago -- las 6 monedas que cruzaron el volumen pedido lo hicieron con
+  # la ventana vacia y tratar ese silencio como presion vendedora las vetaba
+  # las seis, por falta de dato y no por ir mal.
+  #
+  # OJO: ES UN FILTRO MAS EN UN EMBUDO QUE YA ESTA ATASCADO. Esta tarde: 14
+  # candidatas, 0 compras, y las que se caian lo hacian por `min_compradores`.
+  # Esto no abre nada; aprieta. Si tras la ventana de observacion el bot
+  # sigue sin comprar, hay que mirar los dos: este y el de compradores.
   min_presion_ratio: 0
+  # Ventana en la que se mediria. Se deja en 0 mientras el filtro este
+  # apagado; el codigo usa 3 s por defecto.
   presion_seg: 0
   min_buys: 0
   min_ops: 0

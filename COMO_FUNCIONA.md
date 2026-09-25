@@ -56,23 +56,23 @@ todas las entradas, venga de donde venga la moneda.
 
 ## 3. Cuánto pone en cada compra
 
-**El 70% de la cartera.** Cartera = todo lo que tienes, el SOL de la wallet
+**El 80% de la cartera.** Cartera = todo lo que tienes, el SOL de la wallet
 más lo que ya vale lo que hay metido en monedas.
 
 Con 1 SOL de saldo salen así:
 
 ```
-0,700 · 0,200 · 0,048     (suma 0,948 = el 95% del saldo)
+0,800 · 0,125 · 0,029     (suma 0,954 = el 95% del saldo)
 ```
 
-**Una compra de verdad y dos restos.** La primera se lleva siete décimas de
-todo tu dinero; la segunda, lo que quedaba libre; la tercera son 10 $ de los
-que 1,12 $ se van en comisión.
+**Una compra de verdad y dos restos.** La primera se lleva ocho décimas de
+todo tu dinero; la segunda, lo que quedaba libre; la tercera son 6,4 $ de los
+que 1,12 $ se van en comisión — el 18%.
 
-> **La primera compra se lleva el 70% de tu patrimonio, y no es la mejor
+> **La primera compra se lleva el 80% de tu patrimonio, y no es la mejor
 > moneda del día: es la primera que pasa los filtros.** El bot no elige entre
 > candidatas, compra la que llega. Con el stop en el 35%, esa sola posición
-> arriesga el **24,5% de todo tu dinero**.
+> arriesga el **28% de todo tu dinero**.
 
 Subir el porcentaje **no arriesga más dinero en total** — desde el 25% para
 arriba se compromete siempre el mismo 95%, porque el límite lo pone el saldo,
