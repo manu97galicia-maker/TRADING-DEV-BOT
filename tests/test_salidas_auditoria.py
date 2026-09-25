@@ -31,6 +31,15 @@ ENTRADA = 0.0000001
 MULTIPLO_MINIMO_LEJANO = 2.0
 
 
+def _trade_yaml() -> dict:
+    """El bloque `trade` del yaml, leido una vez por llamada.
+
+    Hay otro sitio en este fichero que importa yaml dentro de la funcion; se
+    deja asi porque ya estaba, pero lo nuevo pasa por aqui.
+    """
+    return yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["trade"]
+
+
 def _tiers() -> list:
     t = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["trade"]
     pares = [(t["take_profit_percentage"], t["take_profit_sell_percentage"])]
@@ -65,6 +74,8 @@ def test_una_ganancia_de_9_significa_x10_y_no_mas_9_por_ciento() -> None:
     # Pasado el ultimo peldano ya no se vende mas: lo que queda es el moonbag.
     tope = 1 + max(t.gain for t in _tiers())
     assert _vendido_hasta(50.0) == _vendido_hasta(tope)
+    assert _vendido_hasta(50.0) < 1.0, "queda moonbag: no puede venderse todo"
+    assert _vendido_hasta(50.0) < 1.0, "queda moonbag: no puede venderse todo"
     # YA NO SE COMPRUEBA QUE QUEDE MOONBAG: desde la noche del 24-sep el take
     # profit unico vende el 100%. Que no quede resto lo vigila
     # test_stop_entero_y_renta.py, que es donde importa (un resto sin dueno
@@ -77,7 +88,14 @@ def test_una_ganancia_de_9_significa_x10_y_no_mas_9_por_ciento() -> None:
     # este test --escribir "9" queriendo decir 9% y disparar a x10-- solo
     # existe cuando hay peldanos lejanos, asi que se comprueba cuando los
     # hay. Si vuelven, vuelve la vigilancia sola.
-    hay_lejanos = len(_tiers()) > 1
+    #
+    # "HAY LEJANOS" SE MIRA EN `tp_extra`, no en cuantos peldanos hay. La
+    # version anterior usaba `len(_tiers()) > 1` y se puso roja al volver a
+    # una escalera de DOS peldanos de cerca (+30% y +60%): dos peldanos no
+    # son un peldano lejano, y x1,60 escrito como "0.60" es correcto. Los
+    # peldanos en formato multiplo viven en `tp_extra` y solo ahi existe la
+    # trampa que este test vigila.
+    hay_lejanos = bool(_trade_yaml().get("tp_extra"))
     if hay_lejanos:
         assert tope > MULTIPLO_MINIMO_LEJANO, (
             "el ultimo peldano tiene que ser un multiplo, no un porcentaje"
@@ -112,18 +130,16 @@ def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
     # Lo VENDIDO ACUMULADO al llegar a cada multiplo. Desde la tarde del
-    # 24-sep (noche): UN SOLO peldano, al +55,13%, que vende el 100%. Antes
-    # eran siete. Esta tabla es ahora casi trivial, y esa es justo la
-    # informacion: no hay medias tintas -- o se cobra todo o no se cobra
-    # nada. Se dejan los niveles viejos (+18%, +38%) para que se vea que ahi
-    # ya no se vende
+    # 24-sep (noche, 2a version): DOS peldanos, +30% vendiendo el 60% y +60%
+    # vendiendo el 30%. El 10% que sobra es moonbag y no se vende nunca --
+    # por eso la ultima fila se queda en 0,90 por mucho que suba
     # lejanos en `tp_extra`, cada uno un 35% mas caro que el anterior.
     esperado = {
-        1.18: 0.0,    # el TP1 de antes: hoy aqui no se vende nada
-        1.38: 0.0,
-        1.5512: 0.0,  # justo por debajo del objetivo
-        1.5513: 1.0,  # el take profit unico: se vende la posicion entera
-        50.0: 1.0,    # por mucho que suba, ya no queda nada que cobrar
+        1.29: 0.0,    # justo por debajo del primero
+        1.30: 0.60,   # el primero se lleva el grueso
+        1.59: 0.60,
+        1.60: 0.90,   # los dos cobrados
+        50.0: 0.90,   # el 10% de moonbag no se vende por mucho que suba
     }
     for multiplo, acumulado in esperado.items():
         assert round(_vendido_hasta(multiplo), 6) == acumulado, f"fallo en x{multiplo}"

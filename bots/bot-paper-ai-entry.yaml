@@ -167,63 +167,47 @@ trade:
   # gas de la operacion es un 3,7%. El TP1 NO cubre el gas por si solo, y da
   # igual -- lo que aporta es el suelo, y eso ya esta contado en la cuenta de
   # arriba.
-  # UN SOLO TAKE PROFIT (24-sep, noche, pedido: "lo que quiero es pagar pocas
-  # comisiones, solo quiero un tp y un sl"). Se va la escalera entera.
+  # DOS PELDANOS (24-sep, noche, pedido: "un take profit al 30% vendemos un
+  # 60, al 60 un 30, y lo que sobre"). Vuelve una escalera corta despues de
+  # unas horas con un solo take profit.
   #
-  #   antes                              ahora
-  #   +18% vende 10%                     +55,13% vende 100%
-  #   +38% vende 15%                     (nada mas)
-  #   +55,13% vende 15%
-  #   x2,733 (150k) vende 20%
-  #   x3,644 (200k) vende 17%
-  #   x5,466 (300k) vende 12%
-  #   x7,288 (400k) vende 8%
-  #   3% de moonbag                      no queda moonbag
+  #   peldano   vende   market cap   hay que llegar al   suelo tras cobrarlo
+  #    +30%      60%      ~35,4k      78,9% de curva       compra +5%
+  #    +60%      30%      ~43,6k      84,5% de curva       compra +36,5%
+  #    resto     10%      no se vende nunca
   #
-  # LO QUE SE AHORRA, con las cifras reales: cada venta paga 0,046 $ de
-  # comision de prioridad. Siete ventas son 0,32 $ y una es 0,046 $, asi que
-  # se ahorran 0,28 $ por posicion. Sobre una posicion de 110 $ eso es el
-  # 0,25%. La comision de COMPRA --1,12 $-- no cambia: las siete ventas
-  # juntas costaban menos de un tercio de lo que cuesta abrir la posicion.
+  # LOS DOS CABEN DE SOBRA: entrando al 71% quedan +231,9% hasta migrar.
   #
-  # LO QUE CUESTA, Y ES MUCHO MAS QUE LO QUE AHORRA. El peldano pequeno no
-  # estaba para cobrar: estaba para APAGAR EL STOP. Al tocarlo, el suelo
-  # subia a compra +5% y la operacion ya no podia acabar en perdida. Sin el,
-  # todo lo que no llegue al objetivo cuesta el stop entero:
+  # VUELVE EL PELDANO QUE APAGA EL STOP, y es lo que mas cambia. Con el take
+  # profit unico, una moneda que subia un 45% y se daba la vuelta costaba el
+  # stop entero. Ahora el +30% cobra el 60% de la posicion y sube el suelo a
+  # compra +5%: esa misma moneda deja +20%.
   #
-  #   la moneda llega a    con escalera    con 1 TP
-  #          +20%             +6,3%         -26,0%
-  #          +30%             +6,3%         -26,0%
-  #          +45%            +25,4%         -26,0%
-  #          +54%            +25,4%         -26,0%
-  #          +55%            +42,7%         +55,1%
-  #          x2,73           +75,6%         +55,1%
-  #          x7,29          +213,5%         +55,1%
+  #   la moneda llega a    con 1 TP (+55,13%)    con esta escalera
+  #        +20%                  -35,0%               -35,0%
+  #        +29%                  -35,0%               -35,0%
+  #        +30%                  -35,0%               +20,0%
+  #        +45%                  -35,0%               +20,0%
+  #        +55%                  +55,1%               +20,0%
+  #        +60%                  +55,1%               +39,7%
+  #        x3                    +55,1%               +39,7%
   #
-  # SE ELIGIO A SABIENDAS, con esa tabla delante, y el motivo dado fue que
-  # "buscamos proyectos con mucha presion compradora y que se disparen": si
-  # la mayoria de las compradas llega al objetivo, los finales intermedios
-  # importan poco. Esa es la apuesta, y no esta medida.
+  # MEJOR EN EL TRAMO QUE MAS PASA (+30% a +55%) Y PEOR ARRIBA. El umbral de
+  # aciertos sube de 39% a 47% si se mide contra el caso bueno, pero esa
+  # comparacion enganha: con un solo TP "acertar" era llegar al +55,13% y
+  # aqui basta con llegar al +30% para no perder dinero.
   #
-  # ACIERTOS PARA NO PERDER: 32% (26 / (55,13 + 26)). Con la escalera hacian
-  # falta 38%, pero no son comparables: alli "acertar" era llegar a migrar y
-  # aqui es llegar al +55,13%.
+  # EL 10% QUE SOBRA NO SE VENDE NUNCA. Es el moonbag: se queda en la
+  # cartera hasta que salte el suelo o se venda a mano. Vuelve a existir
+  # despues de unas horas sin el, asi que vuelve tambien lo que arrastra:
+  # la cuenta de token sigue abierta con su renta dentro.
   #
-  # POR QUE EL OBJETIVO EN +55,13%: es el unico numero que la curva decide.
-  # Entrando al 90% quedan +64,7% hasta migrar, asi que entra por 9,6 puntos.
-  # Por encima de +64,7% el objetivo solo se cobraria despues de migrar, y
-  # con un solo peldano eso no es cobrar menos, es no cobrar. Hay test.
-  #
-  # EN MARKET CAP el objetivo cae sobre los 85k (compra ~54,9k con SOL a
-  # 220 $). Si se quisiera cobrar a 150k habria que ponerlo en x2,733, pero
-  # eso queda fuera de la curva: solo se cobraria si la moneda migra y sigue
-  # subiendo, y todo lo demas seria -26%.
-  #
-  # SI SE QUIERE RECUPERAR LA PROTECCION sin volver a la escalera entera,
-  # basta UNA venta mas: un peldano al +18% que venda el 5%. Cuesta 0,046 $
-  # y convierte ese -26% en +5,6% en todo el tramo del +18% al +54%.
-  take_profit_percentage: 0.5513
-  take_profit_sell_percentage: 1.00
+  # LA HOLGURA DEL SUELO ES DE +17,2%: tras cobrar el +60% el suelo queda en
+  # x1,365 y el peldano esta en x1,60. Sitio de sobra para que respire.
+  take_profit_percentage: 0.30
+  take_profit_sell_percentage: 0.60
+  tp2_gain: 0.60
+  tp2_sell: 0.30
   # +53% Y NO +55% (24-sep, pedido: "sube dentro de la curva dos puntos").
   # Dos puntos NO de ganancia sino de MARGEN: entrando al 91,0% quedan
   # +57,5% hasta migrar, asi que el peldano pasa de entrar por 2,5 puntos a

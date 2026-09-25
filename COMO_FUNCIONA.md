@@ -113,65 +113,41 @@ Puede tener **5 posiciones abiertas a la vez**.
 
 Dos escaleras, una detrás de la otra.
 
-### Un solo objetivo
+### Dos peldaños
 
-| sube | vende | market cap aprox. |
+| sube | vende | acumulado | market cap aprox. |
+|---|---|---|---|
+| +30% | 60% | 60% | 35k $ |
+| +60% | 30% | 90% | 44k $ |
+
+El **10% que sobra** se queda corriendo. El bot no lo vende nunca: solo sale
+si el precio se da la vuelta y toca el suelo.
+
+Los dos caben de sobra dentro de la curva: comprando al 71% queda un +232%
+hasta migrar, y para cobrar el segundo basta con que la moneda llegue al
+84,5% de su curva.
+
+### El primer peldaño es el que importa, y no por lo que cobra
+
+En cuanto toca el **+30%**, el suelo sube de −35% a **+5%** y la operación ya
+no puede acabar en pérdida.
+
+Durante unas horas de hoy esto no existía — había un solo objetivo al +55% y
+nada más. La diferencia en las monedas que se quedan a medio camino es enorme:
+
+| la moneda llega a | con un solo TP | con estos dos peldaños |
 |---|---|---|
-| +55% | 100% | 85k $ |
+| +20% | −35,0% | −35,0% |
+| +29% | −35,0% | −35,0% |
+| **+30%** | **−35,0%** | **+20,0%** |
+| **+45%** | **−35,0%** | **+20,0%** |
+| +55% | +55,1% | +20,0% |
+| +60% | +55,1% | +39,7% |
+| x3 | +55,1% | +39,7% |
 
-Eso es todo. No hay escalones, no hay moonbag: o la moneda llega al +55% y se
-vende entera, o no llega.
+**Mejor en el tramo que más ocurre, peor arriba.** Una moneda que sube un 45%
+y se da la vuelta pasaba de costarte un 35% a dejarte un 20%.
 
-**Lo que de verdad decide si se cobra no es el +55%, sino a qué punto de la
-curva equivale.** La curva acelera, así que el mismo +55% queda más lejos
-cuanto más arriba se compra:
-
-| se compra al | para cobrar hay que llegar al |
-|---|---|
-| **71%** | **83,7% de curva** |
-| 79% | 90,1% |
-| 84% | 94,1% |
-| 90% | 98,9% ← casi migrar |
-
-Por eso se compra abajo: el objetivo pasa de pedir *casi migrar* a pedir un
-83,7%, por donde pasan muchas más monedas.
-
-> **Ojo con el nombre.** Esta estrategia se llamaba "la curva casi llena" y
-> nació comprando al 96%. Al 71% le faltan **52 SOL para migrar — dos
-> tercios de la curva**. Ya no son monedas a punto de conseguirlo: son
-> monedas que apenas han empezado. La premisa original ("si ha llegado hasta
-> aquí es que ha pasado por mucha gente") ya casi no se sostiene, y los
-> filtros que quedan están escritos para monedas avanzadas.
-
-### Lo que cuesta tener un solo objetivo
-
-Antes había un peldaño pequeño al +18%. **No estaba para cobrar: estaba para
-apagar el stop.** Al tocarlo, el suelo subía a +5% y la operación ya no podía
-acabar en pérdida.
-
-Sin él, todo lo que no llegue al objetivo cuesta el stop entero:
-
-| la moneda llega a | con la escalera de antes | con un solo TP |
-|---|---|---|
-| +20% | +6,3% | **−35,0%** |
-| +30% | +6,3% | **−35,0%** |
-| +45% | +25,4% | **−35,0%** |
-| +54% | +25,4% | **−35,0%** |
-| +55% | +42,7% | +55,1% |
-| x2,73 | +75,6% | +55,1% |
-| x7,29 | +213,5% | +55,1% |
-
-> Está elegido así a propósito, con esa tabla delante. El razonamiento fue:
-> *buscamos proyectos con mucha presión compradora y que se disparen*, así que
-> la mayoría debería llegar al objetivo y los finales intermedios importan
-> poco. **Esa es la apuesta, y todavía no está medida.**
-
-**Hacen falta 39 aciertos de cada 100** para no perder dinero.
-
-> El stop está en −35%. Cuanto más ancho, más aciertos hacen falta — pero
-> también te sales de menos sustos normales. Con el 70% en una sola moneda,
-> **tres pérdidas seguidas se llevan la mitad de la cuenta**, y no hay ningún
-> freno que las pare.
 
 ### Lo que se ahorra
 
@@ -185,16 +161,13 @@ Esto es lo más importante de todo el sistema:
 
 ```
 al empezar        el suelo está en -35%
-si llega al +55%  se vende TODO y se acabó
+tras cobrar +30%  el suelo sube a  +5%     ← ya no puede acabar en pérdida
+tras cobrar +60%  el suelo sube a +36,5%
 ```
 
-**Ya no hay suelo que suba.** Con un único objetivo no hay nada que proteger
-a mitad de camino: mientras la posición está abierta, lo único que la cierra
-es el stop en −35% o el objetivo en +55%.
-
-Si algún día quieres recuperar esa protección sin volver a la escalera
-entera, basta **una venta más**: un peldaño al +18% que venda el 5%. Cuesta
-0,046 $ y convierte ese −35% en +5,6% en todo el tramo del +18% al +54%.
+**El suelo vuelve a subir**, después de unas horas en las que no lo hacía.
+Y el 10% de moonbag es lo que queda enganchado a él: mientras el precio esté
+por encima del suelo se queda dentro; si baja, sale con el resto.
 
 El suelo se pone un peldaño por detrás del que acabas de cobrar, y un 5% por
 encima de ese. Un 5% *del precio*, no cinco puntos: por eso tras el +38% queda

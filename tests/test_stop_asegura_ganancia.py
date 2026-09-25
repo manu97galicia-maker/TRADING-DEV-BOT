@@ -82,9 +82,8 @@ def test_el_tp1_de_la_config_vende_y_asegura() -> None:
     peldano a mano y se quedara verde midiendo el de dos versiones atras.
     """
     t = _trade()
-    assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 1.00
-    assert _tiers()[0].gain == t["take_profit_percentage"] == 0.5513
-    assert _tiers()[0].gain == t["take_profit_percentage"] == 0.5513
+    assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 0.60
+    assert _tiers()[0].gain == t["take_profit_percentage"] == 0.30
 
 
 # ------------------------------------------------- el suelo asegura ganancia
@@ -170,25 +169,25 @@ def test_el_colchon_mas_apretado_esta_anotado() -> None:
 # ----------------------------------------------------- la escalera completa
 
 
-def test_un_solo_peldano_que_vende_el_cien_por_cien() -> None:
-    """LA CONFIGURACION SE QUEDO EN UN TAKE PROFIT (24-sep, noche, pedido:
-    "solo quiero un tp y un sl", para pagar menos comisiones de venta).
+def test_dos_peldanos_y_un_moonbag_de_lo_que_sobra() -> None:
+    """LA ESCALERA DE LA NOCHE DEL 24-SEP: +30% vende 60%, +60% vende 30%,
+    y el 10% que sobra se queda corriendo ("lo que sobre").
 
-    ESTE TEST SUSTITUYE A DOS. Uno sumaba las dos escaleras --la de
-    porcentaje y la de market cap-- para comprobar que juntas vendian el 97%
-    y dejaban un 3% de moonbag. El otro fijaba los tres peldanos de cerca.
-    Ninguna de las dos cosas existe ya.
+    ESTE TEST HA CAMBIADO DE FORMA TRES VECES HOY, con la escalera: sumaba
+    dos escaleras (porcentaje + market cap) para llegar al 97%; luego exigia
+    un solo peldano vendiendo el 100%; ahora dos y un resto. Se reescribe
+    cada vez en vez de aflojarse, porque lo que fija --cuanto se vende y
+    cuanto sobra-- es justo lo que no puede quedar a medias.
 
-    LO QUE SE COMPRUEBA AHORA es lo que queda por comprobar, que es poco y
-    por eso hay que escribirlo: un peldano, vende todo, no hay resto, y
-    `moonbag_fraction` --que es lo que mira el codigo para decidir si deja
-    algo corriendo-- devuelve cero.
+    LO QUE IMPORTA DEL MOONBAG: mientras exista, la cuenta de token sigue
+    abierta con su renta dentro y el bot sigue vigilando una posicion casi
+    vacia. Es una decision tomada, no un descuido.
     """
     tiers = _tiers()
-    assert len(tiers) == 1, f"un solo take profit: {tiers}"
-    assert tiers[0].sell == 1.0
-    assert moonbag_fraction(tiers) == 0.0
-    # Y que no hayan vuelto por la puerta de atras las otras dos vias.
+    assert len(tiers) == 2, f"dos peldanos: {tiers}"
+    assert [t.gain for t in tiers] == [0.30, 0.60]
+    assert [t.sell for t in tiers] == [0.60, 0.30]
+    assert abs(moonbag_fraction(tiers) - 0.10) < 1e-9
     assert not (_trade().get("tp_extra") or [])
     assert not (_trade().get("mc_take_profit_tiers") or [])
 

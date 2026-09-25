@@ -63,7 +63,7 @@ MIN_OPERACIONES = 5
 #: Hay un test (`test_el_tp_de_verdad_esta_entre_los_niveles_medidos`) que
 #: comprueba que TP3 sigue siendo el del yaml: sin el, este script mediria un
 #: objetivo que el bot ya no tiene y los informes dirian cosas que no pasaron.
-TP1, TP2, TP3 = 0.18, 0.38, 0.5513
+TP1, TP2, TP3 = 0.15, 0.30, 0.60
 STOP = -0.35
 #: Cada cuanto se imprime una linea de estado.
 AVISO_SEG = 30

@@ -48,7 +48,7 @@ def test_con_el_stop_entero_no_queda_nada_que_retener() -> None:
     assert "keep = 0.0 if self.vender_todo_en_stop else original_qty * moonbag" in texto
 
 
-def test_ya_no_queda_moonbag_porque_el_tp_vende_todo() -> None:
+def test_el_moonbag_vuelve_a_existir_y_es_del_10_por_ciento() -> None:
     """YA NO HAY MOONBAG, y este test pasa a vigilar que siga sin haberlo.
 
     Hasta la noche del 24-sep la escalera dejaba un resto --primero un 2%,
@@ -72,9 +72,9 @@ def test_ya_no_queda_moonbag_porque_el_tp_vende_todo() -> None:
         + sum(e["sell"] for e in t.get("tp_extra") or [])
         + sum(d["sell"] for d in t.get("mc_take_profit_tiers") or [])
     )
-    assert round(vendido, 6) == 1.0, (
-        f"se vende el {vendido * 100:.1f}% y queda un {100 - vendido * 100:.1f}% "
-        f"sin dueno: ni lo vende el bot ni nadie sabe que esta ahi"
+    assert round(1 - vendido, 6) == 0.10, (
+        f"el moonbag tiene que ser el 10% que sobra de 60 + 30, y sobra un "
+        f"{(1 - vendido) * 100:.1f}%"
     )
 
 

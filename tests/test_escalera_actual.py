@@ -55,7 +55,7 @@ def test_los_peldanos_son_los_pedidos() -> None:
     donde se entre: 100k es un x2,2 entrando al 86% de la curva y un x1,4
     entrando al 96%. Los multiplos no dependen de eso.
     """
-    assert _peldanos() == [(0.5513, 1.00)]
+    assert _peldanos() == [(0.30, 0.60), (0.60, 0.30)]
 
 
 def _mc_de_compra() -> float:
@@ -78,23 +78,22 @@ def _mc_de_compra() -> float:
 
 
 def test_no_quedan_peldanos_lejanos() -> None:
-    """La noche del 24-sep la escalera se quedo en UN SOLO take profit.
+    """La escalera es corta: dos peldanos de cerca y nada mas.
 
-    Hasta esa tarde habia cuatro escalones lejanos apuntando a 150k, 200k,
-    300k y 400k de market cap. Se quitaron al pedirse "solo quiero un tp y un
-    sl" para pagar menos comisiones de venta.
+    Historial del dia: siete peldanos con escalones de market cap hasta 400k
+    por la tarde; UN SOLO take profit al +55,13% por la noche, para pagar
+    menos comisiones; y ahora dos (+30% vendiendo 60%, +60% vendiendo 30%).
 
-    ESTE TEST SUSTITUYE AL QUE COMPROBABA QUE CAIAN EN ESAS CIFRAS. No se
-    borra sin mas: si alguien vuelve a anadir peldanos lejanos, lo que hay
-    que recuperar es aquel test --que comprobaba el market cap al que caen
-    calculandolo desde la curva-- y no solo meter numeros en el yaml. Queda
-    en el historial de git, en el commit que los quito.
+    NO HAY PELDANOS LEJANOS en ninguna de las dos ultimas. Si vuelven, lo que
+    hay que recuperar es el test que comprobaba que caen en las cifras de
+    market cap pedidas --calculandolas desde la curva-- y no solo meter
+    numeros en el yaml. Queda en el historial de git.
     """
     assert _trade().get("tp_extra") in (None, []), (
         "han vuelto los peldanos lejanos: hay que recuperar la comprobacion "
         "de que caen en las cifras de market cap pedidas"
     )
-    for clave in ("tp2_gain", "tp3_gain", "tp4_gain", "tp5_gain", "tp6_gain"):
+    for clave in ("tp3_gain", "tp4_gain", "tp5_gain", "tp6_gain"):
         assert clave not in _trade(), (
             f"{clave} ha vuelto al yaml. Si es a proposito, hay que volver a "
             f"comprobar que cabe en la curva y que el suelo no lo alcanza"
@@ -148,19 +147,27 @@ def test_nunca_se_vende_mas_del_100() -> None:
     assert sum(v for _, v in _peldanos()) <= 1.0
 
 
-def test_ya_no_queda_moonbag() -> None:
-    """El TP unico vende el 100%: no queda nada corriendo.
+def test_el_moonbag_es_lo_que_sobra_de_la_escalera() -> None:
+    """VUELVE EL MOONBAG (24-sep, noche): "lo que sobre".
 
-    Hasta la noche del 24-sep se dejaba un 3% que el bot no vendia nunca y
-    que Manu vendia a mano. Con un solo take profit que se lleva la posicion
-    entera, ese resto desaparece -- y es coherente con lo pedido: menos
-    ventas, menos comisiones y nada pendiente de gestionar a mano.
+    Los dos peldanos venden el 90% (60 + 30) y el 10% restante se queda en la
+    cartera. El bot NO lo vende nunca -- solo sale si salta el suelo.
+
+    ESTE TEST SUSTITUYE A `test_ya_no_queda_moonbag`, que exigia lo
+    contrario. Durante unas horas el take profit unico vendia el 100% y no
+    sobraba nada; al volver a una escalera corta, sobra.
+
+    LO QUE ARRASTRA, Y POR ESO IMPORTA QUE ESTE ESCRITO: mientras quede
+    moonbag la cuenta de token sigue abierta con su renta dentro, y el bot
+    sigue vigilando una posicion casi vacia. Es el precio de dejar algo
+    corriendo, y es una decision, no un descuido.
     """
     peldanos = _peldanos()
-    assert len(peldanos) == 1, f"un solo take profit: {peldanos}"
-    assert round(sum(v for _, v in peldanos), 6) == 1.0, (
-        "el TP unico tiene que vender el 100%, o quedaria un resto sin dueno "
-        "que ni el bot vende ni nadie sabe que esta ahi"
+    vendido = round(sum(v for _, v in peldanos), 6)
+    assert vendido < 1.0, "si se vende el 100% no hay moonbag que comprobar"
+    assert round(1 - vendido, 6) == 0.10, (
+        f"el moonbag tiene que ser el 10% que sobra de 60 + 30, y es "
+        f"{(1 - vendido) * 100:.1f}%"
     )
 
 def test_el_stop_sube_a_la_entrada_tras_el_primer_tp() -> None:
@@ -186,37 +193,32 @@ def test_el_abandono_no_depende_del_reloj_de_posicion() -> None:
     assert (t["max_hold_time"] or 120) * 3 + 120 < t["abandonar_tras_seg"]
 
 
-def test_con_un_solo_tp_el_ganador_si_cubre_al_perdedor() -> None:
-    """SE DIO LA VUELTA LA PROPIEDAD, y por eso este test cambia de nombre.
+def test_el_primer_peldano_apaga_el_stop_antes_que_el_stop_muerda() -> None:
+    """LO QUE VUELVE CON LA ESCALERA CORTA, y es su razon de ser.
 
-    Mientras hubo escalera, el aviso permanente era el contrario: un ganador
-    que solo llegaba al primer peldano NO cubria a un perdedor ni de lejos
-    (el TP1 cobraba un 6% de la posicion contra un stop del 26%), y hacian
-    falta unos tres aciertos por fallo solo para empatar.
+    El primer peldano (+30%) no esta solo para cobrar: al tocarlo el suelo
+    sube a compra + margen y la operacion deja de poder acabar en perdida.
+    Con el take profit unico eso no existia y una moneda que subia un 45% y
+    se daba la vuelta costaba el stop ENTERO.
 
-    CON UN SOLO TAKE PROFIT ESO DESAPARECE. No hay ganadores a medias: o la
-    moneda llega al objetivo y deja la ganancia entera, o no llega y cuesta
-    el stop entero. El ganador (+55,1%) cubre al perdedor (-26%) con holgura
-    y bastan ~32 aciertos de cada 100 para no perder.
-
-    LO QUE SE PAGA A CAMBIO, Y NO LO MIDE ESTE TEST: los finales intermedios
-    dejan de existir. Una moneda que sube un +54% y se da la vuelta valia
-    +5,6% con el peldano pequeno puesto y ahora vale -26%. Esta escrito en
-    el yaml, en el comentario del take profit.
+    LO QUE SE COMPRUEBA: que el primer peldano quede por debajo del segundo
+    (o no apagaria nada antes), y que vender en el no deje la operacion en
+    rojo si la moneda se da la vuelta justo despues.
     """
     t = _trade()
     peldanos = _peldanos()
-    assert len(peldanos) == 1, f"este test describe la configuracion de UN tp: {peldanos}"
-    g, v = peldanos[0]
-    assert v == 1.0, "el tp unico vende la posicion entera"
-    assert g > t["stop_loss_percentage"], (
-        f"el ganador deja +{g * 100:.1f}% y el perdedor cuesta "
-        f"-{t['stop_loss_percentage'] * 100:.0f}%: si esto se invierte, la "
-        f"configuracion no puede ganar dinero ni acertando la mitad"
+    assert len(peldanos) >= 2, f"esta escalera necesita al menos dos: {peldanos}"
+    (g1, v1), (g2, _) = peldanos[0], peldanos[1]
+    assert g1 < g2
+    margen = float(t["margen_stop_tras_tp"])
+    # Cobrado el primero, el resto sale en compra + margen si se cae.
+    resultado = v1 * (1 + g1) + (1 - v1) * (1 + margen) - 1
+    assert resultado > 0, (
+        f"tocar el primer peldano y darse la vuelta deja {resultado * 100:+.1f}%: "
+        f"el peldano no esta cumpliendo su trabajo de apagar el stop"
     )
 
-
-def test_el_tp_unico_cabe_dentro_de_la_curva() -> None:
+def test_los_peldanos_caben_dentro_de_la_curva() -> None:
     """Lo unico que el take profit tiene que cumplir ahora.
 
     Si el objetivo cae por encima del recorrido que queda hasta migrar, no
@@ -229,7 +231,7 @@ def test_el_tp_unico_cabe_dentro_de_la_curva() -> None:
     c = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"]["curva_96"]
     vt = 1073e6 - 793.1e6 * c["umbral"]
     recorrido = (vt / (1073e6 - 793.1e6)) ** 2 - 1
-    objetivo = _peldanos()[0][0]
+    objetivo = max(g for g, _ in _peldanos())
     assert objetivo < recorrido, (
         f"el take profit (+{objetivo * 100:.1f}%) no cabe en lo que queda de "
         f"curva (+{recorrido * 100:.1f}%): solo cobraria despues de migrar"

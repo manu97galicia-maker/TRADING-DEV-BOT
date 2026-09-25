@@ -202,29 +202,21 @@ def test_tocar_el_tp1_cobra_y_asegura() -> None:
     assert 0 < r["resultado"] < _margen() + t1.sell * t1.gain
 
 
-def test_el_tp_unico_cobra_entero_y_cierra_la_posicion() -> None:
-    """Se toca el objetivo, se vende el 100% y no queda nada que gestionar.
+def test_los_dos_peldanos_cobran_y_queda_el_moonbag() -> None:
+    """Se tocan los dos objetivos, se vende el 90% y queda el 10% corriendo.
 
-    ESTE TEST SUSTITUYE A `test_los_tres_peldanos_de_cerca_y_vuelta_atras`,
-    que simulaba tocar tres peldanos y caer al suelo que dejaba el tercero.
-    Con un solo take profit (24-sep, noche) no hay trinquete que recorrer: o
-    se cobra entero o no se cobra.
-
-    LO QUE SI SIGUE IMPORTANDO, y es lo que se comprueba aqui: que al tocar
-    el objetivo se venda TODO. Si quedara un resto, el bot seguiria vigilando
-    una posicion que ya no tiene, y la cuenta de token quedaria abierta con
-    su renta dentro.
+    ESTE TEST SUSTITUYE A `test_el_tp_unico_cobra_entero_y_cierra_la_posicion`,
+    que exigia que la posicion quedara a CERO. Era cierto mientras el take
+    profit unico vendia el 100%; con la escalera de la noche del 24-sep
+    sobra un 10% a proposito.
     """
     t = _tiers()
-    assert len(t) == 1, f"este test describe la configuracion de UN tp: {t}"
-    r = simula([1.0, 1 + t[0].gain + 0.01])
-    assert r["peldanos"] == [1]
-    assert not r["paro_por_stop"], "no deberia saltar el stop: se cobro el objetivo"
-    assert round(r["restante_pct"], 6) == 0.0, (
-        f"tiene que quedar la posicion a cero y queda {r['restante_pct']:.4f}"
-    )
+    assert len(t) == 2, f"este test describe la escalera de dos peldanos: {t}"
+    r = simula([1.0, 1 + t[0].gain + 0.01, 1 + t[1].gain + 0.01])
+    assert r["peldanos"] == [1, 2]
+    assert not r["paro_por_stop"], "no deberia saltar el stop: se cobraron los dos"
+    assert round(r["restante_pct"], 6) == round(moonbag_fraction(t), 6)
     assert r["resultado"] > 0
-
 
 def test_por_debajo_del_objetivo_manda_el_stop_entero() -> None:
     """EL PRECIO DE TENER UN SOLO TAKE PROFIT, escrito para que no sorprenda.
