@@ -285,13 +285,31 @@ class Curva96Source:
             "curva_progreso": progreso,
         }
         self._cuenta("comprables")
+        # NO SE ANUNCIA UN IMPORTE QUE ESTA FUENTE NO DECIDE.
+        #
+        # `buy_amount` de la curva esta a 0 a proposito: quien decide el
+        # tamano es `fraccion_saldo` en el trader, que lo recalcula desde el
+        # saldo recien leido y bajo el cerrojo de gasto. Esta linea imprimia
+        # `self.buy_amount` igualmente, o sea "se compra con 0.0000 SOL" en
+        # cada moneda candidata.
+        #
+        # LO QUE COSTO (25-sep): esa linea en el log parecia la explicacion de
+        # por que el bot no compraba -- un importe a cero-- cuando el importe
+        # de verdad era el 50% de la cartera y el problema estaba en otro
+        # sitio. Un log que miente manda a buscar el fallo donde no esta. Es
+        # el mismo fallo que ya se corrigio en la linea de "TRAS SL: compra
+        # reducida" del trader, y por las mismas razones.
+        if self.buy_amount > 0:
+            _importe = f"se compra con {self.buy_amount:.4f} SOL"
+        else:
+            _importe = "el importe lo decide el trader (% del saldo)"
         logger.info(
-            "CURVA AL %.1f%% — %s (%s): %.1f SOL en la curva, se compra con %.4f SOL",
+            "CURVA AL %.1f%% — %s (%s): %.1f SOL en la curva, %s",
             progreso * 100,
             symbol,
             mint,
             sol_curva,
-            self.buy_amount,
+            _importe,
         )
         await token_callback(token_info)
 
