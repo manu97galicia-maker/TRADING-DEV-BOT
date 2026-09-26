@@ -106,9 +106,9 @@ def test_apagado_es_el_comportamiento_de_antes() -> None:
 
 def test_la_config_pide_lo_que_se_pidio() -> None:
     t = _cfg()["trade"]
-    # Manda el porcentaje de la cartera: 25% (25-sep). Los otros dos modos
+    # Manda el porcentaje de la cartera: 32% (25-sep). Los otros dos modos
     # van a cero porque solo uno puede mandar a la vez.
-    assert t["fraccion_saldo"] == 0.25
+    assert t["fraccion_saldo"] == 0.32
     assert t["fraccion_base"] == "cartera"
     assert t["buy_amount_usd"] == 0
     assert t["buy_amount"] == 0

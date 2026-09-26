@@ -174,14 +174,14 @@ def test_ahora_mismo_compra_de_verdad() -> None:
     comprar durante dias sin que nadie lo note (que ya paso en agosto).
     """
     assert _trade()["pausar_compras"] is False
-    # Y EL TAMANO: 25% de la CARTERA (25-sep). Ha ido y venido mucho, y se
+    # Y EL TAMANO: 32% de la CARTERA (25-sep). Ha ido y venido mucho, y se
     # fijan aqui los DOS numeros --el porcentaje y sobre que se calcula--
     # para que cualquier cambio sea deliberado.
     #
     # LA BASE IMPORTA TANTO COMO EL PORCENTAJE: sobre el saldo libre las
     # compras menguan solas y el tamano se frena; sobre la cartera salen
     # iguales hasta que se agota el saldo o se llena el techo de posiciones.
-    assert _trade()["fraccion_saldo"] == 0.25
+    assert _trade()["fraccion_saldo"] == 0.32
     assert _trade()["fraccion_base"] == "cartera"
     _t = _trade()
     _encendidos = [

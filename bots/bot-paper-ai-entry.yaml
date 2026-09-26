@@ -750,10 +750,9 @@ trade:
   # 0,30 · 0,21 · 0,15 · 0,10 · 0,07. La quinta valia la cuarta parte que la
   # primera sin que nadie lo pidiera. Sobre la cartera salen IGUALES.
   #
-  # 25% DE LA CARTERA (25-sep, pedido: "compra mejor un 25% del portfolio de
-  # sol por operacion"). Historial: 30% cartera -> 10 $ fijos -> 25% cartera
-  # -> 15% libre -> 20% libre -> 25% -> 30% -> 50% -> 70% -> 80% -> 50% ->
-  # 25% cartera.
+  # 32% DE LA CARTERA (25-sep, pedido: "32% por operacion"). Historial:
+  # 30% cartera -> 10 $ fijos -> 25% cartera -> 15% libre -> 20% libre ->
+  # 25% -> 30% -> 50% -> 70% -> 80% -> 50% -> 25% -> 32% cartera.
   #
   # ES EL PRIMER CAMBIO DE TAMANO CON EL BOT OPERANDO DE VERDAD. Los cinco
   # de ayer se hicieron a ciegas: ninguna de aquellas configuraciones llego a
@@ -769,8 +768,8 @@ trade:
   #
   #   modo                las compras con 1 SOL y 2 plazas    de la cartera
   #   20% libre           0,194  0,155                              35%
-  #   25% cartera (hoy)   0,250  0,249                              50%
-  #   30% cartera         0,300  0,299                              60%
+  #   25% cartera         0,250  0,249                              50%
+  #   32% cartera (hoy)   0,320  0,319                              64%
   #   50% cartera         0,500  0,350                              85%
   #   70% cartera         0,700  0,200                              90%
   #
@@ -779,49 +778,48 @@ trade:
   # ponia el saldo libre, ya con las migas compradas. Ahora el freno es el
   # TECHO, asi que el porcentaje SI decide cuanto dinero se pone a trabajar.
   #
-  # MEDIA CARTERA SE QUEDA QUIETA, y es la consecuencia del 25% que hay que
-  # tener delante: 25% x 2 plazas = 50%. La otra mitad no se usa nunca.
-  #
-  # NO ES UN FALLO, ES UNA ELECCION, y tiene su lado bueno: es dinero que no
-  # puede perderse y que esta ahi si manana se quiere subir el tamano o el
-  # numero de plazas. Pero conviene no confundirlo con "estoy arriesgando el
-  # 25%": se arriesga el 25% POR OPERACION, y solo la mitad del dinero opera.
+  # QUEDA UN TERCIO DE LA CARTERA QUIETO: 32% x 2 plazas = 64%. Con el 25%
+  # era la mitad. No es un fallo --es dinero que no puede perderse y que esta
+  # ahi si manana se sube el tamano o el numero de plazas-- pero conviene no
+  # confundirlo con "estoy arriesgando el 32%": se arriesga el 32% POR
+  # OPERACION, y solo dos tercios del dinero operan.
   #
   # SI LO QUE SE QUIERE ES USARLA ENTERA, las dos palancas son subir
-  # `max_posiciones` a 4 (cuatro compras del 25%) o volver a subir este
-  # porcentaje. Ninguna se toca aqui porque no se pidio.
+  # `max_posiciones` a 3 (tres compras del 32% = 96%) o volver a subir este
+  # porcentaje. Ninguna se toca aqui porque no se pidio. OJO si se sube a 3:
+  # la reserva de 0,01 aguanta hasta 4 plazas, asi que por ahi no hay
+  # problema (la cuenta esta en `min_reserve_sol`).
   #
-  # LAS DOS COMPRAS SALEN IGUALES: 0,250 y 0,249. Con el 50% no lo eran --la
+  # LAS DOS COMPRAS SALEN IGUALES: 0,320 y 0,319. Con el 50% no lo eran --la
   # segunda salia recortada a 0,350 porque ya no quedaba saldo libre para
-  # otra entera-- asi que esto es diversificacion de verdad entre dos
-  # posiciones del mismo tamano, no una grande y una a medias.
+  # otra entera-- asi que esto sigue siendo diversificacion de verdad entre
+  # dos posiciones del mismo tamano.
   #
   # LO QUE SE ARRIESGA. Con el stop en 30%, una posicion que se hunde cuesta
-  # el 7,5% de la cartera (era el 15,0% con el 50%) y las dos a la vez el
-  # 15,0% (era el 30%). El riesgo por operacion se parte por la mitad.
+  # el 9,6% de la cartera (era el 7,5% con el 25% y el 15,0% con el 50%) y
+  # las dos a la vez el 19,2%. Y sin freno de rachas (`parar_tras_perdidas`
+  # sigue en 0), tres perdidas seguidas son -26,1% y diez son -63,6%.
   #
-  # LO QUE CUESTA: LA COMISION PESA EL DOBLE. Es fija (~0,93 $ ida y vuelta),
-  # asi que cuanto mas pequena la compra, mas muerde:
+  # LA COMISION DEJA DE MORDER TANTO. Es fija (~0,93 $ ida y vuelta), asi que
+  # subir el tamano la diluye:
   #
-  #   cartera     con el 50%          con el 25%
-  #   0,50 SOL    22,8 $ -> 4,1%      11,4 $ -> 8,1%   <- aqui duele
-  #   0,83 SOL    37,9 $ -> 2,5%      18,9 $ -> 4,9%
-  #   1,00 SOL    45,6 $ -> 2,0%      22,8 $ -> 4,1%
-  #   2,00 SOL    91,2 $ -> 1,0%      45,6 $ -> 2,0%
+  #   cartera     con el 25%        con el 32%
+  #   0,50 SOL    11,4 $ -> 8,1%    14,5 $ -> 6,4%
+  #   0,83 SOL    18,9 $ -> 4,9%    24,2 $ -> 3,8%
+  #   1,00 SOL    22,8 $ -> 4,1%    29,1 $ -> 3,2%
+  #   2,00 SOL    45,6 $ -> 2,0%    58,3 $ -> 1,6%
   #
-  # O sea que con la cartera pequena hay que ganar un 8% solo para empatar.
-  # Es la misma cuenta que llevo a bajar `max_posiciones` a 2 --no pagar
-  # comisiones por compras pequenas-- y el 25% va justo en sentido
-  # contrario. Con la cartera por encima de 1 SOL deja de importar.
+  # EL TOPE DE 2 SOL empieza a morder a partir de 6,25 SOL de cartera (con el
+  # 25% eran 8). Por encima de ahi el porcentaje efectivo baja solo.
   #
   # LA PRIMERA COMPRA NO ES LA MEJOR MONEDA DEL DIA: es LA PRIMERA que pasa
   # los filtros. El bot no elige entre candidatas, compra la que llega. Eso
-  # no cambia con el tamano, pero se aguanta mejor con el 25% que con el 70%.
+  # no cambia con el tamano.
   #
-  # LA VARIANZA SIGUE SIENDO CASI TODA LA ESTRATEGIA, aunque baja: con dos
-  # posiciones iguales del 25% el resultado del mes lo deciden mas
-  # operaciones que con una del 70%. Y sigue sin haber UNA sola medicion.
-  fraccion_saldo: 0.25
+  # LA VARIANZA SIGUE SIENDO CASI TODA LA ESTRATEGIA, y sigue sin haber UNA
+  # sola medicion de cuantas monedas llegan a cada peldano. El cazador lleva
+  # 223.199 apuntadas y `deploy/analizar_senales.py` no se ha corrido nunca.
+  fraccion_saldo: 0.32
   # SOBRE QUE SE CALCULA EL PORCENTAJE. Es una clave y no una decision
   # escrita en el codigo porque ha ido y venido tres veces en dos dias, y
   # cada vuelta era un commit tocando el camino de compra.
