@@ -2,6 +2,62 @@
 
 This is a trading bot for pump.fun and letsbonk.fun platforms that snipes new tokens and implements various trading strategies.
 
+## REGLA 0 — LAS ORDENES DE MANU SON PERMANENTES, Y NO SE TOCA NADA MAS
+
+Pedida el 25-sep: *"pon una orden de que las ordenes sean permanentes, que no
+hagas cambios"*. Va la primera porque manda sobre todo lo demas de este
+fichero.
+
+**Este bot opera con dinero real de una persona que no programa.** Cada
+numero que hay en `bots/bot-paper-ai-entry.yaml` esta ahi porque Manu lo
+pidio, y sigue ahi hasta que Manu pida otra cosa. Las dos mitades de la regla:
+
+### 1. No se cambia nada que no se haya pedido
+
+Se hace lo pedido. Ni mas, ni de paso, ni "ya que estaba".
+
+- **Un numero de configuracion NUNCA se mueve por iniciativa propia.** Ni
+  aunque la cuenta diga que esta mal, ni aunque un test lo sugiera, ni aunque
+  haya un comentario en el YAML recomendandolo. Si un numero parece
+  equivocado: **se dice, con la cuenta hecha, y se espera.**
+- **Tampoco se arreglan cosas "de paso"**: ni un log que miente, ni un panel
+  incompleto, ni una herramienta de diagnostico. Se avisa y se ofrece. Lo
+  decide el.
+- Lo que SI se puede hacer sin preguntar: **leer, calcular, diagnosticar y
+  contar lo que se ve.** Mirar el codigo no cambia nada.
+- Si al hacer lo pedido hace falta tocar otra cosa para que no quede roto
+  (un test que fija el numero viejo, una tabla del YAML o de
+  `COMO_FUNCIONA.md` que se queda mintiendo), eso SI va incluido: forma parte
+  de dejar lo pedido bien hecho, no es un cambio aparte. Y se dice en la
+  respuesta.
+
+### 2. Lo que ya se ordeno, sigue ordenado
+
+Un cambio nuevo no puede deshacer uno viejo en silencio. Este repo tiene
+historial de justo eso, y cada caso costo dinero o dias:
+
+- los frenos contra rugs vivian dentro de la fuente `holders`; al apagar esa
+  fuente se apagaron con ella sin que nada lo dijera. **FUCKETHAN, −91,9%.**
+- `min_compradores` se calibro para una entrada al 96% de curva y se quedo en
+  30 mientras la entrada bajaba al 71%. **El bot dejo de comprar durante
+  dias** y nadie sabia por que.
+- `min_presion_ratio` se pidio y se dejo escrito, pero encenderlo solo no
+  hace nada sin `max_buy_age`: habria quedado puesto y mudo.
+
+Asi que **antes de cerrar un cambio hay que mirar que no desactive otra cosa
+que Manu pidio antes**, y si la desactiva, decirlo en voz alta en la
+respuesta en vez de dejarlo pasar.
+
+### Como se aplica esto en la practica
+
+- Cuando algo va mal, lo primero es **diagnosticar y contarlo**, no tocar.
+  Bajar filtros persiguiendo un problema que estaba en otro sitio es lo que
+  costo el 21 y el 22-sep.
+- Si hay dos lecturas posibles de lo pedido y llevan a sitios distintos con
+  dinero de por medio, **se pregunta** antes de escribir.
+- Cada cambio deja escrito en el YAML **que se pidio, con las palabras de
+  Manu y la fecha**, y que cuesta. Es lo que permite deshacerlo despues.
+
 ## Project Structure
 
 - `src/` - Main source code
