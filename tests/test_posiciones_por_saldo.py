@@ -20,12 +20,18 @@ saldo de sobra no es un fallo -- es el techo haciendo su trabajo.
 
 # ruff: noqa: S101, PLR2004, PLC0415
 
-from modelo_tamano import COLCHON_POR_POSICION, tamanos
+import yaml
+from modelo_tamano import COLCHON_POR_POSICION, CONFIG, tamanos
 from modelo_tamano import importe as importe_de_compra
 from modelo_tamano import trade as _trade
 
 # Techo configurado de posiciones simultaneas (max_posiciones).
 TECHO = 2
+
+
+def _cfg_fees() -> dict:
+    """El bloque `priority_fees` del yaml, que decide lo que cuesta vender."""
+    return yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["priority_fees"]
 
 
 def caben(saldo: float, reserva: float, compra: float) -> int:
@@ -47,7 +53,62 @@ def test_el_techo_son_dos_posiciones() -> None:
 
 
 def test_la_reserva_sigue_siendo_la_pedida() -> None:
-    assert _trade()["min_reserve_sol"] == 0.03
+    """0,01 SOL (25-sep). Estuvo en 0,03."""
+    assert _trade()["min_reserve_sol"] == 0.01
+
+
+def test_la_reserva_cubre_vender_todo_lo_abierto() -> None:
+    """LO QUE DE VERDAD TIENE QUE CUMPLIR LA RESERVA, y no es ser un numero.
+
+    La reserva es el SOL que el bot nunca gasta comprando, para que siempre
+    quede gas con el que VENDER. Quedarse corto no es "compro menos": es
+    tener una moneda cayendose y no poder soltarla.
+
+    EL PEOR CASO es que TODAS las posiciones abiertas salten el stop a la vez,
+    porque la venta de proteccion lleva su propia comision de prioridad, que
+    es ~24 veces la de un take profit normal (0,005091 contra 0,000211 SOL).
+
+    LO DISPONIBLE no es solo la reserva: cada posicion aparta ademas su
+    colchon de 0,003 (`_fee_headroom_lamports`) para sus comisiones y la renta
+    de la cuenta de token.
+
+    POR QUE ESTE TEST Y NO SOLO EL NUMERO. El 25-sep se pidio bajar la reserva
+    y el numero llego con un emoji comiendose un caracter: 0,001 o 0,01. El
+    primero no cubre ni UNA venta de proteccion. Un test que solo fije "0,01"
+    se quedaria verde si manana suben las plazas a 4 --el peor caso se
+    duplica a 0,0204 y 0,01 deja de llegar-- o si sube la comision de venta.
+    Este ata los tres numeros: reserva, plazas y comision.
+    """
+    t = _trade()
+    fees = _cfg_fees()
+    # Comision de una venta de proteccion, en SOL: microlamports/CU x CU / 1e15.
+    cu_venta = 120_000
+    venta_proteccion = fees["fixed_amount_venta_proteccion"] * cu_venta / 1e15
+    plazas = int(t["max_posiciones"])
+    peor_caso = plazas * venta_proteccion
+    disponible = float(t["min_reserve_sol"]) + plazas * COLCHON_POR_POSICION
+    assert disponible > peor_caso, (
+        f"con {plazas} plazas saltando el stop a la vez hacen falta "
+        f"{peor_caso:.4f} SOL de comision y solo hay {disponible:.4f} "
+        f"(reserva {t['min_reserve_sol']} + {plazas} x {COLCHON_POR_POSICION}): "
+        f"el bot podria quedarse sin gas para vender lo que tiene abierto"
+    )
+
+
+def test_la_reserva_cubre_al_menos_una_venta_de_proteccion_ella_sola() -> None:
+    """La reserva SOLA, sin contar los colchones, cubre cerrar una posicion.
+
+    Los colchones se apartan al abrir cada posicion, asi que dependen de que
+    todo haya ido bien. La reserva es la ultima red y tiene que valer por si
+    misma para al menos una salida de emergencia.
+    """
+    t = _trade()
+    fees = _cfg_fees()
+    venta_proteccion = fees["fixed_amount_venta_proteccion"] * 120_000 / 1e15
+    assert float(t["min_reserve_sol"]) > venta_proteccion, (
+        f"la reserva ({t['min_reserve_sol']} SOL) no cubre ni una venta de "
+        f"proteccion ({venta_proteccion:.6f} SOL)"
+    )
 
 
 def test_el_modo_de_tamano_esta_claro() -> None:

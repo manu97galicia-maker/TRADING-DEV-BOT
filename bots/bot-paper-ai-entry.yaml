@@ -676,7 +676,49 @@ trade:
   # `price_check_interval`, pase lo que pase.
   tick_stream_seg: 0.25
   extreme_fast_mode: false
-  min_reserve_sol: 0.03
+  # RESERVA INTOCABLE: 0,01 SOL (25-sep, pedido "deja de reserva solo 0,01").
+  # Estuvo en 0,03.
+  #
+  # PARA QUE SIRVE: es el SOL que el bot NUNCA gasta comprando, para que
+  # siempre quede gas con el que VENDER lo que esta abierto. Quedarse sin
+  # esto no es "compro menos": es tener una moneda cayendose y no poder
+  # soltarla.
+  #
+  # LA CUENTA QUE DECIDE EL NUMERO, con las comisiones de este mismo fichero:
+  #     venta normal (take profit)   0,000211 SOL
+  #     venta de PROTECCION (stop)   0,005091 SOL   <- la cara
+  #
+  # El peor caso es que las DOS posiciones salten el stop a la vez:
+  #     2 x 0,005091 = 0,0102 SOL solo en comision de prioridad
+  #
+  # Y lo disponible no es solo esta reserva: cada posicion aparta ademas su
+  # propio colchon de 0,003 (`_fee_headroom_lamports`, 3.000.000 lamports)
+  # para sus comisiones y la renta de la cuenta de token.
+  #
+  #   reserva   disponible (reserva + 2 x 0,003)   cubre los 0,0102?
+  #    0,03            0,0360                       si, margen +0,0258
+  #    0,01            0,0160                       si, margen +0,0058   <- aqui
+  #    0,001           0,0070                       NO, faltan 0,0032
+  #
+  # POR QUE NO SE PUSO 0,001. Se pidio con un emoji comiendose un caracter
+  # ("0.0<emoji>1") y las dos lecturas daban resultados opuestos, asi que se
+  # pregunto. 0,001 no cubre ni UNA venta de proteccion (0,005091), o sea que
+  # con dos posiciones en stop el bot se quedaria sin gas a medias.
+  #
+  # OJO SI ALGUN DIA SUBEN LAS PLAZAS O LA COMISION DE VENTA. Este numero
+  # depende de los dos, y el margen se estrecha rapido:
+  #
+  #   plazas   disponible   peor caso   margen
+  #     2        0,0160      0,0102     +0,0058   <- aqui
+  #     4        0,0220      0,0204     +0,0016   justo
+  #     5        0,0250      0,0255     -0,0005   NO LLEGA
+  #
+  # O sea que con 0,01 de reserva el techo real son 4 plazas, y a 4 el margen
+  # es de milesimas. Subir a 5 exigiria subir tambien la reserva. Lo vigila
+  # `test_la_reserva_cubre_vender_todo_lo_abierto`, que recalcula el peor
+  # caso desde `max_posiciones` y la comision del propio fichero en vez de
+  # fiarse de esta tabla.
+  min_reserve_sol: 0.01
   # POLVO. Por debajo de este valor una posicion deja de gestionarse: suelta
   # su plaza de las 5 y se deja de consultar su precio cada segundo.
   #
