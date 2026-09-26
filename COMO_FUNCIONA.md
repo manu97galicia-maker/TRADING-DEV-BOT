@@ -40,7 +40,7 @@ Todo esto, sin saltarse nada:
 | **Gente de verdad** | mínimo **14 carteras distintas** la han comprado |
 | **Sin bundle** | como mucho 3 carteras en su bloque de nacimiento, y máximo 2 SOL |
 | **Sin concentración** | los mayores tenedores no pueden tener más del 50% |
-| **Sin vela verde** | si ha **doblado de precio en 10 segundos**, no entra |
+| **Sin vela verde** | si ha subido más de un **80% en 30 segundos**, no entra |
 
 Los dos últimos son los importantes, y están ahí por algo que pasó:
 

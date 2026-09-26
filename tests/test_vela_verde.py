@@ -14,7 +14,10 @@ distintas: una el dinero de ahora, otra el precio de hace un rato.
 # ruff: noqa: S101, SLF001, PLR2004
 
 import time
+from pathlib import Path
 from types import SimpleNamespace
+
+import yaml
 
 from monitoring import volumen
 from monitoring.holders_source import HoldersSource, build_holders_heartbeat
@@ -68,18 +71,23 @@ def test_una_bajada_no_cuenta_como_subida() -> None:
 def test_la_fuente_descarta_la_vela_verde() -> None:
     """De punta a punta, con la condicion encendida."""
     f = HoldersSource(
-        "wss://x", SimpleNamespace(), SimpleNamespace(),
-        min_holders=3, max_edad_seg=0.0, ultimas_compras=0, presion_seg=0,
-        subida_seg=10.0, max_subida=1.0, heartbeat_interval=0,
+        "wss://x",
+        SimpleNamespace(),
+        SimpleNamespace(),
+        min_holders=3,
+        max_edad_seg=0.0,
+        ultimas_compras=0,
+        presion_seg=0,
+        subida_seg=10.0,
+        max_subida=1.0,
+        heartbeat_interval=0,
     )
     mint = "Er1sFZm3HGuXFiKeXQLg84H9B9Vqk3dp94AjLiS9pump"
     ahora = time.time()
     volumen._ops.pop(mint, None)
     volumen._ops[mint] = [(ahora, 0.5, True, "w1"), (ahora, 0.5, True, "w2")]
     f._revisar([mint], None)  # se ve por debajo del corte
-    volumen._ops[mint] = [
-        (ahora, 0.5, True, f"w{i}") for i in range(5)
-    ]
+    volumen._ops[mint] = [(ahora, 0.5, True, f"w{i}") for i in range(5)]
     _precios(mint, [7.5, 12.0, 25.0])
     f._revisar([mint], None)
     assert f._embudo.get("vela_verde") == 1, f"embudo: {f._embudo}"
@@ -98,9 +106,16 @@ def test_el_parte_ensena_cuantas_se_descartan_asi() -> None:
 
 def _fuente_con_volumen(minimo: float) -> HoldersSource:
     return HoldersSource(
-        "wss://x", SimpleNamespace(), SimpleNamespace(),
-        min_holders=3, max_edad_seg=0.0, ultimas_compras=0, presion_seg=3.0,
-        max_subida=0, volumen_min_sol=minimo, heartbeat_interval=0,
+        "wss://x",
+        SimpleNamespace(),
+        SimpleNamespace(),
+        min_holders=3,
+        max_edad_seg=0.0,
+        ultimas_compras=0,
+        presion_seg=3.0,
+        max_subida=0,
+        volumen_min_sol=minimo,
+        heartbeat_interval=0,
     )
 
 
@@ -117,9 +132,7 @@ def _pasa(f: HoldersSource, mint: str, compras: list[float]) -> bool:
     volumen._historia_precio.pop(mint, None)
     volumen._ops[mint] = [(ahora, 0.1, True, "a"), (ahora, 0.1, True, "b")]
     f._revisar([mint], None)  # se la ve por debajo del corte
-    volumen._ops[mint] = [
-        (ahora, s, True, f"w{i}") for i, s in enumerate(compras)
-    ]
+    volumen._ops[mint] = [(ahora, s, True, f"w{i}") for i, s in enumerate(compras)]
     f._revisar([mint], None)
     return bool(llegaron)
 
@@ -154,3 +167,78 @@ def test_el_parte_ensena_cuantas_se_caen_por_volumen() -> None:
     )
     assert "poco volumen" in texto
     assert "12" in texto
+
+
+# ------------------------- los numeros que corren de verdad, y que rechazan
+
+
+def _filtros() -> dict:
+    raiz = Path(__file__).resolve().parent.parent
+    return yaml.safe_load(
+        (raiz / "bots/bot-paper-ai-entry.yaml").read_text(encoding="utf-8")
+    )["filters"]
+
+
+def test_los_numeros_de_la_vela_verde_son_los_pedidos() -> None:
+    """0,80 en 30 s (25-sep). Estaban en 1,0 en 10 s.
+
+    Pedido: "no compres una moneda que acaba de salir con solo una tremenda
+    vela verde".
+
+    LO QUE FALLABA ERA LA VENTANA. El bot guarda los ultimos 32 precios de
+    cada moneda, que en una recien nacida son casi toda su vida -- pero la
+    ventana de 10 SEGUNDOS solo miraba el ultimo trozo de esos puntos. Si la
+    vela duro 25 s, el filtro veia nada mas el final, que suele estar ya
+    plano arriba del todo, y la dejaba pasar.
+    """
+    f = _filtros()
+    assert f["max_subida_global"] == 0.80
+    assert f["subida_seg_global"] == 30.0
+
+
+def test_los_dos_desastres_del_repo_se_rechazarian_hoy() -> None:
+    """La prueba que importa: que el numero sirva para algo concreto.
+
+    Un test que solo fije "0,80" se queda verde con cualquier numero que
+    alguien escriba. Este comprueba que los dos casos que de verdad costaron
+    dinero caen del lado de "no se compra".
+
+    CATO (23-sep): 7,5K -> 25K de market cap en medio minuto. Se entro a 26K
+    y medio minuto despues valia 12,4K.
+    FUCKETHAN (24-sep): 20K -> 43K en una vela vertical, comprada en la
+    punta y cerrada a -91,9% cuarenta segundos despues.
+    """
+    f = _filtros()
+    tope = float(f["max_subida_global"])
+    for nombre, desde, hasta in (
+        ("CATO", 7_500, 25_000),
+        ("FUCKETHAN", 20_000, 43_000),
+    ):
+        subida = hasta / desde - 1
+        assert subida > tope, (
+            f"{nombre} subio un {subida:.0%} y el tope esta en {tope:.0%}: "
+            f"hoy se volveria a comprar"
+        )
+
+
+def test_una_moneda_que_sube_despacio_hasta_la_entrada_sigue_pasando() -> None:
+    """El filtro no puede cerrar la puerta a todo: corta lo vertical, no lo que sube.
+
+    Entrando al 71% de curva, una moneda que venia del 60% ha subido un 37%.
+    Esa tiene que pasar, o el filtro deja al bot mudo -- que es la trampa
+    documentada del 21 y 22-sep.
+    """
+    k = 30 * 1073e6
+
+    def precio(avance: float) -> float:
+        vt = 1073e6 - 793.1e6 * avance
+        return k / vt**2
+
+    tope = float(_filtros()["max_subida_global"])
+    subida_desde_60 = precio(0.71) / precio(0.60) - 1
+    assert subida_desde_60 < tope, (
+        f"una moneda que venia del 60% de curva sube un {subida_desde_60:.0%} "
+        f"y el tope esta en {tope:.0%}: el filtro cortaria demasiado"
+    )
+    # Y la recien nacida (del 0% al 71%, +343%) tiene que caer del otro lado.
+    assert precio(0.71) / precio(0.0) - 1 > tope

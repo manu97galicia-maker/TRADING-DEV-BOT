@@ -1129,12 +1129,49 @@ filters:
 
   # NO SE ENTRA DETRAS DE UNA VELA VERDE ENORME (23-sep, pedido: "evita
   # comprar cuando el grafico de un segundo es una vela verde enorme").
-  # 1.0 = se descarta si ha DOBLADO en los ultimos 10 segundos. Justo cuando
-  # una moneda acaba de doblar, la presion compradora parece inmejorable --
-  # y eso YA ha pasado; lo que queda por delante es la vuelta.
+  # Justo cuando una moneda acaba de doblar, la presion compradora parece
+  # inmejorable -- y eso YA ha pasado; lo que queda por delante es la vuelta.
   # 0 = no se mira.
-  max_subida_global: 1.0
-  subida_seg_global: 10.0
+  #
+  # APRETADO EL 25-sep, pedido: "no compres una moneda que acaba de salir con
+  # solo una tremenda vela verde". Estaba en 1.0 / 10 s.
+  #
+  # LO QUE FALLABA ERA LA VENTANA, NO EL UMBRAL. El bot guarda los ultimos 32
+  # precios de cada moneda (`_historia_precio`, en volumen.py), que en una
+  # moneda recien nacida son casi toda su vida. Pero la ventana de 10
+  # SEGUNDOS solo miraba el ultimo trozo de esos 32 puntos: si la vela verde
+  # tardo 25 segundos, el filtro veia nada mas el final --que suele estar ya
+  # plano, arriba del todo-- y la dejaba pasar. Con 30 s se usan los puntos
+  # que ya estaban guardados. No cuesta ni memoria ni peticiones: es mirar lo
+  # que el bot ya tenia apuntado.
+  #
+  # EL UMBRAL, CON LA CURVA DELANTE. Entrando al 71%, cuanto ha subido una
+  # moneda depende de desde donde venga:
+  #
+  #   venia del ...% de curva   ha subido
+  #        0% (recien nacida)     +343%
+  #       20%                     +222%
+  #       40%                     +120%
+  #       50%                      +76%
+  #       60%                      +37%
+  #
+  # Con 0.80 se rechaza la que ha hecho MAS de medio recorrido de curva en
+  # menos de 30 segundos. La que sube despacio hasta el 71% pasa igual.
+  #
+  # LOS DOS DESASTRES DE ESTE REPO CAEN DENTRO, y por eso este numero:
+  #     CATO        7,5K -> 25K en 30 s  = +233%   (23-sep, entro a 26K y
+  #                                                 medio minuto despues
+  #                                                 valia 12,4K)
+  #     FUCKETHAN    20K -> 43K          = +115%   (24-sep, -91,9%)
+  # Con 1.0 / 10 s FUCKETHAN habria pasado si el tramo duro mas de 10 s.
+  #
+  # LO QUE CUESTA: se compran MENOS monedas. Este filtro corta por arriba, o
+  # sea que las que quita son justo las que mas estaban subiendo -- y alguna
+  # de ellas habria seguido subiendo. Es el precio de no comprar techos.
+  # Si el bot se queda sin comprar, la palanca para deshacerlo es volver a
+  # 1.0 / 10.0, NO tocar la curva ni los compradores.
+  max_subida_global: 0.80
+  subida_seg_global: 30.0
 
   # POCA GENTE DISTINTA = no hay demanda, hay un grupo empujando. Cuenta las
   # carteras compradoras vistas en el stream, la misma cuenta que usa la
