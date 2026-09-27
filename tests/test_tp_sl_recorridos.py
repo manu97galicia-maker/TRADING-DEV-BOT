@@ -202,10 +202,10 @@ def test_tocar_el_tp1_cobra_y_asegura() -> None:
     assert 0 < r["resultado"] < _margen() + t1.sell * t1.gain
 
 
-def test_los_tres_peldanos_cobran_y_el_resto_pasa_a_la_cola() -> None:
-    """Se tocan los tres objetivos, se vende el 85% y el 15% pasa a la cola.
+def test_los_peldanos_cobran_y_el_resto_pasa_a_la_cola() -> None:
+    """Se tocan los cuatro objetivos, se vende el 85% y el 15% pasa a la cola.
 
-    ESTE TEST SE HA REESCRITO TRES VECES con la escalera: exigia que la
+    ESTE TEST SE HA REESCRITO CUATRO VECES con la escalera: exigia que la
     posicion quedara a CERO (take profit unico al 100%), luego que sobrara un
     10% (dos peldanos), y ahora que sobre el 15% que recogen los escalones de
     market cap.
@@ -216,10 +216,10 @@ def test_los_tres_peldanos_cobran_y_el_resto_pasa_a_la_cola() -> None:
     del precio de SOL y del market cap, y se fija en test_escalera_actual.py.
     """
     t = _tiers()
-    assert len(t) == 3, f"este test describe la escalera de tres peldanos: {t}"
+    assert len(t) == 4, f"este test describe la escalera de cuatro peldanos: {t}"
     r = simula([1.0, *(1 + x.gain + 0.01 for x in t)])
-    assert r["peldanos"] == [1, 2, 3]
-    assert not r["paro_por_stop"], "no deberia saltar el stop: se cobraron los tres"
+    assert r["peldanos"] == [1, 2, 3, 4]
+    assert not r["paro_por_stop"], "no deberia saltar el stop: se cobraron todos"
     assert round(r["restante_pct"], 6) == round(moonbag_fraction(t), 6)
     assert r["resultado"] > 0
 

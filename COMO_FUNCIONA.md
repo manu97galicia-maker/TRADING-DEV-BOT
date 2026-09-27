@@ -19,10 +19,10 @@ casi toda la curva y están cerca de conseguirlo, porque para llegar ahí han
 tenido que pasar por mucha gente.
 
 ```
-nace ─────────────────────────▶ 71,0% ───────────────▶ migra
-                                  ▲
-                             aquí compra
-                     (le faltan ~52 SOL, dos tercios de curva)
+nace ──────────────▶ 59,0% ──────────────────────────▶ migra
+                       ▲
+                  aquí compra
+          (le faltan ~62 SOL, casi tres cuartos de curva)
 ```
 
 Son pocas al día: la mayoría de las monedas mueren mucho antes de llegar. Que
@@ -36,8 +36,8 @@ Todo esto, sin saltarse nada:
 
 | | |
 |---|---|
-| **Punto de la curva** | entre el 71,0% y el 99,5% (pasado eso ya está migrando) |
-| **Gente de verdad** | mínimo **14 carteras distintas** la han comprado |
+| **Punto de la curva** | entre el 59,0% y el 99,5% (pasado eso ya está migrando) |
+| **Gente de verdad** | mínimo **9 carteras distintas** la han comprado |
 | **Sin bundle** | como mucho 3 carteras en su bloque de nacimiento, y máximo 2 SOL |
 | **Sin concentración** | los mayores tenedores no pueden tener más del 50% |
 | **Sin vela verde** | si ha subido más de un **80% en 30 segundos**, no entra |
@@ -56,27 +56,27 @@ todas las entradas, venga de donde venga la moneda.
 
 ## 3. Cuánto pone en cada compra
 
-**El 32% de la cartera.** Cartera = todo lo que tienes, el SOL de la wallet
+**El 30% de la cartera.** Cartera = todo lo que tienes, el SOL de la wallet
 más lo que ya vale lo que hay metido en monedas.
 
 Con 1 SOL de saldo salen así:
 
 ```
-0,320 · 0,319     y se para
+0,300 · 0,299     y se para
 ```
 
 **Dos compras iguales.** No se para porque se acabe el dinero — se para porque
 sólo hay **2 plazas**. Y ahí está lo que hay que entender de este número:
 
-> **32% × 2 plazas = 64% de la cartera. El tercio que sobra no opera nunca.**
+> **30% × 2 plazas = 60% de la cartera. El 40% que sobra no opera nunca.**
 
 No es un fallo, es una elección. Ese dinero quieto no puede perderse y está ahí
 si mañana quieres subir el tamaño o el número de plazas. Pero no lo confundas
-con "estoy arriesgando el 32%": se arriesga el 32% *por operación*, y sólo dos
-tercios del dinero operan.
+con "estoy arriesgando el 30%": se arriesga el 30% *por operación*, y sólo el
+60% del dinero opera.
 
 Si quisieras usarla entera, las dos palancas son subir las plazas a 3 (tres
-compras del 32% son el 96%), o subir otra vez este porcentaje. Ninguna está
+compras del 30% son el 90%), o subir otra vez este porcentaje. Ninguna está
 tocada.
 
 ### Lo que se arriesga
@@ -87,10 +87,10 @@ Con el stop en el 30%:
 |---|---|---|
 | con el 50% | −15,0% de la cartera | −30,0% |
 | con el 25% | −7,5% | −15,0% |
-| **con el 32% (hoy)** | **−9,6%** | **−19,2%** |
+| **con el 30% (hoy)** | **−9,0%** | **−18,0%** |
 
-Y como **no hay freno de rachas**, tres pérdidas seguidas son −26,1% y diez
-son −63,6%. Nada para al bot por el camino.
+Y como **no hay freno de rachas**, tres pérdidas seguidas son −24,6% y diez
+son −61,3%. Nada para al bot por el camino.
 
 > **La primera compra no es la mejor moneda del día: es la primera que pasa
 > los filtros.** El bot no elige entre candidatas, compra la que llega. Eso no
@@ -101,12 +101,12 @@ son −63,6%. Nada para al bot por el camino.
 La comisión es **fija** (unos 0,93 $ entre comprar y vender), así que cuanto
 más pequeña la compra, más muerde:
 
-| cartera | con el 25% | con el 32% |
+| cartera | con el 25% | con el 30% |
 |---|---|---|
-| 0,50 SOL | 11,4 $ → 8,1% | 14,5 $ → **6,4%** |
-| 0,83 SOL | 18,9 $ → 4,9% | 24,2 $ → 3,8% |
-| 1,00 SOL | 22,8 $ → 4,1% | 29,1 $ → 3,2% |
-| 2,00 SOL | 45,6 $ → 2,0% | 58,3 $ → 1,6% |
+| 0,50 SOL | 11,4 $ → 8,1% | 13,7 $ → **6,8%** |
+| 0,83 SOL | 18,9 $ → 4,9% | 22,7 $ → 4,1% |
+| 1,00 SOL | 22,8 $ → 4,1% | 27,4 $ → 3,4% |
+| 2,00 SOL | 45,6 $ → 2,0% | 54,7 $ → 1,7% |
 
 Subir el tamaño la diluye. Con cartera pequeña sigue doliendo, pero menos.
 
@@ -114,14 +114,14 @@ Subir el tamaño la diluye. Con cartera pequeña sigue doliendo, pero menos.
 
 Pase lo que pase, una compra **nunca pasa de 2 SOL**.
 
-Con el 32%, ese techo no manda hasta que la cartera pasa de **6,25 SOL**:
+Con el 30%, ese techo no manda hasta que la cartera pasa de **6,67 SOL**:
 
-| cartera | el 32% sería | se compra |
+| cartera | el 30% sería | se compra |
 |---|---|---|
-| 1 SOL | 0,32 | 0,32 |
-| 3 SOL | 0,96 | 0,96 |
-| 6,25 SOL | 2,00 | 2,00 |
-| 20 SOL | 6,40 | **2,00** |
+| 1 SOL | 0,30 | 0,30 |
+| 3 SOL | 0,90 | 0,90 |
+| 6,67 SOL | 2,00 | 2,00 |
+| 20 SOL | 6,00 | **2,00** |
 
 Está por dos motivos. Uno: si la cuenta crece, el porcentaje efectivo baja solo.
 Y dos, el que importa: es el último freno contra un fallo de cálculo. El 12 de
@@ -130,15 +130,15 @@ nunca se supo por qué.
 
 ### Dos posiciones a la vez
 
-Puede tener **2 posiciones abiertas** como mucho, y con el 32% por compra eso
-es lo que decide cuánto dinero trabaja: dos tercios de la cartera.
+Puede tener **2 posiciones abiertas** como mucho, y con el 30% por compra eso
+es lo que decide cuánto dinero trabaja: el 60% de la cartera.
 
 Antes el techo eran 5, pero era mentira: con el 50% por compra, la tercera y la
 cuarta salían de 8 $ y 1,7 $, y la comisión se llevaba el 12% y el 54% de ellas
 antes de que la moneda se moviera. Eso no es diversificar, es pagar por tener
 una posición que no puede ganar nada.
 
-Con el 32% las dos salen **iguales** (0,320 y 0,319), que es diversificación de
+Con el 30% las dos salen **iguales** (0,300 y 0,299), que es diversificación de
 verdad: dos posiciones del mismo tamaño, no una grande y una a medias.
 
 ---
@@ -147,25 +147,53 @@ verdad: dos posiciones del mismo tamaño, no una grande y una a medias.
 
 Dos escaleras, una detrás de la otra.
 
-### Por porcentaje: tres peldaños
+### Por porcentaje: cuatro peldaños, con el peso en el x3
 
 Lo que sube la moneda **desde el precio al que la compró el bot**.
 
 | sube | vende | acumulado | hay que llegar al |
 |---|---|---|---|
-| +25% | 20% | 20% | 77,8% de la curva |
-| +60% | 40% | 60% | 84,5% de la curva |
-| +100% | 25% | 85% | 89,8% de la curva |
+| +25% | 10% | 10% | 67,1% de la curva |
+| +60% | 20% | 30% | 75,0% de la curva |
+| +100% | 20% | 50% | 81,3% de la curva |
+| **x3 (+200%)** | 35% | 85% | **91,2% de la curva** |
 
-**Los tres caben dentro de la curva, y esto es nuevo.** Comprando al 71% queda
-un +232% hasta que la moneda migra, así que hasta el tercero entra con diez
-puntos de sobra. En la versión de ayer el tercer peldaño se quedaba *fuera*:
-sólo cobraba si la moneda migraba y además seguía subiendo en otro mercado.
+**El x3 sólo cabe porque la entrada bajó al 59%.** Comprando al 71% el x3 caía
+al 98,2% de la curva — prácticamente la migración, o sea un peldaño que casi
+nunca cobraría. Al 59% cae al 91,2%, con sitio de sobra. Bajar la curva y
+enfocar el take profit en el x3 son **el mismo cambio**.
+
+El +25% casi no cobra a propósito: su trabajo no es recoger dinero, es
+**apagar el stop** (sube el suelo a compra +5%), y eso lo hace igual vendiendo
+un 10% que un 20%.
+
+#### Qué cambia respecto de ayer
+
+| la moneda llega a | escalera de ayer | enfocada en el x3 |
+|---|---|---|
+| +25% | +9,0% | +7,0% |
+| +60% | +41,5% | +36,4% |
+| +100% | +64,2% | +68,5% |
+| **x3** | +64,2% | **+121,0%** |
+
+**Se cobra algo menos de las que se quedan a medias, y casi el doble de las
+que llegan al x3.** Ayer una que hacía x3 cobraba lo mismo que una que llegaba
+al +100%, porque no había peldaño arriba.
+
+Y en aciertos necesarios para no perder dinero:
+
+```
+si sólo tocan el +25%     81% de aciertos
+si tocan el +60%          45%
+si tocan el +100%         30%
+si llegan al x3           20%   ← ayer también pedía 32%
+```
 
 ### Por market cap: el 15% que queda
 
-Cuando se han cobrado **los tres** de arriba, se arma la segunda escalera. Ésta
-no mira lo que ha subido, sino la cifra de market cap que ves en la app:
+Cuando se han cobrado **los cuatro** de arriba —o sea, al llegar al x3— se
+arma la segunda escalera. Ésta no mira lo que ha subido, sino la cifra de
+market cap que ves en la app:
 
 | market cap | vende | acumulado |
 |---|---|---|

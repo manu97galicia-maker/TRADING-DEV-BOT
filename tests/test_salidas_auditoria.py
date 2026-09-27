@@ -129,24 +129,30 @@ def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
 
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
-    """Lo VENDIDO ACUMULADO al llegar a cada multiplo (25-sep).
+    """Lo VENDIDO ACUMULADO al llegar a cada multiplo (26-sep).
 
-    TRES peldanos de porcentaje: +25% vende 20%, +60% vende 40%, +100% vende
-    25%. El 15% que queda NO se vende por porcentaje -- se lo reparten los
-    escalones de market cap, que son otra escalera y no se miden aqui: esta
-    funcion solo recorre los peldanos de porcentaje.
+    CUATRO peldanos de porcentaje: +25% vende 10%, +60% vende 20%, +100%
+    vende 20%, x3 vende 35%. El 15% que queda NO se vende por porcentaje --
+    se lo reparten los escalones de market cap, que son otra escalera y no se
+    miden aqui: esta funcion solo recorre los peldanos de porcentaje.
 
     POR ESO LA ULTIMA FILA SE QUEDA EN 0,85 por mucho que suba el multiplo.
     No significa que sobre un 15%: significa que ese 15% sale por la otra
     puerta, y esa puerta depende del market cap en dolares, no del multiplo.
+
+    LO QUE SE VE EN LA TABLA es donde esta el peso: al llegar al +100% solo
+    se ha cobrado la MITAD de la posicion, y el x3 se lleva 35 puntos de
+    golpe. Con la escalera de ayer, al +100% ya se habia cobrado el 85%.
     """
     esperado = {
         1.24: 0.0,  # justo por debajo del primero
-        1.25: 0.20,  # el primero cobra poco: esta ahi por el suelo que arma
-        1.59: 0.20,
-        1.60: 0.60,  # el segundo es el que se lleva el grueso
-        1.99: 0.60,
-        2.00: 0.85,  # los tres cobrados
+        1.25: 0.10,  # el primero casi no cobra: esta por el suelo que arma
+        1.59: 0.10,
+        1.60: 0.30,
+        1.99: 0.30,
+        2.00: 0.50,  # cobrado el +100%, va solo por la mitad
+        2.99: 0.50,
+        3.00: 0.85,  # el x3 es el que se lleva el grueso
         50.0: 0.85,  # el resto lo cobra la cola de market cap, no esta
     }
     for multiplo, acumulado in esperado.items():

@@ -265,10 +265,10 @@ def test_los_dos_numeros_son_los_pedidos() -> None:
     # El importe de la fuente tiene que coincidir con el `buy_amount` global:
     # el de la SENAL pisa al global, asi que si no coinciden el de arriba no
     # sirve de nada. Ya paso una vez. Desde el 23-sep los dos estan a CERO
-    # porque manda el porcentaje de la cartera (`fraccion_saldo`: 32%).
+    # porque manda el porcentaje de la cartera (`fraccion_saldo`: 30%).
     trade = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["trade"]
     assert h["buy_amount"] == trade["buy_amount"] == 0
-    assert trade["fraccion_saldo"] == 0.32
+    assert trade["fraccion_saldo"] == 0.30
 
 
 def test_ningun_filtro_global_puede_descartar_por_su_cuenta() -> None:

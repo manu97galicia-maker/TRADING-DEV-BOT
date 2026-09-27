@@ -47,16 +47,21 @@ def _peldanos() -> list[tuple[float, float]]:
 def test_los_peldanos_son_los_pedidos() -> None:
     """LA ESCALERA ENTERA, fijada para que cualquier cambio sea deliberado.
 
-    25-sep: TRES peldanos de porcentaje y una cola de market cap. Pedido asi:
-    "+25 vendes un 20, sube un 60 vendes un 40%, 100% 25, y el restante lo
-    repartes hasta los 80k".
+    26-sep: CUATRO peldanos de porcentaje y una cola de market cap, con el
+    peso en el x3. Pedido: "tp mas enfocado en el x3".
 
-    EL TERCER PELDANO CABE POR PRIMERA VEZ. Con la entrada al 87% el +100%
-    quedaba 12,8 puntos POR ENCIMA de la migracion y solo cobraba si la
-    moneda migraba y seguia subiendo en PumpSwap. Entrando al 71% cae al
-    89,8% de curva. Lo comprueba `test_los_peldanos_caben_dentro_de_la_curva`.
+    EL x3 SOLO CABE PORQUE LA ENTRADA BAJO AL 59%. Entrando al 71% caia al
+    98,2% de curva --practicamente la migracion-- y habria sido un peldano
+    que casi nunca cobra; al 59% cae al 91,2%. Los dos cambios del 26-sep
+    (bajar la curva y enfocar el take profit) son el mismo cambio. Lo
+    comprueba `test_los_peldanos_caben_dentro_de_la_curva`.
+
+    EL PESO SE MUEVE HACIA ARRIBA: el +25% pasa de vender el 20% al 10%, el
+    +60% del 40% al 20%, el +100% del 25% al 20%, y los 35 puntos liberados
+    van al x3. El +25% se queda casi sin cobrar a proposito: su trabajo es
+    apagar el stop, no recoger dinero.
     """
-    assert _peldanos() == [(0.25, 0.20), (0.60, 0.40), (1.00, 0.25)]
+    assert _peldanos() == [(0.25, 0.10), (0.60, 0.20), (1.00, 0.20), (2.00, 0.35)]
 
 
 def _mc_de_compra() -> float:
@@ -85,24 +90,27 @@ def test_no_quedan_peldanos_lejanos() -> None:
     SOLO take profit al +55,13% (esa noche, para pagar menos comisiones); dos
     peldanos (+30%/+60%); y desde el 25-sep tres, con cola de market cap.
 
-    EL TP3 VOLVIO A PROPOSITO y por eso ya no se prohibe aqui. Las dos cosas
-    que su vuelta obligaba a comprobar estan comprobadas en este mismo
-    fichero, que es lo que pedia el texto anterior:
-      - que cabe en la curva -> test_los_peldanos_caben_dentro_de_la_curva
-      - que el suelo no lo alcanza -> test_el_suelo_nunca_alcanza_al_peldano...
+    EL TP3 Y EL TP4 VOLVIERON A PROPOSITO y por eso ya no se prohiben aqui.
+    Las dos cosas que su vuelta obligaba a comprobar estan comprobadas en
+    este mismo fichero, que es lo que pedia el texto anterior:
+      - que caben en la curva -> test_los_peldanos_caben_dentro_de_la_curva
+      - que el suelo no los alcanza -> test_el_suelo_nunca_alcanza_al_peldano...
 
-    LO QUE SIGUE PROHIBIDO es `tp_extra` y del cuarto en adelante. Con cuatro
-    o mas peldanos de porcentaje la cola de market cap se vuelve inalcanzable
-    en la practica --solo se arma cuando se han cobrado TODOS los de
-    porcentaje-- y quedaria puesta sin hacer nada.
+    LO QUE DECIA ANTES DEL CUARTO, y por que ya no vale: "con cuatro peldanos
+    la cola de market cap se vuelve inalcanzable". Eso era cierto pensando en
+    OCHO peldanos, no en cuatro. La cola se arma cuando se han cobrado todos
+    los de porcentaje, o sea al llegar al x3 -- mas tarde que antes, pero
+    llegar al x3 es justo lo que esta escalera busca.
+
+    LO QUE SIGUE PROHIBIDO es `tp_extra` y del quinto en adelante.
     """
     assert _trade().get("tp_extra") in (None, []), (
         "han vuelto los peldanos lejanos: hay que recuperar la comprobacion "
         "de que caen en las cifras de market cap pedidas"
     )
-    for clave in ("tp4_gain", "tp5_gain", "tp6_gain"):
+    for clave in ("tp5_gain", "tp6_gain"):
         assert clave not in _trade(), (
-            f"{clave} ha vuelto al yaml. Con cuatro peldanos de porcentaje la "
+            f"{clave} ha vuelto al yaml. Con cinco peldanos de porcentaje la "
             f"cola de market cap deja de armarse en la practica"
         )
 

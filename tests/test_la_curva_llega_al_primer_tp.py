@@ -119,36 +119,43 @@ def test_no_se_entra_tan_abajo_que_deje_de_ser_esta_estrategia() -> None:
     repetir el mismo veto con un numero cada vez mas bajo tampoco informa de
     nada.
 
-    ASI QUE LA PREGUNTA CAMBIA, y esta vez por un motivo de fondo y no para
-    dejar pasar el cambio. Con la escalera de siete peldanos, entrar abajo
-    era malo porque los peldanos altos se quedaban sin cobrar. Con UN SOLO
-    take profit eso no aplica: lo unico que decide es si el objetivo se puede
-    cobrar dentro de la curva, y entrar mas abajo lo hace MAS facil, no
-    menos. Al 90% habia que llegar al 98,9% de curva para cobrar el +55,13%;
-    al 84% basta con el 94,1%.
+    Y SE CRUZO UNA CUARTA VEZ el 26-sep, al pedirse el 59%. Repetir el veto
+    con un numero cada vez mas bajo no informa de nada, asi que ESTA VEZ SE
+    QUITA EL SUELO ABSOLUTO y se comprueba lo que de verdad puede romperse.
 
-    LO QUE SE COMPRUEBA AHORA es eso, que es lo que de verdad puede romperse:
-    que el objetivo quede dentro del recorrido con holgura, y que el umbral
-    siga siendo un punto avanzado de la curva y no una moneda cualquiera. El
-    suelo absoluto se deja en 0,70 como tope de cordura -- por debajo de ahi
-    esto ya no es "la curva casi llena" bajo ninguna lectura.
+    CUAL ES ESA COSA. Lo que hace inutil entrar abajo no es el numero en si:
+    es que los peldanos ALTOS dejen de caber dentro de la curva. Y eso se
+    calcula. Entrando al 71% el x3 caia al 98,2% de curva --practicamente la
+    migracion-- y entrando al 59% cae al 91,2%. O sea que bajar la entrada
+    mejora esto en vez de empeorarlo, que es justo lo contrario de lo que
+    decia el suelo de 0,70.
+
+    ASI QUE SE MIRA EL PELDANO MAS ALTO, no el primero. El primero (+25%)
+    cabe siempre y comprobarlo no dice nada; el de arriba es el que se cae
+    fuera, y es donde esta ahora casi todo el peso de la escalera.
+
+    QUEDA UN LIMITE ABSOLUTO MUY BAJO (0,30) que NO es un veto: es para
+    cazar un cero de mas al teclear (0,059 en vez de 0,59), que es un fallo
+    que nadie detectaria leyendo.
     """
     c = _cfg()["filters"]["curva_96"]
-    assert c["umbral"] < c["tope"] <= 1.0
-    assert c["umbral"] >= 0.70, (
-        "por debajo del 70% esto ya no es comprar una curva avanzada: es "
-        "comprar una moneda cualquiera, y los filtros de esta fuente no "
-        "estan pensados para eso"
-    )
-    # Y LO QUE DE VERDAD DECIDE: que el take profit se cobre dentro de la
-    # curva. Se calcula a que punto de curva equivale el objetivo; si cae por
-    # encima del 100%, no se puede cobrar sin migrar.
     t = _cfg()["trade"]
-    objetivo = float(t["take_profit_percentage"])
+    assert c["umbral"] < c["tope"] <= 1.0
+    assert 0.30 <= c["umbral"], (
+        f"umbral {c['umbral']}: parece un cero de mas al teclear"
+    )
+
+    # EL PELDANO MAS ALTO DE LA ESCALERA, que es el que puede quedarse fuera.
+    peldanos = [
+        float(t["take_profit_percentage"]),
+        *(float(t[k]) for k in ("tp2_gain", "tp3_gain", "tp4_gain") if k in t),
+    ]
+    objetivo = max(peldanos)
     vt_compra = 1073e6 - 793.1e6 * c["umbral"]
     vt_objetivo = vt_compra / (1 + objetivo) ** 0.5
     curva_objetivo = (1073e6 - vt_objetivo) / 793.1e6
-    assert curva_objetivo < 0.99, (
-        f"para cobrar el +{objetivo * 100:.1f}% habria que llegar al "
-        f"{curva_objetivo * 100:.1f}% de curva: practicamente migrar"
+    assert curva_objetivo < 0.95, (
+        f"para cobrar el peldano de arriba (+{objetivo * 100:.0f}%) habria "
+        f"que llegar al {curva_objetivo * 100:.1f}% de curva: eso es "
+        f"practicamente migrar, y ese peldano casi nunca cobraria"
     )

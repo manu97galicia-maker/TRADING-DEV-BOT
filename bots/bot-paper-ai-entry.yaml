@@ -196,67 +196,67 @@ trade:
   # gas de la operacion es un 3,7%. El TP1 NO cubre el gas por si solo, y da
   # igual -- lo que aporta es el suelo, y eso ya esta contado en la cuenta de
   # arriba.
-  # TRES PELDANOS Y UNA COLA DE MARKET CAP (25-sep, pedido: "take profit uno
-  # sube un 25 vendes un 20, sube un 60 vendes un 40%, 100% 25, y el restante
-  # lo repartes hasta los 80k").
+  # CUATRO PELDANOS, CON EL PESO EN EL x3, Y UNA COLA DE MARKET CAP
+  # (26-sep, pedido: "tp mas enfocado en el x3").
   #
-  #   peldano   vende   hay que llegar al   suelo tras cobrarlo   holgura
-  #    +25%      20%      77,8% de curva       compra  +5,00%      +19,0%
-  #    +60%      40%      84,5% de curva       compra +31,25%      +21,9%
-  #   +100%      25%      89,8% de curva       compra +68,00%      +19,0%
-  #    resto     15%      escalones de market cap, abajo
+  #   peldano   vende   acum   cae al ...% de curva   suelo tras cobrarlo
+  #    +25%      10%     10%        67,1%              compra   +5,00%
+  #    +60%      20%     30%        75,0%              compra  +31,25%
+  #   +100%      20%     50%        81,3%              compra  +68,00%
+  #    x3        35%     85%        91,2%              compra +110,00%
+  #    resto     15%            escalones de market cap, abajo
   #
-  # LOS TRES CABEN DENTRO DE LA CURVA, y esto es nuevo. Entrando al 71%
-  # quedan +231,9% hasta migrar, asi que el +100% cae al 89,8% de curva con
-  # diez puntos de sobra. En la escalera del 24-sep el tercer peldano estaba
-  # FUERA --entrando al 87% se iba 12,8 puntos por encima de la migracion-- y
-  # solo cobraba si la moneda migraba y seguia subiendo en PumpSwap. Bajar la
-  # entrada al 71% es lo que lo ha metido dentro.
+  # EL x3 SOLO CABE PORQUE LA ENTRADA BAJO AL 59%. Entrando al 71% caia al
+  # 98,2% de curva --practicamente la migracion-- y habria sido un peldano
+  # que casi nunca cobra. Los dos cambios de hoy son el mismo cambio.
   #
-  # LA HOLGURA ES LO QUE HAY QUE MIRAR AL TOCAR ESTO. El suelo que arma cada
-  # peldano tiene que quedar por DEBAJO del peldano que lo armo, o la
-  # posicion se cierra sola en el instante en que cumple su objetivo. Con el
-  # margen del 5% los tres tienen 19-22 puntos de aire. Acercar dos peldanos
-  # entre si se come esa holgura: es el fallo que obligo a mover el TP2 en
-  # agosto.
+  # DE DONDE SALE EL PESO. Se mueve hacia arriba: el +25% pasa de vender el
+  # 20% al 10%, el +60% del 40% al 20%, el +100% del 25% al 20%, y los 35
+  # puntos que se liberan se ponen en el x3. El +25% se queda casi sin
+  # cobrar a proposito: su trabajo no es recoger dinero sino APAGAR EL STOP
+  # (el suelo pasa a compra +5% al tocarlo), y eso lo hace igual vendiendo un
+  # 10% que un 20%.
   #
-  # SE COBRA MENOS PRONTO Y MAS TARDE que la escalera de anoche, y conviene
-  # verlo antes de que pase:
+  #   la moneda llega a   escalera de ayer   enfocada en el x3
+  #        +24%                -30,00%            -30,00%
+  #        +25%                 +9,00%             +7,00%
+  #        +59%                 +9,00%             +7,00%
+  #        +60%                +41,50%            +36,38%
+  #        +99%                +41,50%            +36,38%
+  #       +100%                +64,20%            +68,50%
+  #       +199%                +64,20%            +68,50%
+  #        x3                  +64,20%           +121,00%
+  #       +400%                +64,20%           +121,00%
   #
-  #   la moneda llega a    escalera de anoche    esta escalera
-  #        +24%                  -35,0%              -35,0%
-  #        +25%                  -35,0%               +9,0%
-  #        +30%                  +20,0%               +9,0%
-  #        +45%                  +20,0%               +9,0%
-  #        +59%                  +20,0%               +9,0%
-  #        +60%                  +39,7%              +41,5%
-  #        +99%                  +39,7%              +41,5%
-  #       +100%                  +39,7%              +64,2%
-  #
-  # EL TRAMO QUE PIERDE ES +30% A +59%, y es el que mas pasa. Anoche el
-  # primer peldano vendia el 60% de la posicion y dejaba +20%; ahora vende el
-  # 20% y deja +9%. A cambio, una que llega al +100% pasa de +39,7% a +64,2%.
-  # Es la apuesta pedida: menos de las medianas, mucho mas de las que corren.
+  # LA APUESTA, EN UNA LINEA: se cobra algo menos de las que se quedan entre
+  # el +25% y el +99%, y CASI EL DOBLE de las que llegan al x3.
   #
   # ACIERTOS QUE HACEN FALTA para no perder, contra una que se va al stop:
-  #     si solo toca el +25%     gana  +9,0%  ->  80% de aciertos
-  #     si toca el +60%          gana +41,5%  ->  46% de aciertos
-  #     si toca el +100%         gana +64,2%  ->  35% de aciertos
-  # O sea que esta escalera NO se sostiene con monedas que solo tocan el
-  # primer peldano: necesita que una parte llegue al +60% y al +100%. El +25%
-  # esta ahi por el SUELO que arma (compra +5%), no por lo que cobra.
+  #     si solo tocan el +25%    gana   +7,0%  ->  81% de aciertos
+  #     si tocan el +60%         gana  +36,4%  ->  45% de aciertos
+  #     si tocan el +100%        gana  +68,5%  ->  30% de aciertos
+  #     si llegan al x3          gana +121,0%  ->  20% de aciertos
+  # Con la escalera de ayer, una que llegaba al x3 tambien pedia un 32%:
+  # cobraba lo mismo que una del +100% porque no habia peldano arriba.
   #
-  # NO QUEDA MOONBAG PERPETUO. Anoche sobraba un 10% que no se vendia nunca;
-  # aqui el 15% que queda esta todo asignado a los escalones de market cap,
-  # asi que una moneda que llegue a 80k cierra ENTERA. Lo bueno: no quedan
-  # cuentas de token abiertas con su renta dentro. Lo que cuesta: si una hace
-  # x10 despues de los 80k, no queda nada dentro para cogerlo.
+  # LA HOLGURA DEL SUELO, que es lo que no se puede romper al tocar esto. El
+  # suelo que arma cada peldano tiene que quedar por DEBAJO del peldano que
+  # lo armo, o la posicion se cierra sola al cumplir su objetivo (paso en
+  # agosto). Con el margen del 5%: +19,0%, +21,9%, +19,0% y +42,9%. El del x3
+  # es el mas holgado porque el salto del +100% al x3 es el mas grande.
+  #
+  # SI ESTO NO FUNCIONA, LA PALANCA ES EL REPARTO, NO EL x3. Bajar el x3 a
+  # +150% o subir lo que cobran los peldanos de abajo son cambios de una
+  # linea; mover la entrada por esto seria deshacer el motivo por el que el
+  # x3 cabe.
   take_profit_percentage: 0.25
-  take_profit_sell_percentage: 0.20
+  take_profit_sell_percentage: 0.10
   tp2_gain: 0.60
-  tp2_sell: 0.40
+  tp2_sell: 0.20
   tp3_gain: 1.00
-  tp3_sell: 0.25
+  tp3_sell: 0.20
+  tp4_gain: 2.00
+  tp4_sell: 0.35
   # +53% Y NO +55% (24-sep, pedido: "sube dentro de la curva dos puntos").
   # Dos puntos NO de ganancia sino de MARGEN: entrando al 91,0% quedan
   # +57,5% hasta migrar, asi que el peldano pasa de entrar por 2,5 puntos a
@@ -750,9 +750,9 @@ trade:
   # 0,30 · 0,21 · 0,15 · 0,10 · 0,07. La quinta valia la cuarta parte que la
   # primera sin que nadie lo pidiera. Sobre la cartera salen IGUALES.
   #
-  # 32% DE LA CARTERA (25-sep, pedido: "32% por operacion"). Historial:
-  # 30% cartera -> 10 $ fijos -> 25% cartera -> 15% libre -> 20% libre ->
-  # 25% -> 30% -> 50% -> 70% -> 80% -> 50% -> 25% -> 32% cartera.
+  # 30% DE LA CARTERA (26-sep, pedido: "pon 30% de compra por operacion").
+  # Historial: 30% cartera -> 10 $ fijos -> 25% cartera -> 15% libre -> 20%
+  # libre -> 25% -> 30% -> 50% -> 70% -> 80% -> 50% -> 25% -> 32% -> 30%.
   #
   # ES EL PRIMER CAMBIO DE TAMANO CON EL BOT OPERANDO DE VERDAD. Los cinco
   # de ayer se hicieron a ciegas: ninguna de aquellas configuraciones llego a
@@ -769,7 +769,7 @@ trade:
   #   modo                las compras con 1 SOL y 2 plazas    de la cartera
   #   20% libre           0,194  0,155                              35%
   #   25% cartera         0,250  0,249                              50%
-  #   32% cartera (hoy)   0,320  0,319                              64%
+  #   30% cartera (hoy)   0,300  0,299                              60%
   #   50% cartera         0,500  0,350                              85%
   #   70% cartera         0,700  0,200                              90%
   #
@@ -778,38 +778,37 @@ trade:
   # ponia el saldo libre, ya con las migas compradas. Ahora el freno es el
   # TECHO, asi que el porcentaje SI decide cuanto dinero se pone a trabajar.
   #
-  # QUEDA UN TERCIO DE LA CARTERA QUIETO: 32% x 2 plazas = 64%. Con el 25%
-  # era la mitad. No es un fallo --es dinero que no puede perderse y que esta
+  # QUEDA UN 40% DE LA CARTERA QUIETO: 30% x 2 plazas = 60%. No es un fallo --es dinero que no puede perderse y que esta
   # ahi si manana se sube el tamano o el numero de plazas-- pero conviene no
-  # confundirlo con "estoy arriesgando el 32%": se arriesga el 32% POR
-  # OPERACION, y solo dos tercios del dinero operan.
+  # confundirlo con "estoy arriesgando el 30%": se arriesga el 30% POR
+  # OPERACION, y solo el 60% del dinero opera.
   #
   # SI LO QUE SE QUIERE ES USARLA ENTERA, las dos palancas son subir
-  # `max_posiciones` a 3 (tres compras del 32% = 96%) o volver a subir este
+  # `max_posiciones` a 3 (tres compras del 30% = 90%) o volver a subir este
   # porcentaje. Ninguna se toca aqui porque no se pidio. OJO si se sube a 3:
   # la reserva de 0,01 aguanta hasta 4 plazas, asi que por ahi no hay
   # problema (la cuenta esta en `min_reserve_sol`).
   #
-  # LAS DOS COMPRAS SALEN IGUALES: 0,320 y 0,319. Con el 50% no lo eran --la
+  # LAS DOS COMPRAS SALEN IGUALES: 0,300 y 0,299. Con el 50% no lo eran --la
   # segunda salia recortada a 0,350 porque ya no quedaba saldo libre para
   # otra entera-- asi que esto sigue siendo diversificacion de verdad entre
   # dos posiciones del mismo tamano.
   #
   # LO QUE SE ARRIESGA. Con el stop en 30%, una posicion que se hunde cuesta
-  # el 9,6% de la cartera (era el 7,5% con el 25% y el 15,0% con el 50%) y
-  # las dos a la vez el 19,2%. Y sin freno de rachas (`parar_tras_perdidas`
-  # sigue en 0), tres perdidas seguidas son -26,1% y diez son -63,6%.
+  # el 9,0% de la cartera (era el 7,5% con el 25% y el 15,0% con el 50%) y
+  # las dos a la vez el 18,0%. Y sin freno de rachas (`parar_tras_perdidas`
+  # sigue en 0), tres perdidas seguidas son -24,6% y diez son -61,3%.
   #
   # LA COMISION DEJA DE MORDER TANTO. Es fija (~0,93 $ ida y vuelta), asi que
   # subir el tamano la diluye:
   #
-  #   cartera     con el 25%        con el 32%
-  #   0,50 SOL    11,4 $ -> 8,1%    14,5 $ -> 6,4%
-  #   0,83 SOL    18,9 $ -> 4,9%    24,2 $ -> 3,8%
-  #   1,00 SOL    22,8 $ -> 4,1%    29,1 $ -> 3,2%
-  #   2,00 SOL    45,6 $ -> 2,0%    58,3 $ -> 1,6%
+  #   cartera     con el 25%        con el 30%
+  #   0,50 SOL    11,4 $ -> 8,1%    13,7 $ -> 6,8%
+  #   0,83 SOL    18,9 $ -> 4,9%    22,7 $ -> 4,1%
+  #   1,00 SOL    22,8 $ -> 4,1%    27,4 $ -> 3,4%
+  #   2,00 SOL    45,6 $ -> 2,0%    54,7 $ -> 1,7%
   #
-  # EL TOPE DE 2 SOL empieza a morder a partir de 6,25 SOL de cartera (con el
+  # EL TOPE DE 2 SOL empieza a morder a partir de 6,67 SOL de cartera (con el
   # 25% eran 8). Por encima de ahi el porcentaje efectivo baja solo.
   #
   # LA PRIMERA COMPRA NO ES LA MEJOR MONEDA DEL DIA: es LA PRIMERA que pasa
@@ -819,7 +818,7 @@ trade:
   # LA VARIANZA SIGUE SIENDO CASI TODA LA ESTRATEGIA, y sigue sin haber UNA
   # sola medicion de cuantas monedas llegan a cada peldano. El cazador lleva
   # 223.199 apuntadas y `deploy/analizar_senales.py` no se ha corrido nunca.
-  fraccion_saldo: 0.32
+  fraccion_saldo: 0.30
   # SOBRE QUE SE CALCULA EL PORCENTAJE. Es una clave y no una decision
   # escrita en el codigo porque ha ido y venido tres veces en dos dias, y
   # cada vuelta era un commit tocando el camino de compra.
@@ -1175,15 +1174,29 @@ filters:
   # carteras compradoras vistas en el stream, la misma cuenta que usa la
   # curva, para que las dos puertas midan LO MISMO.
   #
-  # VA MAS BAJO QUE EL DE LA CURVA (30) a proposito: este es un suelo minimo
-  # para TODAS las fuentes, incluida Telegram, no el corte fino de una
-  # estrategia. Con 12 ya no lo mueve un bundle de cuatro carteras, y no
-  # aprieta tanto como para dejar mudo al bot mientras el stream se llena
-  # despues de cada reinicio.
+  # VA POR DEBAJO --O IGUAL-- QUE EL DE LA CURVA a proposito: este es un
+  # suelo minimo para TODAS las fuentes, incluida Telegram, no el corte fino
+  # de una estrategia. Si se pusiera por encima, el de la curva dejaria de
+  # decidir nada: mandaria este y el otro seria decorativo.
+  #
+  # BAJA DE 12 A 9 EL 26-sep, Y NO ES UNA DECISION APARTE. Al bajar la
+  # entrada al 59% el corte de la curva se reescalo a 9 (la cuenta esta en
+  # `curva_96.min_compradores`), y con este en 12 ese 9 no habria servido de
+  # nada: el efectivo habria seguido siendo 12. O se bajaba este, o el
+  # cambio de entrada quedaba a medias sin que nada lo dijera -- que es
+  # exactamente el fallo que este fichero lleva tres dias documentando.
+  #
+  # LO QUE CUESTA, dicho claro: es un suelo de seguridad y ha bajado. Con 9
+  # carteras distintas un grupo de diez monederos puede fabricar la
+  # apariencia de demanda. Lo que sigue tapando ese hueco son los tres
+  # frenos de bundle de la curva y el de la vela verde (+80% en 30 s).
+  #
+  # `test_la_puerta_de_la_curva_no_baja_del_suelo_de_todas_las_fuentes`
+  # vigila la relacion entre los dos, no los numeros.
   #
   # OJO CON EL REINICIO: cuenta lo visto DESDE QUE ARRANCO el bot, asi que
   # recien reiniciado descarta de mas. Es el lado seguro del error.
-  min_compradores_global: 12
+  min_compradores_global: 9
   min_curve_sol: 0
   min_entry_mc: 0
   max_entry_mc: 0
@@ -1595,43 +1608,35 @@ filters:
     # para monedas avanzadas, y aplicados a una moneda a un tercio de camino
     # no significan lo mismo.
     #
-    # DONDE ESTAMOS DE VERDAD. Al 71% faltan 51,9 SOL para migrar: la moneda
-    # ha recorrido un tercio de su curva. La fuente se llama `curva_96` y
-    # nacio comprando al 96%; a esto ya no se le puede llamar "la curva casi
-    # llena" de ninguna manera.
+    # DONDE ESTAMOS DE VERDAD. Al 59% faltan 61,8 SOL para migrar: la moneda
+    # ha hecho poco mas de un cuarto del recorrido de su curva.
     #
-    #   entrada   para cobrar el TP hay que llegar a   MC compra   ventana
-    #    71,0%              83,7% de curva               27,2k       28,5p
-    #    79,0%              90,1%                        35,5k       20,5p   <- antes
-    #    84,0%              94,1%                        42,8k       15,5p
-    #    90,0%              98,9%                        54,9k        9,5p
+    # 59,0% (26-sep, pedido: "baja la curva un 12%"). Historial de la
+    # entrada, que se ha movido dieciocho veces en tres dias:
+    #   96% -> ... -> 93,5% -> 90% -> 84% -> 79% -> 71% -> 59%.
     #
-    #   curva   SOL dentro   falta   precio    subida hasta migrar
-    #   71,0%      33,1       51,9   -23,3%         +231,9%   <- aqui
-    #   79,0%      42,1       42,9     0,0%         +154,4%   <- antes
-    #   90,0%      59,6       25,4   +67,8%          +64,7%
+    #   curva   SOL dentro   falta   hasta migrar
+    #   59,0%      23,2       61,8      +367%   <- aqui
+    #   71,0%      33,1       51,9      +232%   <- antes
+    #   90,0%      59,6       25,4       +65%
     #
-    # ("Precio" es respecto al 79,0%.)
+    # LO QUE SE GANA, Y ES EL MOTIVO DE VERDAD DE ESTE CAMBIO: el x3 pasa a
+    # caber DENTRO de la curva. Entrando al 71% el x3 caia al 98,2% de curva
+    # --practicamente la migracion, o sea que solo se cobraba si la moneda
+    # migraba y seguia subiendo en PumpSwap-- y entrando al 59% cae al 91,2%,
+    # con sitio de sobra. Bajar la entrada y enfocar el take profit en el x3
+    # (los dos pedidos hoy) son el MISMO cambio: sin el primero, el segundo
+    # seria un peldano que casi nunca cobra.
     #
-    # LO QUE SE GANA: la ventana pasa de 20,5 a 28,5 puntos, se entra un 23%
-    # mas barato y el objetivo baja a pedir un 83,7% de curva.
+    # LO QUE CUESTA: una moneda al 59% ha pasado por menos gente y ha
+    # demostrado menos. Es mas barata y mas temprana, pero tambien tiene mas
+    # camino por delante para darse la vuelta. El freno de la vela verde
+    # (+80% en 30 s) y los tres de bundle son los que tapan ese hueco.
     #
-    # LO QUE NO SE GANA, Y ES EL MOTIVO POR EL QUE ESTO NO DEBERIA REPETIRSE.
-    # El embudo de esta tarde: 13.185 monedas con movimiento, 14 llegaron al
-    # umbral, 0 se compraron. Las que se caen lo hacen DESPUES del umbral,
-    # por `min_compradores` y por no haber visto la creacion. Bajar la
-    # entrada mueve el primer numero y no toca el segundo: mas candidatas
-    # cayendose en el mismo sitio.
-    #
-    # Y VA EN CONTRA: una moneda al 71% ha pasado por menos gente que una al
-    # 79%, que pasaba por menos que una al 90%. `min_compradores` se vuelve
-    # mas dificil a cada bajada. De los dos numeros, este es el que NO abre
-    # el embudo.
-    #
-    # RESUELTO EL 25-sep: el problema no era bajar la entrada, era que
-    # `min_compradores` se quedo en el 30 del 96% mientras la entrada bajaba
-    # 25 puntos. Reescalado a 14 ahi abajo, con la cuenta escrita.
-    umbral: 0.71
+    # Y OJO CON `min_compradores`, QUE VA CON ESTO: baja de 14 a 9, porque
+    # una moneda al 59% ha pasado por menos carteras que una al 71%. La
+    # cuenta esta abajo y la vigila `test_la_puerta_de_gente_va_con_la_entrada`.
+    umbral: 0.59
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995
@@ -1675,7 +1680,8 @@ filters:
     #    96%       73,3            30
     #    90%       59,6            24
     #    79%       42,1            17
-    #    71%       33,1            14   <- aqui
+    #    71%       33,1            14
+    #    59%       23,2             9   <- aqui
     #
     # O sea: 30 x (SOL dentro al umbral / 73,3). Lo vigila
     # `test_la_puerta_de_gente_va_con_la_entrada`, que se pone rojo si
@@ -1690,7 +1696,7 @@ filters:
     #
     # Y SIGUE POR ENCIMA DEL SUELO GLOBAL (12), que es lo correcto: aquel es
     # el minimo para todas las fuentes, este es el corte de esta estrategia.
-    min_compradores: 14
+    min_compradores: 9
     # Freno EN CADENA, este no depende de haber visto nacer la moneda: si
     # los mayores titulares concentran mas de esto del supply, es un
     # bundle aunque el bloque de creacion pareciera limpio. Va mas alto

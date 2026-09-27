@@ -78,16 +78,18 @@ def test_el_tp1_de_la_config_vende_y_asegura() -> None:
     compra +5% y la operacion ya no puede acabar en perdida. Ese es el
     trabajo principal del primer peldano; lo que cobra es secundario.
 
-    Y AHORA SE NOTA MAS QUE NUNCA: vendiendo solo el 20%, una moneda que toca
-    el +25% y se da la vuelta deja +9,0% en vez del +20,0% que dejaba
-    cobrando el 60%. El peldano sigue haciendo su trabajo --convertir una
-    perdedora en ganadora pequena-- pero la ganancia pequena es mas pequena.
+    Y AHORA SE NOTA MAS QUE NUNCA: desde el 26-sep vende solo el 10%, asi que
+    una moneda que toca el +25% y se da la vuelta deja +7,0% -- contra el
+    +9,0% de ayer y el +20,0% de cuando cobraba el 60%. El peldano sigue
+    haciendo su trabajo --convertir una perdedora en ganadora pequena-- pero
+    la ganancia pequena es cada vez mas pequena. Es el precio de mover el
+    peso al x3, y esta puesto a sabiendas.
 
     Los dos numeros salen del yaml a proposito: ya paso que un test fijara el
     peldano a mano y se quedara verde midiendo el de dos versiones atras.
     """
     t = _trade()
-    assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 0.20
+    assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 0.10
     assert _tiers()[0].gain == t["take_profit_percentage"] == 0.25
 
 
@@ -174,12 +176,12 @@ def test_el_colchon_mas_apretado_esta_anotado() -> None:
 # ----------------------------------------------------- la escalera completa
 
 
-def test_tres_peldanos_y_una_cola_de_market_cap() -> None:
-    """LA ESCALERA DEL 25-SEP: +25% vende 20%, +60% vende 40%, +100% vende
-    25%, y el 15% que sobra lo reparten cuatro escalones de market cap hasta
-    80k ("el restante lo repartes hasta los 80k").
+def test_cuatro_peldanos_con_el_peso_en_el_x3_y_una_cola() -> None:
+    """LA ESCALERA DEL 26-SEP: +25% vende 10%, +60% vende 20%, +100% vende
+    20%, el x3 vende 35%, y el 15% que sobra lo reparten cuatro escalones de
+    market cap hasta 80k. Pedido: "tp mas enfocado en el x3".
 
-    ESTE TEST HA CAMBIADO DE FORMA CUATRO VECES, con la escalera: sumaba dos
+    ESTE TEST HA CAMBIADO DE FORMA CINCO VECES, con la escalera: sumaba dos
     escaleras (porcentaje + market cap) para llegar al 97%; luego exigia un
     solo peldano vendiendo el 100%; luego dos y un resto de 10%; ahora tres y
     una cola. Se reescribe cada vez en vez de aflojarse, porque lo que fija
@@ -195,9 +197,14 @@ def test_tres_peldanos_y_una_cola_de_market_cap() -> None:
     """
     tiers = _tiers()
     trade = _trade()
-    assert len(tiers) == 3, f"tres peldanos: {tiers}"
-    assert [t.gain for t in tiers] == [0.25, 0.60, 1.00]
-    assert [t.sell for t in tiers] == [0.20, 0.40, 0.25]
+    assert len(tiers) == 4, f"cuatro peldanos: {tiers}"
+    assert [t.gain for t in tiers] == [0.25, 0.60, 1.00, 2.00]
+    assert [t.sell for t in tiers] == [0.10, 0.20, 0.20, 0.35]
+    # EL PESO ESTA ARRIBA: el peldano de mas ganancia es tambien el que mas
+    # vende. Si alguien reparte al reves, esto ya no es "enfocado en el x3".
+    assert max(tiers, key=lambda x: x.gain).sell == max(t.sell for t in tiers), (
+        f"el x3 tiene que ser el que mas vende: {tiers}"
+    )
     assert abs(moonbag_fraction(tiers) - 0.15) < 1e-9
     assert not (trade.get("tp_extra") or [])
     cola = sum(d["sell"] for d in trade.get("mc_take_profit_tiers") or [])
