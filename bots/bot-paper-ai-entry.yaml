@@ -90,7 +90,7 @@ trade:
   # cinco veces por segundo, dos lo hacen dos veces. Con los 429 que salen
   # en el embudo, tres consultas por segundo menos ayudan -- no arreglan el
   # 429, pero no estorban.
-  max_posiciones: 2
+  max_posiciones: 0
   # Tope de por vida de compras reales. Empieza en 1 a proposito: el camino
   # de compra de mints EXISTENTES nunca se ha ejecutado contra una compra de
   # verdad (hay avisos en token_builder.py y en las tres fuentes). Con 1 se ve
@@ -249,14 +249,20 @@ trade:
   # +150% o subir lo que cobran los peldanos de abajo son cambios de una
   # linea; mover la entrada por esto seria deshacer el motivo por el que el
   # x3 cabe.
-  take_profit_percentage: 0.25
-  take_profit_sell_percentage: 0.10
-  tp2_gain: 0.60
-  tp2_sell: 0.20
+  take_profit_percentage: 0.35
+  take_profit_sell_percentage: 0.25
+  tp2_gain: 0.65
+  tp2_sell: 0.40
   tp3_gain: 1.00
-  tp3_sell: 0.20
-  tp4_gain: 2.00
-  tp4_sell: 0.35
+  tp3_sell: 0.15
+  tp4_gain: 1.50
+  tp4_sell: 0.10
+  tp5_gain: 2.00
+  tp5_sell: 0.05
+  tp6_gain: 4.00
+  tp6_sell: 0.03
+  tp7_gain: 10.00
+  tp7_sell: 0.02
   # +53% Y NO +55% (24-sep, pedido: "sube dentro de la curva dos puntos").
   # Dos puntos NO de ganancia sino de MARGEN: entrando al 91,0% quedan
   # +57,5% hasta migrar, asi que el peldano pasa de entrar por 2,5 puntos a
@@ -421,15 +427,7 @@ trade:
   # cobran de golpe en el mismo instante. No rompe nada --se vende el 15% al
   # precio de ese momento, que es mejor que 80k-- pero explica por que a
   # veces se vera la posicion cerrarse entera de una vez.
-  mc_take_profit_tiers:
-    - target_mc: 50000
-      sell: 0.05
-    - target_mc: 60000
-      sell: 0.04
-    - target_mc: 70000
-      sell: 0.03
-    - target_mc: 80000
-      sell: 0.03
+  mc_take_profit_tiers: []
 
   # 35% (24-sep, pedido: "SL al 35%"). Historial: 18% -> 28% -> 40% -> 30%
   # -> 18% -> 28% -> 15% -> 26% -> 35%.
@@ -718,7 +716,7 @@ trade:
   # `test_la_reserva_cubre_vender_todo_lo_abierto`, que recalcula el peor
   # caso desde `max_posiciones` y la comision del propio fichero en vez de
   # fiarse de esta tabla.
-  min_reserve_sol: 0.01
+  min_reserve_sol: 0.03
   # POLVO. Por debajo de este valor una posicion deja de gestionarse: suelta
   # su plaza de las 5 y se deja de consultar su precio cada segundo.
   #
@@ -818,7 +816,7 @@ trade:
   # LA VARIANZA SIGUE SIENDO CASI TODA LA ESTRATEGIA, y sigue sin haber UNA
   # sola medicion de cuantas monedas llegan a cada peldano. El cazador lleva
   # 223.199 apuntadas y `deploy/analizar_senales.py` no se ha corrido nunca.
-  fraccion_saldo: 0.30
+  fraccion_saldo: 0.25
   # SOBRE QUE SE CALCULA EL PORCENTAJE. Es una clave y no una decision
   # escrita en el codigo porque ha ido y venido tres veces en dos dias, y
   # cada vuelta era un commit tocando el camino de compra.
@@ -896,7 +894,7 @@ trade:
   # trader lo reaplica a mano. Esto es otra cosa --el tope del IMPORTE-- y se
   # aplica dentro del cerrojo de gasto, justo antes de calcular el coste con
   # slippage. Hay test.
-  tope_compra_sol: 2.0
+  tope_compra_sol: 0
   # SI NO LLEGA EL SALDO, SE COMPRA CON EL 75% DE LO QUE QUEDE en vez de
   # saltarse la moneda. Pedido el 19-sep.
   #
@@ -1057,6 +1055,7 @@ retries:
 avisos_telegram: false
 
 filters:
+  telegram_only: true
   listener_type: logs
   # Antiguedad EN LA COLA interna, no de la moneda. Con compra instantanea
   # una senal que lleva parada mas de 2 min ya no vale la pena.
@@ -1079,7 +1078,7 @@ filters:
   require_mayhem: false
   marry_mode: false
   yolo_mode: true
-  paper_trade: false
+  paper_trade: true
   # NO SE MIDEN DEVS. Pedido el 19-sep: "que no mida devs, solo si una
   # moneda nueva llega a los 99 holders, nada mas".
   #
@@ -1593,7 +1592,7 @@ filters:
     # punto de migrar a un DEX. Son pocas al dia --la mayoria de las monedas
     # mueren mucho antes-- asi que va a comprar MUCHO menos a menudo. Eso no
     # es que este rota: es lo que hay a ese punto de la curva.
-    enabled: true
+    enabled: false
     # Punto de la curva en que se compra (0,95 = 95% vendido).
     #
     # 71,0% (24-sep, pedido: "baja la curva un 8%"). Tercera bajada en una
@@ -1751,7 +1750,7 @@ filters:
     #
     # Los canales se quedan escritos abajo: volver a encenderla es cambiar
     # este false.
-    enabled: false
+    enabled: true
     session_name: moontok_watcher
     # A CERO los tres, igual que el `buy_amount` global: desde el 23-sep manda
     # el 15% del saldo. TIENEN QUE COINCIDIR con el global: el importe de la
@@ -1792,11 +1791,8 @@ filters:
     # descarta con un aviso en el log y los demas siguen (antes tumbaba la
     # fuente entera, Nitro incluido).
     channels:
-      - dextools_nitro
-      - cryptolistings
       - Wagbocooks
       - LegendsAlphas
-      - SolanaInsiderTerminal
     # Solo monedas de pump.fun normales, que es lo pedido.
     suffixes:
       - pump

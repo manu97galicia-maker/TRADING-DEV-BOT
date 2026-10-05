@@ -124,6 +124,7 @@ class TelegramSource:
                 )
                 token_info.additional_data = {
                     **(token_info.additional_data or {}),
+                    "acquisition_kind": "telegram",
                     "acquisition_source": source,
                     "dextools_nitro_score": nitro_score,
                     "signal_buy_amount": signal_amount,
