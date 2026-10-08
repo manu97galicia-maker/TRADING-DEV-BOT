@@ -87,10 +87,11 @@ Con el stop en el 30%:
 |---|---|---|
 | con el 50% | −15,0% de la cartera | −30,0% |
 | con el 25% | −7,5% | −15,0% |
-| **con el 30% (hoy)** | **−9,0%** | **−18,0%** |
+| con el 30% | −9,0% | −18,0% |
+| **con el 33% (hoy, 8-oct)** | **−9,9%** | **−19,8%** |
 
-Y como **no hay freno de rachas**, tres pérdidas seguidas son −24,6% y diez
-son −61,3%. Nada para al bot por el camino.
+Y como **no hay freno de rachas**, tres pérdidas seguidas son −26,9% y diez
+son −64,7%. Nada para al bot por el camino.
 
 > **La primera compra no es la mejor moneda del día: es la primera que pasa
 > los filtros.** El bot no elige entre candidatas, compra la que llega. Eso no

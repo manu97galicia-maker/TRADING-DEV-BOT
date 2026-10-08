@@ -820,7 +820,12 @@ trade:
   # posiciones simultaneas se compromete como maximo el 50% de la cartera.
   # Con stop del 30%, el riesgo teorico es 7,5% por posicion y 15% si las dos
   # saltan, antes de deslizamiento. Sigue en PAPER hasta medir las tres rutas.
-  fraccion_saldo: 0.25
+  # 8-oct-2026 (noche): UN TERCIO, pedido por Manu: "un tercio del sol
+  # balance por operacion". Con max_posiciones 2 se comprometen como maximo
+  # el 66% de la cartera. Con stop del 30%: -9,9% por posicion, -19,8% si
+  # saltan las dos, antes de deslizamiento. Tres perdidas seguidas -26,9%,
+  # diez -64,7%. Para volver al cuarto: 0.25.
+  fraccion_saldo: 0.33
   # SOBRE QUE SE CALCULA EL PORCENTAJE. Es una clave y no una decision
   # escrita en el codigo porque ha ido y venido tres veces en dos dias, y
   # cada vuelta era un commit tocando el camino de compra.
