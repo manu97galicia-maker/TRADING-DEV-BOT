@@ -1208,6 +1208,15 @@ filters:
   max_entry_mc: 3398
   min_volumen_sol: 8.0
   max_volumen_sol: 0
+  # SEGUNDA PUERTA PAPER: conserva el tramo historico hasta 3.398 USD y solo
+  # amplia a 12K cuando la demanda es excepcionalmente mas fuerte. El techo
+  # tambien se ajusta automaticamente cuando cambia el precio de SOL.
+  entrada_alternativa:
+    max_mc: 12000
+    min_volumen_sol: 16
+    min_compradores: 12
+    min_titulares: 10
+    min_presion_ratio: 2.0
   # REFUERZO CONSERVADOR (8-oct-2026, PAPER): el volumen bruto tambien suma
   # ventas, por lo que 8 SOL por si solos pueden describir una moneda que ya
   # se esta vaciando. UNICA exige ahora que, en los ultimos cinco segundos,
@@ -1758,6 +1767,7 @@ filters:
     channels:
       - Wagbocooks
       - LegendsAlphas
+      - calledbyblakee
       - dextools_nitro
       - cryptolistings
     # Solo monedas de pump.fun normales, que es lo pedido.

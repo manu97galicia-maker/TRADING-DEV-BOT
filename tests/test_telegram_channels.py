@@ -88,7 +88,7 @@ def test_los_canales_configurados_son_los_pedidos() -> None:
     """Cada canal de esta lista es una fuente de compra con dinero real, asi
     que anadir o quitar uno se ve aqui en rojo.
 
-    Solo quedan los dos canales de calls pedidos. La estrategia UNICA entra
+    Solo quedan los tres canales de calls pedidos. La estrategia UNICA entra
     por Helius de forma independiente.
 
     Desde el 14-sep cada compra apunta de que canal vino, asi que
@@ -96,7 +96,11 @@ def test_los_canales_configurados_son_los_pedidos() -> None:
     """
     canales = _config()["filters"]["telegram_calls"]["channels"]
     assert canales == [
-        "Wagbocooks", "LegendsAlphas", "dextools_nitro", "cryptolistings"
+        "Wagbocooks",
+        "LegendsAlphas",
+        "calledbyblakee",
+        "dextools_nitro",
+        "cryptolistings",
     ]
 
 

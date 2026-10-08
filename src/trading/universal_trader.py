@@ -1023,6 +1023,10 @@ class UniversalTrader:
         _ea = entrada_alternativa or {}
         self.entrada_alt_max_mc = float(_ea.get('max_mc') or 0)
         self.entrada_alt_min_vol = float(_ea.get('min_volumen_sol') or 0)
+        self.entrada_alt_min_compradores = int(_ea.get("min_compradores") or 0)
+        self.entrada_alt_min_titulares = int(_ea.get("min_titulares") or 0)
+        self.entrada_alt_min_presion = float(_ea.get("min_presion_ratio") or 0)
+        self._mints_entrada_alt: set[str] = set()
         # TP AGRESIVO para devs moonshot (los que suelen llegar MUY alto): objetivos
         # más altos y moonbag más grande para pillar el pump. +100/300/900%, vende
         # 20% en cada uno, moonbag 40% (vs el normal +50/150/300% moonbag 20%).
@@ -4078,7 +4082,10 @@ class UniversalTrader:
                     # subiendo que mientras todos venden. Aqui se exige que en
                     # los ultimos segundos entre mas dinero del que sale, para
                     # no comprar la primera vela roja de un dump.
-                    if self.min_presion_ratio > 0:
+                    if max(
+                        self.min_presion_ratio,
+                        self.entrada_alt_min_presion,
+                    ) > 0:
                         _pc, _pv = _presion(str(token_info.mint), self.presion_seg)
                         if _pc <= 0 and _pv <= 0:
                             # SIN DATOS != CAYENDO. Medido el 10-ago: las 6
@@ -4097,7 +4104,7 @@ class UniversalTrader:
                             _ok_presion = True
                         else:
                             _ok_presion = (_pc / _pv) >= self.min_presion_ratio
-                        if not _ok_presion:
+                        if self.min_presion_ratio > 0 and not _ok_presion:
                             _visto_presion = (
                                 f"{_pc:.2f} comprados / {_pv:.2f} vendidos "
                                 f"en {self.presion_seg:.0f}s"
@@ -4259,7 +4266,20 @@ class UniversalTrader:
                             self.entrada_alt_max_mc > 0
                             and _mc <= self.entrada_alt_max_mc
                             and _v >= self.entrada_alt_min_vol
+                            and _compradores >= self.entrada_alt_min_compradores
+                            and _h >= self.entrada_alt_min_titulares
+                            and (
+                                self.entrada_alt_min_presion <= 0
+                                or _pv <= 0 < _pc
+                                or (
+                                    _pv > 0
+                                    and (_pc / _pv)
+                                    >= self.entrada_alt_min_presion
+                                )
+                            )
                         )
+                        if _alt_ok:
+                            self._mints_entrada_alt.add(str(token_info.mint))
                         # TERCERA PUERTA: dev_mediana. Este mint ya se marco
                         # como "entra por mediana" en el filtro de creador; si
                         # su MC sigue por debajo del techo propio de esa
@@ -4277,8 +4297,14 @@ class UniversalTrader:
                                 _porque = (
                                     f" · la 2a puerta pide MC<="
                                     f"${self.entrada_alt_max_mc:,.0f} con "
-                                    f"{self.entrada_alt_min_vol:.0f} SOL y hay "
-                                    f"{_v:.1f}"
+                                    f"{self.entrada_alt_min_vol:.0f} SOL, "
+                                    f"{self.entrada_alt_min_compradores} "
+                                    "compradores, "
+                                    f"{self.entrada_alt_min_titulares} holders y "
+                                    f"presion {self.entrada_alt_min_presion:.1f}x; "
+                                    f"hay {_v:.1f} SOL, {_compradores} "
+                                    "compradores, "
+                                    f"{_h} holders"
                                 )
                             if _mediana_max > 0:
                                 _porque += (
@@ -4492,12 +4518,24 @@ class UniversalTrader:
                 and not entrada_especial
             ):
                 entry_mc = entry_price * _PUMP_TOTAL_SUPPLY * _SOL_USD
+                _alt_marcada = str(token_info.mint) in self._mints_entrada_alt
+                self._mints_entrada_alt.discard(str(token_info.mint))
                 if entry_mc > self.max_entry_mc:
+                    _alt_ok = (
+                        _alt_marcada
+                        and entry_mc <= self.entrada_alt_max_mc
+                    )
                     # PUERTA DE MEDIANA: este mint ya paso el filtro de creador
                     # por mediana (no por tasa/migraciones), y esa puerta trae
                     # su propio techo, mas alto que el general a proposito.
                     _mediana_max = float(self.dev_mediana.get("max_entry_mc") or 0)
-                    if (
+                    if _alt_ok:
+                        logger.info(
+                            f"{token_info.symbol}: entra por PRESION FUERTE "
+                            f"(MC ${entry_mc:,.0f} <= "
+                            f"${self.entrada_alt_max_mc:,.0f})"
+                        )
+                    elif (
                         _mediana_max > 0
                         and str(token_info.mint) in self._mints_mediana
                         and entry_mc <= _mediana_max
@@ -7489,6 +7527,8 @@ class UniversalTrader:
                                 "%.0f a %.0f $ para que el filtro no se mueva.",
                                 viejo, nuevo, antes, self.max_entry_mc,
                             )
+                        if self.entrada_alt_max_mc:
+                            self.entrada_alt_max_mc *= razon
                         else:
                             logger.info("SOL %.2f -> %.2f $", viejo, nuevo)
             except Exception:  # noqa: BLE001 - esto nunca debe romper el bot

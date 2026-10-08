@@ -292,6 +292,12 @@ def test_solo_los_filtros_de_unica_pueden_descartar_por_su_cuenta() -> None:
     assert f["min_buys"] >= 8
     assert f["min_ops"] >= 8
     assert f["min_titulares"] >= f["min_compradores_global"]
+    alt = f["entrada_alternativa"]
+    assert alt["max_mc"] == 12000
+    assert alt["min_volumen_sol"] >= 16
+    assert alt["min_compradores"] >= 12
+    assert alt["min_titulares"] >= 10
+    assert alt["min_presion_ratio"] >= 2
 
 
 def test_queda_escrito_que_esto_no_mira_bundles() -> None:
