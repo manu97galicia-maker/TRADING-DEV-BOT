@@ -64,10 +64,20 @@ def test_sin_la_clave_se_manda_todo() -> None:
     assert notifier._TIPOS_PERMITIDOS == set()
 
 
-def test_la_config_que_corre_lo_tiene_apagado() -> None:
-    """Pedido el 19-sep. Si alguien lo enciende, este test lo dice."""
+def test_true_manda_todos_los_avisos() -> None:
+    """El valor natural del YAML no debe romper el arranque del bot."""
+    try:
+        notifier.configurar_avisos(True)
+        assert notifier._SILENCIO is False
+        assert notifier._TIPOS_PERMITIDOS == set()
+    finally:
+        _restaura()
+
+
+def test_la_config_paper_envia_los_avisos_simulados() -> None:
+    """Las entradas y salidas paper deben llegar a Telegram."""
     cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
-    assert cfg["avisos_telegram"] is False
+    assert cfg["avisos_telegram"] is True
 
 
 def test_los_demas_bots_no_se_quedan_mudos_sin_querer() -> None:

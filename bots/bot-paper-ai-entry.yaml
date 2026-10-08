@@ -1,6 +1,6 @@
-# PAPER ONLY. MoonTok + DexScreener paid/boost candidates.
+# PAPER ONLY. UNICA por Helius + calls de Telegram.
 # Real trading must remain disabled until measured and explicitly approved.
-name: "PAPER AI ENTRY - MoonTok + Dex Paid"
+name: "PAPER - UNICA Helius + Telegram"
 env_file: .env
 rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
 wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
@@ -90,7 +90,7 @@ trade:
   # cinco veces por segundo, dos lo hacen dos veces. Con los 429 que salen
   # en el embudo, tres consultas por segundo menos ayudan -- no arreglan el
   # 429, pero no estorban.
-  max_posiciones: 0
+  max_posiciones: 2
   # Tope de por vida de compras reales. Empieza en 1 a proposito: el camino
   # de compra de mints EXISTENTES nunca se ha ejecutado contra una compra de
   # verdad (hay avisos en token_builder.py y en las tres fuentes). Con 1 se ve
@@ -816,6 +816,10 @@ trade:
   # LA VARIANZA SIGUE SIENDO CASI TODA LA ESTRATEGIA, y sigue sin haber UNA
   # sola medicion de cuantas monedas llegan a cada peldano. El cazador lleva
   # 223.199 apuntadas y `deploy/analizar_senales.py` no se ha corrido nunca.
+  # 8-oct-2026: 25% de la cartera por operacion, pedido por Manu. Con dos
+  # posiciones simultaneas se compromete como maximo el 50% de la cartera.
+  # Con stop del 30%, el riesgo teorico es 7,5% por posicion y 15% si las dos
+  # saltan, antes de deslizamiento. Sigue en PAPER hasta medir las tres rutas.
   fraccion_saldo: 0.25
   # SOBRE QUE SE CALCULA EL PORCENTAJE. Es una clave y no una decision
   # escrita en el codigo porque ha ido y venido tres veces en dos dias, y
@@ -1052,15 +1056,32 @@ retries:
 #
 # Todo eso sigue yendo al log; lo que se apaga es el mensajero. Para volver a
 # encenderlo: borrar esta linea, o ponerla a `true`.
-avisos_telegram: false
+# Avisos de simulacion activados: muestra entradas, cada TP/SL y el resultado
+# acumulado como una operacion real, siempre rotulado claramente como PAPER.
+avisos_telegram: true
 
 filters:
-  telegram_only: true
+  # TERCERA RUTA: promociones pagadas. No exige porcentaje de curva y acepta
+  # tanto pump.fun como monedas que ya migraron a PumpSwap.
+  paid_promotion_entry:
+    enabled: true
+    sources:
+      - dexscreener
+      - dextools_hotpools
+      - dextools_nitro
+      - cryptolistings
+  # DOS ENTRADAS EN PARALELO: el listener normal aplica UNICA a las monedas
+  # vistas por Helius; Wagbocooks y LegendsAlphas entran al momento por su
+  # fuente propia. `false` es imprescindible: en `true` se tiraria todo lo que
+  # viene de Helius y solo quedarian las calls.
+  telegram_only: false
   listener_type: logs
   # Antiguedad EN LA COLA interna, no de la moneda. Con compra instantanea
   # una senal que lleva parada mas de 2 min ya no vale la pena.
   max_token_age: 120
-  max_buy_age: 0
+  # UNICA mide la traccion de los primeros cinco segundos. Las calls de los
+  # dos canales aprobados saltan esta espera y siguen entrando al momento.
+  max_buy_age: 5
   min_buy_age: 0
   # SOLO MONEDAS DE PUMP.FUN NORMALES (19-sep, pedido por Manu). En false el
   # bot descarta las que van en modo mayhem.
@@ -1169,78 +1190,29 @@ filters:
   max_subida_global: 0.80
   subida_seg_global: 30.0
 
-  # POCA GENTE DISTINTA = no hay demanda, hay un grupo empujando. Cuenta las
-  # carteras compradoras vistas en el stream, la misma cuenta que usa la
-  # curva, para que las dos puertas midan LO MISMO.
+  # ESTRATEGIA UNICA SOBRE EL STREAM DE HELIUS (7-oct-2026).
+  # La muestra original tenia 1.016 monedas. Pedir 6 carteras distintas,
+  # 8 SOL y entrar por debajo de 2.800 USD dio 20% llegando a 6K frente al
+  # 8,1% base. Estas puertas son para la entrada normal de Helius. Las calls
+  # aprobadas de Telegram las saltan para conservar su compra inmediata.
   #
-  # VA POR DEBAJO --O IGUAL-- QUE EL DE LA CURVA a proposito: este es un
-  # suelo minimo para TODAS las fuentes, incluida Telegram, no el corte fino
-  # de una estrategia. Si se pusiera por encima, el de la curva dejaria de
-  # decidir nada: mandaria este y el otro seria decorativo.
-  #
-  # BAJA DE 12 A 9 EL 26-sep, Y NO ES UNA DECISION APARTE. Al bajar la
-  # entrada al 59% el corte de la curva se reescalo a 9 (la cuenta esta en
-  # `curva_96.min_compradores`), y con este en 12 ese 9 no habria servido de
-  # nada: el efectivo habria seguido siendo 12. O se bajaba este, o el
-  # cambio de entrada quedaba a medias sin que nada lo dijera -- que es
-  # exactamente el fallo que este fichero lleva tres dias documentando.
-  #
-  # LO QUE CUESTA, dicho claro: es un suelo de seguridad y ha bajado. Con 9
-  # carteras distintas un grupo de diez monederos puede fabricar la
-  # apariencia de demanda. Lo que sigue tapando ese hueco son los tres
-  # frenos de bundle de la curva y el de la vela verde (+80% en 30 s).
-  #
-  # `test_la_puerta_de_la_curva_no_baja_del_suelo_de_todas_las_fuentes`
-  # vigila la relacion entre los dos, no los numeros.
-  #
-  # OJO CON EL REINICIO: cuenta lo visto DESDE QUE ARRANCO el bot, asi que
-  # recien reiniciado descarta de mas. Es el lado seguro del error.
-  min_compradores_global: 9
+  # El listener las observa durante los primeros cinco segundos; una call de
+  # Telegram no espera esta ventana.
+  min_compradores_global: 6
   min_curve_sol: 0
   min_entry_mc: 0
-  max_entry_mc: 0
-  min_volumen_sol: 0
+  # El refresco automatico escala este techo desde el precio base interno de
+  # SOL (91,24 USD). Para conservar el punto de curva de la muestra original
+  # (2.800 USD con SOL a 75,18), el valor de arranque debe ser 3.398 USD.
+  # No se escribe aqui el techo adaptado de hoy: hacerlo lo escalaria dos veces.
+  max_entry_mc: 3398
+  min_volumen_sol: 8.0
   max_volumen_sol: 0
-  # PRESION COMPRADORA EN LA ENTRADA: PEDIDA EL 24-SEP Y NO APLICADA
-  # TODAVIA, a proposito. Se deja en 0 y aqui queda escrito por que.
-  #
-  # ENCENDER ESTO SOLO NO HACE NADA. El filtro se comprueba DENTRO de la
-  # ventana de espera del bucle de compra, y esa ventana --`max_buy_age`--
-  # esta en 0: el bot compra al instante y nunca entra en el bucle. Poner
-  # 1,5 aqui seria un numero que parece decidir y no decide. Lo caza
-  # `test_los_filtros_del_bucle_estan_apagados`, que existe justo para eso.
-  #
-  # PARA QUE FUNCIONE hay que poner ademas `max_buy_age` en algo como 15-20
-  # segundos, y eso SI cambia el comportamiento: el bot dejaria de comprar
-  # al instante y se quedaria mirando la moneda hasta que la presion cuadre
-  # o se agote la ventana. Es lo contrario de lo pedido toda la tarde --el
-  # gas de compra se subio dos veces para entrar ANTES-- asi que no se hace
-  # sin decirlo.
-  #
-  # QUE MIDE: cuantas veces mas SOL se COMPRAN que se VENDEN en los ultimos
-  # `presion_seg` segundos. Con 1,5 se exige que entre un 50% mas dinero del
-  # que sale. El volumen solo dice que hay movimiento; esto dice hacia donde
-  # va, y evita entrar justo en la primera vela roja de un dump.
-  #
-  # POR QUE AHORA Y NO ANTES. Esta tarde la entrada bajo del 90% al 71%, y
-  # una moneda al 71% ha demostrado mucho menos que una al 90%: le faltan
-  # 51,9 SOL para migrar contra 25,4. El filtro que daba calidad era el punto
-  # de la curva, y al bajarlo se ha ido. Esto lo sustituye por otra via: en
-  # vez de "ha llegado lejos", "ahora mismo esta entrando dinero".
-  #
-  # SIN DATOS NO ES LO MISMO QUE CAYENDO, y el codigo ya lo distingue: si la
-  # ventana esta vacia (0,00 compras y 0,00 ventas) se deja pasar. Se midio
-  # el 10-ago -- las 6 monedas que cruzaron el volumen pedido lo hicieron con
-  # la ventana vacia y tratar ese silencio como presion vendedora las vetaba
-  # las seis, por falta de dato y no por ir mal.
-  #
-  # OJO: ES UN FILTRO MAS EN UN EMBUDO QUE YA ESTA ATASCADO. Esta tarde: 14
-  # candidatas, 0 compras, y las que se caian lo hacian por `min_compradores`.
-  # Esto no abre nada; aprieta. Si tras la ventana de observacion el bot
-  # sigue sin comprar, hay que mirar los dos: este y el de compradores.
+  # La estrategia medida no exigia un ratio adicional entre compras y ventas:
+  # sus tres puertas eran compradores distintos, volumen y market cap. Por eso
+  # la presion como ratio queda apagada; anadirla seria otra estrategia.
   min_presion_ratio: 0
-  # Ventana en la que se mediria. Se deja en 0 mientras el filtro este
-  # apagado; el codigo usa 3 s por defecto.
+  # Ventana del ratio, sin efecto mientras el filtro este apagado.
   presion_seg: 0
   min_buys: 0
   min_ops: 0
@@ -1257,7 +1229,13 @@ filters:
     enabled: false
 
   buy_on_dex_paid:
-    enabled: false
+    enabled: true
+    # Solo perfil/listado pagado (socials). Los boosts solos no bastan para
+    # esta estrategia. La API publica no ofrece un feed global de anuncios
+    # aislados; un anuncio se detecta cuando el token aparece tambien en el
+    # feed pagado que podemos observar.
+    signal_types:
+      - paid
     # 3s. Cada vuelta cuesta ahora 2 llamadas (los dos feeds), y cada feed
     # tiene su propio cubo de 60/min, asi que 20 vueltas por minuto caben de
     # sobra. Bajarlo mas no gana nada: por debajo de ~2s el cuello pasa a ser
@@ -1296,7 +1274,7 @@ filters:
     #
     # Por eso al encenderlo se activa RugCheck y se exige liquidez bloqueada.
     # Sin informe de RugCheck, la moneda se descarta.
-    incluir_cualquier_origen: true
+    incluir_cualquier_origen: false
     min_lp_locked_pct: 50
     # REGIMEN APARTE para las de fuera de pump.fun. No se les puede aplicar
     # el mismo rasero: alli el supply no es el fijo de pump.fun, no hay curva
@@ -1351,7 +1329,7 @@ filters:
   # de la URL (/trial/v2, /standard/v2...), asi que una clave puesta contra
   # el plan equivocado devuelve 401 y la fuente se queda muda.
   dextools_hotpools:
-    enabled: false
+    enabled: true
     poll_interval: 15
     heartbeat_interval: 300
     limit: 30
@@ -1760,28 +1738,10 @@ filters:
     nitro_buy_amount: 0
     promoted_buy_amount: 0
     promotion_threshold: 500
-    # Dos tipos de canal mezclados, y conviene saberlo al leer resultados:
-    #
-    #   dextools_nitro, cryptolistings -> hay un PAGO detras (Nitro, listing
-    #     de MoonTok). Alguien se ha gastado dinero en la moneda.
-    #   Wagbocooks, LegendsAlphas, SolanaInsiderTerminal -> son CALLS.
-    #     Alguien opina, sin pago detras.
-    #
-    # LegendsAlphas estuvo fuera por eso: "ensucia la muestra" al mezclarse
-    # con las de pago. Esa objecion ya no aplica igual, porque desde el
-    # 14-sep cada compra apunta de QUE CANAL vino (`origen` en trades.log) y
-    # `deploy/resumen_dia.py` los separa. Ahora se puede ver si un canal de
-    # calls gana o pierde en vez de discutirlo: si pierde, se quita.
-    #
-    # DEXTNewPairsBot sigue fuera.
-    #
-    # SolanaInsiderTerminal entro el 21-sep, pedido. Es de los de CALLS, asi
-    # que se lee junto a Wagbocooks y LegendsAlphas al mirar el resumen.
-    #
-    # Y LO QUE NO MIRA NINGUN CANAL: una compra que venga de aqui NO pasa por
-    # las condiciones de titulares --ni 23 carteras, ni edad, ni presion
-    # compradora--. Cualquier direccion que acabe en `pump` y que alguien
-    # pegue se compra si la curva se puede leer y la moneda no ha migrado.
+    # SOLO LOS DOS CANALES DE CALLS PEDIDOS. Se compran al recibir el mensaje:
+    # no pasan por 6 compradores, 8 SOL ni el techo de MC de UNICA. Conservan
+    # el freno comun de vela verde y la comprobacion de que la curva existe y
+    # no ha migrado.
     # Ademas las plazas de `max_posiciones` son COMPARTIDAS --y desde el
     # 25-sep son solo DOS--, asi que un canal movido puede quedarse con toda
     # la cartera antes de que la otra fuente vea nada.
@@ -1793,9 +1753,16 @@ filters:
     channels:
       - Wagbocooks
       - LegendsAlphas
+      - dextools_nitro
+      - cryptolistings
     # Solo monedas de pump.fun normales, que es lo pedido.
     suffixes:
       - pump
+    # Solo las fuentes promocionadas pueden reconstruirse después de migrar.
+    # Las calls normales conservan su comportamiento de pump.fun.
+    migrated_channels:
+      - dextools_nitro
+      - cryptolistings
 
   # Explicitly excluded acquisition modes. This bot only consumes the
   # DexScreener paid/boost feed and the approved MoonTok/DEXTools channels.

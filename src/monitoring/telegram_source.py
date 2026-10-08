@@ -113,12 +113,20 @@ class TelegramSource:
             # Only buy calls that match THIS bot's platform; others alert only.
             buyable = call.get("platform") == self._platform.value
             token_info = None
+            source = call.get("chat_username") or call.get("chat") or "telegram"
+            source_key = str(source).lower().lstrip("@").replace(" ", "")
+            migrated_channels = {
+                str(item).lower().lstrip("@").replace(" ", "")
+                for item in self._config.get("migrated_channels", ())
+            }
             if buyable and self._platform == Platform.PUMP_FUN:
                 token_info = await build_pumpfun_token_info(
-                    call["address"], self._impls, self._client
+                    call["address"],
+                    self._impls,
+                    self._client,
+                    permitir_migradas=source_key in migrated_channels,
                 )
             if token_info is not None:
-                source = call.get("chat_username") or call.get("chat") or "telegram"
                 signal_amount, nitro_score = _telegram_signal_amount(
                     call.get("text", ""), self._config, source=source
                 )

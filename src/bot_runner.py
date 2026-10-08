@@ -274,6 +274,7 @@ async def start_bot(config_path: str):
             dexscreener_config=cfg.get("filters", {}).get("dexscreener"),
             # Buy-on-dex-paid acquisition mode (disabled unless present + enabled)
             buy_on_dex_paid=cfg.get("filters", {}).get("buy_on_dex_paid"),
+            paid_promotion_entry=cfg.get("filters", {}).get("paid_promotion_entry"),
             # Birdeye trending acquisition (disabled unless present + enabled)
             birdeye_trending=cfg.get("filters", {}).get("birdeye_trending"),
             dextools_hotpools=cfg.get("filters", {}).get("dextools_hotpools"),

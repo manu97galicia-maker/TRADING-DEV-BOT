@@ -88,21 +88,15 @@ def test_los_canales_configurados_son_los_pedidos() -> None:
     """Cada canal de esta lista es una fuente de compra con dinero real, asi
     que anadir o quitar uno se ve aqui en rojo.
 
-    Van mezclados dos tipos y conviene saberlo al leer resultados:
-      - dextools_nitro, cryptolistings: hay un PAGO detras (Nitro, listing).
-      - Wagbocooks, LegendsAlphas, SolanaInsiderTerminal: son CALLS, alguien
-        opina sin pagar. El ultimo entro el 21-sep, pedido.
+    Solo quedan los dos canales de calls pedidos. La estrategia UNICA entra
+    por Helius de forma independiente.
 
     Desde el 14-sep cada compra apunta de que canal vino, asi que
     `deploy/resumen_dia.py` los separa y se puede ver cual gana.
     """
     canales = _config()["filters"]["telegram_calls"]["channels"]
     assert canales == [
-        "dextools_nitro",
-        "cryptolistings",
-        "Wagbocooks",
-        "LegendsAlphas",
-        "SolanaInsiderTerminal",
+        "Wagbocooks", "LegendsAlphas", "dextools_nitro", "cryptolistings"
     ]
 
 
@@ -135,28 +129,21 @@ def test_el_importe_de_canal_coincide_con_el_global() -> None:
     )
 
 
-def test_los_canales_estan_apagados_y_los_avisos_tambien() -> None:
+def test_los_canales_y_los_avisos_paper_estan_encendidos() -> None:
     """Dos cosas distintas con el mismo nombre, y es facil deshacer una al
     tocar la otra.
 
-    Los CANALES son de donde el bot lee senales de compra: apagados el 24-sep
-    ("solo esta estrategia", la curva). Los AVISOS son los mensajes que el bot
-    te manda, y llevan apagados desde antes por otro motivo distinto: "no
-    quiero avisos, solo quiero que se compre y se venda".
-
-    QUE ESTEN LOS DOS EN FALSE NO SIGNIFICA QUE SEAN LO MISMO. El dia que se
-    vuelvan a encender los canales, los avisos tienen que seguir apagados --
-    y al reves. Por eso se comprueban juntos y por separado.
-
-    El resto de la configuracion de Telegram --los cinco canales, los
-    importes, los sufijos-- sigue entera en el yaml: volver a encenderla es
-    cambiar un false.
+    Los CANALES son entradas de compra; los AVISOS son los mensajes que el bot
+    envia. Son controles independientes y en esta simulacion estan ambos
+    encendidos.
     """
     cfg = _config()
-    assert cfg["filters"]["telegram_calls"]["enabled"] is False
-    assert cfg["avisos_telegram"] is False
-    # Y la configuracion no se ha borrado al apagarla.
-    assert len(cfg["filters"]["telegram_calls"]["channels"]) >= 1
+    assert cfg["filters"]["telegram_calls"]["enabled"] is True
+    assert cfg["filters"]["telegram_only"] is False
+    assert cfg["avisos_telegram"] is True
+    assert cfg["filters"]["telegram_calls"]["channels"] == [
+        "Wagbocooks", "LegendsAlphas", "dextools_nitro", "cryptolistings"
+    ]
 
 
 def test_solo_monedas_de_pumpfun() -> None:

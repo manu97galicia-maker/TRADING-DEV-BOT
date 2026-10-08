@@ -201,6 +201,7 @@ class DexPaidSource:
         boost_extra_umbral: float = 0.0,
         boost_extra_factor: float = 1.0,
         candidatos_por_vuelta: int = 30,
+        signal_types: tuple[str, ...] = ("paid", "boost"),
     ) -> None:
         self._impls = platform_impls
         self._client = client
@@ -232,6 +233,7 @@ class DexPaidSource:
         # una ventana tan estrecha una moneda entra y sale entre dos sondeos y
         # no llega a verse nunca.
         self.candidatos_por_vuelta = candidatos_por_vuelta
+        self.signal_types = {str(kind).strip().lower() for kind in signal_types}
         self._seen: set[str] = set()
         # Recuerda que redes tenia cada moneda, para saber cuando estrena una.
         self._redes = RedesVistas()
@@ -282,6 +284,8 @@ class DexPaidSource:
         que decidirlo no cuesta ni una llamada.
         """
         mint = resumen.get("mint")
+        if str(resumen.get("signal_type") or "").lower() not in self.signal_types:
+            return False
         if not mint or mint in self._seen:
             self._repetidas += 1
             return False

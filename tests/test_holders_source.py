@@ -265,13 +265,13 @@ def test_los_dos_numeros_son_los_pedidos() -> None:
     # El importe de la fuente tiene que coincidir con el `buy_amount` global:
     # el de la SENAL pisa al global, asi que si no coinciden el de arriba no
     # sirve de nada. Ya paso una vez. Desde el 23-sep los dos estan a CERO
-    # porque manda el porcentaje de la cartera (`fraccion_saldo`: 30%).
+    # porque manda el porcentaje de la cartera (`fraccion_saldo`: 20%).
     trade = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["trade"]
     assert h["buy_amount"] == trade["buy_amount"] == 0
-    assert trade["fraccion_saldo"] == 0.30
+    assert trade["fraccion_saldo"] == 0.25
 
 
-def test_ningun_filtro_global_puede_descartar_por_su_cuenta() -> None:
+def test_solo_los_filtros_de_unica_pueden_descartar_por_su_cuenta() -> None:
     """"Solo esas dos condiciones" tambien vale para lo que ya estaba puesto.
 
     El global `max_holder_pct` valia 0,15 y se aplicaba a TODAS las fuentes:
@@ -280,11 +280,14 @@ def test_ningun_filtro_global_puede_descartar_por_su_cuenta() -> None:
     """
     f = _filtros()
     for clave in (
-        "max_holder_pct", "min_holders", "min_volumen_sol", "min_buys",
+        "max_holder_pct", "min_holders", "min_buys",
         "min_ops", "min_titulares", "min_presion_ratio", "max_dev_hold_pct",
-        "min_curve_sol", "min_entry_mc", "max_entry_mc",
+        "min_curve_sol", "min_entry_mc",
     ):
         assert not f.get(clave, 0), f"el filtro global '{clave}' sigue activo"
+    assert f["min_volumen_sol"] == 8.0
+    assert f["max_entry_mc"] == 3398
+    assert f["min_compradores_global"] == 6
 
 
 def test_queda_escrito_que_esto_no_mira_bundles() -> None:

@@ -81,7 +81,9 @@ def test_todas_las_fuentes_del_yaml_estan_en_la_lista() -> None:
     conocidas = {attr for attr, _ in UniversalTrader.FUENTES}
     for clave, valor in f.items():
         if isinstance(valor, dict) and "enabled" in valor and valor["enabled"]:
-            assert clave in conocidas or clave in {"dexscreener", "rugcheck"}, (
+            assert clave in conocidas or clave in {
+                "dexscreener", "rugcheck", "paid_promotion_entry"
+            }, (
                 f"'{clave}' esta encendida en el YAML y no esta en FUENTES"
             )
 

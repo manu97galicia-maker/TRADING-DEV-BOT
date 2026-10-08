@@ -51,9 +51,14 @@ def _trader(**kw) -> UniversalTrader:
     return t
 
 
-def _moneda(sym: str = "FUCKETHAN") -> types.SimpleNamespace:
+def _moneda(
+    sym: str = "FUCKETHAN", *, telegram: bool = False
+) -> types.SimpleNamespace:
     return types.SimpleNamespace(mint="XTvHfakemint1111111111111111111111111pump",
-                                 symbol=sym)
+                                 symbol=sym,
+                                 additional_data=(
+                                     {"acquisition_kind": "telegram"} if telegram else {}
+                                 ))
 
 
 def _con_stream(monkeypatch, *, subida: float, compradores: int) -> None:  # noqa: ANN001
@@ -98,12 +103,23 @@ def test_cae_por_la_vela_aunque_haya_gente_de_sobra(monkeypatch) -> None:  # noq
     assert "detrás de una vela verde" in t._descartes
 
 
-def test_cae_por_poca_gente_aunque_no_haya_subido(monkeypatch) -> None:  # noqa: ANN001
-    """Y al reves: una moneda tranquila movida por cuatro carteras tampoco."""
+def test_poca_gente_no_se_descarta_antes_de_la_ventana(monkeypatch) -> None:  # noqa: ANN001
+    """UNICA debe disponer de cinco segundos para reunir seis compradores."""
     _con_stream(monkeypatch, subida=0.0, compradores=4)
     t = _trader()
-    assert not _pasa(t, _moneda())
-    assert "pocos compradores distintos" in t._descartes
+    assert _pasa(t, _moneda())
+
+
+def test_una_call_de_telegram_no_espera_a_seis_compradores(monkeypatch) -> None:  # noqa: ANN001
+    """Las calls y UNICA son dos entradas paralelas, no una mezcla."""
+    _con_stream(monkeypatch, subida=0.0, compradores=0)
+    assert _pasa(_trader(), _moneda("CALL", telegram=True))
+
+
+def test_una_call_sigue_respetando_el_freno_de_vela_verde(monkeypatch) -> None:  # noqa: ANN001
+    """Inmediata no significa comprar una vela vertical ya agotada."""
+    _con_stream(monkeypatch, subida=1.15, compradores=200)
+    assert not _pasa(_trader(), _moneda("CALL", telegram=True))
 
 
 def test_una_moneda_normal_si_pasa(monkeypatch) -> None:  # noqa: ANN001

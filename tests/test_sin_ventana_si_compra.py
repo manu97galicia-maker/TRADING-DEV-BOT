@@ -71,10 +71,10 @@ def test_queda_dicho_que_el_else_es_del_while() -> None:
     assert "del `while`" in bloque or "del while" in bloque
 
 
-def test_la_config_de_hoy_va_sin_ventana() -> None:
-    """Por eso importa: es exactamente el caso que estaba roto."""
+def test_la_config_de_hoy_usa_ventana_para_unica() -> None:
+    """UNICA necesita observar cinco segundos; ya no es el caso sin ventana."""
     f = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"]
-    assert f["max_buy_age"] == 0
+    assert f["max_buy_age"] == 5
 
 
 def test_los_filtros_del_bucle_estan_apagados() -> None:
@@ -96,3 +96,11 @@ def test_los_filtros_del_bucle_estan_apagados() -> None:
         "max_buy_age esta a 0: no se van a aplicar. Poner una ventana."
     )
     assert not (f.get("second_wave") or {}).get("enabled")
+
+
+def test_unica_tiene_cinco_segundos_para_formar_la_senal() -> None:
+    """Sin ventana, 8 SOL y seis compradores se mirarian al nacimiento."""
+    f = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"]
+    assert f["max_buy_age"] == 5
+    assert f["min_volumen_sol"] == 8.0
+    assert f["min_compradores_global"] == 6

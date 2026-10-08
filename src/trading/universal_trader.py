@@ -458,6 +458,7 @@ class UniversalTrader:
         dexscreener_config: dict | None = None,
         # Buy-on-dex-paid acquisition mode (disabled unless configured)
         buy_on_dex_paid: dict | None = None,
+        paid_promotion_entry: dict | None = None,
         birdeye_trending: dict | None = None,
         dextools_hotpools: dict | None = None,
         curva_96: dict | None = None,
@@ -1397,6 +1398,7 @@ class UniversalTrader:
         self.dex_filter = DexScreenerFilter(dexscreener_config)
         # Buy-on-dex-paid acquisition mode config (off unless enabled)
         self.buy_on_dex_paid = buy_on_dex_paid or {}
+        self.paid_promotion_entry = paid_promotion_entry or {}
         self.birdeye_trending = birdeye_trending or {}
         self.dextools_hotpools = dextools_hotpools or {}
         self.curva_96 = curva_96 or {}
@@ -1990,6 +1992,9 @@ class UniversalTrader:
             ),
             candidatos_por_vuelta=int(
                 self.buy_on_dex_paid.get("candidatos_por_vuelta", 30)
+            ),
+            signal_types=tuple(
+                self.buy_on_dex_paid.get("signal_types", ("paid", "boost"))
             ),
         )
         try:
@@ -3584,38 +3589,35 @@ class UniversalTrader:
                 self._descarta(token_info, "detrás de una vela verde")
                 return False
 
-        # 2. POCA GENTE DISTINTA. Una moneda que ha movido su curva con cuatro
-        #    carteras no tiene demanda: tiene un grupo empujando para
-        #    soltartela. La curva ya lo miraba por su cuenta; Telegram no.
-        if self.min_compradores_global > 0:
-            try:
-                # La misma cuenta que usa la curva (`_poca_gente`), para que
-                # las dos puertas midan LO MISMO. Dos formas de contar
-                # compradores daria dos veredictos distintos sobre la misma
-                # moneda segun por donde entrara, que es justo el lio que se
-                # esta arreglando.
-                _gente = int(
-                    volumen.metricas_segunda_ola(mint).get("compradores", 0) or 0
-                )
-            except Exception:  # noqa: BLE001
-                _gente = -1
-            # -1 = no se pudo contar. NO se descarta por eso: quedarse sin
-            # dato no es lo mismo que tener un dato malo, y bloquear a ciegas
-            # apagaria el bot entero el dia que falle el contador.
-            if 0 <= _gente < self.min_compradores_global:
-                logger.info(
-                    "Evitado %s: solo %d compradores distintos (hacen falta %d)",
-                    token_info.symbol, _gente, self.min_compradores_global,
-                )
-                self._descarta(token_info, "pocos compradores distintos")
-                return False
-
         return True
+
+    @staticmethod
+    def _es_call_telegram(token_info: TokenInfo) -> bool:
+        """Indica si la candidata procede de un canal de calls de Telegram."""
+        return (token_info.additional_data or {}).get("acquisition_kind") == "telegram"
+
+    def _es_promocion_pagada(self, token_info: TokenInfo) -> bool:
+        """Indica si la señal pertenece a la entrada por promoción pagada."""
+        if not self.paid_promotion_entry.get("enabled"):
+            return False
+        source = str(
+            (token_info.additional_data or {}).get("acquisition_source") or ""
+        ).strip().lower().lstrip("@").replace(" ", "")
+        configured = {
+            str(item).strip().lower().lstrip("@").replace(" ", "")
+            for item in self.paid_promotion_entry.get("sources", ())
+        }
+        return source in configured
 
     async def _handle_token(self, token_info: TokenInfo) -> None:
         """Handle a new token creation event."""
         try:
             signal_data = token_info.additional_data or {}
+            promocion_pagada = self._es_promocion_pagada(token_info)
+            call_telegram_inmediata = (
+                self._es_call_telegram(token_info) and not promocion_pagada
+            )
+            entrada_especial = call_telegram_inmediata or promocion_pagada
             if (
                 self.telegram_only
                 and signal_data.get("acquisition_kind") != "telegram"
@@ -3938,8 +3940,9 @@ class UniversalTrader:
                         # llamada y no vuelve a pagar la latencia.
                         asyncio.ensure_future(creator_migration_stats(str(_dev0)))
 
-            if self.max_buy_age > 0 and (
+            if self.max_buy_age > 0 and not entrada_especial and (
                 self.min_volumen_sol > 0
+                or self.min_compradores_global > 0
                 or self.min_entry_mc > 0
                 or self.min_buys > 0
                 or self.min_first_block_buys > 0
@@ -4022,6 +4025,15 @@ class UniversalTrader:
                     if self.min_volumen_sol > 0 and _v < self.min_volumen_sol:
                         await asyncio.sleep(_paso)
                         continue
+                    if self.min_compradores_global > 0:
+                        _compradores = int(
+                            _segunda_ola(str(token_info.mint)).get(
+                                "compradores", 0
+                            ) or 0
+                        )
+                        if _compradores < self.min_compradores_global:
+                            await asyncio.sleep(_paso)
+                            continue
                     if self.min_buys > 0 and _b < self.min_buys:
                         await asyncio.sleep(_paso)
                         continue
@@ -4312,7 +4324,7 @@ class UniversalTrader:
             # EDAD AL COMPRAR. `max_token_age` se comprueba al sacarla de la
             # cola, cuando la moneda tiene ~1 segundo, así que no acota nada.
             # Éste es el que hace cumplir "menos de N segundos de vida".
-            if self.max_buy_age > 0:
+            if self.max_buy_age > 0 and not entrada_especial:
                 nacida = self.token_timestamps.get(str(token_info.mint))
                 if nacida is not None:
                     edad = monotonic() - nacida
@@ -4439,7 +4451,11 @@ class UniversalTrader:
             # de max_entry_mc (USD). Evita entrar en el techo de un spike (compras
             # tipo GigaBull a $5.5K que luego se desploman). Se compra CERCA del
             # lanzamiento (~$2.1K) donde está el recorrido de verdad.
-            if self.max_entry_mc > 0 and entry_price > 0:
+            if (
+                self.max_entry_mc > 0
+                and entry_price > 0
+                and not entrada_especial
+            ):
                 entry_mc = entry_price * _PUMP_TOTAL_SUPPLY * _SOL_USD
                 if entry_mc > self.max_entry_mc:
                     # PUERTA DE MEDIANA: este mint ya paso el filtro de creador
@@ -4468,7 +4484,7 @@ class UniversalTrader:
             # sobre los $2K; si a los 20 segundos no ha pasado de ahí es que no
             # ha entrado nadie, y en la muestra de Dune la perdedora típica se
             # queda en $2.462 a los 20s frente a los $8.395 de la ganadora.
-            if self.min_entry_mc > 0:
+            if self.min_entry_mc > 0 and not entrada_especial:
                 # Curva ilegible (entry_price 0) = NO se puede afirmar que la
                 # moneda haya despegado, que es justo lo que este filtro exige.
                 # Antes la condición pedía `entry_price > 0`, así que un fallo
@@ -4492,7 +4508,10 @@ class UniversalTrader:
             # VOLUMEN NEGOCIADO. Va antes que GMGN porque es gratis: el dato ya
             # esta en memoria, contado del mismo stream de logs que detecta las
             # monedas. Cero llamadas de red.
-            if self.min_volumen_sol > 0 or self.max_volumen_sol > 0:
+            if (
+                (self.min_volumen_sol > 0 or self.max_volumen_sol > 0)
+                and not entrada_especial
+            ):
                 from monitoring.volumen import operaciones, volumen_sol
 
                 vol = volumen_sol(str(token_info.mint))
