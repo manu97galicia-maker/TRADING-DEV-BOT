@@ -272,7 +272,7 @@ def test_los_dos_numeros_son_los_pedidos() -> None:
 
 
 def test_solo_los_filtros_de_unica_pueden_descartar_por_su_cuenta() -> None:
-    """"Solo esas dos condiciones" tambien vale para lo que ya estaba puesto.
+    """Los filtros activos deben pertenecer a UNICA y estar documentados.
 
     El global `max_holder_pct` valia 0,15 y se aplicaba a TODAS las fuentes:
     habria descartado monedas sin que ninguna de las dos reglas lo pidiera, y
@@ -280,14 +280,18 @@ def test_solo_los_filtros_de_unica_pueden_descartar_por_su_cuenta() -> None:
     """
     f = _filtros()
     for clave in (
-        "max_holder_pct", "min_holders", "min_buys",
-        "min_ops", "min_titulares", "min_presion_ratio", "max_dev_hold_pct",
+        "max_holder_pct", "min_holders", "max_dev_hold_pct",
         "min_curve_sol", "min_entry_mc",
     ):
         assert not f.get(clave, 0), f"el filtro global '{clave}' sigue activo"
     assert f["min_volumen_sol"] == 8.0
     assert f["max_entry_mc"] == 3398
     assert f["min_compradores_global"] == 6
+    assert f["min_presion_ratio"] >= 1.5
+    assert 0 < f["presion_seg"] <= 5
+    assert f["min_buys"] >= 8
+    assert f["min_ops"] >= 8
+    assert f["min_titulares"] >= f["min_compradores_global"]
 
 
 def test_queda_escrito_que_esto_no_mira_bundles() -> None:

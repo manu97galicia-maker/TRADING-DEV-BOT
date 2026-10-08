@@ -1208,15 +1208,20 @@ filters:
   max_entry_mc: 3398
   min_volumen_sol: 8.0
   max_volumen_sol: 0
-  # La estrategia medida no exigia un ratio adicional entre compras y ventas:
-  # sus tres puertas eran compradores distintos, volumen y market cap. Por eso
-  # la presion como ratio queda apagada; anadirla seria otra estrategia.
-  min_presion_ratio: 0
-  # Ventana del ratio, sin efecto mientras el filtro este apagado.
-  presion_seg: 0
-  min_buys: 0
-  min_ops: 0
-  min_titulares: 0
+  # REFUERZO CONSERVADOR (8-oct-2026, PAPER): el volumen bruto tambien suma
+  # ventas, por lo que 8 SOL por si solos pueden describir una moneda que ya
+  # se esta vaciando. UNICA exige ahora que, en los ultimos cinco segundos,
+  # entren al menos 1,5 SOL por cada SOL que sale. Si no hubo operaciones en
+  # esa ventana, el filtro no inventa una caida y deja decidir al resto.
+  min_presion_ratio: 1.5
+  presion_seg: 5.0
+  # Seis direcciones distintas siguen siendo la regla historica, pero ademas
+  # deben existir al menos ocho compras/operaciones y seis wallets con saldo
+  # comprador neto. Esto corta volumen reciclado por pocas carteras y entradas
+  # donde los primeros compradores ya han empezado a abandonar la moneda.
+  min_buys: 8
+  min_ops: 8
+  min_titulares: 6
   redes_originales: false
   min_holders_gmgn: 0
   senal_gmgn: []
