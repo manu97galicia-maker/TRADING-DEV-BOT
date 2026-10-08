@@ -2624,6 +2624,16 @@ class UniversalTrader:
                 "first": first_hit,
                 "secs": round(time.time() - start),
             }
+            for key in (
+                "holders_seen",
+                "distinct_buyers",
+                "observed_volume_sol",
+                "observed_operations",
+                "curve_progress_pct",
+                "migrated",
+            ):
+                if key in signal_data:
+                    rec[key] = signal_data[key]
             try:
                 d = Path("paper_trades")
                 d.mkdir(exist_ok=True)
@@ -2728,11 +2738,30 @@ class UniversalTrader:
         from pathlib import Path
 
         signal_data = token_info.additional_data or {}
+        mint = str(token_info.mint)
+        flow = volumen.metricas_segunda_ola(mint)
+        curve_progress = volumen.progreso_curva(mint)
+        snapshot = {
+            "holders_seen": volumen.titulares(mint),
+            "distinct_buyers": int(flow.get("compradores") or 0),
+            "observed_volume_sol": round(volumen.volumen_sol(mint), 4),
+            "observed_operations": volumen.operaciones(mint),
+            "curve_progress_pct": (
+                round(curve_progress[0] * 100, 1) if curve_progress else None
+            ),
+            "migrated": bool(signal_data.get("migrated")),
+        }
+        # El seguimiento final recibe el mismo TokenInfo. Guardar aqui la foto
+        # inicial permite que el aviso de cierre muestre exactamente los datos
+        # que habia al entrar, no cifras posteriores infladas por el movimiento.
+        signal_data.update(snapshot)
+        token_info.additional_data = signal_data
         paper_amount = float(signal_data.get("signal_buy_amount") or self.buy_amount)
         rec = {
             "t": time.time(),
-            "mint": str(token_info.mint),
+            "mint": mint,
             "symbol": (token_info.symbol or "").strip(),
+            "name": (token_info.name or "").strip(),
             "acquisition_source": str(
                 signal_data.get("acquisition_source") or "deteccion directa"
             ),
@@ -2745,6 +2774,7 @@ class UniversalTrader:
             "amount_sol": paper_amount,
             "curve_sol": round(curve_sol, 3),
             "entry": entry,
+            **snapshot,
         }
         try:
             d = Path("paper_trades")
@@ -2757,7 +2787,6 @@ class UniversalTrader:
         try:
             from monitoring.notifier import build_paper_entry_notification, notify
 
-            mint = rec["mint"]
             market_cap_usd = entry * _PUMP_TOTAL_SUPPLY * _SOL_USD
             strategy = " · ".join(
                 f"+{tier.gain * 100:.0f}%/{tier.sell * 100:.0f}%"
@@ -2778,6 +2807,12 @@ class UniversalTrader:
                     take_profit_tiers=[
                         (tier.gain, tier.sell) for tier in self.tp_tiers
                     ],
+                    holders_seen=snapshot["holders_seen"],
+                    distinct_buyers=snapshot["distinct_buyers"],
+                    observed_volume_sol=snapshot["observed_volume_sol"],
+                    observed_operations=snapshot["observed_operations"],
+                    curve_progress_pct=snapshot["curve_progress_pct"],
+                    migrated=snapshot["migrated"],
                 )
             )
         except Exception:  # noqa: BLE001 - notificar nunca rompe el trading

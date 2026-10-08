@@ -145,11 +145,19 @@ def build_paper_entry_notification(  # noqa: PLR0913
     *,
     name: str | None = None,
     take_profit_tiers: list[tuple[float, float]] | None = None,
+    holders_seen: int = 0,
+    distinct_buyers: int = 0,
+    observed_volume_sol: float = 0.0,
+    observed_operations: int = 0,
+    curve_progress_pct: float | None = None,
+    migrated: bool = False,
 ) -> str:
     """Build a paper-entry alert without implying that real funds were spent."""
     safe_mint = escape(mint)
     lines = [
         f"🧪 <b>ENTRADA PAPER</b> · {token_label(name, symbol)}",
+        f"🪙 Nombre: <b>{escape(name or 'desconocido')}</b>",
+        f"🏷️ Ticker: <b>${escape(symbol or 'desconocido')}</b>",
         f"🔎 Motivo: <b>{purchase_reason_label(source_data)}</b>",
         f"💵 Simulación: <b>{amount_sol:.3f} SOL</b>",
     ]
@@ -168,11 +176,27 @@ def build_paper_entry_notification(  # noqa: PLR0913
         lines.append(f"📈 MC entrada: ~${market_cap_usd:,.0f}")
     lines.extend(
         [
-            f"💧 Curva: {curve_sol:.1f} SOL",
+            f"👥 Holders vistos por Helius: <b>{holders_seen}</b>",
+            f"🛒 Compradores distintos: <b>{distinct_buyers}</b>",
+            f"💱 Volumen observado: <b>{observed_volume_sol:.2f} SOL</b> · "
+            f"{observed_operations} operaciones",
+        ]
+    )
+    if migrated:
+        lines.append("🌊 Estado: <b>PumpSwap / migrada</b>")
+    elif curve_progress_pct is not None:
+        lines.append(
+            f"🟣 Curva pump.fun: <b>{curve_progress_pct:.1f}%</b> · "
+            f"{curve_sol:.1f} SOL"
+        )
+    else:
+        lines.append(f"💧 Curva observada: {curve_sol:.1f} SOL")
+    lines.extend(
+        [
             f"🎯 {strategy} · SL -{stop_loss_pct:.0f}%",
             f'<a href="https://dexscreener.com/solana/{safe_mint}">DexScreener</a> · '
             f'<a href="https://gmgn.ai/sol/token/{safe_mint}">GMGN</a> · '
-            f'<a href="https://pump.fun/{safe_mint}">pump.fun</a>',
+            f'<a href="https://pump.fun/coin/{safe_mint}">pump.fun</a>',
             f"CA: <code>{safe_mint}</code>",
         ]
     )
@@ -197,6 +221,8 @@ def build_paper_result_notification(
 
     lines = [
         f"{heading} · <b>{label}</b>",
+        f"🪙 Nombre: <b>{escape(str(record.get('name') or 'desconocido'))}</b>",
+        f"🏷️ Ticker: <b>${escape(str(record.get('symbol') or 'desconocido'))}</b>",
         f"🔎 Motivo de entrada: <b>{purchase_reason_label(source_data)}</b>",
         f"🏷️ Compra: <code>{float(record.get('entry_price_sol') or 0):.12f} "
         "SOL/token</code>",
@@ -231,6 +257,12 @@ def build_paper_result_notification(
     )
     lines.extend(
         [
+            f"👥 Holders vistos al entrar: <b>{int(record.get('holders_seen') or 0)}</b>",
+            f"🛒 Compradores distintos al entrar: "
+            f"<b>{int(record.get('distinct_buyers') or 0)}</b>",
+            f"💱 Volumen al entrar: "
+            f"<b>{float(record.get('observed_volume_sol') or 0):.2f} SOL</b> · "
+            f"{int(record.get('observed_operations') or 0)} operaciones",
             f"📍 Último precio: <code>{float(record.get('last_price_sol') or 0):.12f}</code>",
             f"🛡️ SL inicial: <code>{float(record.get('initial_stop_price_sol') or 0):.12f}</code>"
             f" · SL final: <code>{float(record.get('final_stop_price_sol') or 0):.12f}</code>",
@@ -250,7 +282,7 @@ def build_paper_result_notification(
             f"💼 P&L paper acumulado: <b>{float(stats.get('pnl') or 0):+.4f} SOL</b>",
             f'<a href="https://dexscreener.com/solana/{safe_mint}">DexScreener</a> · '
             f'<a href="https://gmgn.ai/sol/token/{safe_mint}">GMGN</a> · '
-            f'<a href="https://pump.fun/{safe_mint}">pump.fun</a> · '
+            f'<a href="https://pump.fun/coin/{safe_mint}">pump.fun</a> · '
             f'<a href="https://t.me/MaestroSniperBot?start={safe_mint}">Maestro</a>',
             f"CA: <code>{safe_mint}</code>",
         ]

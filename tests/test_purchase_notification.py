@@ -99,6 +99,12 @@ def test_paper_entry_explains_reason_amount_price_and_ladder() -> None:
             (0.75, 0.10),
             (2.00, 0.10),
         ],
+        name="Paper Coin",
+        holders_seen=7,
+        distinct_buyers=9,
+        observed_volume_sol=11.25,
+        observed_operations=14,
+        curve_progress_pct=48.5,
     )
     assert "ENTRADA PAPER" in message
     assert "DexScreener boost 500" in message
@@ -110,6 +116,13 @@ def test_paper_entry_explains_reason_amount_price_and_ladder() -> None:
     assert "0.000000154320" in message
     assert "https://dexscreener.com/solana/PaperMint" in message
     assert "https://gmgn.ai/sol/token/PaperMint" in message
+    assert "Paper Coin" in message
+    assert "$PAPER" in message
+    assert "Holders vistos por Helius: <b>7" in message
+    assert "Compradores distintos: <b>9" in message
+    assert "11.25 SOL" in message
+    assert "48.5%" in message
+    assert "https://pump.fun/coin/PaperMint" in message
 
 
 def test_paper_result_includes_prices_stops_winrate_and_links() -> None:
