@@ -226,12 +226,12 @@ def test_el_parte_no_lleva_nada_del_env() -> None:
 # ---------------------------------------------------- la configuracion real
 
 
-def test_la_curva_es_la_unica_fuente_encendida() -> None:
-    """Solo la curva. Ninguna otra, ni Telegram.
+def test_solo_hay_una_fuente_encendida() -> None:
+    """Solo la de presion. Ninguna otra, ni la curva, ni Telegram.
 
-    HISTORIAL DE ESTA LINEA, que ha cambiado cuatro veces en cuatro dias:
-    solo titulares -> titulares + canales (21-sep) -> curva + canales
-    (23-sep) -> solo la curva (24-sep, "solo esta estrategia").
+    HISTORIAL DE ESTA LINEA: solo titulares -> titulares + canales (21-sep)
+    -> curva + canales (23-sep) -> solo la curva (24-sep) -> solo presion
+    (09-oct, "solo estrategia de alta presion compradora").
 
     POR QUE SE QUEDO UNA SOLA. Las dos puertas tenian criterios
     incomparables: la curva exige punto de la curva, bundle, compradores y
@@ -252,7 +252,7 @@ def test_la_curva_es_la_unica_fuente_encendida() -> None:
                     "telegram_calls", "curva_96")
         if (f.get(n) or {}).get("enabled")
     ]
-    assert encendidas == ["curva_96"], f"fuentes encendidas: {encendidas}"
+    assert encendidas == ["presion"], f"fuentes encendidas: {encendidas}"
 
 
 def test_los_dos_numeros_son_los_pedidos() -> None:

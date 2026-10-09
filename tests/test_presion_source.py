@@ -215,17 +215,25 @@ def test_no_se_desbordan_las_evaluaciones_en_vuelo() -> None:
 # ------------------------------------------------------------ la config
 
 
-def test_esta_apagada_y_sigue_entera() -> None:
-    """Apagada el 19-sep al cambiar a la estrategia de 99 titulares.
+def test_es_la_unica_fuente_encendida() -> None:
+    """ENCENDIDA EL 09-oct, pedido: "solo estrategia de alta presion".
 
-    NO se borra, y eso es lo que fija este test: la fuente de titulares NO
-    mira bundles, asi que el anti-bundle que se queda aqui dentro
-    (`max_carteras_primer_bloque`) es la unica proteccion escrita contra el
-    pump and dump que hay en el repo. Volver a ella es cambiar dos `enabled`.
+    Estuvo apagada desde el 19-sep, cuando se paso a titulares y luego a la
+    curva. El test de entonces se llamaba `test_esta_apagada_y_sigue_entera`
+    y fijaba que la fuente NO se borrara al apagarla; ahora que vuelve,
+    fija lo contrario: que es la unica encendida.
+
+    POR QUE IMPORTA QUE SEA LA UNICA. Las fuentes se reparten las mismas 2
+    plazas de `max_posiciones`. Con dos encendidas, una movida llena la
+    cartera antes de que la otra vea nada, y luego no se sabe cual de las
+    dos lo hizo. Lo pedido es tener UNA, para poder medirla.
     """
     f = _filtros()
-    assert f["presion"]["enabled"] is False
-    # Los ajustes siguen puestos: encenderla no pide reconstruir nada.
+    assert f["presion"]["enabled"] is True
+    otras = ("curva_96", "holders", "telegram_calls", "buy_on_dex_paid")
+    encendidas = [k for k in otras if (f.get(k) or {}).get("enabled")]
+    assert encendidas == [], f"hay otras fuentes encendidas: {encendidas}"
+    # Los ajustes siguen puestos: encenderla no pidio reconstruir nada.
     assert f["presion"]["min_compradores_ola"] == 8
     assert f["presion"]["max_carteras_primer_bloque"] > 0
 
@@ -262,5 +270,16 @@ def test_al_ir_a_ciegas_la_config_aprieta_la_concentracion() -> None:
         assert p["max_bundle_pct_sin_historia"] < p["max_bundle_pct"]
 
 
-def test_compra_lo_acordado() -> None:
-    assert _filtros()["presion"]["buy_amount"] == 0.07
+def test_el_importe_lo_decide_el_porcentaje_de_cartera() -> None:
+    """A CERO, o el 30% de la cartera no se aplicaria (09-oct).
+
+    El importe de la SENAL pisa al global: con 0,07 aqui, cada compra serian
+    0,07 SOL y `fraccion_saldo: 0.30` no haria nada. Ya paso una vez con la
+    fuente de titulares, y por eso este test empareja los dos numeros en vez
+    de fijar uno suelto.
+    """
+    raiz = Path(__file__).resolve().parent.parent
+    cfg = yaml.safe_load((raiz / "bots/bot-paper-ai-entry.yaml").read_text())
+    assert _filtros()["presion"]["buy_amount"] == 0
+    assert cfg["trade"]["buy_amount"] == 0, "el global tambien tiene que estar a 0"
+    assert cfg["trade"]["fraccion_saldo"] > 0, "si no, no manda nadie y no compra"

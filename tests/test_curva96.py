@@ -313,7 +313,10 @@ def test_la_config_del_bot_pide_lo_que_se_acordo() -> None:
     estrategia a las que estan al 96% de migracion").
     """
     cfg = yaml.safe_load(CONFIG.read_text())["filters"]["curva_96"]
-    assert cfg["enabled"] is True
+    # APAGADA EL 09-oct (solo corre la de presion). Lo que fija este test
+    # desde entonces es que la configuracion siga ENTERA: volver a la curva
+    # tiene que ser cambiar un `enabled`, no reconstruir los numeros.
+    assert cfg["enabled"] is False
     assert cfg["umbral"] == 0.59
     # La ventana de disparo: entre el umbral y el tope. Por encima del tope
     # la moneda ya esta migrando y comprar ahi es tirar la comision.

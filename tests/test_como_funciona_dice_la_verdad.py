@@ -36,10 +36,19 @@ def test_la_nota_existe() -> None:
     assert NOTA.exists(), "la nota se ha borrado"
 
 
-def test_el_punto_de_entrada_es_el_de_verdad() -> None:
-    """El numero que mas ha cambiado hoy: once veces."""
-    c = _cfg()["filters"]["curva_96"]
-    assert f"{c['umbral'] * 100:.1f}%".replace(".", ",") in _texto()
+def test_el_corte_de_la_fuente_encendida_esta_en_la_nota() -> None:
+    """El numero que decide QUE se compra tiene que estar escrito.
+
+    Antes era el punto de la curva (cambio once veces en un dia). Desde el
+    09-oct la fuente encendida es la de presion y su numero es
+    `min_compradores_ola`: cuantas carteras distintas tienen que comprar a la
+    vez. Se saca del yaml para que no se puedan separar.
+    """
+    p = _cfg()["filters"]["presion"]
+    assert p["enabled"] is True, "este test describe la fuente de presion"
+    assert f"{p['min_compradores_ola']} carteras distintas" in _texto(), (
+        f"la nota no dice el corte de verdad ({p['min_compradores_ola']})"
+    )
 
 
 def test_el_tamano_de_compra_es_el_de_verdad() -> None:
@@ -188,8 +197,8 @@ def test_no_promete_plataformas_que_no_hay() -> None:
         k for k, v in c["filters"].items()
         if isinstance(v, dict) and v.get("enabled") and k != "dexscreener"
     ]
-    assert encendidas == ["curva_96"], (
-        f"la nota dice que solo esta la curva, pero hay: {encendidas}"
+    assert encendidas == ["presion"], (
+        f"la nota dice que solo esta la de presion, pero hay: {encendidas}"
     )
 
 

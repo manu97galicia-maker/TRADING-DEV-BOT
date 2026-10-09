@@ -10,23 +10,27 @@ y opera con **dinero real**.
 
 ## 1. La idea en una frase
 
-Una moneda de pump.fun nace con una "curva": hay que meterle unos **85 SOL**
-para que se llene. Cuando se llena, la moneda **migra** a un mercado mayor y
-ahí es cuando entra la gente que no estaba mirando pump.fun.
+**Comprar cuando mucha gente DISTINTA está comprando a la vez.**
 
-El bot **no compra monedas recién nacidas**. Espera a las que ya han recorrido
-casi toda la curva y están cerca de conseguirlo, porque para llegar ahí han
-tenido que pasar por mucha gente.
+No cuando una moneda sube — eso lo puede fabricar una sola cartera comprándose
+a sí misma. Lo que no se puede fabricar es que entren **carteras distintas**.
 
-```
-nace ──────────────▶ 59,0% ──────────────────────────▶ migra
-                       ▲
-                  aquí compra
-          (le faltan ~62 SOL, casi tres cuartos de curva)
-```
+Esto no es una corazonada. Se midieron **27.241 monedas** de pump.fun: se
+apuntaron sus señales a los 20 segundos de vida y se siguieron cinco minutos
+para ver qué hacían.
 
-Son pocas al día: la mayoría de las monedas mueren mucho antes de llegar. Que
-compre poco **no significa que esté roto**.
+| | llegan al +25% |
+|---|---|
+| comprando a ciegas | 14,4% |
+| con **≥3** compradores en la ventana | **27,4%** |
+| con **≥12** compradores | **25,8%** |
+
+Casi el doble que comprar a ciegas. Y un hallazgo que va contra la intuición:
+**la presión como ratio** (más compras que ventas) **no predijo nada**. Lo que
+predice es el *número de carteras*.
+
+> **Es la única parte de este bot que está medida.** Todo lo demás —el punto de
+> la curva, la escalera, los porcentajes— son números razonados, no probados.
 
 ---
 
@@ -36,13 +40,14 @@ Todo esto, sin saltarse nada:
 
 | | |
 |---|---|
-| **Punto de la curva** | entre el 59,0% y el 99,5% (pasado eso ya está migrando) |
-| **Gente de verdad** | mínimo **9 carteras distintas** la han comprado |
-| **Sin bundle** | como mucho 3 carteras en su bloque de nacimiento, y máximo 2 SOL |
+| **Gente a la vez** | mínimo **8 carteras distintas** comprando en 5 segundos |
+| **Gente de verdad** | mínimo **9 carteras distintas** en toda su vida |
+| **No casi migrada** | como mucho el **95%** de la curva recorrido |
+| **Sin bundle** | máximo 3 carteras en su bloque de nacimiento, y máximo 2 SOL |
 | **Sin concentración** | los mayores tenedores no pueden tener más del 50% |
 | **Sin vela verde** | si ha subido más de un **80% en 30 segundos**, no entra |
 
-Los dos últimos son los importantes, y están ahí por algo que pasó:
+Los dos últimos están ahí por algo que pasó:
 
 > El 24 de septiembre el bot compró una moneda con **cinco tenedores** justo en
 > la punta de una vela vertical. Cuarenta segundos después valía un 92% menos y
@@ -51,6 +56,14 @@ Los dos últimos son los importantes, y están ahí por algo que pasó:
 La protección de la vela verde **ya existía**, pero estaba guardada dentro de
 una estrategia que se había apagado, así que no se aplicaba. Ahora vale para
 todas las entradas, venga de donde venga la moneda.
+
+### La estrategia de la curva sigue escrita, pero apagada
+
+Hasta el 9 de octubre el bot compraba monedas que ya habían recorrido el 59%
+de su curva. Esa configuración entera —entrada, compradores, la escalera del
+x3— sigue en el fichero y vuelve cambiando un `enabled`. Se apagó porque sólo
+puede haber **una** fuente encendida: las dos se reparten las mismas 2 plazas,
+y con las dos a la vez no se puede saber cuál produjo el resultado del día.
 
 ---
 

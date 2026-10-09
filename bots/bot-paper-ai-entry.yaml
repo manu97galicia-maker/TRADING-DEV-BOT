@@ -1438,7 +1438,11 @@ filters:
   # un stop de -18%). Se arranca igual por decision de Manu y con 0,07 SOL
   # por operacion, que es lo que lo hace asumible mientras se mide de verdad.
   presion:
-    enabled: false
+    # ENCENDIDA EL 09-oct, pedido: "solo estrategia de alta presion
+    # compradora". Es la UNICA parte de este bot con medicion detras: 27.241
+    # monedas seguidas cinco minutos (la cuenta esta en la cabecera de
+    # `presion_source.py`).
+    enabled: true
     # Compradores DISTINTOS que tienen que entrar en la ventana.
     #
     # HISTORIA DE ESTE NUMERO, porque ha cambiado tres veces:
@@ -1454,7 +1458,11 @@ filters:
     # las 5 plazas, el 12.
     min_compradores_ola: 8
     ventana: 5.0
-    buy_amount: 0.07
+    # A CERO, O EL 30% NO SE APLICA. El importe de la SENAL pisa al global:
+    # con 0,07 aqui, cada compra serian 0,07 SOL y `fraccion_saldo: 0.30`
+    # no haria nada. Ya paso una vez y por eso hay un test que empareja los
+    # dos numeros (`test_los_dos_numeros_son_los_pedidos`).
+    buy_amount: 0
     # Por encima de este avance no se entra: eso lo cubre `curva_96`.
     max_avance_curva: 0.95
     # ANTI-BUNDLE. Sin esto esta fuente seria un iman de pump and dump: un
@@ -1593,7 +1601,10 @@ filters:
     # punto de migrar a un DEX. Son pocas al dia --la mayoria de las monedas
     # mueren mucho antes-- asi que va a comprar MUCHO menos a menudo. Eso no
     # es que este rota: es lo que hay a ese punto de la curva.
-    enabled: true
+    # APAGADA EL 09-oct, pedido: encender SOLO la de alta presion compradora.
+    # No se borra nada: todo lo afinado del 26-sep (entrada 59%, 9 compradores,
+    # la escalera del x3) sigue escrito aqui abajo y vuelve con un `true`.
+    enabled: false
     # Punto de la curva en que se compra (0,95 = 95% vendido).
     #
     # 71,0% (24-sep, pedido: "baja la curva un 8%"). Tercera bajada en una
