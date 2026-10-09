@@ -21,12 +21,13 @@ saldo de sobra no es un fallo -- es el techo haciendo su trabajo.
 # ruff: noqa: S101, PLR2004, PLC0415
 
 import yaml
-from modelo_tamano import COLCHON_POR_POSICION, CONFIG, tamanos
+from modelo_tamano import COLCHON_POR_POSICION, CONFIG, plazas_efectivas, tamanos
 from modelo_tamano import importe as importe_de_compra
 from modelo_tamano import trade as _trade
 
-# Techo configurado de posiciones simultaneas (max_posiciones).
-TECHO = 2
+# Techo EFECTIVO de posiciones simultaneas. `max_posiciones: 0` en el yaml
+# no es cero: el trader aplica `max_posiciones or TOPE_DURO_POSICIONES`.
+TECHO = plazas_efectivas()
 
 
 def _cfg_fees() -> dict:
@@ -42,19 +43,32 @@ def caben(saldo: float, reserva: float, compra: float) -> int:
     return min(int(libre // (compra + COLCHON_POR_POSICION)), TECHO)
 
 
-def test_el_techo_son_dos_posiciones() -> None:
-    """Lo pedido el 25-sep: maximo dos operaciones simultaneas.
+def test_el_techo_de_posiciones_es_el_que_aplica_el_trader() -> None:
+    """`max_posiciones: 0` NO es cero plazas: son 40.
 
-    ESTE TEST SE LLAMABA `test_el_techo_son_cinco_posiciones`. No se ha
-    relajado: el numero pedido cambio y el test lo sigue clavando. Subirlo
-    otra vez sin pedirlo se ve aqui en rojo.
+    Historial: 5 -> 2 (25-sep, "maximo dos operaciones simultaneas") -> 0
+    (05-oct, commit "Restrict paper strategy to Telegram alpha channels").
+
+    EL 0 ES UNA TRAMPA, y por eso este test mira el numero EFECTIVO. En el
+    trader la linea es `int(max_posiciones or TOPE_DURO_POSICIONES)`, asi que
+    un 0 en el yaml se convierte en 40. El modelo de estos tests hacia
+    `range(0)` y simulaba cero compras: todos los tests que lo usan se
+    quedaban verdes sin comprobar nada. Se destapo el 09-oct.
+
+    QUIEN FRENA DE VERDAD CON 40 PLAZAS es el dinero: con el 30% de la
+    cartera por compra se abren cuatro o cinco y se acaba el saldo libre.
     """
-    assert _trade()["max_posiciones"] == TECHO
+    configurado = _trade()["max_posiciones"]
+    assert plazas_efectivas() == TECHO
+    if configurado == 0:
+        assert TECHO == 40, "el tope duro del trader es 40"
+    else:
+        assert configurado == TECHO
 
 
 def test_la_reserva_sigue_siendo_la_pedida() -> None:
-    """0,01 SOL (25-sep). Estuvo en 0,03."""
-    assert _trade()["min_reserve_sol"] == 0.01
+    """0,03 SOL. Bajo a 0,01 el 25-sep y el commit del 05-oct la devolvio."""
+    assert _trade()["min_reserve_sol"] == 0.03
 
 
 def test_la_reserva_cubre_vender_todo_lo_abierto() -> None:
@@ -181,21 +195,16 @@ def test_el_tamano_vuelve_a_encogerse_solo() -> None:
         assert abs(tam[0] - frac * 1.0) < 1e-6, (
             f"la primera tiene que ser el {frac * 100:.0f}% del saldo entero: {tam}"
         )
-        # Y LA SEGUNDA SALE RECORTADA, pero ya no es una miga. Aqui se
-        # exigia `tam[-1] < 0.5 * tam[0]` -- "la ultima es calderilla" --, y
-        # era cierto mientras el techo dejaba llegar a la cuarta y la quinta.
-        # Con el techo en 2 la ultima ES la segunda: 0,500 y 0,350, un 70% de
-        # la primera. Seguir exigiendo calderilla seria exigir justo lo que
-        # se quito.
+        # VUELVEN LAS MIGAS CON `max_posiciones: 0` (05-oct), y conviene
+        # tenerlo escrito porque es justo lo que el techo de 2 habia quitado
+        # el 25-sep. Con 1 SOL y el 30%: 0,300 / 0,299 / 0,298 / 0,048.
         #
-        # Lo que se fija ahora es que TODAS las que salen valgan la pena. El
-        # corte esta en 0,15 SOL (~14 $): por debajo de ahi la comision de
-        # prioridad de ida y vuelta (~0,93 $) pasa del 7% de la compra.
-        assert tam[-1] < tam[0], (
-            f"con base cartera la ultima es un recorte del saldo libre: {tam}"
-        )
-        assert min(tam) > 0.15, (
-            f"con el techo en {TECHO} no puede salir ninguna miga: {tam}"
+        # LA CUARTA SON ~4,4 $, y la comision de ida y vuelta (~0,93 $) se
+        # lleva el 21% antes de que la moneda se mueva. No es un fallo: es la
+        # consecuencia de quitar el techo. La palanca para cortarlas sin
+        # volver a poner techo es `compra_minima_sol`, que sigue a 0.
+        assert tam[-1] < 0.5 * tam[0], (
+            f"sin techo, la ultima vuelve a ser un recorte pequeno: {tam}"
         )
 
 
@@ -245,7 +254,6 @@ def test_cuantas_plazas_caben_de_verdad() -> None:
     from modelo_tamano import base_es_libre
 
     tam = tamanos(1.0)
-    frac = float(_trade()["fraccion_saldo"])
     if base_es_libre():
         # Menguan suaves: se llenan las plazas y la ultima sigue siendo decente.
         assert len(tam) == TECHO, f"con base libre se llenan las plazas: {tam}"
@@ -253,29 +261,35 @@ def test_cuantas_plazas_caben_de_verdad() -> None:
     else:
         # Base "cartera": iguales hasta que se agota el saldo libre... salvo
         # que el techo llegue antes, que es lo que pasa ahora.
-        assert len(tam) == TECHO, (
-            f"con el {frac * 100:.0f}% de la cartera el techo de {TECHO} llega "
-            f"antes que el saldo, asi que se llenan todas las plazas: {tam}"
+        # VUELVE A MANDAR EL DINERO (05-oct, `max_posiciones: 0` = 40
+        # plazas). Con el 30% el saldo libre se agota en la cuarta, muy lejos
+        # de las 40, asi que el techo no ata nada.
+        assert len(tam) < TECHO, (
+            f"con {TECHO} plazas el techo no puede ser lo que para al bot: "
+            f"lo para el dinero. Salen {len(tam)} compras: {tam}"
         )
-        # LA PRUEBA DE QUE MANDA EL TECHO Y NO EL DINERO: si mandara el saldo,
-        # el bot habria seguido comprando restos hasta agotarlo. Queda cartera
-        # sin comprometer, o sea que lo que le paro fue el techo.
-        assert sum(tam) < 0.90, (
-            f"si el techo manda tiene que sobrar cartera sin comprometer: {tam}"
+        # Y SE COMPROMETE CASI TODO, que es la otra cara: sin techo el bot
+        # sigue comprando restos hasta quedarse sin saldo libre.
+        assert sum(tam) > 0.90, (
+            f"sin techo se compromete casi toda la cartera: {tam}"
         )
-        # Y NINGUNA ES UNA MIGA, que es el motivo por el que se bajo el techo.
-        assert min(tam) > 0.15, f"ninguna compra puede ser calderilla: {tam}"
     # Y con poco saldo sigue comprando, solo que diminuto: es lo pedido.
     assert len(tamanos(0.05)) >= 1, "con poco saldo compra poco, pero compra"
 
 
-def test_el_techo_sigue_mandando_por_mucho_saldo_que_haya() -> None:
-    """El techo existe por el NODO, no por el dinero: cada posicion abierta
-    consulta su precio cada segundo y el presupuesto de peticiones no es
-    infinito. Por mucho saldo que haya, nunca mas de las plazas que hay.
+def test_el_techo_sigue_siendo_un_limite_duro() -> None:
+    """Por mucho saldo que haya, nunca mas plazas que el techo efectivo.
+
+    El techo existe por el NODO, no por el dinero: cada posicion abierta
+    consulta su precio y el presupuesto de peticiones no es infinito.
+
+    CON 40 PLAZAS ESE LIMITE YA NO SE TOCA en la practica --el saldo se
+    agota mucho antes-- pero tiene que seguir existiendo: es la ultima red
+    si alguien baja mucho el porcentaje de compra.
     """
-    assert _trade()["max_posiciones"] == TECHO
-    assert len(tamanos(50.0)) == TECHO, "el techo no se puede pasar nunca"
+    assert len(tamanos(50.0)) <= TECHO, "el techo no se puede pasar nunca"
+    # Y con un porcentaje diminuto, el que ata es el techo y no el saldo.
+    assert len(tamanos(50.0, plazas=TECHO)) <= TECHO
 
 
 def test_nunca_se_gasta_la_reserva() -> None:

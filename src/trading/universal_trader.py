@@ -465,6 +465,7 @@ class UniversalTrader:
         holders: dict | None = None,
         # Telegram-calls acquisition mode (disabled unless configured)
         telegram_calls: dict | None = None,
+        telegram_only: bool = False,
         discord_calls: dict | None = None,
         # GMGN smart-money/KOL signals (disabled unless configured)
         gmgn_signals: dict | None = None,
@@ -1411,6 +1412,7 @@ class UniversalTrader:
         self.holders = holders or {}
         # Telegram-calls acquisition mode config (off unless enabled)
         self.telegram_calls = telegram_calls or {}
+        self.telegram_only = bool(telegram_only)
         self.discord_calls = discord_calls or {}
         # GMGN signals acquisition mode config (off unless enabled)
         self.gmgn_signals = gmgn_signals or {}
@@ -3613,6 +3615,13 @@ class UniversalTrader:
     async def _handle_token(self, token_info: TokenInfo) -> None:
         """Handle a new token creation event."""
         try:
+            signal_data = token_info.additional_data or {}
+            if (
+                self.telegram_only
+                and signal_data.get("acquisition_kind") != "telegram"
+            ):
+                return
+
             # Validate that token is for our platform
             if token_info.platform != self.platform:
                 logger.warning(
@@ -4644,6 +4653,36 @@ class UniversalTrader:
 
             # Paper-trade: record the candidate, follow its price, never buy.
             if self.paper_trade:
+                if self.fraccion_saldo > 0:
+                    try:
+                        balance = await self.solana_client.get_sol_balance(
+                            self.wallet.pubkey
+                        )
+                        free_lamports = max(
+                            0,
+                            balance - self.min_reserve_lamports,
+                        )
+                        paper_amount = (
+                            free_lamports
+                            / LAMPORTS_PER_SOL
+                            * self.fraccion_saldo
+                        )
+                        if self.tope_compra_sol > 0:
+                            paper_amount = min(
+                                paper_amount,
+                                self.tope_compra_sol,
+                            )
+                        token_info.additional_data = {
+                            **(token_info.additional_data or {}),
+                            "signal_buy_amount": paper_amount,
+                            "balance_fraction": self.fraccion_saldo,
+                        }
+                    except Exception:  # noqa: BLE001
+                        logger.warning(
+                            "PAPER: no se pudo calcular el 25%% del saldo; "
+                            "se usa el importe base",
+                            exc_info=True,
+                        )
                 self._record_paper(token_info, curve_sol, entry_price)
                 if entry_price > 0:
                     # Con guardia: una excepcion dentro de _paper_watch se

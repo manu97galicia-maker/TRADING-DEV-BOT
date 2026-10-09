@@ -198,7 +198,17 @@ def test_ahora_mismo_compra_de_verdad() -> None:
     assert _trade()["min_reserve_sol"] > 0, "sin reserva no quedaria gas para vender"
 
 
-def test_en_pausa_se_sigue_operando_de_verdad_no_en_papel() -> None:
-    """`paper_trade` simula TAMBIEN las ventas, asi que dejaria sin vender
-    de verdad lo que ya esta comprado. La pausa no es eso."""
-    assert _es_papel() is False
+def test_el_modo_papel_esta_fijado_y_a_la_vista() -> None:
+    """EN PAPEL DESDE EL 05-oct, y este test existe para que no pase inadvertido.
+
+    `paper_trade: true` significa que el bot NO gasta dinero: simula las
+    compras Y las ventas. Lo puso el commit "Restrict paper strategy to
+    Telegram alpha channels", que es de donde viene la palabra "paper".
+
+    POR QUE UN TEST Y NO UN COMENTARIO. Es el interruptor mas consecuente del
+    fichero y el que menos se nota: un bot en papel se ve EXACTAMENTE igual
+    que uno real --arranca, filtra, "compra", escribe en el log-- y la unica
+    diferencia es que no pasa nada en la cadena. Que cambie tiene que ser
+    siempre deliberado, en los dos sentidos.
+    """
+    assert _es_papel() is True

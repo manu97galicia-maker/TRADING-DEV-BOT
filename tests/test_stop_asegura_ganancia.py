@@ -18,6 +18,7 @@ estos tests:
 
 # ruff: noqa: S101, PLR2004
 
+import itertools
 from pathlib import Path
 
 import yaml
@@ -89,8 +90,8 @@ def test_el_tp1_de_la_config_vende_y_asegura() -> None:
     peldano a mano y se quedara verde midiendo el de dos versiones atras.
     """
     t = _trade()
-    assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 0.10
-    assert _tiers()[0].gain == t["take_profit_percentage"] == 0.25
+    assert _tiers()[0].sell == t["take_profit_sell_percentage"] == 0.25
+    assert _tiers()[0].gain == t["take_profit_percentage"] == 0.35
 
 
 # ------------------------------------------------- el suelo asegura ganancia
@@ -176,7 +177,7 @@ def test_el_colchon_mas_apretado_esta_anotado() -> None:
 # ----------------------------------------------------- la escalera completa
 
 
-def test_cuatro_peldanos_con_el_peso_en_el_x3_y_una_cola() -> None:
+def test_seis_peldanos_con_el_peso_abajo_y_una_cola_decreciente() -> None:
     """LA ESCALERA DEL 26-SEP: +25% vende 10%, +60% vende 20%, +100% vende
     20%, el x3 vende 35%, y el 15% que sobra lo reparten cuatro escalones de
     market cap hasta 80k. Pedido: "tp mas enfocado en el x3".
@@ -197,23 +198,33 @@ def test_cuatro_peldanos_con_el_peso_en_el_x3_y_una_cola() -> None:
     """
     tiers = _tiers()
     trade = _trade()
-    assert len(tiers) == 4, f"cuatro peldanos: {tiers}"
-    assert [t.gain for t in tiers] == [0.25, 0.60, 1.00, 2.00]
-    assert [t.sell for t in tiers] == [0.10, 0.20, 0.20, 0.35]
-    # EL PESO ESTA ARRIBA: el peldano de mas ganancia es tambien el que mas
-    # vende. Si alguien reparte al reves, esto ya no es "enfocado en el x3".
-    assert max(tiers, key=lambda x: x.gain).sell == max(t.sell for t in tiers), (
-        f"el x3 tiene que ser el que mas vende: {tiers}"
+    assert len(tiers) == 6, f"seis peldanos: {tiers}"
+    assert [t.gain for t in tiers] == [0.35, 0.65, 1.00, 1.50, 2.00, 4.00]
+    assert [t.sell for t in tiers] == [0.25, 0.40, 0.15, 0.10, 0.05, 0.03]
+    # EL PESO ESTA ABAJO (05-oct), al reves que la escalera del 26-sep. Entre
+    # los dos primeros peldanos se cobra el 65% de la posicion, y de ahi
+    # arriba la cola va menguando: 15, 10, 5, 3.
+    #
+    # ES OTRA APUESTA, no un error: el 26-sep el peso estaba en el x3 para
+    # cobrar mucho de las que corren; esto cobra pronto y deja una cola fina
+    # corriendo. Lo que gana es que una moneda que se queda a medias paga
+    # mucho mas; lo que pierde es el x3.
+    assert tiers[0].sell + tiers[1].sell == 0.65, (
+        f"los dos primeros peldanos tienen que cobrar el 65%: {tiers}"
     )
-    assert abs(moonbag_fraction(tiers) - 0.15) < 1e-9
+    de_la_cola = [x.sell for x in tiers[1:]]
+    for antes, despues in itertools.pairwise(de_la_cola):
+        assert despues <= antes, f"de mas a menos a partir del segundo: {tiers}"
+    assert abs(moonbag_fraction(tiers) - 0.02) < 1e-9
     assert not (trade.get("tp_extra") or [])
+    # LA COLA DE MARKET CAP SE VACIO EL 05-oct, y va con los seis peldanos:
+    # solo se arma cuando se han cobrado TODOS los de porcentaje, asi que con
+    # seis arriba habria quedado puesta sin llegar a armarse casi nunca.
     cola = sum(d["sell"] for d in trade.get("mc_take_profit_tiers") or [])
-    assert abs(cola - 0.15) < 1e-9, (
-        f"la cola de market cap tiene que recoger el 15% que sobra, y "
-        f"reparte el {cola:.0%}"
-    )
-    # Lo que ve el trader de verdad: moonbag menos la cola = nada corriendo.
-    assert abs(max(0.0, moonbag_fraction(tiers) - cola)) < 1e-9
+    assert cola == 0, f"con seis peldanos la cola no se arma: reparte {cola:.0%}"
+    # O sea que el 2% que sobra SI se queda corriendo, y arrastra la cuenta
+    # de token abierta con su renta dentro.
+    assert abs(moonbag_fraction(tiers) - 0.02) < 1e-9
 
 
 def test_los_diez_escalones_disparan_y_queda_el_moonbag() -> None:

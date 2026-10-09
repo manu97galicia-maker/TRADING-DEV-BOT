@@ -75,188 +75,78 @@ más lo que ya vale lo que hay metido en monedas.
 Con 1 SOL de saldo salen así:
 
 ```
-0,300 · 0,299     y se para
+0,300 · 0,299 · 0,298 · 0,048
 ```
 
-**Dos compras iguales.** No se para porque se acabe el dinero — se para porque
-sólo hay **2 plazas**. Y ahí está lo que hay que entender de este número:
+**Cuatro compras, y la cuarta es una miga.** Son ~4,4 $, de los que la comisión
+de ida y vuelta (unos 0,93 $) se lleva el **21%** antes de que la moneda se
+mueva.
 
-> **30% × 2 plazas = 60% de la cartera. El 40% que sobra no opera nunca.**
+Eso pasa porque **no hay techo de posiciones**. En el fichero pone
+`0 posiciones abiertas` como máximo, y ese **0 no significa cero: significa
+40**, porque el código lo traduce a su tope duro. Con 40 plazas lo que para al
+bot es quedarse sin saldo, y para entonces ya ha comprado restos.
 
-No es un fallo, es una elección. Ese dinero quieto no puede perderse y está ahí
-si mañana quieres subir el tamaño o el número de plazas. Pero no lo confundas
-con "estoy arriesgando el 30%": se arriesga el 30% *por operación*, y sólo el
-60% del dinero opera.
-
-Si quisieras usarla entera, las dos palancas son subir las plazas a 3 (tres
-compras del 30% son el 90%), o subir otra vez este porcentaje. Ninguna está
-tocada.
+> El 25 de septiembre esto se arregló bajando el techo a 2, justo para no pagar
+> comisiones por compras de 4 $. El cambio del 5 de octubre lo deshizo. Si
+> molesta, las dos palancas son volver a poner techo o usar
+> `compra_minima_sol`, que está a 0.
 
 ### Lo que se arriesga
 
-Con el stop en el 30%:
+Con el stop en el 30%, cada posición que se hunde cuesta **el 9% de la
+cartera**. Y como no hay freno de rachas (`parar_tras_perdidas: 0`), tres
+seguidas son −24,6% y diez son −61,3%. Nada para al bot por el camino.
 
-| | una posición al stop | las dos a la vez |
-|---|---|---|
-| con el 50% | −15,0% de la cartera | −30,0% |
-| con el 25% | −7,5% | −15,0% |
-| **con el 30% (hoy)** | **−9,0%** | **−18,0%** |
-
-Y como **no hay freno de rachas**, tres pérdidas seguidas son −24,6% y diez
-son −61,3%. Nada para al bot por el camino.
-
-> **La primera compra no es la mejor moneda del día: es la primera que pasa
-> los filtros.** El bot no elige entre candidatas, compra la que llega. Eso no
-> cambia con el tamaño.
-
-### La comisión
-
-La comisión es **fija** (unos 0,93 $ entre comprar y vender), así que cuanto
-más pequeña la compra, más muerde:
-
-| cartera | con el 25% | con el 30% |
-|---|---|---|
-| 0,50 SOL | 11,4 $ → 8,1% | 13,7 $ → **6,8%** |
-| 0,83 SOL | 18,9 $ → 4,9% | 22,7 $ → 4,1% |
-| 1,00 SOL | 22,8 $ → 4,1% | 27,4 $ → 3,4% |
-| 2,00 SOL | 45,6 $ → 2,0% | 54,7 $ → 1,7% |
-
-Subir el tamaño la diluye. Con cartera pequeña sigue doliendo, pero menos.
-
-### Y un techo de 2 SOL por compra
-
-Pase lo que pase, una compra **nunca pasa de 2 SOL**.
-
-Con el 30%, ese techo no manda hasta que la cartera pasa de **6,67 SOL**:
-
-| cartera | el 30% sería | se compra |
-|---|---|---|
-| 1 SOL | 0,30 | 0,30 |
-| 3 SOL | 0,90 | 0,90 |
-| 6,67 SOL | 2,00 | 2,00 |
-| 20 SOL | 6,00 | **2,00** |
-
-Está por dos motivos. Uno: si la cuenta crece, el porcentaje efectivo baja solo.
-Y dos, el que importa: es el último freno contra un fallo de cálculo. El 12 de
-agosto la cadena registró compras de 0,25 y 0,30 SOL con 0,15 configurado, y
-nunca se supo por qué.
-
-### Dos posiciones a la vez
-
-Puede tener **2 posiciones abiertas** como mucho, y con el 30% por compra eso
-es lo que decide cuánto dinero trabaja: el 60% de la cartera.
-
-Antes el techo eran 5, pero era mentira: con el 50% por compra, la tercera y la
-cuarta salían de 8 $ y 1,7 $, y la comisión se llevaba el 12% y el 54% de ellas
-antes de que la moneda se moviera. Eso no es diversificar, es pagar por tener
-una posición que no puede ganar nada.
-
-Con el 30% las dos salen **iguales** (0,300 y 0,299), que es diversificación de
-verdad: dos posiciones del mismo tamaño, no una grande y una a medias.
+**Tampoco hay tope por compra.** El `máximo 2 SOL por operación` que se pidió
+el 25 de septiembre se quitó el 5 de octubre (`tope_compra_sol: 0`). Hoy no
+duele porque la cartera es pequeña, pero la red no está.
 
 ---
 
 ## 4. Cómo vende
 
-Dos escaleras, una detrás de la otra.
+### Seis peldaños
 
-### Por porcentaje: cuatro peldaños, con el peso en el x3
-
-Lo que sube la moneda **desde el precio al que la compró el bot**.
-
-| sube | vende | acumulado | hay que llegar al |
+| sube | vende | acumulado | suelo después |
 |---|---|---|---|
-| +25% | 10% | 10% | 67,1% de la curva |
-| +60% | 20% | 30% | 75,0% de la curva |
-| +100% | 20% | 50% | 81,3% de la curva |
-| **x3 (+200%)** | 35% | 85% | **91,2% de la curva** |
+| +35% | 25% | 25% | compra +5,00% |
+| +65% | 40% | 65% | compra +41,75% |
+| +100% | 15% | 80% | compra +73,25% |
+| +150% | 10% | 90% | compra +110,00% |
+| +200% | 5% | 95% | compra +162,50% |
+| +400% | 3% | 98% | compra +215,00% |
 
-**El x3 sólo cabe porque la entrada bajó al 59%.** Comprando al 71% el x3 caía
-al 98,2% de la curva — prácticamente la migración, o sea un peldaño que casi
-nunca cobraría. Al 59% cae al 91,2%, con sitio de sobra. Bajar la curva y
-enfocar el take profit en el x3 son **el mismo cambio**.
+**El peso está abajo:** entre los dos primeros peldaños se cobra el **65%** de
+la posición. Al llegar al x2 ya se ha vendido el 80%, y los tres de arriba
+reparten 18 puntos entre todos.
 
-El +25% casi no cobra a propósito: su trabajo no es recoger dinero, es
-**apagar el stop** (sube el suelo a compra +5%), y eso lo hace igual vendiendo
-un 10% que un 20%.
+Es una escalera que **cobra pronto y deja una cola fina corriendo**. Gana en
+las monedas que se quedan a medias; pierde en las que se disparan.
 
-#### Qué cambia respecto de ayer
+El **2% que queda** no se vende nunca: es el moonbag. Mientras exista, la
+cuenta de token sigue abierta con su renta (~0,00204 SOL) dentro.
 
-| la moneda llega a | escalera de ayer | enfocada en el x3 |
-|---|---|---|
-| +25% | +9,0% | +7,0% |
-| +60% | +41,5% | +36,4% |
-| +100% | +64,2% | +68,5% |
-| **x3** | +64,2% | **+121,0%** |
+### Los peldaños de arriba sólo pagan si compras pronto
 
-**Se cobra algo menos de las que se quedan a medias, y casi el doble de las
-que llegan al x3.** Ayer una que hacía x3 cobraba lo mismo que una que llegaba
-al +100%, porque no había peldaño arriba.
+Con la estrategia de presión el bot compra la moneda **donde esté**, hasta el
+95% de su curva. Y eso decide cuántos peldaños puede cobrar:
 
-Y en aciertos necesarios para no perder dinero:
+| entra al... | +35% | +65% | +100% | +150% | +200% | +400% |
+|---|---|---|---|---|---|---|
+| 20% | 36,1% | 45,5% | 53,8% | 62,4% | 68,7% | 83,7% |
+| 40% | 53,3% | 61,1% | 67,9% | 75,0% | 80,3% | 92,7% |
+| 60% | 70,5% | 76,7% | 82,1% | 87,7% | 91,8% | **migra** |
+| 80% | 87,7% | 92,2% | 96,2% | **migra** | **migra** | **migra** |
+| 95% | **migra** | **migra** | **migra** | **migra** | **migra** | **migra** |
 
-```
-si sólo tocan el +25%     81% de aciertos
-si tocan el +60%          45%
-si tocan el +100%         30%
-si llegan al x3           20%   ← ayer también pedía 32%
-```
+(los porcentajes son el punto de curva al que tiene que llegar la moneda)
 
-### Por market cap: el 15% que queda
+**En una moneda comprada arriba, la escalera efectiva son uno o dos peldaños y
+luego el suelo.** No es un fallo — es lo que permite la curva.
 
-Cuando se han cobrado **los cuatro** de arriba —o sea, al llegar al x3— se
-arma la segunda escalera. Ésta no mira lo que ha subido, sino la cifra de
-market cap que ves en la app:
-
-| market cap | vende | acumulado |
-|---|---|---|
-| 50k $ | 5% | 90% |
-| 60k $ | 4% | 94% |
-| 70k $ | 3% | 97% |
-| 80k $ | 3% | 100% |
-
-Si llega a 80k, **la posición se cierra entera**. No queda nada corriendo.
-
-> **Ojo con los 80k.** La curva de pump.fun topa en 410,9 **SOL** de market
-> cap, no en una cifra de dólares — así que el techo en dólares se mueve con el
-> precio de SOL. Con SOL a 220 $ la moneda migra sobre los 90k y los 80k caen
-> dentro de la curva. **Con SOL por debajo de 195 $ los 80k quedan fuera**, y
-> ese último escalón sólo se cobra si la moneda migra y sigue subiendo después.
-> No está roto: si no se llega, ese 15% se queda dentro protegido por el suelo.
-
-### El primer peldaño es el que importa, y no por lo que cobra
-
-En cuanto toca el **+25%**, el suelo sube de −30% a **+5%** y la operación ya
-no puede acabar en pérdida.
-
-Ahora bien, vendiendo sólo un 20% ese rescate es más pequeño que antes:
-
-| la moneda llega a | escalera de ayer | esta escalera |
-|---|---|---|
-| +24% | −35,0% | −30,0% |
-| +25% | −35,0% | +9,0% |
-| +45% | +20,0% | +9,0% |
-| +59% | +20,0% | +9,0% |
-| +60% | +39,7% | +41,5% |
-| +99% | +39,7% | +41,5% |
-| +100% | +39,7% | +64,2% |
-
-**Se cobra menos de las medianas y mucho más de las que corren.** El tramo que
-pierde es el de +30% a +59%, que es el que más ocurre. A cambio, una moneda que
-dobla pasa de dejar un +39,7% a dejar un **+64,2%**.
-
-Dicho de otra forma — cuántas tienen que salir bien para no perder dinero,
-contando que una que sale mal cuesta el 30%:
-
-```
-si sólo tocan el +25%     hacen falta 77% de aciertos
-si tocan el +60%          hacen falta 42% de aciertos
-si tocan el +100%         hacen falta 32% de aciertos
-```
-
-Esta escalera **no se sostiene con monedas que sólo tocan el primer peldaño**.
-Necesita que una parte llegue arriba. El +25% está ahí por el suelo que arma,
-no por lo que cobra.
+Hay una franja estrecha, del **94,3% al 95%**, donde ni el primer peldaño cabe:
+esas posiciones sólo pueden cerrarse por el suelo o después de migrar.
 
 ### Y el suelo que sube
 
@@ -264,21 +154,17 @@ Esto es lo más importante de todo el sistema:
 
 ```
 al empezar         el suelo está en -30%
-tras cobrar +25%   el suelo sube a   +5%     ← ya no puede acabar en pérdida
-tras cobrar +60%   el suelo sube a  +31,25%
-tras cobrar +100%  el suelo sube a  +68%
+tras cobrar +35%   sube a   +5,00%     ← ya no puede acabar en pérdida
+tras cobrar +65%   sube a  +41,75%
+tras cobrar +100%  sube a  +73,25%
+tras cobrar +150%  sube a +110,00%
 ```
 
-El suelo se pone un peldaño **por detrás** del que acabas de cobrar, y un 5%
-por encima de ese. Un 5% *del precio*, no cinco puntos: por eso tras el +25%
-queda en +31,25% y no en +30%.
-
-Eso deja entre 19 y 22 puntos de aire entre cada suelo y el peldaño siguiente.
-Ese hueco importa: si un suelo alcanzara al peldaño que lo armó, la posición se
-cerraría sola en el mismo instante en que cumple su objetivo. Pasó en agosto.
+El suelo se pone un peldaño **por detrás** del que acabas de cobrar, y un
+**+5%** por encima de ese. Un 5% *del precio*, no cinco puntos: por eso tras
+cobrar el +65% el suelo queda en +41,75% y no en +40%.
 
 **En cuanto toca el primer peldaño, la operación ya no puede perder dinero.**
-Ese es el verdadero trabajo del primer escalón — lo que cobra es secundario.
 
 ### La salida de emergencia
 

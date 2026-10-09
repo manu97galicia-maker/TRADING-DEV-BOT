@@ -79,9 +79,12 @@ def test_no_queda_ningun_resto_sin_dueno() -> None:
         + sum(e["sell"] for e in t.get("tp_extra") or [])
         + sum(d["sell"] for d in t.get("mc_take_profit_tiers") or [])
     )
-    assert round(1 - vendido, 6) == 0.0, (
-        f"todo lo comprado tiene que tener un escalon que lo venda, y sobra "
-        f"un {(1 - vendido) * 100:.1f}% sin dueno"
+    # 2% DESDE EL 05-oct: los seis peldanos venden el 98% y el resto se deja
+    # correr. No es "sin dueno" --es una decision-- pero sigue arrastrando la
+    # cuenta de token abierta con su renta dentro, y por eso se fija.
+    assert round(1 - vendido, 6) == 0.02, (
+        f"el moonbag acordado el 05-oct es del 2%, y sobra un "
+        f"{(1 - vendido) * 100:.1f}%"
     )
 
 

@@ -216,9 +216,9 @@ def test_los_peldanos_cobran_y_el_resto_pasa_a_la_cola() -> None:
     del precio de SOL y del market cap, y se fija en test_escalera_actual.py.
     """
     t = _tiers()
-    assert len(t) == 4, f"este test describe la escalera de cuatro peldanos: {t}"
+    assert len(t) == 6, f"este test describe la escalera de seis peldanos: {t}"
     r = simula([1.0, *(1 + x.gain + 0.01 for x in t)])
-    assert r["peldanos"] == [1, 2, 3, 4]
+    assert r["peldanos"] == [1, 2, 3, 4, 5, 6]
     assert not r["paro_por_stop"], "no deberia saltar el stop: se cobraron todos"
     assert round(r["restante_pct"], 6) == round(moonbag_fraction(t), 6)
     assert r["resultado"] > 0

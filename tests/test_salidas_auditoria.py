@@ -129,31 +129,31 @@ def test_no_se_vende_nada_por_debajo_del_primer_objetivo() -> None:
 
 
 def test_cada_peldano_dispara_en_su_multiplo_exacto() -> None:
-    """Lo VENDIDO ACUMULADO al llegar a cada multiplo (26-sep).
+    """Lo VENDIDO ACUMULADO al llegar a cada multiplo (05-oct).
 
-    CUATRO peldanos de porcentaje: +25% vende 10%, +60% vende 20%, +100%
-    vende 20%, x3 vende 35%. El 15% que queda NO se vende por porcentaje --
-    se lo reparten los escalones de market cap, que son otra escalera y no se
-    miden aqui: esta funcion solo recorre los peldanos de porcentaje.
+    SEIS peldanos: +35% vende 25%, +65% vende 40%, +100% vende 15%, +150%
+    vende 10%, +200% vende 5%, +400% vende 3%. El 2% que queda se deja
+    corriendo: no hay cola de market cap que lo recoja.
 
-    POR ESO LA ULTIMA FILA SE QUEDA EN 0,85 por mucho que suba el multiplo.
-    No significa que sobre un 15%: significa que ese 15% sale por la otra
-    puerta, y esa puerta depende del market cap en dolares, no del multiplo.
-
-    LO QUE SE VE EN LA TABLA es donde esta el peso: al llegar al +100% solo
-    se ha cobrado la MITAD de la posicion, y el x3 se lleva 35 puntos de
-    golpe. Con la escalera de ayer, al +100% ya se habia cobrado el 85%.
+    DONDE ESTA EL PESO: entre los dos primeros se cobra el 65% de la
+    posicion. Al llegar al x2 ya se ha vendido el 80%, y todo lo de arriba
+    --tres peldanos-- reparte 18 puntos. Es una escalera que cobra pronto y
+    deja una cola fina, al reves que la del 26-sep.
     """
     esperado = {
-        1.24: 0.0,  # justo por debajo del primero
-        1.25: 0.10,  # el primero casi no cobra: esta por el suelo que arma
-        1.59: 0.10,
-        1.60: 0.30,
-        1.99: 0.30,
-        2.00: 0.50,  # cobrado el +100%, va solo por la mitad
-        2.99: 0.50,
-        3.00: 0.85,  # el x3 es el que se lleva el grueso
-        50.0: 0.85,  # el resto lo cobra la cola de market cap, no esta
+        1.34: 0.0,  # justo por debajo del primero
+        1.35: 0.25,  # el primero ya se lleva un cuarto
+        1.64: 0.25,
+        1.65: 0.65,  # el segundo es el que mas vende
+        1.99: 0.65,
+        2.00: 0.80,
+        2.49: 0.80,
+        2.50: 0.90,
+        2.99: 0.90,
+        3.00: 0.95,
+        4.99: 0.95,
+        5.00: 0.98,  # cobrados los seis; el 2% se queda dentro
+        50.0: 0.98,
     }
     for multiplo, acumulado in esperado.items():
         assert round(_vendido_hasta(multiplo), 6) == acumulado, f"fallo en x{multiplo}"

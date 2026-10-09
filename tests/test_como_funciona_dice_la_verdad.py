@@ -85,9 +85,15 @@ def _peldanos_de_porcentaje(t: dict) -> list[tuple[float, float]]:
     cambiado era la escalera. Leyendo los que existan, quitar o anadir un
     peldano sigue poniendo el test en rojo (la nota ya no los lista todos),
     pero el error senala la tabla de la nota, que es donde hay que mirar.
+
+    SOLO HASTA TP6, que es hasta donde lee `bot_runner.py`. Un `tp7_gain` en
+    el yaml no llega al trader: esta escrito y no vende nada. Exigir que la
+    nota lo documente seria obligarla a prometer un peldano que no existe --
+    justo lo contrario de lo que este fichero vigila. Lo inerte se fija
+    aparte, en `test_no_hay_peldanos_escritos_que_el_codigo_no_lea`.
     """
     pares = [(t["take_profit_percentage"], t["take_profit_sell_percentage"])]
-    for i in range(2, 10):
+    for i in range(2, 7):
         if f"tp{i}_gain" not in t:
             break
         pares.append((t[f"tp{i}_gain"], t[f"tp{i}_sell"]))

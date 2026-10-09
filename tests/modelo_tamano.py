@@ -23,6 +23,24 @@ CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
 #: Lo que el codigo reserva por posicion: comisiones + renta de la cuenta de
 #: token (`_fee_headroom_lamports` = 3_000_000 lamports).
 COLCHON_POR_POSICION = 0.003
+#: El tope de posiciones que aplica el trader cuando `max_posiciones` es 0.
+#: Tiene que coincidir con `TOPE_DURO_POSICIONES` en universal_trader.py: lo
+#: comprueba `test_el_tope_duro_del_modelo_es_el_del_codigo`.
+TOPE_DURO_POSICIONES = 40
+
+
+def plazas_efectivas(t: dict | None = None) -> int:
+    """Las plazas que aplica el trader de verdad.
+
+    `max_posiciones: 0` NO significa cero: en el codigo es
+    `int(max_posiciones or TOPE_DURO_POSICIONES)`, o sea 40. El modelo hacia
+    `range(0)` y simulaba CERO compras, asi que los tests que lo usan se
+    quedaban verdes sin comprobar nada -- incluido el de la reserva, que es
+    el que avisa de quedarse sin gas para vender. Se destapo el 09-oct al
+    mezclar el commit del 05-oct, que puso `max_posiciones: 0`.
+    """
+    cfg = t if t is not None else trade()
+    return int(cfg.get("max_posiciones") or TOPE_DURO_POSICIONES)
 #: PRECIO DE SOL DE REFERENCIA PARA LOS TESTS, y solo para eso.
 #:
 #: El bot NO usa este numero: divide por `_SOL_USD`, que refresca solo desde
@@ -124,7 +142,7 @@ def tamanos(
     salen: list[float] = []
     suelo = t.get("compra_minima_sol", 0)
     sobre_libre = base_es_libre(t)
-    for _ in range(plazas or t["max_posiciones"]):
+    for _ in range(plazas or plazas_efectivas(t)):
         libre = wallet - t["min_reserve_sol"]
         if libre <= 0:
             break

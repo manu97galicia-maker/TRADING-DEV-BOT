@@ -89,21 +89,19 @@ def test_los_canales_configurados_son_los_pedidos() -> None:
     que anadir o quitar uno se ve aqui en rojo.
 
     Van mezclados dos tipos y conviene saberlo al leer resultados:
-      - dextools_nitro, cryptolistings: hay un PAGO detras (Nitro, listing).
-      - Wagbocooks, LegendsAlphas, SolanaInsiderTerminal: son CALLS, alguien
-        opina sin pagar. El ultimo entro el 21-sep, pedido.
+      - Wagbocooks, LegendsAlphas: son CALLS, alguien opina sin pagar.
+
+    EL 05-oct SE QUEDARON SOLO ESOS DOS. Se fueron los de PAGO
+    (dextools_nitro, cryptolistings) y SolanaInsiderTerminal, en el commit
+    "Restrict paper strategy to Telegram alpha channels". La fuente entera
+    esta apagada desde el 09-oct, pero la lista se fija igual: si vuelve,
+    tiene que volver con los canales que se acordaron.
 
     Desde el 14-sep cada compra apunta de que canal vino, asi que
     `deploy/resumen_dia.py` los separa y se puede ver cual gana.
     """
     canales = _config()["filters"]["telegram_calls"]["channels"]
-    assert canales == [
-        "dextools_nitro",
-        "cryptolistings",
-        "Wagbocooks",
-        "LegendsAlphas",
-        "SolanaInsiderTerminal",
-    ]
+    assert canales == ["Wagbocooks", "LegendsAlphas"]
 
 
 def test_el_importe_de_canal_coincide_con_el_global() -> None:

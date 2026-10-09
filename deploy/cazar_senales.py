@@ -69,7 +69,7 @@ MIN_OPERACIONES = 5
 #: `test_los_niveles_medidos_son_los_peldanos_del_bot` comprueba que siguen
 #: coincidiendo: sin el, este script mediria objetivos que el bot ya no tiene
 #: y los informes dirian cosas que no pasaron.
-TP1, TP2, TP3 = 0.25, 0.60, 1.00
+TP1, TP2, TP3 = 0.35, 0.65, 1.00
 STOP = -0.30
 #: Cada cuanto se imprime una linea de estado.
 AVISO_SEG = 30

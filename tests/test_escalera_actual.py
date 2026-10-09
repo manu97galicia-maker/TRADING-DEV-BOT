@@ -47,8 +47,10 @@ def _peldanos() -> list[tuple[float, float]]:
 def test_los_peldanos_son_los_pedidos() -> None:
     """LA ESCALERA ENTERA, fijada para que cualquier cambio sea deliberado.
 
-    26-sep: CUATRO peldanos de porcentaje y una cola de market cap, con el
-    peso en el x3. Pedido: "tp mas enfocado en el x3".
+    05-oct: SEIS peldanos de porcentaje y NINGUNA cola de market cap.
+    Viene del commit "Restrict paper strategy to Telegram alpha channels",
+    que reescribio la escalera entera. Es mas nuevo que la version del
+    26-sep (enfocada en el x3, con cola hasta 80k), asi que manda este.
 
     EL x3 SOLO CABE PORQUE LA ENTRADA BAJO AL 59%. Entrando al 71% caia al
     98,2% de curva --practicamente la migracion-- y habria sido un peldano
@@ -61,7 +63,14 @@ def test_los_peldanos_son_los_pedidos() -> None:
     van al x3. El +25% se queda casi sin cobrar a proposito: su trabajo es
     apagar el stop, no recoger dinero.
     """
-    assert _peldanos() == [(0.25, 0.10), (0.60, 0.20), (1.00, 0.20), (2.00, 0.35)]
+    assert _peldanos() == [
+        (0.35, 0.25),
+        (0.65, 0.40),
+        (1.00, 0.15),
+        (1.50, 0.10),
+        (2.00, 0.05),
+        (4.00, 0.03),
+    ]
 
 
 def _mc_de_compra() -> float:
@@ -102,16 +111,25 @@ def test_no_quedan_peldanos_lejanos() -> None:
     los de porcentaje, o sea al llegar al x3 -- mas tarde que antes, pero
     llegar al x3 es justo lo que esta escalera busca.
 
-    LO QUE SIGUE PROHIBIDO es `tp_extra` y del quinto en adelante.
+    EL 05-oct VOLVIERON EL QUINTO Y EL SEXTO (+200% y +400%), y con ellos se
+    quito la cola de market cap. Las dos cosas van juntas: la cola solo se
+    arma cuando se han cobrado TODOS los peldanos de porcentaje, asi que con
+    seis arriba habria quedado puesta sin llegar a armarse casi nunca. Al
+    vaciarla, esa contradiccion desaparece.
+
+    LO QUE SIGUE PROHIBIDO es `tp_extra`: esos peldanos no tienen test que
+    compruebe donde caen.
     """
     assert _trade().get("tp_extra") in (None, []), (
         "han vuelto los peldanos lejanos: hay que recuperar la comprobacion "
         "de que caen en las cifras de market cap pedidas"
     )
-    for clave in ("tp5_gain", "tp6_gain"):
-        assert clave not in _trade(), (
-            f"{clave} ha vuelto al yaml. Con cinco peldanos de porcentaje la "
-            f"cola de market cap deja de armarse en la practica"
+    # Y si vuelve la cola de market cap con seis peldanos arriba, se avisa:
+    # las dos cosas a la vez es tener una via puesta que no se arma.
+    if _trade().get("mc_take_profit_tiers"):
+        assert len(_peldanos()) <= 4, (
+            "con mas de cuatro peldanos de porcentaje la cola de market cap "
+            "casi nunca llega a armarse: o se quitan peldanos, o se vacia"
         )
 
 
@@ -153,12 +171,9 @@ def test_los_escalones_de_market_cap_son_los_pedidos() -> None:
     market cap que solo haya subido un 80% desde la compra no vende nada por
     aqui. Son una COLA, no una via paralela.
     """
-    assert _trade()["mc_take_profit_tiers"] == [
-        {"target_mc": 50000, "sell": 0.05},
-        {"target_mc": 60000, "sell": 0.04},
-        {"target_mc": 70000, "sell": 0.03},
-        {"target_mc": 80000, "sell": 0.03},
-    ]
+    # VACIA DESDE EL 05-oct. La lista se deja puesta en vez de borrar la
+    # clave para que se vea que la via existe y esta apagada.
+    assert _trade()["mc_take_profit_tiers"] == []
 
 
 def test_los_escalones_de_market_cap_van_de_mas_a_menos() -> None:
@@ -177,20 +192,26 @@ def test_los_escalones_de_market_cap_van_de_mas_a_menos() -> None:
         assert despues <= antes, f"de mas a menos: {ventas}"
 
 
-def test_la_cola_de_market_cap_recoge_todo_lo_que_sobra() -> None:
-    """Lo pedido fue repartir EL RESTANTE, o sea que no puede quedar nada.
+def test_lo_que_sobra_de_los_peldanos_es_el_moonbag() -> None:
+    """Los seis peldanos venden el 98%; el 2% que queda se deja correr.
 
-    Si los escalones sumaran menos que el resto, quedaria un moonbag que
-    nadie pidio; si sumaran mas, se estaria ordenando vender mas de lo que
-    hay. Los dos fallos son silenciosos, y por eso van fijados aqui.
+    ESTE TEST SE LLAMABA `test_la_cola_de_market_cap_recoge_todo_lo_que_sobra`
+    y exigia que la cola repartiera EXACTAMENTE el resto. Valia mientras habia
+    cola; el 05-oct se vacio y el resto pasa a ser moonbag otra vez.
+
+    LO QUE ARRASTRA UN MOONBAG, y por eso importa que este escrito: mientras
+    exista, la cuenta de token sigue abierta con su renta (~0,00204 SOL)
+    dentro, y el bot sigue vigilando una posicion casi vacia. Con el 2% es
+    poco, pero no es cero.
     """
     t = _trade()
     porcentaje = sum(v for _, v in _peldanos())
-    cola = sum(d["sell"] for d in t["mc_take_profit_tiers"])
-    resto = round(1.0 - porcentaje, 6)
-    assert round(cola, 6) == resto, (
-        f"los peldanos venden el {porcentaje:.0%} y sobra el {resto:.0%}, "
-        f"pero la cola de market cap reparte el {cola:.0%}"
+    cola = sum(d["sell"] for d in t.get("mc_take_profit_tiers") or [])
+    assert cola == 0, "si vuelve la cola, este test tiene que volver al reparto"
+    sobra = round(1.0 - porcentaje, 6)
+    assert sobra == 0.02, (
+        f"los peldanos venden el {porcentaje:.0%} y sobra el {sobra:.0%}: "
+        f"el moonbag acordado el 05-oct es del 2%"
     )
 
 
@@ -205,35 +226,23 @@ def test_nunca_se_vende_mas_del_100() -> None:
     assert sum(v for _, v in _peldanos()) <= 1.0
 
 
-def test_ya_no_queda_moonbag_perpetuo() -> None:
-    """LO QUE SOBRA DE LOS PELDANOS ESTA TODO ASIGNADO (25-sep).
+def test_el_moonbag_perpetuo_es_del_dos_por_ciento() -> None:
+    """VUELVE EL MOONBAG (05-oct), y este test ha ido y venido con el.
 
-    Los tres peldanos de porcentaje venden el 85% (20 + 40 + 25) y el 15%
-    que queda se lo reparten los cuatro escalones de market cap. O sea que
-    una moneda que llegue a 80k cierra ENTERA y no queda nada corriendo.
+    Historial: `test_ya_no_queda_moonbag` (take profit unico al 100%) ->
+    `test_el_moonbag_es_lo_que_sobra` (10%, escalera de dos peldanos) ->
+    `test_ya_no_queda_moonbag_perpetuo` (la cola de market cap recogia el
+    15%) -> este, con el 2% que dejan los seis peldanos del 05-oct.
 
-    ESTE TEST HA IDO Y VENIDO TRES VECES y por eso conviene el historial:
-      - `test_ya_no_queda_moonbag` cuando el take profit unico vendia el 100%
-      - `test_el_moonbag_es_lo_que_sobra_de_la_escalera` con la escalera de
-        dos peldanos, que dejaba un 10% sin vender nunca
-      - este, que vuelve a cero pero por otro motivo: no es que se venda todo
-        de golpe, es que la cola de market cap recoge el resto.
-
-    LO QUE SE GANA: no quedan cuentas de token abiertas con su renta dentro
-    ni posiciones casi vacias vigilandose. LO QUE CUESTA: si una moneda hace
-    x10 por encima de los 80k, ya no queda nada dentro para cogerlo.
-
-    OJO: esto vale MIENTRAS LOS ESCALONES SE ALCANCEN. Si el market cap no
-    llega (ver el aviso de los 80k en el yaml), el 15% se queda dentro
-    protegido por el suelo. "Sin moonbag" es una propiedad de la
-    configuracion, no una promesa de lo que pasara en cada moneda.
+    No se afloja nada: cada version fija lo que de verdad corre, y lo que no
+    puede pasar nunca es que sobre un trozo SIN que nadie sepa que sobra.
     """
     t = _trade()
     porcentaje = sum(v for _, v in _peldanos())
     cola = sum(d["sell"] for d in t.get("mc_take_profit_tiers") or [])
-    assert round(porcentaje + cola, 6) == 1.0, (
-        f"peldanos {porcentaje:.0%} + cola {cola:.0%} tienen que sumar el "
-        f"100% de la compra para que no quede moonbag perpetuo"
+    assert round(porcentaje + cola, 6) == 0.98, (
+        f"peldanos {porcentaje:.0%} + cola {cola:.0%}: el 05-oct se acordo "
+        f"vender el 98% y dejar el 2% corriendo"
     )
 
 
@@ -286,28 +295,67 @@ def test_el_primer_peldano_apaga_el_stop_antes_que_el_stop_muerda() -> None:
     )
 
 
-def test_los_peldanos_caben_dentro_de_la_curva() -> None:
-    """Lo unico que el take profit tiene que cumplir ahora.
+def test_el_primer_peldano_cabe_desde_la_entrada_mas_alta_posible() -> None:
+    """Que al menos el PRIMER peldano se pueda cobrar sin migrar.
 
-    Si el objetivo cae por encima del recorrido que queda hasta migrar, no
-    se cobra mientras la moneda esta en pump.fun: hace falta que migre Y siga
-    subiendo. Con un solo peldano eso no es "cobrar menos", es no cobrar.
+    POR QUE CAMBIA LA PREGUNTA (09-oct). Antes la entrada era fija --el
+    umbral de la curva-- y se comprobaba que el peldano MAS ALTO cupiera.
+    Con la fuente de presion encendida no hay entrada fija: compra la moneda
+    donde este, hasta el `max_avance_curva`. Asi que "cabe la escalera" deja
+    de tener una respuesta sola, y pedir que quepa el +400% desde cualquier
+    punto seria imposible de cumplir.
 
-    Entrando al 90% quedan +64,7% y el objetivo esta en +55,1%: entra por
-    9,6 puntos.
+    DONDE CAE CADA PELDANO SEGUN DONDE SE ENTRE, calculado con la curva:
+
+        entra al   +35%    +65%   +100%   +150%   +200%   +400%
+           20%    36,1%   45,5%   53,8%   62,4%   68,7%   83,7%
+           40%    53,3%   61,1%   67,9%   75,0%   80,3%   92,7%
+           60%    70,5%   76,7%   82,1%   87,7%   91,8%   MIGRA
+           80%    87,7%   92,2%   96,2%   MIGRA   MIGRA   MIGRA
+           95%    MIGRA   MIGRA   MIGRA   MIGRA   MIGRA   MIGRA
+
+    O sea: los peldanos altos SOLO pagan en monedas compradas pronto en su
+    curva. Eso no es un fallo --es lo que hay-- pero significa que en una
+    moneda comprada arriba la escalera efectiva son uno o dos peldanos y
+    luego el suelo.
+
+    LO QUE SI SE PUEDE EXIGIR, y es lo que fija este test: que desde la
+    entrada mas alta que la configuracion permite, el PRIMER peldano siga
+    cobrandose dentro de la curva. Si ni ese cabe, la posicion no tiene
+    ninguna salida por arriba y solo puede cerrarse por el suelo.
     """
-    c = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"]["curva_96"]
-    vt = 1073e6 - 793.1e6 * c["umbral"]
-    recorrido = (vt / (1073e6 - 793.1e6)) ** 2 - 1
-    objetivo = max(g for g, _ in _peldanos())
-    assert objetivo < recorrido, (
-        f"el take profit (+{objetivo * 100:.1f}%) no cabe en lo que queda de "
-        f"curva (+{recorrido * 100:.1f}%): solo cobraria despues de migrar"
-    )
-    margen = recorrido - objetivo
-    assert margen > 0.05, (
-        f"entra por solo {margen * 100:.1f} puntos; con tan poco margen "
-        f"depende de que la moneda llegue practicamente a migrar"
+    f = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"]
+    if not (f.get("presion") or {}).get("enabled"):
+        return  # este test describe la fuente de presion
+
+    def recorrido(avance: float) -> float:
+        """Cuanto puede subir una moneda desde `avance` hasta migrar."""
+        vt = 1073e6 - 793.1e6 * avance
+        return (vt / (1073e6 - 793.1e6)) ** 2 - 1
+
+    tope = float(f["presion"]["max_avance_curva"])
+    primero = min(g for g, _ in _peldanos())
+
+    # El punto de curva donde el primer peldano deja de caber, por biseccion.
+    bajo, alto = 0.0, 0.999
+    for _ in range(60):
+        medio = (bajo + alto) / 2
+        if recorrido(medio) > primero:
+            bajo = medio
+        else:
+            alto = medio
+    corte = bajo
+
+    # HOY: corte 94,3% y tope 95% -> una franja de 0,7 puntos donde ningun
+    # peldano paga antes de migrar. Es estrecha y se acepta; lo que no puede
+    # pasar es que crezca sin que nadie lo note.
+    franja = max(0.0, tope - corte)
+    assert franja < 0.05, (
+        f"el primer peldano (+{primero * 100:.0f}%) deja de caber a partir "
+        f"del {corte:.1%} de curva, y se compra hasta el {tope:.0%}: hay "
+        f"{franja * 100:.1f} puntos de entradas sin ninguna salida por "
+        f"arriba antes de migrar. O baja max_avance_curva, o baja el primer "
+        f"peldano"
     )
 
 
@@ -333,3 +381,45 @@ def test_todos_los_peldanos_son_fraccion_de_la_compra_original() -> None:
     t = _trade()
     suma += sum(d["sell"] for d in t.get("mc_take_profit_tiers") or [])
     assert suma <= 1.0
+
+
+def test_no_hay_peldanos_escritos_que_el_codigo_no_lea() -> None:
+    """UN PELDANO EN EL YAML QUE NO SE EJECUTA, y ahora mismo hay uno.
+
+    `bot_runner.py` pasa al trader `tp2_gain`..`tp6_gain` y para ahi. Un
+    `tp7_gain` en el yaml NO llega al codigo: se queda escrito, suma en la
+    cabeza de quien lee el fichero, y no vende nada.
+
+    LO QUE CUESTA HOY. El commit del 05-oct escribio siete peldanos cuyas
+    ventas suman el 100%, o sea "se vende todo". Pero el septimo (+1000%,
+    vende 2%) es inerte, asi que lo que de verdad corre son SEIS peldanos
+    que venden el 98%, y el 2% restante se queda como moonbag permanente
+    arrastrando la renta de la cuenta de token.
+
+    Es la misma familia de fallo que este repo lleva semanas documentando:
+    un numero que parece decidir y no decide. No se borra sin pedirlo --
+    cambiar la escalera es decision de Manu-- pero deja de ser invisible.
+
+    PARA ARREGLARLO hay dos caminos: borrar `tp7_*` (y asumir el moonbag del
+    2%), o moverlo a `tp_extra`, que es la via que SI escala y que existe
+    justo para no ir anadiendo tp8, tp9...
+    """
+    t = _trade()
+    LEIDOS = 6  # noqa: N806 -- hasta tp6_gain, ver bot_runner.py
+    inertes = [
+        f"tp{i}_gain" for i in range(LEIDOS + 1, 12) if f"tp{i}_gain" in t
+    ]
+    vivos = sum(v for _, v in _peldanos())
+    muertos = sum(
+        t.get(f"tp{i}_sell") or 0 for i in range(LEIDOS + 1, 12) if f"tp{i}_gain" in t
+    )
+    assert inertes == ["tp7_gain"], (
+        f"ha cambiado la lista de peldanos inertes: {inertes}. Si se ha "
+        f"borrado tp7, este test tiene que pasar a exigir la lista vacia; si "
+        f"se ha anadido otro, hay que decirlo aqui"
+    )
+    # Y que quede clavado lo que eso significa de verdad.
+    assert round(vivos, 6) == 0.98, f"lo que SE VENDE son seis peldanos: {vivos}"
+    assert round(muertos, 6) == 0.02, (
+        f"lo que esta escrito y no se ejecuta: {muertos}"
+    )

@@ -153,7 +153,13 @@ def test_sobre_el_saldo_libre_las_posiciones_menguan() -> None:
     # CUANTAS CABEN LO DECIDE EL DINERO, no `max_posiciones`: con el 30% de
     # la cartera el saldo se acaba en la cuarta. Lo fija en detalle
     # test_posiciones_por_saldo.py; aqui basta con no darlo por hecho.
-    assert 1 <= len(tam) <= _trade()["max_posiciones"], f"nunca mas del techo: {tam}"
+    #
+    # EL TECHO ES EL EFECTIVO, no el del yaml: `max_posiciones: 0` no es cero
+    # plazas, son 40 (`max_posiciones or TOPE_DURO_POSICIONES` en el trader).
+    # Leer el 0 a pelo hacia que este test exigiera `len(tam) <= 0`.
+    from modelo_tamano import plazas_efectivas
+
+    assert 1 <= len(tam) <= plazas_efectivas(), f"nunca mas del techo: {tam}"
     for antes, despues in pairwise(tam):
         assert despues <= antes + 1e-9, f"nunca crecen: {tam}"
     if base_es_libre():
@@ -176,23 +182,24 @@ def test_sobre_el_saldo_libre_las_posiciones_menguan() -> None:
         # posiciones y mas gordas. Lo unico que paraba era el guardian del
         # saldo libre, ya con las migas compradas.
         #
-        # QUIEN FRENA AHORA ES EL TECHO DE POSICIONES (25-sep, `max_posiciones`
-        # de 5 a 2). Con dos plazas el bot se para despues de dos compras de
-        # verdad en vez de seguir bajando hasta restos de 1,7 $, y por eso NO
-        # se compromete la cartera entera: queda un resto sin gastar.
+        # QUIEN FRENA HA IDO Y VENIDO, y es lo que este bloque fija:
         #
-        # Ese resto es la prueba de que el techo manda. Si alguien vuelve a
-        # subir `max_posiciones` sin tocar la fraccion, el resto desaparece y
-        # este test se pone rojo -- que es justo lo que se quiere que pase.
+        #   hasta el 25-sep  el saldo (techo de 5, nunca se llegaba)
+        #   25-sep           el TECHO, bajado a 2: sobraba cartera sin gastar
+        #   05-oct           el saldo otra vez (`max_posiciones: 0` = 40)
+        #
+        # Con 40 plazas y el 30% el saldo libre se agota en la cuarta, muy
+        # lejos del techo. Asi que vuelve a comprometerse casi todo, y
+        # vuelven las compras pequenas al final.
+        from modelo_tamano import plazas_efectivas
+
         assert sum(tam) < 0.97, f"no se puede gastar mas de lo que hay: {tam}"
-        assert len(tam) == _trade()["max_posiciones"], (
-            f"con el {frac:.0%} el techo de posiciones es lo que para al bot, "
-            f"asi que tienen que salir exactamente las plazas que hay: {tam}"
+        assert len(tam) < plazas_efectivas(), (
+            f"con {plazas_efectivas()} plazas el techo no ata: lo que para al "
+            f"bot es el dinero. Salen {len(tam)}: {tam}"
         )
-        sobra = 1.0 - sum(tam)
-        assert sobra > 0.10, (
-            f"con solo {_trade()['max_posiciones']} plazas del {frac:.0%} "
-            f"tiene que quedar cartera SIN comprometer: sobran {sobra:.1%}"
+        assert sum(tam) > 0.90, (
+            f"sin techo que ate, se compromete casi toda la cartera: {tam}"
         )
 
 

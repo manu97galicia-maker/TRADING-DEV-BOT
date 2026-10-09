@@ -153,9 +153,21 @@ def test_el_extra_no_se_salta_el_tope_por_compra() -> None:
     # recorte era exigir que el tope fuera PEQUENO, que es lo contrario de
     # lo que este test deberia vigilar.
     #
-    # Lo que importa es que ninguna via se cuele por encima del tope.
-    assert min(mayor, tope) <= tope
-    assert importe(mayor, {"fraccion_saldo": 0, "buy_amount": mayor, "tope_compra_sol": tope}) <= tope
+    # Y EL 05-oct EL TOPE SE QUITO (2,0 -> 0). Con 0 no hay recorte: `importe`
+    # devuelve el importe entero. Asi que lo que se comprueba cambia segun
+    # haya tope o no -- y se comprueba que la rama correcta es la que corre.
+    calculado = importe(
+        mayor,
+        {"fraccion_saldo": 0, "buy_amount": mayor, "tope_compra_sol": tope},
+    )
+    if tope > 0:
+        assert calculado <= tope, "ninguna via puede colarse por encima del tope"
+    else:
+        # SIN TOPE NO HAY RED. Queda escrito: el 25-sep se pidio "maximo dos
+        # SOL por operacion" y el commit del 05-oct lo quito. Hoy el caso
+        # mayor de esta via son 0,568 SOL, asi que no duele -- pero la
+        # proteccion no esta.
+        assert calculado == mayor
 
 
 def test_el_extra_de_redes_ya_no_cambia_nada_por_otro_motivo() -> None:
