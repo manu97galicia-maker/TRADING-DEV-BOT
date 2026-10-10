@@ -199,16 +199,18 @@ def test_ahora_mismo_compra_de_verdad() -> None:
 
 
 def test_el_modo_papel_esta_fijado_y_a_la_vista() -> None:
-    """EN PAPEL DESDE EL 05-oct, y este test existe para que no pase inadvertido.
+    """EN DINERO REAL desde el 10-oct, y este test existe para que se note.
 
-    `paper_trade: true` significa que el bot NO gasta dinero: simula las
-    compras Y las ventas. Lo puso el commit "Restrict paper strategy to
-    Telegram alpha channels", que es de donde viene la palabra "paper".
+    `paper_trade` decide si el bot FIRMA o solo lo simula. En papel hace todo
+    menos gastar: escucha, filtra, decide y apunta la compra en el log.
 
     POR QUE UN TEST Y NO UN COMENTARIO. Es el interruptor mas consecuente del
     fichero y el que menos se nota: un bot en papel se ve EXACTAMENTE igual
     que uno real --arranca, filtra, "compra", escribe en el log-- y la unica
     diferencia es que no pasa nada en la cadena. Que cambie tiene que ser
     siempre deliberado, en los dos sentidos.
+
+    HISTORIAL: real hasta el 05-oct -> papel (commit "Restrict paper strategy
+    to Telegram alpha channels") -> real otra vez el 10-oct, pedido.
     """
-    assert _es_papel() is True
+    assert _es_papel() is False

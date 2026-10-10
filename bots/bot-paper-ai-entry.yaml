@@ -1088,7 +1088,18 @@ filters:
   require_mayhem: false
   marry_mode: false
   yolo_mode: true
-  paper_trade: true
+  # DINERO REAL (10-oct, pedido: "como pongo en real la estrategia de presion
+  # compradora"). Estuvo en papel desde el commit del 05-oct, que es de donde
+  # viene la palabra "paper" en su titulo.
+  #
+  # QUE CAMBIA DE VERDAD. En papel el bot hace TODO menos firmar: escucha,
+  # filtra, decide, apunta la compra y la venta en el log. En real firma.
+  # Desde fuera se ven EXACTAMENTE igual, y esa es la razon por la que este
+  # interruptor tiene su propio test: un bot en papel que se cree real no da
+  # ni un sintoma.
+  #
+  # HISTORIAL: false hasta el 05-oct -> true (commit de Telegram) -> false.
+  paper_trade: false
   # NO SE MIDEN DEVS. Pedido el 19-sep: "que no mida devs, solo si una
   # moneda nueva llega a los 99 holders, nada mas".
   #
