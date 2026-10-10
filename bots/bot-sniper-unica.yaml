@@ -1,4 +1,7 @@
-# UNICA123 - variante de UNICA para validacion exclusivamente en paper.
+# UNICA123 - variante de UNICA. EN DINERO REAL desde el 10-oct.
+#
+# 10-oct, Manu: "activa real unica123" + "pon hasta 4,2k mc".
+# Pasa de paper a real y el techo de entrada sube de 2.800 $ a 4.200 $.
 #
 # Sustituye a DEFINITIVA, ELITE y RAPIDA, que hacian lo mismo con umbrales de
 # creador distintos y se pisaban entre ellas comprando la misma moneda.
@@ -35,13 +38,13 @@
 # hasta ahora iban por separado: que la moneda acabe de nacer, que ya se este
 # moviendo dinero de verdad en ella, y que el creador tenga historial.
 
-name: "UNICA123 - 6+ carteras, 8+ SOL, MC <=2.800"
+name: "UNICA123 - 6+ carteras, 8+ SOL, MC <=4.200"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
-enabled: false
+enabled: true
 separate_process: false
 platform: "pump_fun"
 
@@ -241,7 +244,7 @@ filters:
   require_mayhem: false
   marry_mode: false
   yolo_mode: true
-  paper_trade: true           # PAPER: nunca envia compras ni ventas reales
+  paper_trade: false          # DINERO REAL (10-oct, "activa real unica123")
 
   # TECHO DE COMPRA EN 2.800 $.
   #
@@ -257,7 +260,8 @@ filters:
   # POR DEBAJO DE 3.700 $, el mismo techo para todos: el techo aparte para el
   # creador bueno (2.800) se queda desactivado porque ahora seria MAS BAJO que
   # el general.
-  max_entry_mc: 2800
+  # 10-oct, Manu: "pon hasta 4,2k mc". Antes 2.800.
+  max_entry_mc: 4200
   max_entry_mc_dev_top: 0
   min_curve_sol: 0
   # SIN TECHO DE VOLUMEN, y esto corrige una medida anterior.
