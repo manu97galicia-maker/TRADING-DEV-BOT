@@ -1,4 +1,4 @@
-# UNICA - la unica estrategia viva.
+# UNICA123 - variante de UNICA para validacion exclusivamente en paper.
 #
 # Sustituye a DEFINITIVA, ELITE y RAPIDA, que hacian lo mismo con umbrales de
 # creador distintos y se pisaban entre ellas comprando la misma moneda.
@@ -35,7 +35,7 @@
 # hasta ahora iban por separado: que la moneda acabe de nacer, que ya se este
 # moviendo dinero de verdad en ella, y que el creador tenga historial.
 
-name: "UNICA - 6+ carteras, 8-15 SOL, MC <=2.800; +50% vende la mitad"
+name: "UNICA123 - 6+ carteras, 8+ SOL, MC <=2.800"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -241,7 +241,7 @@ filters:
   require_mayhem: false
   marry_mode: false
   yolo_mode: true
-  paper_trade: false          # DINERO REAL
+  paper_trade: true           # PAPER: nunca envia compras ni ventas reales
 
   # TECHO DE COMPRA EN 2.800 $.
   #
