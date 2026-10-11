@@ -46,7 +46,18 @@ Todo esto, sin saltarse nada:
 | **Sin concentración** | los mayores tenedores no pueden tener más del 50% |
 | **Sin vela verde** | si ha subido más de un **80% en 30 segundos**, no entra |
 
-Los dos últimos están ahí por algo que pasó:
+El freno de la vela verde es el que te protege de comprar **la mecha de un
+pump and dump**, y el 11 de octubre se descubrió que estaba midiendo mal: el
+número decía 30 segundos pero el bot sólo guardaba los últimos 32 precios de
+cada moneda, que en una moneda caliente son unos **6 segundos**. O sea que el
+freno estaba encendido y era **ciego** justo para las monedas rápidas, que son
+las que tiene que cazar. Ahora guarda 128 precios y la ventana es de verdad.
+
+Importa más desde que se entra al 95% de la curva: ahí **toda** moneda ha hecho
+ya un x11,3 desde que nació, así que lo único que distingue una subida sana de
+una mecha es *en cuánto tiempo* la hizo.
+
+Los dos de bundle y concentración están ahí por algo que pasó:
 
 > El 24 de septiembre el bot compró una moneda con **cinco tenedores** justo en
 > la punta de una vela vertical. Cuarenta segundos después valía un 92% menos y
@@ -76,7 +87,7 @@ compradores distintos en la ventana. La estrategia de la curva que corre ahora
 
 ## 3. Cuánto pone en cada compra
 
-**El 30% de la cartera.** Cartera = todo lo que tienes, el SOL de la wallet
+**El 33% de la cartera.** Cartera = todo lo que tienes, el SOL de la wallet
 más lo que ya vale lo que hay metido en monedas.
 
 Con 1 SOL de saldo salen así:

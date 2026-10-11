@@ -54,7 +54,7 @@ def test_el_modo_activo_es_el_porcentaje_del_saldo_libre() -> None:
     el fallo donde no esta.
     """
     t = _trade()
-    assert t["fraccion_saldo"] == 0.30
+    assert t["fraccion_saldo"] == 0.33
     # LA BASE ES PARTE DEL MODO. "15%" no dice nada sin ella: el 15% del
     # saldo libre y el 15% de la cartera son numeros distintos y menguan
     # distinto.

@@ -105,10 +105,23 @@ _precio: dict[str, tuple[float, float]] = {}
 #: medio minuto. Comprar el ultimo escalon de una subida vertical es comprar
 #: el techo: medio minuto despues estaba a 12,4K.
 #:
-#: Son 32 puntos por moneda, no un historico: solo interesa lo de hace unos
-#: segundos. Unos 900 bytes por moneda ACTIVA, y solo las que operan tienen.
+#: Son 128 puntos por moneda, no un historico: solo interesa lo de hace unos
+#: segundos. Unos 3,6 KB por moneda ACTIVA, y solo las que operan tienen; con
+#: el tope de `_MAX_MINTS` (4.000) son ~14 MB en el peor caso.
+#:
+#: POR QUE 128 Y NO 32, que es lo que habia hasta el 11-oct. El freno de la
+#: vela verde esta configurado a 30 SEGUNDOS (`subida_seg_global`), pero
+#: `subida()` solo puede mirar los puntos que haya en este buffer. Una moneda
+#: caliente --justo la que importa-- hace varias operaciones por segundo, asi
+#: que 32 puntos eran unos 6 segundos de historia: el filtro decia "30 s" y
+#: miraba 6. La vela que se queria evitar cabia entera en el hueco.
+#:
+#: ES EL MISMO FALLO DE FAMILIA de `min_presion_ratio` sin `max_buy_age`: un
+#: freno pedido, escrito, encendido... y mudo, porque le faltaba la pieza que
+#: lo hace medir de verdad. Aqui no era una clave que faltara, era el tamano
+#: del buffer. Lo ata `test_la_ventana_de_la_vela_verde_cabe_en_el_buffer`.
 _historia_precio: dict[str, deque[tuple[float, float]]] = defaultdict(
-    lambda: deque(maxlen=32)
+    lambda: deque(maxlen=128)
 )
 #: Con un solo punto no se puede saber si el precio subio o lleva ahi desde
 #: siempre, y bloquear una compra sin saberlo seria inventarse el motivo.
@@ -221,7 +234,9 @@ def configurar_memoria(ventana_de_compra: float, margen: float = 1.5) -> None:
     logger.info(
         "Memoria del stream: se recuerdan %.0f min por moneda, hasta %d monedas "
         "(ventana de compra %.0f min)",
-        nueva / 60, _MAX_MINTS, float(ventana_de_compra) / 60,
+        nueva / 60,
+        _MAX_MINTS,
+        float(ventana_de_compra) / 60,
     )
 
 
@@ -355,9 +370,7 @@ def registrar_logs(logs: list[str], slot: int | None = None) -> list[str]:
             if len(cuerpo) >= _LARGO_RESERVAS:
                 # Reservas VIRTUALES: de aqui sale el precio, que es la misma
                 # cuenta que hace el nodo cuando se le pregunta.
-                v_sol, v_tokens = struct.unpack_from(
-                    "<QQ", cuerpo, _OFFSET_VIRTUALES
-                )
+                v_sol, v_tokens = struct.unpack_from("<QQ", cuerpo, _OFFSET_VIRTUALES)
                 if v_tokens > 0:
                     _p = (v_sol / _LAMPORTS) / (v_tokens / _DEC_TOKEN)
                     _precio[mint] = (ahora, _p)
@@ -670,7 +683,8 @@ def compra_creador_sol(mint: str, creador: str) -> float:
     if not creador:
         return 0.0
     return sum(
-        s for _t, s, es_compra, w in (_ops.get(mint) or ())
+        s
+        for _t, s, es_compra, w in (_ops.get(mint) or ())
         if es_compra and w == creador
     )
 

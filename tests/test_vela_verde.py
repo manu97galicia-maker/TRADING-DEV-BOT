@@ -242,3 +242,68 @@ def test_una_moneda_que_sube_despacio_hasta_la_entrada_sigue_pasando() -> None:
     )
     # Y la recien nacida (del 0% al 71%, +343%) tiene que caer del otro lado.
     assert precio(0.71) / precio(0.0) - 1 > tope
+
+
+def test_la_ventana_de_la_vela_verde_cabe_en_el_buffer() -> None:
+    """EL FRENO DECIA 30 SEGUNDOS Y MIRABA 6. Arreglado el 11-oct.
+
+    EL FALLO. `subida()` solo puede mirar los puntos que haya en
+    `_historia_precio`, que es un deque con tope. Estaba en 32 puntos. Una
+    moneda caliente --justo la que este filtro tiene que cazar-- hace varias
+    operaciones por segundo, asi que 32 puntos eran unos 6 segundos de
+    historia. La vela de CATO duro medio minuto: con el buffer corto, el
+    arranque de la vela se caia del buffer y lo que quedaba dentro era solo
+    el tramo plano de arriba, que no dispara nada.
+
+    O SEA QUE EL FILTRO ESTABA ENCENDIDO, CONFIGURADO A 30 s Y MUDO para las
+    monedas rapidas. Es el mismo fallo de familia que `min_presion_ratio` sin
+    `max_buy_age`: pedido, escrito, y sin la pieza que lo hace medir.
+
+    POR QUE IMPORTA AHORA MAS QUE ANTES. Desde el 11-oct se entra al 95% de
+    la curva, donde TODA moneda ha hecho ya un x11 desde que nacio. Si el
+    freno anti-mecha solo ve los ultimos 6 segundos, no distingue la que
+    subio despacio de la que acaba de pegar el tiron.
+
+    ESTE TEST SIMULA UNA MONEDA RAPIDA: la vela ocurre al principio de la
+    ventana y despues llegan 100 operaciones mas, planas. Con 32 puntos la
+    vela ya no esta en el buffer y `subida()` devuelve ~0; con 128 se ve.
+    """
+    mint = "rapida"
+    volumen._historia_precio.pop(mint, None)
+    ahora = time.time()
+    # La vela: x3,3 en los primeros 3 segundos de la ventana de 30 s.
+    for i, precio in enumerate((7.5, 10.0, 15.0, 20.0, 25.0)):
+        volumen._historia_precio[mint].append((ahora - 29 + i * 0.6, precio))
+    # Y despues, 100 operaciones planas arriba -- lo normal en una moneda
+    # caliente, y lo que empujaba la vela fuera de un buffer de 32.
+    for i in range(100):
+        volumen._historia_precio[mint].append((ahora - 25 + i * 0.25, 25.0))
+
+    sub = volumen.subida(mint, 30.0)
+    assert sub > 0.80, (
+        f"la vela de x3,3 que ocurrio hace 29 s ya no se ve: subida={sub:.1%}. "
+        "El buffer de precios no da para la ventana configurada en "
+        "`subida_seg_global`, asi que el freno anti-mecha esta mudo para las "
+        "monedas rapidas, que son justo las que tiene que cazar."
+    )
+
+
+def test_el_buffer_de_precios_no_vuelve_a_quedarse_corto() -> None:
+    """Ata el tamano del buffer a la ventana configurada.
+
+    La cuenta: una moneda caliente hace del orden de 4 operaciones por
+    segundo, asi que para cubrir `subida_seg_global` hacen falta unos
+    `4 x segundos` puntos. Con la ventana en 30 s son 120, y el buffer tiene
+    128. Si alguien sube la ventana sin subir el buffer, esto sale en rojo
+    en vez de dejar el filtro medio ciego sin que nada lo diga.
+    """
+    ventana = float(_filtros()["subida_seg_global"])
+    buffer_real = volumen._historia_precio["x"].maxlen
+    volumen._historia_precio.pop("x", None)
+    necesarios = 4 * ventana
+    assert buffer_real >= necesarios, (
+        f"la vela verde mira {ventana:.0f} s pero el buffer solo guarda "
+        f"{buffer_real} puntos (~{buffer_real / 4:.0f} s en una moneda "
+        f"caliente). Hacen falta {necesarios:.0f}. Subir `maxlen` en "
+        "`volumen._historia_precio`."
+    )

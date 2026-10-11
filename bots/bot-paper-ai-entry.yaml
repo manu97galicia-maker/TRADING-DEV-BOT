@@ -816,7 +816,9 @@ trade:
   # LA VARIANZA SIGUE SIENDO CASI TODA LA ESTRATEGIA, y sigue sin haber UNA
   # sola medicion de cuantas monedas llegan a cada peldano. El cazador lleva
   # 223.199 apuntadas y `deploy/analizar_senales.py` no se ha corrido nunca.
-  fraccion_saldo: 0.30
+  # 33% EL 11-oct, pedido: "33% del capital por operaciones". Sube desde el
+  # 30% del 10-oct. Este numero ha sido 25 -> 32 -> 30 -> 33 en dos dias.
+  fraccion_saldo: 0.33
   # SOBRE QUE SE CALCULA EL PORCENTAJE. Es una clave y no una decision
   # escrita en el codigo porque ha ido y venido tres veces en dos dias, y
   # cada vuelta era un commit tocando el camino de compra.
@@ -1187,6 +1189,19 @@ filters:
   # de ellas habria seguido subiendo. Es el precio de no comprar techos.
   # Si el bot se queda sin comprar, la palanca para deshacerlo es volver a
   # 1.0 / 10.0, NO tocar la curva ni los compradores.
+  #
+  # EL 11-oct SE DESCUBRIO QUE ESTOS 30 SEGUNDOS ERAN 6, pedido: "asegurate
+  # que no es mecha de pump y dump". El numero no se ha tocado --sigue en
+  # 0,80 / 30 s, como se pidio el 25-sep-- pero `subida()` solo puede mirar
+  # los puntos que quepan en el buffer de precios, que estaba en 32. Una
+  # moneda caliente hace varias operaciones por segundo, asi que 32 puntos
+  # eran unos 6 segundos: el freno decia 30 y miraba 6, y la vela que
+  # queria evitar cabia entera en el hueco. El buffer paso a 128 puntos
+  # (`volumen._historia_precio`) y ahora la ventana es de verdad.
+  #
+  # IMPORTA MAS DESDE HOY: entrando al 95% de curva, TODA moneda ha hecho ya
+  # un x11,3 desde que nacio. Un freno que solo ve 6 segundos no distingue
+  # la que subio despacio de la que acaba de pegar el tiron.
   max_subida_global: 0.80
   subida_seg_global: 30.0
 
