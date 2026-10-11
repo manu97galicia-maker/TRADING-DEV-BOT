@@ -51,13 +51,13 @@ def _poblar(mint: str, compradores: int, *, creacion: bool, bloque_carteras: int
     volumen._first_slot_wallets.clear()
     volumen._first_slot_sol.clear()
     ahora = time.time()
-    volumen._ops[mint] = [
-        (ahora, 0.5, True, f"wallet{i}") for i in range(compradores)
-    ]
+    volumen._ops[mint] = [(ahora, 0.5, True, f"wallet{i}") for i in range(compradores)]
     if creacion:
         # `vio_la_creacion` mira que el tope de tokens visto sea el inicial.
         volumen._curva[mint] = (
-            ahora, 700_000_000_000_000, 40_000_000_000,
+            ahora,
+            700_000_000_000_000,
+            40_000_000_000,
             volumen.RESERVA_TOKENS_INICIAL,
         )
     else:
@@ -171,8 +171,10 @@ def test_una_curva_casi_llena_la_deja_para_la_otra_fuente() -> None:
     _poblar(MINT, 30, creacion=True)
     # Curva al 99%: queda poquisimo token por vender.
     volumen._curva[MINT] = (
-        time.time(), int(volumen.RESERVA_TOKENS_INICIAL * 0.01),
-        85_000_000_000, volumen.RESERVA_TOKENS_INICIAL,
+        time.time(),
+        int(volumen.RESERVA_TOKENS_INICIAL * 0.01),
+        85_000_000_000,
+        volumen.RESERVA_TOKENS_INICIAL,
     )
     lanzadas = []
     f._lanzar = lambda mint, cb: lanzadas.append(mint)
@@ -215,27 +217,41 @@ def test_no_se_desbordan_las_evaluaciones_en_vuelo() -> None:
 # ------------------------------------------------------------ la config
 
 
-def test_es_la_unica_fuente_encendida() -> None:
-    """ENCENDIDA EL 09-oct, pedido: "solo estrategia de alta presion".
+def test_esta_apagada_y_sigue_entera() -> None:
+    """APAGADA EL 11-oct, pedido: "deja solo la regla de comprar al 95% de la
+    bonding curve". Encendida estuvo solo del 09 al 11-oct.
 
-    Estuvo apagada desde el 19-sep, cuando se paso a titulares y luego a la
-    curva. El test de entonces se llamaba `test_esta_apagada_y_sigue_entera`
-    y fijaba que la fuente NO se borrara al apagarla; ahora que vuelve,
-    fija lo contrario: que es la unica encendida.
+    ESTE TEST SE HA DADO LA VUELTA DOS VECES, y el nombre va con ella: fijaba
+    que la fuente no se borrara al apagarla (19-sep), paso a fijar que era la
+    unica encendida (09-oct) y vuelve a lo primero. Es el mismo contrato en
+    los dos sentidos: apagar una fuente NO es borrarla, porque lo que cuesta
+    dias es tener que reconstruir los numeros al volver.
 
-    POR QUE IMPORTA QUE SEA LA UNICA. Las fuentes se reparten las mismas 2
-    plazas de `max_posiciones`. Con dos encendidas, una movida llena la
-    cartera antes de que la otra vea nada, y luego no se sabe cual de las
-    dos lo hizo. Lo pedido es tener UNA, para poder medirla.
+    LO QUE SE PERDIO AL APAGARLA, y esta escrito aqui para que no se olvide:
+    esta era la UNICA parte del bot con medicion detras. Sobre 27.241 monedas
+    seguidas cinco minutos, la probabilidad de hacer +25% pasaba del 14,4%
+    de base al 27,4% con 3+ compradores distintos en la ventana. La fuente
+    que corre ahora --la de la curva-- no tiene ninguna medicion detras.
     """
     f = _filtros()
-    assert f["presion"]["enabled"] is True
-    otras = ("curva_96", "holders", "telegram_calls", "buy_on_dex_paid")
-    encendidas = [k for k in otras if (f.get(k) or {}).get("enabled")]
-    assert encendidas == [], f"hay otras fuentes encendidas: {encendidas}"
-    # Los ajustes siguen puestos: encenderla no pidio reconstruir nada.
+    assert f["presion"]["enabled"] is False
+    # Y SIGUE ENTERA: volver tiene que ser cambiar un `enabled`.
     assert f["presion"]["min_compradores_ola"] == 8
     assert f["presion"]["max_carteras_primer_bloque"] > 0
+    assert f["presion"]["ventana"] > 0
+    assert f["presion"]["buy_amount"] == 0
+
+
+def test_la_curva_es_la_unica_fuente_encendida() -> None:
+    """POR QUE IMPORTA QUE HAYA UNA SOLA. Las fuentes se reparten las mismas
+    plazas de `max_posiciones`. Con dos encendidas, una movida llena la
+    cartera antes de que la otra vea nada, y luego no se sabe cual de las dos
+    lo hizo. Lo pedido desde el 24-sep es tener UNA, para poder medirla.
+    """
+    f = _filtros()
+    fuentes = ("presion", "curva_96", "holders", "telegram_calls", "buy_on_dex_paid")
+    encendidas = [k for k in fuentes if (f.get(k) or {}).get("enabled")]
+    assert encendidas == ["curva_96"], f"fuentes encendidas: {encendidas}"
 
 
 def test_el_corte_es_el_pedido() -> None:

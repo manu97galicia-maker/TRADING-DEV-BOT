@@ -37,17 +37,23 @@ def test_la_nota_existe() -> None:
 
 
 def test_el_corte_de_la_fuente_encendida_esta_en_la_nota() -> None:
-    """El numero que decide QUE se compra tiene que estar escrito.
+    """Los numeros que deciden QUE se compra tienen que estar escritos.
 
-    Antes era el punto de la curva (cambio once veces en un dia). Desde el
-    09-oct la fuente encendida es la de presion y su numero es
-    `min_compradores_ola`: cuantas carteras distintas tienen que comprar a la
-    vez. Se saca del yaml para que no se puedan separar.
+    Han cambiado de fuente dos veces: era el punto de la curva (cambio once
+    veces en un dia), paso a ser `min_compradores_ola` de la presion
+    (09-oct) y vuelve a ser la curva el 11-oct ("deja solo la regla de
+    comprar al 95% de la bonding curve"). Los dos numeros de la curva --por
+    donde entra y cuanta gente exige-- se sacan del yaml para que la nota no
+    pueda separarse de ellos.
     """
-    p = _cfg()["filters"]["presion"]
-    assert p["enabled"] is True, "este test describe la fuente de presion"
-    assert f"{p['min_compradores_ola']} carteras distintas" in _texto(), (
-        f"la nota no dice el corte de verdad ({p['min_compradores_ola']})"
+    c = _cfg()["filters"]["curva_96"]
+    assert c["enabled"] is True, "este test describe la fuente de la curva"
+    texto = _texto()
+    assert f"{c['umbral'] * 100:.0f}%" in texto, (
+        f"la nota no dice por donde entra de verdad ({c['umbral']:.0%})"
+    )
+    assert f"{c['min_compradores']} carteras distintas" in texto, (
+        f"la nota no dice el corte de gente de verdad ({c['min_compradores']})"
     )
 
 
@@ -145,7 +151,9 @@ def _tabla_de_peldanos(texto: str) -> str:
         "la nota ya no tiene la tabla de peldanos (cabecera '| sube |'): "
         "si ha cambiado de formato, hay que actualizar este test"
     )
-    fin = next((i for i in range(ini, len(lineas)) if not lineas[i].strip()), len(lineas))
+    fin = next(
+        (i for i in range(ini, len(lineas)) if not lineas[i].strip()), len(lineas)
+    )
     return "\n".join(lineas[ini:fin])
 
 
@@ -200,11 +208,12 @@ def test_no_promete_plataformas_que_no_hay() -> None:
     c = _cfg()
     assert c["platform"] == "pump_fun"
     encendidas = [
-        k for k, v in c["filters"].items()
+        k
+        for k, v in c["filters"].items()
         if isinstance(v, dict) and v.get("enabled") and k != "dexscreener"
     ]
-    assert encendidas == ["presion"], (
-        f"la nota dice que solo esta la de presion, pero hay: {encendidas}"
+    assert encendidas == ["curva_96"], (
+        f"la nota dice que solo esta la de la curva, pero hay: {encendidas}"
     )
 
 

@@ -313,11 +313,12 @@ def test_la_config_del_bot_pide_lo_que_se_acordo() -> None:
     estrategia a las que estan al 96% de migracion").
     """
     cfg = yaml.safe_load(CONFIG.read_text())["filters"]["curva_96"]
-    # APAGADA EL 09-oct (solo corre la de presion). Lo que fija este test
-    # desde entonces es que la configuracion siga ENTERA: volver a la curva
-    # tiene que ser cambiar un `enabled`, no reconstruir los numeros.
-    assert cfg["enabled"] is False
-    assert cfg["umbral"] == 0.59
+    # REENCENDIDA EL 11-oct, pedido: "deja solo la regla de comprar al 95%
+    # de la bonding curve". Estuvo apagada del 05 al 11-oct y volvio
+    # cambiando un `enabled`, que es justo lo que fijaba este test mientras
+    # estuvo apagada: que la configuracion siguiera entera.
+    assert cfg["enabled"] is True
+    assert cfg["umbral"] == 0.95
     # La ventana de disparo: entre el umbral y el tope. Por encima del tope
     # la moneda ya esta migrando y comprar ahi es tirar la comision.
     assert cfg["tope"] > cfg["umbral"]
@@ -348,8 +349,7 @@ def test_el_parte_de_la_curva_sale_por_el_log() -> None:
     ANTES del intento de Telegram -- si Telegram falla, el log ya salio.
     """
     fuente = (
-        Path(__file__).resolve().parent.parent
-        / "src/monitoring/curva96_source.py"
+        Path(__file__).resolve().parent.parent / "src/monitoring/curva96_source.py"
     ).read_text(encoding="utf-8")
     corte = fuente.index("def _heartbeat_si_toca")
     cuerpo = fuente[corte : corte + 1400]

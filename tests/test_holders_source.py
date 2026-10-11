@@ -48,9 +48,7 @@ def _fuente(**kw) -> HoldersSource:
     return HoldersSource("wss://x", SimpleNamespace(), SimpleNamespace(), **opciones)
 
 
-def _poblar(
-    mint: str, compradores: int, *, creacion: bool, edad: float = 10.0
-) -> None:
+def _poblar(mint: str, compradores: int, *, creacion: bool, edad: float = 10.0) -> None:
     """Deja `volumen` como si esas carteras hubieran comprado hace `edad` s."""
     volumen._ops.clear()
     volumen._curva.clear()
@@ -64,7 +62,9 @@ def _poblar(
     if creacion:
         # `vio_la_creacion` mira que el tope de tokens visto sea el inicial.
         volumen._curva[mint] = (
-            time.time(), 700_000_000_000_000, 40_000_000_000,
+            time.time(),
+            700_000_000_000_000,
+            40_000_000_000,
             volumen.RESERVA_TOKENS_INICIAL,
         )
     else:
@@ -130,7 +130,7 @@ def test_quien_vende_deja_de_contar() -> None:
     volumen._ops[MINT] = [
         (ahora, 0.5, True, "a"),
         (ahora, 0.5, True, "b"),
-        (ahora, 0.5, False, "b"),   # b sale entera
+        (ahora, 0.5, False, "b"),  # b sale entera
     ]
     assert volumen.titulares(MINT) == 1
 
@@ -183,7 +183,7 @@ def test_exigir_ver_nacer_cuesta_poco_con_el_tope_que_haya() -> None:
 
 
 def test_el_embudo_cuenta_cada_caida_por_separado() -> None:
-    """"0 compradas" puede ser que no llegue nada o que llegue y se caiga todo
+    """ "0 compradas" puede ser que no llegue nada o que llegue y se caiga todo
     por el camino, y son problemas opuestos con arreglos opuestos."""
     f = _fuente(min_holders=90)
     _poblar(MINT, 10, creacion=True)
@@ -193,9 +193,9 @@ def test_el_embudo_cuenta_cada_caida_por_separado() -> None:
 
     f = _fuente(min_holders=90, max_edad_seg=300.0)
     _poblar(MINT, 40, creacion=True, edad=900.0)
-    _revisa(f, [MINT])                      # se ve pequena: queda apuntada
+    _revisa(f, [MINT])  # se ve pequena: queda apuntada
     _poblar(MINT, 120, creacion=True, edad=900.0)
-    _revisa(f, [MINT])                      # cruza, pero ya es vieja
+    _revisa(f, [MINT])  # cruza, pero ya es vieja
     assert f._embudo["con_titulares"] == 1
     assert f._embudo["viejas"] == 1
 
@@ -227,11 +227,13 @@ def test_el_parte_no_lleva_nada_del_env() -> None:
 
 
 def test_solo_hay_una_fuente_encendida() -> None:
-    """Solo la de presion. Ninguna otra, ni la curva, ni Telegram.
+    """Solo la de la curva. Ninguna otra, ni la de presion, ni Telegram.
 
     HISTORIAL DE ESTA LINEA: solo titulares -> titulares + canales (21-sep)
     -> curva + canales (23-sep) -> solo la curva (24-sep) -> solo presion
-    (09-oct, "solo estrategia de alta presion compradora").
+    (09-oct, "solo estrategia de alta presion compradora") -> solo la curva
+    otra vez (11-oct, "deja solo la regla de comprar al 95% de la bonding
+    curve").
 
     POR QUE SE QUEDO UNA SOLA. Las dos puertas tenian criterios
     incomparables: la curva exige punto de la curva, bundle, compradores y
@@ -247,12 +249,21 @@ def test_solo_hay_una_fuente_encendida() -> None:
     """
     f = _filtros()
     encendidas = [
-        n for n in ("buy_on_dex_paid", "birdeye_trending", "dextools_hotpools",
-                    "holders", "presion", "discord_calls", "gmgn_signals",
-                    "telegram_calls", "curva_96")
+        n
+        for n in (
+            "buy_on_dex_paid",
+            "birdeye_trending",
+            "dextools_hotpools",
+            "holders",
+            "presion",
+            "discord_calls",
+            "gmgn_signals",
+            "telegram_calls",
+            "curva_96",
+        )
         if (f.get(n) or {}).get("enabled")
     ]
-    assert encendidas == ["presion"], f"fuentes encendidas: {encendidas}"
+    assert encendidas == ["curva_96"], f"fuentes encendidas: {encendidas}"
 
 
 def test_los_dos_numeros_son_los_pedidos() -> None:
@@ -272,7 +283,7 @@ def test_los_dos_numeros_son_los_pedidos() -> None:
 
 
 def test_ningun_filtro_global_puede_descartar_por_su_cuenta() -> None:
-    """"Solo esas dos condiciones" tambien vale para lo que ya estaba puesto.
+    """ "Solo esas dos condiciones" tambien vale para lo que ya estaba puesto.
 
     El global `max_holder_pct` valia 0,15 y se aplicaba a TODAS las fuentes:
     habria descartado monedas sin que ninguna de las dos reglas lo pidiera, y
@@ -280,9 +291,17 @@ def test_ningun_filtro_global_puede_descartar_por_su_cuenta() -> None:
     """
     f = _filtros()
     for clave in (
-        "max_holder_pct", "min_holders", "min_volumen_sol", "min_buys",
-        "min_ops", "min_titulares", "min_presion_ratio", "max_dev_hold_pct",
-        "min_curve_sol", "min_entry_mc", "max_entry_mc",
+        "max_holder_pct",
+        "min_holders",
+        "min_volumen_sol",
+        "min_buys",
+        "min_ops",
+        "min_titulares",
+        "min_presion_ratio",
+        "max_dev_hold_pct",
+        "min_curve_sol",
+        "min_entry_mc",
+        "max_entry_mc",
     ):
         assert not f.get(clave, 0), f"el filtro global '{clave}' sigue activo"
 
@@ -377,11 +396,11 @@ def test_la_misma_moneda_vista_antes_por_debajo_si_se_compra() -> None:
     """Y esto es lo que impide que el freno mate las buenas."""
     f = _fuente(min_holders=90)
     _poblar(MINT, 40, creacion=True, edad=20.0)
-    _revisa(f, [MINT])                # la ve pequena: queda apuntada
+    _revisa(f, [MINT])  # la ve pequena: queda apuntada
     assert f._embudo.get("con_titulares", 0) == 0
 
     _poblar(MINT, 120, creacion=True, edad=40.0)
-    _revisa(f, [MINT])                # ahora cruza
+    _revisa(f, [MINT])  # ahora cruza
     assert f._embudo.get("con_titulares") == 1
     assert f._embudo.get("ya_venian_cumplidas", 0) == 0
 
@@ -415,7 +434,10 @@ def test_el_parte_dice_cuantas_se_cayeron_por_el_cruce() -> None:
     """Si el freno se pasa de listo, tiene que verse en Telegram y no en un
     log que desde el movil no se lee."""
     texto = build_holders_heartbeat(
-        90, 300.0, 0.12, {"vistas": 10, "ya_venian_cumplidas": 7},
+        90,
+        300.0,
+        0.12,
+        {"vistas": 10, "ya_venian_cumplidas": 7},
         paper_mode=False,
     )
     assert "7" in texto
@@ -438,7 +460,7 @@ def test_el_embudo_cuenta_monedas_y_no_veces() -> None:
 
 
 def test_no_queda_ningun_filtro_que_pueda_descartar() -> None:
-    """"Que no haya mas restricciones", pedido el 19-sep.
+    """ "Que no haya mas restricciones", pedido el 19-sep.
 
     No basta con no anadir ninguna: hay que comprobar que no quede viva una de
     las que ya estaban. Asi estuvo el bot dias encendido sin comprar --por
@@ -449,13 +471,29 @@ def test_no_queda_ningun_filtro_que_pueda_descartar() -> None:
     """
     f = _filtros()
     numericos = (
-        "no_repeat_name_min", "min_volumen_sol", "max_volumen_sol", "min_buys",
-        "min_ops", "min_presion_ratio", "max_first_block_pct",
-        "ultimas_tx_compra", "min_titulares", "max_titulares",
-        "min_vol_ventana_sol", "max_mc_por_sol_curva", "max_entry_mc",
-        "min_entry_mc", "min_buy_age", "max_buy_age", "min_curve_sol",
-        "min_holders_gmgn", "max_holder_pct", "min_holders",
-        "max_dev_hold_pct", "min_dev_hold_pct", "max_bundle_pct",
+        "no_repeat_name_min",
+        "min_volumen_sol",
+        "max_volumen_sol",
+        "min_buys",
+        "min_ops",
+        "min_presion_ratio",
+        "max_first_block_pct",
+        "ultimas_tx_compra",
+        "min_titulares",
+        "max_titulares",
+        "min_vol_ventana_sol",
+        "max_mc_por_sol_curva",
+        "max_entry_mc",
+        "min_entry_mc",
+        "min_buy_age",
+        "max_buy_age",
+        "min_curve_sol",
+        "min_holders_gmgn",
+        "max_holder_pct",
+        "min_holders",
+        "max_dev_hold_pct",
+        "min_dev_hold_pct",
+        "max_bundle_pct",
         "min_supply_en_manos",
     )
     vivos = [k for k in numericos if f.get(k, 0)]
@@ -484,9 +522,12 @@ def test_dexscreener_no_puede_bloquear_aunque_este_encendido() -> None:
     """
     dx = _filtros()["dexscreener"]
     criterios = (
-        dx.get("require_listed"), dx.get("require_dex_paid"),
-        dx.get("min_boosts"), dx.get("min_liquidity_usd"),
-        dx.get("min_market_cap"), dx.get("max_market_cap"),
+        dx.get("require_listed"),
+        dx.get("require_dex_paid"),
+        dx.get("min_boosts"),
+        dx.get("min_liquidity_usd"),
+        dx.get("min_market_cap"),
+        dx.get("max_market_cap"),
     )
     assert not any(criterios), f"DexScreener tiene criterios vivos: {criterios}"
 
@@ -507,11 +548,12 @@ def _ops(mint: str, ops: list[tuple[float, bool]]) -> None:
     volumen._curva.clear()
     ahora = time.time()
     volumen._ops[mint] = [
-        (ahora - atras, 1.0, compra, f"w{i}")
-        for i, (atras, compra) in enumerate(ops)
+        (ahora - atras, 1.0, compra, f"w{i}") for i, (atras, compra) in enumerate(ops)
     ]
     volumen._curva[mint] = (
-        ahora, 700_000_000_000_000, 40_000_000_000,
+        ahora,
+        700_000_000_000_000,
+        40_000_000_000,
         volumen.RESERVA_TOKENS_INICIAL,
     )
 
@@ -549,9 +591,13 @@ def test_no_basta_con_que_el_saldo_salga_bien() -> None:
 def _pone(mint: str, ops: list[tuple[float, float, bool, str]]) -> None:
     """Estado exacto de `volumen` para esa moneda, con la curva de recien nacida."""
     ahora = time.time()
-    volumen._ops[mint] = [(ahora - atras, sol, compra, w) for atras, sol, compra, w in ops]
+    volumen._ops[mint] = [
+        (ahora - atras, sol, compra, w) for atras, sol, compra, w in ops
+    ]
     volumen._curva[mint] = (
-        ahora, 700_000_000_000_000, 40_000_000_000,
+        ahora,
+        700_000_000_000_000,
+        40_000_000_000,
         volumen.RESERVA_TOKENS_INICIAL,
     )
 
@@ -561,14 +607,19 @@ def test_se_descarta_por_venta_reciente() -> None:
     f = _fuente(min_holders=3, max_edad_seg=1200.0)
     volumen._ops.clear()
     volumen._curva.clear()
-    _pone(MINT, [(5, 1.0, True, "a")])           # 1 titular: por debajo
+    _pone(MINT, [(5, 1.0, True, "a")])  # 1 titular: por debajo
     _revisa(f, [MINT])
     assert f._embudo.get("con_titulares", 0) == 0
 
-    _pone(MINT, [
-        (5, 1.0, True, "a"), (4, 1.0, True, "b"), (3, 1.0, True, "c"),
-        (1, 0.2, False, "d"),                     # alguien sale por detras
-    ])
+    _pone(
+        MINT,
+        [
+            (5, 1.0, True, "a"),
+            (4, 1.0, True, "b"),
+            (3, 1.0, True, "c"),
+            (1, 0.2, False, "d"),  # alguien sale por detras
+        ],
+    )
     _revisa(f, [MINT])
     assert f._embudo.get("venta_reciente") == 1, f"embudo: {f._embudo}"
 
@@ -578,14 +629,20 @@ def test_se_descarta_por_dip() -> None:
     f = _fuente(min_holders=3, max_edad_seg=1200.0)
     volumen._ops.clear()
     volumen._curva.clear()
-    _pone(MINT, [(5, 1.0, True, "a")])           # 1 titular: por debajo
+    _pone(MINT, [(5, 1.0, True, "a")])  # 1 titular: por debajo
     _revisa(f, [MINT])
 
-    _pone(MINT, [
-        (5, 1.0, True, "a"), (4, 1.0, True, "b"), (3, 1.0, True, "c"),
-        (2, 50.0, False, "ballena"),              # volcada gorda
-        (1, 0.5, True, "d"), (0.5, 0.5, True, "e"),
-    ])
+    _pone(
+        MINT,
+        [
+            (5, 1.0, True, "a"),
+            (4, 1.0, True, "b"),
+            (3, 1.0, True, "c"),
+            (2, 50.0, False, "ballena"),  # volcada gorda
+            (1, 0.5, True, "d"),
+            (0.5, 0.5, True, "e"),
+        ],
+    )
     _revisa(f, [MINT])
     assert volumen.ultimas_son_compra(MINT, 2) is True, "las dos ultimas son compras"
     assert f._embudo.get("dip") == 1, f"embudo: {f._embudo}"
@@ -599,10 +656,15 @@ def test_una_moneda_que_sube_limpia_si_pasa() -> None:
     _pone(MINT, [(5, 1.0, True, "a")])
     _revisa(f, [MINT])
 
-    _pone(MINT, [
-        (5, 1.0, True, "a"), (4, 1.0, True, "b"),
-        (2, 2.0, True, "c"), (1, 2.0, True, "d"),
-    ])
+    _pone(
+        MINT,
+        [
+            (5, 1.0, True, "a"),
+            (4, 1.0, True, "b"),
+            (2, 2.0, True, "c"),
+            (1, 2.0, True, "d"),
+        ],
+    )
     _revisa(f, [MINT])
     assert f._embudo.get("dip", 0) == 0
     assert f._embudo.get("venta_reciente", 0) == 0
@@ -611,7 +673,9 @@ def test_una_moneda_que_sube_limpia_si_pasa() -> None:
 
 def test_el_parte_dice_por_cual_de_los_dos_se_cae() -> None:
     texto = build_holders_heartbeat(
-        60, 1200.0, 0.12,
+        60,
+        1200.0,
+        0.12,
         {"vistas": 100, "venta_reciente": 7, "dip": 5, "sin_datos_presion": 2},
         paper_mode=False,
     )
@@ -726,7 +790,9 @@ def test_la_presion_compradora_sigue_siendo_la_que_manda() -> None:
     _cumple(f, MINT)
     ahora = time.time()
     volumen._ops[MINT] = [
-        (ahora, 0.5, True, "a"), (ahora, 0.5, True, "b"), (ahora, 0.5, True, "c"),
+        (ahora, 0.5, True, "a"),
+        (ahora, 0.5, True, "b"),
+        (ahora, 0.5, True, "c"),
         (ahora, 50.0, False, "ballena"),  # se esta volcando
     ]
     assert _pasan(f, [MINT]) == []
@@ -734,7 +800,7 @@ def test_la_presion_compradora_sigue_siendo_la_que_manda() -> None:
 
 
 def test_el_parte_no_dice_menos_de_0_min() -> None:
-    """"menos de 0 min" seria mentira y encima alarmante: no es que el limite
+    """ "menos de 0 min" seria mentira y encima alarmante: no es que el limite
     sea cero, es que no hay limite."""
     texto = build_holders_heartbeat(23, 0.0, 0.04, {}, paper_mode=False)
     assert "0 min" not in texto

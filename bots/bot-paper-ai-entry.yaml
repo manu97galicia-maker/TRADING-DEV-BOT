@@ -1462,7 +1462,15 @@ filters:
     # compradora". Es la UNICA parte de este bot con medicion detras: 27.241
     # monedas seguidas cinco minutos (la cuenta esta en la cabecera de
     # `presion_source.py`).
-    enabled: true
+    # APAGADA EL 11-oct, pedido: "deja solo la regla de comprar al 95% de
+    # la bonding curve". Se eligio esa lectura entre tres en el chat.
+    #
+    # LO QUE CUESTA, y se dijo en voz alta al aplicarlo: esta era la UNICA
+    # parte del bot con medicion detras (27.241 monedas). El dato era que
+    # con 3+ compradores distintos la probabilidad de hacer +25% sube del
+    # 14,4% al 27,4%. Apagar esto tira ese dato a la basura. No se borra
+    # nada: todo sigue escrito abajo y vuelve con un `true`.
+    enabled: false
     # Compradores DISTINTOS que tienen que entrar en la ventana.
     #
     # HISTORIA DE ESTE NUMERO, porque ha cambiado tres veces:
@@ -1625,7 +1633,10 @@ filters:
     # apagada el 09-oct, pedido: encender SOLO la de alta presion compradora.
     # No se borra nada: todo lo afinado del 26-sep (entrada 59%, 9 compradores,
     # la escalera del x3) sigue escrito aqui abajo y vuelve con un `true`.
-    enabled: false
+    # REENCENDIDA EL 11-oct, pedido: "deja solo la regla de comprar al 95%
+    # de la bonding curve". Vuelve a ser la UNICA fuente, como del 23-sep al
+    # 05-oct.
+    enabled: true
     # Punto de la curva en que se compra (0,95 = 95% vendido).
     #
     # 71,0% (24-sep, pedido: "baja la curva un 8%"). Tercera bajada en una
@@ -1668,7 +1679,18 @@ filters:
     # Y OJO CON `min_compradores`, QUE VA CON ESTO: baja de 14 a 9, porque
     # una moneda al 59% ha pasado por menos carteras que una al 71%. La
     # cuenta esta abajo y la vigila `test_la_puerta_de_gente_va_con_la_entrada`.
-    umbral: 0.59
+    # 95,0% EL 11-oct, pedido literal: "comprar al 95% de la bonding curve".
+    # Sube desde el 59% del 09-oct. Quinto movimiento de este numero:
+    # 90 -> 84 -> 79 -> 71 -> 59 -> 95.
+    #
+    # LO QUE CUESTA, dicho en el chat al aplicarlo: al 95% solo quedan
+    # +30,3% de subida DENTRO de la curva (del 95% al 100% el precio sube
+    # eso y nada mas). O sea que NINGUN peldano de la escalera del 05-oct
+    # --el primero es +35%-- se puede cobrar sin que la moneda migre antes
+    # a PumpSwap. El cerrojo que sube el stop a compra +5% tampoco engancha,
+    # porque tambien espera el +35%. Entrando aqui, todo el beneficio
+    # depende de que migre y siga subiendo fuera de la curva.
+    umbral: 0.95
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995
@@ -1728,7 +1750,15 @@ filters:
     #
     # Y SIGUE POR ENCIMA DEL SUELO GLOBAL (12), que es lo correcto: aquel es
     # el minimo para todas las fuentes, este es el corte de esta estrategia.
-    min_compradores: 9
+    # 29 EL 11-oct, ARRASTRADO por el umbral al 95%. No es un cambio
+    # aparte: este numero y el umbral son el MISMO mando y lo ata
+    # `test_la_puerta_de_gente_va_con_la_entrada`. La cuenta:
+    #     30 x (70,73 SOL dentro al 95% / 73,30 al 96%) = 29
+    # Dejarlo en 9 habria aflojado el filtro sin que nadie lo pidiera: al
+    # 95% de la curva han pasado 29 carteras de media, asi que un 9 no
+    # cortaria nada. Es el error de septiembre al reves (entonces se quedo
+    # en 30 mientras la entrada bajaba, y el bot dejo de comprar).
+    min_compradores: 29
     # Freno EN CADENA, este no depende de haber visto nacer la moneda: si
     # los mayores titulares concentran mas de esto del supply, es un
     # bundle aunque el bloque de creacion pareciera limpio. Va mas alto
