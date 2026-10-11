@@ -93,22 +93,23 @@ más lo que ya vale lo que hay metido en monedas.
 Con 1 SOL de saldo salen así:
 
 ```
-0,300 · 0,299 · 0,298 · 0,048
+0,330 · 0,329
 ```
 
-**Cuatro compras, y la cuarta es una miga.** Son ~4,4 $, de los que la comisión
-de ida y vuelta (unos 0,93 $) se lleva el **21%** antes de que la moneda se
-mueva.
+**Dos compras, y las dos enteras.** Como máximo hay **2 posiciones abiertas** a
+la vez, así que se compromete el 66% de la cartera y queda un tercio libre. Lo
+que para al bot es esa decisión, no quedarse sin dinero.
 
-Eso pasa porque **no hay techo de posiciones**. En el fichero pone
-`0 posiciones abiertas` como máximo, y ese **0 no significa cero: significa
-40**, porque el código lo traduce a su tope duro. Con 40 plazas lo que para al
-bot es quedarse sin saldo, y para entonces ya ha comprado restos.
-
-> El 25 de septiembre esto se arregló bajando el techo a 2, justo para no pagar
-> comisiones por compras de 4 $. El cambio del 5 de octubre lo deshizo. Si
-> molesta, las dos palancas son volver a poner techo o usar
-> `compra_minima_sol`, que está a 0.
+> **Esto estuvo roto del 5 al 11 de octubre.** El techo se había quedado en
+> `0`, y ese 0 no significa cero: el código lo traduce a **40** plazas. Con 40
+> lo que paraba al bot era agotar el saldo, y para entonces ya había comprado
+> restos: con 1 SOL salían `0,300 · 0,299 · 0,298 · 0,048`, y esa cuarta eran
+> ~4,4 $ de los que la comisión de ida y vuelta (~0,93 $) se llevaba el **21%**
+> antes de que la moneda se moviera.
+>
+> El 25 de septiembre se había pedido "máximo dos operaciones simultáneas" y
+> estaba bien puesto; el cambio del 5 de octubre lo deshizo sin decirlo. El 11
+> de octubre se restauró el 2.
 
 ### Lo que se arriesga
 

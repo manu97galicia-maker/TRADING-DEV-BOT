@@ -90,7 +90,19 @@ trade:
   # cinco veces por segundo, dos lo hacen dos veces. Con los 429 que salen
   # en el embudo, tres consultas por segundo menos ayudan -- no arreglan el
   # 429, pero no estorban.
-  max_posiciones: 0
+  # 2 EL 11-oct: se restaura la orden del 25-sep, "maximo dos operaciones
+  # simultaneas", que el commit del 05-oct habia deshecho dejando un 0.
+  #
+  # EL 0 NO ERA CERO: el trader hace `int(max_posiciones or
+  # TOPE_DURO_POSICIONES)`, asi que un 0 son 40 plazas. Con el 33% de la
+  # cartera por compra y base "cartera" (que no mengua al comprar), tres
+  # compras comprometen el 99%: el freno no era una decision, era quedarse
+  # sin saldo, y para entonces ya habia comprado restos de 4 $ donde la
+  # comision de ida y vuelta (0,93 $) se lleva el 21%.
+  #
+  # CON 2 Y EL 33%: dos posiciones comprometen el 66% y queda un tercio
+  # libre. Es la combinacion que cuadra.
+  max_posiciones: 2
   # Tope de por vida de compras reales. Empieza en 1 a proposito: el camino
   # de compra de mints EXISTENTES nunca se ha ejecutado contra una compra de
   # verdad (hay avisos en token_builder.py y en las tres fuentes). Con 1 se ve

@@ -44,7 +44,22 @@ rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
-enabled: true
+# APAGADO EL 11-oct, pedido. Estaba ENCENDIDO y con DINERO REAL a la vez que
+# `bot-paper-ai-entry.yaml`, los dos sobre la MISMA wallet: `run_all_bots()`
+# arranca todos los ficheros de `bots/` con `enabled: true`, y habia dos.
+#
+# COMO SE VIO: el cartel `CONFIG ACTIVA` del arranque decia "compras REALES
+# 0.2000 SOL · 2 plazas · fuentes: NINGUNA", que no es la configuracion de la
+# curva --esa dice 33% y curva96--. Eran dos carteles de dos bots distintos
+# en el mismo log, con dos segundos de diferencia.
+#
+# POR QUE SE APAGA ESTE Y NO EL OTRO: el 11-oct se pidio "deja solo la regla
+# de comprar al 95% de la bonding curve". Este compra lo contrario --monedas
+# recien nacidas por el listener normal, MC <= 4.200 $-- y ademas competia
+# por el mismo SOL, asi que ninguno de los dos resultados se podria atribuir.
+#
+# NO SE BORRA NADA: toda su configuracion sigue aqui y vuelve con un `true`.
+enabled: false
 separate_process: false
 platform: "pump_fun"
 

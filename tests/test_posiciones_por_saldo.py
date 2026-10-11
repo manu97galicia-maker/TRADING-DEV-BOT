@@ -195,16 +195,13 @@ def test_el_tamano_vuelve_a_encogerse_solo() -> None:
         assert abs(tam[0] - frac * 1.0) < 1e-6, (
             f"la primera tiene que ser el {frac * 100:.0f}% del saldo entero: {tam}"
         )
-        # VUELVEN LAS MIGAS CON `max_posiciones: 0` (05-oct), y conviene
-        # tenerlo escrito porque es justo lo que el techo de 2 habia quitado
-        # el 25-sep. Con 1 SOL y el 30%: 0,300 / 0,299 / 0,298 / 0,048.
-        #
-        # LA CUARTA SON ~4,4 $, y la comision de ida y vuelta (~0,93 $) se
-        # lleva el 21% antes de que la moneda se mueva. No es un fallo: es la
-        # consecuencia de quitar el techo. La palanca para cortarlas sin
-        # volver a poner techo es `compra_minima_sol`, que sigue a 0.
-        assert tam[-1] < 0.5 * tam[0], (
-            f"sin techo, la ultima vuelve a ser un recorte pequeno: {tam}"
+        # SE ACABARON LAS MIGAS (11-oct, techo de 2 restaurado). Con el 0 de
+        # 05-oct eran 40 plazas y con 1 SOL al 30% salian 0,300 / 0,299 /
+        # 0,298 / 0,048: esa cuarta eran ~4,4 $, de los que la comision de
+        # ida y vuelta (~0,93 $) se llevaba el 21% antes de que la moneda se
+        # moviera. Con 2 plazas la ultima compra sigue siendo entera.
+        assert tam[-1] > 0.4 * tam[0], (
+            f"con techo, la ultima no puede ser un recorte pequeno: {tam}"
         )
 
 
@@ -259,19 +256,24 @@ def test_cuantas_plazas_caben_de_verdad() -> None:
         assert len(tam) == TECHO, f"con base libre se llenan las plazas: {tam}"
         assert tam[-1] > 0.4 * tam[0], f"la ultima no puede ser una miga: {tam}"
     else:
-        # Base "cartera": iguales hasta que se agota el saldo libre... salvo
-        # que el techo llegue antes, que es lo que pasa ahora.
-        # VUELVE A MANDAR EL DINERO (05-oct, `max_posiciones: 0` = 40
-        # plazas). Con el 30% el saldo libre se agota en la cuarta, muy lejos
-        # de las 40, asi que el techo no ata nada.
-        assert len(tam) < TECHO, (
-            f"con {TECHO} plazas el techo no puede ser lo que para al bot: "
-            f"lo para el dinero. Salen {len(tam)} compras: {tam}"
+        # VUELVE A MANDAR EL TECHO (11-oct, `max_posiciones: 2`, restaurando
+        # la orden del 25-sep que el 05-oct habia deshecho). Con el 33% y 1
+        # SOL salen 0,330 y 0,329 y se acaba: no porque el dinero se agote
+        # --queda un tercio sin comprometer-- sino porque no hay mas plazas.
+        assert len(tam) == TECHO, (
+            f"con {TECHO} plazas el techo tiene que ser lo que para al bot, "
+            f"no el dinero. Salen {len(tam)} compras: {tam}"
         )
-        # Y SE COMPROMETE CASI TODO, que es la otra cara: sin techo el bot
-        # sigue comprando restos hasta quedarse sin saldo libre.
-        assert sum(tam) > 0.90, (
-            f"sin techo se compromete casi toda la cartera: {tam}"
+        # Y QUEDA CARTERA SIN COMPROMETER, que es la otra cara del techo y
+        # justo lo que no pasaba con las 40 plazas.
+        assert sum(tam) < 0.90, (
+            f"con techo tiene que sobrar cartera sin comprometer: {tam}"
+        )
+        # Y NINGUNA ES UNA MIGA: el techo llega antes de que el saldo libre
+        # obligue a recortar la ultima. Las migas de ~4 $ pagaban un 21% en
+        # comisiones, que es lo que el techo de 2 quita.
+        assert tam[-1] > 0.4 * tam[0], (
+            f"con techo ninguna compra deberia ser un resto: {tam}"
         )
     # Y con poco saldo sigue comprando, solo que diminuto: es lo pedido.
     assert len(tamanos(0.05)) >= 1, "con poco saldo compra poco, pero compra"

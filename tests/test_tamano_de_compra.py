@@ -188,18 +188,19 @@ def test_sobre_el_saldo_libre_las_posiciones_menguan() -> None:
         #   25-sep           el TECHO, bajado a 2: sobraba cartera sin gastar
         #   05-oct           el saldo otra vez (`max_posiciones: 0` = 40)
         #
-        # Con 40 plazas y el 30% el saldo libre se agota en la cuarta, muy
-        # lejos del techo. Asi que vuelve a comprometerse casi todo, y
-        # vuelven las compras pequenas al final.
+        #   11-oct           el TECHO otra vez, de vuelta a 2
+        #
+        # Con 2 plazas y el 33% se comprometen dos tercios y sobra el resto:
+        # lo que para al bot es la decision, no quedarse sin dinero.
         from modelo_tamano import plazas_efectivas
 
         assert sum(tam) < 0.97, f"no se puede gastar mas de lo que hay: {tam}"
-        assert len(tam) < plazas_efectivas(), (
-            f"con {plazas_efectivas()} plazas el techo no ata: lo que para al "
-            f"bot es el dinero. Salen {len(tam)}: {tam}"
+        assert len(tam) == plazas_efectivas(), (
+            f"con {plazas_efectivas()} plazas el techo tiene que atar: lo que "
+            f"para al bot no puede ser el dinero. Salen {len(tam)}: {tam}"
         )
-        assert sum(tam) > 0.90, (
-            f"sin techo que ate, se compromete casi toda la cartera: {tam}"
+        assert sum(tam) < 0.90, (
+            f"con techo que ata tiene que sobrar cartera: {tam}"
         )
 
 
