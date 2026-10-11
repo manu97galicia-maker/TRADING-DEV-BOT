@@ -1717,7 +1717,11 @@ filters:
     # a PumpSwap. El cerrojo que sube el stop a compra +5% tampoco engancha,
     # porque tambien espera el +35%. Entrando aqui, todo el beneficio
     # depende de que migre y siga subiendo fuera de la curva.
-    umbral: 0.95
+    # 96,0% EL 11-oct, pedido: "deja en 96% y arranca". Sube desde el 95%
+    # de esta misma manana. Sexto movimiento: 90 -> 84 -> 79 -> 71 -> 59 ->
+    # 95 -> 96. Es el punto donde se calibro la estrategia (de ahi el
+    # nombre `curva_96`).
+    umbral: 0.96
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995
@@ -1731,7 +1735,7 @@ filters:
     #   max_edad_seg: 10800   por encima de 3 h de vida, NO se compra
     #
     # POR QUE LAS DOS PUNTAS. Una moneda que ha recorrido el 95% de su curva
-    # --que es un x11,3 desde que nacio-- en menos de 15 segundos no la ha
+    # --que es un x11,9 desde que nacio-- en menos de 15 segundos no la ha
     # subido gente: la ha subido un grupo, y lo siguiente es la vuelta. Y una
     # que lleva mas de 3 horas pegada al 95% sin migrar no esta subiendo,
     # esta atascada.
@@ -1818,7 +1822,11 @@ filters:
     # 95% de la curva han pasado 29 carteras de media, asi que un 9 no
     # cortaria nada. Es el error de septiembre al reves (entonces se quedo
     # en 30 mientras la entrada bajaba, y el bot dejo de comprar).
-    min_compradores: 29
+    # 30 EL 11-oct, ARRASTRADO por el umbral al 96%, igual que el 29 lo
+    # estuvo por el 95%. No es un cambio aparte: lo ata
+    # `test_la_puerta_de_gente_va_con_la_entrada`, y 96% es justo el punto
+    # donde se calibro el 30 original.
+    min_compradores: 30
     # Freno EN CADENA, este no depende de haber visto nacer la moneda: si
     # los mayores titulares concentran mas de esto del supply, es un
     # bundle aunque el bloque de creacion pareciera limpio. Va mas alto

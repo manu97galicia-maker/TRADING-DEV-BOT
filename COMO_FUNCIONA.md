@@ -40,8 +40,8 @@ Todo esto, sin saltarse nada:
 
 | | |
 |---|---|
-| **Punto de la curva** | ha recorrido ya el **95%** de su curva (y menos del 99,5%) |
-| **Gente de verdad** | mínimo **29 carteras distintas** en toda su vida |
+| **Punto de la curva** | ha recorrido ya el **96%** de su curva (y menos del 99,5%) |
+| **Gente de verdad** | mínimo **30 carteras distintas** en toda su vida |
 | **Sin bundle** | máximo 3 carteras en su bloque de nacimiento, y máximo 2 SOL |
 | **Sin concentración** | los mayores tenedores no pueden tener más del 50% |
 | **Sin vela verde** | si ha subido más de un **80% en 30 segundos**, no entra |
@@ -53,8 +53,8 @@ cada moneda, que en una moneda caliente son unos **6 segundos**. O sea que el
 freno estaba encendido y era **ciego** justo para las monedas rápidas, que son
 las que tiene que cazar. Ahora guarda 128 precios y la ventana es de verdad.
 
-Importa más desde que se entra al 95% de la curva: ahí **toda** moneda ha hecho
-ya un x11,3 desde que nació, así que lo único que distingue una subida sana de
+Importa más desde que se entra al 96% de la curva: ahí **toda** moneda ha hecho
+ya un x11,9 desde que nació, así que lo único que distingue una subida sana de
 una mecha es *en cuánto tiempo* la hizo.
 
 Los dos de bundle y concentración están ahí por algo que pasó:
@@ -148,7 +148,7 @@ cuenta de token sigue abierta con su renta (~0,00204 SOL) dentro.
 
 ### Los peldaños de arriba sólo pagan si compras pronto
 
-El bot entra **al 95% de la curva**, así que de las filas de abajo la suya es
+El bot entra **al 96% de la curva**, así que de las filas de abajo la suya es
 **la última**. Y esa fila dice que no cabe ni un peldaño:
 
 | entra al... | +35% | +65% | +100% | +150% | +200% | +400% |
@@ -157,12 +157,12 @@ El bot entra **al 95% de la curva**, así que de las filas de abajo la suya es
 | 40% | 53,3% | 61,1% | 67,9% | 75,0% | 80,3% | 92,7% |
 | 60% | 70,5% | 76,7% | 82,1% | 87,7% | 91,8% | **migra** |
 | 80% | 87,7% | 92,2% | 96,2% | **migra** | **migra** | **migra** |
-| 95% | **migra** | **migra** | **migra** | **migra** | **migra** | **migra** |
+| 96% | **migra** | **migra** | **migra** | **migra** | **migra** | **migra** |
 
 (los porcentajes son el punto de curva al que tiene que llegar la moneda)
 
-**Entrando al 95% no cabe ningún peldaño dentro de la curva.** Del 95% al
-100% el precio sólo sube un **+30,3%**, y el primer peldaño pide +35%. O sea
+**Entrando al 96% no cabe ningún peldaño dentro de la curva.** Del 96% al
+100% el precio sólo sube un **+24,0%**, y el primer peldaño pide +35%. O sea
 que toda la escalera —y el cerrojo que sube el suelo a compra +5%, que también
 espera el +35%— **sólo puede cobrar después de que la moneda migre** a
 PumpSwap y siga subiendo allí.
@@ -171,14 +171,15 @@ No es un fallo del bot: es la consecuencia aritmética de entrar tan arriba, y
 el bot **sí sabe vender después de migrar** (`universal_trader.py`, la venta
 de respaldo en PumpSwap/Raydium). Pero conviene tenerlo claro:
 
-| entrando al 95%, la moneda... | qué pasa |
+| entrando al 96%, la moneda... | qué pasa |
 |---|---|
 | migra y sigue subiendo | cobra la escalera, de +35% en adelante |
 | migra y se queda plana | sale por tiempo o se queda esperando |
 | no llega a migrar | sólo puede salir por el suelo (−30%) |
 
 Antes del 11 de octubre esto era una **franja estrecha** del 94,3% al 95% en la
-que caían pocas compras. Ahora es **dónde entra siempre**.
+que caían pocas compras. Ahora es **dónde entra siempre**, y con la entrada al
+96% (pedida esa misma tarde) el margen hasta migrar es aún menor: +24,0%.
 
 ### Y el suelo que sube
 

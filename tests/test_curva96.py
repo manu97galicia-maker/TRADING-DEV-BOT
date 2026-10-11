@@ -318,7 +318,7 @@ def test_la_config_del_bot_pide_lo_que_se_acordo() -> None:
     # cambiando un `enabled`, que es justo lo que fijaba este test mientras
     # estuvo apagada: que la configuracion siguiera entera.
     assert cfg["enabled"] is True
-    assert cfg["umbral"] == 0.95
+    assert cfg["umbral"] == 0.96
     # La ventana de disparo: entre el umbral y el tope. Por encima del tope
     # la moneda ya esta migrando y comprar ahi es tirar la comision.
     assert cfg["tope"] > cfg["umbral"]
