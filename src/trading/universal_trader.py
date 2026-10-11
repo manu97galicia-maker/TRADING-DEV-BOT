@@ -2276,6 +2276,8 @@ class UniversalTrader:
             max_carteras_primer_bloque=int(cfg.get("max_carteras_primer_bloque", 3)),
             max_sol_primer_bloque=float(cfg.get("max_sol_primer_bloque", 2.0)),
             min_compradores=int(cfg.get("min_compradores", 30)),
+            min_edad_seg=float(cfg.get("min_edad_seg", 0) or 0),
+            max_edad_seg=float(cfg.get("max_edad_seg", 0) or 0),
             max_bundle_pct=float(cfg.get("max_bundle_pct", 0.5)),
             max_bundle_pct_sin_historia=float(
                 cfg.get("max_bundle_pct_sin_historia", 0.35)

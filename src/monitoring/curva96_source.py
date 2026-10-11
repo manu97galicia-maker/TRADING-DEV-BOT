@@ -100,6 +100,8 @@ class Curva96Source:
         max_carteras_primer_bloque: int = 3,
         max_sol_primer_bloque: float = 2.0,
         min_compradores: int = 30,
+        min_edad_seg: float = 0.0,
+        max_edad_seg: float = 0.0,
         max_bundle_pct: float = 0.5,
         max_bundle_pct_sin_historia: float = 0.35,
         exigir_ver_creacion: bool = True,
@@ -115,6 +117,10 @@ class Curva96Source:
         self.max_carteras_primer_bloque = int(max_carteras_primer_bloque)
         self.max_sol_primer_bloque = float(max_sol_primer_bloque)
         self.min_compradores = int(min_compradores)
+        # VENTANA DE EDAD DE LA MONEDA, pedida el 11-oct: "que pasen las de 15
+        # segundos hasta 3h". 0 en cualquiera de las dos = ese lado no se mira.
+        self.min_edad_seg = max(0.0, float(min_edad_seg or 0))
+        self.max_edad_seg = max(0.0, float(max_edad_seg or 0))
         self.max_bundle_pct = float(max_bundle_pct)
         # MAS APRETADO CUANDO SE VA A CIEGAS. Si no se vio nacer la moneda,
         # los avisos del bloque de creacion no existen y este tope en cadena
@@ -230,6 +236,85 @@ class Curva96Source:
             return True
         return False
 
+    def _fuera_de_edad(self, mint: str, symbol: str) -> bool:
+        """True si la moneda es demasiado nueva o demasiado vieja.
+
+        PEDIDO EL 11-oct: "que pasen las de 15 segundos hasta 3h", despues de
+        "asegurate que no es mecha de pump y dump". Las dos puntas descartan
+        cosas distintas:
+
+          - DEMASIADO NUEVA. Una moneda que ha recorrido el 95% de su curva
+            --un x11,3-- en menos de 15 segundos no ha tenido tiempo de que la
+            compre nadie de verdad: es un bundle o una mecha. El freno de la
+            vela verde mira el PRECIO; este mira el RELOJ, y llega incluso
+            cuando no hay suficientes puntos de precio para medir la subida.
+          - DEMASIADO VIEJA. Una moneda que lleva horas pegada al 95% sin
+            migrar no esta subiendo: esta atascada. Lo que queda no es el
+            tiron, es el aburrimiento.
+
+        SIN EDAD NO SE PUEDE ASEGURAR NADA, y eso descarta. Si el bot no vio
+        nacer la moneda, `volumen.edad()` devuelve None y esta puerta no puede
+        saber si cae dentro de la ventana. Dejarla pasar seria el fallo de
+        siempre de este repo: un freno encendido, configurado y mudo justo
+        para las monedas que no puede medir (FUCKETHAN, -91,9%). Asi que se
+        descarta y se cuenta en el embudo, para que el panel diga cuantas se
+        caen aqui en vez de que desaparezcan en silencio.
+
+        EL PREFIJO DEL LOG ES "Evitado" A PROPOSITO, y no "Descartada" como
+        las puertas vecinas de este mismo fichero: `deploy/porque.sh` junta
+        los motivos con `grep -oE "Evitado [^:]+: .*"`, asi que una linea que
+        empiece por "Descartada" NO sale en el diagnostico. Esta puerta puede
+        descartar MUCHO, asi que tiene que verse con `porque`.
+        (Las de los vecinos no salen -- es un hueco anterior, avisado.)
+
+        OJO CON LA INTERACCION: con `exigir_ver_creacion: False` la fuente
+        acepta monedas sin historia, pero esta puerta las rechaza igual
+        mientras haya una edad pedida. O sea que poner una ventana de edad
+        aprieta MAS que lo que sugiere ese `False`. Poner las dos a 0 lo
+        deshace.
+        """
+        if self.min_edad_seg <= 0 and self.max_edad_seg <= 0:
+            return False
+
+        edad = volumen.edad(mint)
+        if edad is None:
+            logger.info(
+                "Evitado %s (%s): no se vio nacer, así que no se puede "
+                "saber su edad — y se pidió comprar solo entre %.0fs y %.0fs",
+                symbol,
+                mint,
+                self.min_edad_seg,
+                self.max_edad_seg,
+            )
+            self._cuenta("edad_desconocida")
+            return True
+
+        if self.min_edad_seg > 0 and edad < self.min_edad_seg:
+            logger.info(
+                "Evitado %s (%s): solo %.1fs de vida y ya al 95%% de curva "
+                "(mín %.0fs) — eso no lo sube gente, es una mecha",
+                symbol,
+                mint,
+                edad,
+                self.min_edad_seg,
+            )
+            self._cuenta("demasiado_nueva")
+            return True
+
+        if self.max_edad_seg > 0 and edad > self.max_edad_seg:
+            logger.info(
+                "Evitado %s (%s): %.0f min de vida pegada a la curva "
+                "(máx %.0f min) — lleva horas sin migrar, está atascada",
+                symbol,
+                mint,
+                edad / 60,
+                self.max_edad_seg / 60,
+            )
+            self._cuenta("demasiado_vieja")
+            return True
+
+        return False
+
     # ---------------------------------------------------------------- decidir
 
     async def _evaluar(
@@ -253,6 +338,11 @@ class Curva96Source:
                     mint,
                 )
                 return
+
+        # LA EDAD TAMBIEN ANTES DE RECONSTRUIR, por lo mismo: sale de memoria
+        # y no cuesta una sola llamada al nodo.
+        if self._fuera_de_edad(mint, mint[:6]):
+            return
 
         # El bundle se mira ANTES de reconstruir la moneda: lo de arriba es
         # memoria y no cuesta nada, y reconstruirla son varias llamadas al nodo

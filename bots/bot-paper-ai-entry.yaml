@@ -1709,8 +1709,41 @@ filters:
     # Pasado esto la moneda ya esta migrando y la curva deja de operar:
     # comprar ahi es tirar el dinero en comisiones.
     tope: 0.995
-    # A CERO como todos los demas: manda el 30% de la cartera.
+    # A CERO como todos los demas: manda el 33% de la cartera.
     buy_amount: 0
+    # VENTANA DE EDAD DE LA MONEDA (11-oct). Pedido, con sus palabras:
+    # "asegurate que no es mecha de pump y dump" + "que pasen las de 15
+    # segundos hasta 3h".
+    #
+    #   min_edad_seg: 15      por debajo de 15 s de vida, NO se compra
+    #   max_edad_seg: 10800   por encima de 3 h de vida, NO se compra
+    #
+    # POR QUE LAS DOS PUNTAS. Una moneda que ha recorrido el 95% de su curva
+    # --que es un x11,3 desde que nacio-- en menos de 15 segundos no la ha
+    # subido gente: la ha subido un grupo, y lo siguiente es la vuelta. Y una
+    # que lleva mas de 3 horas pegada al 95% sin migrar no esta subiendo,
+    # esta atascada.
+    #
+    # ES DISTINTO DEL FRENO DE LA VELA VERDE, y por eso van los dos: aquel
+    # mira el PRECIO (cuanto subio en los ultimos 30 s) y este mira el RELOJ.
+    # El del reloj llega incluso cuando no hay suficientes puntos de precio
+    # para medir la subida, que era justo el agujero del buffer de 32.
+    #
+    # LO QUE CUESTA, y es lo importante: si el bot NO vio nacer la moneda no
+    # puede saber su edad, y entonces la descarta. Con `exigir_ver_creacion:
+    # false` la fuente aceptaba esas monedas; con una ventana de edad puesta
+    # ya no. O sea que esto aprieta MAS de lo que sugiere ese `false`, y en el
+    # arranque --mientras el bot lleva poco tiempo escuchando-- va a descartar
+    # casi todo.
+    #
+    # PARA VER CUANTAS SE CAEN AQUI: el comando `porque`. Las tres lineas
+    # salen con el prefijo "Evitado", que es el que esa herramienta junta y
+    # cuenta. (El panel `bot` NO las muestra: su top-3 es de transacciones
+    # fallidas, que es otra cosa.)
+    #
+    # PARA DESHACERLO: las dos a 0.
+    min_edad_seg: 15
+    max_edad_seg: 10800
     # SIN TOPE DE PRUEBA (23-sep). Estaba en "3 compras y si dos salen mal se
     # para sola", que era lo correcto para una prueba acotada -- pero ahora es
     # LA estrategia, y un tope de tres la dejaria muda tras el tercer intento
