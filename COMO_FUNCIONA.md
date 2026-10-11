@@ -40,9 +40,8 @@ Todo esto, sin saltarse nada:
 
 | | |
 |---|---|
-| **Gente a la vez** | mínimo **8 carteras distintas** comprando en 5 segundos |
-| **Gente de verdad** | mínimo **9 carteras distintas** en toda su vida |
-| **No casi migrada** | como mucho el **95%** de la curva recorrido |
+| **Punto de la curva** | ha recorrido ya el **95%** de su curva (y menos del 99,5%) |
+| **Gente de verdad** | mínimo **29 carteras distintas** en toda su vida |
 | **Sin bundle** | máximo 3 carteras en su bloque de nacimiento, y máximo 2 SOL |
 | **Sin concentración** | los mayores tenedores no pueden tener más del 50% |
 | **Sin vela verde** | si ha subido más de un **80% en 30 segundos**, no entra |
@@ -57,13 +56,21 @@ La protección de la vela verde **ya existía**, pero estaba guardada dentro de
 una estrategia que se había apagado, así que no se aplicaba. Ahora vale para
 todas las entradas, venga de donde venga la moneda.
 
-### La estrategia de la curva sigue escrita, pero apagada
+### La estrategia de presión sigue escrita, pero apagada
 
-Hasta el 9 de octubre el bot compraba monedas que ya habían recorrido el 59%
-de su curva. Esa configuración entera —entrada, compradores, la escalera del
-x3— sigue en el fichero y vuelve cambiando un `enabled`. Se apagó porque sólo
-puede haber **una** fuente encendida: las dos se reparten las mismas 2 plazas,
-y con las dos a la vez no se puede saber cuál produjo el resultado del día.
+Del 9 al 11 de octubre el bot compraba por **presión compradora**: 8 carteras
+distintas entrando en 5 segundos, la moneda donde estuviera. El 11 de octubre
+se pidió *"deja solo la regla de comprar al 95% de la bonding curve"* y se
+apagó. Su configuración entera sigue en el fichero y vuelve cambiando un
+`enabled`. Sólo puede haber **una** fuente encendida: las dos se reparten las
+mismas plazas, y con las dos a la vez no se puede saber cuál produjo el
+resultado del día.
+
+**Lo que se perdió al apagarla, dicho claro:** era la única parte de este bot
+con una medición detrás. Sobre 27.241 monedas seguidas cinco minutos, la
+probabilidad de hacer +25% pasaba del 14,4% de base al **27,4%** con 3 o más
+compradores distintos en la ventana. La estrategia de la curva que corre ahora
+**no tiene ninguna medición detrás**: es un número razonado, no probado.
 
 ---
 
@@ -129,8 +136,8 @@ cuenta de token sigue abierta con su renta (~0,00204 SOL) dentro.
 
 ### Los peldaños de arriba sólo pagan si compras pronto
 
-Con la estrategia de presión el bot compra la moneda **donde esté**, hasta el
-95% de su curva. Y eso decide cuántos peldaños puede cobrar:
+El bot entra **al 95% de la curva**, así que de las filas de abajo la suya es
+**la última**. Y esa fila dice que no cabe ni un peldaño:
 
 | entra al... | +35% | +65% | +100% | +150% | +200% | +400% |
 |---|---|---|---|---|---|---|
@@ -142,11 +149,24 @@ Con la estrategia de presión el bot compra la moneda **donde esté**, hasta el
 
 (los porcentajes son el punto de curva al que tiene que llegar la moneda)
 
-**En una moneda comprada arriba, la escalera efectiva son uno o dos peldaños y
-luego el suelo.** No es un fallo — es lo que permite la curva.
+**Entrando al 95% no cabe ningún peldaño dentro de la curva.** Del 95% al
+100% el precio sólo sube un **+30,3%**, y el primer peldaño pide +35%. O sea
+que toda la escalera —y el cerrojo que sube el suelo a compra +5%, que también
+espera el +35%— **sólo puede cobrar después de que la moneda migre** a
+PumpSwap y siga subiendo allí.
 
-Hay una franja estrecha, del **94,3% al 95%**, donde ni el primer peldaño cabe:
-esas posiciones sólo pueden cerrarse por el suelo o después de migrar.
+No es un fallo del bot: es la consecuencia aritmética de entrar tan arriba, y
+el bot **sí sabe vender después de migrar** (`universal_trader.py`, la venta
+de respaldo en PumpSwap/Raydium). Pero conviene tenerlo claro:
+
+| entrando al 95%, la moneda... | qué pasa |
+|---|---|
+| migra y sigue subiendo | cobra la escalera, de +35% en adelante |
+| migra y se queda plana | sale por tiempo o se queda esperando |
+| no llega a migrar | sólo puede salir por el suelo (−30%) |
+
+Antes del 11 de octubre esto era una **franja estrecha** del 94,3% al 95% en la
+que caían pocas compras. Ahora es **dónde entra siempre**.
 
 ### Y el suelo que sube
 
