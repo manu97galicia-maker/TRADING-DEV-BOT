@@ -276,7 +276,12 @@ def test_cuantas_plazas_caben_de_verdad() -> None:
             f"con techo ninguna compra deberia ser un resto: {tam}"
         )
     # Y con poco saldo sigue comprando, solo que diminuto: es lo pedido.
-    assert len(tamanos(0.05)) >= 1, "con poco saldo compra poco, pero compra"
+    # 0,06 Y NO 0,05 DESDE EL 11-oct. El saldo minimo con el que todavia se
+    # abre una posicion depende del slippage: `need` es
+    # `importe x (1 + buy_slippage) + colchon`, asi que al subir el slippage
+    # del 10% al 25% el minimo paso de 0,05 a 0,06 SOL de cartera. Este test
+    # se puso rojo con el 0,05 y dijo exactamente eso, que es su trabajo.
+    assert len(tamanos(0.06)) >= 1, "con poco saldo compra poco, pero compra"
 
 
 def test_el_techo_sigue_siendo_un_limite_duro() -> None:

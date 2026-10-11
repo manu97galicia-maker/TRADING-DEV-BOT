@@ -232,9 +232,11 @@ def test_sin_suelo_compra_con_lo_que_haya() -> None:
     assert t["compra_minima_sol"] == 0
     assert t["fraccion_si_no_llega"] > 0, "sin esto, con poco saldo no compraria"
     assert len(_tamanos(0.10)) >= 1, "con el suelo a 0 tiene que comprar igual"
-    assert len(_tamanos(0.05)) >= 1
+    # 0,06: el minimo sube con el slippage (ver el mismo comentario en
+    # test_posiciones_por_saldo.py). Con el 25% del 11-oct, 0,05 ya no llega.
+    assert len(_tamanos(0.06)) >= 1
     # Con poco saldo la compra sale diminuta: menos de dos centesimas de SOL.
-    assert max(_tamanos(0.05)) < 0.02
+    assert max(_tamanos(0.06)) < 0.02
 
 
 def test_la_reserva_sigue_siendo_intocable() -> None:

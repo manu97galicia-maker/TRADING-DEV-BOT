@@ -128,7 +128,28 @@ trade:
   # como una cantidad suelta.
   buy_amount_tras_sl: 0
   rugs_para_bloquear: 1
-  buy_slippage: 0.10
+  # 25% EL 11-oct, pedido tras "no compra" con 2 de 2 transacciones caidas.
+  # Sube desde el 10%.
+  #
+  # POR QUE. Entrando al 96% de la curva se compite por el ultimo trozo
+  # contra otros bots. Entre que el bot decide y la transaccion aterriza, el
+  # precio se mueve; si se mueve mas que el slippage, la transaccion se cae
+  # con "Transaction failed to confirm". En septiembre, entrando al 59-71%,
+  # el 10% sobraba porque no habia carrera. Al 96% no sobra.
+  #
+  # LO QUE CUESTA: se acepta pagar hasta un 25% por encima del precio visto.
+  # Con el 33% de la cartera por operacion, en una compra de 0,33 SOL son
+  # hasta 0,08 SOL (~18 $) de peor precio en el peor caso. No es el caso
+  # normal --solo se paga lo que de verdad se haya movido-- pero es el techo
+  # que se esta autorizando.
+  #
+  # DESCARTADO ANTES DE TOCAR ESTO, para que no se vuelva a mirar: la
+  # comision de prioridad ya es alta (0,0051 SOL por compra), se reintenta 5
+  # veces, la instruccion lleva las 18 cuentas correctas segun el IDL y el
+  # hueco que queda en la curva al 96% (11,7 SOL) sobra para la compra.
+  #
+  # LA VENTA NO SE TOCA: `sell_slippage` sigue en 0,10.
+  buy_slippage: 0.25
   sell_slippage: 0.1
   # SLIPPAGE DE LAS VENTAS QUE SALVAN LA POSICION (stop loss, anti-rug,
   # panico). 23-sep.
