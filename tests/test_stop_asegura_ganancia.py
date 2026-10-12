@@ -32,6 +32,7 @@ from trading.tiered_exit import (
 from trading.universal_trader import _peldanos_extra
 
 CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
+REAL_CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-unica123-real.yaml"
 ENTRADA = 1.0
 
 
@@ -45,6 +46,28 @@ def _tiers() -> list:
     pares += [(t.get(f"tp{i}_gain"), t.get(f"tp{i}_sell")) for i in (2, 3, 4, 5, 6)]
     pares += _peldanos_extra(t.get("tp_extra"))
     return build_tiers(pares)
+
+
+def test_unica123_arma_mas_12_al_tocar_mas_50() -> None:
+    """En real, +50% no vende y mueve el stop a entrada +12%."""
+    trade = yaml.safe_load(REAL_CONFIG.read_text(encoding="utf-8"))["trade"]
+    tiers = build_tiers(
+        [
+            (
+                trade["take_profit_percentage"],
+                trade["take_profit_sell_percentage"],
+            ),
+            (trade["tp2_gain"], trade["tp2_sell"]),
+        ]
+    )
+    assert tiers[0].gain == 0.50
+    assert tiers[0].sell == 0.0
+    assert trade["margen_stop_tras_tp"] == 0.12
+    assert trade["stop_a_entrada_tras_tp"] is True
+    assert trade["stop_al_tp_tras_tp"] is False
+    assert stepped_stop_price(ENTRADA, tiers, 0, 0.12) == 1.12
+    assert tiers[1].gain == 0.75
+    assert tiers[1].sell == 1.0
 
 
 # ------------------------------------- un escalon que no vende sigue existiendo
