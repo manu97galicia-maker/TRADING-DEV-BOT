@@ -331,8 +331,8 @@ class Curva96Source:
 
     # ---------------------------------------------------------------- decidir
 
-    def _presion_fuerte(self, mint: str, symbol: str) -> bool:
-        """Confirma demanda reciente y rechaza una vela vertical de un segundo."""
+    def _sin_mecha_vertical(self, mint: str, symbol: str) -> bool:
+        """Rechaza únicamente una subida vertical dentro de la vela corta."""
         subida = volumen.subida(mint, self.vela_seg)
         if self.max_subida_vela > 0 and subida > self.max_subida_vela:
             logger.info(
@@ -345,33 +345,6 @@ class Curva96Source:
             )
             self._cuenta("vela_1s")
             return False
-
-        metricas = volumen.metricas_segunda_ola(
-            mint,
-            ventana=self.ventana_presion,
-        )
-        compradores = int(metricas.get("ola_compradores", 0) or 0)
-        comprado, vendido = volumen.presion(mint, self.ventana_presion)
-        ratio = comprado / vendido if vendido > 0 else float("inf")
-        if (
-            compradores < self.min_compradores_ola
-            or comprado < self.min_compra_sol
-            or ratio < self.min_presion_ratio
-        ):
-            logger.info(
-                "Curva 94%% %s (%s) espera presión: %d/%d compradores, "
-                "%.2f SOL compra, %.2f venta, ratio %.2fx/%.2fx",
-                symbol,
-                mint,
-                compradores,
-                self.min_compradores_ola,
-                comprado,
-                vendido,
-                ratio,
-                self.min_presion_ratio,
-            )
-            self._cuenta("sin_presion")
-            return False
         return True
 
     async def _evaluar(
@@ -383,10 +356,9 @@ class Curva96Source:
             return
         progreso, sol_curva = avance
 
-        # Al cruzar el 94% no basta con haber llegado: solo entra si AHORA hay
-        # compradores reales empujando. Si aun no los hay se permite volver a
-        # evaluar en la siguiente operación, mientras siga dentro de la curva.
-        if not self._presion_fuerte(mint, mint[:6]):
+        # No persigue una subida vertical de un segundo. Fuera de esa mecha,
+        # la entrada ya no exige presión reciente ni un volumen mínimo en SOL.
+        if not self._sin_mecha_vertical(mint, mint[:6]):
             self._probadas.discard(mint)
             return
 
@@ -437,7 +409,7 @@ class Curva96Source:
                 else self.max_bundle_pct_sin_historia
             ),
             "curva_progreso": progreso,
-            "estrategia": "curva_94_presion_fuerte",
+            "estrategia": "curva_95_sin_mecha_1s",
         }
         self._cuenta("comprables")
         # NO SE ANUNCIA UN IMPORTE QUE ESTA FUENTE NO DECIDE.

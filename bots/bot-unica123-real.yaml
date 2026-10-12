@@ -305,8 +305,8 @@ filters:
   buy_on_dex_paid:
     enabled: false
 
-  # UNICA FUENTE DE ENTRADA: una curva de pump.fun alcanza el 95% y todavia
-  # mantiene demanda real. Al existir una fuente de adquisicion activa, el
+  # UNICA FUENTE DE ENTRADA: una curva de pump.fun alcanza el 95%. Al existir
+  # una fuente de adquisicion activa, el
   # listener normal de monedas nuevas no abre operaciones por su cuenta.
   curva_96:
     enabled: true
@@ -317,13 +317,10 @@ filters:
     parar_tras_perdidas: 0
 
     # Demanda repartida entre personas, no una sola wallet empujando el precio.
+    # No se exige presión reciente ni un volumen mínimo en SOL.
     min_compradores: 30
     min_edad_seg: 15
     max_edad_seg: 10800
-    min_compradores_ola: 8
-    ventana_presion: 3.0
-    min_presion_ratio: 2.0
-    min_compra_sol: 1.0
 
     # No perseguir una mecha/pump vertical de un segundo. La moneda puede
     # volver a evaluarse en la siguiente operacion mientras siga en la curva.

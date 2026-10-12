@@ -185,24 +185,15 @@ def test_una_mecha_vertical_de_un_segundo_no_se_compra() -> None:
     """Una subida instantanea no se confunde con demanda sostenible."""
     fuente = _fuente(vela_seg=1.0, max_subida_vela=0.35)
     with patch.object(volumen, "subida", return_value=0.36):
-        assert fuente._presion_fuerte("mint", "MECHA") is False
+        assert fuente._sin_mecha_vertical("mint", "MECHA") is False
     assert fuente._embudo["vela_1s"] == 1
 
 
-def test_presion_repartida_y_con_volumen_confirma_la_curva() -> None:
-    """Ocho wallets, volumen real y ratio 2x dejan pasar la entrada."""
-    fuente = _fuente(
-        min_compradores_ola=8,
-        min_compra_sol=1.0,
-        min_presion_ratio=2.0,
-    )
-    metricas = {"ola_compradores": 8}
-    with (
-        patch.object(volumen, "subida", return_value=0.10),
-        patch.object(volumen, "metricas_segunda_ola", return_value=metricas),
-        patch.object(volumen, "presion", return_value=(2.0, 1.0)),
-    ):
-        assert fuente._presion_fuerte("mint", "LIMPIA") is True
+def test_sin_mecha_no_exige_presion_ni_volumen_reciente() -> None:
+    """Una vela normal pasa aunque no haya volumen reciente mínimo."""
+    fuente = _fuente()
+    with patch.object(volumen, "subida", return_value=0.10):
+        assert fuente._sin_mecha_vertical("mint", "LIMPIA") is True
 
 
 # ------------------------------------------------------------ umbral y disparo
