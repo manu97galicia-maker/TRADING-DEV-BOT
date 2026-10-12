@@ -22,7 +22,7 @@ muerto, y callarse por un fichero ilegible es como se perdieron ocho dias en
 septiembre.
 """
 
-# ruff: noqa: S101, PLC0415
+# ruff: noqa: S101, PLC0415, ANN001, ANN201, ANN202
 
 import sys
 from pathlib import Path
