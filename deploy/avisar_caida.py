@@ -37,6 +37,53 @@ SERVICIO = os.getenv("PUMP_BOT_SERVICE", "pump-bot")
 TESTIGO = Path("/tmp/pump-bot-caida-avisada")  # noqa: S108
 
 
+def avisos_apagados() -> bool:
+    """True si los bots encendidos piden `avisos_telegram: false`.
+
+    POR QUE EXISTE, pedido el 11-oct: "no envies mas notificaciones por
+    telegram". El bot ya estaba callado --`bot_runner.py` llama a
+    `configurar_avisos(cfg["avisos_telegram"])` y eso pone `_SILENCIO`--
+    pero ESTE script es otro proceso, lanzado por `pump-bot-vigia`, y no
+    pasaba por ahi. Resultado: con todo "apagado" seguian llegando avisos
+    cada vez que el bot se reiniciaba, y el 11-oct se reinicio media docena
+    de veces.
+
+    O SEA QUE `avisos_telegram` MENTIA: decia apagar los avisos y solo
+    apagaba los de un proceso. Ahora es el interruptor de los dos.
+
+    SI NO SE PUEDE LEER LA CONFIGURACION, SE AVISA IGUAL. Este script es el
+    unico que cuenta que el bot esta muerto; ante la duda tiene que sonar,
+    no callarse. Callarse por un yaml ilegible seria el fallo que costo
+    ocho dias en septiembre, otra vez.
+    """
+    try:
+        import yaml  # noqa: PLC0415
+
+        encendidos = []
+        for fichero in sorted((RAIZ / "bots").glob("*.yaml")):
+            try:
+                cfg = yaml.safe_load(fichero.read_text(encoding="utf-8")) or {}
+            except (OSError, yaml.YAMLError):
+                return False  # ilegible: que suene
+            if cfg.get("enabled", True):
+                # `is False` Y NO `bool(...)`, que es como lo hace el bot:
+                # `configurar_avisos` tiene `_SILENCIO = solo is False`. Los
+                # tres valores de esta clave significan cosas distintas:
+                #   nada   -> se manda TODO (nadie ha pedido silencio)
+                #   false  -> silencio total
+                #   lista  -> solo esos tipos; el aviso de caida va por
+                #             `notify_ahora`, que se salta ese filtro aposta
+                # Con `bool(...)` la ausencia contaba como silencio y el
+                # vigia se habria callado sin que nadie se lo pidiera. Lo
+                # caza `test_sin_la_clave_se_avisa`.
+                encendidos.append(cfg.get("avisos_telegram") is False)
+        if not encendidos:
+            return False  # ningun bot encendido: que suene
+        return all(encendidos)
+    except Exception:  # noqa: BLE001 - ante cualquier duda, que suene
+        return False
+
+
 def estado(servicio: str) -> str:
     """Devuelve el estado de systemd: active, failed, inactive..."""
     try:
@@ -88,6 +135,16 @@ def main() -> int:
 
     load_dotenv(RAIZ / ".env")
     from monitoring.notifier import notify_ahora  # noqa: PLC0415
+
+    if avisos_apagados():
+        # SE DICE EN VOZ ALTA por journalctl. Un silencio silencioso es como
+        # se pierden los avisos sin que nadie lo sepa.
+        print(
+            "Vigia callado: los bots encendidos piden `avisos_telegram: false`. "
+            "Si el bot se cae, NADIE te lo va a decir.",
+            file=sys.stderr,
+        )
+        return 0
 
     situacion = estado(SERVICIO)
     if situacion == "active":
