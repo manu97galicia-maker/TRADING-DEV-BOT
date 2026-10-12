@@ -68,10 +68,10 @@ trade:
 
   exit_strategy: "tp_sl"
   # Al tocar +50% no vende: arma un stop en compra +12%. Si sigue subiendo,
-  # al llegar a +75% vende el 100% de la posicion.
+  # al llegar a +70% vende el 100% de la posicion.
   take_profit_percentage: 0.50
   take_profit_sell_percentage: 0.0
-  tp2_gain: 0.75
+  tp2_gain: 0.70
   tp2_sell: 1.0
   #
   # Medido sobre la muestra del 20-ago (40 monedas del grupo filtrado, y
@@ -96,7 +96,7 @@ trade:
   mc_take_profit_tiers: []
 
   # Stop defensivo para que la prueba no herede el antiguo suelo del 80%.
-  stop_loss_percentage: 0.30
+  stop_loss_percentage: 0.32
   trailing_stop_percentage: 0
 
   # El primer escalon no vende; únicamente sube el stop al 112% de la entrada.
