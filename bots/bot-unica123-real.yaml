@@ -320,7 +320,7 @@ filters:
     # No se exige presión reciente ni un volumen mínimo en SOL.
     min_compradores: 30
     min_edad_seg: 15
-    max_edad_seg: 10800
+    max_edad_seg: 0
 
     # No perseguir una mecha/pump vertical de un segundo. La moneda puede
     # volver a evaluarse en la siguiente operacion mientras siga en la curva.

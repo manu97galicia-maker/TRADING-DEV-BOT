@@ -125,7 +125,7 @@ def test_el_yaml_pide_los_quince_segundos_y_las_tres_horas() -> None:
     """Los numeros pedidos, atados al fichero que de verdad corre."""
     cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"]["curva_96"]
     assert cfg["min_edad_seg"] == 15, "se pidio 15 segundos como suelo"
-    assert cfg["max_edad_seg"] == 10800, "se pidio 3 horas como techo (3*3600)"
+    assert cfg["max_edad_seg"] == 0, "sin edad maxima: solo se pidio el suelo"
 
 
 def test_el_trader_le_pasa_los_dos_numeros_a_la_fuente() -> None:
