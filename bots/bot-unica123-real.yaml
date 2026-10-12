@@ -294,7 +294,7 @@ filters:
   no_repeat_name_min: 2
   max_holder_pct: 0.0
   max_dev_hold_pct: 0.0
-  min_holders: 0
+  min_holders: 20
   holder_bypass_ratio: 0
 
   buy_on_dex_paid:
@@ -311,10 +311,9 @@ filters:
     max_compras: 1
     parar_tras_perdidas: 0
 
-    # Demanda repartida entre personas, no una sola wallet empujando el precio.
-    # No se exige presión reciente ni un volumen mínimo en SOL.
-    min_compradores: 30
-    min_edad_seg: 15
+    # Entrada desde 10 segundos y al menos 20 holders reales en cadena.
+    min_compradores: 0
+    min_edad_seg: 10
     max_edad_seg: 0
 
     # No perseguir una mecha/pump vertical de un segundo. La moneda puede
@@ -322,13 +321,12 @@ filters:
     vela_seg: 1.0
     max_subida_vela: 0.35
 
-    # Anti-bundle/rug: solo monedas cuya creacion vio el bot, maximo tres
-    # carteras y dos SOL en el bloque inicial, mas control de concentracion.
-    exigir_ver_creacion: true
-    max_carteras_primer_bloque: 3
-    max_sol_primer_bloque: 2.0
-    max_bundle_pct: 0.50
-    max_bundle_pct_sin_historia: 0.35
+    # Por peticion expresa, las señales de bundle no bloquean la compra.
+    exigir_ver_creacion: false
+    max_carteras_primer_bloque: 0
+    max_sol_primer_bloque: 0
+    max_bundle_pct: 0
+    max_bundle_pct_sin_historia: 0
     heartbeat_interval: 300
 
   dexscreener:

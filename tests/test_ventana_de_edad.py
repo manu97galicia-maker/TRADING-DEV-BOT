@@ -38,6 +38,7 @@ from monitoring import volumen
 from monitoring.curva96_source import Curva96Source
 
 CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
+REAL_CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-unica123-real.yaml"
 
 
 def _fuente(**extra) -> Curva96Source:
@@ -141,6 +142,21 @@ def test_el_trader_le_pasa_los_dos_numeros_a_la_fuente() -> None:
             f"el trader no le pasa {clave} a Curva96Source: estaria escrito "
             "en el yaml y mudo"
         )
+
+
+def test_real_edad_10_y_bundle_no_bloquea() -> None:
+    """La config real respeta edad 10, 20 holders y no rechaza bundles."""
+    filtros = yaml.safe_load(REAL_CONFIG.read_text(encoding="utf-8"))["filters"]
+    cfg = filtros["curva_96"]
+    assert cfg["min_edad_seg"] == 10
+    assert cfg["max_edad_seg"] == 0
+    assert filtros["min_holders"] == 20
+    assert cfg["min_compradores"] == 0
+    assert cfg["exigir_ver_creacion"] is False
+    assert cfg["max_carteras_primer_bloque"] == 0
+    assert cfg["max_sol_primer_bloque"] == 0
+    assert cfg["max_bundle_pct"] == 0
+    assert cfg["max_bundle_pct_sin_historia"] == 0
 
 
 def test_la_puerta_se_mira_antes_de_gastar_llamadas_al_nodo() -> None:
