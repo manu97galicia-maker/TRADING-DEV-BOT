@@ -292,13 +292,19 @@ class Curva96Source:
 
         edad = volumen.edad(mint)
         if edad is None:
+            if self.max_edad_seg > 0:
+                ventana = (
+                    f"entre {self.min_edad_seg:.0f}s y "
+                    f"{self.max_edad_seg:.0f}s"
+                )
+            else:
+                ventana = f"con al menos {self.min_edad_seg:.0f}s, sin máximo"
             logger.info(
                 "Evitado %s (%s): no se vio nacer, así que no se puede "
-                "saber su edad — y se pidió comprar solo entre %.0fs y %.0fs",
+                "saber su edad — se pidió comprar %s",
                 symbol,
                 mint,
-                self.min_edad_seg,
-                self.max_edad_seg,
+                ventana,
             )
             self._cuenta("edad_desconocida")
             return True
