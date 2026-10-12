@@ -78,6 +78,8 @@ def build_curva96_heartbeat(
             f"  ↳ sin ver su creación: {embudo.get('sin_historia', 0)}",
             f"  ↳ bundle descartado: {embudo.get('bundles', 0)}",
             f"  ↳ pocos compradores: {embudo.get('poca_gente', 0)}",
+            f"  ↳ sin presión reciente: {embudo.get('sin_presion', 0)}",
+            f"  ↳ vela 1s descartada: {embudo.get('vela_1s', 0)}",
             f"  ↳ no se pudo construir: {embudo.get('sin_construir', 0)}",
             f"✅ Enviadas a comprar: <b>{embudo.get('comprables', 0)}</b>",
             f"Modo: <b>{modo}</b>",
@@ -102,6 +104,12 @@ class Curva96Source:
         min_compradores: int = 30,
         min_edad_seg: float = 0.0,
         max_edad_seg: float = 0.0,
+        min_compradores_ola: int = 8,
+        ventana_presion: float = 3.0,
+        min_presion_ratio: float = 2.0,
+        min_compra_sol: float = 1.0,
+        vela_seg: float = 1.0,
+        max_subida_vela: float = 0.35,
         max_bundle_pct: float = 0.5,
         max_bundle_pct_sin_historia: float = 0.35,
         exigir_ver_creacion: bool = True,
@@ -121,6 +129,12 @@ class Curva96Source:
         # segundos hasta 3h". 0 en cualquiera de las dos = ese lado no se mira.
         self.min_edad_seg = max(0.0, float(min_edad_seg or 0))
         self.max_edad_seg = max(0.0, float(max_edad_seg or 0))
+        self.min_compradores_ola = int(min_compradores_ola)
+        self.ventana_presion = float(ventana_presion)
+        self.min_presion_ratio = float(min_presion_ratio)
+        self.min_compra_sol = float(min_compra_sol)
+        self.vela_seg = float(vela_seg)
+        self.max_subida_vela = float(max_subida_vela)
         self.max_bundle_pct = float(max_bundle_pct)
         # MAS APRETADO CUANDO SE VA A CIEGAS. Si no se vio nacer la moneda,
         # los avisos del bloque de creacion no existen y este tope en cadena
@@ -317,6 +331,49 @@ class Curva96Source:
 
     # ---------------------------------------------------------------- decidir
 
+    def _presion_fuerte(self, mint: str, symbol: str) -> bool:
+        """Confirma demanda reciente y rechaza una vela vertical de un segundo."""
+        subida = volumen.subida(mint, self.vela_seg)
+        if self.max_subida_vela > 0 and subida > self.max_subida_vela:
+            logger.info(
+                "Descartada %s (%s): vela de +%.0f%% en %.1fs; posible "
+                "pump and dump",
+                symbol,
+                mint,
+                subida * 100,
+                self.vela_seg,
+            )
+            self._cuenta("vela_1s")
+            return False
+
+        metricas = volumen.metricas_segunda_ola(
+            mint,
+            ventana=self.ventana_presion,
+        )
+        compradores = int(metricas.get("ola_compradores", 0) or 0)
+        comprado, vendido = volumen.presion(mint, self.ventana_presion)
+        ratio = comprado / vendido if vendido > 0 else float("inf")
+        if (
+            compradores < self.min_compradores_ola
+            or comprado < self.min_compra_sol
+            or ratio < self.min_presion_ratio
+        ):
+            logger.info(
+                "Curva 94%% %s (%s) espera presión: %d/%d compradores, "
+                "%.2f SOL compra, %.2f venta, ratio %.2fx/%.2fx",
+                symbol,
+                mint,
+                compradores,
+                self.min_compradores_ola,
+                comprado,
+                vendido,
+                ratio,
+                self.min_presion_ratio,
+            )
+            self._cuenta("sin_presion")
+            return False
+        return True
+
     async def _evaluar(
         self, mint: str, token_callback: Callable[[TokenInfo], Awaitable[None]]
     ) -> None:
@@ -325,6 +382,13 @@ class Curva96Source:
         if avance is None:
             return
         progreso, sol_curva = avance
+
+        # Al cruzar el 94% no basta con haber llegado: solo entra si AHORA hay
+        # compradores reales empujando. Si aun no los hay se permite volver a
+        # evaluar en la siguiente operación, mientras siga dentro de la curva.
+        if not self._presion_fuerte(mint, mint[:6]):
+            self._probadas.discard(mint)
+            return
 
         con_historia = volumen.vio_la_creacion(mint)
         if not con_historia:
@@ -373,6 +437,7 @@ class Curva96Source:
                 else self.max_bundle_pct_sin_historia
             ),
             "curva_progreso": progreso,
+            "estrategia": "curva_94_presion_fuerte",
         }
         self._cuenta("comprables")
         # NO SE ANUNCIA UN IMPORTE QUE ESTA FUENTE NO DECIDE.

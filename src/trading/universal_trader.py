@@ -2278,6 +2278,12 @@ class UniversalTrader:
             min_compradores=int(cfg.get("min_compradores", 30)),
             min_edad_seg=float(cfg.get("min_edad_seg", 0) or 0),
             max_edad_seg=float(cfg.get("max_edad_seg", 0) or 0),
+            min_compradores_ola=int(cfg.get("min_compradores_ola", 8)),
+            ventana_presion=float(cfg.get("ventana_presion", 3.0)),
+            min_presion_ratio=float(cfg.get("min_presion_ratio", 2.0)),
+            min_compra_sol=float(cfg.get("min_compra_sol", 1.0)),
+            vela_seg=float(cfg.get("vela_seg", 1.0)),
+            max_subida_vela=float(cfg.get("max_subida_vela", 0.35)),
             max_bundle_pct=float(cfg.get("max_bundle_pct", 0.5)),
             max_bundle_pct_sin_historia=float(
                 cfg.get("max_bundle_pct_sin_historia", 0.35)

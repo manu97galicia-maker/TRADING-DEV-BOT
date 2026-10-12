@@ -35,7 +35,7 @@
 # hasta ahora iban por separado: que la moneda acabe de nacer, que ya se este
 # moviendo dinero de verdad en ella, y que el creador tenga historial.
 
-name: "UNICA123 REAL - 0.10 SOL, maximo 0.20 por operacion"
+name: "UNICA123 REAL - curva 95% con presion y anti-rug"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -304,6 +304,41 @@ filters:
 
   buy_on_dex_paid:
     enabled: false
+
+  # UNICA FUENTE DE ENTRADA: una curva de pump.fun alcanza el 95% y todavia
+  # mantiene demanda real. Al existir una fuente de adquisicion activa, el
+  # listener normal de monedas nuevas no abre operaciones por su cuenta.
+  curva_96:
+    enabled: true
+    umbral: 0.95
+    tope: 0.995
+    buy_amount: 0
+    max_compras: 1
+    parar_tras_perdidas: 0
+
+    # Demanda repartida entre personas, no una sola wallet empujando el precio.
+    min_compradores: 30
+    min_edad_seg: 15
+    max_edad_seg: 10800
+    min_compradores_ola: 8
+    ventana_presion: 3.0
+    min_presion_ratio: 2.0
+    min_compra_sol: 1.0
+
+    # No perseguir una mecha/pump vertical de un segundo. La moneda puede
+    # volver a evaluarse en la siguiente operacion mientras siga en la curva.
+    vela_seg: 1.0
+    max_subida_vela: 0.35
+
+    # Anti-bundle/rug: solo monedas cuya creacion vio el bot, maximo tres
+    # carteras y dos SOL en el bloque inicial, mas control de concentracion.
+    exigir_ver_creacion: true
+    max_carteras_primer_bloque: 3
+    max_sol_primer_bloque: 2.0
+    max_bundle_pct: 0.50
+    max_bundle_pct_sin_historia: 0.35
+    heartbeat_interval: 300
+
   dexscreener:
     enabled: false
     enforce: false
