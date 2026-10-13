@@ -56,7 +56,19 @@ trade:
   tope_compra_sol: 0.20
   nombre_estrategia: "unica123-real"
   escala_por_sol_ganado: 0
-  max_real_buys: 2
+  # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no que
+  # solo dos". ERA EL SEGUNDO CUPO ESCONDIDO, y el mas traicionero de los
+  # dos: cuenta las compras reales DESDE QUE ARRANCA EL PROCESO y, con
+  # `reiniciar_tanda` sin poner (= False), es un tope DE POR VIDA. Dos
+  # compras y el bot no vuelve a comprar hasta que se reinicie.
+  #
+  # LOS TRES MANDOS QUE SE CONFUNDIAN POR EL NOMBRE:
+  #   curva_96.max_compras -> cupo total de la fuente        (ya a 0)
+  #   trade.max_real_buys  -> cupo total del proceso         (este)
+  #   trade.max_posiciones -> cuantas A LA VEZ               (sigue en 2)
+  #
+  # Queda UN solo mando para lo pedido: `max_posiciones: 2`.
+  max_real_buys: 0
   buy_amount_dev_top: 0.20
   dev_top_min_rate: 0.20
   mayhem_buy_amount: 0.10
@@ -312,7 +324,20 @@ filters:
     umbral: 0.95
     tope: 0.995
     buy_amount: 0
-    max_compras: 2
+    # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no
+    # que solo dos". Estaba en 2 y eso NO era "dos a la vez": era un CUPO
+    # TOTAL. Tras dos compras confirmadas la fuente se callaba para siempre
+    # hasta reiniciar, y sin gritarlo -- justo la parada silenciosa que este
+    # repo tiene documentada como "ya costo dias".
+    #
+    # QUIEN LIMITA LAS SIMULTANEAS ES `trade.max_posiciones`, que sigue en 2.
+    # Son dos mandos distintos y se confundian por el nombre:
+    #   max_compras    -> cuantas compra en TODA su vida (0 = sin limite)
+    #   max_posiciones -> cuantas tiene abiertas A LA VEZ
+    #
+    # 0 ES "SIN LIMITE" aqui, no "ninguna": el codigo hace
+    # `if cupo > 0 and ...` (universal_trader.py).
+    max_compras: 0
     parar_tras_perdidas: 0
 
     # Entrada desde 10 segundos y al menos 20 holders reales en cadena.

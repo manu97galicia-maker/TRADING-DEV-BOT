@@ -44,13 +44,38 @@ def test_un_max_posiciones_explicito_sigue_mandando() -> None:
 
 
 def test_c123_sin_techo_mc_y_con_dos_posiciones() -> None:
-    """C123 puede abrir una segunda posición y no filtra por market cap."""
+    """DOS A LA VEZ, NO DOS EN TOTAL. Pedido el 13-oct con esas palabras:
+    "maximo de compras simultaneas son dos pero no que solo dos".
+
+    HABIA TRES MANDOS Y DOS ERAN CUPOS TOTALES, que es lo que se confundia:
+
+      trade.max_posiciones  -> cuantas abiertas A LA VEZ. Este es el pedido.
+      trade.max_real_buys   -> cupo TOTAL del proceso. Con `reiniciar_tanda`
+                               sin poner (= False) es un tope de POR VIDA:
+                               dos compras y el bot no vuelve a comprar
+                               hasta reiniciarse.
+      curva_96.max_compras  -> cupo TOTAL de la fuente, misma trampa.
+
+    Los dos cupos pasan a 0 (= sin limite; el codigo hace `if cupo > 0` y
+    `if self.max_real_buys and ...`). Queda uno solo decidiendo.
+
+    POR QUE ESTE TEST IMPORTA: los dos cupos paran EN SILENCIO. El de la
+    fuente escribe "cupo agotado" una vez y el del proceso "tanda
+    completada"; despues el bot parece vivo y no compra nada. Este repo
+    tiene esa parada documentada como "ya costo dias".
+    """
     cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
-    assert cfg["trade"]["max_posiciones"] == 2
-    assert cfg["trade"]["max_real_buys"] == 2
+    assert cfg["trade"]["max_posiciones"] == 2, "dos posiciones a la vez"
+    assert cfg["trade"]["max_real_buys"] == 0, (
+        "max_real_buys es un cupo TOTAL, no simultaneas: a 0 o el bot se "
+        "para solo tras esas compras y no lo vuelve a decir"
+    )
+    assert cfg["filters"]["curva_96"]["max_compras"] == 0, (
+        "max_compras es el cupo total de la fuente: a 0 o se calla tras "
+        "agotarlo"
+    )
     assert cfg["trade"]["min_reserve_sol"] == 0.03
     assert cfg["filters"]["max_entry_mc"] == 0
-    assert cfg["filters"]["curva_96"]["max_compras"] == 2
 
 
 def test_avisa_cuando_hay_mas_posiciones_que_nodo(
