@@ -340,9 +340,10 @@ filters:
     max_compras: 0
     parar_tras_perdidas: 0
 
-    # Entrada desde 10 segundos y al menos 20 holders reales en cadena.
+    # Sin filtro de edad: también puede evaluar monedas que nacieron antes de
+    # arrancar el proceso. Se mantienen curva, holders y protección de vela.
     min_compradores: 0
-    min_edad_seg: 10
+    min_edad_seg: 0
     max_edad_seg: 0
 
     # No perseguir una mecha/pump vertical de un segundo. La moneda puede

@@ -142,37 +142,14 @@ def _bot_encendido() -> tuple[str, dict]:
     raise AssertionError("no hay ningun bot encendido en bots/")
 
 
-def test_el_bot_encendido_tiene_suelo_de_edad() -> None:
-    """Que la moneda no sea un recien nacido, en el bot que de verdad corre.
-
-    LO QUE SE PIDIO EL 11-oct, con sus palabras: "asegurate que no es mecha
-    de pump y dump" y "que pasen las de 15 segundos hasta 3h". Eran DOS
-    puntas: suelo de 15 s y techo de 3 h.
-
-    EL TECHO DE 3 HORAS YA NO ESTA EN EL BOT QUE CORRE. Los commits de C123
-    del 12-oct lo quitaron (`max_edad_seg: 0` = sin techo) y reescribieron
-    este test para que dijera "solo se pidio el suelo" -- que no es lo que
-    se pidio. Queda escrito aqui en vez de corregirlo por mi cuenta: es un
-    numero de configuracion con dinero real y lo decide Manu. Si lo quiere
-    de vuelta, es poner `max_edad_seg: 10800` en el bot encendido.
-
-    LO QUE SI SE EXIGE, porque sin eso la mitad de lo pedido desaparece sin
-    rastro: que haya SUELO. Sin el, una moneda que ha recorrido el 95% de su
-    curva en tres segundos --un x11 que no lo hace la gente, lo hace un
-    grupo-- entraria igual.
-    """
+def test_el_bot_encendido_no_filtra_por_edad() -> None:
+    """La petición vigente elimina tanto el suelo como el techo de edad."""
     nombre, cfg = _bot_encendido()
     cv = cfg["filters"]["curva_96"]
     suelo = float(cv.get("min_edad_seg") or 0)
-    assert suelo > 0, (
-        f"{nombre} no pide edad minima: una moneda de tres segundos al 95% "
-        "de curva entraria igual, y eso es la mecha que se pidio evitar"
-    )
+    assert suelo == 0, f"{nombre} todavía exige una edad mínima de {suelo}s"
     techo = float(cv.get("max_edad_seg") or 0)
-    assert techo == 0 or techo > suelo, (
-        f"{nombre}: el techo de edad ({techo}s) no puede ser menor que el "
-        f"suelo ({suelo}s), o no entraria ninguna moneda"
-    )
+    assert techo == 0, f"{nombre} todavía impone una edad máxima de {techo}s"
 
 
 def test_el_trader_le_pasa_los_dos_numeros_a_la_fuente() -> None:
@@ -190,11 +167,11 @@ def test_el_trader_le_pasa_los_dos_numeros_a_la_fuente() -> None:
         )
 
 
-def test_real_edad_10_y_bundle_no_bloquea() -> None:
-    """La config real respeta edad 10, 20 holders y no rechaza bundles."""
+def test_real_sin_edad_y_bundle_no_bloquea() -> None:
+    """La config real no filtra por edad ni bundle, y exige 20 holders."""
     filtros = yaml.safe_load(REAL_CONFIG.read_text(encoding="utf-8"))["filters"]
     cfg = filtros["curva_96"]
-    assert cfg["min_edad_seg"] == 10
+    assert cfg["min_edad_seg"] == 0
     assert cfg["max_edad_seg"] == 0
     assert filtros["min_holders"] == 20
     assert cfg["min_compradores"] == 0
