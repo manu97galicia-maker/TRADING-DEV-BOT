@@ -131,7 +131,7 @@ trade:
   max_hold_time: 3600
   price_check_interval: 1
   extreme_fast_mode: false
-  min_reserve_sol: 0.05
+  min_reserve_sol: 0.03
 
   # UN SOLO RUG Y FUERA. Por defecto son 2; con 1, al creador que te la
   # juega una vez no se le vuelve a comprar nunca (queda anotado en

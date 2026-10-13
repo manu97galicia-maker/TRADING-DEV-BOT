@@ -48,6 +48,7 @@ def test_c123_sin_techo_mc_y_con_dos_posiciones() -> None:
     cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
     assert cfg["trade"]["max_posiciones"] == 2
     assert cfg["trade"]["max_real_buys"] == 2
+    assert cfg["trade"]["min_reserve_sol"] == 0.03
     assert cfg["filters"]["max_entry_mc"] == 0
     assert cfg["filters"]["curva_96"]["max_compras"] == 2
 
