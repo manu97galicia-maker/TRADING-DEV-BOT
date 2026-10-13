@@ -12,8 +12,11 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import yaml
 
 from trading.universal_trader import TOPE_DURO_POSICIONES, UniversalTrader
+
+CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-unica123-real.yaml"
 
 
 def _trader(abiertas: int, intervalo: float, max_rps: float) -> UniversalTrader:
@@ -38,6 +41,15 @@ def test_sin_max_posiciones_se_usa_el_tope_duro() -> None:
 
 def test_un_max_posiciones_explicito_sigue_mandando() -> None:
     assert asyncio.Semaphore(int(3 or TOPE_DURO_POSICIONES))._value == 3
+
+
+def test_c123_sin_techo_mc_y_con_dos_posiciones() -> None:
+    """C123 puede abrir una segunda posición y no filtra por market cap."""
+    cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    assert cfg["trade"]["max_posiciones"] == 2
+    assert cfg["trade"]["max_real_buys"] == 2
+    assert cfg["filters"]["max_entry_mc"] == 0
+    assert cfg["filters"]["curva_96"]["max_compras"] == 2
 
 
 def test_avisa_cuando_hay_mas_posiciones_que_nodo(

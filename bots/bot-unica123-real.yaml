@@ -52,13 +52,13 @@ trade:
   tope_compra_sol: 0.20
   nombre_estrategia: "unica123-real"
   escala_por_sol_ganado: 0
-  max_real_buys: 1
+  max_real_buys: 2
   buy_amount_dev_top: 0.20
   dev_top_min_rate: 0.20
   mayhem_buy_amount: 0.10
 
-  # Una sola posicion y una sola compra real durante esta prueba.
-  max_posiciones: 1
+  # Puede abrir una segunda posición aunque la primera siga activa.
+  max_posiciones: 2
   mayhem_max_perdidas: 0
 
   # Slippage alto en la compra: en una moneda que se esta moviendo, un margen
@@ -227,7 +227,7 @@ filters:
   yolo_mode: false            # Un unico ciclo y termina.
   paper_trade: false          # REAL: requiere revision manual antes de arrancar.
 
-  # TECHO DE COMPRA EN 2.800 $.
+  # Sin techo de market cap por peticion expresa.
   #
   # AVISO IMPORTANTE, y prefiero decirtelo antes de que veas el log vacio:
   # este techo y el filtro de volumen tiran el uno contra el otro. El volumen
@@ -241,7 +241,7 @@ filters:
   # POR DEBAJO DE 3.700 $, el mismo techo para todos: el techo aparte para el
   # creador bueno (2.800) se queda desactivado porque ahora seria MAS BAJO que
   # el general.
-  max_entry_mc: 2800
+  max_entry_mc: 0
   max_entry_mc_dev_top: 0
   min_curve_sol: 0
   # SIN TECHO DE VOLUMEN, y esto corrige una medida anterior.
@@ -308,7 +308,7 @@ filters:
     umbral: 0.95
     tope: 0.995
     buy_amount: 0
-    max_compras: 1
+    max_compras: 2
     parar_tras_perdidas: 0
 
     # Entrada desde 10 segundos y al menos 20 holders reales en cadena.
