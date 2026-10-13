@@ -5,7 +5,11 @@ env_file: .env
 rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
 wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
 private_key: ${SOLANA_PRIVATE_KEY}
-enabled: true
+# APAGADO EL 13-oct al encender C123 (`bot-unica123-real.yaml`). No se borra
+# nada: toda la configuracion del 11-oct --entrada al 96%, 30 compradores,
+# ventana de edad 15s-3h, 33% de la cartera, 2 plazas, slippage 25%-- sigue
+# escrita aqui y vuelve cambiando este `enabled`.
+enabled: false
 separate_process: false
 platform: pump_fun
 

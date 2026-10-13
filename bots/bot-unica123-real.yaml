@@ -41,7 +41,11 @@ rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 
-enabled: false
+# ENCENDIDO EL 13-oct, pedido: se eligio C123 frente a la de la curva al 96%
+# que venia corriendo. Solo puede haber UNO encendido: los dos comparten la
+# misma wallet y se reparten las mismas plazas, asi que con los dos a la vez
+# ningun resultado del dia se podria atribuir a ninguno.
+enabled: true
 separate_process: false
 platform: "pump_fun"
 

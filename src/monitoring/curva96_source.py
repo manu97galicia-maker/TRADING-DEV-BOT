@@ -293,10 +293,7 @@ class Curva96Source:
         edad = volumen.edad(mint)
         if edad is None:
             if self.max_edad_seg > 0:
-                ventana = (
-                    f"entre {self.min_edad_seg:.0f}s y "
-                    f"{self.max_edad_seg:.0f}s"
-                )
+                ventana = f"entre {self.min_edad_seg:.0f}s y {self.max_edad_seg:.0f}s"
             else:
                 ventana = f"con al menos {self.min_edad_seg:.0f}s, sin máximo"
             logger.info(
@@ -338,12 +335,18 @@ class Curva96Source:
     # ---------------------------------------------------------------- decidir
 
     def _sin_mecha_vertical(self, mint: str, symbol: str) -> bool:
-        """Rechaza únicamente una subida vertical dentro de la vela corta."""
+        """Rechaza únicamente una subida vertical dentro de la vela corta.
+
+        EL PREFIJO DEL LOG ES "Evitado" A PROPOSITO, igual que los descartes
+        por edad de aquí arriba: `deploy/porque.sh` junta los motivos con
+        `grep -oE "Evitado [^:]+: .*"`, así que una línea que empiece por
+        "Descartada" NO sale en el diagnóstico. Nació con "Descartada" el
+        12-oct y lo cazó `test_los_descartes_por_edad_se_ven_con_el_comando_porque`.
+        """
         subida = volumen.subida(mint, self.vela_seg)
         if self.max_subida_vela > 0 and subida > self.max_subida_vela:
             logger.info(
-                "Descartada %s (%s): vela de +%.0f%% en %.1fs; posible "
-                "pump and dump",
+                "Evitado %s (%s): vela de +%.0f%% en %.1fs; posible pump and dump",
                 symbol,
                 mint,
                 subida * 100,

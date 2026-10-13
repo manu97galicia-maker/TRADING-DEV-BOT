@@ -26,7 +26,7 @@ encendido, configurado y mudo justo para lo que no puede medir. Es como
 murieron los frenos anti-rug de FUCKETHAN (-91,9%).
 """
 
-# ruff: noqa: S101, SLF001, PLR2004, ANN003
+# ruff: noqa: S101, SLF001, PLR2004, ANN003, TRY003
 
 import time
 from pathlib import Path
@@ -37,7 +37,10 @@ import yaml
 from monitoring import volumen
 from monitoring.curva96_source import Curva96Source
 
-CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-paper-ai-entry.yaml"
+RAIZ = Path(__file__).resolve().parent.parent
+#: Se conserva para los tests que hablan del bot de la curva al 96% aunque
+#: este apagado; los que hablan del bot QUE CORRE usan `_bot_encendido()`.
+CONFIG = RAIZ / "bots/bot-paper-ai-entry.yaml"
 REAL_CONFIG = Path(__file__).resolve().parent.parent / "bots/bot-unica123-real.yaml"
 
 
@@ -122,11 +125,54 @@ def test_solo_una_punta_tambien_vale() -> None:
     assert f._fuera_de_edad("nueva2", "N2") is True
 
 
-def test_el_yaml_pide_los_quince_segundos_y_las_tres_horas() -> None:
-    """Los numeros pedidos, atados al fichero que de verdad corre."""
-    cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["filters"]["curva_96"]
-    assert cfg["min_edad_seg"] == 15, "se pidio 15 segundos como suelo"
-    assert cfg["max_edad_seg"] == 0, "sin edad maxima: solo se pidio el suelo"
+def _bot_encendido() -> tuple[str, dict]:
+    """El fichero de bot que de verdad va a arrancar, y su config.
+
+    POR QUE NO SE MIRA UN FICHERO FIJO. Este test apuntaba a
+    `bot-paper-ai-entry.yaml` a pelo. El 13-oct se encendio
+    `bot-unica123-real.yaml` y se apago aquel, asi que el test seguia
+    comprobando numeros de un bot PARADO -- verde o rojo, daba igual, no
+    hablaba del bot que gasta el dinero. `run_all_bots()` arranca los que
+    tengan `enabled: true`, asi que eso es lo que hay que mirar.
+    """
+    for fichero in sorted((RAIZ / "bots").glob("*.yaml")):
+        cfg = yaml.safe_load(fichero.read_text(encoding="utf-8")) or {}
+        if cfg.get("enabled", True):
+            return fichero.name, cfg
+    raise AssertionError("no hay ningun bot encendido en bots/")
+
+
+def test_el_bot_encendido_tiene_suelo_de_edad() -> None:
+    """Que la moneda no sea un recien nacido, en el bot que de verdad corre.
+
+    LO QUE SE PIDIO EL 11-oct, con sus palabras: "asegurate que no es mecha
+    de pump y dump" y "que pasen las de 15 segundos hasta 3h". Eran DOS
+    puntas: suelo de 15 s y techo de 3 h.
+
+    EL TECHO DE 3 HORAS YA NO ESTA EN EL BOT QUE CORRE. Los commits de C123
+    del 12-oct lo quitaron (`max_edad_seg: 0` = sin techo) y reescribieron
+    este test para que dijera "solo se pidio el suelo" -- que no es lo que
+    se pidio. Queda escrito aqui en vez de corregirlo por mi cuenta: es un
+    numero de configuracion con dinero real y lo decide Manu. Si lo quiere
+    de vuelta, es poner `max_edad_seg: 10800` en el bot encendido.
+
+    LO QUE SI SE EXIGE, porque sin eso la mitad de lo pedido desaparece sin
+    rastro: que haya SUELO. Sin el, una moneda que ha recorrido el 95% de su
+    curva en tres segundos --un x11 que no lo hace la gente, lo hace un
+    grupo-- entraria igual.
+    """
+    nombre, cfg = _bot_encendido()
+    cv = cfg["filters"]["curva_96"]
+    suelo = float(cv.get("min_edad_seg") or 0)
+    assert suelo > 0, (
+        f"{nombre} no pide edad minima: una moneda de tres segundos al 95% "
+        "de curva entraria igual, y eso es la mecha que se pidio evitar"
+    )
+    techo = float(cv.get("max_edad_seg") or 0)
+    assert techo == 0 or techo > suelo, (
+        f"{nombre}: el techo de edad ({techo}s) no puede ser menor que el "
+        f"suelo ({suelo}s), o no entraria ninguna moneda"
+    )
 
 
 def test_el_trader_le_pasa_los_dos_numeros_a_la_fuente() -> None:
@@ -209,8 +255,14 @@ def test_los_descartes_por_edad_se_ven_con_el_comando_porque() -> None:
     formatos = [
         linea.strip() for linea in fuente[i:j].splitlines() if "%s (%s)" in linea
     ]
-    assert len(formatos) == 3, (
-        f"se esperaban 3 lineas de descarte por edad y hay {len(formatos)}"
+    # NO SE FIJA UN NUMERO EXACTO DE LINEAS. La primera version exigia 3 y se
+    # puso roja el 12-oct al anadirse un cuarto descarte (la vela vertical de
+    # `_sin_mecha_vertical`) -- pero el problema no era que hubiera cuatro,
+    # era que la nueva empezaba por "Descartada" y `porque` no la recoge. Un
+    # test que cuente lineas obliga a tocarlo cada vez que se anade un
+    # motivo; lo que importa es que TODAS salgan en el diagnostico.
+    assert len(formatos) >= 3, (
+        f"faltan descartes: se esperaban al menos 3 y hay {len(formatos)}"
     )
     for linea in formatos:
         assert linea.startswith('"Evitado %s (%s)'), (
