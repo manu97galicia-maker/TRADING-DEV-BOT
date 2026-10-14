@@ -167,14 +167,25 @@ def test_el_trader_le_pasa_los_dos_numeros_a_la_fuente() -> None:
         )
 
 
-def test_real_sin_edad_y_bundle_no_bloquea() -> None:
-    """La config real no filtra por edad ni bundle, y exige 20 holders."""
+def test_real_compra_al_96_sin_filtros_adicionales() -> None:
+    """La config real usa únicamente el cruce del 96% como señal de token."""
     filtros = yaml.safe_load(REAL_CONFIG.read_text(encoding="utf-8"))["filters"]
     cfg = filtros["curva_96"]
+    assert cfg["umbral"] == 0.96
+    assert cfg["tope"] == 1.0
     assert cfg["min_edad_seg"] == 0
     assert cfg["max_edad_seg"] == 0
-    assert filtros["min_holders"] == 20
+    assert filtros["min_holders"] == 0
+    assert filtros["min_volumen_sol"] == 0
+    assert filtros["min_ops"] == 0
+    assert filtros["ultimas_tx_compra"] == 0
+    assert filtros["min_presion_ratio"] == 0
+    assert filtros["min_titulares"] == 0
+    assert filtros["no_repeat_name_min"] == 0
+    assert filtros["ignorar_listas_de_devs"] is True
+    assert filtros["allow_mayhem"] is True
     assert cfg["min_compradores"] == 0
+    assert cfg["max_subida_vela"] == 0
     assert cfg["exigir_ver_creacion"] is False
     assert cfg["max_carteras_primer_bloque"] == 0
     assert cfg["max_sol_primer_bloque"] == 0

@@ -197,7 +197,8 @@ filters:
   # espera a ciegas: se queda vigilando la moneda y compra en el instante
   # exacto en que cumple las dos condiciones. Con la ventana en 3 s no daria
   # tiempo a que se negociara nada y no compraria nunca.
-  max_buy_age: 60
+  # Sin ventana ni corte de edad: la fuente decide únicamente por la curva.
+  max_buy_age: 0
 
   match_string: null
   bro_address: null
@@ -205,7 +206,7 @@ filters:
   # creador que te rugea `rugs_para_bloquear` veces no se le vuelve a comprar
   # nunca (queda en blocked_devs_bot-sniper-definitiva.json). En true esa lista
   # se ignoraba, que es como estaba heredado.
-  ignorar_listas_de_devs: false
+  ignorar_listas_de_devs: true
 
   # FILTRO DEL CREADOR: APAGADO, y a proposito.
   #
@@ -230,14 +231,14 @@ filters:
     enabled: false
 
   # VOLUMEN MINIMO 300 $ = 3,99 SOL (a 75,18 $/SOL).
-  min_volumen_sol: 8.0
+  min_volumen_sol: 0
 
   # SIN FRANJA HORARIA: opera las 24 horas. El {inicio:18, fin:4} venia
   # heredado de cuando esta estrategia se llamaba NOCHE, y estaba descartando
   # todo fuera de esa banda sin que nadie lo hubiera pedido para esta version.
   horario: {}
 
-  allow_mayhem: false
+  allow_mayhem: true
   require_mayhem: false
   marry_mode: false
   yolo_mode: false            # Un unico ciclo y termina.
@@ -288,17 +289,17 @@ filters:
   # a tener 3 compradores en 30 s.
   # 4 TRANSACCIONES PREVIAS antes de entrar. Cuenta operaciones de la moneda,
   # compras y ventas, no compradores distintos: es "que haya pasado algo ya".
-  min_ops: 4
+  min_ops: 0
   # MAS COMPRA QUE VENTA. El ratio mide cuanto SOL entra frente al que sale en
   # los ultimos  segundos: 1.0 exige que entre mas del que sale.
   # El volumen solo dice que hay movimiento; esto dice hacia donde va, y evita
   # entrar justo cuando el dinero se esta yendo.
   # Las 3 ultimas operaciones tienen que ser COMPRAS: nadie ha vendido aun.
-  ultimas_tx_compra: 2
-  min_presion_ratio: 1.0
-  presion_seg: 3.0
+  ultimas_tx_compra: 0
+  min_presion_ratio: 0
+  presion_seg: 0
   min_buys: 0
-  min_titulares: 6
+  min_titulares: 0
   redes_originales: false
   min_holders_gmgn: 0
   senal_gmgn: []
@@ -307,22 +308,22 @@ filters:
   # todo el flujo (461 de 721 monedas): con tickers comunes, un nombre bloquea
   # al siguiente durante un dia entero. Dos minutos es lo que pediste y hace lo
   # que hacia falta: cortar al que relanza la misma moneda seguida.
-  no_repeat_name_min: 2
+  no_repeat_name_min: 0
   max_holder_pct: 0.0
   max_dev_hold_pct: 0.0
-  min_holders: 20
+  min_holders: 0
   holder_bypass_ratio: 0
 
   buy_on_dex_paid:
     enabled: false
 
-  # UNICA FUENTE DE ENTRADA: una curva de pump.fun alcanza el 95%. Al existir
+  # UNICA FUENTE DE ENTRADA: una curva de pump.fun alcanza el 96%. Al existir
   # una fuente de adquisicion activa, el
   # listener normal de monedas nuevas no abre operaciones por su cuenta.
   curva_96:
     enabled: true
-    umbral: 0.95
-    tope: 0.995
+    umbral: 0.96
+    tope: 1.0
     buy_amount: 0
     # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no
     # que solo dos". Estaba en 2 y eso NO era "dos a la vez": era un CUPO
@@ -340,16 +341,14 @@ filters:
     max_compras: 0
     parar_tras_perdidas: 0
 
-    # Sin filtro de edad: también puede evaluar monedas que nacieron antes de
-    # arrancar el proceso. Se mantienen curva, holders y protección de vela.
+    # Sin filtros adicionales: edad, compradores, holders, bundle y vela no
+    # bloquean. La única condición de señal es alcanzar el 96% de la curva.
     min_compradores: 0
     min_edad_seg: 0
     max_edad_seg: 0
 
-    # No perseguir una mecha/pump vertical de un segundo. La moneda puede
-    # volver a evaluarse en la siguiente operacion mientras siga en la curva.
     vela_seg: 1.0
-    max_subida_vela: 0.35
+    max_subida_vela: 0
 
     # Por peticion expresa, las señales de bundle no bloquean la compra.
     exigir_ver_creacion: false
