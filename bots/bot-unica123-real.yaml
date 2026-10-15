@@ -520,8 +520,41 @@ filters:
   pumpfun_dev:
     enabled: false
 
-  # VOLUMEN MINIMO 300 $ = 3,99 SOL (a 75,18 $/SOL).
-  min_volumen_sol: 0
+  # VOLUMEN MINIMO 20 SOL (15-oct, pedido: "un poco mas de volumen").
+  # Estaba en 0, o sea apagado.
+  #
+  # DE DONDE SALE EL 20, que no es a ojo. Estos son los SOL REALES que hay
+  # dentro de la curva en cada punto (sale de k/vt - 30, la matematica de la
+  # propia curva):
+  #
+  #     70% de curva ... 32,2 SOL dentro
+  #     77% de curva ... 39,6 SOL dentro   <- aqui el bot empieza a mirar
+  #     MC $18.000 ..... 44,3 SOL dentro   <- suelo de la banda
+  #     MC $23.000 ..... 54,0 SOL dentro   <- techo de la banda
+  #
+  # Para llegar a donde el bot mira, una moneda ya ha movido ~40 SOL netos.
+  # Un filtro por debajo de eso no filtra nada. Se pone 20, la mitad, a
+  # proposito: es "un poco", no un muro.
+  #
+  # PERO OJO, Y ESTO ES LO QUE DE VERDAD HACE: el bot solo recuerda 300
+  # SEGUNDOS por moneda (`_VIDA` en volumen.py, y `configurar_memoria` no se
+  # llama en este camino). Asi que esto NO mide el volumen de toda la vida de
+  # la moneda: mide el de los ultimos 5 minutos. En la practica es un filtro
+  # de VELOCIDAD -- pasa la que subio rapido, no la que lleva media hora
+  # arrastrandose. Que es seguramente lo que se quiere, pero conviene saber
+  # que se esta pidiendo eso y no otra cosa.
+  #
+  # SI NO LLEGA, ESPERA. No descarta: hace `sleep` y sigue mirando dentro de
+  # los 60s de `max_buy_age` (universal_trader.py:4242 y alrededores), igual
+  # que la banda de market cap.
+  #
+  # EL RIESGO, dicho antes de que pase: este repo ya tiene el caso de un
+  # filtro calibrado para una entrada y dejado puesto al cambiarla
+  # (`min_compradores` en 30 con la entrada bajada al 71%), y el bot dejo de
+  # comprar DURANTE DIAS sin que nadie supiera por que. Si tras poner esto
+  # las compras se secan, el comando `porque` ensena el embudo y dice cuantas
+  # se caen por volumen. Se apaga volviendo a 0.
+  min_volumen_sol: 20
 
   # SIN FRANJA HORARIA: opera las 24 horas. El {inicio:18, fin:4} venia
   # heredado de cuando esta estrategia se llamaba NOCHE, y estaba descartando
@@ -627,7 +660,37 @@ filters:
   # entrar justo cuando el dinero se esta yendo.
   # Las 3 ultimas operaciones tienen que ser COMPRAS: nadie ha vendido aun.
   ultimas_tx_compra: 0
-  min_presion_ratio: 0
+  # PRESION 1.2 (15-oct, pedido: "ligeramente mayor presion compradora").
+  # Estaba en 0, apagado.
+  #
+  # QUE EXIGE: que en los ultimos 3 segundos entre un 20% mas de SOL del que
+  # sale. Es deliberadamente suave -- el valor por defecto del codigo es 2.0
+  # (el doble), y lo pedido fue "ligeramente".
+  #
+  # HASTA HOY ESTE NUMERO ERA MUDO, y es importante entenderlo: el chequeo
+  # vive dentro del bloque del `max_buy_age`, cuya puerta pide que ADEMAS
+  # este encendido alguno de `min_volumen_sol`, `min_entry_mc`, `min_buys`,
+  # `min_first_block_buys`, `min_ops`, `min_titulares` o `second_wave`.
+  # `min_presion_ratio` NO abre esa puerta por si solo. Como todos estaban a
+  # cero, ponerlo no habria hecho absolutamente nada. Ahora la puerta esta
+  # abierta (por `min_entry_mc: 18000` y por el volumen de arriba), asi que
+  # este numero por fin cuenta.
+  #
+  # SIN DATOS NO ES CAIDA. Si en esos 3 segundos no hubo ninguna operacion,
+  # el codigo lo trata como "pasa" (universal_trader.py, `_pc <= 0 and
+  # _pv <= 0 -> _ok_presion = True`). Esta medido: el 10-ago las 6 monedas
+  # que cruzaron el volumen pedido lo hicieron con la ventana vacia y se
+  # descartaron las seis. Por eso este filtro no puede vetar todo por falta
+  # de dato.
+  #
+  # LO QUE DICE LA MEDICION DEL PROPIO REPO, y va en contra de este filtro:
+  # en `presion_source.py` hay 27.241 monedas medidas y la conclusion fue que
+  # el RATIO de presion "no saco ventaja suficiente para aparecer en la
+  # lista"; lo que si predijo pumps fue el NUMERO DE COMPRADORES DISTINTOS
+  # (del 14,4% al 27,4% con 3 o mas). O sea: `min_titulares` o `min_buys`
+  # tienen mas respaldo que esto. Se pone igual porque es lo pedido, y queda
+  # dicho para que la alternativa este sobre la mesa.
+  min_presion_ratio: 1.2
   presion_seg: 3.0
   min_buys: 0
   min_titulares: 0
