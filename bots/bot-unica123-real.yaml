@@ -230,7 +230,7 @@ filters:
     enabled: false
 
   # VOLUMEN MINIMO 300 $ = 3,99 SOL (a 75,18 $/SOL).
-  min_volumen_sol: 8.0
+  min_volumen_sol: 0
 
   # SIN FRANJA HORARIA: opera las 24 horas. El {inicio:18, fin:4} venia
   # heredado de cuando esta estrategia se llamaba NOCHE, y estaba descartando
@@ -288,17 +288,17 @@ filters:
   # a tener 3 compradores en 30 s.
   # 4 TRANSACCIONES PREVIAS antes de entrar. Cuenta operaciones de la moneda,
   # compras y ventas, no compradores distintos: es "que haya pasado algo ya".
-  min_ops: 4
+  min_ops: 0
   # MAS COMPRA QUE VENTA. El ratio mide cuanto SOL entra frente al que sale en
   # los ultimos  segundos: 1.0 exige que entre mas del que sale.
   # El volumen solo dice que hay movimiento; esto dice hacia donde va, y evita
   # entrar justo cuando el dinero se esta yendo.
   # Las 3 ultimas operaciones tienen que ser COMPRAS: nadie ha vendido aun.
-  ultimas_tx_compra: 2
-  min_presion_ratio: 1.0
+  ultimas_tx_compra: 0
+  min_presion_ratio: 0
   presion_seg: 3.0
   min_buys: 0
-  min_titulares: 6
+  min_titulares: 0
   redes_originales: false
   min_holders_gmgn: 0
   senal_gmgn: []
@@ -307,10 +307,10 @@ filters:
   # todo el flujo (461 de 721 monedas): con tickers comunes, un nombre bloquea
   # al siguiente durante un dia entero. Dos minutos es lo que pediste y hace lo
   # que hacia falta: cortar al que relanza la misma moneda seguida.
-  no_repeat_name_min: 2
+  no_repeat_name_min: 0
   max_holder_pct: 0.0
   max_dev_hold_pct: 0.0
-  min_holders: 20
+  min_holders: 0
   holder_bypass_ratio: 0
 
   buy_on_dex_paid:
@@ -351,13 +351,13 @@ filters:
 
     # Entrada desde 10 segundos y al menos 20 holders reales en cadena.
     min_compradores: 0
-    min_edad_seg: 10
+    min_edad_seg: 0
     max_edad_seg: 0
 
     # No perseguir una mecha/pump vertical de un segundo. La moneda puede
     # volver a evaluarse en la siguiente operacion mientras siga en la curva.
     vela_seg: 1.0
-    max_subida_vela: 0.35
+    max_subida_vela: 0
 
     # Por peticion expresa, las señales de bundle no bloquean la compra.
     exigir_ver_creacion: false

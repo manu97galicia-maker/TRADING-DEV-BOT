@@ -142,39 +142,49 @@ def _bot_encendido() -> tuple[str, dict]:
     raise AssertionError("no hay ningun bot encendido en bots/")
 
 
-def test_el_bot_encendido_tiene_suelo_de_edad() -> None:
-    """La moneda no puede ser un recien nacido, en el bot que de verdad corre.
+def test_los_frenos_de_calidad_son_una_decision_y_se_ven_de_un_vistazo() -> None:
+    """QUE FRENOS HAY PUESTOS HOY. No exige ninguno: los ENSENA.
 
-    ESTE TEST SE HA DADO LA VUELTA DOS VECES Y CONVIENE QUE ESTE ESCRITO:
+    POR QUE ESTE TEST NO VETA NADA. Los frenos de calidad --edad minima,
+    anti-mecha, holders, titulares, operaciones, volumen, presion-- han
+    cambiado de sentido CUATRO veces en cuatro dias:
 
-      11-oct  se pide "que pasen las de 15 segundos hasta 3h" y nace el test
-              exigiendo suelo (y techo).
-      13-oct  C123 trae `min_edad_seg: 10` y quita el techo; el test se
-              adapta y sigue exigiendo suelo.
-      13/14-oct  los commits "Remove C123 token age filter" y "Buy C123
-              tokens at 96 percent without entry filters" ponen el suelo a 0
-              Y REESCRIBEN ESTE TEST para que exija lo contrario
-              (`test_el_bot_encendido_no_filtra_por_edad`). Con eso la suite
-              salia verde sin vigilar nada.
-      15-oct  se pide volver a los frenos. El test vuelve a lo suyo.
+      11-oct  se pide suelo de edad "15 segundos hasta 3h": se enciende.
+      13-oct  C123 lo baja a 10 s y quita el techo.
+      13/14-oct  dos commits los apagan TODOS y reescriben los tests que los
+              vigilaban para que exijan lo contrario. La suite seguia verde.
+      15-oct  se piden de vuelta ("sin mayhem")... y una hora despues se
+              piden fuera otra vez ("solo que compre al llegar al 96%").
 
-    POR QUE IMPORTA EL SUELO. Entrando al 96% de la curva, la moneda ha hecho
-    un x11,9 desde que nacio. Hacerlo en menos de diez segundos no lo
-    consigue la gente comprando: lo consigue un grupo empujando, y lo
-    siguiente que hace ese grupo es vender. Es la mecha de pump and dump.
+    Un test que exija un valor concreto de estos hay que reescribirlo en
+    cada vuelta, y reescribir un guardian es como se pierde lo que
+    vigilaba. Asi que este deja de opinar sobre CUANTO y se queda con lo
+    unico que de verdad hace falta: que el estado sea visible y coherente.
+    Lo que SI se sigue vigilando con dientes esta en el test de abajo.
     """
     nombre, cfg = _bot_encendido()
-    cv = cfg["filters"]["curva_96"]
+    fl = cfg["filters"]
+    cv = fl["curva_96"]
+    frenos = {
+        "edad minima (s)": cv.get("min_edad_seg") or 0,
+        "anti-mecha": cv.get("max_subida_vela") or 0,
+        "compradores distintos": cv.get("min_compradores") or 0,
+        "holders": fl.get("min_holders") or 0,
+        "titulares": fl.get("min_titulares") or 0,
+        "operaciones": fl.get("min_ops") or 0,
+        "volumen (SOL)": fl.get("min_volumen_sol") or 0,
+        "presion compradora": fl.get("min_presion_ratio") or 0,
+        "ultimas tx compra": fl.get("ultimas_tx_compra") or 0,
+    }
+    # COHERENCIA, que es lo unico que se exige: un freno no puede estar en
+    # negativo, y si la edad tiene techo tiene que ser mayor que el suelo.
+    for etiqueta, valor in frenos.items():
+        assert float(valor) >= 0, f"{nombre}: {etiqueta} en negativo ({valor})"
     suelo = float(cv.get("min_edad_seg") or 0)
-    assert suelo > 0, (
-        f"{nombre} no pide edad minima: una moneda que ha hecho el 96% de su "
-        "curva en tres segundos entraria igual, y eso es la mecha que se "
-        "pidio evitar"
-    )
     techo = float(cv.get("max_edad_seg") or 0)
     assert techo == 0 or techo > suelo, (
-        f"{nombre}: el techo de edad ({techo}s) no puede ser menor que el "
-        f"suelo ({suelo}s), o no entraria ninguna moneda"
+        f"{nombre}: techo de edad ({techo}s) por debajo del suelo ({suelo}s): "
+        "no entraria ninguna moneda"
     )
 
 
@@ -193,39 +203,30 @@ def test_el_trader_le_pasa_los_dos_numeros_a_la_fuente() -> None:
         )
 
 
-def test_real_compra_al_96_con_los_frenos_puestos() -> None:
-    """C123 entra al 96% PERO con frenos. Pedido el 15-oct, "sin mayhem".
+def test_lo_que_nunca_se_ha_pedido_apagar_sigue_encendido() -> None:
+    """LOS TRES QUE NO SE TOCAN. Aqui si hay dientes.
 
-    ESTE TEST EXIGIA LO CONTRARIO HASTA HOY. Los commits del 13 y 14-oct lo
-    escribieron para fijar que no hubiera NINGUN filtro: edad 0, anti-mecha
-    0, holders 0, titulares 0, operaciones 0, volumen 0, presion 0, mayhem
-    permitido, listas de devs ignoradas y tope al 100% de curva. O sea que
-    el bot compraba cualquier cosa que cruzara el 96%.
+    Los frenos de calidad se encienden y se apagan segun el dia (ver el test
+    de arriba). Estos tres no: se pidieron una vez, no se han desdicho nunca,
+    y los tres se apagaron solos en los commits del 13 y 14-oct sin que nadie
+    lo pidiera. Por eso tienen guardian propio.
 
-    El 15-oct se pidio el 96% CON los frenos, y "sin mayhem". Lo que se fija
-    aqui es cada uno de ellos, por separado, para que apagar cualquiera
-    vuelva a salir en rojo con su nombre en vez de pasar desapercibido.
+      umbral 0,96        pedido el 14-oct y repetido el 15: "solo que compre
+                         al llegar al 96%".
+      tope por debajo    con el tope al 100% se intenta comprar en plena
+      del 100%           migracion, donde la curva ya no opera: comisiones
+                         tiradas y transacciones que no confirman. Lo paso a
+                         1,0 el commit "...without entry filters".
+      sin mayhem         pedido el 15-oct con esas palabras. El mismo commit
+                         lo habia puesto en true.
     """
     filtros = yaml.safe_load(REAL_CONFIG.read_text(encoding="utf-8"))["filters"]
     cfg = filtros["curva_96"]
 
     assert cfg["umbral"] == 0.96, "se pidio entrar al 96% de la curva"
     assert cfg["tope"] < 1.0, (
-        "con el tope al 100% se intenta comprar en plena migracion, donde la "
-        "curva ya no opera: son comisiones tiradas y transacciones que no "
-        "confirman"
-    )
-    assert cfg["min_edad_seg"] > 0, "sin suelo de edad entra la mecha"
-    assert cfg["max_subida_vela"] > 0, "sin esto entra detras de una vertical"
-    assert filtros["min_holders"] > 0, "sin holders minimos no hay demanda"
-    assert filtros["min_titulares"] > 0
-    assert filtros["min_ops"] > 0
-    assert filtros["min_volumen_sol"] > 0
-    assert filtros["min_presion_ratio"] > 0, (
-        "sin esto se entra mientras el dinero esta SALIENDO"
-    )
-    assert filtros["ultimas_tx_compra"] > 0, (
-        "sin esto se entra con alguien vendiendo por detras"
+        "con el tope al 100% se compra en plena migracion: la curva ya no "
+        "opera ahi, son comisiones tiradas y transacciones que no confirman"
     )
     assert filtros["allow_mayhem"] is False, (
         "pedido el 15-oct con esas palabras: sin mayhem"
