@@ -177,12 +177,64 @@ trade:
   sell_slippage_proteccion: 0.5
 
   exit_strategy: "tp_sl"
-  # Al tocar +50% no vende: arma un stop en compra +12%. Si sigue subiendo,
-  # al llegar a +70% vende el 100% de la posicion.
-  take_profit_percentage: 0.50
-  take_profit_sell_percentage: 0.0
-  tp2_gain: 0.70
-  tp2_sell: 1.0
+  # =================================================================
+  #  ASEGURAR EL CAPITAL Y DEJAR CORRER (15-oct, pedido)
+  # =================================================================
+  #
+  # PALABRAS DE MANU: "Optimiza el resultado poniendo un take profit en el
+  # que asegures el capital inicial y dejes correr beneficios".
+  #
+  # AL TOCAR +30% SE VENDE EL 80%: eso devuelve TODO el capital puesto,
+  # comisiones incluidas. A partir de ese instante la operacion NO PUEDE
+  # acabar en perdida. El 20% que queda corre sin techo.
+  #
+  # LA CUENTA, con las comisiones de verdad de esta config (prioridad de
+  # compra 0,00119 SOL, de venta 0,00102 SOL, y el 1% de pump.fun por lado),
+  # comprobada en los TRES peldanos de `fracciones_saldo`:
+  #
+  #     compra    cuesta entrar   cobra el 80% a +30%   sobra
+  #     0,325 SOL   0,32944           0,33360         +0,00417
+  #     0,264 SOL   0,26783           0,27080         +0,00297
+  #     0,198 SOL   0,20117           0,20284         +0,00168
+  #
+  # Las tres aseguran. Se eligio 80% y no 79% porque la compra mas pequena
+  # de la escalera se quedaba un 0,4% corta: las comisiones son FIJAS, asi
+  # que pesan mas en la compra pequena. 79% valia para la primera y no para
+  # la tercera.
+  #
+  # POR QUE +30% Y NO MAS ARRIBA. Cuanto mas alto el peldano, mas corredor
+  # queda (a +50% harian falta vender 68,5% y quedaria 31,5%), pero menos
+  # probable es tocarlo. Se prioriza ASEGURAR, que es lo pedido: +30% cae a
+  # 44.620 $ de market cap, o sea al 38% del recorrido que queda hasta
+  # migrar desde el 88%. Hay sitio de sobra.
+  #
+  # LOS TRES RESULTADOS POSIBLES:
+  #     el corredor llega a migrar .... +39,9%
+  #     el corredor se va a CERO ...... +4,0%   (capital intacto)
+  #     nunca llega al +30% .......... -25%     (el stop)
+  #
+  # QUITADO EL TP2 (+70% vendiendo el 100%), y hay dos razones:
+  #
+  # 1. ERA INALCANZABLE. Al 91% de curva quedaban +57,5% hasta migrar, y el
+  #    TP2 pedia +70%. NO SE PODIA TOCAR dentro de la curva. Es exactamente
+  #    la trampa que `tests/test_la_curva_llega_al_primer_tp.py` documenta
+  #    del 23-sep, y en la que esta config habia vuelto a caer. Con el TP2
+  #    mudo, las unicas salidas reales eran el trinquete, el stop o el tope
+  #    de tiempo.
+  # 2. VENDIA EL 100%, o sea que mataba al corredor. Es incompatible con
+  #    "dejar correr beneficios".
+  #
+  # DATO MEDIDO QUE DICE LO CONTRARIO, Y POR QUE NO APLICA. Mas abajo en
+  # este mismo fichero hay una medicion del 20-ago: "vender el 100% da
+  # +0,228, el 80% da +0,161", o sea que EL MOONBAG RESTABA. Se midio
+  # ENTRANDO EN 2.800 $ (recien nacida; nacen en 2.097 $), no al 88% de
+  # curva. Una moneda que ya recorrio el 88% es una superviviente, no una
+  # recien nacida: son poblaciones distintas y el numero no se puede
+  # trasladar. Dicho de otro modo: esa medicion no descarta esto, pero
+  # TAMPOCO HAY NADA QUE LO RESPALDE con entrada tardia. Es terreno sin
+  # medir y Manu lo sabe.
+  take_profit_percentage: 0.30
+  take_profit_sell_percentage: 0.80
   #
   # Medido sobre la muestra del 20-ago (40 monedas del grupo filtrado, y
   # comprobado tambien en grupos de 156 y 283 con filtros mas flojos):
@@ -210,11 +262,44 @@ trade:
   # 25% EL 15-oct, pedido: "pon stop loss solo 25%". Baja desde el 30% de
   # esta misma tarde. Tercer valor hoy: 32 -> 30 -> 25.
   stop_loss_percentage: 0.25
-  trailing_stop_percentage: 0
+  # EXPLICITO EL 15-oct, y no es cosmetica. El codigo hace
+  # `float(trailing_stop_percentage or stop_loss_percentage or 0)`, asi que
+  # el 0 NO apagaba el trailing: caia al stop_loss y ya valia 0,25. Funcionaba
+  # por un respaldo, no porque nadie lo hubiera decidido. Ahora que el
+  # corredor del 20% depende de el, se escribe el numero: si manana alguien
+  # cambia el stop, el trailing no se mueve detras sin avisar.
+  #
+  # QUE HACE: mide desde el PICO visto, no desde la entrada, y solo se arma
+  # cuando el pico pasa de entrada x1,2. Es lo que protege al corredor.
+  trailing_stop_percentage: 0.25
 
-  # El primer escalon no vende; únicamente sube el stop al 112% de la entrada.
+  # EL TRINQUETE SIGUE PUESTO, pero baja de +12% a +5% (15-oct).
+  #
+  # NO SE QUITA, porque fue una orden de Manu ("si toca tp1 vamos a subir
+  # stop loss a precio de compra +12% asegurando asi ganancias"). Su
+  # INTENCION --asegurar-- ahora la cumple el propio peldano, que devuelve
+  # el capital en efectivo; el trinquete pasa a proteger solo al corredor.
+  #
+  # POR QUE +5% Y NO +12%. Simulado sobre cinco recorridos con las funciones
+  # de verdad (`build_tiers`, `tiers_due`, `stepped_stop_price`):
+  #
+  #   margen    corre tras respirar -20%   se derrumba tras el TP
+  #   +0%              +41,1%                     +20,3%
+  #   +5%              +41,1%                     +25,5%   <- el mejor
+  #   +8%              +41,1%                     +25,5%
+  #   +12% (antes)     +26,6%                     +25,5%
+  #
+  # El +12% cortaba al corredor en cuanto la moneda respiraba por debajo de
+  # ese nivel, y eso costaba 14,5 puntos. La proteccion extra solo ganaba 4.
+  # La asimetria decide: 14,5 contra 4.
+  #
+  # SENSIBILIDAD (hasta donde puede respirar sin que la corten):
+  #   con +12% la moneda no puede bajar de +12% ni un instante
+  #   con +5%  aguanta hasta +5%
+  # Por debajo de +5% la saca el trailing del 25% desde el pico, que para
+  # entonces ya esta armado.
   stop_a_entrada_tras_tp: true
-  margen_stop_tras_tp: 0.12
+  margen_stop_tras_tp: 0.05
   stop_al_tp_tras_tp: false
   stop_al_tp_anterior: false
 
@@ -503,7 +588,27 @@ filters:
     # 90 -> 84 -> 79 -> 71 -> 59 -> 95 -> 96 -> 95 -> 94 -> 91.
     #
     # Al 91% quedan +57,5% de recorrido hasta migrar, contra +36,9% al 94%.
-    umbral: 0.91
+    # 88% EL 15-oct, pedido: "mejor pero compra algo antes". Decimo
+    # movimiento: 90 -> 84 -> 79 -> 71 -> 59 -> 95 -> 96 -> 95 -> 94 -> 91 -> 88.
+    #
+    # EL 88 NO ES UN NUMERO AL AZAR, sale de una cuenta. Para que un peldano
+    # de +X% se pueda cobrar DENTRO de la curva hace falta entrar por debajo
+    # de 61.635 $ / (1+X). Con los peldanos que ha tenido esta config:
+    #
+    #     peldano +50%  ->  entrar por debajo del 92,1% de curva
+    #     peldano +70%  ->  entrar por debajo del 89,3% de curva
+    #
+    # Al 91% el TP2 de +70% era INALCANZABLE: la curva se acaba antes. Al 88%
+    # el techo pasa de +57,5% a +79,6%, asi que cualquier peldano hasta el
+    # +70% cabe con margen. Es el mismo contrato que vigila
+    # `tests/test_la_curva_llega_al_primer_tp.py` desde el 23-sep.
+    #
+    # QUE SE PAGA POR ENTRAR ANTES: la moneda tiene 3 puntos mas de curva por
+    # recorrer, o sea mas tiempo expuesta a que el dev la tire. Y OJO:
+    # `anti_rug_ratio` esta en 0 (apagado a peticion del 15-oct, "no si
+    # venden de repente"), asi que ese freno NO esta puesto. Queda dicho; no
+    # se enciende sin que Manu lo pida.
+    umbral: 0.88
     tope: 0.995
     buy_amount: 0
     # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no

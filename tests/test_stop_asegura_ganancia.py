@@ -21,6 +21,7 @@ estos tests:
 import itertools
 from pathlib import Path
 
+import pytest
 import yaml
 
 from trading.tiered_exit import (
@@ -48,8 +49,23 @@ def _tiers() -> list:
     return build_tiers(pares)
 
 
-def test_unica123_arma_mas_12_al_tocar_mas_50() -> None:
-    """En real, +50% no vende y mueve el stop a entrada +12%."""
+def test_unica123_asegura_el_capital_al_tocar_mas_30() -> None:
+    """En real, +30% vende el 80% --el capital entero-- y el 20% corre.
+
+    CAMBIADO EL 15-oct, pedido: "Optimiza el resultado poniendo un take
+    profit en el que asegures el capital inicial y dejes correr beneficios".
+    Antes era +50% sin vender y +70% vendiendo todo.
+
+    POR QUE SE QUITO EL TP2 DE +70%. Era INALCANZABLE. Al 91% de curva
+    quedaban +57,5% hasta migrar y el peldano pedia +70%: la curva se acaba
+    antes. Es la trampa que `test_la_curva_llega_al_primer_tp` documenta del
+    23-sep y en la que esta config habia vuelto a caer. Con el TP2 mudo, las
+    unicas salidas eran el trinquete, el stop o el tope de tiempo.
+
+    EL TRINQUETE SIGUE PUESTO pero baja de +12% a +5%: a +12% cortaba al
+    corredor en cuanto la moneda respiraba, y eso costaba 14,5 puntos
+    mientras la proteccion extra solo ganaba 4.
+    """
     trade = yaml.safe_load(REAL_CONFIG.read_text(encoding="utf-8"))["trade"]
     tiers = build_tiers(
         [
@@ -57,20 +73,64 @@ def test_unica123_arma_mas_12_al_tocar_mas_50() -> None:
                 trade["take_profit_percentage"],
                 trade["take_profit_sell_percentage"],
             ),
-            (trade["tp2_gain"], trade["tp2_sell"]),
+            (trade.get("tp2_gain"), trade.get("tp2_sell")),
         ]
     )
-    assert tiers[0].gain == 0.50
-    assert tiers[0].sell == 0.0
-    assert trade["margen_stop_tras_tp"] == 0.12
+    # UN SOLO PELDANO. El tp2 ya no esta escrito, asi que `build_tiers` lo
+    # descarta por None -- que es como se apaga de verdad un peldano (un 0
+    # explicito crearia un escalon al +0%).
+    assert len(tiers) == 1, f"se esperaba un solo escalon, hay {tiers}"
+    assert tiers[0].gain == 0.30
+    assert tiers[0].sell == 0.80
+    assert moonbag_fraction(tiers) == pytest.approx(0.20)
+
     assert trade["stop_a_entrada_tras_tp"] is True
     assert trade["stop_al_tp_tras_tp"] is False
-    assert stepped_stop_price(ENTRADA, tiers, 0, 0.12) == 1.12
-    assert tiers[1].gain == 0.70
-    assert tiers[1].sell == 1.0
+    assert trade["margen_stop_tras_tp"] == 0.05
+    assert stepped_stop_price(ENTRADA, tiers, 0, 0.05) == pytest.approx(1.05)
+
     # 25% desde el 15-oct, pedido ("pon stop loss solo 25%"). Tercer valor
     # ese mismo dia: 32 -> 30 -> 25.
     assert trade["stop_loss_percentage"] == 0.25
+    # El trailing protege al corredor y ahora esta ESCRITO, no heredado del
+    # stop por el respaldo `trailing_stop_percentage or stop_loss_percentage`.
+    assert trade["trailing_stop_percentage"] == 0.25
+
+
+def test_el_peldano_devuelve_el_capital_en_las_tres_compras() -> None:
+    """ "Asegurar el capital" es una cuenta, no una intencion.
+
+    Vendiendo una fraccion f a ganancia g se recupera lo puesto solo si
+    f x compra x (1+g) x (1-comision) - comision_prioridad >= lo que costo
+    entrar. Las comisiones de prioridad son FIJAS, asi que pesan mas en la
+    compra pequena: por eso el 79% valia para el primer peldano de
+    `fracciones_saldo` y NO para el tercero, y se subio al 80%.
+
+    Si alguien baja el porcentaje de venta o sube el TP sin recalcular, la
+    operacion deja de asegurar el capital y este test lo dice.
+    """
+    cfg = yaml.safe_load(REAL_CONFIG.read_text(encoding="utf-8"))
+    trade, pf, cu = cfg["trade"], cfg["priority_fees"], cfg["compute_units"]
+
+    g = trade["take_profit_percentage"]
+    f = trade["take_profit_sell_percentage"]
+    fee_compra = pf["fixed_amount"] * cu["buy"] / 1e15
+    fee_venta = pf["fixed_amount"] * cu["sell"] / 1e15
+    comision_pump = 0.01
+
+    # Los tamanos reales que produce la escalera con 1 SOL libre.
+    libre, compras = 1.0, []
+    for frac in trade["fracciones_saldo"]:
+        compras.append(libre * frac)
+        libre -= libre * frac
+
+    for compra in compras:
+        cuesta = compra * (1 + comision_pump) + fee_compra
+        cobra = f * compra * (1 + g) * (1 - comision_pump) - fee_venta
+        assert cobra >= cuesta, (
+            f"con una compra de {compra:.4f} SOL se cobran {cobra:.5f} y "
+            f"costo {cuesta:.5f}: NO asegura el capital"
+        )
 
 
 # ------------------------------------- un escalon que no vende sigue existiendo
@@ -292,3 +352,66 @@ def test_tocar_el_tp1_y_caer_cierra_en_verde() -> None:
     # Ahora cae. El resultado de cerrar en el suelo:
     assert sl / ENTRADA - 1 > 0, "tenia que cerrar en verde"
     assert round((sl / ENTRADA - 1) * 100, 1) == round(m * 100, 1)
+
+
+def test_la_entrada_del_c123_da_para_cobrar_el_primer_peldano() -> None:
+    """EL GUARDIAN QUE FALTABA, y su ausencia costo el TP2.
+
+    `tests/test_la_curva_llega_al_primer_tp.py` vigila este mismo contrato
+    desde el 23-sep, pero sobre `bot-paper-ai-entry.yaml`. El C123 no tenia
+    ninguno, y por eso volvio a caer en la trampa sin que nada chillara:
+    umbral al 91% (quedaban +57,5% hasta migrar) con un tp2 que pedia +70%.
+    Ese peldano NO SE PODIA TOCAR dentro de la curva, y era el que vendia el
+    100% de la posicion. Las unicas salidas reales eran el trinquete, el stop
+    o el tope de tiempo.
+
+    LA CUENTA. La curva es un producto constante entre reservas virtuales, el
+    precio va como 1/tokens_virtuales**2 y el market cap al migrar son
+    410,9 SOL. Para que un peldano de +X% se cobre DENTRO de la curva hace
+    falta entrar por debajo de MC_migracion / (1+X).
+
+    Este test NO exige un umbral concreto --eso lo decide Manu y lo mueve
+    mucho-- sino que el umbral y los peldanos sigan cuadrando. Si alguien
+    sube el umbral o el TP hasta que dejen de encajar, se dice aqui.
+    """
+    cfg = yaml.safe_load(REAL_CONFIG.read_text(encoding="utf-8"))
+    umbral = cfg["filters"]["curva_96"]["umbral"]
+    trade = cfg["trade"]
+
+    k = 30 * 1073e6
+    vt0 = 1073e6
+    #: MC al migrar, en SOL. Sale de la matematica de la curva.
+    mc_sol_al_migrar = 410.9
+
+    def mc_en_sol(avance: float) -> float:
+        vt = vt0 - 793.1e6 * avance
+        return (k / vt**2) * 1e9
+
+    entrada = mc_en_sol(umbral)
+    techo = mc_sol_al_migrar / entrada - 1
+
+    tiers = build_tiers(
+        [
+            (
+                trade["take_profit_percentage"],
+                trade["take_profit_sell_percentage"],
+            ),
+            (trade.get("tp2_gain"), trade.get("tp2_sell")),
+        ]
+    )
+    assert tiers, "sin peldanos no hay nada que cobrar"
+
+    for i, t in enumerate(tiers):
+        assert t.gain <= techo, (
+            f"el peldano {i + 1} pide +{t.gain * 100:.0f}% pero entrando al "
+            f"{umbral * 100:.0f}% de curva solo quedan +{techo * 100:.1f}% "
+            "hasta migrar: NO se puede cobrar dentro de la curva"
+        )
+
+    # Y con holgura: un peldano justo en el techo solo se cobra si la moneda
+    # migra EXACTAMENTE, lo que en la practica es no cobrarlo.
+    assert tiers[0].gain <= techo * 0.75, (
+        f"el primer peldano (+{tiers[0].gain * 100:.0f}%) se come el "
+        f"{tiers[0].gain / techo * 100:.0f}% del recorrido disponible "
+        f"(+{techo * 100:.1f}%): demasiado justo"
+    )
