@@ -65,7 +65,14 @@ def test_c123_sin_techo_mc_y_con_dos_posiciones() -> None:
     tiene esa parada documentada como "ya costo dias".
     """
     cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
-    assert cfg["trade"]["max_posiciones"] == 2, "dos posiciones a la vez"
+    # SIN TOPE desde el 15-oct, pedido ("elimina numero maximo de
+    # posicion"). Fue 2 del 13 al 15-oct.
+    #
+    # 0 NO ES "INFINITAS": el trader hace
+    # `int(max_posiciones or TOPE_DURO_POSICIONES)` y eso son 40 plazas.
+    # Quien frena de verdad es el dinero: con el 25% del saldo LIBRE las
+    # compras menguan solas y el saldo se agota mucho antes de la 40.
+    assert cfg["trade"]["max_posiciones"] == 0, "se pidio sin tope de plazas"
     assert cfg["trade"]["max_real_buys"] == 0, (
         "max_real_buys es un cupo TOTAL, no simultaneas: a 0 o el bot se "
         "para solo tras esas compras y no lo vuelve a decir"

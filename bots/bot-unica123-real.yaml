@@ -52,7 +52,26 @@ platform: "pump_fun"
 trade:
   # Compra normal de 0,10 SOL. El techo absoluto impide superar 0,20 SOL por
   # operacion aunque otra ruta proponga un importe superior.
+  # YA NO MANDA. Desde el 15-oct el importe lo decide `fraccion_saldo`,
+  # que va ANTES que esta clave. Se deja escrito como respaldo: con
+  # `fraccion_saldo: 0` volveria a mandar este 0,10.
   buy_amount: 0.10
+  # 25% DEL SALDO LIBRE POR COMPRA (15-oct, pedido: "pon 25% del sol
+  # balance por compra").
+  fraccion_saldo: 0.25
+  # SOBRE QUE SE CALCULA ESE 25%, que es la mitad de la decision:
+  #
+  #   libre    el SOL gastable: saldo - reserva - lo ya comprometido.
+  #            Mengua con cada compra, asi que las compras salen cada vez
+  #            mas pequenas y el tamano se frena SOLO.
+  #   cartera  saldo MAS lo que ya valen las monedas. No baja al comprar,
+  #            asi que salen IGUALES y cuatro del 25% comprometen el 100%.
+  #
+  # SE ELIGE `libre` porque se pidio "del sol balance" --el SOL que hay--
+  # y porque se acaba de quitar el tope de posiciones: sin tope y con base
+  # `cartera`, cuatro compras dejarian la cartera entera dentro. Con
+  # `libre` el propio tamano hace de freno.
+  fraccion_base: libre
   tope_compra_sol: 0.20
   nombre_estrategia: "unica123-real"
   escala_por_sol_ganado: 0
@@ -74,7 +93,17 @@ trade:
   mayhem_buy_amount: 0.10
 
   # Puede abrir una segunda posición aunque la primera siga activa.
-  max_posiciones: 2
+  # SIN TOPE EL 15-oct, pedido: "elimina numero maximo de posicion".
+  #
+  # OJO: 0 NO ES "INFINITAS". El trader hace
+  # `int(max_posiciones or TOPE_DURO_POSICIONES)`, asi que un 0 son 40
+  # plazas. No hay forma de escribir "sin limite" en esta clave; 40 es el
+  # techo duro del codigo.
+  #
+  # QUIEN FRENA DE VERDAD ES EL DINERO: con el 25% del saldo libre por
+  # compra las compras menguan solas (0,25 · 0,19 · 0,14 · 0,11 ...) y el
+  # saldo se agota mucho antes de la plaza 40.
+  max_posiciones: 0
   mayhem_max_perdidas: 0
 
   # Slippage alto en la compra: en una moneda que se esta moviendo, un margen
