@@ -40,6 +40,28 @@ EOF
   echo "  $nombre  ->  deploy/$guion"
 }
 
+# Y un TERCER envoltorio para los que SI necesitan el entorno del bot
+# (aiohttp, solders, dotenv): esos van con `uv run`, y ademas hace falta un
+# `cd` al repo porque `uv` busca el proyecto desde el directorio actual.
+#
+# EL FALLO QUE LO MOTIVA, 15-oct: se mando
+# `uv run deploy/analizar_despegue.py ...` y desde el movil la sesion estaba
+# en ~, asi que uv contesto "Failed to spawn: No such file or directory". No
+# era el script: era la ruta relativa. Es la misma trampa que ya tiene
+# documentada `arranca.sh` ("desde el movil la sesion vuelve a ~ y las rutas
+# relativas fallan"), y la respuesta es la misma: ruta absoluta dentro de un
+# fichero, para que el comando funcione se este donde se este.
+_poner_uv() {
+  local nombre="$1" guion="$2"
+  cat > "$DESTINO/$nombre" <<EOF
+#!/usr/bin/env bash
+cd "$RAIZ" || { echo "No existe $RAIZ"; exit 1; }
+exec uv run "deploy/$guion" "\$@"
+EOF
+  chmod +x "$DESTINO/$nombre"
+  echo "  $nombre  ->  deploy/$guion  (con el entorno del bot)"
+}
+
 echo "Instalando comandos globales:"
 _poner devs devs.sh
 _poner cazador cazador.sh
@@ -50,6 +72,10 @@ _poner porque porque.sh
 # entrando en 28k; distinguirlo pedia cuatro comandos y leer 800 lineas de
 # YAML desde el movil.
 _poner_py banda banda.py
+# QUE PASO CUANDO UNA MONEDA CRUZO UN MARKET CAP. Necesita el entorno del bot
+# (aiohttp, solders) y el nodo, asi que va con `uv run`.
+#     despegue --mc 20000 --sol 105 <mint> <mint> ...
+_poner_uv despegue analizar_despegue.py
 # POR QUE SE CERRO UNA MONEDA CONCRETA. Es la pregunta que mas se repite y
 # hasta ahora pedia inventar un grep distinto cada vez.
 _poner_py porque_cerro porque_cerro.py
