@@ -4,6 +4,13 @@ PEDIDO (15-oct, palabras de Manu): "33% del portfolio de sol por operacion y
 el 40% db la segunda y jn 50% de la restante a la tercer maximo 3 posiciones
 abiertas a la vez y minimo 0.015 sol de reservar".
 
+OJO: EL C123 YA NO USA LA ESCALERA. Ese mismo dia Manu la cambio por un 60%
+plano ("pon 60% sol balance por operaciones maximo 3 simultaneamente"), asi
+que `fracciones_saldo` se borro de su yaml. ESTE FICHERO SIGUE ENTERO porque
+el MECANISMO sigue en el codigo y cualquier bot puede volver a usarlo: lo que
+vigila es que la escalera funcione cuando se configure, no que el C123 la
+tenga. Las comprobaciones del C123 se han movido a lo que lleva ahora.
+
 POR QUE HIZO FALTA CODIGO NUEVO Y NO SOLO UN NUMERO EN EL YAML.
 `fraccion_saldo` es UN escalar. Con `fraccion_base: libre` las compras ya
 menguaban solas --el porcentaje se aplica al saldo que queda-- pero el
@@ -179,11 +186,11 @@ def test_bot_runner_pasa_la_escalera() -> None:
 
 
 # ------------------------------------------- la aritmetica del YAML
-def test_las_cuentas_escritas_en_el_yaml_son_de_verdad() -> None:
-    """El YAML afirma 0,330 / 0,268 / 0,201 y un 20,1% sin tocar.
+def test_las_cuentas_de_la_escalera_son_de_verdad() -> None:
+    """La escalera 33/40/50 da 0,330 / 0,268 / 0,201 sobre 1 SOL libre.
 
-    Se recalcula aqui: si alguien cambia un peldano y no el comentario, el
-    comentario pasa a mentir y este test lo pilla.
+    Se queda como prueba del MECANISMO aunque el C123 ya no la use: si
+    manana se vuelve a configurar, estas son las cifras que tiene que dar.
     """
     libre = 1.0
     compras = []
@@ -197,10 +204,6 @@ def test_las_cuentas_escritas_en_el_yaml_son_de_verdad() -> None:
     assert compras[2] == pytest.approx(0.201, abs=0.001)
     assert sum(compras) == pytest.approx(0.799, abs=0.001)
     assert libre == pytest.approx(0.201, abs=0.001)
-
-    texto = C123.read_text(encoding="utf-8")
-    for trozo in ("0,330", "0,268", "0,201", "0,799"):
-        assert trozo in texto, f"el yaml ya no dice {trozo}"
 
 
 def test_la_escalera_sube_de_verdad_el_porcentaje() -> None:
@@ -228,16 +231,55 @@ def test_la_escalera_sube_de_verdad_el_porcentaje() -> None:
 
 
 # ----------------------------------------------- lo que pide el C123
-def test_el_c123_lleva_lo_pedido() -> None:
-    cfg = yaml.safe_load(C123.read_text(encoding="utf-8"))
-    trade = cfg["trade"]
-    assert trade["fracciones_saldo"] == ESCALERA_PEDIDA
-    assert trade["min_reserve_sol"] == RESERVA_PEDIDA
-    assert trade["max_posiciones"] == PLAZAS_PEDIDAS
-    assert str(trade["fraccion_base"]).strip().lower() == "libre", (
-        "la escalera solo se aplica en la rama `libre`; con base `cartera` "
-        "quedaria muda"
+def test_el_c123_lleva_el_60_por_ciento_plano() -> None:
+    """Lo ultimo pedido: "pon 60% sol balance por operaciones maximo 3
+    simultaneamente". Tercer tamano del dia: 25% -> escalera 33/40/50 -> 60%.
+
+    `fracciones_saldo` tiene que estar BORRADA, no puesta a 0 ni a
+    [0.6, 0.6, 0.6]: dejarla escrita invita a creer que sigue mandando.
+    """
+    trade = yaml.safe_load(C123.read_text(encoding="utf-8"))["trade"]
+    assert trade["fraccion_saldo"] == pytest.approx(0.60)
+    assert "fracciones_saldo" not in trade, (
+        "el C123 ya no usa escalera: la clave debe estar borrada"
     )
+    assert trade["max_posiciones"] == PLAZAS_PEDIDAS
+    assert trade["min_reserve_sol"] == RESERVA_PEDIDA
+    assert str(trade["fraccion_base"]).strip().lower() == "libre"
+
+
+def test_el_60_por_ciento_deja_las_posiciones_muy_desiguales() -> None:
+    """Fija la consecuencia para que no sorprenda a nadie.
+
+    Con base `libre` el 60% da 0,591 / 0,235 / 0,092 sobre 1 SOL: la primera
+    es 6,4 VECES la tercera. Con la escalera 33/40/50 eran casi iguales
+    (0,325 / 0,263 / 0,196). No es un fallo, es lo que se pidio -- pero esta
+    escrito aqui y en el yaml para que sea una decision y no una sorpresa.
+    """
+    trade = yaml.safe_load(C123.read_text(encoding="utf-8"))["trade"]
+    libre = 1.0 - trade["min_reserve_sol"]
+    compras = []
+    for _ in range(trade["max_posiciones"]):
+        imp = libre * trade["fraccion_saldo"]
+        compras.append(imp)
+        libre -= imp
+    assert compras[0] / compras[2] == pytest.approx(6.25, abs=0.3)
+    assert sum(compras) / (1.0 - trade["min_reserve_sol"]) == pytest.approx(
+        0.936, abs=0.01
+    ), "el 60% despliega el 93% del saldo libre"
+
+
+def test_el_suelo_de_compra_protege_la_orden_de_asegurar_el_capital() -> None:
+    """El 60% hacia compras demasiado pequenas para devolver el capital.
+
+    Es el choque entre dos ordenes de Manu del mismo dia: el 60% plano y
+    "asegures el capital inicial". El suelo `compra_minima_sol` las hace
+    compatibles. La cuenta exacta la comprueba
+    `test_toda_compra_que_el_bot_haga_devuelve_el_capital` en
+    tests/test_stop_asegura_ganancia.py.
+    """
+    trade = yaml.safe_load(C123.read_text(encoding="utf-8"))["trade"]
+    assert trade["compra_minima_sol"] == pytest.approx(0.113)
 
 
 def test_el_tope_de_compra_sigue_a_cero() -> None:

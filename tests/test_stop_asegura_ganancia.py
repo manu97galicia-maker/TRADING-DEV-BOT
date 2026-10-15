@@ -97,17 +97,25 @@ def test_unica123_asegura_el_capital_al_tocar_mas_30() -> None:
     assert trade["trailing_stop_percentage"] == 0.25
 
 
-def test_el_peldano_devuelve_el_capital_en_las_tres_compras() -> None:
-    """ "Asegurar el capital" es una cuenta, no una intencion.
+def test_toda_compra_que_el_bot_haga_devuelve_el_capital() -> None:
+    """ "Asegurar el capital" es una cuenta, y el suelo es lo que la sostiene.
 
     Vendiendo una fraccion f a ganancia g se recupera lo puesto solo si
     f x compra x (1+g) x (1-comision) - comision_prioridad >= lo que costo
-    entrar. Las comisiones de prioridad son FIJAS, asi que pesan mas en la
-    compra pequena: por eso el 79% valia para el primer peldano de
-    `fracciones_saldo` y NO para el tercero, y se subio al 80%.
+    entrar. Las comisiones de prioridad son FIJAS, asi que por debajo de un
+    cierto tamano la venta ya no cubre la compra.
 
-    Si alguien baja el porcentaje de venta o sube el TP sin recalcular, la
-    operacion deja de asegurar el capital y este test lo dice.
+    EL 60% PLANO (15-oct) ROMPIA ESTO. Con base `libre` las compras menguan:
+    con 1 SOL salian 0,591 / 0,235 / 0,092, y la tercera se quedaba 0,00040
+    SOL corta de devolver el capital. Con 0,3 SOL fallaban la segunda y la
+    tercera. El pedido nuevo habria roto en silencio el pedido anterior
+    ("asegures el capital inicial").
+
+    EL ARREGLO es `compra_minima_sol`: por debajo de el el bot NO compra mas
+    pequeno, SALTA la moneda (universal_trader.py:5121). Asi que lo que
+    comprueba este test es la propiedad que de verdad importa: TODA COMPRA
+    QUE EL BOT LLEGUE A HACER asegura el capital. Las que no podrian, no se
+    hacen.
     """
     cfg = yaml.safe_load(REAL_CONFIG.read_text(encoding="utf-8"))
     trade, pf, cu = cfg["trade"], cfg["priority_fees"], cfg["compute_units"]
@@ -117,23 +125,43 @@ def test_el_peldano_devuelve_el_capital_en_las_tres_compras() -> None:
     fee_compra = pf["fixed_amount"] * cu["buy"] / 1e15
     fee_venta = pf["fixed_amount"] * cu["sell"] / 1e15
     comision_pump = 0.01
+    suelo = trade["compra_minima_sol"]
+    reserva = trade["min_reserve_sol"]
+    colchon = 0.003  # _fee_headroom_lamports
 
-    # Los tamanos reales que produce la escalera con 1 SOL libre.
-    libre, compras = 1.0, []
-    for frac in trade["fracciones_saldo"]:
-        compras.append(libre * frac)
-        libre -= libre * frac
-
-    for compra in compras:
+    def asegura(compra: float) -> bool:
         cuesta = compra * (1 + comision_pump) + fee_compra
         cobra = f * compra * (1 + g) * (1 - comision_pump) - fee_venta
-        assert cobra >= cuesta, (
-            f"con una compra de {compra:.4f} SOL se cobran {cobra:.5f} y "
-            f"costo {cuesta:.5f}: NO asegura el capital"
-        )
+        return cobra >= cuesta
 
+    # El suelo configurado TIENE que asegurar: es toda su razon de ser.
+    assert asegura(suelo), (
+        f"el suelo de {suelo} SOL no llega a devolver el capital: "
+        "entonces no protege de nada"
+    )
+    # Y un 10% por debajo NO debe asegurar, o el suelo estaria mas alto de
+    # lo necesario y saltaria compras que si valian.
+    assert not asegura(suelo * 0.9), (
+        f"con {suelo * 0.9:.4f} SOL tambien se asegura: el suelo sobra"
+    )
 
-# ------------------------------------- un escalon que no vende sigue existiendo
+    # Simulacion de las compras que SI se harian, con varios saldos.
+    for saldo in (0.3, 0.5, 1.0, 2.0, 5.0):
+        wallet = saldo
+        for _ in range(trade["max_posiciones"]):
+            libre = wallet - reserva
+            if libre <= 0:
+                break
+            imp = libre * trade["fraccion_saldo"]
+            if imp * (1 + trade["buy_slippage"]) + colchon > libre:
+                break
+            if imp < suelo:
+                break  # el bot salta la moneda: no se abre la posicion
+            assert asegura(imp), (
+                f"con {saldo} SOL se compraria {imp:.4f} (por encima del "
+                f"suelo {suelo}) y NO devuelve el capital"
+            )
+            wallet -= imp + colchon
 
 
 def test_un_escalon_que_vende_cero_sobrevive() -> None:
@@ -415,3 +443,37 @@ def test_la_entrada_del_c123_da_para_cobrar_el_primer_peldano() -> None:
         f"{tiers[0].gain / techo * 100:.0f}% del recorrido disponible "
         f"(+{techo * 100:.1f}%): demasiado justo"
     )
+
+
+def test_las_cifras_del_ejemplo_del_yaml_son_de_verdad() -> None:
+    """El YAML trae una tabla de ejemplo con tres compras y lo que cobran.
+
+    Se recalcula aqui porque ese bloque YA MINTIO una vez: hablaba de "los
+    tres peldanos de fracciones_saldo" con las cifras de la escalera
+    33/40/50, y Manu habia cambiado a un 60% plano el mismo dia. Un ejemplo
+    con numeros que ya no salen es peor que no tener ejemplo.
+    """
+    cfg = yaml.safe_load(REAL_CONFIG.read_text(encoding="utf-8"))
+    trade, pf, cu = cfg["trade"], cfg["priority_fees"], cfg["compute_units"]
+    fee_compra = pf["fixed_amount"] * cu["buy"] / 1e15
+    fee_venta = pf["fixed_amount"] * cu["sell"] / 1e15
+    f = trade["take_profit_sell_percentage"]
+    g = trade["take_profit_percentage"]
+    texto = REAL_CONFIG.read_text(encoding="utf-8")
+
+    # (compra, cuesta, cobra) tal y como estan escritas en el yaml
+    for compra, cuesta_esc, cobra_esc in (
+        (0.891, "0,90110", "0,91636"),
+        (0.355, "0,35974", "0,36449"),
+        (0.140, "0,14259", "0,14313"),
+    ):
+        cuesta = compra * 1.01 + fee_compra
+        cobra = f * compra * (1 + g) * 0.99 - fee_venta
+        assert f"{cuesta:.5f}".replace(".", ",") == cuesta_esc, (
+            f"el yaml dice que {compra} cuesta {cuesta_esc} y son {cuesta:.5f}"
+        )
+        assert f"{cobra:.5f}".replace(".", ",") == cobra_esc, (
+            f"el yaml dice que {compra} cobra {cobra_esc} y son {cobra:.5f}"
+        )
+        assert cuesta_esc in texto
+        assert cobra_esc in texto

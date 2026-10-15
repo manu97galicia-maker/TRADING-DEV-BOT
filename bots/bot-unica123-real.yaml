@@ -56,45 +56,37 @@ trade:
   # que va ANTES que esta clave. Se deja escrito como respaldo: con
   # `fraccion_saldo: 0` volveria a mandar este 0,10.
   buy_amount: 0.10
-  # ESCALERA DE TAMANOS, 15-oct (palabras de Manu): "33% del portfolio de
-  # sol por operacion y el 40% db la segunda y jn 50% de la restante a la
-  # tercer maximo 3 posiciones abiertas a la vez y minimo 0.015 sol de
-  # reservar".
+  # 60% DEL SALDO LIBRE POR OPERACION (15-oct, pedido): "Y pon 60% sol
+  # balance por operaciones maximo 3 simultaneamente".
   #
-  # SUSTITUYE AL 25% DE ESTA MANANA. El pedido anterior era "pon 25% del
-  # sol balance por compra", repetido como "25% sol por oper". Queda
-  # anulado por este, que es posterior y mas concreto. Se deja dicho para
-  # que no parezca que el 25% se perdio por descuido.
+  # SUSTITUYE A LA ESCALERA 33/40/50 de hace un rato, que a su vez habia
+  # sustituido al 25% de la manana. Tercer tamano de hoy: 25% -> escalera
+  # 33/40/50 -> 60% plano. Queda dicho para que no parezca que la escalera
+  # se perdio por descuido: la pidio Manu y la ha cambiado Manu.
+  # `fracciones_saldo` se BORRA (no se pone a 0: un 0 ahi tambien se
+  # descarta, pero dejar la clave escrita invita a creer que sigue mandando).
   #
-  # CADA PELDANO SE APLICA AL SALDO QUE QUEDA, no al inicial. Es lo que
-  # significa "de la restante". Con 1 SOL libre:
+  # SE APLICA AL SALDO QUE QUEDA (`fraccion_base: libre`), asi que las
+  # compras menguan solas. Con 1 SOL:
   #
-  #   compra 1: 33% de 1,000 = 0,330  -> quedan 0,670
-  #   compra 2: 40% de 0,670 = 0,268  -> quedan 0,402
-  #   compra 3: 50% de 0,402 = 0,201  -> quedan 0,201
+  #   compra 1: 60% de 0,985 = 0,591  -> quedan 0,391
+  #   compra 2: 60% de 0,391 = 0,235  -> quedan 0,153
+  #   compra 3: 60% de 0,153 = 0,092  -> quedan 0,058
   #   --------------------------------------------------
-  #   desplegado 0,799 (79,9%)   ·   sin tocar 0,201 (20,1%)
+  #   desplegado 0,918 (93,2% del libre)
   #
-  # ESE 20% QUE NO SE JUEGA NUNCA no es un error de cuentas: sale de pedir
-  # porcentajes "de lo que queda". Si se quisiera desplegar el 100% habria
-  # que decir el ultimo peldano a 1.0, y entonces la tercera compra se lo
-  # lleva todo y no queda nada para comisiones de venta. No se hace.
+  # DOS CONSECUENCIAS QUE HAY QUE SABER, y no son opiniones:
   #
-  # POR QUE HIZO FALTA CODIGO NUEVO. `fraccion_saldo` es UN numero: con
-  # base `libre` las compras ya menguaban solas (33% · 22% · 15%), pero el
-  # PORCENTAJE era siempre el mismo. Que suba a 40 y a 50 no se podia
-  # escribir con un escalar. Se anadio `fracciones_saldo` en
-  # `universal_trader.py` (metodo `_fraccion_de_esta_compra`).
+  # 1. LAS POSICIONES SALEN MUY DESIGUALES. La primera es 6,4 VECES la
+  #    tercera (0,591 contra 0,092). Con la escalera 33/40/50 eran
+  #    0,325/0,263/0,196, casi iguales. Si lo que se quiere es apostar
+  #    fuerte a la primera, esto lo hace; si se queria repartir, no.
   #
-  # QUE PELDANO TOCA se decide contando MARCADORES EN DISCO, no el
-  # semaforo: tras un reinicio el semaforo dice cero aunque haya posiciones
-  # vivas, y la siguiente compra usaria el 33% de un saldo ya comprometido.
-  fracciones_saldo: [0.33, 0.40, 0.50]
-  # RESPALDO, ya no manda. Si alguien vaciara `fracciones_saldo`, el
-  # importe caeria aqui. Se pone en 0.33 --el primer peldano-- y no en el
-  # 0.25 viejo para que, si eso pasa, se compre lo mas parecido a lo
-  # pedido en vez de un numero de otro dia.
-  fraccion_saldo: 0.33
+  # 2. SE DESPLIEGA EL 93% DEL SALDO, contra el 80% de la escalera. Queda
+  #    muy poco fuera. El gas de las ventas lo cubre `min_reserve_sol`
+  #    (0,015, intocable), asi que eso no peligra, pero no queda colchon
+  #    para una cuarta oportunidad.
+  fraccion_saldo: 0.60
   # SOBRE QUE SE CALCULAN ESOS PORCENTAJES, que es la mitad de la decision:
   #
   #   libre    el SOL gastable: saldo - reserva - lo ya comprometido.
@@ -189,18 +181,26 @@ trade:
   # acabar en perdida. El 20% que queda corre sin techo.
   #
   # LA CUENTA, con las comisiones de verdad de esta config (prioridad de
-  # compra 0,00119 SOL, de venta 0,00102 SOL, y el 1% de pump.fun por lado),
-  # comprobada en los TRES peldanos de `fracciones_saldo`:
+  # compra 0,00119 SOL, de venta 0,00102 SOL, y el 1% de pump.fun por lado).
+  # Vendiendo el 80% a +30% se recupera lo puesto a partir de 0,1125 SOL de
+  # compra; por eso `compra_minima_sol` esta en 0,113. Con el 60% plano y
+  # 1,5 SOL de saldo las compras son 0,891 / 0,355 / 0,140, y las tres
+  # aseguran:
   #
   #     compra    cuesta entrar   cobra el 80% a +30%   sobra
-  #     0,325 SOL   0,32944           0,33360         +0,00417
-  #     0,264 SOL   0,26783           0,27080         +0,00297
-  #     0,198 SOL   0,20117           0,20284         +0,00168
+  #     0,891 SOL   0,90110           0,91636         +0,01526
+  #     0,355 SOL   0,35974           0,36449         +0,00475
+  #     0,140 SOL   0,14259           0,14313         +0,00054
   #
-  # Las tres aseguran. Se eligio 80% y no 79% porque la compra mas pequena
-  # de la escalera se quedaba un 0,4% corta: las comisiones son FIJAS, asi
-  # que pesan mas en la compra pequena. 79% valia para la primera y no para
-  # la tercera.
+  # SE ELIGIO VENDER 80% Y NO 79% porque las comisiones son FIJAS y pesan
+  # mas en la compra pequena: el 79% valia para la compra grande y se
+  # quedaba 0,4% corto en la pequena.
+  #
+  # (Este bloque hablaba antes de "los tres peldanos de fracciones_saldo",
+  # que era la escalera 33/40/50. Manu la cambio por el 60% plano el mismo
+  # dia; la cuenta no cambia --es relativa al tamano de cada compra-- pero
+  # el ejemplo si, y un ejemplo con numeros que ya no salen es un comentario
+  # que miente.)
   #
   # POR QUE +30% Y NO MAS ARRIBA. Cuanto mas alto el peldano, mas corredor
   # queda (a +50% harian falta vender 68,5% y quedaria 31,5%), pero menos
@@ -372,6 +372,39 @@ trade:
   # Con la comision de venta protectora a 42.424.243 ulam y 120.000 CU,
   # una venta cuesta 42.424.243 * 120.000 / 1e15 = 0,0051 SOL, asi que
   # 0,015 da para unas tres ventas protegidas seguidas.
+  # SUELO DE COMPRA, 0,113 SOL (15-oct). NO LO PIDIO MANU: hace falta para
+  # que el 60% que SI pidio no rompa en silencio lo que pidio antes
+  # ("asegures el capital inicial").
+  #
+  # EL PROBLEMA. El TP vende el 80% a +30% y eso devuelve el capital, pero
+  # las comisiones de prioridad son FIJAS (0,00119 al comprar, 0,00102 al
+  # vender) mas el 1% de pump.fun por lado. Por debajo de cierto tamano la
+  # venta ya no cubre la compra. Con el 60% plano, la tercera compra sale
+  # tan pequena que cae ahi:
+  #
+  #     saldo    3a compra   asegura el capital?
+  #     1,0 SOL    0,0920    NO, falta 0,00040
+  #     0,5 SOL    0,0440    NO, falta 0,00134
+  #     0,3 SOL    0,0248    NO, falta 0,00172   (y la 2a tambien)
+  #
+  # EL SUELO EXACTO son 0,1125 SOL, resuelto de
+  # `0,80 x c x 1,30 x 0,99 - 0,00102 >= c x 1,01 + 0,00119`. Se redondea
+  # al alza a 0,113.
+  #
+  # QUE HACE EL CODIGO POR DEBAJO (universal_trader.py:5121): no compra mas
+  # pequeno, SALTA la moneda y lo escribe en el log ("saldrian X SOL y el
+  # minimo que compensa es Y"). Es preferible no abrir una posicion que
+  # abrirla condenada a no poder asegurar el capital.
+  #
+  # CONSECUENCIA PRACTICA: con el 60%, las TRES posiciones solo caben desde
+  # 1,218 SOL de saldo. Por debajo abre 2 y salta la tercera diciendolo.
+  #     0,3 SOL -> 1 posicion
+  #     0,5 a 1,2 SOL -> 2 posiciones
+  #     1,5 SOL o mas -> 3 posiciones
+  # `max_posiciones: 3` es un MAXIMO, no una cuota, asi que esto no lo
+  # incumple. Pero si se quieren 3 de verdad, hace falta saldo.
+  compra_minima_sol: 0.113
+
   min_reserve_sol: 0.015
 
   # UN SOLO RUG Y FUERA. Por defecto son 2; con 1, al creador que te la
