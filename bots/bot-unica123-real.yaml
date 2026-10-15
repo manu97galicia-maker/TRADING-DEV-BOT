@@ -56,10 +56,46 @@ trade:
   # que va ANTES que esta clave. Se deja escrito como respaldo: con
   # `fraccion_saldo: 0` volveria a mandar este 0,10.
   buy_amount: 0.10
-  # 25% DEL SALDO LIBRE POR COMPRA (15-oct, pedido: "pon 25% del sol
-  # balance por compra").
-  fraccion_saldo: 0.25
-  # SOBRE QUE SE CALCULA ESE 25%, que es la mitad de la decision:
+  # ESCALERA DE TAMANOS, 15-oct (palabras de Manu): "33% del portfolio de
+  # sol por operacion y el 40% db la segunda y jn 50% de la restante a la
+  # tercer maximo 3 posiciones abiertas a la vez y minimo 0.015 sol de
+  # reservar".
+  #
+  # SUSTITUYE AL 25% DE ESTA MANANA. El pedido anterior era "pon 25% del
+  # sol balance por compra", repetido como "25% sol por oper". Queda
+  # anulado por este, que es posterior y mas concreto. Se deja dicho para
+  # que no parezca que el 25% se perdio por descuido.
+  #
+  # CADA PELDANO SE APLICA AL SALDO QUE QUEDA, no al inicial. Es lo que
+  # significa "de la restante". Con 1 SOL libre:
+  #
+  #   compra 1: 33% de 1,000 = 0,330  -> quedan 0,670
+  #   compra 2: 40% de 0,670 = 0,268  -> quedan 0,402
+  #   compra 3: 50% de 0,402 = 0,201  -> quedan 0,201
+  #   --------------------------------------------------
+  #   desplegado 0,799 (79,9%)   ·   sin tocar 0,201 (20,1%)
+  #
+  # ESE 20% QUE NO SE JUEGA NUNCA no es un error de cuentas: sale de pedir
+  # porcentajes "de lo que queda". Si se quisiera desplegar el 100% habria
+  # que decir el ultimo peldano a 1.0, y entonces la tercera compra se lo
+  # lleva todo y no queda nada para comisiones de venta. No se hace.
+  #
+  # POR QUE HIZO FALTA CODIGO NUEVO. `fraccion_saldo` es UN numero: con
+  # base `libre` las compras ya menguaban solas (33% · 22% · 15%), pero el
+  # PORCENTAJE era siempre el mismo. Que suba a 40 y a 50 no se podia
+  # escribir con un escalar. Se anadio `fracciones_saldo` en
+  # `universal_trader.py` (metodo `_fraccion_de_esta_compra`).
+  #
+  # QUE PELDANO TOCA se decide contando MARCADORES EN DISCO, no el
+  # semaforo: tras un reinicio el semaforo dice cero aunque haya posiciones
+  # vivas, y la siguiente compra usaria el 33% de un saldo ya comprometido.
+  fracciones_saldo: [0.33, 0.40, 0.50]
+  # RESPALDO, ya no manda. Si alguien vaciara `fracciones_saldo`, el
+  # importe caeria aqui. Se pone en 0.33 --el primer peldano-- y no en el
+  # 0.25 viejo para que, si eso pasa, se compre lo mas parecido a lo
+  # pedido en vez de un numero de otro dia.
+  fraccion_saldo: 0.33
+  # SOBRE QUE SE CALCULAN ESOS PORCENTAJES, que es la mitad de la decision:
   #
   #   libre    el SOL gastable: saldo - reserva - lo ya comprometido.
   #            Mengua con cada compra, asi que las compras salen cada vez
@@ -226,7 +262,14 @@ trade:
   max_hold_time: 3600
   price_check_interval: 1
   extreme_fast_mode: false
-  min_reserve_sol: 0.03
+  # 0,015 SOL EL 15-oct, pedido: "minimo 0.015 sol de reservar". Venia de
+  # 0,03. Es el colchon que NUNCA se gasta: paga las comisiones de
+  # prioridad de las VENTAS. Bajarlo libera 0,015 SOL para comprar, y a
+  # cambio deja menos margen para que una venta de emergencia pase.
+  # Con la comision de venta protectora a 42.424.243 ulam y 120.000 CU,
+  # una venta cuesta 42.424.243 * 120.000 / 1e15 = 0,0051 SOL, asi que
+  # 0,015 da para unas tres ventas protegidas seguidas.
+  min_reserve_sol: 0.015
 
   # UN SOLO RUG Y FUERA. Por defecto son 2; con 1, al creador que te la
   # juega una vez no se le vuelve a comprar nunca (queda anotado en

@@ -69,14 +69,34 @@ def base_es_libre(t: dict | None = None) -> bool:
     return str(t.get("fraccion_base", "cartera")).strip().lower() == "libre"
 
 
-def importe(cartera: float, t: dict | None = None) -> float:
+def fraccion_del_peldano(t: dict, peldano: int) -> float:
+    """El porcentaje que toca a la compra numero `peldano` (desde 0).
+
+    Copia de `_fraccion_de_esta_compra` en `universal_trader.py`.
+
+    Con `fracciones_saldo` puesta manda la ESCALERA: un porcentaje por
+    posicion abierta (pedido el 15-oct: "33% [...] el 40% de la segunda y un
+    50% de la restante a la tercera"). Sin ella manda el escalar
+    `fraccion_saldo`, que es el comportamiento de siempre.
+
+    Si hay mas compras que peldanos se repite el ultimo, igual que el codigo:
+    no se cae al escalar ni se levanta por indice.
+    """
+    escalera = t.get("fracciones_saldo") or []
+    if not escalera:
+        return float(t.get("fraccion_saldo", 0) or 0)
+    return float(escalera[min(max(0, peldano), len(escalera) - 1)])
+
+
+def importe(cartera: float, t: dict | None = None, peldano: int = 0) -> float:
     """El importe de UNA compra con esa CARTERA, en el modo que este puesto.
 
     Hay TRES modos y se excluyen. El orden es el mismo que en el codigo:
 
     1. `buy_amount_usd` -- un importe en DOLARES, que se pasa a SOL con el
        precio de SOL en vivo. Es el que manda hoy: 10 $ por operacion.
-    2. `fraccion_saldo` -- un porcentaje de la cartera.
+    2. `fraccion_saldo` / `fracciones_saldo` -- un porcentaje de la cartera.
+       Si hay escalera, el porcentaje depende de `peldano`.
     3. `buy_amount` -- un numero de SOL fijo.
 
     Esta funcion existe para que los tests no tengan que saber cual esta
@@ -93,7 +113,7 @@ def importe(cartera: float, t: dict | None = None) -> float:
     """
     t = t or trade()
     usd = t.get("buy_amount_usd", 0)
-    frac = t.get("fraccion_saldo", 0)
+    frac = fraccion_del_peldano(t, peldano)
     if usd > 0:
         imp = float(usd) / SOL_USD_REF
     elif frac > 0:
@@ -142,11 +162,11 @@ def tamanos(
     salen: list[float] = []
     suelo = t.get("compra_minima_sol", 0)
     sobre_libre = base_es_libre(t)
-    for _ in range(plazas or plazas_efectivas(t)):
+    for _peldano in range(plazas or plazas_efectivas(t)):
         libre = wallet - t["min_reserve_sol"]
         if libre <= 0:
             break
-        imp = importe(libre if sobre_libre else wallet + dentro, t)
+        imp = importe(libre if sobre_libre else wallet + dentro, t, _peldano)
         if imp <= 0 or (suelo > 0 and imp < suelo):
             break
         necesita = imp * (1 + t["buy_slippage"]) + COLCHON_POR_POSICION

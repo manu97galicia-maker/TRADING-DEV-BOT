@@ -619,6 +619,7 @@ class UniversalTrader:
         # calcula en el momento de comprar y dentro del cerrojo de gasto, asi
         # que sube solo cuando la wallet sube y no hay que reeditar el yaml.
         fraccion_saldo: float = 0.0,
+        fracciones_saldo: list[float] | None = None,
         buy_amount_usd: float = 0.0,
         fraccion_base: str = "cartera",
         fraccion_si_no_llega: float = 0.0,
@@ -1223,6 +1224,39 @@ class UniversalTrader:
         #: Fraccion de la CARTERA (saldo + lo que ya esta en monedas) con
         #: la que se compra. 0 = tamano fijo. Ver `_valor_en_posiciones_lamports`.
         self.fraccion_saldo = max(0.0, min(1.0, float(fraccion_saldo or 0)))
+        #: ESCALERA DE FRACCIONES, una por posicion abierta. Reemplaza al
+        #: escalar `fraccion_saldo` cuando esta puesta Y la base es "libre".
+        #:
+        #: PEDIDO (15-oct, palabras de Manu): "33% del portfolio de sol por
+        #: operacion y el 40% de la segunda y un 50% de la restante a la
+        #: tercera".
+        #:
+        #: POR QUE HACIA FALTA CODIGO NUEVO. `fraccion_saldo` es UN numero:
+        #: con base "libre" se aplica al saldo gastable, asi que las compras
+        #: menguan solas (33% · 22% · 15% del saldo inicial) pero el
+        #: PORCENTAJE es siempre el mismo. Manu pide que el porcentaje SUBA
+        #: con cada posicion. No se podia expresar con un escalar.
+        #:
+        #: Lo que sale con [0.33, 0.40, 0.50] y 1 SOL libre:
+        #:   compra 1: 33% de 1,000 = 0,330  -> quedan 0,670
+        #:   compra 2: 40% de 0,670 = 0,268  -> quedan 0,402
+        #:   compra 3: 50% de 0,402 = 0,201  -> quedan 0,201
+        #: Total desplegado 0,799: el 20% de la cartera NO se juega nunca.
+        #: Ese resto no es un descuido, es la consecuencia de pedir "de la
+        #: restante" y es el freno que evita comprometer la cartera entera.
+        #:
+        #: Que posicion toca se decide con `_posiciones_abiertas()`, que
+        #: cuenta MARCADORES EN DISCO y no el semaforo: tras un reinicio el
+        #: semaforo dice cero aunque haya posiciones vivas, y entonces la
+        #: cuarta compra volveria a usar el 33% de un saldo ya comprometido.
+        #:
+        #: Si hay mas posiciones que peldanos se repite el ultimo, en vez de
+        #: reventar por indice o caer al escalar sin avisar.
+        self.fracciones_saldo = [
+            max(0.0, min(1.0, float(x)))
+            for x in (fracciones_saldo or [])
+            if x is not None
+        ]
         #: IMPORTE EN DOLARES por compra. 0 = apagado. Si es mayor que cero
         #: manda el, y los SOL salen de dividir por el precio de SOL EN VIVO
         #: (`_SOL_USD`, que refresca `_precio_sol_loop` desde DexScreener).
@@ -2188,6 +2222,35 @@ class UniversalTrader:
             return len(self._open_position_paths())
         except OSError:
             return 0
+
+    def _fraccion_de_esta_compra(self) -> tuple[float, int]:
+        """La fraccion que toca a la compra que se esta montando ahora.
+
+        Devuelve `(fraccion, indice_del_peldano)`. Sin escalera configurada
+        devuelve el escalar `fraccion_saldo` y el indice 0, o sea el
+        comportamiento de siempre.
+
+        PEDIDO (15-oct): "33% del portfolio de sol por operacion y el 40% de
+        la segunda y un 50% de la restante a la tercera".
+
+        QUE POSICION ES ESTA. Se cuenta con `_posiciones_abiertas()`, que lee
+        los marcadores EN DISCO. Hay dos razones para no usar el semaforo:
+        tras un reinicio el semaforo se recrea vacio y diria cero con
+        posiciones vivas --la siguiente compra usaria el 33% de un saldo ya
+        comprometido-- y la posicion que se esta montando ahora todavia no
+        tiene marcador, asi que "0 abiertas" significa correctamente "esta es
+        la primera".
+
+        SI HAY MAS POSICIONES QUE PELDANOS se repite el ultimo. No se cae al
+        escalar ni se levanta por indice: con `max_posiciones` por encima de
+        los peldanos escritos, la compra de mas usaria el porcentaje mas alto,
+        que sobre un saldo ya mermado es el lado seguro.
+        """
+        if not self.fracciones_saldo:
+            return self.fraccion_saldo, 0
+        abiertas = self._posiciones_abiertas()
+        indice = min(max(0, abiertas), len(self.fracciones_saldo) - 1)
+        return self.fracciones_saldo[indice], indice
 
     def _valor_en_posiciones_lamports(self) -> int:
         """Lo que ya esta metido en monedas, en lamports. 0 si no se sabe.
@@ -4978,7 +5041,9 @@ class UniversalTrader:
                             self.buy_amount_usd, _sol_usd, _importe,
                             free / LAMPORTS_PER_SOL,
                         )
-                    elif self.fraccion_saldo > 0 and self.fraccion_base == "libre":
+                    elif (
+                        self.fraccion_saldo > 0 or self.fracciones_saldo
+                    ) and self.fraccion_base == "libre":
                         # SOBRE EL SALDO LIBRE (24-sep, pedido: "cada compra
                         # sera del 15% del total de sol libre").
                         #
@@ -4992,19 +5057,22 @@ class UniversalTrader:
                         # tamano se frena solo y nunca se llega a comprometer
                         # la cartera entera. Es el freno automatico que se
                         # perdio al pasar a la base "cartera" el 23-sep.
-                        _importe = max(
-                            0.0, free / LAMPORTS_PER_SOL * self.fraccion_saldo
-                        )
+                        _frac, _peldano = self._fraccion_de_esta_compra()
+                        _importe = max(0.0, free / LAMPORTS_PER_SOL * _frac)
                         if _tope > 0 and _importe > _tope:
                             _importe = _tope
                         need = int(
                             _importe * (1 + self.buy_slippage) * LAMPORTS_PER_SOL
                         ) + self._fee_headroom_lamports
                         logger.info(
-                            "LIBRE: %.4f SOL gastables -> compra de %.4f (%.0f%%)",
+                            "LIBRE: %.4f SOL gastables -> compra de %.4f (%.0f%%"
+                            "%s)",
                             free / LAMPORTS_PER_SOL,
                             _importe,
-                            self.fraccion_saldo * 100,
+                            _frac * 100,
+                            f", peldano {_peldano + 1} de {len(self.fracciones_saldo)}"
+                            if self.fracciones_saldo
+                            else "",
                         )
                     elif self.fraccion_saldo > 0:
                         # SOBRE LA CARTERA ENTERA, no sobre el saldo libre

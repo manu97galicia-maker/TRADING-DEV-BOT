@@ -91,7 +91,17 @@ def test_c123_sin_techo_mc_y_con_dos_posiciones() -> None:
         "max_compras es el cupo total de la fuente: a 0 o se calla tras "
         "agotarlo"
     )
-    assert cfg["trade"]["min_reserve_sol"] == 0.03
+    # 0,015 DESDE EL 15-oct, pedido ("minimo 0.015 sol de reservar"). Venia
+    # de 0,03. Este assert fijaba el numero viejo, asi que se actualiza a la
+    # vez que el yaml: dejarlo habria puesto el test rojo exigiendo la
+    # version anterior de algo que Manu mando cambiar.
+    #
+    # NO ES UN NUMERO LIBRE: es el colchon que paga las comisiones de
+    # prioridad de las VENTAS. Lo que hay que vigilar no es el valor, es que
+    # siga dando para salir corriendo mas de una vez -- eso lo comprueba
+    # `test_la_reserva_da_para_las_ventas_protegidas` en
+    # tests/test_escalera_de_tamanos.py, con la cuenta hecha.
+    assert cfg["trade"]["min_reserve_sol"] == 0.015
     assert cfg["filters"]["max_entry_mc"] == 0
 
 

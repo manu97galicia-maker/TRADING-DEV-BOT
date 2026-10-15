@@ -120,12 +120,27 @@ def test_las_dos_bases_existen_y_la_elige_el_yaml() -> None:
     Este fichero sigue entero aunque hoy mande "libre": lo que vigila no es la
     decision --esa cambia-- sino que la cuenta de la cartera siga bien hecha
     para el dia que se vuelva a ella.
+
+    CAMBIO DEL 15-oct. La rama "libre" ya no multiplica por
+    `self.fraccion_saldo` sino por `_frac`, que sale de
+    `_fraccion_de_esta_compra()`: con `fracciones_saldo` puesta hay un
+    porcentaje POR POSICION (pedido: "33% [...] el 40% de la segunda y un 50%
+    de la restante a la tercera") y sin ella devuelve el escalar de siempre.
+    Este test se actualizo a la vez que el codigo; si se hubiera dejado como
+    estaba, se habria puesto rojo pidiendo la version vieja de una linea que
+    Manu mando cambiar.
     """
     assert "cartera / LAMPORTS_PER_SOL * self.fraccion_saldo" in FUENTE
-    assert "free / LAMPORTS_PER_SOL * self.fraccion_saldo" in FUENTE
+    assert "free / LAMPORTS_PER_SOL * _frac" in FUENTE
     assert "cartera = bal + _dentro" in FUENTE
     # Y la que se usa la decide el yaml, no el codigo.
     assert 'self.fraccion_base == "libre"' in FUENTE
+    # La escalera tiene que seguir existiendo y seguir cayendo al escalar
+    # cuando no esta puesta: si desapareciera el `if not self.fracciones_saldo`
+    # el bot usaria el peldano 0 para TODAS las compras sin avisar.
+    assert "def _fraccion_de_esta_compra" in FUENTE
+    assert "if not self.fracciones_saldo:" in FUENTE
+    assert "return self.fraccion_saldo, 0" in FUENTE
 
 
 def test_un_valor_mal_escrito_no_cambia_en_silencio_lo_que_se_gasta() -> None:
