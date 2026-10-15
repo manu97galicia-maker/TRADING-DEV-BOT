@@ -81,6 +81,14 @@ trade:
   # corto hace que la transaccion REVIENTE y pagues la comision sin moneda.
   buy_slippage: 0.12
   sell_slippage: 0.25
+  # SUELO ANCHO SOLO PARA LAS VENTAS QUE PROTEGEN (15-oct, mismo pedido).
+  # Estaba sin poner, asi que el stop salia con el 25% de siempre. El
+  # codigo lo explica en `_slippage_para`: "el suelo estrecho hacia que un
+  # stop loss NO SE EJECUTARA justo en la moneda que se estaba desplomando".
+  # En un desplome el precio se mueve mas que eso entre que se decide y
+  # aterriza, y entonces la venta se cae y te quedas dentro.
+  # 0,5 es el que ya usaba la otra configuracion. Solo aplica al stop.
+  sell_slippage_proteccion: 0.5
 
   exit_strategy: "tp_sl"
   # Al tocar +50% no vende: arma un stop en compra +12%. Si sigue subiendo,
@@ -174,8 +182,30 @@ priority_fees:
   # Si SOL cambia mucho de precio, este numero deja de valer 0,089 $ y hay que
   # rehacerlo.
   fixed_amount: 8_480_000
+  # COMISION RAPIDA SOLO PARA LAS VENTAS QUE PROTEGEN (15-oct, pedido:
+  # "asegurate q el take profit y stop loss saltan de inmediato").
+  #
+  # ESTABA A 0, o sea apagada: el stop loss pagaba lo mismo que cualquier
+  # venta --0,00102 SOL-- y el stop salta justo cuando todo el mundo esta
+  # vendiendo y pagando por salir. Con la comision baja, tu venta se queda
+  # en la cola mientras el precio sigue cayendo.
+  #
+  # El valor es el que ya usaba la otra configuracion: 42.424.243 x 120.000
+  # CU = 0,00509 SOL por venta protectora (~0,76 $), contra los 0,00102
+  # (~0,15 $) de antes. Cinco veces mas, pero SOLO cuando salta un stop.
+  #
+  # NO SE SUBE LA DE TODAS LAS VENTAS a proposito: una posicion se compra
+  # una vez y se vende varias, asi que se pagaria en cada peldano. Y un
+  # take profit SI puede esperar una vuelta; un stop no.
+  fixed_amount_venta_proteccion: 42_424_243
   extra_percentage: 0.0
-  hard_cap: 8_480_000
+  # SUBIDO EL 15-oct CON LA LINEA DE ARRIBA, y no es un cambio aparte: el
+  # trader recorta la comision protectora a este tope
+  # (`universal_trader.py:775`, "se recorta"). Con el tope pegado a
+  # `fixed_amount`, la comision de 42.424.243 se habria quedado ESCRITA Y
+  # MUDA -- el fallo de familia de este repo. 75.000.000 es el que ya
+  # llevaba la otra configuracion y deja holgura sin permitir una errata.
+  hard_cap: 75_000_000
 
 retries:
   # DOS INTENTOS, no tres. Cada intento que aterriza y falla paga su comision;
