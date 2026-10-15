@@ -205,7 +205,18 @@ filters:
   # creador que te rugea `rugs_para_bloquear` veces no se le vuelve a comprar
   # nunca (queda en blocked_devs_bot-sniper-definitiva.json). En true esa lista
   # se ignoraba, que es como estaba heredado.
-  ignorar_listas_de_devs: false
+  # TRUE EL 15-oct, pedido: "quita la lista de devs". Se salta las DOS
+  # listas que bloqueaban a un creador (`universal_trader.py:3675`):
+  #   - la BLACKLIST MANUAL, devs vetados a mano uno por uno
+  #   - el AUTO-BANEO, devs que acumularon malos resultados
+  #
+  # LO QUE CUESTA: un dev que ya te hizo perder dinero vuelve a ser
+  # comprable. Era la ultima puerta que miraba QUIEN hizo la moneda; a
+  # partir de aqui solo se mira el 96% de curva.
+  #
+  # (El filtro de reputacion en vivo, que mira la tasa de migracion del
+  # creador, sigue decidiendo por su cuenta: esto no lo toca.)
+  ignorar_listas_de_devs: true
 
   # FILTRO DEL CREADOR: APAGADO, y a proposito.
   #
