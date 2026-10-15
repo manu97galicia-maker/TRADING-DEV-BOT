@@ -428,7 +428,14 @@ filters:
     # LO QUE GANA: al 95% quedan +30,3% de recorrido hasta migrar, contra
     # +24,0% que quedaban al 96%. Mas margen antes de la migracion, que es
     # donde las transacciones no confirmaban.
-    umbral: 0.95
+    # 94% EL 15-oct, pedido: "pon q compre un 1% antes en la curvatura".
+    # Octavo movimiento: 90 -> 84 -> 79 -> 71 -> 59 -> 95 -> 96 -> 95 -> 94.
+    #
+    # LO QUE GANA: al 94% quedan +36,9% de recorrido hasta migrar, contra
+    # +30,3% al 95%. Mas margen antes de la migracion, que es donde las
+    # transacciones dejaban de confirmar. Y mas candidatas, porque toda
+    # moneda que llegue al 95% pasa antes por el 94%.
+    umbral: 0.94
     tope: 0.995
     buy_amount: 0
     # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no
