@@ -35,7 +35,7 @@ C123 = RAIZ / "bots/bot-unica123-real.yaml"
 FUENTE = (RAIZ / "src/trading/universal_trader.py").read_text(encoding="utf-8")
 
 SUELO_PEDIDO = 18000
-TECHO_PEDIDO = 22000
+TECHO_PEDIDO = 23000
 
 #: Matematica de la bonding curve. El MC en SOL es exacto y no depende del
 #: precio de SOL; por eso todo lo estructural se comprueba en SOL.

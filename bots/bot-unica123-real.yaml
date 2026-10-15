@@ -553,8 +553,10 @@ filters:
   #   2. El chequeo de PRESION COMPRADORA vive en ese mismo bloque. Sigue
   #      mudo porque `min_presion_ratio` esta en 0, pero a partir de ahora
   #      ponerlo SI tendria efecto. Antes no: era el fallo diagnosticado hoy.
+  # TECHO A 23.000 EL 15-oct, pedido: "Sigue entrando en 28k quiero entre 18
+  # y 23". Venia de 22.000, puesto hace un rato.
   min_entry_mc: 18000
-  max_entry_mc: 22000
+  max_entry_mc: 23000
   max_entry_mc_dev_top: 0
   min_curve_sol: 0
   # SIN TECHO DE VOLUMEN, y esto corrige una medida anterior.

@@ -108,7 +108,7 @@ def test_c123_sin_techo_mc_y_con_dos_posiciones() -> None:
     # dejo de estar apagado a proposito: es el mando que cumple el pedido.
     # Lo vigila `test_banda_de_entrada_en_dolares` en
     # tests/test_banda_de_entrada.py, con las cuentas hechas.
-    assert cfg["filters"]["max_entry_mc"] == 22000
+    assert cfg["filters"]["max_entry_mc"] == 23000
     assert cfg["filters"]["min_entry_mc"] == 18000
 
 

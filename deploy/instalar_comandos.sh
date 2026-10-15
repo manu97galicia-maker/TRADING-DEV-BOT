@@ -44,6 +44,12 @@ echo "Instalando comandos globales:"
 _poner devs devs.sh
 _poner cazador cazador.sh
 _poner porque porque.sh
+# DONDE ESTA ENTRANDO EL BOT, y por que no donde se le pidio. Separa las tres
+# causas que desde fuera se parecen: codigo viejo, bot sin reiniciar, o la
+# banda esquivada. El 15-oct se pidio entrar en 18-23k y el bot seguia
+# entrando en 28k; distinguirlo pedia cuatro comandos y leer 800 lineas de
+# YAML desde el movil.
+_poner_py banda banda.py
 # POR QUE SE CERRO UNA MONEDA CONCRETA. Es la pregunta que mas se repite y
 # hasta ahora pedia inventar un grep distinto cada vez.
 _poner_py porque_cerro porque_cerro.py
