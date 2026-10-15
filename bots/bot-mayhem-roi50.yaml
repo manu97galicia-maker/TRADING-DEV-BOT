@@ -1,0 +1,277 @@
+# =====================================================================
+#  MAYHEM ROI50 -- comprar al nacer, cobrar +50% y salir
+# =====================================================================
+#
+# PEDIDO POR MANU (15-oct-2026, sus palabras):
+#   "Para la otra estrategia creame una estrategia solo para mayhem donde
+#    pueda sacar facil un roi de un 50% por operacion haciendo trades muy
+#    frecuentes"
+#   y despues: "No ya tenemos datos toma accion"
+#
+# ---------------------------------------------------------------------
+#  POR QUE ESTA ESTRATEGIA ENTRA AL NACER Y NO AL 91% DE CURVA
+# ---------------------------------------------------------------------
+#
+# Esto es lo unico que de verdad importa de este fichero. El +50% que pide
+# Manu es IMPOSIBLE donde compra el C123 y FACIL aqui, y no es cuestion de
+# ajustar filtros: es donde se entra.
+#
+#   Entrada              MC de entrada     Techo antes de migrar
+#   -----------------    --------------    ---------------------
+#   91% de curva (C123)     $39.130              +57,6%
+#   al nacer (este bot)      $4.194         llegan a $30.000 = +615%
+#
+# Un TP de +50% al 91% de curva exige que la moneda CASI MIGRE (+57,6% es
+# todo el recorrido que queda). Al nacer, un +50% es MC $6.291 -- y la mitad
+# de estas monedas llegan a $30.000, asi que pasan por $6.291 obligatoriamente
+# de camino. El +50% no es el objetivo: es un peaje que cruzan de paso.
+#
+# Cuenta con la matematica de la curva (k=30*1073e6, vt=1073e6-793.1e6*a,
+# SOL a $150): MC(0%) = $4.194, MC(91%) = $39.130.
+#
+# ---------------------------------------------------------------------
+#  DE DONDE SALE EL 50% DE ACIERTO (y que parte no se puede creer)
+# ---------------------------------------------------------------------
+#
+# Fuente: `mayhem_v2_raw.csv` -- 250 devs, 603 lanzamientos mayhem medidos
+# (ventana Dune 30d). Medido el 15-oct-2026 sobre el fichero del 9-oct.
+#
+# LO QUE NO SE PUEDE CREER DEL CSV:
+#   - 217 de 250 devs tienen 2 lanzamientos. Con 2, "50% de acierto" solo
+#     puede significar 1 de 2. No es una tasa, es un artefacto.
+#   - CERO devs con 0% de acierto. La tasa mas baja del fichero es 33,3%.
+#     Eso demuestra que la lista se construyo ELIGIENDO a los que ya habian
+#     acertado. En un universo real la mayoria de devs tiene 0%.
+#   -> Por eso la mediana de "50%" del CSV completo NO sirve de prediccion.
+#
+# LO QUE SI SE PUEDE CREER:
+#   - 9 devs tienen 5+ lanzamientos. Juntos: 84 lanzamientos, 42 llegaron a
+#     $30.000 = 50,0% exacto.
+#   - Uno de ellos tiene 39 lanzamientos el solo: 51,3%.
+#   Dos muestras con tamano suficiente dando lo mismo. Ese 50% se sostiene
+#   PARA ESOS DEVS, que son los que estan en la lista cerrada de abajo.
+#
+# ---------------------------------------------------------------------
+#  LAS CUENTAS, SIN MAQUILLAR
+# ---------------------------------------------------------------------
+#
+#   Equilibrio con TP +50% / SL -25% / comisiones 0,88%:  acertar 34,5%
+#   Medido:                                               50,0%
+#   Margen:                                               +15,5 puntos
+#
+#   MEDIA POR OPERACION: +11,6%   <-- NO es +50%
+#
+#   El +50% es lo que entra CUANDO ACIERTA. La media mezcla los aciertos
+#   (+50%) con los fallos (-25%). Con 0,25 SOL por compra son +0,029 SOL de
+#   media por operacion; tras 100 operaciones, +2,9 SOL.
+#   Si alguien lee "+50% por operacion" y espera 100 x 0,125 SOL, se lleva
+#   un disgusto. Es 100 x 0,029 SOL.
+#
+# ---------------------------------------------------------------------
+#  DONDE LOS DATOS LE DICEN NO A MANU
+# ---------------------------------------------------------------------
+#
+# Pidio "trades muy frecuentes". Los datos no lo dan:
+#   - 250 devs mayhem = 20,1 lanzamientos al dia ENTRE TODOS
+#   - la lista cerrada de 20 devs = 2,7 al dia, y eso ANTES de los filtros
+#     de calidad de abajo
+# Son unas pocas operaciones al dia, no muchas. Abrir la lista daria
+# frecuencia, pero se perderia la seleccion de la que sale el 50%: es
+# exactamente el canje que hay que decidir, y lo decide Manu.
+#
+# ---------------------------------------------------------------------
+#  AVISOS DE LA REGLA 0 (cosas que este fichero reintroduce)
+# ---------------------------------------------------------------------
+#
+# 1. ESTE BOT USA LISTA DE DEVS. Manu pidio "quita la lista de devs" y el
+#    C123 tiene `ignorar_listas_de_devs: true`. Aqui va en `false` A
+#    PROPOSITO: el 50% de acierto VIENE de la lista, sin ella no queda nada
+#    medido. El C123 no se toca; esto es un bot aparte.
+#
+# 2. `max_real_buys: 0` NO ES CERO COMPRAS. En `universal_trader.py:4741`
+#    el chequeo es `if (self.max_real_buys and ...)`: el 0 es falsy, o sea
+#    SIN LIMITE. El unico freno real aqui es `paper_trade: true` mas
+#    `enabled: false`. No confiar en ese cero como cinturon.
+#
+# 3. NACE EN PAPEL Y APAGADO. Los datos son una foto historica de hace 6
+#    dias y la seleccion de la lista esta sesgada (ver arriba). No hay NI UNA
+#    operacion medida fuera de muestra con esta configuracion. Pasarlo a real
+#    es decision de Manu y solo tiene sentido despues de medir en papel.
+#
+name: "MAYHEM ROI50 - papel"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: false
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  nombre_estrategia: "mayhem-roi50"
+
+  # TAMANO: 25% del saldo SOL por compra. Es la orden de Manu vigente para
+  # el C123 ("Elimina numero maximo d posicion y pon 25% del sol balance por
+  # compra"), repetida despues ("25% sol por oper"). Se usa el mismo tamano
+  # aqui para que lo que mida el papel prediga lo que haria el dinero real.
+  fraccion_saldo: 0.25
+  fraccion_base: "libre"
+  tope_compra_sol: 0
+  buy_amount: 0.03          # solo respaldo; manda `fraccion_saldo`
+  min_reserve_sol: 0.03
+
+  # 3 posiciones simultaneas: orden de Manu del 14-oct ("maximo 3 operaciones
+  # simultaneas"). Tambien cabe de sobra en el presupuesto del nodo:
+  # vigilables = max_rps * price_check_interval / 2 = 12*1/2 = 6.
+  max_posiciones: 3
+  max_real_buys: 0          # 0 = SIN LIMITE (ver aviso 2 arriba)
+  reiniciar_tanda: false
+  escala_por_sol_ganado: 0
+
+  buy_slippage: 0.12
+  sell_slippage: 0.25
+  exit_strategy: "tp_sl"
+
+  # ----- LA SALIDA: +50% Y SE CIERRA -----
+  # Un unico escalon al +50% que vende el 100%. Es la lectura literal de
+  # "un roi de un 50% por operacion": cuando acierta, entra +50% y la
+  # posicion se cierra.
+  #
+  # Comprobado que ejecuta de verdad: `build_tiers` recorta el sell a [0,1]
+  # -> Tier(gain=0.50, sell=1.0); el bucle de `_monitor_tiered_exit` corre
+  # `while remaining > 1e-9` (linea 209) y corta en `if remaining <= 1e-9:
+  # break` (linea 524). Al vender el 100% en el primer escalon, cierra.
+  #
+  # LO QUE CUESTA ESTA ELECCION: la mitad de estas monedas llegan a $30.000
+  # (x7,2 desde el nacimiento). Vendiendo todo a +50% se renuncia a esa cola.
+  # La alternativa seria vender el 70% a +50% y dejar el 30% corriendo con
+  # trailing. No se hace porque Manu pidio +50% por operacion, no un abanico.
+  # Si quiere la cola, se cambia `take_profit_sell_percentage` a 0.7 y se
+  # anade un tp2. Lo decide el.
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 1.0
+
+  # LOS `tp2..tp5` NO SE ESCRIBEN, Y NO ES UN OLVIDO.
+  #
+  # Ponerlos a 0 NO los apaga: los convierte en escalones al +0%. En
+  # `tiered_exit.py` el descarte es `if gain is None or sell is None` -- o sea
+  # que solo desaparecen si la clave NO EXISTE. Un 0 explicito pasa el filtro
+  # y sale un `Tier(gain=0, sell=0)`.
+  #
+  # Que pasaba al escribirlos a 0 (comprobado, estaba asi y se corrigio):
+  #   escalon 0: +0% vende 0%   <- se cumplen EN EL INSTANTE DE COMPRAR,
+  #   escalon 1: +0% vende 0%      porque `tiers_due` exige price >= entry*1.0
+  #   escalon 2: +0% vende 0%
+  #   escalon 3: +0% vende 0%
+  #   escalon 4: +50% vende 100%
+  # Tres danos: (1) el escalon de verdad se va al indice 4; (2) cada escalon
+  # cumplido pone `had_tp = True`, que es la senal "este dev entrego un pump"
+  # -- se marcarian TODAS las monedas como pump y se corrompe la clasificacion
+  # rug/win de los devs; (3) si algun dia se enciende
+  # `stop_a_entrada_tras_tp`, `stepped_stop_price` devolveria entry*(1+0)*
+  # (1+margen), o sea EL STOP POR ENCIMA DEL PRECIO DE COMPRA, y la posicion
+  # se cerraria sola al primer tick.
+  #
+  # Asi esta hecho el C123: tampoco escribe tp3..tp5. Por eso ahi los
+  # escalones salen limpios (+50% y +70%) y el stop sube bien.
+  final_target_mc: 0
+  mc_take_profit_tiers: []
+
+  # STOP -25%: la orden de Manu vigente ("Y pon stop loss solo 25%"). Es el
+  # mismo numero con el que esta hecha la cuenta de equilibrio de arriba:
+  # cambiarlo invalida el 34,5%.
+  stop_loss_percentage: 0.25
+  vender_todo_en_stop: true
+  stop_a_entrada_tras_tp: false   # con un solo escalon que vende todo, no aplica
+  stop_al_tp_tras_tp: false
+  trailing_stop_percentage: 0
+
+  # Frenos contra rug, ACTIVOS. Comprando al nacer son imprescindibles: es
+  # el momento de maxima exposicion a que el dev tire la moneda. En el C123
+  # estan apagados porque alli se entra al 91% de curva, con la moneda ya
+  # recorrida. Aqui no.
+  anti_rug_ratio: 1.6
+  anti_rug_seg: 3
+  anti_rug_min_sol: 1.0
+  venta_bajo_entrada_seg: 25
+  venta_muerta_seg: 60
+  venta_muerta_gain: 0.0
+  venta_sin_volumen_seg: 45
+
+  max_hold_time: 180
+  price_check_interval: 1
+  extreme_fast_mode: false
+
+compute_units:
+  buy: 140000
+  sell: 120000
+
+priority_fees:
+  enable_dynamic: true
+  enable_fixed: false
+  fixed_amount: 0
+  extra_percentage: 0.0
+  hard_cap: 5000000
+
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  # `logs` (Helius) es OBLIGATORIO, no una preferencia: el feed gratis de
+  # pumpportal NO dice si una moneda es mayhem. Esa bandera solo la lee
+  # Helius. Con pumpportal, `require_mayhem` quedaria escrito y mudo.
+  listener_type: "logs"
+
+  paper_trade: true          # EL FRENO REAL. Ver aviso 2 arriba.
+
+  # SOLO MAYHEM. `require_mayhem` esta implementado en
+  # `platforms/platform_aware.py:258`.
+  allow_mayhem: true
+  require_mayhem: true
+
+  # ----- ENTRADA AL NACER: lo que hace posible el +50% -----
+  # MC(0% de curva) = $4.194 con SOL a $150. La ventana 2600-4200 obliga a
+  # comprar antes de que la moneda se mueva. Si esto se sube, el +50% se
+  # vuelve inalcanzable por geometria (ver la tabla de arriba).
+  min_entry_mc: 2600
+  max_entry_mc: 4200
+  max_token_age: 12
+  max_buy_age: 15
+  min_buy_age: 1
+
+  # ----- CALIDAD: que haya alguien comprando, no solo el dev -----
+  # Estos filtros recortan la frecuencia (ya baja: 2,7/dia antes de ellos).
+  # Son los del `dev40k`, que es la unica configuracion del repo calibrada
+  # para entrada al nacer.
+  min_buys: 8
+  min_titulares: 8
+  min_ops: 8
+  min_curve_sol: 0.5
+  ultimas_tx_compra: 3
+  min_presion_ratio: 1.4
+  presion_seg: 4
+  max_compras_por_cartera: 1.5
+  max_first_block_pct: 0.55
+  max_holder_pct: 0.05
+  no_repeat_name_min: 5
+
+  marry_mode: false
+  yolo_mode: true
+
+  # ----- LA LISTA CERRADA (ver aviso 1 arriba) -----
+  # 20 wallets unicas con 3+ lanzamientos mayhem y mediana de pico >= $40K.
+  # De aqui sale el 50% de acierto; sin esto no queda nada medido.
+  ignorar_listas_de_devs: false
+  bro_address: "top_devs_mayhem40k.json"
+  pumpfun_dev:
+    enabled: false
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 12
