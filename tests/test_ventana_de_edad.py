@@ -230,7 +230,7 @@ def test_lo_que_nunca_se_ha_pedido_apagar_sigue_encendido() -> None:
     # movimiento de este numero. Lo que vigila este guardian NO es el valor
     # --lo mueve Manu y lo mueve mucho-- sino que no se vaya SOLO, como paso
     # el 13-oct en dos commits que nadie pidio.
-    assert cfg["umbral"] == 0.88, "se pidio entrar al 88% de la curva"
+    assert cfg["umbral"] == 0.82, "se pidio entrar al 82% de la curva"
     assert cfg["tope"] < 1.0, (
         "con el tope al 100% se compra en plena migracion: la curva ya no "
         "opera ahi, son comisiones tiradas y transacciones que no confirman"

@@ -608,7 +608,44 @@ filters:
     # `anti_rug_ratio` esta en 0 (apagado a peticion del 15-oct, "no si
     # venden de repente"), asi que ese freno NO esta puesto. Queda dicho; no
     # se enciende sin que Manu lo pida.
-    umbral: 0.88
+    # 82% EL 15-oct, pedido: "este bien esta pillando buenas subidas pero
+    # entra entorno a los 27k a ver si consigues lo mismo pero entrando
+    # entorno 18/22k". Undecimo movimiento.
+    #
+    # EL 82 SALE DE SU PROPIA OBSERVACION, no de mi tabla. Manu ve entradas
+    # en ~27.000 $, y eso CALIBRA el precio de SOL --que yo venia suponiendo
+    # a 150 $ y no lo esta:
+    #
+    #     si el umbral vivo era 88% -> 228,8 SOL de MC -> SOL a ~$118
+    #     si el umbral vivo era 91% -> 260,9 SOL de MC -> SOL a ~$104
+    #
+    # No se sabe cual de los dos tenia el droplet (depende de si habia hecho
+    # pull), asi que se eligio un umbral que caiga en 18-22k CON LOS DOS:
+    #
+    #     umbral 82%  ->  $21.263 con SOL a $118
+    #                 ->  $18.650 con SOL a $104
+    #
+    # El 80% y el 81% solo valian para uno de los dos casos; el 83% y el 84%
+    # solo para el otro. El 82 es el unico que entra en los dos.
+    #
+    # OJO CON LOS DOLARES DE ESTE FICHERO. Todos los MC en $ escritos arriba
+    # (34.323, 39.130, 61.635 de migracion) se calcularon con SOL a 150 $.
+    # Con SOL entre 104 y 118 son un 27-44% mas bajos: la migracion esta en
+    # 43.000-48.500 $, no en 61.635. LOS PORCENTAJES DE CURVA Y LAS
+    # PROPORCIONES SIGUEN BIEN --no dependen del precio-- pero las cifras en
+    # dolares hay que releerlas con el SOL del dia.
+    #
+    # Si se quiere fijar la entrada en DOLARES de verdad (que es lo que Manu
+    # pide realmente), el mando es `filters.max_entry_mc`, que usa el precio
+    # de SOL en vivo. No se toca aqui porque es otro cambio: ese filtro vive
+    # detras de la puerta del `max_buy_age` y encenderlo mueve mas cosas.
+    # Queda ofrecido.
+    #
+    # QUE SE PAGA: 18 puntos de curva por recorrer en vez de 12. Mas tiempo
+    # expuesto a un rug, y `anti_rug_ratio` sigue en 0 (apagado a peticion).
+    # Techo hasta migrar: +128%, asi que el TP de +30% cabe de sobra (se come
+    # el 23% del recorrido disponible).
+    umbral: 0.82
     tope: 0.995
     buy_amount: 0
     # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no
