@@ -150,7 +150,9 @@ trade:
 
   # Stop defensivo para que la prueba no herede el antiguo suelo del 80%.
   # 30% EL 15-oct, pedido: "pon stop loss 30%". Baja desde el 32%.
-  stop_loss_percentage: 0.30
+  # 25% EL 15-oct, pedido: "pon stop loss solo 25%". Baja desde el 30% de
+  # esta misma tarde. Tercer valor hoy: 32 -> 30 -> 25.
+  stop_loss_percentage: 0.25
   trailing_stop_percentage: 0
 
   # El primer escalon no vende; únicamente sube el stop al 112% de la entrada.
@@ -159,7 +161,25 @@ trade:
   stop_al_tp_tras_tp: false
   stop_al_tp_anterior: false
 
-  anti_rug_ratio: 2.0
+  # APAGADO EL 15-oct, pedido: "no si venden de repente". Estaba en 2,0,
+  # o sea: si en 4 segundos se vendian 3+ SOL y las ventas doblaban a las
+  # compras, salia corriendo sin esperar al precio.
+  #
+  # LO QUE SE PIERDE, y conviene tenerlo escrito. Lo explica el propio
+  # trader donde vive este freno: "el stop-loss reacciona al PRECIO, que
+  # es la consecuencia; para cuando el precio ha caido un 35% el volcado
+  # ya ha pasado y solo queda lo que nadie quiso. Esto mira la CAUSA
+  # --quien esta vendiendo ahora mismo-- y sale antes de que el precio
+  # termine de desplomarse."
+  #
+  # O sea que en un rug ya no hay salida temprana: se espera al -25% de un
+  # precio que para entonces esta en caida libre, y lo que se cobre puede
+  # ser bastante peor que ese -25%. Es el escenario de FUCKETHAN (-91,9%),
+  # que fue justo con los frenos anti-rug apagados.
+  #
+  # Se deshace poniendo 2.0 otra vez. `anti_rug_seg` y `anti_rug_min_sol`
+  # se quedan escritos y sin efecto mientras esto sea 0.
+  anti_rug_ratio: 0
   anti_rug_seg: 4
   anti_rug_min_sol: 3
 
