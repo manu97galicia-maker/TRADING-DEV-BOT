@@ -223,7 +223,10 @@ def test_lo_que_nunca_se_ha_pedido_apagar_sigue_encendido() -> None:
     filtros = yaml.safe_load(REAL_CONFIG.read_text(encoding="utf-8"))["filters"]
     cfg = filtros["curva_96"]
 
-    assert cfg["umbral"] == 0.96, "se pidio entrar al 96% de la curva"
+    # 95% desde el 15-oct, pedido ("que compre en 95% curva"). Este numero
+    # lo mueve Manu y se mueve mucho (septima vez); lo que este guardian
+    # vigila no es el valor sino que NO se vaya solo, como paso el 13-oct.
+    assert cfg["umbral"] == 0.95, "se pidio entrar al 95% de la curva"
     assert cfg["tope"] < 1.0, (
         "con el tope al 100% se compra en plena migracion: la curva ya no "
         "opera ahi, son comisiones tiradas y transacciones que no confirman"

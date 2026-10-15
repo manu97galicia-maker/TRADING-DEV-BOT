@@ -120,7 +120,8 @@ trade:
   mc_take_profit_tiers: []
 
   # Stop defensivo para que la prueba no herede el antiguo suelo del 80%.
-  stop_loss_percentage: 0.32
+  # 30% EL 15-oct, pedido: "pon stop loss 30%". Baja desde el 32%.
+  stop_loss_percentage: 0.30
   trailing_stop_percentage: 0
 
   # El primer escalon no vende; únicamente sube el stop al 112% de la entrada.
@@ -371,7 +372,14 @@ filters:
     # titulares 0, operaciones 0, volumen 0, presion 0, mayhem permitido y
     # tope al 100%. Pedido el 15-oct: el 96% SI, los frenos tambien, y
     # "sin mayhem".
-    umbral: 0.96
+    # 95% EL 15-oct, pedido: "que compre en 95% curva". Baja desde el 96%
+    # de esta misma manana. Septimo movimiento de este numero:
+    # 90 -> 84 -> 79 -> 71 -> 59 -> 95 -> 96 -> 95.
+    #
+    # LO QUE GANA: al 95% quedan +30,3% de recorrido hasta migrar, contra
+    # +24,0% que quedaban al 96%. Mas margen antes de la migracion, que es
+    # donde las transacciones no confirmaban.
+    umbral: 0.95
     tope: 0.995
     buy_amount: 0
     # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no

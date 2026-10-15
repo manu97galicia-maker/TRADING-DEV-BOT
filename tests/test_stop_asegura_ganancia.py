@@ -68,7 +68,8 @@ def test_unica123_arma_mas_12_al_tocar_mas_50() -> None:
     assert stepped_stop_price(ENTRADA, tiers, 0, 0.12) == 1.12
     assert tiers[1].gain == 0.70
     assert tiers[1].sell == 1.0
-    assert trade["stop_loss_percentage"] == 0.32
+    # 30% desde el 15-oct, pedido ("pon stop loss 30%"). Fue 32% el 12-oct.
+    assert trade["stop_loss_percentage"] == 0.30
 
 
 # ------------------------------------- un escalon que no vende sigue existiendo
