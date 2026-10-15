@@ -72,7 +72,21 @@ trade:
   # `cartera`, cuatro compras dejarian la cartera entera dentro. Con
   # `libre` el propio tamano hace de freno.
   fraccion_base: libre
-  tope_compra_sol: 0.20
+  # QUITADO EL 15-oct. Pedido "25% del sol balance por compra" y repetido
+  # ("25% sol por oper") al ver que no se aplicaba.
+  #
+  # ESTE TOPE LO RECORTABA EN SILENCIO. Con 0,20 SOL, el 25% dejaba de
+  # mandar en cuanto el saldo libre pasaba de 0,81 SOL: a partir de ahi se
+  # compraba 0,20 fijo pasara lo que pasara. Con 2 SOL el 25% serian 0,49
+  # y se compraban 0,20; con 5 SOL serian 1,24 y se compraban 0,20.
+  #
+  # Es la misma familia que el `hard_cap` recortando la comision o los dos
+  # cupos de compras: un numero puesto y otro que lo anula sin decirlo.
+  #
+  # 0 = sin tope (el codigo hace `if _tope > 0 and _importe > _tope`).
+  # Quien frena ahora es el propio 25%, que mengua con cada compra porque
+  # la base es el saldo LIBRE.
+  tope_compra_sol: 0
   nombre_estrategia: "unica123-real"
   escala_por_sol_ganado: 0
   # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no que

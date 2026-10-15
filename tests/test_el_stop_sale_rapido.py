@@ -181,3 +181,41 @@ def test_el_peldano_que_no_vende_sigue_subiendo_el_suelo() -> None:
     assert "_vendido = True" in bloque, (
         "el peldano que no vende ya no se marca como hecho: no subiria el suelo"
     )
+
+
+def test_nada_recorta_en_silencio_el_porcentaje_por_compra() -> None:
+    """Si se pide un % del saldo, que sea ESE % y no otro.
+
+    EL FALLO, del 15-oct. Se pidio "25% del sol balance por compra" y se
+    puso `fraccion_saldo: 0.25`. Pero `tope_compra_sol` seguia en 0,20 SOL,
+    y el trader recorta: `if _tope > 0 and _importe > _tope`. Con saldo
+    libre por encima de 0,81 SOL el 25% dejaba de mandar y se compraba 0,20
+    fijo -- con 5 SOL el 25% son 1,24 y se compraban 0,20.
+
+    No fallaba nada ni lo decia el log: habia dos numeros y el segundo
+    anulaba al primero. Hubo que pedirlo dos veces para verlo.
+
+    ES LA FAMILIA DE SIEMPRE EN ESTE REPO: el `hard_cap` recortando la
+    comision protectora, los dos cupos de compras, el buffer de 32 puntos.
+    Un numero puesto y otro que lo deja sin efecto sin decirlo.
+
+    LO QUE SE EXIGE: o no hay tope, o el tope es coherente con el
+    porcentaje para el saldo con el que se opera. No se fija un valor: se
+    fija que no se contradigan en silencio.
+    """
+    nombre, cfg = _bot_encendido()
+    t = cfg["trade"]
+    frac = float(t.get("fraccion_saldo") or 0)
+    tope = float(t.get("tope_compra_sol") or 0)
+    if frac <= 0 or tope <= 0:
+        return  # o manda un importe fijo, o no hay tope: nada que contradecir
+
+    #: Saldo por encima del cual el tope empieza a mandar en vez del %.
+    corte = tope / frac
+    raise AssertionError(
+        f"{nombre}: se compra el {frac:.0%} del saldo PERO `tope_compra_sol` "
+        f"esta en {tope} SOL. A partir de {corte:.2f} SOL de saldo libre el "
+        f"porcentaje deja de aplicarse y se compra {tope} fijo, sin que nada "
+        "lo diga. O se quita el tope (0) o se sube por encima de lo que vaya "
+        "a dar el porcentaje."
+    )
