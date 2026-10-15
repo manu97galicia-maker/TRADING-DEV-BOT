@@ -92,18 +92,21 @@ trade:
   dev_top_min_rate: 0.20
   mayhem_buy_amount: 0.10
 
-  # Puede abrir una segunda posición aunque la primera siga activa.
-  # SIN TOPE EL 15-oct, pedido: "elimina numero maximo de posicion".
+  # 4 EL 15-oct, pedido: "pon maximo de operaciones abiertas simultaneas 4".
+  # Estuvo sin tope (0 = 40) unas horas esa misma tarde.
   #
-  # OJO: 0 NO ES "INFINITAS". El trader hace
-  # `int(max_posiciones or TOPE_DURO_POSICIONES)`, asi que un 0 son 40
-  # plazas. No hay forma de escribir "sin limite" en esta clave; 40 es el
-  # techo duro del codigo.
+  # POR QUE VUELVE UN TOPE, y de donde sale el 4. El take profit tardaba en
+  # ejecutarse y una de las dos causas era el NODO: cada posicion abierta
+  # consulta su precio cada `price_check_interval` (1 s) y el nodo da para
+  #     max_rps (20) x intervalo (1) / 2 = 10 posiciones
+  # Por encima de ahi las consultas se encolan y lo que se retrasa es ver
+  # que toco el objetivo. Con 40 plazas cada posicion se miraba cada 4 s.
+  # Con 4 se mira cada 1 s, que es el minimo que permite el intervalo.
   #
-  # QUIEN FRENA DE VERDAD ES EL DINERO: con el 25% del saldo libre por
-  # compra las compras menguan solas (0,25 · 0,19 · 0,14 · 0,11 ...) y el
-  # saldo se agota mucho antes de la plaza 40.
-  max_posiciones: 0
+  # LA OTRA CAUSA SIGUE EN PIE Y NO SE TOCA: la venta del take profit paga
+  # la comision normal (0,00102 SOL) y no la reforzada (0,00509) que desde
+  # hoy lleva el stop. Se ofrecio subirla y no se pidio.
+  max_posiciones: 4
   mayhem_max_perdidas: 0
 
   # Slippage alto en la compra: en una moneda que se esta moviendo, un margen
