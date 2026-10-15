@@ -1,0 +1,563 @@
+# ===================================================================
+# SOLO MAYHEM - EN PAPEL, PARA MEDIR ANTES DE ARRIESGAR
+# ===================================================================
+#
+# Creado el 15-oct, pedido: "creame una estrategia solo para mayhem".
+#
+# POR QUE NACE EN PAPEL Y APAGADO, y no en real:
+#
+#   NO HAY UN SOLO DATO sobre si las monedas mayhem se comportan mejor,
+#   peor o igual. El cazador lleva 579.706 monedas apuntadas y `_foto`
+#   (en cazar_senales.py) NO guarda si una moneda es mayhem, asi que esa
+#   pregunta no se puede responder con lo acumulado. Encender esto en
+#   real seria apostar sin ningun numero detras.
+#
+#   En papel anota lo mismo que haria con dinero --entradas, picos,
+#   suelos, que peldano habria cobrado-- sin gastar nada. En unos dias
+#   hay con que comparar contra la estrategia que si corre en real.
+#
+# PARA ENCENDERLO EN PAPEL: poner `enabled: true` aqui abajo. Puede
+# convivir con el bot real porque no compra; lo unico que comparte es el
+# nodo.
+#
+# PARA PASARLO A REAL despues de medir: `paper_trade: false`. Y entonces
+# hay que APAGAR el otro bot, porque dos a la vez se reparten la wallet y
+# ningun resultado se puede atribuir a ninguno.
+#
+# LA UNICA DIFERENCIA CON `bot-unica123-real.yaml` es `require_mayhem`.
+# Todo lo demas se copia igual a proposito: si se cambian dos cosas a la
+# vez, lo que se mida no dice nada.
+# ===================================================================
+
+# UNICA123 REAL - prueba controlada. No arrancar sin revisar saldo y wallet.
+#
+# Sustituye a DEFINITIVA, ELITE y RAPIDA, que hacian lo mismo con umbrales de
+# creador distintos y se pisaban entre ellas comprando la misma moneda.
+#
+# LA ENTRADA SALE DE UNA MEDIDA, no de una corazonada. El 20-ago se cruzaron
+# 1.016 monedas (lectura del bot en los 5 primeros segundos) con su maximo
+# real segun pump.fun:
+#
+#   base de la muestra ................  8,1% llegan a 6K   3,1% a 12K
+#   6+ carteras, 8-15 SOL, MC <=2.800 .. 20,0% llegan a 6K   7,5% a 12K
+#
+#   Eso es 2,48 veces mejor que no filtrar.
+#
+# LO QUE SEPARA ES CUANTA GENTE DISTINTA COMPRA, no cuanto dinero entra:
+#
+#   0-5 carteras   5,8% llegan a 6K
+#   5-8            8,3%
+#   8-12          12,2%
+#   12-20         15,0%
+#
+# Y MAS SOL NO ES MEJOR. De 8 a 15 SOL en cinco segundos rinde un 10,8%; por
+# encima de 15 baja al 9,1% y solo el 1,8% llega a 12K. Eso ya no es demanda,
+# es bundle. Por eso hay techo de volumen y no solo suelo.
+#
+# EL 18% DE LA CURVA NO ERA LA SENAL: pasarlo en 5 segundos da 9,3% frente al
+# 6,7% de no pasarlo. Existe, pero es ruido al lado de lo de arriba.
+#
+# =============================================================================
+#  VOL4K  ·  recien nacidas  ·  volumen  ·  dev que migra 10%+  ·  0,35 SOL
+#  Salida 55% al +40% · 20% al +100% · 10% al x3 · 15% moonbag · SIN STOP
+# =============================================================================
+#
+# Pedida por Manu el 15-ago como UNICA estrategia activa. Junta tres cosas que
+# hasta ahora iban por separado: que la moneda acabe de nacer, que ya se este
+# moviendo dinero de verdad en ella, y que el creador tenga historial.
+
+name: "MAYHEM PAPEL - solo monedas mayhem, para medir"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+
+# ENCENDIDO EL 13-oct, pedido: se eligio C123 frente a la de la curva al 96%
+# que venia corriendo. Solo puede haber UNO encendido: los dos comparten la
+# misma wallet y se reparten las mismas plazas, asi que con los dos a la vez
+# ningun resultado del dia se podria atribuir a ninguno.
+enabled: false
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  # Compra normal de 0,10 SOL. El techo absoluto impide superar 0,20 SOL por
+  # operacion aunque otra ruta proponga un importe superior.
+  # YA NO MANDA. Desde el 15-oct el importe lo decide `fraccion_saldo`,
+  # que va ANTES que esta clave. Se deja escrito como respaldo: con
+  # `fraccion_saldo: 0` volveria a mandar este 0,10.
+  buy_amount: 0.10
+  # 25% DEL SALDO LIBRE POR COMPRA (15-oct, pedido: "pon 25% del sol
+  # balance por compra").
+  fraccion_saldo: 0.25
+  # SOBRE QUE SE CALCULA ESE 25%, que es la mitad de la decision:
+  #
+  #   libre    el SOL gastable: saldo - reserva - lo ya comprometido.
+  #            Mengua con cada compra, asi que las compras salen cada vez
+  #            mas pequenas y el tamano se frena SOLO.
+  #   cartera  saldo MAS lo que ya valen las monedas. No baja al comprar,
+  #            asi que salen IGUALES y cuatro del 25% comprometen el 100%.
+  #
+  # SE ELIGE `libre` porque se pidio "del sol balance" --el SOL que hay--
+  # y porque se acaba de quitar el tope de posiciones: sin tope y con base
+  # `cartera`, cuatro compras dejarian la cartera entera dentro. Con
+  # `libre` el propio tamano hace de freno.
+  fraccion_base: libre
+  # QUITADO EL 15-oct. Pedido "25% del sol balance por compra" y repetido
+  # ("25% sol por oper") al ver que no se aplicaba.
+  #
+  # ESTE TOPE LO RECORTABA EN SILENCIO. Con 0,20 SOL, el 25% dejaba de
+  # mandar en cuanto el saldo libre pasaba de 0,81 SOL: a partir de ahi se
+  # compraba 0,20 fijo pasara lo que pasara. Con 2 SOL el 25% serian 0,49
+  # y se compraban 0,20; con 5 SOL serian 1,24 y se compraban 0,20.
+  #
+  # Es la misma familia que el `hard_cap` recortando la comision o los dos
+  # cupos de compras: un numero puesto y otro que lo anula sin decirlo.
+  #
+  # 0 = sin tope (el codigo hace `if _tope > 0 and _importe > _tope`).
+  # Quien frena ahora es el propio 25%, que mengua con cada compra porque
+  # la base es el saldo LIBRE.
+  tope_compra_sol: 0
+  nombre_estrategia: "unica123-real"
+  escala_por_sol_ganado: 0
+  # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no que
+  # solo dos". ERA EL SEGUNDO CUPO ESCONDIDO, y el mas traicionero de los
+  # dos: cuenta las compras reales DESDE QUE ARRANCA EL PROCESO y, con
+  # `reiniciar_tanda` sin poner (= False), es un tope DE POR VIDA. Dos
+  # compras y el bot no vuelve a comprar hasta que se reinicie.
+  #
+  # LOS TRES MANDOS QUE SE CONFUNDIAN POR EL NOMBRE:
+  #   curva_96.max_compras -> cupo total de la fuente        (ya a 0)
+  #   trade.max_real_buys  -> cupo total del proceso         (este)
+  #   trade.max_posiciones -> cuantas A LA VEZ               (sigue en 2)
+  #
+  # Queda UN solo mando para lo pedido: `max_posiciones: 2`.
+  max_real_buys: 0
+  buy_amount_dev_top: 0.20
+  dev_top_min_rate: 0.20
+  mayhem_buy_amount: 0.10
+
+  # 4 EL 15-oct, pedido: "pon maximo de operaciones abiertas simultaneas 4".
+  # Estuvo sin tope (0 = 40) unas horas esa misma tarde.
+  #
+  # POR QUE VUELVE UN TOPE, y de donde sale el 4. El take profit tardaba en
+  # ejecutarse y una de las dos causas era el NODO: cada posicion abierta
+  # consulta su precio cada `price_check_interval` (1 s) y el nodo da para
+  #     max_rps (20) x intervalo (1) / 2 = 10 posiciones
+  # Por encima de ahi las consultas se encolan y lo que se retrasa es ver
+  # que toco el objetivo. Con 40 plazas cada posicion se miraba cada 4 s.
+  # Con 4 se mira cada 1 s, que es el minimo que permite el intervalo.
+  #
+  # LA OTRA CAUSA SIGUE EN PIE Y NO SE TOCA: la venta del take profit paga
+  # la comision normal (0,00102 SOL) y no la reforzada (0,00509) que desde
+  # hoy lleva el stop. Se ofrecio subirla y no se pidio.
+  # 3 EL 15-oct, pedido: "maximo 3 operaciones simultaneas". Fue 4 unas
+  # horas antes. Sigue por debajo de las 10 que el nodo puede vigilar
+  # (max_rps 20 x intervalo 1 s / 2), asi que cada posicion se mira cada
+  # segundo y el take profit no se retrasa por ahi.
+  max_posiciones: 3
+  mayhem_max_perdidas: 0
+
+  # Slippage alto en la compra: en una moneda que se esta moviendo, un margen
+  # corto hace que la transaccion REVIENTE y pagues la comision sin moneda.
+  buy_slippage: 0.12
+  sell_slippage: 0.25
+  # SUELO ANCHO SOLO PARA LAS VENTAS QUE PROTEGEN (15-oct, mismo pedido).
+  # Estaba sin poner, asi que el stop salia con el 25% de siempre. El
+  # codigo lo explica en `_slippage_para`: "el suelo estrecho hacia que un
+  # stop loss NO SE EJECUTARA justo en la moneda que se estaba desplomando".
+  # En un desplome el precio se mueve mas que eso entre que se decide y
+  # aterriza, y entonces la venta se cae y te quedas dentro.
+  # 0,5 es el que ya usaba la otra configuracion. Solo aplica al stop.
+  sell_slippage_proteccion: 0.5
+
+  exit_strategy: "tp_sl"
+  # Al tocar +50% no vende: arma un stop en compra +12%. Si sigue subiendo,
+  # al llegar a +70% vende el 100% de la posicion.
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 0.0
+  tp2_gain: 0.70
+  tp2_sell: 1.0
+  #
+  # Medido sobre la muestra del 20-ago (40 monedas del grupo filtrado, y
+  # comprobado tambien en grupos de 156 y 283 con filtros mas flojos):
+  #
+  #     vende todo a x1,50 ... +0,145 por cada 1 SOL
+  #     vende todo a x1,75 ... +0,228     <- el mejor en las tres muestras
+  #     vende todo a x2,00 ... +0,177
+  #     la escalera anterior . +0,159
+  #
+  # NO ES UN PICO DE SUERTE. Los vecinos (1,70 / 1,80 / 1,85) dan entre +0,196
+  # y +0,228: es una meseta. Remuestreando 1.000 veces sale positivo el 100%
+  # de las veces, con el 90% de los casos entre +0,102 y +0,333.
+  #
+  # Se descartaron x3 y x4, que en la media salian mejor (+0,216 y +0,236) pero
+  # PIERDEN dinero en la primera mitad de la muestra: todo su resultado venia
+  # de una sola moneda que hizo x14,4.
+  #
+  # Y EL MOONBAG RESTABA: vender el 100% da +0,228, el 80% da +0,161 y el 50%
+  # da +0,059. Lo que queda dentro casi nunca sigue subiendo -- vuelve al
+  # precio de compra y sale por el suelo del trinquete.
+  mc_take_profit_tiers: []
+
+  # Stop defensivo para que la prueba no herede el antiguo suelo del 80%.
+  # 30% EL 15-oct, pedido: "pon stop loss 30%". Baja desde el 32%.
+  # 25% EL 15-oct, pedido: "pon stop loss solo 25%". Baja desde el 30% de
+  # esta misma tarde. Tercer valor hoy: 32 -> 30 -> 25.
+  stop_loss_percentage: 0.25
+  trailing_stop_percentage: 0
+
+  # El primer escalon no vende; únicamente sube el stop al 112% de la entrada.
+  stop_a_entrada_tras_tp: true
+  margen_stop_tras_tp: 0.12
+  stop_al_tp_tras_tp: false
+  stop_al_tp_anterior: false
+
+  # APAGADO EL 15-oct, pedido: "no si venden de repente". Estaba en 2,0,
+  # o sea: si en 4 segundos se vendian 3+ SOL y las ventas doblaban a las
+  # compras, salia corriendo sin esperar al precio.
+  #
+  # LO QUE SE PIERDE, y conviene tenerlo escrito. Lo explica el propio
+  # trader donde vive este freno: "el stop-loss reacciona al PRECIO, que
+  # es la consecuencia; para cuando el precio ha caido un 35% el volcado
+  # ya ha pasado y solo queda lo que nadie quiso. Esto mira la CAUSA
+  # --quien esta vendiendo ahora mismo-- y sale antes de que el precio
+  # termine de desplomarse."
+  #
+  # O sea que en un rug ya no hay salida temprana: se espera al -25% de un
+  # precio que para entonces esta en caida libre, y lo que se cobre puede
+  # ser bastante peor que ese -25%. Es el escenario de FUCKETHAN (-91,9%),
+  # que fue justo con los frenos anti-rug apagados.
+  #
+  # Se deshace poniendo 2.0 otra vez. `anti_rug_seg` y `anti_rug_min_sol`
+  # se quedan escritos y sin efecto mientras esto sea 0.
+  anti_rug_ratio: 0
+  anti_rug_seg: 4
+  anti_rug_min_sol: 3
+
+  # LAS DOS CONDICIONES DE SALIDA QUE PEDISTE, y son distintas:
+  #
+  # 1) PARADA POR DEBAJO DE LA COMPRA a los 2 minutos -> fuera. Mira el PRECIO,
+  #    una sola vez, al cumplirse el plazo.
+  venta_muerta_seg: 120
+  # MAS DE UN MINUTO POR DEBAJO DE LA COMPRA -> FUERA ENTERA, moonbag
+  # incluido. El suelo estructural son 2.097 $ y se entra en 2.800: una
+  # moneda que al minuto sigue por debajo de lo pagado no ha encontrado
+  # comprador, y lo unico que queda por delante es la caida al suelo. El
+  # stop del 80% esta demasiado abajo para sacarla; esto si.
+  venta_bajo_entrada_seg: 60
+  venta_muerta_gain: 0.0
+  # 2) SIN VOLUMEN 2 minutos seguidos -> fuera. Mira el VOLUMEN, de forma
+  #    continua. Da igual que el precio siga alto: si nadie negocia, ese precio
+  #    no lo va a pagar nadie. Es la leccion de las 63 monedas que quedaron
+  #    atrapadas con "valor" en pantalla y cero SOL detras.
+  #    (Opcion nueva, anadida al motor el 15-ago.)
+  venta_sin_volumen_seg: 120
+
+  max_hold_time: 3600
+  price_check_interval: 1
+  extreme_fast_mode: false
+  min_reserve_sol: 0.03
+
+  # UN SOLO RUG Y FUERA. Por defecto son 2; con 1, al creador que te la
+  # juega una vez no se le vuelve a comprar nunca (queda anotado en
+  # blocked_devs_bot-sniper-definitiva.json).
+  rugs_para_bloquear: 1
+
+# OBLIGATORIO: Token-2022 no cabe en las 59.700 unidades por defecto y la VENTA
+# falla con "Program failed to complete", dejando la posicion atrapada.
+compute_units:
+  buy: 140000
+  sell: 120000
+
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  # UN 5% POR ENCIMA DE LO QUE PAGAN ELLOS. En la captura de Manu la tarifa de
+  # prioridad es 0,085 $; un 5% mas son 0,08925 $, que a 75,18 $/SOL son
+  # 0,0011871 SOL. Con 140.000 unidades de computo eso sale a 8.480.000
+  # microlamports por unidad.
+  #
+  # OJO: esto es la parte de PRIORIDAD, la que se puja. La comision base de red
+  # (los 0,075 $ de la captura) no se elige, la pone la red.
+  #
+  # Si SOL cambia mucho de precio, este numero deja de valer 0,089 $ y hay que
+  # rehacerlo.
+  fixed_amount: 8_480_000
+  # COMISION RAPIDA SOLO PARA LAS VENTAS QUE PROTEGEN (15-oct, pedido:
+  # "asegurate q el take profit y stop loss saltan de inmediato").
+  #
+  # ESTABA A 0, o sea apagada: el stop loss pagaba lo mismo que cualquier
+  # venta --0,00102 SOL-- y el stop salta justo cuando todo el mundo esta
+  # vendiendo y pagando por salir. Con la comision baja, tu venta se queda
+  # en la cola mientras el precio sigue cayendo.
+  #
+  # El valor es el que ya usaba la otra configuracion: 42.424.243 x 120.000
+  # CU = 0,00509 SOL por venta protectora (~0,76 $), contra los 0,00102
+  # (~0,15 $) de antes. Cinco veces mas, pero SOLO cuando salta un stop.
+  #
+  # NO SE SUBE LA DE TODAS LAS VENTAS a proposito: una posicion se compra
+  # una vez y se vende varias, asi que se pagaria en cada peldano. Y un
+  # take profit SI puede esperar una vuelta; un stop no.
+  fixed_amount_venta_proteccion: 42_424_243
+  extra_percentage: 0.0
+  # SUBIDO EL 15-oct CON LA LINEA DE ARRIBA, y no es un cambio aparte: el
+  # trader recorta la comision protectora a este tope
+  # (`universal_trader.py:775`, "se recorta"). Con el tope pegado a
+  # `fixed_amount`, la comision de 42.424.243 se habria quedado ESCRITA Y
+  # MUDA -- el fallo de familia de este repo. 75.000.000 es el que ya
+  # llevaba la otra configuracion y deja holgura sin permitir una errata.
+  hard_cap: 75_000_000
+
+retries:
+  # DOS INTENTOS, no tres. Cada intento que aterriza y falla paga su comision;
+  # el tercero casi nunca salva la operacion y si suma coste.
+  max_attempts: 1
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 90
+
+  # 30 SEGUNDOS DE VENTANA, no 3. Esto es lo que hace posible el filtro de
+  # volumen: el bot ve la moneda al nacer y se queda VIGILANDOLA hasta 30 s,
+  # comprando en el instante exacto en que el volumen cumple. Con la ventana en
+  # 3 s no daria tiempo a que se negociara nada y el filtro no dispararia
+  # nunca. No retrasa la compra: si cumple en el segundo 1, compra en el 1.
+  # 30 SEGUNDOS, no 3. Con filtros de volumen y de operaciones el bot NO
+  # espera a ciegas: se queda vigilando la moneda y compra en el instante
+  # exacto en que cumple las dos condiciones. Con la ventana en 3 s no daria
+  # tiempo a que se negociara nada y no compraria nunca.
+  max_buy_age: 60
+
+  match_string: null
+  bro_address: null
+  # BANEO AUTOMATICO ACTIVADO. En false, el bot mantiene su propia lista: al
+  # creador que te rugea `rugs_para_bloquear` veces no se le vuelve a comprar
+  # nunca (queda en blocked_devs_bot-sniper-definitiva.json). En true esa lista
+  # se ignoraba, que es como estaba heredado.
+  # TRUE EL 15-oct, pedido: "quita la lista de devs". Se salta las DOS
+  # listas que bloqueaban a un creador (`universal_trader.py:3675`):
+  #   - la BLACKLIST MANUAL, devs vetados a mano uno por uno
+  #   - el AUTO-BANEO, devs que acumularon malos resultados
+  #
+  # LO QUE CUESTA: un dev que ya te hizo perder dinero vuelve a ser
+  # comprable. Era la ultima puerta que miraba QUIEN hizo la moneda; a
+  # partir de aqui solo se mira el 96% de curva.
+  #
+  # (El filtro de reputacion en vivo, que mira la tasa de migracion del
+  # creador, sigue decidiendo por su cuenta: esto no lo toca.)
+  ignorar_listas_de_devs: true
+
+  # FILTRO DEL CREADOR: APAGADO, y a proposito.
+  #
+  # Era el unico de los filtros que no tenia una medida detras. Los otros tres
+  # --carteras, volumen, market cap-- salen de cruzar 1.016 monedas con su
+  # maximo real. Este venia de intuicion, y los datos dicen lo contrario:
+  #
+  #   el 85,2% de las monedas con arranque limpio las lanza alguien con CERO
+  #   migraciones, asi que exigir historial deja fuera casi todo el flujo
+  #
+  #   y los creadores que REPITEN rinden peor: 13,3% llegan a x1,75 frente al
+  #   16,4% de los que solo aparecen una vez
+  #
+  # El 20-ago a las 11:31 tumbo a TradeFi, que cumplia todo lo demas --6
+  # carteras, 9,2 SOL, MC 2.605 $-- solo porque era la primera moneda de su
+  # creador y por tanto no podia tener historial. Con ELITE al 25% llego a
+  # tumbar el 98% de lo que le llegaba: 3 compras en toda su vida.
+  #
+  # Lo que protege aqui es la ESTRUCTURA (el techo de entrada a 2.800 $, con el
+  # suelo estructural en 2.097), no la reputacion del que lanza.
+  pumpfun_dev:
+    enabled: false
+
+  # VOLUMEN MINIMO 300 $ = 3,99 SOL (a 75,18 $/SOL).
+  min_volumen_sol: 0
+
+  # SIN FRANJA HORARIA: opera las 24 horas. El {inicio:18, fin:4} venia
+  # heredado de cuando esta estrategia se llamaba NOCHE, y estaba descartando
+  # todo fuera de esa banda sin que nadie lo hubiera pedido para esta version.
+  horario: {}
+
+  allow_mayhem: false
+  # EL UNICO CAMBIO FRENTE AL BOT REAL. Con esto solo se compran monedas
+  # en modo mayhem; el resto se descarta con "no es mayhem mode"
+  # (`platform_aware.py:258`). Implica `allow_mayhem`.
+  require_mayhem: true
+  marry_mode: false
+  yolo_mode: false            # Un unico ciclo y termina.
+  paper_trade: true          # REAL: requiere revision manual antes de arrancar.
+
+  # Sin techo de market cap por peticion expresa.
+  #
+  # AVISO IMPORTANTE, y prefiero decirtelo antes de que veas el log vacio:
+  # este techo y el filtro de volumen tiran el uno contra el otro. El volumen
+  # EMPUJA el market cap -- son la misma magnitud en la curva de pump.fun --,
+  # asi que una moneda que ya ha negociado 53 SOL dificilmente sigue por debajo
+  # de 2.800 $. Es una combinacion muy estrecha: espera pocas compras, o
+  # ninguna. Si a las pocas horas no ha disparado, el numero a soltar es este
+  # (o el volumen), no el filtro del dev.
+  min_entry_mc: 0
+  # POR DEBAJO DE 2.600 $, que es practicamente el nacimiento (2.097).
+  # POR DEBAJO DE 3.700 $, el mismo techo para todos: el techo aparte para el
+  # creador bueno (2.800) se queda desactivado porque ahora seria MAS BAJO que
+  # el general.
+  max_entry_mc: 0
+  max_entry_mc_dev_top: 0
+  min_curve_sol: 0
+  # SIN TECHO DE VOLUMEN, y esto corrige una medida anterior.
+  #
+  # Se habia puesto un techo de 15 SOL porque sobre TODAS las monedas mas
+  # volumen rendia peor (9,1% frente a 10,8%): mucho SOL de golpe suele ser
+  # bundle. Pero esa medida no estaba condicionada.
+  #
+  # Cuando ya se exigen 6 carteras distintas Y market cap por debajo de 2.800,
+  # el volumen alto deja de ser bundle: 20 SOL repartidos entre seis
+  # compradores con el precio aun por debajo de 2.800 es demanda real que
+  # todavia no ha movido el market cap.
+  #
+  #   con techo de 15 ... 40 casos, 45,0% aciertan, rinde +0,2280, 1,94 ops/h
+  #   sin techo ......... 71 casos, 43,7% aciertan, rinde +0,2168, 3,20 ops/h
+  #   el tramo que se tiraba (>15 SOL): 31 casos y el 41,9% llegaba al +75%
+  #
+  # Se pierden 1,3 puntos de acierto y se gana un 65% de operaciones: el SOL
+  # por hora sube un 69%. Aguanta las dos mitades de la muestra (+0,186 y
+  # +0,247) y sale positivo el 100% de 1.000 remuestreos.
+  #
+  # OJO: bajar a 5 carteras SI diluye de verdad (34,7% de aciertos, +0,1411).
+  # El techo de volumen sobraba; el suelo de carteras no.
+  max_volumen_sol: 0
+  min_vol_ventana_sol: 0
+  # Sin minimo de compras: la condicion de arranque es el volumen. Estuvo en 4
+  # y era el mayor cuello del embudo -- de 38 monedas descartadas, solo 1 llego
+  # a tener 3 compradores en 30 s.
+  # 4 TRANSACCIONES PREVIAS antes de entrar. Cuenta operaciones de la moneda,
+  # compras y ventas, no compradores distintos: es "que haya pasado algo ya".
+  min_ops: 0
+  # MAS COMPRA QUE VENTA. El ratio mide cuanto SOL entra frente al que sale en
+  # los ultimos  segundos: 1.0 exige que entre mas del que sale.
+  # El volumen solo dice que hay movimiento; esto dice hacia donde va, y evita
+  # entrar justo cuando el dinero se esta yendo.
+  # Las 3 ultimas operaciones tienen que ser COMPRAS: nadie ha vendido aun.
+  ultimas_tx_compra: 0
+  min_presion_ratio: 0
+  presion_seg: 3.0
+  min_buys: 0
+  min_titulares: 0
+  redes_originales: false
+  min_holders_gmgn: 0
+  senal_gmgn: []
+
+  # DOS MINUTOS, no 24 horas. El bloqueo de un dia estaba tumbando el 64% de
+  # todo el flujo (461 de 721 monedas): con tickers comunes, un nombre bloquea
+  # al siguiente durante un dia entero. Dos minutos es lo que pediste y hace lo
+  # que hacia falta: cortar al que relanza la misma moneda seguida.
+  no_repeat_name_min: 0
+  max_holder_pct: 0.0
+  max_dev_hold_pct: 0.0
+  min_holders: 0
+  holder_bypass_ratio: 0
+
+  buy_on_dex_paid:
+    enabled: false
+
+  # UNICA FUENTE DE ENTRADA: una curva de pump.fun alcanza el 95%. Al existir
+  # una fuente de adquisicion activa, el
+  # listener normal de monedas nuevas no abre operaciones por su cuenta.
+  curva_96:
+    enabled: true
+    # 96% EL 15-oct, pedido. Sube desde el 95%.
+    #
+    # ESTE FICHERO VUELVE A LA VERSION DEL 13-oct Y SOLO CAMBIA ESTO. Los
+    # commits del 13 y 14 ("Remove C123 token age filter", "Buy C123 tokens
+    # at 96 percent without entry filters") habian dejado la entrada al 96%
+    # pero apagando TODOS los frenos: edad minima 0, anti-mecha 0, holders 0,
+    # titulares 0, operaciones 0, volumen 0, presion 0, mayhem permitido y
+    # tope al 100%. Pedido el 15-oct: el 96% SI, los frenos tambien, y
+    # "sin mayhem".
+    # 95% EL 15-oct, pedido: "que compre en 95% curva". Baja desde el 96%
+    # de esta misma manana. Septimo movimiento de este numero:
+    # 90 -> 84 -> 79 -> 71 -> 59 -> 95 -> 96 -> 95.
+    #
+    # LO QUE GANA: al 95% quedan +30,3% de recorrido hasta migrar, contra
+    # +24,0% que quedaban al 96%. Mas margen antes de la migracion, que es
+    # donde las transacciones no confirmaban.
+    # 94% EL 15-oct, pedido: "pon q compre un 1% antes en la curvatura".
+    # Octavo movimiento: 90 -> 84 -> 79 -> 71 -> 59 -> 95 -> 96 -> 95 -> 94.
+    #
+    # LO QUE GANA: al 94% quedan +36,9% de recorrido hasta migrar, contra
+    # +30,3% al 95%. Mas margen antes de la migracion, que es donde las
+    # transacciones dejaban de confirmar. Y mas candidatas, porque toda
+    # moneda que llegue al 95% pasa antes por el 94%.
+    # 91% EL 15-oct, pedido: "baja al 91% la bonding". Noveno movimiento:
+    # 90 -> 84 -> 79 -> 71 -> 59 -> 95 -> 96 -> 95 -> 94 -> 91.
+    #
+    # Al 91% quedan +57,5% de recorrido hasta migrar, contra +36,9% al 94%.
+    umbral: 0.91
+    tope: 0.995
+    buy_amount: 0
+    # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no
+    # que solo dos". Estaba en 2 y eso NO era "dos a la vez": era un CUPO
+    # TOTAL. Tras dos compras confirmadas la fuente se callaba para siempre
+    # hasta reiniciar, y sin gritarlo -- justo la parada silenciosa que este
+    # repo tiene documentada como "ya costo dias".
+    #
+    # QUIEN LIMITA LAS SIMULTANEAS ES `trade.max_posiciones`, que sigue en 2.
+    # Son dos mandos distintos y se confundian por el nombre:
+    #   max_compras    -> cuantas compra en TODA su vida (0 = sin limite)
+    #   max_posiciones -> cuantas tiene abiertas A LA VEZ
+    #
+    # 0 ES "SIN LIMITE" aqui, no "ninguna": el codigo hace
+    # `if cupo > 0 and ...` (universal_trader.py).
+    max_compras: 0
+    parar_tras_perdidas: 0
+
+    # Entrada desde 10 segundos y al menos 20 holders reales en cadena.
+    min_compradores: 0
+    min_edad_seg: 0
+    max_edad_seg: 0
+
+    # No perseguir una mecha/pump vertical de un segundo. La moneda puede
+    # volver a evaluarse en la siguiente operacion mientras siga en la curva.
+    vela_seg: 1.0
+    max_subida_vela: 0
+
+    # Por peticion expresa, las señales de bundle no bloquean la compra.
+    exigir_ver_creacion: false
+    max_carteras_primer_bloque: 0
+    max_sol_primer_bloque: 0
+    max_bundle_pct: 0
+    max_bundle_pct_sin_historia: 0
+    heartbeat_interval: 300
+
+  dexscreener:
+    enabled: false
+    enforce: false
+    block_on_error: false
+    chain: "solana"
+    require_dex_paid: false
+    require_liquidity_locked: false
+    min_lp_locked_pct: 0
+    min_boosts: 0
+    min_liquidity_usd: 0
+    min_market_cap: 0
+    max_market_cap: 0
+    min_dev_migration_rate: 0
+    min_dev_launches: 0
+    timeout_seconds: 6
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  # 40 rps con el plan ampliado de Helius. Estuvo en 8 mientras el nodo
+  # devolvia 429; si vuelven a aparecer, es que el limite sigue por debajo de
+  # esto y hay que bajarlo otra vez -- o revisar que el endpoint del .env sea
+  # el del plan nuevo y no el viejo.
+  # 20, no 40. Con 40 el nodo devolvia 429 justo al ir a leer la curva para
+  # comprar -- paso con "Joe", que habia pasado TODOS los filtros. Mejor menos
+  # peticiones y que las que importan entren.
+  max_rps: 20
