@@ -45,10 +45,17 @@ SUPPLY = 1e9
 #: MC en SOL cuando la curva se completa y la moneda migra.
 MC_SOL_AL_MIGRAR = 410.9
 
-#: Los dos precios de SOL que explican la observacion de Manu ("entra entorno
-#: a los 27k"), segun si el droplet corria el 88% o el 91% de curva. No se
-#: sabe cual, asi que la banda tiene que funcionar con LOS DOS.
-SOL_CALIBRADO = (104.0, 118.0)
+#: Precio de SOL, ya CONFIRMADO. Antes se barajaban $104 y $118 porque no se
+#: sabia si el droplet corria el 88% o el 91% de curva. El 15-oct el log en
+#: vivo lo zanjo: corria el 91% ("CURVA AL 91.2% / 91.9% / 97.4%"), asi que
+#: de las entradas observadas en 27-28k sale 27000/260,9 = $103 y
+#: 28000/260,9 = $107. Se deja un margen hasta 108.
+SOL_CALIBRADO = (103.0, 108.0)
+
+#: Cuanto puede faltar, en SOL de compras netas, entre donde el bot empieza a
+#: mirar y el suelo de la banda. Es el numero que fallo el 15-oct: con el
+#: umbral al 77% hacian falta 4,7 SOL en menos de 60s y el bot no compraba.
+MAX_SOL_HASTA_LA_BANDA = 2.0
 
 
 def _cfg() -> dict:
@@ -66,46 +73,58 @@ def test_la_banda_es_la_pedida() -> None:
     assert filtros["max_entry_mc"] == TECHO_PEDIDO
 
 
-def test_el_umbral_dispara_por_debajo_del_suelo_con_los_dos_precios() -> None:
-    """EL INVARIANTE QUE HACE QUE LA BANDA MANDE.
+def test_el_umbral_deja_la_banda_al_alcance() -> None:
+    """EL FALLO DEL 15-oct, convertido en guardian.
 
-    Si el umbral disparase ya dentro de la banda, el bot compraria al cruzar
-    y `min_entry_mc` no decidiria nada. Y si disparase por ENCIMA del techo,
-    no compraria nunca.
+    La version anterior de este test solo exigia que el umbral disparase POR
+    DEBAJO del suelo de la banda. Eso lo cumplia el 77%... y el bot NO
+    COMPRABA, porque entre el 77% y el suelo de 18.000 $ (el 80,7% con SOL a
+    105) hay 3,7 puntos de curva = 4,7 SOL de compras netas, y habia que
+    cruzarlos dentro de los 60s de `max_buy_age`.
 
-    Se exige con los dos precios de SOL calibrados porque no se sabe cual
-    corria el droplet cuando Manu observo los 27k.
+    Lo que de verdad importa no es "estar por debajo" sino ESTAR CERCA:
+
+        umbral   MC        hueco hasta la banda
+          77%    $15.814   4,7 SOL   <- no compraba
+          79%    $16.958   2,2 SOL
+          80%    $17.576   0,9 SOL   <- puesto
+
+    Se mide en SOL dentro de la curva (k/vt - 30) y no en puntos de curva,
+    porque los puntos no son equivalentes entre si: la curva es un producto
+    constante y cada punto cuesta mas SOL que el anterior.
     """
     cfg = _cfg()
     umbral = cfg["filters"]["curva_96"]["umbral"]
-    mc_en_sol = _mc_sol(umbral)
+
+    def dentro(avance: float) -> float:
+        return K / (VT0 - 793.1e6 * avance) - 30
+
+    def avance_de(mc_usd: float, precio: float) -> float:
+        lo, hi = 0.0, 1.0
+        for _ in range(200):
+            m = (lo + hi) / 2
+            if _mc_sol(m) * precio < mc_usd:
+                lo = m
+            else:
+                hi = m
+        return (lo + hi) / 2
 
     for precio in SOL_CALIBRADO:
-        mc_usd = mc_en_sol * precio
-        assert mc_usd < SUELO_PEDIDO, (
-            f"con SOL a ${precio:.0f} el umbral del {umbral * 100:.0f}% "
-            f"dispara en ${mc_usd:,.0f}, que ya esta en la banda o por "
-            "encima: entonces la banda no decide nada"
+        mc_al_mirar = _mc_sol(umbral) * precio
+        assert mc_al_mirar < TECHO_PEDIDO, (
+            f"con SOL a ${precio:.0f} el umbral dispara en "
+            f"${mc_al_mirar:,.0f}, por encima del techo de la banda: no "
+            "compraria nunca"
         )
+        if mc_al_mirar >= SUELO_PEDIDO:
+            continue  # ya dispara dentro de la banda: compra al instante
 
-
-def test_el_umbral_no_esta_tan_abajo_que_no_llegue_a_la_banda() -> None:
-    """El otro lado del invariante.
-
-    Cuanto mas abajo dispare, mas tiene que subir la moneda para entrar en
-    banda y mas probable es que se agoten los 60s de `max_buy_age`. Se exige
-    que la subida necesaria sea razonable (menos de un x1,5).
-    """
-    cfg = _cfg()
-    umbral = cfg["filters"]["curva_96"]["umbral"]
-    mc_en_sol = _mc_sol(umbral)
-
-    for precio in SOL_CALIBRADO:
-        falta = SUELO_PEDIDO / (mc_en_sol * precio)
-        assert falta < 1.5, (
-            f"con SOL a ${precio:.0f} la moneda tendria que subir "
-            f"+{(falta - 1) * 100:.0f}% para entrar en banda, y solo hay "
-            f"{cfg['filters']['max_buy_age']}s"
+        falta = dentro(avance_de(SUELO_PEDIDO, precio)) - dentro(umbral)
+        assert falta <= MAX_SOL_HASTA_LA_BANDA, (
+            f"con SOL a ${precio:.0f} hacen falta {falta:.1f} SOL de compras "
+            f"para ir del umbral ({umbral * 100:.0f}%) al suelo de la banda, "
+            f"y solo hay {cfg['filters']['max_buy_age']}s: el bot se queda "
+            "sin comprar (paso el 15-oct con el 77%)"
         )
 
 
@@ -200,7 +219,7 @@ def test_el_antirug_esta_encendido_al_entrar_tan_abajo() -> None:
 def test_el_volumen_y_la_presion_estan_puestos() -> None:
     """Pedido: "un poco mas de volumen y ligeramente mayor presion"."""
     filtros = _cfg()["filters"]
-    assert filtros["min_volumen_sol"] == 20
+    assert filtros["min_volumen_sol"] == 8
     assert filtros["min_presion_ratio"] == pytest.approx(1.2)
     assert filtros["presion_seg"] > 0, "sin ventana, la presion no mide nada"
 

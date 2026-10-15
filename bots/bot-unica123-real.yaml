@@ -554,7 +554,23 @@ filters:
   # comprar DURANTE DIAS sin que nadie supiera por que. Si tras poner esto
   # las compras se secan, el comando `porque` ensena el embudo y dice cuantas
   # se caen por volumen. Se apaga volviendo a 0.
-  min_volumen_sol: 20
+  # BAJADO A 8 EL 15-oct. El 20 era un error de calculo mio y Manu reporto
+  # "no compra" con el puesto.
+  #
+  # QUE CALCULE MAL. Razone sobre los ~40 SOL que hay DENTRO de la curva al
+  # 77% y puse la mitad. Pero `min_volumen_sol` no mide los SOL de la curva:
+  # mide el volumen que EL BOT RECUERDA, y solo guarda 300 SEGUNDOS por
+  # moneda. Una moneda que tardo media hora en llegar al 80% tiene casi todo
+  # ese volumen OLVIDADO, asi que ve mucho menos de 40 y se cae por un filtro
+  # calibrado contra un numero que no es el que se compara.
+  #
+  # El 8 es coherente con lo que si mide: actividad de los ultimos 5 minutos.
+  # Sigue tirando la moneda muerta --cruzar de 80% a la banda son ~0,9 SOL,
+  # asi que 8 pide bastante mas que el minimo-- sin exigir una historia que
+  # el bot no tiene.
+  #
+  # Si aun asi no compra, el siguiente numero a soltar es este (a 3, o a 0).
+  min_volumen_sol: 8
 
   # SIN FRANJA HORARIA: opera las 24 horas. El {inicio:18, fin:4} venia
   # heredado de cuando esta estrategia se llamaba NOCHE, y estaba descartando
@@ -827,7 +843,26 @@ filters:
     #
     # Techo de curva al 77%: +173%, asi que el TP de +30% se come solo el
     # 17% del recorrido disponible.
-    umbral: 0.77
+    # 80% EL 15-oct. Decimotercer movimiento, y CORRIGE UN ERROR MIO del 77%.
+    #
+    # EL FALLO. Puse el 77% para que disparase por debajo del suelo de la
+    # banda con cualquiera de los dos precios de SOL que barajaba. Pero con
+    # SOL a ~105 (ya bien calibrado) el suelo de 18.000 $ cae en el 80,7% de
+    # curva, asi que la moneda tenia que subir de 77% a 80,7% DENTRO de los
+    # 60s de `max_buy_age`, o se descartaba por tiempo:
+    #
+    #     umbral   MC        hueco hasta la banda
+    #       77%    $15.814   3,7 puntos = 4,7 SOL de compras
+    #       79%    $16.958   1,7 puntos = 2,2 SOL
+    #       80%    $17.576   0,7 puntos = 0,9 SOL   <- elegido
+    #
+    # Con el 80% hace falta casi SEIS VECES menos movimiento para entrar en
+    # banda. Sigue disparando por debajo del suelo --que es lo que hace que
+    # mande la banda y no este numero-- pero pegado a el.
+    #
+    # Manu reporto "no compra" tras encender todo esto. Esta es una de las dos
+    # causas que se corrigen; la otra es `min_volumen_sol`.
+    umbral: 0.80
     tope: 0.995
     buy_amount: 0
     # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no
