@@ -106,7 +106,11 @@ trade:
   # LA OTRA CAUSA SIGUE EN PIE Y NO SE TOCA: la venta del take profit paga
   # la comision normal (0,00102 SOL) y no la reforzada (0,00509) que desde
   # hoy lleva el stop. Se ofrecio subirla y no se pidio.
-  max_posiciones: 4
+  # 3 EL 15-oct, pedido: "maximo 3 operaciones simultaneas". Fue 4 unas
+  # horas antes. Sigue por debajo de las 10 que el nodo puede vigilar
+  # (max_rps 20 x intervalo 1 s / 2), asi que cada posicion se mira cada
+  # segundo y el take profit no se retrasa por ahi.
+  max_posiciones: 3
   mayhem_max_perdidas: 0
 
   # Slippage alto en la compra: en una moneda que se esta moviendo, un margen
@@ -438,7 +442,11 @@ filters:
     # +30,3% al 95%. Mas margen antes de la migracion, que es donde las
     # transacciones dejaban de confirmar. Y mas candidatas, porque toda
     # moneda que llegue al 95% pasa antes por el 94%.
-    umbral: 0.94
+    # 91% EL 15-oct, pedido: "baja al 91% la bonding". Noveno movimiento:
+    # 90 -> 84 -> 79 -> 71 -> 59 -> 95 -> 96 -> 95 -> 94 -> 91.
+    #
+    # Al 91% quedan +57,5% de recorrido hasta migrar, contra +36,9% al 94%.
+    umbral: 0.91
     tope: 0.995
     buy_amount: 0
     # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no

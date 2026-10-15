@@ -226,7 +226,7 @@ def test_lo_que_nunca_se_ha_pedido_apagar_sigue_encendido() -> None:
     # 95% desde el 15-oct, pedido ("que compre en 95% curva"). Este numero
     # lo mueve Manu y se mueve mucho (septima vez); lo que este guardian
     # vigila no es el valor sino que NO se vaya solo, como paso el 13-oct.
-    assert cfg["umbral"] == 0.94, "se pidio entrar al 94% de la curva"
+    assert cfg["umbral"] == 0.91, "se pidio entrar al 91% de la curva"
     assert cfg["tope"] < 1.0, (
         "con el tope al 100% se compra en plena migracion: la curva ya no "
         "opera ahi, son comisiones tiradas y transacciones que no confirman"
