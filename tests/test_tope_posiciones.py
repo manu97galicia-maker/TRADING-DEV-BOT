@@ -102,7 +102,14 @@ def test_c123_sin_techo_mc_y_con_dos_posiciones() -> None:
     # `test_la_reserva_da_para_las_ventas_protegidas` en
     # tests/test_escalera_de_tamanos.py, con la cuenta hecha.
     assert cfg["trade"]["min_reserve_sol"] == 0.015
-    assert cfg["filters"]["max_entry_mc"] == 0
+    # YA NO ES 0. Desde el 15-oct la entrada la decide una BANDA EN DOLARES
+    # (18.000-22.000), pedida con estas palabras: "entra entorno a los 27k a
+    # ver si consigues lo mismo pero entrando entorno 18/22k". El techo de MC
+    # dejo de estar apagado a proposito: es el mando que cumple el pedido.
+    # Lo vigila `test_banda_de_entrada_en_dolares` en
+    # tests/test_banda_de_entrada.py, con las cuentas hechas.
+    assert cfg["filters"]["max_entry_mc"] == 22000
+    assert cfg["filters"]["min_entry_mc"] == 18000
 
 
 def test_avisa_cuando_hay_mas_posiciones_que_nodo(

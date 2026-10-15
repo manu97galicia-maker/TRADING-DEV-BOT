@@ -321,7 +321,25 @@ trade:
   #
   # Se deshace poniendo 2.0 otra vez. `anti_rug_seg` y `anti_rug_min_sol`
   # se quedan escritos y sin efecto mientras esto sea 0.
-  anti_rug_ratio: 0
+  #
+  # ENCENDIDO A 1.6 EL 15-oct, pedido. Estuvo en 0 (apagado) desde esta
+  # misma tarde, cuando Manu pidio "no si venden de repente".
+  #
+  # POR QUE SE VUELVE A ENCENDER, y lo pidio el sabiendo lo que cuesta: la
+  # entrada se ha ido del 91% al 77% de curva, o sea 14 puntos mas de curva
+  # por recorrer con la moneda dentro. Ese tramo es justo donde un dev puede
+  # tirarla, y este es el unico freno que mira eso. Apagarlo era defendible
+  # entrando al 91% --quedaba poca curva-- y deja de serlo al 77%.
+  #
+  # 1.6 es el valor de `bot-paper-mayhem-dev40k.yaml`, la unica config del
+  # repo calibrada para entrada temprana. QUE HACE: en una ventana de 4
+  # segundos, si se venden mas de 3 SOL Y las ventas superan en 1,6x a las
+  # compras, sale corriendo con la comision de venta protegida.
+  #
+  # LO QUE PUEDE COSTAR: sacarte de una moneda que solo estaba respirando.
+  # Es exactamente el motivo por el que Manu lo apago. Si vuelve a molestar,
+  # se sube a 2.5 (mas permisivo) antes de apagarlo del todo.
+  anti_rug_ratio: 1.6
   anti_rug_seg: 4
   anti_rug_min_sol: 3
 
@@ -492,12 +510,51 @@ filters:
   # de 2.800 $. Es una combinacion muy estrecha: espera pocas compras, o
   # ninguna. Si a las pocas horas no ha disparado, el numero a soltar es este
   # (o el volumen), no el filtro del dev.
-  min_entry_mc: 0
-  # POR DEBAJO DE 2.600 $, que es practicamente el nacimiento (2.097).
-  # POR DEBAJO DE 3.700 $, el mismo techo para todos: el techo aparte para el
-  # creador bueno (2.800) se queda desactivado porque ahora seria MAS BAJO que
-  # el general.
-  max_entry_mc: 0
+  # =================================================================
+  #  LA BANDA DE ENTRADA, EN DOLARES (15-oct, pedido)
+  # =================================================================
+  #
+  # PALABRAS DE MANU: "este bien esta pillando buenas subidas pero entra
+  # entorno a los 27k a ver si consigues lo mismo pero entrando entorno
+  # 18/22k".
+  #
+  # ESTOS DOS NUMEROS SON AHORA LOS QUE MANDAN sobre la entrada. El umbral de
+  # curva (77%) solo decide cuando se EMPIEZA A MIRAR la moneda; quien dice
+  # si se compra es esta banda.
+  #
+  # POR QUE EN DOLARES Y NO EN % DE CURVA. El objetivo de Manu esta en
+  # dolares, y un % de curva es fijo mientras el precio de SOL se mueve. El
+  # 82% daba 18-21k con SOL a 104-118 y daria 24-27k con SOL a 150: el mismo
+  # ajuste, el mismo resultado distinto. Por eso este parametro se habia
+  # movido ONCE veces. El codigo calcula
+  # `_mc = precio * supply * _SOL_USD` con el precio de SOL EN VIVO
+  # (universal_trader.py:4256), asi que la banda se mantiene sola.
+  #
+  # COMO SE COMPORTA (universal_trader.py:4276 y :4337):
+  #   MC por debajo de 18.000 -> ESPERA (sleep + continue) a que suba
+  #   MC entre 18.000 y 22.000 -> compra
+  #   MC por encima de 22.000 -> descarta, y lo dice en el log
+  #                              ("se paso de la banda")
+  #   si pasan los 60s de `max_buy_age` sin entrar en banda -> descarta
+  #                              ("no cumplio en 60s")
+  #
+  # LAS PUERTAS TRASERAS ESTAN CERRADAS, comprobado: `entrada_alternativa`
+  # no esta en este fichero (asi que `entrada_alt_max_mc` es 0) y
+  # `dev_mediana` tampoco. Sin ellas, el techo de 22.000 es duro de verdad.
+  # Si alguien anade cualquiera de las dos, el techo deja de ser un techo.
+  #
+  # EFECTO SECUNDARIO QUE HAY QUE SABER. Poner `min_entry_mc` ABRE el bloque
+  # del `max_buy_age`, que estaba cerrado: la puerta es
+  # `max_buy_age > 0 and (min_volumen_sol>0 or min_entry_mc>0 or min_buys>0
+  # or min_first_block_buys>0 or min_ops>0 or min_titulares>0 or
+  # second_wave.enabled)`. Dos consecuencias:
+  #   1. El bot ya no compra en el instante de cruzar el umbral: entra en un
+  #      bucle de hasta 60s esperando que se cumpla la banda.
+  #   2. El chequeo de PRESION COMPRADORA vive en ese mismo bloque. Sigue
+  #      mudo porque `min_presion_ratio` esta en 0, pero a partir de ahora
+  #      ponerlo SI tendria efecto. Antes no: era el fallo diagnosticado hoy.
+  min_entry_mc: 18000
+  max_entry_mc: 22000
   max_entry_mc_dev_top: 0
   min_curve_sol: 0
   # SIN TECHO DE VOLUMEN, y esto corrige una medida anterior.
@@ -645,7 +702,34 @@ filters:
     # expuesto a un rug, y `anti_rug_ratio` sigue en 0 (apagado a peticion).
     # Techo hasta migrar: +128%, asi que el TP de +30% cabe de sobra (se come
     # el 23% del recorrido disponible).
-    umbral: 0.82
+    # 77% EL 15-oct. Duodecimo movimiento, y EL ULTIMO QUE DEBERIA HACER
+    # FALTA, porque a partir de ahora quien decide la entrada es la banda en
+    # DOLARES (`min_entry_mc` / `max_entry_mc`, mas abajo), no este numero.
+    #
+    # POR QUE CAMBIA EL PAPEL DE ESTE NUMERO. Un porcentaje de curva es fijo
+    # y el precio de SOL se mueve: el 82% daba 18-21k con SOL a 104-118, y
+    # daria 24-27k con SOL a 150. Ese es el motivo de que este parametro se
+    # haya movido ONCE veces -- no era indecision, era que persigue un
+    # objetivo en dolares con una herramienta que no mide dolares.
+    #
+    # AHORA ESTE UMBRAL SOLO DECIDE CUANDO SE EMPIEZA A MIRAR LA MONEDA, y
+    # tiene que disparar POR DEBAJO del suelo de 18k para que el bot pueda
+    # esperar a que entre en la banda. Con los dos precios de SOL calibrados
+    # desde la observacion de Manu ("entra entorno a los 27k"):
+    #
+    #     umbral   SOL a $118   SOL a $104   bajo el suelo con los dos
+    #       76%      $17.177      $15.139    si
+    #       77%      $17.772      $15.663    si  <-- elegido
+    #       78%      $18.398      $16.215    NO (ya en banda con $118)
+    #
+    # Se elige el 77% porque es el MAS CERCANO al suelo que sigue estando
+    # por debajo con ambos precios: asi la espera hasta entrar en la banda es
+    # la mas corta posible (+1,3% con SOL a 118, +15% con SOL a 104) y cabe
+    # de sobra en los 60s de `max_buy_age`.
+    #
+    # Techo de curva al 77%: +173%, asi que el TP de +30% se come solo el
+    # 17% del recorrido disponible.
+    umbral: 0.77
     tope: 0.995
     buy_amount: 0
     # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no

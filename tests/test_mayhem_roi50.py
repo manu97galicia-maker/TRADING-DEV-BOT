@@ -293,7 +293,7 @@ class MayhemRoi50Tests(unittest.TestCase):
         self.assertTrue(c123["enabled"])
         self.assertFalse(c123["filters"]["paper_trade"])
         self.assertTrue(c123["filters"]["ignorar_listas_de_devs"])
-        self.assertEqual(c123["filters"]["curva_96"]["umbral"], 0.82)
+        self.assertEqual(c123["filters"]["curva_96"]["umbral"], 0.77)
 
 
 if __name__ == "__main__":
