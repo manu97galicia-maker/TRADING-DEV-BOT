@@ -132,3 +132,52 @@ def test_el_bot_mira_el_precio_a_menudo() -> None:
         f"{nombre}: mira el precio cada {intervalo}s. Por encima de 5 el stop "
         "loss reacciona tarde pase lo que pase con la comision"
     )
+
+
+def test_la_escalera_de_salida_esta_enchufada() -> None:
+    """El TP y el SL solo existen si el bot elige el monitor que los mira.
+
+    LA CADENA, comprobada entera el 15-oct al pedirse "revisa que el tp se
+    efectua":
+
+        _handle_token  -> (si exit_strategy == "tp_sl" y no marry_mode)
+        _handle_tp_sl_exit -> _monitor_tiered_exit -> tiers_due -> _sell_amount
+
+    Si `exit_strategy` deja de ser "tp_sl", el bot compra y se va por otra
+    rama (`time_based` o `manual`): la escalera entera --peldanos, trinquete
+    del stop y stop loss-- queda ESCRITA Y MUDA, sin que nada lo diga. Y si
+    `marry_mode` se enciende, no vende nunca.
+
+    Es la misma familia que el `hard_cap` recortando la comision o el buffer
+    de 32 puntos: la configuracion esta puesta y no se aplica.
+    """
+    nombre, cfg = _bot_encendido()
+    estrategia = str(cfg["trade"].get("exit_strategy") or "")
+    assert estrategia == "tp_sl", (
+        f"{nombre}: exit_strategy es {estrategia!r}, no 'tp_sl'. La escalera "
+        "de take profit y el stop loss no se miran nunca"
+    )
+    assert cfg["filters"].get("marry_mode") is not True, (
+        f"{nombre}: marry_mode encendido, el bot no vende nunca"
+    )
+
+
+def test_el_peldano_que_no_vende_sigue_subiendo_el_suelo() -> None:
+    """El TP1 esta a 0%: no cobra, pero ARMA. Si se pierde, no hace nada.
+
+    `build_tiers` acepta `sell = 0` a proposito y `_monitor_tiered_exit` lo
+    trata aparte (no llama a vender, pero marca el peldano y sube el suelo).
+    Antes ese caso salia por un `continue` que se saltaba la subida del
+    suelo: el peldano no hacia absolutamente nada y desde fuera parecia que
+    la configuracion no se aplicaba.
+    """
+    trader = (RAIZ / "src/trading/universal_trader.py").read_text(encoding="utf-8")
+    i = trader.index("for i in tiers_due(entry_price, price, tiers, executed):")
+    bloque = trader[i : i + 1500]
+    assert "if amount > 1e-9:" in bloque, (
+        "ha desaparecido la rama que deja pasar el peldano que no vende: el "
+        "TP1 al 0% volveria a no hacer nada"
+    )
+    assert "_vendido = True" in bloque, (
+        "el peldano que no vende ya no se marca como hecho: no subiria el suelo"
+    )
