@@ -50,6 +50,13 @@ separate_process: false
 platform: "pump_fun"
 
 trade:
+  # === VUELTA ATRAS DEL 16-oct, pedido: "No compra pon la anterior
+  # configuracion". Se restaura la ENTRADA tal y como estaba cuando el bot si
+  # compraba (commit 8fb4dd5, "pillando buenas subidas"). Lo que se apaga son
+  # MIS filtros, no los suyos: la banda de dolares, el volumen, la presion y
+  # el umbral del 80% los introduje yo esta noche y el bot dejo de comprar.
+  # El tamano (60%), el suelo de compra y la reserva se CONSERVAN porque son
+  # ordenes suyas posteriores y no son lo que impedia comprar. ===
   # Compra normal de 0,10 SOL. El techo absoluto impide superar 0,20 SOL por
   # operacion aunque otra ruta proponga un importe superior.
   # YA NO MANDA. Desde el 15-oct el importe lo decide `fraccion_saldo`,
@@ -233,8 +240,45 @@ trade:
   # trasladar. Dicho de otro modo: esa medicion no descarta esto, pero
   # TAMPOCO HAY NADA QUE LO RESPALDE con entrada tardia. Es terreno sin
   # medir y Manu lo sabe.
-  take_profit_percentage: 0.30
-  take_profit_sell_percentage: 0.80
+  # TP DEL 16-oct, pedido: "tp 40% recuperar, luego dejar correr hasta x4".
+  # Antes era +30% vendiendo el 80%.
+  #
+  # AL +40% SE VENDE EL 75%: eso devuelve TODO el capital, comisiones
+  # incluidas. Comprobado en los cuatro tamanos que puede producir el 60%:
+  #
+  #     compra     cuesta     cobra el 75% a +40%    sobra
+  #     0,591 SOL  0,59810        0,61333          +0,01523
+  #     0,235 SOL  0,23854        0,24326          +0,00473
+  #     0,140 SOL  0,14259        0,14451          +0,00193
+  #     0,113 SOL  0,11532        0,11645          +0,00113
+  #
+  # La fraccion exacta que hace falta va de 73,1% a 74,3% segun el tamano
+  # (las comisiones son fijas y pesan mas en la compra pequena); se pone 75%,
+  # redondeado al alza, para que valga en todas.
+  #
+  # EL 25% QUE QUEDA CORRE HASTA x4, que es el tp2 de abajo.
+  #
+  # LOS DOS FINALES:
+  #     llega a x4 ....... 75% x 1,40 + 25% x 4,00 = +105%
+  #     se va a CERO ..... 75% x 1,40              = +5,0%  (capital intacto)
+  take_profit_percentage: 0.40
+  take_profit_sell_percentage: 0.75
+  # x4 = +300%. VENDE LO QUE QUEDE (el `sell` es sobre la posicion original y
+  # el codigo hace `min(original * sell, restante)`, asi que 1.0 se lleva el
+  # remanente y cierra).
+  #
+  # EL x4 NO CABE EN LA CURVA, y hay que saberlo: entrando al 91% quedan
+  # +57,5% hasta migrar. El +40% si cabe (es el 70% de ese recorrido), pero
+  # el x4 exige que la moneda MIGRE y siga subiendo ya en PumpSwap. O sea que
+  # el tp2 es un billete de loteria pagado con dinero que ya no es tuyo --
+  # que es exactamente lo que se pidio.
+  #
+  # OJO CON EL RELOJ: `max_hold_time` esta en 3600 (1 hora) y, al no quedar
+  # moonbag despues del tp2, al cumplirse vende lo que haya. Asi que el x4
+  # tiene UNA HORA para ocurrir. Si se quiere dar mas margen, el numero a
+  # subir es `max_hold_time`. No se toca sin pedirlo.
+  tp2_gain: 3.0
+  tp2_sell: 1.0
   #
   # Medido sobre la muestra del 20-ago (40 monedas del grupo filtrado, y
   # comprobado tambien en grupos de 156 y 283 con filtros mas flojos):
@@ -339,7 +383,7 @@ trade:
   # LO QUE PUEDE COSTAR: sacarte de una moneda que solo estaba respirando.
   # Es exactamente el motivo por el que Manu lo apago. Si vuelve a molestar,
   # se sube a 2.5 (mas permisivo) antes de apagarlo del todo.
-  anti_rug_ratio: 1.6
+  anti_rug_ratio: 0
   anti_rug_seg: 4
   anti_rug_min_sol: 3
 
@@ -403,7 +447,16 @@ trade:
   #     1,5 SOL o mas -> 3 posiciones
   # `max_posiciones: 3` es un MAXIMO, no una cuota, asi que esto no lo
   # incumple. Pero si se quieren 3 de verdad, hace falta saldo.
-  compra_minima_sol: 0.113
+  # 0,075 EL 16-oct. Baja desde 0,113 porque EL SUELO DEPENDE DEL TP y el TP
+  # cambio: con +30% vendiendo 80% hacian falta 0,1125 SOL para recuperar el
+  # capital; con +40% vendiendo 75% bastan 0,0747. Se redondea al alza.
+  #
+  # No es aflojar un freno: es recalcularlo. Si se dejara en 0,113 estaria
+  # saltando compras de entre 0,075 y 0,113 SOL que SI recuperan el capital,
+  # o sea perdiendo posiciones validas por un numero de otra configuracion.
+  #
+  # Sale de resolver `0,75 x c x 1,40 x 0,99 - 0,00102 >= c x 1,01 + 0,00119`.
+  compra_minima_sol: 0.075
 
   min_reserve_sol: 0.015
 
@@ -570,7 +623,7 @@ filters:
   # el bot no tiene.
   #
   # Si aun asi no compra, el siguiente numero a soltar es este (a 3, o a 0).
-  min_volumen_sol: 8
+  min_volumen_sol: 0
 
   # SIN FRANJA HORARIA: opera las 24 horas. El {inicio:18, fin:4} venia
   # heredado de cuando esta estrategia se llamaba NOCHE, y estaba descartando
@@ -637,8 +690,8 @@ filters:
   #      ponerlo SI tendria efecto. Antes no: era el fallo diagnosticado hoy.
   # TECHO A 23.000 EL 15-oct, pedido: "Sigue entrando en 28k quiero entre 18
   # y 23". Venia de 22.000, puesto hace un rato.
-  min_entry_mc: 18000
-  max_entry_mc: 23000
+  min_entry_mc: 0
+  max_entry_mc: 0
   max_entry_mc_dev_top: 0
   min_curve_sol: 0
   # SIN TECHO DE VOLUMEN, y esto corrige una medida anterior.
@@ -706,7 +759,7 @@ filters:
   # (del 14,4% al 27,4% con 3 o mas). O sea: `min_titulares` o `min_buys`
   # tienen mas respaldo que esto. Se pone igual porque es lo pedido, y queda
   # dicho para que la alternativa este sobre la mesa.
-  min_presion_ratio: 1.2
+  min_presion_ratio: 0
   presion_seg: 3.0
   min_buys: 0
   min_titulares: 0
@@ -862,7 +915,7 @@ filters:
     #
     # Manu reporto "no compra" tras encender todo esto. Esta es una de las dos
     # causas que se corrigen; la otra es `min_volumen_sol`.
-    umbral: 0.80
+    umbral: 0.91
     tope: 0.995
     buy_amount: 0
     # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no

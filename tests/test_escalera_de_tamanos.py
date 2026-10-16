@@ -279,7 +279,12 @@ def test_el_suelo_de_compra_protege_la_orden_de_asegurar_el_capital() -> None:
     tests/test_stop_asegura_ganancia.py.
     """
     trade = yaml.safe_load(C123.read_text(encoding="utf-8"))["trade"]
-    assert trade["compra_minima_sol"] == pytest.approx(0.113)
+    # 0,075 desde el 16-oct: EL SUELO DEPENDE DEL TP y el TP paso de
+    # +30%/80% a +40%/75%. Con el TP mas alto el capital se recupera antes,
+    # asi que el suelo baja. Si se dejara en 0,113 estaria saltando compras
+    # que SI recuperan. La cuenta exacta la comprueba
+    # `test_toda_compra_que_el_bot_haga_devuelve_el_capital`.
+    assert trade["compra_minima_sol"] == pytest.approx(0.075)
 
 
 def test_el_tope_de_compra_sigue_a_cero() -> None:

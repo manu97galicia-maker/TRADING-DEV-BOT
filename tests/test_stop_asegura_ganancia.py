@@ -49,8 +49,8 @@ def _tiers() -> list:
     return build_tiers(pares)
 
 
-def test_unica123_asegura_el_capital_al_tocar_mas_30() -> None:
-    """En real, +30% vende el 80% --el capital entero-- y el 20% corre.
+def test_unica123_recupera_al_mas_40_y_deja_correr_a_x4() -> None:
+    """En real, +40% vende el 75% --el capital entero-- y el 25% corre a x4.
 
     CAMBIADO EL 15-oct, pedido: "Optimiza el resultado poniendo un take
     profit en el que asegures el capital inicial y dejes correr beneficios".
@@ -76,13 +76,13 @@ def test_unica123_asegura_el_capital_al_tocar_mas_30() -> None:
             (trade.get("tp2_gain"), trade.get("tp2_sell")),
         ]
     )
-    # UN SOLO PELDANO. El tp2 ya no esta escrito, asi que `build_tiers` lo
-    # descarta por None -- que es como se apaga de verdad un peldano (un 0
-    # explicito crearia un escalon al +0%).
-    assert len(tiers) == 1, f"se esperaba un solo escalon, hay {tiers}"
-    assert tiers[0].gain == 0.30
-    assert tiers[0].sell == 0.80
-    assert moonbag_fraction(tiers) == pytest.approx(0.20)
+    # DOS PELDANOS desde el 16-oct, pedido: "tp 40% recuperar, luego dejar
+    # correr hasta x4".
+    assert [t.gain for t in tiers] == [0.40, 3.0]
+    assert [t.sell for t in tiers] == [0.75, 1.0]
+    # El tp2 vende el remanente (`min(original * sell, restante)`), asi que
+    # no queda moonbag: a x4 se cierra la posicion.
+    assert moonbag_fraction(tiers) == pytest.approx(0.0)
 
     assert trade["stop_a_entrada_tras_tp"] is True
     assert trade["stop_al_tp_tras_tp"] is False
@@ -429,19 +429,28 @@ def test_la_entrada_del_c123_da_para_cobrar_el_primer_peldano() -> None:
     )
     assert tiers, "sin peldanos no hay nada que cobrar"
 
-    for i, t in enumerate(tiers):
-        assert t.gain <= techo, (
-            f"el peldano {i + 1} pide +{t.gain * 100:.0f}% pero entrando al "
-            f"{umbral * 100:.0f}% de curva solo quedan +{techo * 100:.1f}% "
-            "hasta migrar: NO se puede cobrar dentro de la curva"
-        )
-
-    # Y con holgura: un peldano justo en el techo solo se cobra si la moneda
-    # migra EXACTAMENTE, lo que en la practica es no cobrarlo.
+    # EL PRIMERO ES EL QUE TIENE QUE CABER: es el que recupera el capital, o
+    # sea la unica salida en verde garantizada dentro de la curva. Si ese no
+    # se puede tocar, las unicas salidas son el stop y el reloj -- que es
+    # exactamente lo que pasaba con el tp2 de +70% entrando al 91%.
     assert tiers[0].gain <= techo * 0.75, (
         f"el primer peldano (+{tiers[0].gain * 100:.0f}%) se come el "
         f"{tiers[0].gain / techo * 100:.0f}% del recorrido disponible "
-        f"(+{techo * 100:.1f}%): demasiado justo"
+        f"(+{techo * 100:.1f}%): demasiado justo o inalcanzable"
+    )
+
+    # LOS DE MAS ARRIBA PUEDEN SALIRSE DE LA CURVA A PROPOSITO. El x4 pedido
+    # el 16-oct exige migrar y seguir subiendo en PumpSwap; es una decision,
+    # no un fallo, porque se juega con dinero ya recuperado. Lo que NO puede
+    # pasar es que la mayor parte de la posicion dependa de que migre.
+    cobrables = [t for t in tiers if t.gain <= techo]
+    assert cobrables, (
+        f"NINGUN peldano cabe en el +{techo * 100:.1f}% que queda hasta "
+        "migrar: la escalera no cobraria en ningun sitio"
+    )
+    assert sum(t.sell for t in cobrables) >= 0.5, (
+        "los peldanos alcanzables dentro de la curva venden menos de la "
+        "mitad: casi todo quedaria colgado de que la moneda migre"
     )
 
 
@@ -463,9 +472,10 @@ def test_las_cifras_del_ejemplo_del_yaml_son_de_verdad() -> None:
 
     # (compra, cuesta, cobra) tal y como estan escritas en el yaml
     for compra, cuesta_esc, cobra_esc in (
-        (0.891, "0,90110", "0,91636"),
-        (0.355, "0,35974", "0,36449"),
-        (0.140, "0,14259", "0,14313"),
+        (0.591, "0,59810", "0,61333"),
+        (0.235, "0,23854", "0,24326"),
+        (0.140, "0,14259", "0,14451"),
+        (0.113, "0,11532", "0,11645"),
     ):
         cuesta = compra * 1.01 + fee_compra
         cobra = f * compra * (1 + g) * 0.99 - fee_venta

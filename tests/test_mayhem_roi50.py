@@ -204,8 +204,8 @@ class MayhemRoi50Tests(unittest.TestCase):
         # capital entero) y deja un moonbag del 20% corriendo. El tp2 de
         # +70% se quito porque era INALCANZABLE al 91% de curva --quedaban
         # +57,5%-- y porque vendia el 100%, matando al corredor.
-        self.assertEqual([t.gain for t in escalera], [0.30])
-        self.assertEqual([t.sell for t in escalera], [0.80])
+        self.assertEqual([t.gain for t in escalera], [0.40, 3.0])
+        self.assertEqual([t.sell for t in escalera], [0.75, 1.0])
 
     def test_los_frenos_antirug_estan_activos(self) -> None:
         """Comprando al nacer, el rug es el riesgo principal.
@@ -293,7 +293,7 @@ class MayhemRoi50Tests(unittest.TestCase):
         self.assertTrue(c123["enabled"])
         self.assertFalse(c123["filters"]["paper_trade"])
         self.assertTrue(c123["filters"]["ignorar_listas_de_devs"])
-        self.assertEqual(c123["filters"]["curva_96"]["umbral"], 0.80)
+        self.assertEqual(c123["filters"]["curva_96"]["umbral"], 0.91)
 
 
 if __name__ == "__main__":

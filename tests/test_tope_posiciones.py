@@ -88,8 +88,7 @@ def test_c123_sin_techo_mc_y_con_dos_posiciones() -> None:
         "para solo tras esas compras y no lo vuelve a decir"
     )
     assert cfg["filters"]["curva_96"]["max_compras"] == 0, (
-        "max_compras es el cupo total de la fuente: a 0 o se calla tras "
-        "agotarlo"
+        "max_compras es el cupo total de la fuente: a 0 o se calla tras agotarlo"
     )
     # 0,015 DESDE EL 15-oct, pedido ("minimo 0.015 sol de reservar"). Venia
     # de 0,03. Este assert fijaba el numero viejo, asi que se actualiza a la
@@ -108,8 +107,8 @@ def test_c123_sin_techo_mc_y_con_dos_posiciones() -> None:
     # dejo de estar apagado a proposito: es el mando que cumple el pedido.
     # Lo vigila `test_banda_de_entrada_en_dolares` en
     # tests/test_banda_de_entrada.py, con las cuentas hechas.
-    assert cfg["filters"]["max_entry_mc"] == 23000
-    assert cfg["filters"]["min_entry_mc"] == 18000
+    assert cfg["filters"]["max_entry_mc"] == 0
+    assert cfg["filters"]["min_entry_mc"] == 0
 
 
 def test_avisa_cuando_hay_mas_posiciones_que_nodo(
