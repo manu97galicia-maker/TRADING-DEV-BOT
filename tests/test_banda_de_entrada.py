@@ -42,8 +42,10 @@ RAIZ = Path(__file__).resolve().parent.parent
 C123 = RAIZ / "bots/bot-unica123-real.yaml"
 FUENTE = (RAIZ / "src/trading/universal_trader.py").read_text(encoding="utf-8")
 
-SUELO_PEDIDO = 18000
-TECHO_PEDIDO = 23000
+# 15.000-22.000 desde el 16-oct, pedido: "comprar maximo en entre
+# 15k-22k". Antes fue 18.000-23.000.
+SUELO_PEDIDO = 15000
+TECHO_PEDIDO = 22000
 
 #: Matematica de la bonding curve. El MC en SOL es exacto y no depende del
 #: precio de SOL; por eso todo lo estructural se comprueba en SOL.

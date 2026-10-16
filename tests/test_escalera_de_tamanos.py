@@ -49,7 +49,7 @@ C123 = RAIZ / "bots/bot-unica123-real.yaml"
 
 ESCALERA_PEDIDA = [0.33, 0.40, 0.50]
 RESERVA_PEDIDA = 0.015
-PLAZAS_PEDIDAS = 3
+PLAZAS_PEDIDAS = 2  # 16-oct: "maximo dos posiciones simultaneas"
 
 
 def _trader(
@@ -263,10 +263,13 @@ def test_el_60_por_ciento_deja_las_posiciones_muy_desiguales() -> None:
         imp = libre * trade["fraccion_saldo"]
         compras.append(imp)
         libre -= imp
-    assert compras[0] / compras[2] == pytest.approx(6.25, abs=0.3)
+    # Con 2 posiciones (16-oct) la desigualdad baja: la primera es 2,5 veces
+    # la segunda, no 6,4 veces la tercera. Y se despliega el 84% en vez del
+    # 93%, porque hay una compra menos.
+    assert compras[0] / compras[-1] == pytest.approx(2.52, abs=0.1)
     assert sum(compras) / (1.0 - trade["min_reserve_sol"]) == pytest.approx(
-        0.936, abs=0.01
-    ), "el 60% despliega el 93% del saldo libre"
+        0.838, abs=0.01
+    ), "el 60% con 2 posiciones despliega el 84% del saldo libre"
 
 
 def test_el_suelo_de_compra_protege_la_orden_de_asegurar_el_capital() -> None:

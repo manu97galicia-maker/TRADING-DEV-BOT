@@ -159,7 +159,10 @@ trade:
   # horas antes. Sigue por debajo de las 10 que el nodo puede vigilar
   # (max_rps 20 x intervalo 1 s / 2), asi que cada posicion se mira cada
   # segundo y el take profit no se retrasa por ahi.
-  max_posiciones: 3
+  # 2 EL 16-oct, pedido: "maximo dos posiciones simultaneas". Venia de 3.
+  # Cabe de sobra en el presupuesto del nodo: con `max_rps: 8` y
+  # `price_check_interval: 1` se pueden vigilar 8*1/2 = 4 posiciones.
+  max_posiciones: 2
   mayhem_max_perdidas: 0
 
   # Slippage alto en la compra: en una moneda que se esta moviendo, un margen
@@ -706,8 +709,25 @@ filters:
   #      ponerlo SI tendria efecto. Antes no: era el fallo diagnosticado hoy.
   # TECHO A 23.000 EL 15-oct, pedido: "Sigue entrando en 28k quiero entre 18
   # y 23". Venia de 22.000, puesto hace un rato.
-  min_entry_mc: 0
-  max_entry_mc: 0
+  # BANDA 15.000-22.000 $ EL 16-oct, pedido: "habiamos quedado en comprar
+  # maximo en entre 15k-22k". Estaba apagada (0) desde la vuelta atras de
+  # ayer.
+  #
+  # POR QUE VUELVE, con un caso concreto: Manu enseno una compra hecha en
+  # 30.600 $ de market cap, muy por encima de lo acordado. UN % DE CURVA NO
+  # PUEDE GARANTIZAR UN TECHO EN DOLARES, porque el MC de un mismo punto de
+  # la curva sube y baja con el precio de SOL:
+  #
+  #     el 75,4% de curva son 142,7 SOL de market cap
+  #     con SOL a $105 -> $14.980
+  #     con SOL a $214 -> $30.531
+  #
+  # `max_entry_mc` SI lo garantiza: el codigo calcula
+  # `_mc = precio * supply * _SOL_USD` con el precio de SOL EN VIVO
+  # (universal_trader.py:4256), asi que 22.000 son 22.000 hoy y manana.
+  # Esto solo es el freno que impide repetir la compra de 30.600.
+  min_entry_mc: 15000
+  max_entry_mc: 22000
   max_entry_mc_dev_top: 0
   min_curve_sol: 0
   # SIN TECHO DE VOLUMEN, y esto corrige una medida anterior.

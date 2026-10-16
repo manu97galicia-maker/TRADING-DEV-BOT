@@ -77,7 +77,7 @@ def test_c123_sin_techo_mc_y_con_dos_posiciones() -> None:
     # Si alguien sube este numero por encima de 10, el TP y el stop empiezan
     # a reaccionar tarde sin que nada cambie a la vista.
     plazas = cfg["trade"]["max_posiciones"]
-    assert plazas == 3, "se pidieron 3 posiciones simultaneas"
+    assert plazas == 2, "se pidieron 2 posiciones simultaneas (16-oct)"
     vigilables = cfg["node"]["max_rps"] * cfg["trade"]["price_check_interval"] / 2
     assert plazas <= vigilables, (
         f"{plazas} posiciones y el nodo solo da para vigilar {vigilables:.0f} "
@@ -107,8 +107,10 @@ def test_c123_sin_techo_mc_y_con_dos_posiciones() -> None:
     # dejo de estar apagado a proposito: es el mando que cumple el pedido.
     # Lo vigila `test_banda_de_entrada_en_dolares` en
     # tests/test_banda_de_entrada.py, con las cuentas hechas.
-    assert cfg["filters"]["max_entry_mc"] == 0
-    assert cfg["filters"]["min_entry_mc"] == 0
+    # Banda en dolares otra vez desde el 16-oct: Manu enseno una compra en
+    # 30.600 $ y un % de curva no puede garantizar un techo en dolares.
+    assert cfg["filters"]["max_entry_mc"] == 22000
+    assert cfg["filters"]["min_entry_mc"] == 15000
 
 
 def test_avisa_cuando_hay_mas_posiciones_que_nodo(
