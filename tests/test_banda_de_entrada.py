@@ -246,3 +246,58 @@ def test_el_antirug_acompana_a_lo_temprano_que_se_entre() -> None:
             f"{(1 - umbral) * 100:.0f} puntos con la moneda dentro) y el "
             "anti-rug esta apagado"
         )
+
+
+def test_min_ops_es_una_llave_y_no_un_filtro() -> None:
+    """`min_ops: 1` esta ahi para ABRIR el bloque de la presion, no para filtrar.
+
+    El chequeo de presion vive dentro del bloque del `max_buy_age` y
+    `min_presion_ratio` NO abre esa puerta por si solo. Con todos los
+    abridores a 0 --como quedo al volver atras el 16-oct-- poner la presion
+    no hace nada: queda escrita y muda. Ya paso el 15-oct.
+
+    Se eligio `min_ops` porque es el abridor que MENOS filtra: al 75% de
+    curva una moneda lleva decenas de transacciones, asi que exigir 1 no
+    descarta nada. Si alguien lo sube pensando que es un filtro de calidad,
+    estara descartando monedas con un mando que no se puso para eso --y
+    ademas hay abridores mejores para filtrar (titulares, compras).
+    """
+    filtros = _cfg()["filters"]
+    if filtros.get("min_presion_ratio", 0) <= 0:
+        return  # presion apagada: la llave no hace falta
+
+    assert filtros.get("min_ops", 0) >= 1, (
+        "la presion esta encendida pero no hay ningun abridor: quedaria muda"
+    )
+    assert filtros["min_ops"] <= 3, (
+        f"min_ops esta en {filtros['min_ops']}: eso ya es un filtro, no una "
+        "llave. Para filtrar por calidad hay mandos con mas respaldo "
+        "(min_titulares: la medicion de 27.241 monedas dice que los "
+        "compradores distintos predicen el pump y el ratio de presion no)"
+    )
+
+
+def test_la_presion_es_exigente_pero_el_bucle_la_hace_viable() -> None:
+    """ "Potente pero que no descarte demasiado" lo concilia el BUCLE, no el
+    numero.
+
+    El bloque reintenta cada `_paso` (0,15 s) durante `max_buy_age` (60 s),
+    o sea unas 400 veces, y basta con que la presion se cumpla UNA VEZ. Por
+    eso un 1.5 --exigente de verdad-- no se traduce en descartar casi todo.
+
+    Si alguien bajara `max_buy_age`, el mismo 1.5 pasaria a ser muchisimo mas
+    estricto sin que nadie hubiera tocado la presion. Este test lo vigila.
+    """
+    filtros = _cfg()["filters"]
+    ratio = filtros.get("min_presion_ratio", 0)
+    if ratio <= 0:
+        return
+
+    ventana = filtros["max_buy_age"]
+    paso = 0.15  # `_paso` en universal_trader.py
+    intentos = ventana / paso
+    assert intentos >= 100, (
+        f"con max_buy_age={ventana}s solo hay {intentos:.0f} oportunidades de "
+        f"cumplir la presion de {ratio}: pasaria a descartar casi todo"
+    )
+    assert filtros["presion_seg"] > 0, "sin ventana, la presion no mide nada"

@@ -383,7 +383,23 @@ trade:
   # LO QUE PUEDE COSTAR: sacarte de una moneda que solo estaba respirando.
   # Es exactamente el motivo por el que Manu lo apago. Si vuelve a molestar,
   # se sube a 2.5 (mas permisivo) antes de apagarlo del todo.
-  anti_rug_ratio: 0
+  # 1.6 OTRA VEZ EL 16-oct. NO LO PIDIO MANU en este mensaje: lo exige bajar
+  # la entrada a 15k.
+  #
+  # Al 91% quedaban 9 puntos de curva con la moneda dentro; al 75,4% quedan
+  # 25. Casi el triple de tiempo en el tramo donde un dev puede tirarla, y
+  # este es el unico freno que mira eso. Manu ya eligio 1.6 el 15-oct para
+  # exactamente esta situacion (cuando se bajo al 77%), asi que se aplica el
+  # mismo criterio suyo, no uno mio.
+  #
+  # Apagarlo entrando tan abajo es el caso FUCKETHAN (-91,9%). Hay un test
+  # que lo exige: `test_el_antirug_acompana_a_lo_temprano_que_se_entre` se
+  # pone rojo si el umbral baja del 85% con esto en 0.
+  #
+  # QUE HACE: en 4 s, si se venden mas de 3 SOL Y las ventas superan en 1,6x
+  # a las compras, sale corriendo. Si molesta sacando de monedas que solo
+  # respiraban, se sube a 2.5 antes de apagarlo.
+  anti_rug_ratio: 1.6
   anti_rug_seg: 4
   anti_rug_min_sol: 3
 
@@ -722,7 +738,23 @@ filters:
   # a tener 3 compradores en 30 s.
   # 4 TRANSACCIONES PREVIAS antes de entrar. Cuenta operaciones de la moneda,
   # compras y ventas, no compradores distintos: es "que haya pasado algo ya".
-  min_ops: 0
+  # 1 EL 16-oct, y NO ES UN FILTRO: es la LLAVE que hace que la presion
+  # compradora funcione.
+  #
+  # EL CHEQUEO DE PRESION vive dentro del bloque del `max_buy_age`, y la
+  # puerta de ese bloque es:
+  #     if max_buy_age > 0 and (min_volumen_sol>0 or min_entry_mc>0 or
+  #        min_buys>0 or min_first_block_buys>0 or min_ops>0 or
+  #        min_titulares>0 or second_wave.enabled)
+  # `min_presion_ratio` NO ESTA en esa lista, asi que no abre la puerta por
+  # si solo. Con todos los demas a 0 --que es como quedo al volver atras--
+  # poner la presion no haria absolutamente nada. Ya paso el 15-oct.
+  #
+  # POR QUE `min_ops: 1` Y NO OTRO. Es el abridor que menos filtra: exige UNA
+  # transaccion. Al 75% de curva una moneda lleva decenas, asi que no descarta
+  # nada; solo enciende el bloque. Cualquier otro abridor (volumen, titulares,
+  # compras) SI filtraria, y lo pedido fue que no descarte demasiado.
+  min_ops: 1
   # MAS COMPRA QUE VENTA. El ratio mide cuanto SOL entra frente al que sale en
   # los ultimos  segundos: 1.0 exige que entre mas del que sale.
   # El volumen solo dice que hay movimiento; esto dice hacia donde va, y evita
@@ -759,7 +791,28 @@ filters:
   # (del 14,4% al 27,4% con 3 o mas). O sea: `min_titulares` o `min_buys`
   # tienen mas respaldo que esto. Se pone igual porque es lo pedido, y queda
   # dicho para que la alternativa este sobre la mesa.
-  min_presion_ratio: 0
+  # PRESION 1.5 EL 16-oct, pedido: "presion compradora potente que facil se
+  # dispare pero no descarte demasiado". Son dos cosas que tiran en contra, y
+  # lo que las concilia NO es el numero sino el BUCLE.
+  #
+  # EXIGE que en los ultimos 3 segundos entre un 50% mas de SOL del que sale.
+  # Eso es "potente": el defecto del codigo es 2.0, y el 15-oct se probo 1.2,
+  # que era flojo.
+  #
+  # POR QUE NO DESCARTA, aunque 1.5 suene exigente: el bloque reintenta cada
+  # `_paso` = 0,15 s durante `max_buy_age` = 60 s, o sea unas 400 VECES. La
+  # presion solo tiene que cumplirse UNA VEZ en ese minuto. No pide que la
+  # moneda este fuerte todo el rato, solo que lo este un instante.
+  #
+  # Y SIN DATOS NO ES CAIDA: si en esos 3 segundos no hubo ninguna operacion,
+  # el codigo lo trata como "pasa" (`_pc <= 0 and _pv <= 0 -> _ok_presion =
+  # True`). Medido el 10-ago: 6 monedas cruzaron el volumen con la ventana
+  # vacia y se descartaron las seis; por eso se arreglo. Las ventanas quietas
+  # no vetan.
+  #
+  # SI AUN ASI SE SECAN LAS COMPRAS, el orden para aflojar es: 1.5 -> 1.3 ->
+  # 1.0 -> 0. Y `porque` dice cuantas se caen por aqui antes de tocar nada.
+  min_presion_ratio: 1.5
   presion_seg: 3.0
   min_buys: 0
   min_titulares: 0
@@ -915,7 +968,27 @@ filters:
     #
     # Manu reporto "no compra" tras encender todo esto. Esta es una de las dos
     # causas que se corrigen; la otra es `min_volumen_sol`.
-    umbral: 0.91
+    # 75,4% EL 16-oct, pedido: "baja a que compre entorno 15k".
+    #
+    # EL NUMERO SALE DEL MC, no de un porcentaje redondo. Con SOL a ~105
+    # (calibrado desde las entradas observadas) el market cap en cada punto:
+    #
+    #     75,0% de curva -> $14.782
+    #     75,4% de curva -> $14.980   <- elegido
+    #     76,0% de curva -> $15.285
+    #     90,7% de curva -> $27.000   (donde compraba hasta ahora)
+    #
+    # OJO: ESTO ES UN % DE CURVA, no dolares. Si SOL se mueve, el MC de
+    # entrada se mueve con el. A 15k eso importa menos que antes porque el
+    # objetivo es "entorno a", no una banda cerrada.
+    #
+    # LO QUE SE PAGA, y no es menor: quedan 25 PUNTOS de curva con la moneda
+    # dentro, contra 9 al 91%. Casi el triple de tiempo expuesto a que el dev
+    # la tire. Por eso se vuelve a encender el anti-rug (ver `anti_rug_ratio`).
+    #
+    # LO QUE SE GANA: el techo hasta migrar pasa de +57,5% a +188%, asi que
+    # el TP de +40% solo se come el 21% del recorrido disponible.
+    umbral: 0.754
     tope: 0.995
     buy_amount: 0
     # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no
