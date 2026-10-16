@@ -1054,4 +1054,30 @@ node:
   # 20, no 40. Con 40 el nodo devolvia 429 justo al ir a leer la curva para
   # comprar -- paso con "Joe", que habia pasado TODOS los filtros. Mejor menos
   # peticiones y que las que importan entren.
-  max_rps: 20
+  # 8 EL 16-oct. TERCERA VEZ que este numero baja por 429. El panel mostro
+  # 208 avisos de 429/websocket caido en 15 minutos, con el bot sin comprar
+  # nada. Manu habia ampliado CREDITOS, que es el limite equivocado:
+  #
+  #     creditos   = cuantas peticiones al mes      (lo que amplio)
+  #     rate limit = cuantas peticiones por SEGUNDO (lo que devuelve 429)
+  #
+  # Son limites distintos y ampliar uno no toca el otro.
+  #
+  # POR QUE 8 Y NO MENOS. El tope de posiciones vigilables es
+  # `max_rps x price_check_interval / 2`:
+  #
+  #     max_rps 20 -> 10 vigilables
+  #     max_rps 10 ->  5 vigilables
+  #     max_rps  8 ->  4 vigilables   <- elegido, y hay 3 posiciones
+  #     max_rps  6 ->  3 vigilables   (justo, sin margen)
+  #     max_rps  5 ->  2 vigilables   NO: el TP reaccionaria tarde
+  #
+  # Con 8 caben las 3 posiciones con un hueco de margen, y el bot manda la
+  # mitad de peticiones que con 20. Es ademas el valor con el que ya funciono
+  # la ultima vez que aparecieron 429.
+  #
+  # SI LOS 429 SIGUEN DESPUES DE ESTO, el problema NO es el ritmo: hay que
+  # mirar que `SOLANA_NODE_RPC_ENDPOINT` del .env sea el del plan NUEVO.
+  # Helius puede dar una URL distinta al cambiar de plan, y entonces los
+  # creditos pagados estan en una cuenta que el bot no usa.
+  max_rps: 8
