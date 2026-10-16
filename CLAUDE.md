@@ -58,6 +58,41 @@ respuesta en vez de dejarlo pasar.
 - Cada cambio deja escrito en el YAML **que se pidio, con las palabras de
   Manu y la fecha**, y que cuesta. Es lo que permite deshacerlo despues.
 
+## REGLA 1 — HELIUS NO SE ENCIENDE SOLO, Y SIEMPRE CON PLAZO
+
+Pedida el 16-oct: *"activa helius cuando yo te digo y siempre preguntame
+durante cuanto tiempo para no gastar a lo tonto"*.
+
+**Helius se paga por uso.** El bot consume cuota cada segundo que corre:
+`listener_type: logs` es una suscripcion WSS abierta a Helius, y `node.max_rps`
+(20) son consultas por segundo mientras haya posiciones vivas.
+
+### Las dos mitades de la regla
+
+1. **No se enciende por iniciativa propia.** Ni "para probar", ni "para ver si
+   compra", ni porque acabe de subirse un cambio. Se arranca cuando Manu lo
+   dice, con esas palabras o equivalentes.
+
+2. **Siempre se pregunta DURANTE CUANTO TIEMPO**, antes de dar el comando.
+   No se asume "hasta que lo pares": eso es justo lo que gasta de mas. Si
+   Manu dice "arranca" sin plazo, se pregunta el plazo primero.
+
+### Que significa "activar" en la practica
+
+El bot corre como servicio systemd en el droplet (`pump-bot`). Nadie desde
+una sesion de Claude puede arrancarlo ni pararlo: no hay red hacia el droplet
+ni `ssh`. Asi que "activar" es **darle a Manu el comando**, y ese comando
+tiene que llevar el apagado automatico dentro -- no vale decirle "y luego lo
+paras tu", porque eso es exactamente lo que falla.
+
+    arrancar:  bash /root/ai-bot/deploy/arranca.sh
+    parar:     systemctl stop pump-bot
+
+### Lo que NO cubre esta regla
+
+Mirar logs, leer configuracion, calcular o diagnosticar no gasta Helius: eso
+se hace sin preguntar. Lo que gasta es el bot corriendo.
+
 ## Project Structure
 
 - `src/` - Main source code
