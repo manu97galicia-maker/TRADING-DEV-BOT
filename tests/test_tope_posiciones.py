@@ -77,7 +77,7 @@ def test_c123_sin_techo_mc_y_con_dos_posiciones() -> None:
     # Si alguien sube este numero por encima de 10, el TP y el stop empiezan
     # a reaccionar tarde sin que nada cambie a la vista.
     plazas = cfg["trade"]["max_posiciones"]
-    assert plazas == 2, "se pidieron 2 posiciones simultaneas (16-oct)"
+    assert plazas == 3, "vuelven a 3 plazas (18-oct, elegido por Manu)"
     vigilables = cfg["node"]["max_rps"] * cfg["trade"]["price_check_interval"] / 2
     assert plazas <= vigilables, (
         f"{plazas} posiciones y el nodo solo da para vigilar {vigilables:.0f} "

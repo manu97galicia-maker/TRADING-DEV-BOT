@@ -160,9 +160,25 @@ trade:
   # (max_rps 20 x intervalo 1 s / 2), asi que cada posicion se mira cada
   # segundo y el take profit no se retrasa por ahi.
   # 2 EL 16-oct, pedido: "maximo dos posiciones simultaneas". Venia de 3.
-  # Cabe de sobra en el presupuesto del nodo: con `max_rps: 8` y
-  # `price_check_interval: 1` se pueden vigilar 8*1/2 = 4 posiciones.
-  max_posiciones: 2
+  #
+  # VUELVE A 3 EL 18-oct, elegido por Manu ("subir las plazas otra vez")
+  # cuando el bot no compraba. ESTO DESHACE LA ORDEN DEL 16-oct de dos
+  # plazas, y queda escrito aqui para que se sepa: si manana se quiere
+  # volver a dos, es cambiar este numero.
+  #
+  # 3 y no mas porque es el valor que el ya habia pedido el 15-oct ("maximo
+  # 3 simultaneamente"); el techo del nodo esta en 4 (max_rps 8 x
+  # price_check_interval 1 / 2), asi que 3 deja margen.
+  #
+  # LO QUE ESTO NO ARREGLA. Si en el droplet quedan 3 o mas marcadores
+  # `open_position*.json` de posiciones viejas, al arrancar ocupan las tres
+  # plazas y el bot sigue sin comprar: subir el numero solo da hueco si hay
+  # menos posiciones retomadas que plazas.
+  #
+  # Y OJO CON EL SALDO: la tercera compra es el 9,6% del saldo libre
+  # (0,6 x 0,4 x 0,4), asi que con `compra_minima_sol: 0.075` hacen falta
+  # unos 0,80 SOL libres para que la tercera plaza llegue a usarse.
+  max_posiciones: 3
   mayhem_max_perdidas: 0
 
   # Slippage alto en la compra: en una moneda que se esta moviendo, un margen
