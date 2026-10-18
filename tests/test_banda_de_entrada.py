@@ -258,11 +258,14 @@ def test_min_ops_es_una_llave_y_no_un_filtro() -> None:
     abridores a 0 --como quedo al volver atras el 16-oct-- poner la presion
     no hace nada: queda escrita y muda. Ya paso el 15-oct.
 
-    Se eligio `min_ops` porque es el abridor que MENOS filtra: al 75% de
-    curva una moneda lleva decenas de transacciones, asi que exigir 1 no
-    descarta nada. Si alguien lo sube pensando que es un filtro de calidad,
-    estara descartando monedas con un mando que no se puso para eso --y
-    ademas hay abridores mejores para filtrar (titulares, compras).
+    EL 18-oct `min_ops` PASO A SER TAMBIEN UN FILTRO, pedido: "que haya
+    muchas operaciones frecuentes". Asi que este guardian ya no vigila que
+    sea pequeno; vigila las dos cosas que siguen importando:
+
+      1. que nunca baje de 1, porque entonces la presion se queda muda;
+      2. que no se pelee con `min_volumen_sol`, que mide los mismos 300 s.
+         Si uno pide 8 SOL y el otro 200 operaciones, el segundo manda y el
+         primero es decorativo -- y nadie lo ve en el YAML.
     """
     filtros = _cfg()["filters"]
     if filtros.get("min_presion_ratio", 0) <= 0:
@@ -271,12 +274,19 @@ def test_min_ops_es_una_llave_y_no_un_filtro() -> None:
     assert filtros.get("min_ops", 0) >= 1, (
         "la presion esta encendida pero no hay ningun abridor: quedaria muda"
     )
-    assert filtros["min_ops"] <= 3, (
-        f"min_ops esta en {filtros['min_ops']}: eso ya es un filtro, no una "
-        "llave. Para filtrar por calidad hay mandos con mas respaldo "
-        "(min_titulares: la medicion de 27.241 monedas dice que los "
-        "compradores distintos predicen el pump y el ratio de presion no)"
-    )
+
+    # COHERENCIA ENTRE LOS DOS MANDOS DE LA MISMA VENTANA. Con una compra
+    # media de entre 0,2 y 0,5 SOL, los `min_volumen_sol` SOL equivalen a
+    # entre vol/0,5 y vol/0,2 operaciones. Pedir mas que el extremo alto es
+    # dejar el filtro de volumen sin efecto.
+    vol = float(filtros.get("min_volumen_sol", 0) or 0)
+    if vol > 0:
+        techo = vol / 0.2
+        assert filtros["min_ops"] <= techo, (
+            f"min_ops {filtros['min_ops']} pasa de las {techo:.0f} "
+            f"operaciones que como mucho representan {vol:g} SOL. El filtro "
+            "de volumen se queda decorativo y el YAML no lo dice"
+        )
 
 
 def test_la_presion_es_exigente_pero_el_bucle_la_hace_viable() -> None:
@@ -303,3 +313,69 @@ def test_la_presion_es_exigente_pero_el_bucle_la_hace_viable() -> None:
         f"cumplir la presion de {ratio}: pasaria a descartar casi todo"
     )
     assert filtros["presion_seg"] > 0, "sin ventana, la presion no mide nada"
+
+
+def test_el_volumen_no_vuelve_al_20_que_seco_las_compras() -> None:
+    """`min_volumen_sol: 20` ya dejo al bot sin comprar el 15-oct.
+
+    EL ERROR QUE LO PUSO, para que no se repita: se razono sobre los ~38 SOL
+    que hay DENTRO de la curva cuando la moneda esta en la banda de Manu. Pero
+    este filtro no mide el SOL de la curva, mide el que el bot RECUERDA, y
+    `volumen.py` solo guarda 300 segundos por moneda (`_VIDA = 300`). Una
+    moneda que tardo media hora en subir llega a la banda con casi todo ese
+    volumen olvidado, asi que ve mucho menos de 38 y se cae por un filtro
+    calibrado contra una cantidad distinta de la que se compara.
+
+    El 18-oct, al pedir Manu "volumen decente comprador", el primer impulso
+    fue otra vez 20. Este guardian existe para que ese impulso choque con la
+    medicion en vez de con el dinero.
+    """
+    vol = float(_cfg()["filters"].get("min_volumen_sol", 0) or 0)
+    if vol <= 0:
+        return  # apagado: no hay nada que vigilar
+
+    assert vol < 20, (
+        f"min_volumen_sol esta en {vol:g}. El 20 ya seco las compras el "
+        "15-oct porque este mando se compara contra los 300 s de memoria de "
+        "volumen.py, no contra los SOL de la curva"
+    )
+
+    # Y que siga teniendo sentido contra lo que SI mide: cruzar del 80% de
+    # curva hasta la banda son ~0,9 SOL, asi que el filtro tiene que pedir
+    # mas que eso (si no, no filtra nada) y bastante menos que los 38 netos
+    # que hay dentro (si no, exige una historia que el bot no recuerda).
+    assert vol > 0.9, (
+        f"min_volumen_sol {vol:g} no llega ni al ~0,9 SOL que cuesta cruzar "
+        "a la banda: no esta filtrando nada"
+    )
+
+
+def test_la_aceleracion_pide_el_ritmo_de_la_curva_y_no_mas() -> None:
+    """La ventana corta es "operaciones frecuentes", no un segundo filtro duro.
+
+    Pedido el 18-oct junto con las operaciones. El numero sale de la curva:
+    cruzar del 80% hasta la banda de 15-22k son ~0,9 SOL, asi que pedir ~1 SOL
+    en la ventana es pedir ese mismo ritmo. Si alguien sube esto, deja de ser
+    "que se este moviendo" y se convierte en el filtro que manda, encima de
+    `min_ops`, que es el que Manu pidio para eso.
+    """
+    f = _cfg()["filters"]
+    acel = float(f.get("min_vol_ventana_sol", 0) or 0)
+    if acel <= 0:
+        return  # apagada
+
+    seg = float(f.get("vol_ventana_seg", 3.0) or 3.0)
+    assert seg >= 5, (
+        f"la ventana son {seg:g} s: demasiado corta para medir un ritmo. "
+        "Entre dos bloques de Solana puede no haber ninguna operacion y la "
+        "moneda buena se descarta por un hueco de medio segundo"
+    )
+
+    # El ritmo pedido, en SOL por segundo, no debe pasar del que hace falta
+    # para recorrer la banda entera (38 -> 52 SOL dentro) en un minuto.
+    ritmo = acel / seg
+    assert ritmo <= (52.2 - 37.8) / 60, (
+        f"se piden {ritmo:.3f} SOL/s, mas de los {(52.2 - 37.8) / 60:.3f} SOL/s "
+        "que cruzan la banda completa en un minuto: eso no es 'que se mueva', "
+        "es exigir un pump en marcha"
+    )

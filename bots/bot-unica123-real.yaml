@@ -658,7 +658,18 @@ filters:
   # el bot no tiene.
   #
   # Si aun asi no compra, el siguiente numero a soltar es este (a 3, o a 0).
-  min_volumen_sol: 0
+  #
+  # ENCENDIDO A 8 EL 18-oct, pedido: "volumen decente comprador". Estaba en 0
+  # desde la vuelta atras del 16-oct.
+  #
+  # POR QUE 8 Y NO 20. Mi primer impulso hoy fue 20, razonando que una moneda
+  # en la banda tiene 38 SOL netos dentro de la curva. Pero eso ya se probo
+  # el 15-oct y Manu reporto "no compra" con el 20 puesto: este filtro NO
+  # mide el SOL de la curva, mide el que el bot RECUERDA, y solo guarda 300
+  # segundos por moneda. Una moneda que tardo media hora en subir tiene casi
+  # todo ese volumen olvidado. El 8 es el numero que ya se calibro contra lo
+  # que de verdad mide, y se respeta.
+  min_volumen_sol: 8
 
   # SIN FRANJA HORARIA: opera las 24 horas. El {inicio:18, fin:4} venia
   # heredado de cuando esta estrategia se llamaba NOCHE, y estaba descartando
@@ -768,7 +779,17 @@ filters:
   # OJO: bajar a 5 carteras SI diluye de verdad (34,7% de aciertos, +0,1411).
   # El techo de volumen sobraba; el suelo de carteras no.
   max_volumen_sol: 0
-  min_vol_ventana_sol: 0
+  # ACELERACION, ENCENDIDA EL 18-oct: la otra mitad de "operaciones
+  # frecuentes". Las 20 operaciones dicen que ha pasado mucho en 5 minutos;
+  # esto dice que esta pasando AHORA, y tira la moneda que cruzo a la banda y
+  # se quedo muerta.
+  #
+  # 1 SOL EN 10 SEGUNDOS, y el numero sale de la curva: cruzar del 80% hasta
+  # la banda son ~0,9 SOL. Pedir 1 SOL en 10 s es pedir ese mismo ritmo de
+  # subida, no mas. Deliberadamente suave: el que filtra de verdad es
+  # `min_ops`.
+  min_vol_ventana_sol: 1.0
+  vol_ventana_seg: 10
   # Sin minimo de compras: la condicion de arranque es el volumen. Estuvo en 4
   # y era el mayor cuello del embudo -- de 38 monedas descartadas, solo 1 llego
   # a tener 3 compradores en 30 s.
@@ -790,7 +811,22 @@ filters:
   # transaccion. Al 75% de curva una moneda lleva decenas, asi que no descarta
   # nada; solo enciende el bloque. Cualquier otro abridor (volumen, titulares,
   # compras) SI filtraria, y lo pedido fue que no descarte demasiado.
-  min_ops: 1
+  # 20 EL 18-oct, pedido: "que haya muchas operaciones frecuentes". Venia de
+  # 1, que no filtraba nada: era solo la llave del bloque.
+  #
+  # POR QUE 20, y sale del numero de al lado para no inventarlo: `operaciones`
+  # cuenta cada transaccion de los mismos 300 s que mide el volumen. Con
+  # `min_volumen_sol: 8` y una compra media de 0,4 SOL, 8 SOL son unas 20
+  # operaciones. Los dos mandos aprietan parecido en vez de pelearse.
+  #
+  # "FRECUENTES" lo pone la ventana: son 20 operaciones en los ultimos 5
+  # minutos, no en toda la vida de la moneda.
+  #
+  # ES EL FILTRO QUE MAS PUEDE SECAR LAS COMPRAS de los tres nuevos, porque
+  # una moneda que subio despacio llega a la banda con pocas operaciones
+  # RECIENTES aunque tenga cientos en total. Es el primero que hay que soltar
+  # si se seca (a 10, luego a 5).
+  min_ops: 20
   # MAS COMPRA QUE VENTA. El ratio mide cuanto SOL entra frente al que sale en
   # los ultimos  segundos: 1.0 exige que entre mas del que sale.
   # El volumen solo dice que hay movimiento; esto dice hacia donde va, y evita
