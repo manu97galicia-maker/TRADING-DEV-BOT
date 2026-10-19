@@ -891,7 +891,18 @@ filters:
   # dolares si lo garantiza: el codigo compara contra el precio de SOL EN
   # VIVO (universal_trader.py:4276 y 4513).
   min_entry_mc: 22000
-  max_entry_mc: 28000
+  # SUBIDO A 42.000 EL 19-oct, pedido: "afloja el punto 3 mucho", con el
+  # embudo delante: 28 de los descartes eran "se paso de la banda".
+  #
+  # EL PORQUE, con la cuenta: la ventana de curva va del 88% al 99,5%, o sea
+  # de 24.026 $ a 41.945 $. El techo en 28.000 $ es el 91,5% de curva, asi
+  # que de esa ventana solo se compraba del 88% al 91,5% y TODO lo detectado
+  # por encima se tiraba. 42.000 cubre la ventana entera.
+  #
+  # El techo en dolares sigue existiendo y sigue sirviendo para lo que se
+  # puso: si SOL se dispara, un mismo punto de curva vale mas dolares y este
+  # freno lo corta. Lo que ya no hace es recortar la propia estrategia.
+  max_entry_mc: 42000
   max_entry_mc_dev_top: 0
   min_curve_sol: 0
   # SIN TECHO DE VOLUMEN, y esto corrige una medida anterior.
@@ -1058,7 +1069,14 @@ filters:
   #
   # SI AUN ASI SE SECAN LAS COMPRAS, el orden para aflojar es: 1.5 -> 1.3 ->
   # 1.0 -> 0. Y `porque` dice cuantas se caen por aqui antes de tocar nada.
-  min_presion_ratio: 1.5
+  # AFLOJADA A 1.1 EL 19-oct, pedido: "afloja el punto 3 mucho". Venia de
+  # 1,5. Los 46 descartes de "no cumplio en Ns" son monedas que agotaron los
+  # 60 s sin llegar a la presion pedida.
+  #
+  # 1,1 sigue exigiendo que entre MAS SOL del que sale (un 10% mas), que es
+  # lo que separa "sube" de "se esta yendo la gente". Por debajo de 1,0 el
+  # filtro deja de significar nada.
+  min_presion_ratio: 1.1
   presion_seg: 3.0
   min_buys: 0
   min_titulares: 0

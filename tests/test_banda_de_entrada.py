@@ -49,7 +49,11 @@ FUENTE = (RAIZ / "src/trading/universal_trader.py").read_text(encoding="utf-8")
 #
 # Antes fue 2.000-5.000, y antes 15.000-22.000, y antes 18.000-23.000.
 SUELO_PEDIDO = 22000
-TECHO_PEDIDO = 28000
+# 42.000 desde el 19-oct ("afloja el punto 3 mucho"): el embudo enseno 28
+# descartes por "se paso de la banda". El techo en 28.000 era el 91,5% de
+# curva y recortaba la propia ventana del 88%-99,5%. 42.000 la cubre entera
+# y el freno sigue ahi por si SOL se dispara.
+TECHO_PEDIDO = 42000
 
 #: Matematica de la bonding curve. El MC en SOL es exacto y no depende del
 #: precio de SOL; por eso todo lo estructural se comprueba en SOL.
