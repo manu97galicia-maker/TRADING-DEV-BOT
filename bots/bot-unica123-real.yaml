@@ -739,7 +739,10 @@ filters:
   #
   # El 2 es el 22% de los 9,2 SOL que caben en la banda: pide actividad de
   # verdad sin exigir lo que no puede tener.
-  min_volumen_sol: 2
+  # APAGADO EL 19-oct, pedido: "pon solo filtro market cap y presion".
+  # Se queda escrito el valor de ayer por si hay que volver.
+  # Venia de 2 (18-oct).
+  min_volumen_sol: 0
 
   # SIN FRANJA HORARIA: opera las 24 horas. El {inicio:18, fin:4} venia
   # heredado de cuando esta estrategia se llamaba NOCHE, y estaba descartando
@@ -889,7 +892,10 @@ filters:
   # cruzar del 80% de curva a la banda vieja. En la banda nueva la moneda
   # entera son 9,2 SOL, asi que 1 SOL en 10 s era pedir el 11% de todo su
   # recorrido cada diez segundos.
-  min_vol_ventana_sol: 0.3
+  # APAGADO EL 19-oct, pedido: "pon solo filtro market cap y presion".
+  # Se queda escrito el valor de ayer por si hay que volver.
+  # Venia de 0.3 (18-oct).
+  min_vol_ventana_sol: 0
   vol_ventana_seg: 10
   # Sin minimo de compras: la condicion de arranque es el volumen. Estuvo en 4
   # y era el mayor cuello del embudo -- de 38 monedas descartadas, solo 1 llego
@@ -932,7 +938,15 @@ filters:
   # moneda recien nacida las compras son mas pequenas que al 80% de curva)
   # salen unas 10 operaciones. "Muchas operaciones" sigue en pie: son 10 en
   # los ultimos 5 minutos de una moneda que acaba de nacer.
-  min_ops: 10
+  # APAGADO EL 19-oct, pedido: "pon solo filtro market cap y presion".
+  # Se queda escrito el valor de ayer por si hay que volver.
+  # Venia de 10 (18-oct).
+  #
+  # Y NO DEJA MUDA LA PRESION, comprobado en universal_trader.py:4012: la
+  # puerta del bloque es `max_buy_age > 0 and (min_volumen_sol>0 or
+  # min_entry_mc>0 or ...)`. `min_entry_mc` esta en 2.000, asi que la
+  # abre el solo y el chequeo de presion sigue corriendo.
+  min_ops: 0
   # MAS COMPRA QUE VENTA. El ratio mide cuanto SOL entra frente al que sale en
   # los ultimos  segundos: 1.0 exige que entre mas del que sale.
   # El volumen solo dice que hay movimiento; esto dice hacia donde va, y evita
@@ -949,7 +963,13 @@ filters:
   # ESTE ESPERA, NO DESCARTA (universal_trader.py:4159): si las dos ultimas no
   # son compras, vuelve a mirar dentro de 0,15 s hasta agotar `max_buy_age`.
   # Basta con que lleguen dos compras seguidas en esos 60 s.
-  ultimas_tx_compra: 2
+  # APAGADO EL 19-oct, pedido: "pon solo filtro market cap y presion".
+  # Se queda escrito el valor de ayer por si hay que volver.
+  # Venia de 2, pedido AYER ("ultimas dos tx son compras"). ESTO
+  # DESHACE AQUELLA ORDEN: no es presion, es un filtro aparte --el ratio
+  # mira cuanto SOL entra frente al que sale, esto mira el ORDEN de las
+  # ultimas operaciones.
+  ultimas_tx_compra: 0
   # PRESION 1.2 (15-oct, pedido: "ligeramente mayor presion compradora").
   # Estaba en 0, apagado.
   #

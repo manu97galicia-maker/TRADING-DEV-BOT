@@ -274,8 +274,25 @@ def test_min_ops_es_una_llave_y_no_un_filtro() -> None:
     if filtros.get("min_presion_ratio", 0) <= 0:
         return  # presion apagada: la llave no hace falta
 
-    assert filtros.get("min_ops", 0) >= 1, (
-        "la presion esta encendida pero no hay ningun abridor: quedaria muda"
+    # CORREGIDO EL 19-oct: este guardian exigia `min_ops >= 1` como si fuera
+    # la UNICA llave, y no lo es. La puerta real (universal_trader.py:4012)
+    # se abre con cualquiera de siete mandos. Al apagar min_ops ese dia, el
+    # guardian habria obligado a dejarlo encendido sin motivo: `min_entry_mc`
+    # ya abre el bloque. Lo que hay que vigilar es que haya ALGUNA llave.
+    llaves = {
+        "min_volumen_sol": filtros.get("min_volumen_sol", 0),
+        "min_entry_mc": filtros.get("min_entry_mc", 0),
+        "min_buys": filtros.get("min_buys", 0),
+        "min_first_block_buys": filtros.get("min_first_block_buys", 0),
+        "min_ops": filtros.get("min_ops", 0),
+        "min_titulares": filtros.get("min_titulares", 0),
+    }
+    assert filtros.get("max_buy_age", 0) > 0, (
+        "max_buy_age esta en 0: el bloque entero no corre y la presion es muda"
+    )
+    assert any(v > 0 for v in llaves.values()), (
+        f"la presion esta encendida pero ninguna llave abre el bloque "
+        f"({llaves}): quedaria escrita y muda, como paso el 15-oct"
     )
 
     # COHERENCIA ENTRE LOS DOS MANDOS DE LA MISMA VENTANA. Con una compra
