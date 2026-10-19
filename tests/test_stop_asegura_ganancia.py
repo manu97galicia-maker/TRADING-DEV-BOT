@@ -76,22 +76,36 @@ def test_unica123_recupera_al_mas_40_y_deja_correr_a_x4() -> None:
             (trade.get("tp2_gain"), trade.get("tp2_sell")),
         ]
     )
-    # DOS PELDANOS desde el 16-oct, pedido: "tp 40% recuperar, luego dejar
-    # correr hasta x4".
-    assert [t.gain for t in tiers] == [0.40, 3.0]
-    assert [t.sell for t in tiers] == [0.75, 1.0]
+    # DOS PELDANOS, reescritos el 18-oct: "vender la mitad cuando suba un
+    # 50% y luego el restante un 40% relativo a la subida anterior".
+    #
+    # "RELATIVO A LA SUBIDA ANTERIOR" SE ENCADENA, no se suma:
+    #     TP1 = entrada x 1,50
+    #     TP2 = TP1 x 1,40 = entrada x 2,10 = +110%
+    # Si se hubiera puesto +40% desde la entrada (1,40), `build_tiers` lo
+    # ordenaria ANTES del TP1 y los dos peldanos se dispararian juntos.
+    assert [t.gain for t in tiers] == [0.50, 1.10]
+    assert [t.sell for t in tiers] == [0.50, 1.0]
     # El tp2 vende el remanente (`min(original * sell, restante)`), asi que
     # no queda moonbag: a x4 se cierra la posicion.
     assert moonbag_fraction(tiers) == pytest.approx(0.0)
 
     assert trade["stop_a_entrada_tras_tp"] is True
     assert trade["stop_al_tp_tras_tp"] is False
-    assert trade["margen_stop_tras_tp"] == 0.05
-    assert stepped_stop_price(ENTRADA, tiers, 0, 0.05) == pytest.approx(1.05)
+    # 15% desde el 18-oct ("el sl se mueve de precio al de compra 15%").
+    # Es el mando que hace que tocar el TP1 asegure el capital: el TP1 por si
+    # solo embolsa 0,7425, por debajo del 1,0100 que cuesta entrar.
+    assert trade["margen_stop_tras_tp"] == 0.15
+    assert stepped_stop_price(ENTRADA, tiers, 0, 0.15) == pytest.approx(1.15)
 
-    # 25% desde el 15-oct, pedido ("pon stop loss solo 25%"). Tercer valor
-    # ese mismo dia: 32 -> 30 -> 25.
-    assert trade["stop_loss_percentage"] == 0.25
+    # 60% desde el 18-oct, pedido ("stop loss 60%"). Venia del 25%.
+    #
+    # Y AQUI VA EL AVISO QUE NO HAY QUE PERDER: con la banda de entrada en
+    # 2.000-5.000 este stop NO PUEDE SALTAR. La curva no cotiza por debajo
+    # del nacimiento (2.936 $ con SOL a 105), asi que entrando en 5.000 la
+    # caida maxima posible es -41,3% y entrando mas abajo, menos. Lo que
+    # protege de un volcado en esta banda es el anti-rug, no el stop.
+    assert trade["stop_loss_percentage"] == 0.60
     # El trailing protege al corredor y ahora esta ESCRITO, no heredado del
     # stop por el respaldo `trailing_stop_percentage or stop_loss_percentage`.
     assert trade["trailing_stop_percentage"] == 0.25
@@ -129,22 +143,46 @@ def test_toda_compra_que_el_bot_haga_devuelve_el_capital() -> None:
     reserva = trade["min_reserve_sol"]
     colchon = 0.003  # _fee_headroom_lamports
 
-    def asegura(compra: float) -> bool:
+    # EL CRITERIO CAMBIO EL 18-oct Y NO ES UN AJUSTE COSMETICO.
+    #
+    # Hasta el 17-oct el TP1 devolvia el capital el solo (+40% vendiendo el
+    # 75% cobra 1,039 por cada 1 puesto). Con lo pedido el 18-oct --vender la
+    # MITAD a +50%-- cobra 0,7425 y entrar cuesta 1,0100: el TP1 no puede
+    # devolverlo a NINGUN tamano, y eso no se arregla subiendo el suelo de
+    # compra.
+    #
+    # Lo que lo devuelve es el TP1 MAS el resto saliendo por el suelo que
+    # sube a la compra + `margen_stop_tras_tp`. Asi que el test mide esa
+    # suma, que es la garantia de verdad, y de paso deja escrito que ahora
+    # la proteccion DEPENDE DE DOS VENTAS en vez de una.
+    margen = trade["margen_stop_tras_tp"]
+
+    def asegura_el_tp_solo(compra: float) -> bool:
         cuesta = compra * (1 + comision_pump) + fee_compra
         cobra = f * compra * (1 + g) * (1 - comision_pump) - fee_venta
         return cobra >= cuesta
+
+    def asegura(compra: float) -> bool:
+        cuesta = compra * (1 + comision_pump) + fee_compra
+        tp1 = f * compra * (1 + g) * (1 - comision_pump) - fee_venta
+        resto = (1 - f) * compra * (1 + margen) * (1 - comision_pump) - fee_venta
+        return tp1 + resto >= cuesta
 
     # El suelo configurado TIENE que asegurar: es toda su razon de ser.
     assert asegura(suelo), (
         f"el suelo de {suelo} SOL no llega a devolver el capital: "
         "entonces no protege de nada"
     )
-    # Y un 10% por debajo NO debe asegurar, o el suelo estaria mas alto de
-    # lo necesario y saltaria compras que si valian.
-    assert not asegura(suelo * 0.9), (
-        f"con {suelo * 0.9:.4f} SOL tambien se asegura: el suelo sobra"
+    # Y SE DEJA DICHO QUE EL TP1 SOLO NO LLEGA. Si alguien vuelve a una
+    # configuracion donde el TP1 se baste (vendiendo mas, o a mas ganancia),
+    # este aviso salta y hay que revisar el bloque del YAML, que explica que
+    # la garantia depende de dos ventas.
+    assert not asegura_el_tp_solo(suelo), (
+        "el TP1 ya se basta solo: el YAML dice lo contrario y hay que actualizarlo"
     )
-
+    # El suelo ya no tiene que ser justo: con el criterio combinado hace
+    # falta 0,0107 SOL y el suelo esta en 0,075, asi que sobra de largo. Eso
+    # es correcto -- el suelo lo puso el TP viejo, mas exigente.
     # Simulacion de las compras que SI se harian, con varios saldos.
     for saldo in (0.3, 0.5, 1.0, 2.0, 5.0):
         wallet = saldo
@@ -468,22 +506,41 @@ def test_las_cifras_del_ejemplo_del_yaml_son_de_verdad() -> None:
     fee_venta = pf["fixed_amount"] * cu["sell"] / 1e15
     f = trade["take_profit_sell_percentage"]
     g = trade["take_profit_percentage"]
+    margen = trade["margen_stop_tras_tp"]
     texto = REAL_CONFIG.read_text(encoding="utf-8")
 
-    # (compra, cuesta, cobra) tal y como estan escritas en el yaml
-    for compra, cuesta_esc, cobra_esc in (
-        (0.591, "0,59810", "0,61333"),
-        (0.235, "0,23854", "0,24326"),
-        (0.140, "0,14259", "0,14451"),
-        (0.113, "0,11532", "0,11645"),
+    # LA TABLA SE REESCRIBIO EL 18-oct. Con el TP1 vendiendo solo la mitad ya
+    # no basta una columna "cobra el TP1": la garantia son DOS ventas, el TP1
+    # y el resto saliendo por el suelo subido a la compra + margen. La tabla
+    # del YAML tiene ahora cuatro columnas y aqui se recalculan las cuatro.
+    #
+    # (compra, cuesta, TP1, resto, total) tal y como estan en el yaml
+    for compra, cuesta_esc, tp1_esc, resto_esc, total_esc in (
+        (0.24625, "0,24990", "0,18182", "0,13916", "0,32098"),
+        (0.18469, "0,18772", "0,13611", "0,10412", "0,24023"),
+        (0.13852, "0,14109", "0,10183", "0,07783", "0,17967"),
+        (0.07500, "0,07694", "0,05467", "0,04168", "0,09635"),
     ):
         cuesta = compra * 1.01 + fee_compra
-        cobra = f * compra * (1 + g) * 0.99 - fee_venta
-        assert f"{cuesta:.5f}".replace(".", ",") == cuesta_esc, (
-            f"el yaml dice que {compra} cuesta {cuesta_esc} y son {cuesta:.5f}"
+        tp1 = f * compra * (1 + g) * 0.99 - fee_venta
+        resto = (1 - f) * compra * (1 + margen) * 0.99 - fee_venta
+        for valor, escrito, nombre in (
+            (cuesta, cuesta_esc, "cuesta"),
+            (tp1, tp1_esc, "el TP1"),
+            (resto, resto_esc, "el resto"),
+            (tp1 + resto, total_esc, "en total"),
+        ):
+            assert f"{valor:.5f}".replace(".", ",") == escrito, (
+                f"el yaml dice que {compra} {nombre} {escrito} y son {valor:.5f}"
+            )
+            assert escrito in texto, (
+                f"{escrito} no esta escrito en el yaml: la tabla y el test "
+                "ya no hablan de lo mismo"
+            )
+
+        # Y LO QUE DE VERDAD IMPORTA: que sobre. Si algun dia no sobra, este
+        # test lo dice antes de que lo diga la cartera.
+        assert tp1 + resto > cuesta, (
+            f"una compra de {compra} SOL no devolveria el capital: cuesta "
+            f"{cuesta:.5f} y las dos ventas dan {tp1 + resto:.5f}"
         )
-        assert f"{cobra:.5f}".replace(".", ",") == cobra_esc, (
-            f"el yaml dice que {compra} cobra {cobra_esc} y son {cobra:.5f}"
-        )
-        assert cuesta_esc in texto
-        assert cobra_esc in texto

@@ -207,7 +207,8 @@ class MayhemRoi50Tests(unittest.TestCase):
         # +50% y +110% desde el 18-oct ("vender la mitad cuando suba un 50%"
         # y "luego el restante un 40% relativo a la subida anterior").
         self.assertEqual([t.gain for t in escalera], [0.50, 1.10])
-        self.assertEqual([t.sell for t in escalera], [0.75, 1.0])
+        # La mitad en el TP1 desde el 18-oct ("vender la mitad").
+        self.assertEqual([t.sell for t in escalera], [0.50, 1.0])
 
     def test_los_frenos_antirug_estan_activos(self) -> None:
         """Comprando al nacer, el rug es el riesgo principal.

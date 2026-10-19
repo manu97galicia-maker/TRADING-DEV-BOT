@@ -76,18 +76,17 @@ trade:
   # SE APLICA AL SALDO QUE QUEDA (`fraccion_base: libre`), asi que las
   # compras menguan solas. Con 1 SOL:
   #
-  #   compra 1: 60% de 0,985 = 0,591  -> quedan 0,391
-  #   compra 2: 60% de 0,391 = 0,235  -> quedan 0,153
-  #   compra 3: 60% de 0,153 = 0,092  -> quedan 0,058
+  #   compra 1: 25% de 0,985 = 0,24625  -> quedan 0,739
+  #   compra 2: 25% de 0,739 = 0,18469  -> quedan 0,554
+  #   compra 3: 25% de 0,554 = 0,13852  -> quedan 0,416
   #   --------------------------------------------------
-  #   desplegado 0,918 (93,2% del libre)
+  #   desplegado 0,56945 (57,8% del libre)
   #
   # DOS CONSECUENCIAS QUE HAY QUE SABER, y no son opiniones:
   #
-  # 1. LAS POSICIONES SALEN MUY DESIGUALES. La primera es 6,4 VECES la
-  #    tercera (0,591 contra 0,092). Con la escalera 33/40/50 eran
-  #    0,325/0,263/0,196, casi iguales. Si lo que se quiere es apostar
-  #    fuerte a la primera, esto lo hace; si se queria repartir, no.
+  # 1. CON EL 25% (18-oct) LAS POSICIONES SALEN CASI IGUALES. La primera es
+  #    1,78 veces la tercera (0,24625 contra 0,13852). Con el 60% era 6,4
+  #    veces, apostando fuerte a la primera. Esto reparte.
   #
   # 2. SE DESPLIEGA EL 93% DEL SALDO, contra el 80% de la escalera. Queda
   #    muy poco fuera. El gas de las ventas lo cubre `min_reserve_sol`
@@ -267,20 +266,29 @@ trade:
   # TP DEL 16-oct, pedido: "tp 40% recuperar, luego dejar correr hasta x4".
   # Antes era +30% vendiendo el 80%.
   #
-  # AL +40% SE VENDE EL 75%: eso devuelve TODO el capital, comisiones
-  # incluidas. Comprobado en los cuatro tamanos que puede producir el 60%:
+  # REESCRITO EL 18-oct: "vender la mitad cuando suba un 50%".
   #
-  #     compra     cuesta     cobra el 75% a +40%    sobra
-  #     0,591 SOL  0,59810        0,61333          +0,01523
-  #     0,235 SOL  0,23854        0,24326          +0,00473
-  #     0,140 SOL  0,14259        0,14451          +0,00193
-  #     0,113 SOL  0,11532        0,11645          +0,00113
+  # EL TP1 SOLO YA NO DEVUELVE EL CAPITAL, y hay que saberlo: vender el 50%
+  # a +50% cobra 0,7425 por cada 1 que se pone, y entrar cuesta 1,0100. Es
+  # imposible a CUALQUIER tamano -- no es cosa del suelo de compra.
   #
-  # La fraccion exacta que hace falta va de 73,1% a 74,3% segun el tamano
-  # (las comisiones son fijas y pesan mas en la compra pequena); se pone 75%,
-  # redondeado al alza, para que valga en todas.
+  # QUIEN LO DEVUELVE ES EL SUELO SUBIDO a la compra +15% (margen_stop_tras_tp
+  # mas abajo). Sumando lo que embolsa el TP1 y lo que saca el resto si luego
+  # cae y salta el suelo, con los tamanos que produce el 25%:
   #
-  # EL 25% QUE QUEDA CORRE HASTA x4, que es el tp2 de abajo.
+  #     compra      cuesta      TP1      resto     total      sobra
+  #     0,24625    0,24990   0,18182   0,13916   0,32098   +0,07108
+  #     0,18469    0,18772   0,13611   0,10412   0,24023   +0,05251
+  #     0,13852    0,14109   0,10183   0,07783   0,17967   +0,03857
+  #     0,07500    0,07694   0,05467   0,04168   0,09635   +0,01941
+  #
+  # Los cuatro sobran, asi que la orden del 16-oct ("asegures el capital
+  # inicial") se sigue cumpliendo. Pero AHORA DEPENDE DE DOS VENTAS, no de
+  # una: si la moneda se volca tan rapido que el suelo no llega a ejecutarse,
+  # solo esta embolsado el 0,7425. La configuracion anterior (+40% vendiendo
+  # el 75%) tenia 1,039 en efectivo desde el primer peldano.
+  #
+  # LA MITAD QUE QUEDA CORRE HASTA EL TP2 (+110%), que es el de abajo.
   #
   # LOS DOS FINALES:
   #     llega a x4 ....... 75% x 1,40 + 25% x 4,00 = +105%

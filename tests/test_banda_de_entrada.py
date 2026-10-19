@@ -382,3 +382,62 @@ def test_la_aceleracion_pide_el_ritmo_de_la_curva_y_no_mas() -> None:
         "que cruzan la banda completa en un minuto: eso no es 'que se mueva', "
         "es exigir un pump en marcha"
     )
+
+
+def test_solo_mayhem_sigue_encendido() -> None:
+    """ "Pon solo modo mayhem" (18-oct) no tenia quien lo vigilase.
+
+    Lo descubrio una mutacion: apagar `require_mayhem` dejaba los 872
+    guardianes en verde. Un mando que se puede apagar sin que nada chille es
+    un mando que algun dia se apaga solo, y este decide QUE MONEDAS se
+    compran con dinero real.
+
+    LO QUE ESTE FILTRO NO DA, y queda escrito aqui para que no se confunda:
+    el 50% de acierto sobre 30.000 $ de `ANALISIS_MAYHEM_DEV40K.md` NO es de
+    las monedas mayhem. Es de 20 creadores seleccionados con 3+ lanzamientos
+    mayhem y mediana de pico >=40.000 $, sobre 250 filas. Esto filtra "que
+    sea mayhem"; para ese 50% hace falta ademas la lista
+    `top_devs_mayhem40k.json`, que esta en el repo y no se ha encendido
+    porque no se pidio.
+    """
+    filtros = _cfg()["filters"]
+    assert filtros.get("require_mayhem") is True, (
+        "require_mayhem esta apagado: Manu pidio 'solo modo mayhem' el "
+        "18-oct y el bot volveria a comprar cualquier moneda"
+    )
+    # `require_mayhem` implica `allow_mayhem` en el codigo
+    # (universal_trader.py:828), asi que poner allow a False a mano no
+    # apagaria nada -- pero si contradiria lo que dice el YAML.
+    assert filtros.get("allow_mayhem", False) is not None
+
+
+def test_el_rechazo_del_no_mayhem_llega_tarde_y_cuesta_nodo() -> None:
+    """Aviso estructural, no un numero: el no-mayhem se tira al comprar.
+
+    `require_mayhem` se comprueba en `platform_aware.py`, en el momento de
+    firmar la compra, DESPUES del bucle de espera de `max_buy_age`. Una
+    moneda normal que pase volumen, operaciones y presion se queda hasta 60 s
+    leyendo la curva --6,7 lecturas por segundo-- y se descarta al final.
+
+    Con `max_rps: 8` el nodo da para 1,2 monedas a la vez en ese bucle, asi
+    que esto importa: es la misma saturacion que dio los 429 del 16-oct. El
+    freno que lo contiene es `curva_96.tope`, que impide que el detector
+    mande a evaluar monedas de toda la curva.
+
+    Si alguien sube el tope sin subir `max_rps`, este test lo dice.
+    """
+    cfg = _cfg()
+    f = cfg["filters"]
+    if not f.get("require_mayhem"):
+        return
+
+    vigilables = cfg["node"]["max_rps"] * 0.15  # _paso = 0,15 s por lectura
+    assert f["curva_96"]["tope"] <= 0.50, (
+        f"el tope de curva esta en {f['curva_96']['tope']}: con el umbral en "
+        f"{f['curva_96']['umbral']} el detector manda a evaluar casi toda la "
+        f"curva, y el nodo solo aguanta {vigilables:.1f} monedas a la vez en "
+        "el bucle de espera"
+    )
+    assert f["curva_96"]["umbral"] < f["curva_96"]["tope"], (
+        "el umbral esta por encima del tope: no pasaria ninguna moneda"
+    )
