@@ -42,13 +42,14 @@ RAIZ = Path(__file__).resolve().parent.parent
 C123 = RAIZ / "bots/bot-unica123-real.yaml"
 FUENTE = (RAIZ / "src/trading/universal_trader.py").read_text(encoding="utf-8")
 
-# 2.000-5.000 desde el 18-oct, pedido: "entra entorno 2/5k mc". Antes fue
-# 15.000-22.000, y antes 18.000-23.000.
+# 22.000-28.000 desde el 19-oct: Manu pidio "vuelve a usar la estrategia de
+# comprar a un 89%", y el 89% de curva son 25.075 $ con SOL a 105. La banda lo
+# rodea (86%-92%) para que el techo en dolares siga existiendo: un % de curva
+# no puede garantizarlo porque el MC se mueve con el precio de SOL.
 #
-# EL SUELO DE 2.000 NO BINDE: una moneda de pump.fun nace en ~2.936 $ (con SOL
-# a 105) y la curva no cotiza por debajo. Se deja porque es lo pedido.
-SUELO_PEDIDO = 2000
-TECHO_PEDIDO = 5000
+# Antes fue 2.000-5.000, y antes 15.000-22.000, y antes 18.000-23.000.
+SUELO_PEDIDO = 22000
+TECHO_PEDIDO = 28000
 
 #: Matematica de la bonding curve. El MC en SOL es exacto y no depende del
 #: precio de SOL; por eso todo lo estructural se comprueba en SOL.
@@ -417,10 +418,14 @@ def test_solo_mayhem_sigue_encendido() -> None:
     `top_devs_mayhem40k.json`, que esta en el repo y no se ha encendido
     porque no se pidio.
     """
+    # APAGADO EL 19-oct ("no mayhem"), un dia despues de encenderlo. Este
+    # guardian cambia de lado: ahora vigila que siga apagado, para que no se
+    # encienda solo en un cambio futuro. Si Manu lo vuelve a pedir, se
+    # cambia aqui y en el YAML, y asi queda el rastro de las dos ordenes.
     filtros = _cfg()["filters"]
-    assert filtros.get("require_mayhem") is True, (
-        "require_mayhem esta apagado: Manu pidio 'solo modo mayhem' el "
-        "18-oct y el bot volveria a comprar cualquier moneda"
+    assert filtros.get("require_mayhem") is False, (
+        "require_mayhem esta encendido: Manu lo apago el 19-oct ('no "
+        "mayhem') y esto filtraria casi todas las monedas sin que se note"
     )
     # `require_mayhem` implica `allow_mayhem` en el codigo
     # (universal_trader.py:828), asi que poner allow a False a mano no
@@ -458,3 +463,66 @@ def test_el_rechazo_del_no_mayhem_llega_tarde_y_cuesta_nodo() -> None:
     assert f["curva_96"]["umbral"] < f["curva_96"]["tope"], (
         "el umbral esta por encima del tope: no pasaria ninguna moneda"
     )
+
+
+def test_la_ventana_de_curva_no_puede_quedar_vacia() -> None:
+    """El umbral SIEMPRE por debajo del tope, pase lo que pase.
+
+    `curva96_source.py:492` descarta con `progreso < umbral or progreso >
+    tope`. Si el tope queda por debajo del umbral no pasa NINGUNA moneda: el
+    bot no compra, no escribe ningun descarte distinto, y desde fuera parece
+    que simplemente no hay monedas buenas. Es el fallo mas caro de este repo
+    porque es invisible.
+
+    Y casi pasa el 19-oct: el tope estaba en 0,40 (puesto para la banda 2-5k,
+    donde protegia el nodo) y el umbral subio a 0,89. Lo encontro una
+    mutacion, no una lectura.
+
+    El guardian que ya miraba esto vivia dentro del bloque de
+    `require_mayhem` y dejo de correr en cuanto Manu apago el mayhem. Por eso
+    este no depende de ninguna condicion.
+    """
+    cur = _cfg()["filters"]["curva_96"]
+    umbral, tope = float(cur["umbral"]), float(cur["tope"])
+    assert umbral < tope, (
+        f"el umbral ({umbral}) esta por encima o igual que el tope ({tope}): "
+        "no pasa ninguna moneda y el bot se queda mudo sin decir por que"
+    )
+    # Y que la ventana no sea tan estrecha que no quepa nada util: menos de
+    # un punto de curva entre los dos es practicamente lo mismo que cero.
+    assert tope - umbral >= 0.01, (
+        f"la ventana de curva es de {(tope - umbral) * 100:.2f} puntos: "
+        "demasiado estrecha para que entre nada"
+    )
+
+
+def test_la_banda_en_dolares_cae_dentro_de_la_ventana_de_curva() -> None:
+    """Los dos mandos tienen que hablar del mismo sitio.
+
+    La ventana de curva decide QUE monedas se miran; la banda en dolares
+    decide cuales se compran. Si no se solapan, el bot mira unas y compra
+    otras: o sea, no compra.
+
+    Es el fallo del 18-oct al reves. Aquel dia la banda bajo a 2-5k y el
+    umbral se quedo en 0,754 (14.980 $): el detector no veia nada por debajo
+    del triple del techo. Hoy el riesgo es el simetrico.
+    """
+    f = _cfg()["filters"]
+    cur = f["curva_96"]
+    suelo_usd, techo_usd = f.get("min_entry_mc", 0), f.get("max_entry_mc", 0)
+    if not techo_usd:
+        return  # sin techo en dolares no hay nada que cuadrar
+
+    # La ventana de curva, traducida a dolares con el SOL calibrado.
+    for sol in SOL_CALIBRADO:
+        ventana_min = _mc_sol(float(cur["umbral"])) * sol
+        ventana_max = _mc_sol(float(cur["tope"])) * sol
+        assert ventana_min <= techo_usd, (
+            f"con SOL a ${sol:.0f} el detector empieza a mirar en "
+            f"${ventana_min:,.0f}, por encima del techo de ${techo_usd:,.0f}: "
+            "mira monedas que nunca podra comprar"
+        )
+        assert ventana_max >= suelo_usd, (
+            f"con SOL a ${sol:.0f} el detector deja de mirar en "
+            f"${ventana_max:,.0f}, por debajo del suelo de ${suelo_usd:,.0f}"
+        )

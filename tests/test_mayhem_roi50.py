@@ -296,8 +296,8 @@ class MayhemRoi50Tests(unittest.TestCase):
         self.assertTrue(c123["enabled"])
         self.assertFalse(c123["filters"]["paper_trade"])
         self.assertTrue(c123["filters"]["ignorar_listas_de_devs"])
-        # 0.01 desde el 18-oct: la banda 2-5k no es alcanzable con 0,754.
-        self.assertEqual(c123["filters"]["curva_96"]["umbral"], 0.01)
+        # 0.89 desde el 19-oct ("comprar a un 89%").
+        self.assertEqual(c123["filters"]["curva_96"]["umbral"], 0.89)
 
 
 if __name__ == "__main__":

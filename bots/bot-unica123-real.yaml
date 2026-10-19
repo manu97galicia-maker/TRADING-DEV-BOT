@@ -766,7 +766,9 @@ filters:
   # platform_aware.py:258, en el momento de comprar, DESPUES del bucle de
   # espera. Una moneda normal que pase volumen y presion se queda 60 s
   # consultando la curva y se tira al final.
-  require_mayhem: true
+  # APAGADO EL 19-oct, pedido: "no mayhem". Estuvo encendido un dia.
+  # DESHACE la orden de ayer ("pon solo modo mayhem"), y queda dicho aqui.
+  require_mayhem: false
   marry_mode: false
   yolo_mode: false            # Un unico ciclo y termina.
   paper_trade: false          # REAL: requiere revision manual antes de arrancar.
@@ -853,8 +855,16 @@ filters:
   # El suelo de 2.000 NO FILTRA NADA porque ninguna moneda cotiza ahi. La
   # banda real es "del nacimiento a 5.000". Se deja el 2.000 porque es lo
   # pedido y no estorba.
-  min_entry_mc: 2000
-  max_entry_mc: 5000
+  # BANDA 22.000-28.000 EL 19-oct. El 89% pedido son 25.075 $, y esta banda
+  # lo rodea: del 86% al 92% de curva.
+  #
+  # POR QUE HAY BANDA Y NO SOLO EL % DE CURVA. Un % de curva NO garantiza un
+  # techo en dolares, porque el MC del mismo punto se mueve con el precio de
+  # SOL. Es lo que dejo entrar la compra de 30.600 $ del 16-oct. El techo en
+  # dolares si lo garantiza: el codigo compara contra el precio de SOL EN
+  # VIVO (universal_trader.py:4276 y 4513).
+  min_entry_mc: 22000
+  max_entry_mc: 28000
   max_entry_mc_dev_top: 0
   min_curve_sol: 0
   # SIN TECHO DE VOLUMEN, y esto corrige una medida anterior.
@@ -1212,7 +1222,11 @@ filters:
     # Se pone 0.01 y no 0 para que la moneda tenga al menos una operacion
     # hecha: con 0 entraria tambien la que acaba de nacer sin que nadie la
     # haya tocado, y no hay nada que medir en ella.
-    umbral: 0.01
+    # 0.89 EL 19-oct, pedido: "vuelve a usar la estrategia de comprar a un
+    # 89%". Venia de 0.01 (la banda 2-5k de ayer).
+    #
+    # EL 89% DE CURVA SON 25.075 $ con SOL a 105, y 57,7 SOL dentro.
+    umbral: 0.89
     # TOPE AL 40% EL 18-oct, por la misma razon y para proteger el nodo.
     #
     # Con el umbral tan abajo, dejar el tope en 0,995 haria que el detector
@@ -1224,7 +1238,13 @@ filters:
     # El 40% de curva son ~6.700 $: deja margen por encima del techo de 5.000
     # para que el que corte sea `max_entry_mc` (que usa el precio de SOL EN
     # VIVO) y no este tope de curva, que se desplazaria si SOL se mueve.
-    tope: 0.40
+    # TOPE DE VUELTA A 0.995, y NO es cosmetico: con el umbral en 0,89 un
+    # tope de 0,40 descartaria TODAS las monedas (`progreso < umbral or
+    # progreso > tope`). Habria quedado mudo.
+    #
+    # El nodo ya no sufre como con el umbral al 1%: la ventana 89%-99,5% es
+    # estrecha y pasan pocas monedas, no toda la curva.
+    tope: 0.995
     buy_amount: 0
     # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no
     # que solo dos". Estaba en 2 y eso NO era "dos a la vez": era un CUPO

@@ -233,11 +233,9 @@ def test_lo_que_nunca_se_ha_pedido_apagar_sigue_encendido() -> None:
     # 77% desde el 15-oct. A partir de ahora este numero NO decide la
     # entrada: solo dice cuando se empieza a mirar la moneda. Quien decide es
     # la banda en dolares (min_entry_mc / max_entry_mc).
-    # 0.01 DESDE EL 18-oct. Esto SUSTITUYE la orden del 16-oct de entrar a
-    # ~15k: Manu pidio "entra entorno 2/5k mc", y con el umbral en 0,754 la
-    # primera vez que el detector ve una moneda ya vale 14.980 $, tres veces
-    # el techo nuevo. El umbral bajo es lo que hace alcanzable la banda.
-    assert cfg["umbral"] == 0.01, "se bajo al nacimiento para la banda 2-5k (18-oct)"
+    # 0.89 DESDE EL 19-oct, pedido: "vuelve a usar la estrategia de comprar
+    # a un 89%". Antes fue 0,01 (banda 2-5k), y antes 0,754 (banda 15-22k).
+    assert cfg["umbral"] == 0.89, "se volvio al 89% de curva (19-oct)"
     assert cfg["tope"] < 1.0, (
         "con el tope al 100% se compra en plena migracion: la curva ya no "
         "opera ahi, son comisiones tiradas y transacciones que no confirman"
