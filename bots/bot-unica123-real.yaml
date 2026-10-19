@@ -766,10 +766,22 @@ filters:
   #
   # El 2 es el 22% de los 9,2 SOL que caben en la banda: pide actividad de
   # verdad sin exigir lo que no puede tener.
-  # APAGADO EL 19-oct, pedido: "pon solo filtro market cap y presion".
-  # Se queda escrito el valor de ayer por si hay que volver.
-  # Venia de 2 (18-oct).
-  min_volumen_sol: 0
+  # ENCENDIDO OTRA VEZ A 8 EL 19-oct, pedido: "simplemente que compre en ese
+  # rango de precios con cierto volumen y presion compradora". Estuvo unas
+  # horas en 0 ("solo market cap y presion").
+  #
+  # POR QUE 8, Y POR QUE NO MAS. Este mando NO mide el SOL que hay dentro de
+  # la curva: mide el volumen que el bot RECUERDA, y `volumen.py` solo guarda
+  # 300 segundos por moneda (`_VIDA = 300`). Ponerle 20 razonando sobre los
+  # SOL de la curva ya seco las compras el 15-oct.
+  #
+  # Al 88% una moneda tiene 55,8 SOL dentro, asi que 8 SOL de movimiento en
+  # los ultimos 5 minutos es el 14% de eso: pide actividad reciente de verdad
+  # sin exigir una historia que el bot no guarda.
+  #
+  # SI SE SECAN LAS COMPRAS, ESTE ES EL PRIMERO QUE HAY QUE SOLTAR: a 3, y
+  # luego a 0. Y se nota en `porque`, en el punto 3 del embudo.
+  min_volumen_sol: 8
 
   # SIN FRANJA HORARIA: opera las 24 horas. El {inicio:18, fin:4} venia
   # heredado de cuando esta estrategia se llamaba NOCHE, y estaba descartando
