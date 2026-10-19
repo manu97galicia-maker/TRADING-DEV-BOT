@@ -1377,7 +1377,20 @@ filters:
     #
     # SE VE EN `porque`: el motivo sale como "vela de +N% en 1,0s; posible
     # pump and dump", y el embudo lo cuenta en "vela 1s descartada".
-    max_subida_vela: 0.40
+    # SUBIDO A 1.00 EL 19-oct, pedido: "sube anti mechas". Venia de 0,40.
+    #
+    # EL MOTIVO, con el embudo delante: el punto 3 de `porque` daba 37
+    # descartes por vela, el freno MAS grande de los tres. Y tiene logica:
+    # al 88% de curva una moneda esta subiendo POR DEFINICION --es como ha
+    # llegado hasta ahi-- asi que un corte en +40% la pilla a media subida
+    # normal.
+    #
+    #     +40%  en 1 s  <- ~15,7 SOL de compras en ese segundo
+    #     +100% en 1 s  <- ~35,5 SOL de compras en ese segundo
+    #
+    # Con 1,00 solo corta la mecha de verdad: 35 SOL entrando de golpe en un
+    # segundo no es un comprador grande, es una pared.
+    max_subida_vela: 1.00
 
     # Por peticion expresa, las señales de bundle no bloquean la compra.
     exigir_ver_creacion: false
