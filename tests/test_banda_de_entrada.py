@@ -530,3 +530,75 @@ def test_la_banda_en_dolares_cae_dentro_de_la_ventana_de_curva() -> None:
             f"con SOL a ${sol:.0f} el detector deja de mirar en "
             f"${ventana_max:,.0f}, por debajo del suelo de ${suelo_usd:,.0f}"
         )
+
+
+def test_el_yaml_no_tiene_claves_duplicadas() -> None:
+    """Una clave repetida se pisa en silencio y el YAML miente.
+
+    Paso el 19-oct al encender el anti-mecha: se escribio
+    `max_subida_vela: 0.40` y dos lineas mas abajo seguia el
+    `max_subida_vela: 0` de antes. YAML se queda con la ultima, asi que el
+    filtro quedaba ESCRITO, comentado, explicado... y apagado. Desde fuera
+    el fichero decia 0,40.
+
+    Es la misma familia de fallo que los escalones fantasma: algo que se lee
+    como puesto y no lo esta. Por eso se vigila el fichero entero y no solo
+    esa clave.
+    """
+    import re
+
+    texto = C123.read_text(encoding="utf-8")
+    # {indentacion: {clave: [lineas]}}, porque una misma clave puede existir
+    # legitimamente en bloques distintos (p.ej. `enabled` en varios).
+    vistas: dict[tuple[int, str], list[int]] = {}
+    bloque: list[str] = []
+    for n, linea in enumerate(texto.splitlines(), 1):
+        if not linea.strip() or linea.lstrip().startswith("#"):
+            continue
+        m = re.match(r"^(\s*)([A-Za-z_][A-Za-z0-9_]*):", linea)
+        if not m:
+            continue
+        sangria = len(m.group(1))
+        del bloque[sangria:]
+        bloque.append(m.group(2))
+        vistas.setdefault((sangria, ".".join(bloque)), []).append(n)
+
+    repetidas = {k: v for k, v in vistas.items() if len(v) > 1}
+    assert not repetidas, (
+        "claves repetidas en bot-unica123-real.yaml (la ultima pisa a las "
+        "demas en silencio): "
+        + "; ".join(f"{ruta} en las lineas {ls}" for (_, ruta), ls in repetidas.items())
+    )
+
+
+def test_el_antimechas_esta_puesto_y_no_es_suicida() -> None:
+    """ "Pon un filtro anti mechas pump y dump" (19-oct).
+
+    `volumen.subida()` mira cuanto ha subido el precio desde su minimo en los
+    ultimos `vela_seg` segundos; si pasa de `max_subida_vela`, la moneda se
+    descarta con "posible pump and dump" y se vuelve a evaluar en la
+    siguiente operacion.
+
+    EL NUMERO SALE DE LA CURVA, no del gusto. Al 88% el precio sube segun el
+    tamano de la compra que entra:
+
+        2 SOL -> +4,7%    5 SOL -> +12,0%
+       10 SOL -> +24,7%  20 SOL -> +52,0%
+
+    Asi que un umbral por debajo del ~20% descartaria monedas por UNA compra
+    normal de 6-8 SOL, que al 88% de curva no tiene nada de raro. Y por
+    encima del 100% ya no filtra ninguna mecha que merezca el nombre.
+    """
+    cur = _cfg()["filters"]["curva_96"]
+    tope = float(cur.get("max_subida_vela", 0) or 0)
+    assert tope > 0, (
+        "max_subida_vela esta en 0: el anti-mechas pedido el 19-oct no corre"
+    )
+    assert float(cur.get("vela_seg", 0) or 0) > 0, (
+        "vela_seg en 0 deja el anti-mechas sin ventana que medir"
+    )
+    assert 0.20 <= tope <= 1.00, (
+        f"max_subida_vela en {tope}: fuera del rango util. Por debajo de 0,20 "
+        "una sola compra normal al 88% ya lo dispara; por encima de 1,00 no "
+        "filtra ninguna mecha"
+    )

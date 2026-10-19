@@ -1329,7 +1329,32 @@ filters:
     # No perseguir una mecha/pump vertical de un segundo. La moneda puede
     # volver a evaluarse en la siguiente operacion mientras siga en la curva.
     vela_seg: 1.0
-    max_subida_vela: 0
+
+    # ANTI-MECHA / ANTI PUMP-AND-DUMP, ENCENDIDO EL 19-oct, pedido: "pon un
+    # filtro anti mechas pump y dump". Estaba en 0 (apagado).
+    #
+    # QUE HACE: `volumen.subida()` mira cuanto ha subido el precio desde su
+    # minimo en el ultimo segundo. Si pasa de este numero, la moneda se
+    # descarta con "posible pump and dump" (curva96_source.py:347) y NO se
+    # pierde: se vuelve a evaluar en la siguiente operacion si sigue en la
+    # curva. Nacio el 23-sep tras entrar en CATO a 26K justo despues de que
+    # subiera de 7,5K a 25K.
+    #
+    # POR QUE 0.40 Y NO MENOS, con la aritmetica de la curva al 88%:
+    #
+    #     compra de  2 SOL -> el precio sube  +4,7%
+    #     compra de  5 SOL -> el precio sube +12,0%
+    #     compra de 10 SOL -> el precio sube +24,7%
+    #     compra de 20 SOL -> el precio sube +52,0%
+    #
+    # Un 40% en UN segundo pide ~15,7 SOL de compras en ese mismo segundo.
+    # Eso ya no es un comprador grande: es una pared coordinada, que es
+    # justo la mecha que se quiere evitar. Poner 15% tiraria monedas por una
+    # sola compra de 6 SOL, que es normal al 88% de curva.
+    #
+    # SE VE EN `porque`: el motivo sale como "vela de +N% en 1,0s; posible
+    # pump and dump", y el embudo lo cuenta en "vela 1s descartada".
+    max_subida_vela: 0.40
 
     # Por peticion expresa, las señales de bundle no bloquean la compra.
     exigir_ver_creacion: false
