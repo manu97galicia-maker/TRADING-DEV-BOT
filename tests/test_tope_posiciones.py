@@ -109,8 +109,9 @@ def test_c123_sin_techo_mc_y_con_dos_posiciones() -> None:
     # tests/test_banda_de_entrada.py, con las cuentas hechas.
     # Banda en dolares otra vez desde el 16-oct: Manu enseno una compra en
     # 30.600 $ y un % de curva no puede garantizar un techo en dolares.
-    assert cfg["filters"]["max_entry_mc"] == 22000
-    assert cfg["filters"]["min_entry_mc"] == 15000
+    # Banda 2.000-5.000 desde el 18-oct ("entra entorno 2/5k mc").
+    assert cfg["filters"]["max_entry_mc"] == 5000
+    assert cfg["filters"]["min_entry_mc"] == 2000
 
 
 def test_avisa_cuando_hay_mas_posiciones_que_nodo(

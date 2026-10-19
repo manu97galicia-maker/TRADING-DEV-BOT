@@ -42,10 +42,13 @@ RAIZ = Path(__file__).resolve().parent.parent
 C123 = RAIZ / "bots/bot-unica123-real.yaml"
 FUENTE = (RAIZ / "src/trading/universal_trader.py").read_text(encoding="utf-8")
 
-# 15.000-22.000 desde el 16-oct, pedido: "comprar maximo en entre
-# 15k-22k". Antes fue 18.000-23.000.
-SUELO_PEDIDO = 15000
-TECHO_PEDIDO = 22000
+# 2.000-5.000 desde el 18-oct, pedido: "entra entorno 2/5k mc". Antes fue
+# 15.000-22.000, y antes 18.000-23.000.
+#
+# EL SUELO DE 2.000 NO BINDE: una moneda de pump.fun nace en ~2.936 $ (con SOL
+# a 105) y la curva no cotiza por debajo. Se deja porque es lo pedido.
+SUELO_PEDIDO = 2000
+TECHO_PEDIDO = 5000
 
 #: Matematica de la bonding curve. El MC en SOL es exacto y no depende del
 #: precio de SOL; por eso todo lo estructural se comprueba en SOL.

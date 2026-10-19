@@ -93,7 +93,12 @@ trade:
   #    muy poco fuera. El gas de las ventas lo cubre `min_reserve_sol`
   #    (0,015, intocable), asi que eso no peligra, pero no queda colchon
   #    para una cuarta oportunidad.
-  fraccion_saldo: 0.60
+  # 25% EL 18-oct, pedido: "25% sol balance por operacion". Venia del 60%.
+  #
+  # Con 3 plazas y 1 SOL libre, las compras salen 0,246 / 0,185 / 0,138 SOL
+  # (cada una el 25% de lo que queda), y se despliega el 58% del saldo libre
+  # en vez del 94% que desplegaba el 60%. Mas tiros y mas pequenos.
+  fraccion_saldo: 0.25
   # SOBRE QUE SE CALCULAN ESOS PORCENTAJES, que es la mitad de la decision:
   #
   #   libre    el SOL gastable: saldo - reserva - lo ya comprometido.
@@ -280,8 +285,10 @@ trade:
   # LOS DOS FINALES:
   #     llega a x4 ....... 75% x 1,40 + 25% x 4,00 = +105%
   #     se va a CERO ..... 75% x 1,40              = +5,0%  (capital intacto)
-  take_profit_percentage: 0.40
-  take_profit_sell_percentage: 0.75
+  # TP1 AL +50% VENDIENDO LA MITAD, EL 18-oct, pedido: "vender la mitad
+  # cuando suba un 50%". Venia de +40% vendiendo el 75%.
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 0.50
   # x4 = +300%. VENDE LO QUE QUEDE (el `sell` es sobre la posicion original y
   # el codigo hace `min(original * sell, restante)`, asi que 1.0 se lleva el
   # remanente y cierra).
@@ -296,7 +303,23 @@ trade:
   # moonbag despues del tp2, al cumplirse vende lo que haya. Asi que el x4
   # tiene UNA HORA para ocurrir. Si se quiere dar mas margen, el numero a
   # subir es `max_hold_time`. No se toca sin pedirlo.
-  tp2_gain: 3.0
+  # TP2 AL +110%, EL 18-oct, pedido: "luego el restante un 40% relativo a la
+  # subida anterior". Venia de 3.0 (x4).
+  #
+  # LA CUENTA: "relativo a la subida anterior" significa encadenar, no sumar.
+  #     TP1 = entrada x 1,50
+  #     TP2 = TP1 x 1,40 = entrada x 1,50 x 1,40 = entrada x 2,10 = +110%
+  # Si fuera +40% desde la entrada seria 1,40, mas BAJO que el TP1, y
+  # `build_tiers` lo pondria antes: el peldano se dispararia a la vez que el
+  # primero. Por eso va encadenado.
+  #
+  # Y AHORA SI SE PUEDE COBRAR. Con la banda 2-5k los dos peldanos caen
+  # dentro de la curva con mucho margen (la migracion esta en ~43.100 $):
+  #     entrando en 2.936 -> TP1 4.404  TP2  6.166
+  #     entrando en 5.000 -> TP1 7.500  TP2 10.500
+  # Antes, con la entrada en 15-22k, el x4 pedia 60.000-88.000 y EXIGIA que
+  # la moneda migrase. Eso ya no hace falta.
+  tp2_gain: 1.10
   tp2_sell: 1.0
   #
   # Medido sobre la muestra del 20-ago (40 monedas del grupo filtrado, y
@@ -324,7 +347,18 @@ trade:
   # 30% EL 15-oct, pedido: "pon stop loss 30%". Baja desde el 32%.
   # 25% EL 15-oct, pedido: "pon stop loss solo 25%". Baja desde el 30% de
   # esta misma tarde. Tercer valor hoy: 32 -> 30 -> 25.
-  stop_loss_percentage: 0.25
+  # STOP AL 60% EL 18-oct, pedido: "stop loss 60%". Venia del 25%.
+  #
+  # OJO, Y ESTO NO SE TOCA SIN QUE MANU LO DIGA: con la banda de entrada en
+  # 2-5k este stop NO PUEDE SALTAR NUNCA. La curva no baja del nacimiento
+  # (2.936 $ con SOL a 105): si todo el mundo vende, el precio vuelve ahi y
+  # no mas abajo. Asi que la caida maxima posible es:
+  #     entrando en 5.000 $ -> como mucho -41,3%
+  #     entrando en 4.000 $ -> como mucho -26,6%
+  #     entrando en 2.936 $ -> como mucho   -0,0%
+  # Ninguna llega al -60%. Lo unico que protege de un volcado en esta banda
+  # es el anti-rug (ratio 1,6 en 4 s con 3 SOL minimos), que SI salta.
+  stop_loss_percentage: 0.60
   # EXPLICITO EL 15-oct, y no es cosmetica. El codigo hace
   # `float(trailing_stop_percentage or stop_loss_percentage or 0)`, asi que
   # el 0 NO apagaba el trailing: caia al stop_loss y ya valia 0,25. Funcionaba
@@ -362,7 +396,27 @@ trade:
   # Por debajo de +5% la saca el trailing del 25% desde el pico, que para
   # entonces ya esta armado.
   stop_a_entrada_tras_tp: true
-  margen_stop_tras_tp: 0.05
+  # MARGEN DEL 15% EL 18-oct, pedido: "si salta tp 1 el sl se mueve de precio
+  # al de compra 15%" y "(Tp 1) ahi seria el nuevo sl etc". Venia del 5%.
+  #
+  # LAS DOS FRASES SON EL MISMO MANDO, no dos cosas distintas: este margen
+  # hace que tras cada peldano el suelo suba AL ESCALON ANTERIOR + el margen.
+  #     tras el TP1 -> suelo en la entrada + 15%
+  #     tras el TP2 -> suelo en el nivel del TP1 + 15%
+  # El "etc" ya esta cubierto por el mecanismo; no hace falta encender
+  # `stop_al_tp_tras_tp` y se deja como estaba.
+  #
+  # ESTE 15% ES LO QUE CUMPLE LA ORDEN DEL 16-oct de asegurar el capital.
+  # El TP1 por si solo NO lo recupera: vender el 50% a +50% embolsa 0,75 del
+  # capital, no 1,00. Es el stop subido el que lo cierra:
+  #     0,750 embolsado + 0,575 del resto al stop = 1,325  ->  +32,5%
+  #     garantizado en cuanto toca el TP1.
+  #
+  # EL COSTE FRENTE A LA CONFIGURACION ANTERIOR, dicho claro: el TP del 40%
+  # vendiendo el 75% embolsaba 1,05 EN EFECTIVO al instante. Esta embolsa
+  # 0,75 y deja 0,575 dependiendo de que el stop llegue a ejecutarse. Garantiza
+  # mas (+32,5% contra +5%) pero tiene mas colgando de una venta futura.
+  margen_stop_tras_tp: 0.15
   stop_al_tp_tras_tp: false
   stop_al_tp_anterior: false
 
@@ -669,7 +723,15 @@ filters:
   # segundos por moneda. Una moneda que tardo media hora en subir tiene casi
   # todo ese volumen olvidado. El 8 es el numero que ya se calibro contra lo
   # que de verdad mide, y se respeta.
-  min_volumen_sol: 8
+  # RECALIBRADO A 2 EL 18-oct. Tampoco se pidio: el 8 se puso hace una hora
+  # para la banda 15-22k, donde la moneda tiene 38-52 SOL DENTRO de la curva.
+  # En la banda 2-5k tiene entre 0 y 9,2 SOL. Pedirle 8 SOL de volumen seria
+  # pedirle casi toda su vida entera, y el bot no compraria -- la misma clase
+  # de error que el 20 del 15-oct, solo que al reves.
+  #
+  # El 2 es el 22% de los 9,2 SOL que caben en la banda: pide actividad de
+  # verdad sin exigir lo que no puede tener.
+  min_volumen_sol: 2
 
   # SIN FRANJA HORARIA: opera las 24 horas. El {inicio:18, fin:4} venia
   # heredado de cuando esta estrategia se llamaba NOCHE, y estaba descartando
@@ -677,7 +739,23 @@ filters:
   horario: {}
 
   allow_mayhem: false
-  require_mayhem: false
+  # SOLO MAYHEM EL 18-oct, pedido: "pon solo modo mayhem". Venia de false.
+  #
+  # `require_mayhem` implica `allow_mayhem` en el codigo
+  # (universal_trader.py:828), asi que no hay que encender las dos.
+  #
+  # EL DATO QUE NO DA, y hay que saberlo: el 50% de acierto sobre 30.000 $ de
+  # `ANALISIS_MAYHEM_DEV40K.md` NO es de las monedas mayhem. Es de 20
+  # creadores seleccionados con 3+ lanzamientos mayhem y mediana de pico
+  # >=40.000 $, de 250 filas. Esto filtra "que sea mayhem", no ese 50%. Para
+  # eso hace falta ademas la lista `top_devs_mayhem40k.json`, que esta en el
+  # repo y NO se ha encendido porque no se pidio.
+  #
+  # DONDE SE DESCARTA, que importa para el nodo: el no-mayhem se rechaza en
+  # platform_aware.py:258, en el momento de comprar, DESPUES del bucle de
+  # espera. Una moneda normal que pase volumen y presion se queda 60 s
+  # consultando la curva y se tira al final.
+  require_mayhem: true
   marry_mode: false
   yolo_mode: false            # Un unico ciclo y termina.
   paper_trade: false          # REAL: requiere revision manual antes de arrancar.
@@ -753,8 +831,19 @@ filters:
   # `_mc = precio * supply * _SOL_USD` con el precio de SOL EN VIVO
   # (universal_trader.py:4256), asi que 22.000 son 22.000 hoy y manana.
   # Esto solo es el freno que impide repetir la compra de 30.600.
-  min_entry_mc: 15000
-  max_entry_mc: 22000
+  # BANDA 2.000-5.000 EL 18-oct, pedido: "entra entorno 2/5k mc". Venia de
+  # 15.000-22.000.
+  #
+  # DONDE CAE ESO EN LA CURVA (con SOL a 105 $):
+  #     2.000 $ -> curva -28,6%   NO EXISTE: por debajo del nacimiento
+  #     2.936 $ -> curva    0%    aqui NACE una moneda de pump.fun
+  #     5.000 $ -> curva  31,6%   (9,2 SOL dentro de la curva)
+  #
+  # El suelo de 2.000 NO FILTRA NADA porque ninguna moneda cotiza ahi. La
+  # banda real es "del nacimiento a 5.000". Se deja el 2.000 porque es lo
+  # pedido y no estorba.
+  min_entry_mc: 2000
+  max_entry_mc: 5000
   max_entry_mc_dev_top: 0
   min_curve_sol: 0
   # SIN TECHO DE VOLUMEN, y esto corrige una medida anterior.
@@ -788,7 +877,11 @@ filters:
   # la banda son ~0,9 SOL. Pedir 1 SOL en 10 s es pedir ese mismo ritmo de
   # subida, no mas. Deliberadamente suave: el que filtra de verdad es
   # `min_ops`.
-  min_vol_ventana_sol: 1.0
+  # RECALIBRADO A 0.3 EL 18-oct. El 1 SOL en 10 s salia de lo que cuesta
+  # cruzar del 80% de curva a la banda vieja. En la banda nueva la moneda
+  # entera son 9,2 SOL, asi que 1 SOL en 10 s era pedir el 11% de todo su
+  # recorrido cada diez segundos.
+  min_vol_ventana_sol: 0.3
   vol_ventana_seg: 10
   # Sin minimo de compras: la condicion de arranque es el volumen. Estuvo en 4
   # y era el mayor cuello del embudo -- de 38 monedas descartadas, solo 1 llego
@@ -826,13 +919,29 @@ filters:
   # una moneda que subio despacio llega a la banda con pocas operaciones
   # RECIENTES aunque tenga cientos en total. Es el primero que hay que soltar
   # si se seca (a 10, luego a 5).
-  min_ops: 20
+  # RECALIBRADO A 10 EL 18-oct, por lo mismo y manteniendo la coherencia con
+  # el mando de al lado: con 2 SOL y una compra media de 0,2 SOL (en una
+  # moneda recien nacida las compras son mas pequenas que al 80% de curva)
+  # salen unas 10 operaciones. "Muchas operaciones" sigue en pie: son 10 en
+  # los ultimos 5 minutos de una moneda que acaba de nacer.
+  min_ops: 10
   # MAS COMPRA QUE VENTA. El ratio mide cuanto SOL entra frente al que sale en
   # los ultimos  segundos: 1.0 exige que entre mas del que sale.
   # El volumen solo dice que hay movimiento; esto dice hacia donde va, y evita
   # entrar justo cuando el dinero se esta yendo.
   # Las 3 ultimas operaciones tienen que ser COMPRAS: nadie ha vendido aun.
-  ultimas_tx_compra: 0
+  # LAS DOS ULTIMAS SON COMPRAS, EL 18-oct, pedido: "ultimas dos operaciones
+  # o tx son compras". Venia de 0 (apagado).
+  #
+  # NO ES LO MISMO QUE LA PRESION: el ratio mira cuanto SOL entra frente al
+  # que sale en una ventana; esto mira el ORDEN de las ultimas operaciones.
+  # Una moneda puede tener ratio 1,5 y haber recibido la ultima venta hace
+  # medio segundo.
+  #
+  # ESTE ESPERA, NO DESCARTA (universal_trader.py:4159): si las dos ultimas no
+  # son compras, vuelve a mirar dentro de 0,15 s hasta agotar `max_buy_age`.
+  # Basta con que lleguen dos compras seguidas en esos 60 s.
+  ultimas_tx_compra: 2
   # PRESION 1.2 (15-oct, pedido: "ligeramente mayor presion compradora").
   # Estaba en 0, apagado.
   #
@@ -1060,8 +1169,34 @@ filters:
     #
     # LO QUE SE GANA: el techo hasta migrar pasa de +57,5% a +188%, asi que
     # el TP de +40% solo se come el 21% del recorrido disponible.
-    umbral: 0.754
-    tope: 0.995
+    # UMBRAL AL 1% EL 18-oct. ESTO NO SE PIDIO: va incluido porque sin el, lo
+    # que SI se pidio (comprar en 2-5k) no compra absolutamente nada.
+    #
+    # EL MOTIVO, con la cuenta hecha. Este detector descarta toda moneda con
+    # `progreso < umbral` (curva96_source.py:492). Con el umbral en 0,754 la
+    # primera vez que ve una moneda ya vale 14.980 $: TRES VECES el techo de
+    # 5.000 pedido. La banda 2-5k quedaria puesta y muda para siempre.
+    #
+    #     0,754 de curva = 14.980 $     <- donde miraba antes
+    #     0,316 de curva =  5.000 $     <- el techo pedido
+    #     0,000 de curva =  2.936 $     <- donde NACE una moneda
+    #
+    # Se pone 0.01 y no 0 para que la moneda tenga al menos una operacion
+    # hecha: con 0 entraria tambien la que acaba de nacer sin que nadie la
+    # haya tocado, y no hay nada que medir en ella.
+    umbral: 0.01
+    # TOPE AL 40% EL 18-oct, por la misma razon y para proteger el nodo.
+    #
+    # Con el umbral tan abajo, dejar el tope en 0,995 haria que el detector
+    # mandase a evaluar CADA moneda que opere entre el nacimiento y la
+    # migracion. Cada evaluacion que pasa el volumen se queda hasta 60 s
+    # leyendo la curva 6,7 veces por segundo, y `max_rps: 8` solo da para 1,2
+    # monedas a la vez. El 429 de ayer fue exactamente eso.
+    #
+    # El 40% de curva son ~6.700 $: deja margen por encima del techo de 5.000
+    # para que el que corte sea `max_entry_mc` (que usa el precio de SOL EN
+    # VIVO) y no este tope de curva, que se desplazaria si SOL se mueve.
+    tope: 0.40
     buy_amount: 0
     # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no
     # que solo dos". Estaba en 2 y eso NO era "dos a la vez": era un CUPO

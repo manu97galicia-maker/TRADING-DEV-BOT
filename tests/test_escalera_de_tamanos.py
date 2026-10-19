@@ -239,7 +239,8 @@ def test_el_c123_lleva_el_60_por_ciento_plano() -> None:
     [0.6, 0.6, 0.6]: dejarla escrita invita a creer que sigue mandando.
     """
     trade = yaml.safe_load(C123.read_text(encoding="utf-8"))["trade"]
-    assert trade["fraccion_saldo"] == pytest.approx(0.60)
+    # 25% desde el 18-oct ("25% sol balance por operacion"). Venia del 60%.
+    assert trade["fraccion_saldo"] == pytest.approx(0.25)
     assert "fracciones_saldo" not in trade, (
         "el C123 ya no usa escalera: la clave debe estar borrada"
     )
@@ -263,12 +264,13 @@ def test_el_60_por_ciento_deja_las_posiciones_muy_desiguales() -> None:
         imp = libre * trade["fraccion_saldo"]
         compras.append(imp)
         libre -= imp
-    # Con 3 posiciones (18-oct) la primera es 6,25 veces la tercera y se
-    # despliega el 93,6% del saldo libre. Con 2 plazas era 2,52 y el 83,8%.
-    assert compras[0] / compras[-1] == pytest.approx(6.25, abs=0.3)
+    # Con el 25% (18-oct) la desigualdad casi desaparece: la primera es 1,78
+    # veces la tercera, no 6,25. Y se despliega el 57,8% del saldo libre en
+    # vez del 93,6%: mas tiros, mas pequenos, y mas SOL sin usar.
+    assert compras[0] / compras[-1] == pytest.approx(1.78, abs=0.05)
     assert sum(compras) / (1.0 - trade["min_reserve_sol"]) == pytest.approx(
-        0.936, abs=0.01
-    ), "el 60% con 3 posiciones despliega el 93,6% del saldo libre"
+        0.578, abs=0.01
+    ), "el 25% con 3 posiciones despliega el 57,8% del saldo libre"
 
 
 def test_el_suelo_de_compra_protege_la_orden_de_asegurar_el_capital() -> None:
