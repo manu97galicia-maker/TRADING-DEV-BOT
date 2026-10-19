@@ -327,8 +327,35 @@ trade:
   #     entrando en 5.000 -> TP1 7.500  TP2 10.500
   # Antes, con la entrada en 15-22k, el x4 pedia 60.000-88.000 y EXIGIA que
   # la moneda migrase. Eso ya no hace falta.
+  # TP2 BAJA DE VENDER EL RESTO A VENDER EL 41%, EL 19-oct, pedido: "tp ok
+  # pero deja un 9% y vendes desde x3 a x9".
+  #
+  # LA CUENTA DEL 9%, y `sell` es fraccion del TOTAL ORIGINAL, no de lo que
+  # queda (`moonbag_fraction = 1 - suma de los sell`, tiered_exit.py:159):
+  #     TP1  vende 0,50  -> queda 0,50
+  #     TP2  vende 0,41  -> queda 0,09   <- el 9% pedido
+  #     x3   vende 0,03  -> queda 0,06
+  #     x6   vende 0,03  -> queda 0,03
+  #     x9   vende 0,03  -> queda 0,00
+  #   suma 1,00: no sobra nada colgado para siempre.
   tp2_gain: 1.10
-  tp2_sell: 1.0
+  tp2_sell: 0.41
+
+  # EL 9% REPARTIDO DE x3 A x9, pedido el 19-oct. "Desde x3 a x9" se reparte
+  # en tres escalones iguales (3% cada uno) para no tener que acertar UN
+  # punto exacto: si la moneda se para en x4, ya cobraste el x3.
+  #
+  #   x3 = +200%   x6 = +500%   x9 = +800%
+  #
+  # OJO CON PONER 0 AQUI: `build_tiers` ACEPTA `sell: 0` (tiered_exit.py:61)
+  # y crea un escalon que no vende pero SI mueve el stop. Para quitar un
+  # peldano hay que BORRAR las dos lineas, no ponerlas a 0. Ya paso una vez.
+  tp3_gain: 2.0
+  tp3_sell: 0.03
+  tp4_gain: 5.0
+  tp4_sell: 0.03
+  tp5_gain: 8.0
+  tp5_sell: 0.03
   #
   # Medido sobre la muestra del 20-ago (40 monedas del grupo filtrado, y
   # comprobado tambien en grupos de 156 y 283 con filtros mas flojos):
@@ -1226,7 +1253,9 @@ filters:
     # 89%". Venia de 0.01 (la banda 2-5k de ayer).
     #
     # EL 89% DE CURVA SON 25.075 $ con SOL a 105, y 57,7 SOL dentro.
-    umbral: 0.89
+    # 0.88 EL 19-oct, pedido: "desde el 88". Venia de 0,89 (de hace un rato).
+    # El 88% de curva son 24.026 $ y quedan +79,6% hasta migrar.
+    umbral: 0.88
     # TOPE AL 40% EL 18-oct, por la misma razon y para proteger el nodo.
     #
     # Con el umbral tan abajo, dejar el tope en 0,995 haria que el detector

@@ -235,7 +235,7 @@ def test_lo_que_nunca_se_ha_pedido_apagar_sigue_encendido() -> None:
     # la banda en dolares (min_entry_mc / max_entry_mc).
     # 0.89 DESDE EL 19-oct, pedido: "vuelve a usar la estrategia de comprar
     # a un 89%". Antes fue 0,01 (banda 2-5k), y antes 0,754 (banda 15-22k).
-    assert cfg["umbral"] == 0.89, "se volvio al 89% de curva (19-oct)"
+    assert cfg["umbral"] == 0.88, "desde el 88% de curva (19-oct)"
     assert cfg["tope"] < 1.0, (
         "con el tope al 100% se compra en plena migracion: la curva ya no "
         "opera ahi, son comisiones tiradas y transacciones que no confirman"

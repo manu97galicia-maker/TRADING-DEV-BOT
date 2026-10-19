@@ -49,7 +49,7 @@ def _tiers() -> list:
     return build_tiers(pares)
 
 
-def test_unica123_recupera_al_mas_40_y_deja_correr_a_x4() -> None:
+def test_unica123_vende_la_mitad_al_mas_50_y_deja_un_9_por_ciento() -> None:
     """En real, +40% vende el 75% --el capital entero-- y el 25% corre a x4.
 
     CAMBIADO EL 15-oct, pedido: "Optimiza el resultado poniendo un take
@@ -67,25 +67,36 @@ def test_unica123_recupera_al_mas_40_y_deja_correr_a_x4() -> None:
     mientras la proteccion extra solo ganaba 4.
     """
     trade = yaml.safe_load(REAL_CONFIG.read_text(encoding="utf-8"))["trade"]
+    # SE LEEN LOS CINCO, y esto era un agujero: hasta el 19-oct este guardian
+    # solo construia tp1 y tp2, asi que un escalon fantasma en tp3, tp4 o tp5
+    # --el fallo que ya costo cuatro peldanos a +0% disparandose en la
+    # compra-- habria pasado sin que nadie lo viera.
     tiers = build_tiers(
         [
             (
                 trade["take_profit_percentage"],
                 trade["take_profit_sell_percentage"],
             ),
-            (trade.get("tp2_gain"), trade.get("tp2_sell")),
+            *[
+                (trade.get(f"tp{i}_gain"), trade.get(f"tp{i}_sell"))
+                for i in range(2, 6)
+            ],
         ]
     )
-    # DOS PELDANOS, reescritos el 18-oct: "vender la mitad cuando suba un
-    # 50% y luego el restante un 40% relativo a la subida anterior".
+    # CINCO PELDANOS desde el 19-oct: "tp ok pero deja un 9% y vendes desde
+    # x3 a x9". Los dos primeros son los del 18-oct, sin tocar su objetivo;
+    # lo unico que cambia es cuanto vende el segundo, para dejar ese 9%.
     #
     # "RELATIVO A LA SUBIDA ANTERIOR" SE ENCADENA, no se suma:
     #     TP1 = entrada x 1,50
     #     TP2 = TP1 x 1,40 = entrada x 2,10 = +110%
-    # Si se hubiera puesto +40% desde la entrada (1,40), `build_tiers` lo
-    # ordenaria ANTES del TP1 y los dos peldanos se dispararian juntos.
-    assert [t.gain for t in tiers] == [0.50, 1.10]
-    assert [t.sell for t in tiers] == [0.50, 1.0]
+    #
+    # Y "DESDE x3 A x9" se reparte en tres escalones iguales en vez de
+    # jugarselo a un punto: si la moneda se para en x4, el x3 ya cobro.
+    assert [t.gain for t in tiers] == [0.50, 1.10, 2.0, 5.0, 8.0]
+    assert [t.sell for t in tiers] == [0.50, 0.41, 0.03, 0.03, 0.03]
+    # 0,50 + 0,41 = 0,91: queda exactamente el 9% pedido para los de arriba.
+    assert sum(t.sell for t in tiers[:2]) == pytest.approx(0.91)
     # El tp2 vende el remanente (`min(original * sell, restante)`), asi que
     # no queda moonbag: a x4 se cierra la posicion.
     assert moonbag_fraction(tiers) == pytest.approx(0.0)
@@ -456,13 +467,20 @@ def test_la_entrada_del_c123_da_para_cobrar_el_primer_peldano() -> None:
     entrada = mc_en_sol(umbral)
     techo = mc_sol_al_migrar / entrada - 1
 
+    # SE LEEN LOS CINCO, y esto era un agujero: hasta el 19-oct este guardian
+    # solo construia tp1 y tp2, asi que un escalon fantasma en tp3, tp4 o tp5
+    # --el fallo que ya costo cuatro peldanos a +0% disparandose en la
+    # compra-- habria pasado sin que nadie lo viera.
     tiers = build_tiers(
         [
             (
                 trade["take_profit_percentage"],
                 trade["take_profit_sell_percentage"],
             ),
-            (trade.get("tp2_gain"), trade.get("tp2_sell")),
+            *[
+                (trade.get(f"tp{i}_gain"), trade.get(f"tp{i}_sell"))
+                for i in range(2, 6)
+            ],
         ]
     )
     assert tiers, "sin peldanos no hay nada que cobrar"
