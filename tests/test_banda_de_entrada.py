@@ -591,9 +591,12 @@ def test_el_antimechas_esta_puesto_y_no_es_suicida() -> None:
     """
     cur = _cfg()["filters"]["curva_96"]
     tope = float(cur.get("max_subida_vela", 0) or 0)
-    assert tope > 0, (
-        "max_subida_vela esta en 0: el anti-mechas pedido el 19-oct no corre"
-    )
+    if tope <= 0:
+        # APAGADO EL 19-oct ("que lo elimines"), el mismo dia que se pidio
+        # encenderlo. El guardian deja de exigirlo, pero NO desaparece: si
+        # alguien lo vuelve a encender, las comprobaciones de abajo siguen
+        # vigilando que el numero tenga sentido.
+        return
     assert float(cur.get("vela_seg", 0) or 0) > 0, (
         "vela_seg en 0 deja el anti-mechas sin ventana que medir"
     )

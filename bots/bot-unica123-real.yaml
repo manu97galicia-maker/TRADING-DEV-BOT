@@ -1377,20 +1377,23 @@ filters:
     #
     # SE VE EN `porque`: el motivo sale como "vela de +N% en 1,0s; posible
     # pump and dump", y el embudo lo cuenta en "vela 1s descartada".
-    # SUBIDO A 1.00 EL 19-oct, pedido: "sube anti mechas". Venia de 0,40.
+    # APAGADO EL 19-oct, pedido: "que lo elimines". Estuvo encendido unas
+    # horas: primero en 0,40 ("pon un filtro anti mechas pump y dump") y
+    # luego en 1,00 ("sube anti mechas"), las dos cosas pedidas hoy mismo.
+    # ESTO DESHACE AQUELLAS DOS ORDENES y queda escrito aqui.
     #
-    # EL MOTIVO, con el embudo delante: el punto 3 de `porque` daba 37
-    # descartes por vela, el freno MAS grande de los tres. Y tiene logica:
-    # al 88% de curva una moneda esta subiendo POR DEFINICION --es como ha
-    # llegado hasta ahi-- asi que un corte en +40% la pilla a media subida
-    # normal.
+    # POR QUE SE QUITA, con el embudo delante: el punto 3 de `porque` daba 37
+    # descartes por vela, el freno mas grande de los tres (21 por
+    # volumen/presion, 11 por mayhem). Al 88% de curva una moneda esta
+    # subiendo POR DEFINICION --es como ha llegado ahi-- asi que cualquier
+    # corte por velocidad la pilla a media subida normal.
     #
-    #     +40%  en 1 s  <- ~15,7 SOL de compras en ese segundo
-    #     +100% en 1 s  <- ~35,5 SOL de compras en ese segundo
+    # LO QUE SE PIERDE: era lo unico que impedia comprar el ultimo escalon de
+    # una vela verde. Nacio el 23-sep tras entrar en CATO a 26K justo despues
+    # de que subiera de 7,5K a 25K. Sin esto, eso puede repetirse.
     #
-    # Con 1,00 solo corta la mecha de verdad: 35 SOL entrando de golpe en un
-    # segundo no es un comprador grande, es una pared.
-    max_subida_vela: 1.00
+    # Para volver a encenderlo basta poner un numero aqui; con 0 no corre.
+    max_subida_vela: 0
 
     # Por peticion expresa, las señales de bundle no bloquean la compra.
     exigir_ver_creacion: false
