@@ -282,13 +282,46 @@ def test_el_suelo_de_compra_protege_la_orden_de_asegurar_el_capital() -> None:
     `test_toda_compra_que_el_bot_haga_devuelve_el_capital` en
     tests/test_stop_asegura_ganancia.py.
     """
-    trade = yaml.safe_load(C123.read_text(encoding="utf-8"))["trade"]
-    # 0,075 desde el 16-oct: EL SUELO DEPENDE DEL TP y el TP paso de
-    # +30%/80% a +40%/75%. Con el TP mas alto el capital se recupera antes,
-    # asi que el suelo baja. Si se dejara en 0,113 estaria saltando compras
-    # que SI recuperan. La cuenta exacta la comprueba
-    # `test_toda_compra_que_el_bot_haga_devuelve_el_capital`.
-    assert trade["compra_minima_sol"] == pytest.approx(0.075)
+    cfg = yaml.safe_load(C123.read_text(encoding="utf-8"))
+    trade, pf, cu = cfg["trade"], cfg["priority_fees"], cfg["compute_units"]
+    suelo = trade["compra_minima_sol"]
+
+    # 0,04 desde el 19-oct, pedido ("elimina el minimo de compra pon 0.04
+    # sol"). Antes 0,075, y antes 0,113.
+    assert suelo == pytest.approx(0.04)
+
+    # PERO EL NUMERO SUELTO NO VALE DE GUARDIAN: EL SUELO DEPENDE DEL TP, y
+    # el TP ha cambiado tres veces. Por eso se recalcula aqui el punto exacto
+    # en que una compra deja de devolver el capital, y se exige que el suelo
+    # quede por encima.
+    #
+    # Con el TP de hoy el capital lo devuelven DOS ventas: el TP1 (vende `f`
+    # a `+g`) y el resto saliendo por el suelo subido a la compra + margen.
+    fee_compra = pf["fixed_amount"] * cu["buy"] / 1e15
+    fee_venta = pf["fixed_amount"] * cu["sell"] / 1e15
+    com = 0.01
+    g = trade["take_profit_percentage"]
+    f = trade["take_profit_sell_percentage"]
+    margen = trade["margen_stop_tras_tp"]
+    coef = f * (1 + g) * (1 - com) + (1 - f) * (1 + margen) * (1 - com)
+    assert coef > (1 + com), (
+        "ni el TP1 ni el suelo subido cubren el coste de entrar: con esta "
+        "escalera no hay ningun tamano de compra que devuelva el capital"
+    )
+    minimo_real = (fee_compra + 2 * fee_venta) / (coef - (1 + com))
+
+    assert suelo > minimo_real, (
+        f"el suelo {suelo} esta POR DEBAJO del minimo que devuelve el "
+        f"capital ({minimo_real:.5f} SOL): las comisiones de prioridad son "
+        "fijas y se comen la compra pequena, asi que el bot estaria "
+        "comprando para perder"
+    )
+    # Y con holgura: justo en el limite, cualquier cambio de comisiones o de
+    # TP lo deja del lado malo sin que nadie se entere.
+    assert suelo >= minimo_real * 2, (
+        f"el suelo {suelo} esta a menos del doble del minimo real "
+        f"({minimo_real:.5f}): demasiado al borde"
+    )
 
 
 def test_el_tope_de_compra_sigue_a_cero() -> None:

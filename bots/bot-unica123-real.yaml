@@ -580,7 +580,30 @@ trade:
   # o sea perdiendo posiciones validas por un numero de otra configuracion.
   #
   # Sale de resolver `0,75 x c x 1,40 x 0,99 - 0,00102 >= c x 1,01 + 0,00119`.
-  compra_minima_sol: 0.075
+  #
+  # BAJADO A 0.04 EL 19-oct, pedido: "elimina el minimo de compra pon 0.04
+  # sol". Venia de 0,075.
+  #
+  # EL 0,075 LO PUSO UN TP QUE YA NO EXISTE. Aquella cuenta era del TP de
+  # +40% vendiendo el 75%, que devolvia el capital el solo. Con el TP de hoy
+  # (+50% vendiendo la mitad) el capital lo devuelven DOS ventas: el TP1 mas
+  # el resto saliendo por el suelo subido a la compra +15%. Esa cuenta es:
+  #
+  #     c x 1,3117 - 2 x 0,00102  >=  c x 1,01 + 0,00119
+  #     -> el minimo real son 0,01068 SOL
+  #
+  # Asi que 0,04 sigue devolviendo el capital con holgura:
+  #
+  #     compra 0,040  cuesta 0,04159  cobra 0,05043  sobra +0,00885
+  #
+  # Y NO SE BAJA MAS: con 0,010 la cuenta ya sale NEGATIVA (-0,00020),
+  # porque las comisiones de prioridad son fijas y se comen la operacion
+  # pequena. Por debajo de ~0,011 el bot estaria comprando para perder.
+  #
+  # LO QUE ESTO DESBLOQUEA: la primera compra es el 25% del saldo libre, asi
+  # que con el suelo en 0,075 hacian falta 0,30 SOL libres para que el bot
+  # comprara algo. Con 0,04 bastan 0,16.
+  compra_minima_sol: 0.04
 
   min_reserve_sol: 0.015
 
