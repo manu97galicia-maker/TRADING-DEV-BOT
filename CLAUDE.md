@@ -1,5 +1,12 @@
 # Pump Bot Development Guide
 
+## Instrucciones BSC obligatorias
+
+Antes de revisar, configurar, desplegar o arrancar el bot de BNB Smart Chain
+(Four.meme o Flap), lee completo `INSTRUCCIONES.md` y respeta sus puertas de
+seguridad, rutas, validación paper y procedimiento de activación real. No
+actives operaciones reales ni muestres secretos sin autorización explícita.
+
 This is a trading bot for pump.fun and letsbonk.fun platforms that snipes new tokens and implements various trading strategies.
 
 ## REGLA 0 — LAS ORDENES DE MANU SON PERMANENTES, Y NO SE TOCA NADA MAS
