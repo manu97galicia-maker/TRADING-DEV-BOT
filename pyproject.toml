@@ -23,11 +23,19 @@ dependencies = [
     "uvloop>=0.21.0; sys_platform != 'win32'",
     "winloop>=0.1.0; sys_platform == 'win32'",
     "mnemonic>=0.21",
+    # BSC (Four.meme / Flap). Añadido el 21-oct con el bot de BNB Smart
+    # Chain: `web3` firma y consulta la cadena, y `eth-account` maneja la
+    # clave de la wallet dedicada. El bot de Solana no los usa.
+    "web3>=7.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.10.0"
+    "ruff>=0.10.0",
+    # pytest estaba instalado a mano y NO declarado: el primer `uv sync` que
+    # se corrio (21-oct, al anadir web3) lo desinstalo y dejo la suite de 878
+    # guardianes sin poder ejecutarse. Declarado, eso no vuelve a pasar.
+    "pytest>=8.0.0",
 ]
 
 [project.scripts]
