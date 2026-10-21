@@ -1,0 +1,66 @@
+# BSC launchpad strategy. PAPER ONLY: no key and no transaction signer.
+network:
+  chain: bsc
+  chain_id: 56
+  rpc_http_env: BSC_RPC_HTTP
+
+mode:
+  paper_trade: true
+  live_transactions: false
+
+poll_seconds: 2
+
+sources:
+  gmgn:
+    api_key_env: GMGN_API_KEY
+    stages: [new_creation, near_completion]
+  four_meme:
+    enabled: true
+  flap:
+    enabled: true
+    portal: "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0"
+
+entry:
+  amount_usd: 25
+  # Estrictamente menor: una moneda en 9.000 USD ya no entra.
+  max_market_cap_usd: 9000
+  # Tax del token: compra + venta. 600 bps = 6%.
+  max_combined_tax_bps: 600
+  reject_when_tax_unknown: true
+  # Compartido entre Four.meme y Flap; persiste tras reinicios.
+  reject_repeated_name_within_seconds: 7200
+  repeated_name_state: reservas/bsc_recent_names.json
+  developer:
+    min_migrations: 2
+    min_migration_rate: 0.08
+    require_complete_history: true
+
+positions:
+  max_open: 2
+  state_file: reservas/bsc_positions_paper.json
+
+gas:
+  mode: rapid_adaptive
+  # La compra tiene prioridad ultra; las ventas normales pagan menos.
+  buy_multiplier: 2.5
+  sell_multiplier: 1.25
+  max_gwei: 5.0
+  max_buy_gas_usd: 1.30
+  estimated_buy_gas_units: 350000
+  estimated_sell_gas_units: 250000
+
+exit:
+  stop_loss: 0.38
+  recover_initial:
+    gain: 0.60
+    sell_fraction_of_original: 0.625
+  market_cap_tiers:
+    - {market_cap_usd: 10000, sell_fraction_of_original: 0.0458333333333333}
+    - {market_cap_usd: 15000, sell_fraction_of_original: 0.0458333333333333}
+    - {market_cap_usd: 20000, sell_fraction_of_original: 0.0458333333333333}
+    - {market_cap_usd: 25000, sell_fraction_of_original: 0.0458333333333333}
+    - {market_cap_usd: 30000, sell_fraction_of_original: 0.0458333333333333}
+    - {market_cap_usd: 35000, sell_fraction_of_original: 0.0458333333333335}
+    - {market_cap_usd: 180000, sell_fraction_of_original: 0.05}
+    - {market_cap_usd: 400000, sell_fraction_of_original: 0.025}
+    - {market_cap_usd: 900000, sell_fraction_of_original: 0.025}

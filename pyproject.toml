@@ -26,7 +26,7 @@ dependencies = [
     # BSC (Four.meme / Flap). Añadido el 21-oct con el bot de BNB Smart
     # Chain: `web3` firma y consulta la cadena, y `eth-account` maneja la
     # clave de la wallet dedicada. El bot de Solana no los usa.
-    "web3>=7.0.0",
+    "web3>=7.0,<8",
 ]
 
 [project.optional-dependencies]
@@ -36,6 +36,7 @@ dev = [
     # se corrio (21-oct, al anadir web3) lo desinstalo y dejo la suite de 878
     # guardianes sin poder ejecutarse. Declarado, eso no vuelve a pasar.
     "pytest>=8.0.0",
+    "pytest-asyncio>=0.25.0",
 ]
 
 [project.scripts]

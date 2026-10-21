@@ -1,0 +1,19 @@
+[Unit]
+Description=Definitivo BSC Four.meme and Flap coordinator
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/ai-bot
+EnvironmentFile=/root/ai-bot/.env
+Environment=PYTHONPATH=/root/ai-bot/src
+ExecStart=/root/ai-bot/.venv/bin/python /root/ai-bot/run_bsc.py --config /root/ai-bot/bots/bot-bsc-four-flap-real.yaml
+Restart=on-failure
+RestartSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
