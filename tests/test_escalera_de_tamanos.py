@@ -49,7 +49,7 @@ C123 = RAIZ / "bots/bot-unica123-real.yaml"
 
 ESCALERA_PEDIDA = [0.33, 0.40, 0.50]
 RESERVA_PEDIDA = 0.015
-PLAZAS_PEDIDAS = 3  # 18-oct: vuelve a 3 ("subir las plazas otra vez")
+PLAZAS_PEDIDAS = 4  # 23-oct: "maximo 4 abiertas en simultaneo"
 
 
 def _trader(
@@ -239,8 +239,8 @@ def test_el_c123_lleva_el_60_por_ciento_plano() -> None:
     [0.6, 0.6, 0.6]: dejarla escrita invita a creer que sigue mandando.
     """
     trade = yaml.safe_load(C123.read_text(encoding="utf-8"))["trade"]
-    # 25% desde el 18-oct ("25% sol balance por operacion"). Venia del 60%.
-    assert trade["fraccion_saldo"] == pytest.approx(0.25)
+    # 20% desde el 23-oct ("20% de sol total balance por operacion").
+    assert trade["fraccion_saldo"] == pytest.approx(0.20)
     assert "fracciones_saldo" not in trade, (
         "el C123 ya no usa escalera: la clave debe estar borrada"
     )
@@ -264,13 +264,20 @@ def test_el_60_por_ciento_deja_las_posiciones_muy_desiguales() -> None:
         imp = libre * trade["fraccion_saldo"]
         compras.append(imp)
         libre -= imp
-    # Con el 25% (18-oct) la desigualdad casi desaparece: la primera es 1,78
-    # veces la tercera, no 6,25. Y se despliega el 57,8% del saldo libre en
-    # vez del 93,6%: mas tiros, mas pequenos, y mas SOL sin usar.
-    assert compras[0] / compras[-1] == pytest.approx(1.78, abs=0.05)
+    # Con el 20% y CUATRO plazas (23-oct): 0,197 / 0,158 / 0,126 / 0,101
+    # con 1 SOL. La primera es 1,95 veces la ultima y se despliega el 59,0%
+    # del saldo libre.
+    #
+    # LA BASE SIGUE SIENDO `libre`, no la cartera entera. Manu pidio "20% de
+    # sol total balance", que leido al pie de la letra seria base `cartera`
+    # y daria cuatro compras IGUALES de 0,197 (el 80% de la cartera
+    # desplegado). Se deja en `libre` --que es como estaba-- hasta que el lo
+    # confirme, porque cambiarlo quita el freno automatico que hace que las
+    # compras menguen solas.
+    assert compras[0] / compras[-1] == pytest.approx(1.95, abs=0.05)
     assert sum(compras) / (1.0 - trade["min_reserve_sol"]) == pytest.approx(
-        0.578, abs=0.01
-    ), "el 25% con 3 posiciones despliega el 57,8% del saldo libre"
+        0.590, abs=0.01
+    ), "el 20% con 4 posiciones despliega el 59,0% del saldo libre"
 
 
 def test_el_suelo_de_compra_protege_la_orden_de_asegurar_el_capital() -> None:

@@ -97,7 +97,9 @@ trade:
   # Con 3 plazas y 1 SOL libre, las compras salen 0,246 / 0,185 / 0,138 SOL
   # (cada una el 25% de lo que queda), y se despliega el 58% del saldo libre
   # en vez del 94% que desplegaba el 60%. Mas tiros y mas pequenos.
-  fraccion_saldo: 0.25
+  # 20% EL 23-oct, pedido: "20% de sol total balance por operacion".
+  # Venia del 25%.
+  fraccion_saldo: 0.20
   # SOBRE QUE SE CALCULAN ESOS PORCENTAJES, que es la mitad de la decision:
   #
   #   libre    el SOL gastable: saldo - reserva - lo ya comprometido.
@@ -182,7 +184,12 @@ trade:
   # Y OJO CON EL SALDO: la tercera compra es el 9,6% del saldo libre
   # (0,6 x 0,4 x 0,4), asi que con `compra_minima_sol: 0.075` hacen falta
   # unos 0,80 SOL libres para que la tercera plaza llegue a usarse.
-  max_posiciones: 3
+  # 4 EL 23-oct, pedido: "maximo 4 abiertas en simultaneo". Venia de 3.
+  #
+  # OJO CON EL NODO: `max_rps 8 x price_check_interval 1 / 2` da 4 posiciones
+  # vigilables. Con 4 plazas se va al limite exacto; una quinta y el take
+  # profit empezaria a reaccionar tarde sin que nada avisara.
+  max_posiciones: 4
   mayhem_max_perdidas: 0
 
   # Slippage alto en la compra: en una moneda que se esta moviendo, un margen
@@ -293,10 +300,11 @@ trade:
   # LO QUE SE COBRA SI TODO VA BIEN, con los tamanos que da el 25%:
   #
   #     compra     cuesta      TP1      resto     total      sobra
-  #     0,24625   0,24990   0,25496   0,06907   0,32403   +0,07413
-  #     0,18469   0,18772   0,19097   0,05155   0,24252   +0,05479
-  #     0,13852   0,14109   0,14297   0,03841   0,18138   +0,04029
-  #     0,04000   0,04159   0,04056   0,01037   0,05093   +0,00934
+  #     0,19700   0,20016   0,20376   0,05262   0,25638   +0,05622
+  #     0,15760   0,16036   0,16281   0,04189   0,20470   +0,04433
+  #     0,12608   0,12853   0,13004   0,03331   0,16335   +0,03482
+  #     0,10086   0,10306   0,10383   0,02644   0,13027   +0,02721
+  #     0,04000   0,04159   0,04056   0,00987   0,05043   +0,00885
   #
   # OJO CON LA ULTIMA FILA: con el suelo de compra en 0,04 el TP1 SOLO NO
   # llega (0,04056 contra 0,04159). Para que el TP1 se baste por si mismo
@@ -334,26 +342,35 @@ trade:
   #     entrando en 5.000 -> TP1 7.500  TP2 10.500
   # Antes, con la entrada en 15-22k, el x4 pedia 60.000-88.000 y EXIGIA que
   # la moneda migrase. Eso ya no hace falta.
-  # EL RESTO EN DOS VENTAS, EL 23-oct, pedido: "dejad correr el resto en dos
-  # ventas un x2.35 y un 3.36". Antes eran cinco peldanos con moonbag del 9%.
+  # ESCALERA DEL 23-oct. Sobre lo pedido el mismo dia ("dejad correr el
+  # resto en dos ventas un x2.35 y un 3.36") se anade: "deja un 4% moonbag
+  # vende en 400k si llega y el 2% restante hold".
   #
-  #     TP1  +40%  (x1,40)  vende 75,0%  -> queda 25%   <- recupera el capital
-  #     TP2 +135%  (x2,35)  vende 12,5%  -> queda 12,5%
-  #     TP3 +236%  (x3,36)  vende 12,5%  -> queda  0%
-  #     suma 100%: no queda moonbag colgado
+  #     TP1  +40%     (x1,40)   vende 75,0%  -> queda 25,0%   recupera capital
+  #     TP2 +135%     (x2,35)   vende  9,5%  -> queda 15,5%
+  #     TP3 +236%     (x3,36)   vende  9,5%  -> queda  6,0%
+  #     TP4 +1231%  (400k MC)   vende  4,0%  -> queda  2,0%
+  #     ---- el 2% NO SE VENDE NUNCA: es el hold pedido ----
   #
-  # LAS GANANCIAS VAN EN TANTO POR UNO SOBRE LA ENTRADA, no en multiplicador:
-  # un x2,35 es +135%, no +235%. Equivocarse ahi pondria los peldanos al
-  # doble de altura sin que se notara.
+  # EL 9,5% SALE DE LA RESTA, no de un gusto: quedaba el 25% tras el TP1 y
+  # hay que reservar 6 puntos (4 para los 400k y 2 para el hold), asi que
+  # las dos ventas pedidas se reparten los 19 restantes a la mitad.
   #
-  # LOS DOS DE ARRIBA NECESITAN QUE LA MONEDA MIGRE: desde el 93% de curva
-  # solo quedan +43,6% hasta la migracion, asi que el TP1 cabe dentro de la
-  # curva y los otros dos no. Es lo pedido --"dejad correr"-- pero significa
-  # que el 25% que queda depende de que la moneda llegue a PumpSwap.
+  # LOS 400k SON UNA GANANCIA, NO UN MARKET CAP. Esta escalera dispara por
+  # ganancia sobre la entrada, no por MC absoluto. Entrando al 93% de curva
+  # el market cap son 30.043 $ con SOL a 105, asi que 400.000 $ son x13,31,
+  # o sea una ganancia de 12,314.
+  #
+  # Y DE AHI SALE SU LIMITACION, que hay que saber: si SOL cambia de precio,
+  # el market cap de entrada cambia y ese peldano deja de caer exactamente
+  # en 400.000 $. Con SOL a 91 serian ~347.000; con SOL a 120, ~457.000. La
+  # alternativa seria un disparo por MC absoluto, que este bot no tiene.
   tp2_gain: 1.35
-  tp2_sell: 0.125
+  tp2_sell: 0.095
   tp3_gain: 2.36
-  tp3_sell: 0.125
+  tp3_sell: 0.095
+  tp4_gain: 12.314
+  tp4_sell: 0.04
   #
   # Medido sobre la muestra del 20-ago (40 monedas del grupo filtrado, y
   # comprobado tambien en grupos de 156 y 283 con filtros mas flojos):
@@ -454,7 +471,12 @@ trade:
   # vendiendo el 75% embolsaba 1,05 EN EFECTIVO al instante. Esta embolsa
   # 0,75 y deja 0,575 dependiendo de que el stop llegue a ejecutarse. Garantiza
   # mas (+32,5% contra +5%) pero tiene mas colgando de una venta futura.
-  margen_stop_tras_tp: 0.15
+  # 10% EL 23-oct, pedido: "si salto el tp1 el nuevo sl se mueve a precio
+  # inicial +10%". Venia del 15%.
+  #
+  # Este mando sube el suelo AL ESCALON ANTERIOR + el margen, asi que tras el
+  # TP1 el suelo queda en la entrada +10%, que es lo pedido.
+  margen_stop_tras_tp: 0.10
   stop_al_tp_tras_tp: false
   stop_al_tp_anterior: false
 

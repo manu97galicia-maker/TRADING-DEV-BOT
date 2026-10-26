@@ -93,8 +93,8 @@ def test_unica123_recoge_iniciales_al_mas_40_y_deja_correr_el_resto() -> None:
     #
     # Y "DESDE x3 A x9" se reparte en tres escalones iguales en vez de
     # jugarselo a un punto: si la moneda se para en x4, el x3 ya cobro.
-    assert [t.gain for t in tiers] == [0.40, 1.35, 2.36]
-    assert [t.sell for t in tiers] == [0.75, 0.125, 0.125]
+    assert [t.gain for t in tiers] == [0.40, 1.35, 2.36, 12.314]
+    assert [t.sell for t in tiers] == [0.75, 0.095, 0.095, 0.04]
     # EL 75% DEL PRIMERO NO ES LIBRE: es lo que hace falta para que el TP1
     # SOLO devuelva el capital (0,75 x 1,40 x 0,99 = 1,0395 contra 1,01 de
     # entrar). Vender menos y seguir llamandolo "recoge iniciales" seria
@@ -103,20 +103,39 @@ def test_unica123_recoge_iniciales_al_mas_40_y_deja_correr_el_resto() -> None:
         "el primer peldano ya no devuelve el capital: deja de ser el que "
         "recoge iniciales"
     )
-    assert sum(t.sell for t in tiers) == pytest.approx(1.0), (
-        "los tres peldanos tienen que vender el 100%: no se pidio moonbag"
+    # EL 2% QUE NO SE VENDE ES DELIBERADO, pedido el 23-oct ("el 2% restante
+    # hold"). Antes del 23-oct la escalera vendia el 100% y este guardian
+    # exigia justo eso; ahora exige el 98% exacto, para que ese 2% no se
+    # convierta en 5 ni en 0 por un descuido de reparto.
+    assert sum(t.sell for t in tiers) == pytest.approx(0.98), (
+        "la escalera tiene que vender el 98%: el 2% restante es el hold "
+        "perpetuo pedido, ni mas ni menos"
+    )
+    assert moonbag_fraction(tiers) == pytest.approx(0.02, abs=1e-9)
+    # Y EL PELDANO DE LOS 400k. Esta escalera dispara por GANANCIA, no por
+    # market cap absoluto: entrando al 93% de curva el MC son 30.043 $ con
+    # SOL a 105, asi que 400.000 $ son x13,31. Si alguien cambia el umbral
+    # de entrada sin recalcular esto, el peldano deja de caer en 400k.
+    assert tiers[-1].gain == pytest.approx(12.314), (
+        "el ultimo peldano ya no equivale a 400.000 $ de market cap"
     )
     # El tp2 vende el remanente (`min(original * sell, restante)`), asi que
     # no queda moonbag: a x4 se cierra la posicion.
-    assert moonbag_fraction(tiers) == pytest.approx(0.0)
+    # EL 2% ES EL HOLD PEDIDO EL 23-oct, no un resto olvidado. Hasta ese dia
+    # la escalera vendia el 100% y aqui se exigia moonbag cero.
+    assert moonbag_fraction(tiers) == pytest.approx(0.02, abs=1e-9)
 
     assert trade["stop_a_entrada_tras_tp"] is True
     assert trade["stop_al_tp_tras_tp"] is False
     # 15% desde el 18-oct ("el sl se mueve de precio al de compra 15%").
     # Es el mando que hace que tocar el TP1 asegure el capital: el TP1 por si
     # solo embolsa 0,7425, por debajo del 1,0100 que cuesta entrar.
-    assert trade["margen_stop_tras_tp"] == 0.15
-    assert stepped_stop_price(ENTRADA, tiers, 0, 0.15) == pytest.approx(1.15)
+    # 10% desde el 23-oct, pedido: "si salto el tp1 el nuevo sl se mueve a
+    # precio inicial +10%". Venia del 15%.
+    assert trade["margen_stop_tras_tp"] == 0.10
+    assert stepped_stop_price(ENTRADA, tiers, 0, 0.10) == pytest.approx(1.10), (
+        "tras el TP1 el suelo tiene que quedar en la entrada +10% exacto"
+    )
 
     # 60% desde el 18-oct, pedido ("stop loss 60%"). Venia del 25%.
     #
@@ -567,10 +586,11 @@ def test_las_cifras_del_ejemplo_del_yaml_son_de_verdad() -> None:
     #
     # (compra, cuesta, TP1, resto, total) tal y como estan en el yaml
     for compra, cuesta_esc, tp1_esc, resto_esc, total_esc in (
-        (0.24625, "0,24990", "0,25496", "0,06907", "0,32403"),
-        (0.18469, "0,18772", "0,19097", "0,05155", "0,24252"),
-        (0.13852, "0,14109", "0,14297", "0,03841", "0,18138"),
-        (0.04000, "0,04159", "0,04056", "0,01037", "0,05093"),
+        (0.19700, "0,20016", "0,20376", "0,05262", "0,25638"),
+        (0.15760, "0,16036", "0,16281", "0,04189", "0,20470"),
+        (0.12608, "0,12853", "0,13004", "0,03331", "0,16335"),
+        (0.10086, "0,10306", "0,10383", "0,02644", "0,13027"),
+        (0.04000, "0,04159", "0,04056", "0,00987", "0,05043"),
     ):
         cuesta = compra * 1.01 + fee_compra
         tp1 = f * compra * (1 + g) * 0.99 - fee_venta
