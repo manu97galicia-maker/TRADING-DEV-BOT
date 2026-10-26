@@ -206,11 +206,10 @@ class MayhemRoi50Tests(unittest.TestCase):
         # +57,5%-- y porque vendia el 100%, matando al corredor.
         # CINCO peldanos desde el 19-oct: "tp ok pero deja un 9% y vendes
         # desde x3 a x9". Los tres de arriba reparten ese 9%.
-        self.assertEqual([t.gain for t in escalera], [0.50, 1.10, 2.0, 5.0, 8.0])
+        # TRES peldanos desde el 23-oct: +40% recupera, luego x2,35 y x3,36.
+        self.assertEqual([t.gain for t in escalera], [0.40, 1.35, 2.36])
         # 0,50 + 0,41 = 0,91, asi que queda justo el 9% para x3/x6/x9.
-        self.assertEqual(
-            [t.sell for t in escalera], [0.50, 0.41, 0.03, 0.03, 0.03]
-        )
+        self.assertEqual([t.sell for t in escalera], [0.75, 0.125, 0.125])
 
     def test_los_frenos_antirug_estan_activos(self) -> None:
         """Comprando al nacer, el rug es el riesgo principal.
@@ -299,7 +298,7 @@ class MayhemRoi50Tests(unittest.TestCase):
         self.assertFalse(c123["filters"]["paper_trade"])
         self.assertTrue(c123["filters"]["ignorar_listas_de_devs"])
         # 0.88 desde el 19-oct ("desde el 88").
-        self.assertEqual(c123["filters"]["curva_96"]["umbral"], 0.88)
+        self.assertEqual(c123["filters"]["curva_96"]["umbral"], 0.93)
 
 
 if __name__ == "__main__":

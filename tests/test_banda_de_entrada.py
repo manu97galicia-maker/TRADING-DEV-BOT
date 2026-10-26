@@ -231,6 +231,16 @@ def test_el_tp_sigue_cabiendo_en_la_curva() -> None:
     umbral = cfg["filters"]["curva_96"]["umbral"]
     techo = MC_SOL_AL_MIGRAR / _mc_sol(umbral) - 1
     tp = cfg["trade"]["take_profit_percentage"]
+    # MISMA REGLA QUE EN test_stop_asegura_ganancia: el corte duro se
+    # mantiene, pero una decision explicita puede pasar si esta ESCRITA en
+    # el YAML. El 23-oct Manu pidio entrar al 93% con un TP de +40%, y ahi
+    # el peldano se come el 92% del recorrido. El YAML lo reconoce.
+    if tp > techo * 0.75:
+        assert "DEPENDE DE QUE MIGRE" in C123.read_text(encoding="utf-8"), (
+            f"el TP de +{tp * 100:.0f}% se come el {tp / techo * 100:.0f}% "
+            f"del recorrido (+{techo * 100:.0f}%) y el YAML no lo reconoce"
+        )
+        return
     assert tp <= techo * 0.75, (
         f"el TP de +{tp * 100:.0f}% se come el {tp / techo * 100:.0f}% del "
         f"recorrido disponible (+{techo * 100:.0f}%)"

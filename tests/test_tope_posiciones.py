@@ -107,11 +107,17 @@ def test_c123_sin_techo_mc_y_con_dos_posiciones() -> None:
     # dejo de estar apagado a proposito: es el mando que cumple el pedido.
     # Lo vigila `test_banda_de_entrada_en_dolares` en
     # tests/test_banda_de_entrada.py, con las cuentas hechas.
-    # Banda en dolares otra vez desde el 16-oct: Manu enseno una compra en
-    # 30.600 $ y un % de curva no puede garantizar un techo en dolares.
-    # Techo a 42.000 desde el 19-oct: cubre la ventana de curva entera.
-    assert cfg["filters"]["max_entry_mc"] == 42000
-    assert cfg["filters"]["min_entry_mc"] == 22000
+    # BANDA EN DOLARES APAGADA EL 23-oct: Manu pidio "UNICAMENTE requisitos
+    # de sol que cruce el 93% de la bonding curve", asi que el umbral de
+    # curva es el unico filtro.
+    #
+    # ESTO DESHACE LA PROTECCION DEL 16-oct, y queda escrito: aquel dia se
+    # puso la banda porque un % de curva NO garantiza un techo en dolares
+    # --el MC del mismo punto sube con el precio de SOL-- y asi habia
+    # entrado una compra de 30.600 $. Ahora no hay techo: si SOL sube, el
+    # 93% cuesta mas dolares y se compra igual.
+    assert cfg["filters"]["max_entry_mc"] == 0
+    assert cfg["filters"]["min_entry_mc"] == 0
 
 
 def test_avisa_cuando_hay_mas_posiciones_que_nodo(

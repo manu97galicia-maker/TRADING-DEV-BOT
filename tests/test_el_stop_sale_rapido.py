@@ -44,6 +44,13 @@ CU_VENTA = 120_000
 def _bot_encendido() -> tuple[str, dict]:
     """El bot que de verdad arranca. Ver `run_all_bots`."""
     for fichero in sorted((RAIZ / "bots").glob("*.yaml")):
+        # LOS YAML DEL BOT BSC NO SON DE ESTE BOT. Entraron en `bots/`
+        # con el commit 490a05f y no tienen bloque `trade`: son de otra
+        # cadena, otro motor y otro formato. Recorrerlos aqui rompia
+        # cinco guardianes de Solana sin que nada estuviera mal en
+        # Solana.
+        if fichero.name.startswith("bot-bsc-"):
+            continue
         cfg = yaml.safe_load(fichero.read_text(encoding="utf-8")) or {}
         if cfg.get("enabled", True):
             return fichero.name, cfg

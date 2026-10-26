@@ -266,37 +266,44 @@ trade:
   # TP DEL 16-oct, pedido: "tp 40% recuperar, luego dejar correr hasta x4".
   # Antes era +30% vendiendo el 80%.
   #
-  # REESCRITO EL 18-oct: "vender la mitad cuando suba un 50%".
+  # +40% VENDIENDO EL 75%, EL 23-oct, pedido: "to 40% recoged iniciales".
   #
-  # EL TP1 SOLO YA NO DEVUELVE EL CAPITAL, y hay que saberlo: vender el 50%
-  # a +50% cobra 0,7425 por cada 1 que se pone, y entrar cuesta 1,0100. Es
-  # imposible a CUALQUIER tamano -- no es cosa del suelo de compra.
+  # EL 75% NO ES UN NUMERO LIBRE: es lo que hace falta para que el TP1 SOLO
+  # devuelva el capital. 0,75 x 1,40 x 0,99 = 1,0395 contra 1,01 que cuesta
+  # entrar. Vender menos y seguir llamandolo "recoge iniciales" seria mentira.
   #
-  # QUIEN LO DEVUELVE ES EL SUELO SUBIDO a la compra +15% (margen_stop_tras_tp
-  # mas abajo). Sumando lo que embolsa el TP1 y lo que saca el resto si luego
-  # cae y salta el suelo, con los tamanos que produce el 25%:
+  # ============================================================
+  # AVISO: ENTRANDO AL 93%, TODO DEPENDE DE QUE MIGRE
+  # ============================================================
+  # Al 93% de curva solo quedan +43,6% hasta la migracion. Las cuentas:
   #
-  #     compra      cuesta      TP1      resto     total      sobra
-  #     0,24625    0,24990   0,18182   0,13916   0,32098   +0,07108
-  #     0,18469    0,18772   0,13611   0,10412   0,24023   +0,05251
-  #     0,13852    0,14109   0,10183   0,07783   0,17967   +0,03857
-  #     0,07500    0,07694   0,05467   0,04168   0,09635   +0,01941
+  #     TP1 +40%   exige llegar al 99,55% de curva (42.060 $)
+  #                la migracion esta en 43.142 $, o sea a 0,45 puntos
+  #     TP2 x2,35  SOLO despues de migrar
+  #     TP3 x3,36  SOLO despues de migrar
   #
-  # Los cuatro sobran, asi que la orden del 16-oct ("asegures el capital
-  # inicial") se sigue cumpliendo. Pero AHORA DEPENDE DE DOS VENTAS, no de
-  # una: si la moneda se volca tan rapido que el suelo no llega a ejecutarse,
-  # solo esta embolsado el 0,7425. La configuracion anterior (+40% vendiendo
-  # el 75%) tenia 1,039 en efectivo desde el primer peldano.
+  # O sea que el primer peldano se come el 92% del recorrido que queda, y
+  # practicamente coincide con la migracion. Dentro de la curva, las salidas
+  # reales son el stop (-32%) y el reloj.
   #
-  # LA MITAD QUE QUEDA CORRE HASTA EL TP2 (+110%), que es el de abajo.
+  # NO ES UN FALLO: es la consecuencia aritmetica de entrar tan arriba, y el
+  # bot sabe vender despues de migrar. Pero el 100% de la ganancia depende
+  # de que la moneda LLEGUE a migrar.
   #
-  # LOS DOS FINALES:
-  #     llega a x4 ....... 75% x 1,40 + 25% x 4,00 = +105%
-  #     se va a CERO ..... 75% x 1,40              = +5,0%  (capital intacto)
-  # TP1 AL +50% VENDIENDO LA MITAD, EL 18-oct, pedido: "vender la mitad
-  # cuando suba un 50%". Venia de +40% vendiendo el 75%.
-  take_profit_percentage: 0.50
-  take_profit_sell_percentage: 0.50
+  # LO QUE SE COBRA SI TODO VA BIEN, con los tamanos que da el 25%:
+  #
+  #     compra     cuesta      TP1      resto     total      sobra
+  #     0,24625   0,24990   0,25496   0,06907   0,32403   +0,07413
+  #     0,18469   0,18772   0,19097   0,05155   0,24252   +0,05479
+  #     0,13852   0,14109   0,14297   0,03841   0,18138   +0,04029
+  #     0,04000   0,04159   0,04056   0,01037   0,05093   +0,00934
+  #
+  # OJO CON LA ULTIMA FILA: con el suelo de compra en 0,04 el TP1 SOLO NO
+  # llega (0,04056 contra 0,04159). Para que el TP1 se baste por si mismo
+  # haria falta un suelo de 0,0748 SOL. Por debajo de eso el capital se
+  # recupera solo si TAMBIEN se ejecuta la venta del suelo subido.
+  take_profit_percentage: 0.40
+  take_profit_sell_percentage: 0.75
   # x4 = +300%. VENDE LO QUE QUEDE (el `sell` es sobre la posicion original y
   # el codigo hace `min(original * sell, restante)`, asi que 1.0 se lleva el
   # remanente y cierra).
@@ -327,35 +334,26 @@ trade:
   #     entrando en 5.000 -> TP1 7.500  TP2 10.500
   # Antes, con la entrada en 15-22k, el x4 pedia 60.000-88.000 y EXIGIA que
   # la moneda migrase. Eso ya no hace falta.
-  # TP2 BAJA DE VENDER EL RESTO A VENDER EL 41%, EL 19-oct, pedido: "tp ok
-  # pero deja un 9% y vendes desde x3 a x9".
+  # EL RESTO EN DOS VENTAS, EL 23-oct, pedido: "dejad correr el resto en dos
+  # ventas un x2.35 y un 3.36". Antes eran cinco peldanos con moonbag del 9%.
   #
-  # LA CUENTA DEL 9%, y `sell` es fraccion del TOTAL ORIGINAL, no de lo que
-  # queda (`moonbag_fraction = 1 - suma de los sell`, tiered_exit.py:159):
-  #     TP1  vende 0,50  -> queda 0,50
-  #     TP2  vende 0,41  -> queda 0,09   <- el 9% pedido
-  #     x3   vende 0,03  -> queda 0,06
-  #     x6   vende 0,03  -> queda 0,03
-  #     x9   vende 0,03  -> queda 0,00
-  #   suma 1,00: no sobra nada colgado para siempre.
-  tp2_gain: 1.10
-  tp2_sell: 0.41
-
-  # EL 9% REPARTIDO DE x3 A x9, pedido el 19-oct. "Desde x3 a x9" se reparte
-  # en tres escalones iguales (3% cada uno) para no tener que acertar UN
-  # punto exacto: si la moneda se para en x4, ya cobraste el x3.
+  #     TP1  +40%  (x1,40)  vende 75,0%  -> queda 25%   <- recupera el capital
+  #     TP2 +135%  (x2,35)  vende 12,5%  -> queda 12,5%
+  #     TP3 +236%  (x3,36)  vende 12,5%  -> queda  0%
+  #     suma 100%: no queda moonbag colgado
   #
-  #   x3 = +200%   x6 = +500%   x9 = +800%
+  # LAS GANANCIAS VAN EN TANTO POR UNO SOBRE LA ENTRADA, no en multiplicador:
+  # un x2,35 es +135%, no +235%. Equivocarse ahi pondria los peldanos al
+  # doble de altura sin que se notara.
   #
-  # OJO CON PONER 0 AQUI: `build_tiers` ACEPTA `sell: 0` (tiered_exit.py:61)
-  # y crea un escalon que no vende pero SI mueve el stop. Para quitar un
-  # peldano hay que BORRAR las dos lineas, no ponerlas a 0. Ya paso una vez.
-  tp3_gain: 2.0
-  tp3_sell: 0.03
-  tp4_gain: 5.0
-  tp4_sell: 0.03
-  tp5_gain: 8.0
-  tp5_sell: 0.03
+  # LOS DOS DE ARRIBA NECESITAN QUE LA MONEDA MIGRE: desde el 93% de curva
+  # solo quedan +43,6% hasta la migracion, asi que el TP1 cabe dentro de la
+  # curva y los otros dos no. Es lo pedido --"dejad correr"-- pero significa
+  # que el 25% que queda depende de que la moneda llegue a PumpSwap.
+  tp2_gain: 1.35
+  tp2_sell: 0.125
+  tp3_gain: 2.36
+  tp3_sell: 0.125
   #
   # Medido sobre la muestra del 20-ago (40 monedas del grupo filtrado, y
   # comprobado tambien en grupos de 156 y 283 con filtros mas flojos):
@@ -393,7 +391,12 @@ trade:
   #     entrando en 2.936 $ -> como mucho   -0,0%
   # Ninguna llega al -60%. Lo unico que protege de un volcado en esta banda
   # es el anti-rug (ratio 1,6 en 4 s con 3 SOL minimos), que SI salta.
-  stop_loss_percentage: 0.60
+  # 32% EL 23-oct, pedido: "sl 32%". Venia del 60%.
+  #
+  # Y AHORA SI PUEDE SALTAR, al reves que el 60% con la banda 2-5k: desde el
+  # 93% de curva la moneda puede caer mucho mas del 32% antes de tocar el
+  # suelo de la curva, asi que este stop es real.
+  stop_loss_percentage: 0.32
   # EXPLICITO EL 15-oct, y no es cosmetica. El codigo hace
   # `float(trailing_stop_percentage or stop_loss_percentage or 0)`, asi que
   # el 0 NO apagaba el trailing: caia al stop_loss y ya valia 0,25. Funcionaba
@@ -804,7 +807,9 @@ filters:
   #
   # SI SE SECAN LAS COMPRAS, ESTE ES EL PRIMERO QUE HAY QUE SOLTAR: a 3, y
   # luego a 0. Y se nota en `porque`, en el punto 3 del embudo.
-  min_volumen_sol: 8
+  # APAGADO EL 23-oct, pedido: "UNICAMENTE requisitos de sol que cruce
+  # el 93% de la bonding curve". El 93% es ahora el unico filtro.
+  min_volumen_sol: 0
 
   # SIN FRANJA HORARIA: opera las 24 horas. El {inicio:18, fin:4} venia
   # heredado de cuando esta estrategia se llamaba NOCHE, y estaba descartando
@@ -925,7 +930,9 @@ filters:
   # SOL. Es lo que dejo entrar la compra de 30.600 $ del 16-oct. El techo en
   # dolares si lo garantiza: el codigo compara contra el precio de SOL EN
   # VIVO (universal_trader.py:4276 y 4513).
-  min_entry_mc: 22000
+  # APAGADO EL 23-oct, pedido: "UNICAMENTE requisitos de sol que cruce
+  # el 93% de la bonding curve". El 93% es ahora el unico filtro.
+  min_entry_mc: 0
   # SUBIDO A 42.000 EL 19-oct, pedido: "afloja el punto 3 mucho", con el
   # embudo delante: 28 de los descartes eran "se paso de la banda".
   #
@@ -937,7 +944,9 @@ filters:
   # El techo en dolares sigue existiendo y sigue sirviendo para lo que se
   # puso: si SOL se dispara, un mismo punto de curva vale mas dolares y este
   # freno lo corta. Lo que ya no hace es recortar la propia estrategia.
-  max_entry_mc: 42000
+  # APAGADO EL 23-oct, pedido: "UNICAMENTE requisitos de sol que cruce
+  # el 93% de la bonding curve". El 93% es ahora el unico filtro.
+  max_entry_mc: 0
   max_entry_mc_dev_top: 0
   min_curve_sol: 0
   # SIN TECHO DE VOLUMEN, y esto corrige una medida anterior.
@@ -1111,7 +1120,9 @@ filters:
   # 1,1 sigue exigiendo que entre MAS SOL del que sale (un 10% mas), que es
   # lo que separa "sube" de "se esta yendo la gente". Por debajo de 1,0 el
   # filtro deja de significar nada.
-  min_presion_ratio: 1.1
+  # APAGADO EL 23-oct, pedido: "UNICAMENTE requisitos de sol que cruce
+  # el 93% de la bonding curve". El 93% es ahora el unico filtro.
+  min_presion_ratio: 0
   presion_seg: 3.0
   min_buys: 0
   min_titulares: 0
@@ -1308,7 +1319,10 @@ filters:
     # EL 89% DE CURVA SON 25.075 $ con SOL a 105, y 57,7 SOL dentro.
     # 0.88 EL 19-oct, pedido: "desde el 88". Venia de 0,89 (de hace un rato).
     # El 88% de curva son 24.026 $ y quedan +79,6% hasta migrar.
-    umbral: 0.88
+    # 0.93 EL 23-oct, pedido: "unicamente requisitos de sol que cruce el 93%
+    # de la bonding curve". Venia de 0,88.
+    # El 93% son 286,1 SOL de market cap = 30.043 $ con SOL a 105.
+    umbral: 0.93
     # TOPE AL 40% EL 18-oct, por la misma razon y para proteger el nodo.
     #
     # Con el umbral tan abajo, dejar el tope en 0,995 haria que el detector

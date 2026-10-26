@@ -49,7 +49,7 @@ def _tiers() -> list:
     return build_tiers(pares)
 
 
-def test_unica123_vende_la_mitad_al_mas_50_y_deja_un_9_por_ciento() -> None:
+def test_unica123_recoge_iniciales_al_mas_40_y_deja_correr_el_resto() -> None:
     """En real, +40% vende el 75% --el capital entero-- y el 25% corre a x4.
 
     CAMBIADO EL 15-oct, pedido: "Optimiza el resultado poniendo un take
@@ -93,10 +93,19 @@ def test_unica123_vende_la_mitad_al_mas_50_y_deja_un_9_por_ciento() -> None:
     #
     # Y "DESDE x3 A x9" se reparte en tres escalones iguales en vez de
     # jugarselo a un punto: si la moneda se para en x4, el x3 ya cobro.
-    assert [t.gain for t in tiers] == [0.50, 1.10, 2.0, 5.0, 8.0]
-    assert [t.sell for t in tiers] == [0.50, 0.41, 0.03, 0.03, 0.03]
-    # 0,50 + 0,41 = 0,91: queda exactamente el 9% pedido para los de arriba.
-    assert sum(t.sell for t in tiers[:2]) == pytest.approx(0.91)
+    assert [t.gain for t in tiers] == [0.40, 1.35, 2.36]
+    assert [t.sell for t in tiers] == [0.75, 0.125, 0.125]
+    # EL 75% DEL PRIMERO NO ES LIBRE: es lo que hace falta para que el TP1
+    # SOLO devuelva el capital (0,75 x 1,40 x 0,99 = 1,0395 contra 1,01 de
+    # entrar). Vender menos y seguir llamandolo "recoge iniciales" seria
+    # mentira. Si alguien mueve el 40% o el 75%, esto salta.
+    assert tiers[0].sell * (1 + tiers[0].gain) * 0.99 >= 1.01, (
+        "el primer peldano ya no devuelve el capital: deja de ser el que "
+        "recoge iniciales"
+    )
+    assert sum(t.sell for t in tiers) == pytest.approx(1.0), (
+        "los tres peldanos tienen que vender el 100%: no se pidio moonbag"
+    )
     # El tp2 vende el remanente (`min(original * sell, restante)`), asi que
     # no queda moonbag: a x4 se cierra la posicion.
     assert moonbag_fraction(tiers) == pytest.approx(0.0)
@@ -116,7 +125,9 @@ def test_unica123_vende_la_mitad_al_mas_50_y_deja_un_9_por_ciento() -> None:
     # del nacimiento (2.936 $ con SOL a 105), asi que entrando en 5.000 la
     # caida maxima posible es -41,3% y entrando mas abajo, menos. Lo que
     # protege de un volcado en esta banda es el anti-rug, no el stop.
-    assert trade["stop_loss_percentage"] == 0.60
+    # 32% desde el 23-oct ("sl 32%"). Venia del 60%, que con la banda 2-5k
+    # no podia ni saltar. Desde el 93% de curva este si es un stop real.
+    assert trade["stop_loss_percentage"] == 0.32
     # El trailing protege al corredor y ahora esta ESCRITO, no heredado del
     # stop por el respaldo `trailing_stop_percentage or stop_loss_percentage`.
     assert trade["trailing_stop_percentage"] == 0.25
@@ -489,11 +500,33 @@ def test_la_entrada_del_c123_da_para_cobrar_el_primer_peldano() -> None:
     # sea la unica salida en verde garantizada dentro de la curva. Si ese no
     # se puede tocar, las unicas salidas son el stop y el reloj -- que es
     # exactamente lo que pasaba con el tp2 de +70% entrando al 91%.
-    assert tiers[0].gain <= techo * 0.75, (
-        f"el primer peldano (+{tiers[0].gain * 100:.0f}%) se come el "
-        f"{tiers[0].gain / techo * 100:.0f}% del recorrido disponible "
-        f"(+{techo * 100:.1f}%): demasiado justo o inalcanzable"
-    )
+    # EL PRIMER PELDANO TIENE QUE CABER CON HOLGURA... O ESTAR RECONOCIDO.
+    #
+    # Hasta el 23-oct esto era un corte duro al 75% del recorrido. Ese dia
+    # Manu pidio entrar al 93% de curva con un TP de +40%, y ahi solo quedan
+    # +43,6% hasta migrar: el peldano se come el 92% del recorrido y el
+    # guardian saltaba.
+    #
+    # NO SE RELAJA EL CORTE, porque la propiedad que vigila es real: un
+    # primer peldano que no cabe deja la posicion dependiendo de que la
+    # moneda migre, y las unicas salidas dentro de la curva pasan a ser el
+    # stop y el reloj. Lo que se hace es exigir que esa decision este
+    # ESCRITA en el YAML. Asi un cambio futuro que vuelva a dejarlo justo
+    # sin querer sigue saltando.
+    holgura_ok = tiers[0].gain <= techo * 0.75
+    if not holgura_ok:
+        texto = REAL_CONFIG.read_text(encoding="utf-8")
+        assert "DEPENDE DE QUE MIGRE" in texto, (
+            f"el primer peldano (+{tiers[0].gain * 100:.0f}%) se come el "
+            f"{tiers[0].gain / techo * 100:.0f}% del recorrido disponible "
+            f"(+{techo * 100:.1f}%), y el YAML no lo reconoce. O cabe con "
+            "holgura, o se escribe en el YAML por que no"
+        )
+        assert tiers[0].gain <= techo, (
+            f"el primer peldano (+{tiers[0].gain * 100:.0f}%) ni siquiera "
+            f"cabe en el +{techo * 100:.1f}% que queda hasta migrar: dentro "
+            "de la curva no cobraria NUNCA"
+        )
 
     # LOS DE MAS ARRIBA PUEDEN SALIRSE DE LA CURVA A PROPOSITO. El x4 pedido
     # el 16-oct exige migrar y seguir subiendo en PumpSwap; es una decision,
@@ -534,10 +567,10 @@ def test_las_cifras_del_ejemplo_del_yaml_son_de_verdad() -> None:
     #
     # (compra, cuesta, TP1, resto, total) tal y como estan en el yaml
     for compra, cuesta_esc, tp1_esc, resto_esc, total_esc in (
-        (0.24625, "0,24990", "0,18182", "0,13916", "0,32098"),
-        (0.18469, "0,18772", "0,13611", "0,10412", "0,24023"),
-        (0.13852, "0,14109", "0,10183", "0,07783", "0,17967"),
-        (0.07500, "0,07694", "0,05467", "0,04168", "0,09635"),
+        (0.24625, "0,24990", "0,25496", "0,06907", "0,32403"),
+        (0.18469, "0,18772", "0,19097", "0,05155", "0,24252"),
+        (0.13852, "0,14109", "0,14297", "0,03841", "0,18138"),
+        (0.04000, "0,04159", "0,04056", "0,01037", "0,05093"),
     ):
         cuesta = compra * 1.01 + fee_compra
         tp1 = f * compra * (1 + g) * 0.99 - fee_venta
