@@ -342,35 +342,43 @@ trade:
   #     entrando en 5.000 -> TP1 7.500  TP2 10.500
   # Antes, con la entrada en 15-22k, el x4 pedia 60.000-88.000 y EXIGIA que
   # la moneda migrase. Eso ya no hace falta.
-  # ESCALERA DEL 23-oct. Sobre lo pedido el mismo dia ("dejad correr el
-  # resto en dos ventas un x2.35 y un 3.36") se anade: "deja un 4% moonbag
-  # vende en 400k si llega y el 2% restante hold".
+  # ESCALERA DEL 29-oct, pedido: "luego vas soltando el profit que sobra
+  # cada 35% respecto de la subida anterior" (opcion A, elegida por Manu).
   #
-  #     TP1  +40%     (x1,40)   vende 75,0%  -> queda 25,0%   recupera capital
-  #     TP2 +135%     (x2,35)   vende  9,5%  -> queda 15,5%
-  #     TP3 +236%     (x3,36)   vende  9,5%  -> queda  6,0%
-  #     TP4 +1231%  (400k MC)   vende  4,0%  -> queda  2,0%
-  #     ---- el 2% NO SE VENDE NUNCA: es el hold pedido ----
+  # CADA PELDANO ES EL ANTERIOR x 1,35, encadenado desde el TP1:
   #
-  # EL 9,5% SALE DE LA RESTA, no de un gusto: quedaba el 25% tras el TP1 y
-  # hay que reservar 6 puntos (4 para los 400k y 2 para el hold), asi que
-  # las dos ventas pedidas se reparten los 19 restantes a la mitad.
+  #     TP1  x1,40  (+40%)      vende 75,0%  -> queda 25,0%  recupera capital
+  #     TP2  x1,89  (+89%)      vende  4,6%  -> queda 20,4%
+  #     TP3  x2,55  (+155,2%)   vende  4,6%  -> queda 15,8%
+  #     TP4  x3,44  (+244,5%)   vende  4,6%  -> queda 11,2%
+  #     TP5  x4,65  (+365,0%)   vende  4,6%  -> queda  6,6%
+  #     TP6  x6,28  (+527,8%)   vende  4,6%  -> queda  2,0%
+  #     ---- el 2% NO SE VENDE NUNCA: el hold pedido el 23-oct ----
   #
-  # LOS 400k SON UNA GANANCIA, NO UN MARKET CAP. Esta escalera dispara por
-  # ganancia sobre la entrada, no por MC absoluto. Entrando al 93% de curva
-  # el market cap son 30.043 $ con SOL a 105, asi que 400.000 $ son x13,31,
-  # o sea una ganancia de 12,314.
+  # EL 4,6% SALE DE LA RESTA: tras el TP1 quedaba el 25%, se reservan 2
+  # puntos para el hold y los 23 restantes se reparten entre los cinco
+  # peldanos de la cadena.
   #
-  # Y DE AHI SALE SU LIMITACION, que hay que saber: si SOL cambia de precio,
-  # el market cap de entrada cambia y ese peldano deja de caer exactamente
-  # en 400.000 $. Con SOL a 91 serian ~347.000; con SOL a 120, ~457.000. La
-  # alternativa seria un disparo por MC absoluto, que este bot no tiene.
-  tp2_gain: 1.35
-  tp2_sell: 0.095
-  tp3_gain: 2.36
-  tp3_sell: 0.095
-  tp4_gain: 12.314
-  tp4_sell: 0.04
+  # ESTO DESHACE DOS COSAS PEDIDAS EL 23-oct, y queda escrito:
+  #   1. los peldanos x2,35 y x3,36. No encajaban en una cadena del 35%:
+  #      de x1,40 a x2,35 hay un x1,68 y de x2,35 a x3,36 un x1,43.
+  #   2. el peldano del 4% a 400k de market cap (x13,31). El bot admite
+  #      SIETE peldanos como mucho (TP1 mas tp2..tp6) y la cadena los ocupa
+  #      todos. Si se quiere recuperar, hay que quitar uno de la cadena.
+  #
+  # SIETE ES EL TOPE DEL CODIGO, no una decision: `bot_runner.py` lee de
+  # `tp2_gain` a `tp6_gain` y nada mas. Un `tp7_gain` en este fichero se
+  # quedaria escrito y mudo.
+  tp2_gain: 0.89
+  tp2_sell: 0.046
+  tp3_gain: 1.5515
+  tp3_sell: 0.046
+  tp4_gain: 2.4445
+  tp4_sell: 0.046
+  tp5_gain: 3.6501
+  tp5_sell: 0.046
+  tp6_gain: 5.2776
+  tp6_sell: 0.046
   #
   # Medido sobre la muestra del 20-ago (40 monedas del grupo filtrado, y
   # comprobado tambien en grupos de 156 y 283 con filtros mas flojos):

@@ -67,10 +67,11 @@ def test_unica123_recoge_iniciales_al_mas_40_y_deja_correr_el_resto() -> None:
     mientras la proteccion extra solo ganaba 4.
     """
     trade = yaml.safe_load(REAL_CONFIG.read_text(encoding="utf-8"))["trade"]
-    # SE LEEN LOS CINCO, y esto era un agujero: hasta el 19-oct este guardian
-    # solo construia tp1 y tp2, asi que un escalon fantasma en tp3, tp4 o tp5
-    # --el fallo que ya costo cuatro peldanos a +0% disparandose en la
-    # compra-- habria pasado sin que nadie lo viera.
+    # SE LEEN LOS SIETE, y esto ha sido un agujero DOS VECES: hasta el
+    # 19-oct solo se construian tp1 y tp2, y hasta el 29-oct se paraba en
+    # tp5 --justo cuando el bot ya leia tp6--, asi que un escalon fantasma
+    # ahi habria pasado invisible. `bot_runner.py` lee de tp2 a tp6: este
+    # rango tiene que llegar igual de lejos.
     tiers = build_tiers(
         [
             (
@@ -79,7 +80,7 @@ def test_unica123_recoge_iniciales_al_mas_40_y_deja_correr_el_resto() -> None:
             ),
             *[
                 (trade.get(f"tp{i}_gain"), trade.get(f"tp{i}_sell"))
-                for i in range(2, 6)
+                for i in range(2, 7)
             ],
         ]
     )
@@ -93,8 +94,19 @@ def test_unica123_recoge_iniciales_al_mas_40_y_deja_correr_el_resto() -> None:
     #
     # Y "DESDE x3 A x9" se reparte en tres escalones iguales en vez de
     # jugarselo a un punto: si la moneda se para en x4, el x3 ya cobro.
-    assert [t.gain for t in tiers] == [0.40, 1.35, 2.36, 12.314]
-    assert [t.sell for t in tiers] == [0.75, 0.095, 0.095, 0.04]
+    assert [t.gain for t in tiers] == [0.40, 0.89, 1.5515, 2.4445, 3.6501, 5.2776]
+    assert [t.sell for t in tiers] == [0.75, 0.046, 0.046, 0.046, 0.046, 0.046]
+
+    # CADA PELDANO ES EL ANTERIOR x 1,35, pedido el 29-oct ("vas soltando el
+    # profit que sobra cada 35% respecto de la subida anterior"). Se
+    # comprueba la RELACION, no los numeros sueltos: asi, si alguien mueve
+    # uno, se ve que la cadena se ha roto en vez de recalcularla a mano.
+    for anterior, siguiente in zip(tiers[:-1], tiers[1:], strict=True):
+        razon = (1 + siguiente.gain) / (1 + anterior.gain)
+        assert razon == pytest.approx(1.35, abs=0.001), (
+            f"de x{1 + anterior.gain:.2f} a x{1 + siguiente.gain:.2f} hay "
+            f"un x{razon:.3f}, y la cadena pedida es de x1,35"
+        )
     # EL 75% DEL PRIMERO NO ES LIBRE: es lo que hace falta para que el TP1
     # SOLO devuelva el capital (0,75 x 1,40 x 0,99 = 1,0395 contra 1,01 de
     # entrar). Vender menos y seguir llamandolo "recoge iniciales" seria
@@ -112,12 +124,12 @@ def test_unica123_recoge_iniciales_al_mas_40_y_deja_correr_el_resto() -> None:
         "perpetuo pedido, ni mas ni menos"
     )
     assert moonbag_fraction(tiers) == pytest.approx(0.02, abs=1e-9)
-    # Y EL PELDANO DE LOS 400k. Esta escalera dispara por GANANCIA, no por
-    # market cap absoluto: entrando al 93% de curva el MC son 30.043 $ con
-    # SOL a 105, asi que 400.000 $ son x13,31. Si alguien cambia el umbral
-    # de entrada sin recalcular esto, el peldano deja de caer en 400k.
-    assert tiers[-1].gain == pytest.approx(12.314), (
-        "el ultimo peldano ya no equivale a 400.000 $ de market cap"
+    # EL PELDANO DE LOS 400k SE CAYO EL 29-oct, y queda dicho: el bot admite
+    # SIETE peldanos como mucho (TP1 mas tp2..tp6) y la cadena del 35% los
+    # ocupa todos. Para recuperarlo habria que quitar uno de la cadena.
+    assert len(tiers) <= 6, (
+        "mas de 6 peldanos significa que alguien escribio un tp7, y "
+        "`bot_runner.py` solo lee hasta tp6: quedaria escrito y mudo"
     )
     # El tp2 vende el remanente (`min(original * sell, restante)`), asi que
     # no queda moonbag: a x4 se cierra la posicion.
@@ -509,7 +521,7 @@ def test_la_entrada_del_c123_da_para_cobrar_el_primer_peldano() -> None:
             ),
             *[
                 (trade.get(f"tp{i}_gain"), trade.get(f"tp{i}_sell"))
-                for i in range(2, 6)
+                for i in range(2, 7)
             ],
         ]
     )

@@ -54,8 +54,11 @@ def _escalera(trade: dict) -> list:
     pares = [
         (trade.get("take_profit_percentage"), trade.get("take_profit_sell_percentage"))
     ]
+    # HASTA tp6, que es lo que lee `bot_runner.py`. Pararse en tp5 --como
+    # estaba hasta el 29-oct-- dejaba un escalon fantasma en tp6 invisible
+    # para este guardian, que existe justo para cazar escalones fantasma.
     pares += [
-        (trade.get(f"tp{n}_gain"), trade.get(f"tp{n}_sell")) for n in (2, 3, 4, 5)
+        (trade.get(f"tp{n}_gain"), trade.get(f"tp{n}_sell")) for n in (2, 3, 4, 5, 6)
     ]
     return build_tiers(pares)
 
@@ -207,13 +210,14 @@ class MayhemRoi50Tests(unittest.TestCase):
         # CINCO peldanos desde el 19-oct: "tp ok pero deja un 9% y vendes
         # desde x3 a x9". Los tres de arriba reparten ese 9%.
         # TRES peldanos desde el 23-oct: +40% recupera, luego x2,35 y x3,36.
-        # CUATRO peldanos desde el 23-oct: el ultimo es el 4% a 400k de MC.
+        # SEIS peldanos desde el 29-oct: el TP1 recupera el capital y los
+        # cinco de arriba son una cadena de +35% sobre el anterior.
         self.assertEqual(
-            [t.gain for t in escalera], [0.40, 1.35, 2.36, 12.314]
+            [t.gain for t in escalera], [0.40, 0.89, 1.5515, 2.4445, 3.6501, 5.2776]
         )
         # 0,50 + 0,41 = 0,91, asi que queda justo el 9% para x3/x6/x9.
         self.assertEqual(
-            [t.sell for t in escalera], [0.75, 0.095, 0.095, 0.04]
+            [t.sell for t in escalera], [0.75, 0.046, 0.046, 0.046, 0.046, 0.046]
         )
 
     def test_los_frenos_antirug_estan_activos(self) -> None:
