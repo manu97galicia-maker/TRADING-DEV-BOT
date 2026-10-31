@@ -50,6 +50,10 @@ filters:
   allow_mayhem: false
   require_mayhem: false
   ignorar_listas_de_devs: true
+  # La curva solo genera la candidata; la compra simulada se autoriza
+  # exclusivamente dentro de esta banda de market cap.
+  min_entry_mc: 8000
+  max_entry_mc: 13000
   min_holders: 8
   max_holder_pct: 0
   curva_96:
@@ -62,8 +66,8 @@ filters:
     min_compradores: 8
     min_compradores_ola: 3
     ventana_presion: 5.0
-    # Algo mas exigente: 70% mas SOL comprador que vendedor en 5 segundos.
-    min_presion_ratio: 1.7
+    # Un punto medio: 60% mas SOL comprador que vendedor en 5 segundos.
+    min_presion_ratio: 1.6
     min_compra_sol: 0.20
     vela_seg: 1.0
     max_subida_vela: 0.35
