@@ -63,3 +63,19 @@ def test_unica123_real_compra_el_20_por_ciento_del_sol_libre() -> None:
     assert trade["tope_compra_sol"] == 0.20
     assert trade["max_real_buys"] == 0
     assert trade["max_posiciones"] == 2
+
+
+def test_unica123_real_exige_holders_presion_y_sin_mecha() -> None:
+    """La curva sola no basta para autorizar una entrada real."""
+    config = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    filters = config["filters"]
+    curva = filters["curva_96"]
+
+    assert filters["min_holders"] == 5
+    assert curva["min_compradores"] == 8
+    assert curva["min_compradores_ola"] == 3
+    assert curva["ventana_presion"] == 5.0
+    assert curva["min_presion_ratio"] == 1.5
+    assert curva["min_compra_sol"] == 0.20
+    assert curva["vela_seg"] == 1.0
+    assert curva["max_subida_vela"] == 0.35

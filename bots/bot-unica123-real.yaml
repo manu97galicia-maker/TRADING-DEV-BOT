@@ -1162,7 +1162,8 @@ filters:
   no_repeat_name_min: 0
   max_holder_pct: 0.0
   max_dev_hold_pct: 0.0
-  min_holders: 0
+  # Al menos cinco cuentas con tokens fuera de la curva.
+  min_holders: 5
   holder_bypass_ratio: 0
 
   buy_on_dex_paid:
@@ -1383,8 +1384,12 @@ filters:
     max_compras: 0
     parar_tras_perdidas: 0
 
-    # Entrada desde 10 segundos y al menos 20 holders reales en cadena.
-    min_compradores: 0
+    # Demanda repartida: compradores totales y presión reciente.
+    min_compradores: 8
+    min_compradores_ola: 3
+    ventana_presion: 5.0
+    min_presion_ratio: 1.5
+    min_compra_sol: 0.20
     min_edad_seg: 0
     max_edad_seg: 0
 
@@ -1432,7 +1437,7 @@ filters:
     # de que subiera de 7,5K a 25K. Sin esto, eso puede repetirse.
     #
     # Para volver a encenderlo basta poner un numero aqui; con 0 no corre.
-    max_subida_vela: 0
+    max_subida_vela: 0.35
 
     # Por peticion expresa, las señales de bundle no bloquean la compra.
     exigir_ver_creacion: false

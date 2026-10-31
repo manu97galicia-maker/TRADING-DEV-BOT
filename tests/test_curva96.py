@@ -189,11 +189,46 @@ def test_una_mecha_vertical_de_un_segundo_no_se_compra() -> None:
     assert fuente._embudo["vela_1s"] == 1
 
 
-def test_sin_mecha_no_exige_presion_ni_volumen_reciente() -> None:
-    """Una vela normal pasa aunque no haya volumen reciente mínimo."""
+def test_una_vela_normal_pasa_el_filtro_anti_mecha() -> None:
+    """Una subida normal no se confunde con un pump vertical."""
     fuente = _fuente()
     with patch.object(volumen, "subida", return_value=0.10):
         assert fuente._sin_mecha_vertical("mint", "LIMPIA") is True
+
+
+def test_la_presion_reciente_debe_superar_los_minimos() -> None:
+    """Una curva alta sin demanda actual no se manda a comprar."""
+    fuente = _fuente(
+        min_compradores_ola=3,
+        ventana_presion=5.0,
+        min_presion_ratio=1.5,
+        min_compra_sol=0.20,
+    )
+    metricas = {
+        "ola_compradores": 2,
+        "ola_compra_sol": 0.19,
+        "ola_venta_sol": 0.15,
+    }
+    with patch.object(volumen, "metricas_segunda_ola", return_value=metricas):
+        assert fuente._presion_suficiente("mint", "FLOJA") is False
+    assert fuente._embudo["sin_presion"] == 1
+
+
+def test_presion_repartida_y_superior_a_ventas_pasa() -> None:
+    """Tres compradores y ratio suficiente permiten continuar."""
+    fuente = _fuente(
+        min_compradores_ola=3,
+        ventana_presion=5.0,
+        min_presion_ratio=1.5,
+        min_compra_sol=0.20,
+    )
+    metricas = {
+        "ola_compradores": 3,
+        "ola_compra_sol": 0.30,
+        "ola_venta_sol": 0.10,
+    }
+    with patch.object(volumen, "metricas_segunda_ola", return_value=metricas):
+        assert fuente._presion_suficiente("mint", "FUERTE") is True
 
 
 # ------------------------------------------------------------ umbral y disparo

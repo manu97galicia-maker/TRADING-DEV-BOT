@@ -33,15 +33,19 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
-from collections.abc import Awaitable, Callable
 from time import monotonic
+from typing import TYPE_CHECKING
 
 import websockets
 
-from interfaces.core import TokenInfo
 from monitoring import volumen
 from trading.token_builder import build_pumpfun_token_info
 from utils.logger import get_logger
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
+    from interfaces.core import TokenInfo
 
 logger = get_logger(__name__)
 
@@ -356,7 +360,44 @@ class Curva96Source:
             return False
         return True
 
-    async def _evaluar(
+    def _presion_suficiente(self, mint: str, symbol: str) -> bool:
+        """Exige demanda reciente repartida y superior a las ventas."""
+        metricas = volumen.metricas_segunda_ola(
+            mint,
+            ventana=self.ventana_presion,
+        )
+        compradores = int(metricas.get("ola_compradores", 0) or 0)
+        compra = float(metricas.get("ola_compra_sol", 0) or 0)
+        venta = float(metricas.get("ola_venta_sol", 0) or 0)
+        ratio = compra / venta if venta > 0 else (float("inf") if compra > 0 else 0)
+
+        suficiente = (
+            compradores >= self.min_compradores_ola
+            and compra >= self.min_compra_sol
+            and ratio >= self.min_presion_ratio
+        )
+        if suficiente:
+            return True
+
+        logger.info(
+            "Evitado %s (%s): presión insuficiente en %.1fs — %d compradores, "
+            "%.2f SOL compra, %.2f SOL venta, ratio %.2fx; mínimos %d, %.2f "
+            "SOL y %.2fx",
+            symbol,
+            mint,
+            self.ventana_presion,
+            compradores,
+            compra,
+            venta,
+            ratio,
+            self.min_compradores_ola,
+            self.min_compra_sol,
+            self.min_presion_ratio,
+        )
+        self._cuenta("sin_presion")
+        return False
+
+    async def _evaluar(  # noqa: PLR0911
         self, mint: str, token_callback: Callable[[TokenInfo], Awaitable[None]]
     ) -> None:
         """Comprueba una moneda que acaba de cruzar el umbral y la manda a comprar."""
@@ -365,9 +406,15 @@ class Curva96Source:
             return
         progreso, sol_curva = avance
 
-        # No persigue una subida vertical de un segundo. Fuera de esa mecha,
-        # la entrada ya no exige presión reciente ni un volumen mínimo en SOL.
+        # No persigue una subida vertical de un segundo.
         if not self._sin_mecha_vertical(mint, mint[:6]):
+            self._probadas.discard(mint)
+            return
+
+        # Una curva alta no basta: tiene que seguir entrando gente y SOL ahora,
+        # con mas compras que ventas. Si falla, puede volver a evaluarse en la
+        # siguiente operacion mientras siga dentro de la ventana de curva.
+        if not self._presion_suficiente(mint, mint[:6]):
             self._probadas.discard(mint)
             return
 
