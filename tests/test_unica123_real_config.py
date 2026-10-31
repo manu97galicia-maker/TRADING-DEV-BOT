@@ -62,7 +62,7 @@ def test_unica123_real_compra_el_20_por_ciento_del_sol_libre() -> None:
     assert trade["fraccion_base"] == "libre"
     assert trade["tope_compra_sol"] == 0.20
     assert trade["max_real_buys"] == 0
-    assert trade["max_posiciones"] == 2
+    assert trade["max_posiciones"] == 4
 
 
 def test_unica123_real_exige_holders_presion_y_sin_mecha() -> None:

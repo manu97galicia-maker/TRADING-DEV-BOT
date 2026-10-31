@@ -189,7 +189,7 @@ trade:
   # OJO CON EL NODO: `max_rps 8 x price_check_interval 1 / 2` da 4 posiciones
   # vigilables. Con 4 plazas se va al limite exacto; una quinta y el take
   # profit empezaria a reaccionar tarde sin que nada avisara.
-  max_posiciones: 2
+  max_posiciones: 4
   mayhem_max_perdidas: 0
 
   # Slippage alto en la compra: en una moneda que se esta moviendo, un margen
