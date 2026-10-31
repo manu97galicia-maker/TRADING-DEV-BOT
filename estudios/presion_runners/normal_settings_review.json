@@ -1,0 +1,180 @@
+{
+  "status": "review_only_not_applied",
+  "observed_at_utc": "2026-10-31 22:32:08 UTC",
+  "target": "/root/ai-bot/bots/bot-paper-presion50-24k.yaml",
+  "read_only_preparation": true,
+  "notes": [
+    "Este archivo no se carga en el bot y no ejecuta operaciones.",
+    "Entrada solicitada: 25% de la cartera, sujeta al nuevo tope propuesto de 0.30 SOL y la reserva de 0.03 SOL.",
+    "TP: 85% de tokens originales a +25%, 3% a +50%, 3% a +100%, 3% a +200%, 6% a +400%.",
+    "Stop inicial -35%, maximo cuatro posiciones y plazo de 600 segundos, como en la referencia.",
+    "Los filtros de entrada no cambian. Las subidas recientes de volumen/presion se prepararon para Mayhem simulado.",
+    "El primer TP busca recuperar capital; el neto efectivo debe cubrir compra y costes para considerarlo recuperado."
+  ],
+  "observed_baseline_subset": {
+    "trade": {
+      "fraccion_saldo": 0.15,
+      "fraccion_base": "cartera",
+      "tope_compra_sol": 0.2,
+      "min_reserve_sol": 0.03,
+      "max_posiciones": 4,
+      "take_profit_percentage": 0.25,
+      "take_profit_sell_percentage": 0.85,
+      "tp2_gain": 0.5,
+      "tp2_sell": 0.05,
+      "tp3_gain": 1,
+      "tp3_sell": 0.05,
+      "tp4_gain": 2,
+      "tp4_sell": 0.05,
+      "stop_loss_percentage": 0.35,
+      "stop_a_entrada_tras_tp": true,
+      "stop_al_tp_tras_tp": false,
+      "max_hold_time": 600
+    }
+  },
+  "operations": [
+    {
+      "op": "test",
+      "path": "/trade/fraccion_saldo",
+      "value": 0.15
+    },
+    {
+      "op": "test",
+      "path": "/trade/fraccion_base",
+      "value": "cartera"
+    },
+    {
+      "op": "test",
+      "path": "/trade/tope_compra_sol",
+      "value": 0.2
+    },
+    {
+      "op": "test",
+      "path": "/trade/min_reserve_sol",
+      "value": 0.03
+    },
+    {
+      "op": "test",
+      "path": "/trade/max_posiciones",
+      "value": 4
+    },
+    {
+      "op": "test",
+      "path": "/trade/take_profit_percentage",
+      "value": 0.25
+    },
+    {
+      "op": "test",
+      "path": "/trade/take_profit_sell_percentage",
+      "value": 0.85
+    },
+    {
+      "op": "test",
+      "path": "/trade/tp2_gain",
+      "value": 0.5
+    },
+    {
+      "op": "test",
+      "path": "/trade/tp2_sell",
+      "value": 0.05
+    },
+    {
+      "op": "test",
+      "path": "/trade/tp3_gain",
+      "value": 1
+    },
+    {
+      "op": "test",
+      "path": "/trade/tp3_sell",
+      "value": 0.05
+    },
+    {
+      "op": "test",
+      "path": "/trade/tp4_gain",
+      "value": 2
+    },
+    {
+      "op": "test",
+      "path": "/trade/tp4_sell",
+      "value": 0.05
+    },
+    {
+      "op": "test",
+      "path": "/trade/stop_loss_percentage",
+      "value": 0.35
+    },
+    {
+      "op": "test",
+      "path": "/trade/stop_a_entrada_tras_tp",
+      "value": true
+    },
+    {
+      "op": "test",
+      "path": "/trade/stop_al_tp_tras_tp",
+      "value": false
+    },
+    {
+      "op": "test",
+      "path": "/trade/max_hold_time",
+      "value": 600
+    },
+    {
+      "op": "replace",
+      "path": "/trade/fraccion_saldo",
+      "value": 0.25
+    },
+    {
+      "op": "replace",
+      "path": "/trade/tp2_sell",
+      "value": 0.03
+    },
+    {
+      "op": "replace",
+      "path": "/trade/tp3_sell",
+      "value": 0.03
+    },
+    {
+      "op": "replace",
+      "path": "/trade/tp4_sell",
+      "value": 0.03
+    },
+    {
+      "op": "add",
+      "path": "/trade/tp5_gain",
+      "value": 4
+    },
+    {
+      "op": "add",
+      "path": "/trade/tp5_sell",
+      "value": 0.06
+    },
+    {
+      "op": "replace",
+      "path": "/trade/tope_compra_sol",
+      "value": 0.3
+    }
+  ],
+  "preview_after_subset": {
+    "trade": {
+      "fraccion_saldo": 0.25,
+      "fraccion_base": "cartera",
+      "tope_compra_sol": 0.3,
+      "min_reserve_sol": 0.03,
+      "max_posiciones": 4,
+      "take_profit_percentage": 0.25,
+      "take_profit_sell_percentage": 0.85,
+      "tp2_gain": 0.5,
+      "tp2_sell": 0.03,
+      "tp3_gain": 1,
+      "tp3_sell": 0.03,
+      "tp4_gain": 2,
+      "tp4_sell": 0.03,
+      "stop_loss_percentage": 0.35,
+      "stop_a_entrada_tras_tp": true,
+      "stop_al_tp_tras_tp": false,
+      "max_hold_time": 600,
+      "tp5_gain": 4,
+      "tp5_sell": 0.06
+    }
+  }
+}
