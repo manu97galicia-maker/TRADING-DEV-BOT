@@ -45,6 +45,7 @@ def test_unica123_real_reparte_la_salida_completa() -> None:
         1.0,
     )
     assert trade["stop_a_entrada_tras_tp"] is True
+    assert trade["stop_loss_percentage"] == 0.30
     assert trade["margen_stop_tras_tp"] == 0
     assert trade["stop_al_tp_tras_tp"] is False
 

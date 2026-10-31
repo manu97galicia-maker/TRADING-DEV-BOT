@@ -416,7 +416,7 @@ trade:
   # Y AHORA SI PUEDE SALTAR, al reves que el 60% con la banda 2-5k: desde el
   # 93% de curva la moneda puede caer mucho mas del 32% antes de tocar el
   # suelo de la curva, asi que este stop es real.
-  stop_loss_percentage: 0.32
+  stop_loss_percentage: 0.30
   # EXPLICITO EL 15-oct, y no es cosmetica. El codigo hace
   # `float(trailing_stop_percentage or stop_loss_percentage or 0)`, asi que
   # el 0 NO apagaba el trailing: caia al stop_loss y ya valia 0,25. Funcionaba
