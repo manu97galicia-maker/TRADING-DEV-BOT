@@ -20,6 +20,7 @@ def test_solo_estan_los_dos_canales_pedidos() -> None:
     assert telegram["enabled"] is True
     assert telegram["channels"] == ["Wagbocooks", "LegendsAlphas"]
     assert telegram["suffixes"] == ["pump"]
+    assert telegram["session_name"] == "moontok_watcher"
 
 
 def test_las_calls_usan_quince_por_ciento_sin_importe_fijo() -> None:

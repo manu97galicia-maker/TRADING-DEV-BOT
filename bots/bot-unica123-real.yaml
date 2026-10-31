@@ -1183,7 +1183,10 @@ filters:
       - "LegendsAlphas"
     suffixes:
       - "pump"
-    session_name: "tg_wagbo_legends"
+    # Reutiliza la sesion Telethon ya autenticada en el droplet. Cambiar este
+    # nombre crearia una sesion vacia y el servicio no podria pedir el codigo
+    # interactivo de Telegram durante el arranque.
+    session_name: "moontok_watcher"
     balance_fraction: 0.15
     normal_buy_amount: 0
     nitro_buy_amount: 0
