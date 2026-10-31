@@ -165,7 +165,11 @@ def test_la_rama_libre_se_abre_tambien_con_solo_la_escalera() -> None:
     Poniendo solo `fracciones_saldo` y el escalar en 0, el importe habria
     caido al `buy_amount` fijo y la escalera habria quedado muda.
     """
-    assert "self.fraccion_saldo > 0 or self.fracciones_saldo" in FUENTE
+    # Reescrito por Codex el 31-oct para que una fuente pueda pedir su propia
+    # fraccion del saldo (las calls de Telegram al 15%, mientras la curva
+    # sigue al 20%). La rama `libre` NO se quito: se comprobo leyendo el diff.
+    assert "_signal_fraction > 0" in FUENTE
+    assert "self.fracciones_saldo" in FUENTE
 
 
 def test_la_rama_libre_multiplica_por_el_peldano_no_por_el_escalar() -> None:
@@ -325,7 +329,11 @@ def test_el_suelo_de_compra_protege_la_orden_de_asegurar_el_capital() -> None:
     )
     # Y con holgura: justo en el limite, cualquier cambio de comisiones o de
     # TP lo deja del lado malo sin que nadie se entere.
-    assert suelo >= minimo_real * 2, (
+    # CON LA ESCALERA DE CODEX (31-oct) el minimo que devuelve el capital
+    # baja a 0,0272 SOL, porque su TP1 vende el 40% a +35% y el suelo tras el
+    # TP1 ya no sube (`margen_stop_tras_tp: 0`). El suelo de 0,04 sigue por
+    # encima, pero con mucho menos margen que antes.
+    assert suelo >= minimo_real * 1.4, (
         f"el suelo {suelo} esta a menos del doble del minimo real "
         f"({minimo_real:.5f}): demasiado al borde"
     )
@@ -339,7 +347,23 @@ def test_el_tope_de_compra_sigue_a_cero() -> None:
     peldano grande es el que mas se recorta.
     """
     trade = yaml.safe_load(C123.read_text(encoding="utf-8"))["trade"]
-    assert trade["tope_compra_sol"] == 0
+    # EL TOPE VOLVIO EL 31-oct, PUESTO POR CODEX, y Manu decidio quedarse con
+    # su configuracion. Queda escrito lo que hace, porque es justo lo que este
+    # guardian vigilaba:
+    #
+    #     tope_compra_sol: 0,20  ·  fraccion_saldo: 0,20
+    #     -> el tope MUERDE en cuanto el saldo libre pasa de 1,00 SOL
+    #
+    # Por encima de ese saldo las compras dejan de ser el 20% y se quedan
+    # planas en 0,20 SOL. Ya paso el 15-oct con otro tope y otro porcentaje.
+    assert trade["tope_compra_sol"] == 0.20
+    # Y QUE SE SEPA DONDE EMPIEZA A MORDER: si alguien cambia uno de los dos
+    # numeros, este calculo lo dice en vez de dejarlo pasar.
+    muerde_desde = trade["tope_compra_sol"] / trade["fraccion_saldo"]
+    assert muerde_desde == pytest.approx(1.00, abs=0.01), (
+        f"el tope deja de ser el {trade['fraccion_saldo'] * 100:.0f}% en "
+        f"cuanto el saldo libre pasa de {muerde_desde:.2f} SOL"
+    )
 
 
 def test_la_reserva_da_para_las_ventas_protegidas() -> None:

@@ -94,36 +94,27 @@ def test_unica123_recoge_iniciales_al_mas_40_y_deja_correr_el_resto() -> None:
     #
     # Y "DESDE x3 A x9" se reparte en tres escalones iguales en vez de
     # jugarselo a un punto: si la moneda se para en x4, el x3 ya cobro.
-    assert [t.gain for t in tiers] == [0.40, 0.89, 1.5515, 2.4445, 3.6501, 5.2776]
-    assert [t.sell for t in tiers] == [0.75, 0.046, 0.046, 0.046, 0.046, 0.046]
+    # ESCALERA DE CODEX (31-oct), que Manu decidio conservar.
+    assert [t.gain for t in tiers] == [0.35, 0.73]
+    assert [t.sell for t in tiers] == [0.40, 0.50]
 
-    # CADA PELDANO ES EL ANTERIOR x 1,35, pedido el 29-oct ("vas soltando el
-    # profit que sobra cada 35% respecto de la subida anterior"). Se
-    # comprueba la RELACION, no los numeros sueltos: asi, si alguien mueve
-    # uno, se ve que la cadena se ha roto en vez de recalcularla a mano.
-    for anterior, siguiente in zip(tiers[:-1], tiers[1:], strict=True):
-        razon = (1 + siguiente.gain) / (1 + anterior.gain)
-        assert razon == pytest.approx(1.35, abs=0.001), (
-            f"de x{1 + anterior.gain:.2f} a x{1 + siguiente.gain:.2f} hay "
-            f"un x{razon:.3f}, y la cadena pedida es de x1,35"
-        )
-    # EL 75% DEL PRIMERO NO ES LIBRE: es lo que hace falta para que el TP1
-    # SOLO devuelva el capital (0,75 x 1,40 x 0,99 = 1,0395 contra 1,01 de
-    # entrar). Vender menos y seguir llamandolo "recoge iniciales" seria
-    # mentira. Si alguien mueve el 40% o el 75%, esto salta.
-    assert tiers[0].sell * (1 + tiers[0].gain) * 0.99 >= 1.01, (
-        "el primer peldano ya no devuelve el capital: deja de ser el que "
-        "recoge iniciales"
+    # EL TP1 DE ESTA ESCALERA NO DEVUELVE EL CAPITAL, y queda escrito porque
+    # es lo contrario de lo que hacia la anterior: vender el 40% a +35% cobra
+    # 0,5346 por cada 1,0100 que cuesta entrar. Y `margen_stop_tras_tp` esta
+    # en 0, asi que tras cobrar el TP1 el suelo NO sube. Las dos cosas juntas
+    # significan que una operacion puede cobrar el primer peldano y aun asi
+    # acabar en perdida.
+    assert tiers[0].sell * (1 + tiers[0].gain) * 0.99 < 1.01, (
+        "el TP1 ya devuelve el capital: entonces este aviso sobra y hay que "
+        "volver a exigirlo como propiedad, no documentarlo como ausencia"
     )
     # EL 2% QUE NO SE VENDE ES DELIBERADO, pedido el 23-oct ("el 2% restante
     # hold"). Antes del 23-oct la escalera vendia el 100% y este guardian
     # exigia justo eso; ahora exige el 98% exacto, para que ese 2% no se
     # convierta en 5 ni en 0 por un descuido de reparto.
-    assert sum(t.sell for t in tiers) == pytest.approx(0.98), (
-        "la escalera tiene que vender el 98%: el 2% restante es el hold "
-        "perpetuo pedido, ni mas ni menos"
-    )
-    assert moonbag_fraction(tiers) == pytest.approx(0.02, abs=1e-9)
+    # CODEX DEJA UN 10% SIN VENDER (31-oct), no el 2% de antes.
+    assert sum(t.sell for t in tiers) == pytest.approx(0.90)
+    assert moonbag_fraction(tiers) == pytest.approx(0.10, abs=1e-9)
     # EL PELDANO DE LOS 400k SE CAYO EL 29-oct, y queda dicho: el bot admite
     # SIETE peldanos como mucho (TP1 mas tp2..tp6) y la cadena del 35% los
     # ocupa todos. Para recuperarlo habria que quitar uno de la cadena.
@@ -135,7 +126,7 @@ def test_unica123_recoge_iniciales_al_mas_40_y_deja_correr_el_resto() -> None:
     # no queda moonbag: a x4 se cierra la posicion.
     # EL 2% ES EL HOLD PEDIDO EL 23-oct, no un resto olvidado. Hasta ese dia
     # la escalera vendia el 100% y aqui se exigia moonbag cero.
-    assert moonbag_fraction(tiers) == pytest.approx(0.02, abs=1e-9)
+    assert moonbag_fraction(tiers) == pytest.approx(0.10, abs=1e-9)
 
     assert trade["stop_a_entrada_tras_tp"] is True
     assert trade["stop_al_tp_tras_tp"] is False
@@ -144,9 +135,10 @@ def test_unica123_recoge_iniciales_al_mas_40_y_deja_correr_el_resto() -> None:
     # solo embolsa 0,7425, por debajo del 1,0100 que cuesta entrar.
     # 10% desde el 23-oct, pedido: "si salto el tp1 el nuevo sl se mueve a
     # precio inicial +10%". Venia del 15%.
-    assert trade["margen_stop_tras_tp"] == 0.10
-    assert stepped_stop_price(ENTRADA, tiers, 0, 0.10) == pytest.approx(1.10), (
-        "tras el TP1 el suelo tiene que quedar en la entrada +10% exacto"
+    # Codex lo dejo en 0: tras el TP1 el suelo NO sube (31-oct).
+    assert trade["margen_stop_tras_tp"] == 0
+    assert stepped_stop_price(ENTRADA, tiers, 0, 0) == pytest.approx(1.00), (
+        "con margen 0 el suelo se queda en la entrada, sin asegurar nada"
     )
 
     # 60% desde el 18-oct, pedido ("stop loss 60%"). Venia del 25%.
@@ -158,7 +150,7 @@ def test_unica123_recoge_iniciales_al_mas_40_y_deja_correr_el_resto() -> None:
     # protege de un volcado en esta banda es el anti-rug, no el stop.
     # 32% desde el 23-oct ("sl 32%"). Venia del 60%, que con la banda 2-5k
     # no podia ni saltar. Desde el 93% de curva este si es un stop real.
-    assert trade["stop_loss_percentage"] == 0.32
+    assert trade["stop_loss_percentage"] == 0.30  # Codex, 31-oct
     # El trailing protege al corredor y ahora esta ESCRITO, no heredado del
     # stop por el respaldo `trailing_stop_percentage or stop_loss_percentage`.
     assert trade["trailing_stop_percentage"] == 0.25
@@ -568,10 +560,17 @@ def test_la_entrada_del_c123_da_para_cobrar_el_primer_peldano() -> None:
         f"NINGUN peldano cabe en el +{techo * 100:.1f}% que queda hasta "
         "migrar: la escalera no cobraria en ningun sitio"
     )
-    assert sum(t.sell for t in cobrables) >= 0.5, (
-        "los peldanos alcanzables dentro de la curva venden menos de la "
-        "mitad: casi todo quedaria colgado de que la moneda migre"
-    )
+    # CON LA ESCALERA DE CODEX ESTO YA NO SE CUMPLE, y queda escrito en vez
+    # de bajarse el liston: entrando al 93% solo cabe el TP1 dentro de la
+    # curva, y vende el 40%. El 60% restante depende de que la moneda migre.
+    # El corte sigue existiendo para cualquier otra configuracion; esta pasa
+    # porque el YAML lo reconoce.
+    if sum(t.sell for t in cobrables) < 0.5:
+        assert "DEPENDE DE QUE MIGRE" in REAL_CONFIG.read_text(encoding="utf-8"), (
+            "los peldanos alcanzables dentro de la curva venden menos de la "
+            "mitad y el YAML no lo reconoce: casi todo quedaria colgado de "
+            "que la moneda migre"
+        )
 
 
 def test_las_cifras_del_ejemplo_del_yaml_son_de_verdad() -> None:
@@ -598,11 +597,11 @@ def test_las_cifras_del_ejemplo_del_yaml_son_de_verdad() -> None:
     #
     # (compra, cuesta, TP1, resto, total) tal y como estan en el yaml
     for compra, cuesta_esc, tp1_esc, resto_esc, total_esc in (
-        (0.19700, "0,20016", "0,20376", "0,05262", "0,25638"),
-        (0.15760, "0,16036", "0,16281", "0,04189", "0,20470"),
-        (0.12608, "0,12853", "0,13004", "0,03331", "0,16335"),
-        (0.10086, "0,10306", "0,10383", "0,02644", "0,13027"),
-        (0.04000, "0,04159", "0,04056", "0,00987", "0,05043"),
+        (0.19700, "0,20016", "0,10430", "0,11600", "0,22030"),
+        (0.15760, "0,16036", "0,08324", "0,09260", "0,17583"),
+        (0.12608, "0,12853", "0,06638", "0,07387", "0,14026"),
+        (0.10086, "0,10306", "0,05290", "0,05889", "0,11180"),
+        (0.04000, "0,04159", "0,02037", "0,02274", "0,04311"),
     ):
         cuesta = compra * 1.01 + fee_compra
         tp1 = f * compra * (1 + g) * 0.99 - fee_venta

@@ -130,7 +130,13 @@ def test_las_dos_bases_existen_y_la_elige_el_yaml() -> None:
     estaba, se habria puesto rojo pidiendo la version vieja de una linea que
     Manu mando cambiar.
     """
-    assert "cartera / LAMPORTS_PER_SOL * self.fraccion_saldo" in FUENTE
+    # ACTUALIZADO EL 31-oct. Codex reescribio esta rama para que una fuente
+    # pueda pedir SU PROPIA fraccion del saldo (las calls de Telegram al 15%,
+    # mientras la curva sigue al 20%). La base `cartera` NO se quito: se
+    # comprobo leyendo el diff. Lo unico que cambio es el nombre de la
+    # variable, de `self.fraccion_saldo` a `_frac`, que ahora puede venir de
+    # la senal o del YAML.
+    assert "cartera / LAMPORTS_PER_SOL * _frac" in FUENTE
     assert "free / LAMPORTS_PER_SOL * _frac" in FUENTE
     assert "cartera = bal + _dentro" in FUENTE
     # Y la que se usa la decide el yaml, no el codigo.

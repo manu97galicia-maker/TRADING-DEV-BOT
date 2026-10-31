@@ -143,6 +143,14 @@ def _bot_encendido() -> tuple[str, dict]:
         # Solana.
         if fichero.name.startswith("bot-bsc-"):
             continue
+        # Y LOS DE PAPEL TAMPOCO. El 31-oct entraron varios
+        # (`bot-paper-presion*`, `bot-paper-mayhem-24k`) que no llevan
+        # algunos bloques de un bot real. Estos guardianes existen para
+        # proteger DINERO, y en papel no hay ninguno que proteger: lo que
+        # vigilan --la comision de la venta protectora, los frenos de
+        # calidad-- solo cuesta dinero donde se opera de verdad.
+        if "paper" in fichero.name:
+            continue
         cfg = yaml.safe_load(fichero.read_text(encoding="utf-8")) or {}
         if cfg.get("enabled", True):
             return fichero.name, cfg

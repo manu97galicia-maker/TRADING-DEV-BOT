@@ -210,15 +210,10 @@ class MayhemRoi50Tests(unittest.TestCase):
         # CINCO peldanos desde el 19-oct: "tp ok pero deja un 9% y vendes
         # desde x3 a x9". Los tres de arriba reparten ese 9%.
         # TRES peldanos desde el 23-oct: +40% recupera, luego x2,35 y x3,36.
-        # SEIS peldanos desde el 29-oct: el TP1 recupera el capital y los
-        # cinco de arriba son una cadena de +35% sobre el anterior.
-        self.assertEqual(
-            [t.gain for t in escalera], [0.40, 0.89, 1.5515, 2.4445, 3.6501, 5.2776]
-        )
-        # 0,50 + 0,41 = 0,91, asi que queda justo el 9% para x3/x6/x9.
-        self.assertEqual(
-            [t.sell for t in escalera], [0.75, 0.046, 0.046, 0.046, 0.046, 0.046]
-        )
+        # ESCALERA DE CODEX, 31-oct, que Manu decidio conservar: dos
+        # peldanos y un 10% que no se vende. Sustituye a la cadena del 35%.
+        self.assertEqual([t.gain for t in escalera], [0.35, 0.73])
+        self.assertEqual([t.sell for t in escalera], [0.40, 0.50])
 
     def test_los_frenos_antirug_estan_activos(self) -> None:
         """Comprando al nacer, el rug es el riesgo principal.

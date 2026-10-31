@@ -51,6 +51,14 @@ def _bot_encendido() -> tuple[str, dict]:
         # Solana.
         if fichero.name.startswith("bot-bsc-"):
             continue
+        # Y LOS DE PAPEL TAMPOCO. El 31-oct entraron varios
+        # (`bot-paper-presion*`, `bot-paper-mayhem-24k`) que no llevan
+        # algunos bloques de un bot real. Estos guardianes existen para
+        # proteger DINERO, y en papel no hay ninguno que proteger: lo que
+        # vigilan --la comision de la venta protectora, los frenos de
+        # calidad-- solo cuesta dinero donde se opera de verdad.
+        if "paper" in fichero.name:
+            continue
         cfg = yaml.safe_load(fichero.read_text(encoding="utf-8")) or {}
         if cfg.get("enabled", True):
             return fichero.name, cfg
@@ -219,6 +227,15 @@ def test_nada_recorta_en_silencio_el_porcentaje_por_compra() -> None:
 
     #: Saldo por encima del cual el tope empieza a mandar en vez del %.
     corte = tope / frac
+    # EL CORTE NO SE RELAJA: se exige que la decision este ESCRITA en el YAML.
+    # El 31-oct Codex volvio a poner este tope y Manu decidio quedarse con su
+    # configuracion, asi que el YAML lo reconoce con esa frase. Si alguien
+    # vuelve a poner un tope que anule el porcentaje SIN QUERER --que es lo
+    # que paso el 15-oct y costo pedirlo dos veces-- esto sigue saltando.
+    if "TOPE ACEPTADO A SABIENDAS" in (RAIZ / "bots" / nombre).read_text(
+        encoding="utf-8"
+    ):
+        return
     raise AssertionError(
         f"{nombre}: se compra el {frac:.0%} del saldo PERO `tope_compra_sol` "
         f"esta en {tope} SOL. A partir de {corte:.2f} SOL de saldo libre el "

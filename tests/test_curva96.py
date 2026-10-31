@@ -271,7 +271,13 @@ def test_sin_ver_la_creacion_no_se_compra() -> None:
     """Se deja pasar en vez de comprar sin poder mirar si es un bundle."""
     mint, clave = _nueva_moneda(45)
     volumen.registrar_logs([_evento(mint, 1.0, bytes([5]) * 32, int(INICIAL * 0.03))])
-    fuente = _fuente()
+    # LA PRESION SE APAGA AQUI A PROPOSITO. El 31-oct Codex anadio un chequeo
+    # de presion ANTES del de "no se vio nacer", y con sus valores por defecto
+    # (8 compradores, 1 SOL, ratio 2,0) esta moneda se descarta por presion y
+    # nunca llega a la puerta que este test vigila. La proteccion de "sin ver
+    # la creacion" sigue existiendo (curva96_source.py:421); lo que cambio es
+    # el orden.
+    fuente = _fuente(min_compradores_ola=0, min_compra_sol=0, min_presion_ratio=0)
     comprada: list[object] = []
     asyncio.run(fuente._evaluar(clave, lambda ti: comprada.append(ti)))
     assert comprada == []

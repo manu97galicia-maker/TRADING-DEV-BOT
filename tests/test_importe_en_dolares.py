@@ -141,7 +141,7 @@ def test_sin_precio_confirmado_no_se_compra() -> None:
     podrian comprar.
     """
     trozo = FUENTE[FUENTE.index("if self.buy_amount_usd > 0:"):]
-    trozo = trozo[: trozo.index("elif self.fraccion_saldo > 0:")]
+    trozo = trozo[: trozo.index("elif _signal_fraction > 0 or self.fraccion_saldo > 0:")]
     assert "if _sol_usd == _ARRANQUE_SOL_USD:" in trozo
     assert "_suelta_moneda(_mint_str)" in trozo
     assert "return" in trozo

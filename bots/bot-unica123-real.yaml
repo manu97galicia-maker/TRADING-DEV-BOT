@@ -127,6 +127,17 @@ trade:
   # 0 = sin tope (el codigo hace `if _tope > 0 and _importe > _tope`).
   # Quien frena ahora es el propio 25%, que mengua con cada compra porque
   # la base es el saldo LIBRE.
+  # TOPE ACEPTADO A SABIENDAS (31-oct). Lo puso Codex y Manu decidio
+  # quedarse con su configuracion entera. Queda escrito lo que hace:
+  #
+  #     tope_compra_sol 0,20  ·  fraccion_saldo 0,20
+  #     -> a partir de 1,00 SOL de saldo libre el porcentaje DEJA DE MANDAR
+  #        y cada compra se queda plana en 0,20 SOL
+  #
+  # ES EL MISMO FALLO DEL 15-oct, que costo pedirlo dos veces para verlo: se
+  # pidio el 25% del saldo y este tope seguia en 0,20, asi que por encima de
+  # 0,81 SOL se compraban 0,20 fijos. No fallaba nada ni lo decia el log.
+  # Hoy no es un descuido: es una decision, y por eso se acepta.
   tope_compra_sol: 0.20
   nombre_estrategia: "unica123-real"
   escala_por_sol_ganado: 0
@@ -300,16 +311,16 @@ trade:
   # LO QUE SE COBRA SI TODO VA BIEN, con los tamanos que da el 25%:
   #
   #     compra     cuesta      TP1      resto     total      sobra
-  #     0,19700   0,20016   0,20376   0,05262   0,25638   +0,05622
-  #     0,15760   0,16036   0,16281   0,04189   0,20470   +0,04433
-  #     0,12608   0,12853   0,13004   0,03331   0,16335   +0,03482
-  #     0,10086   0,10306   0,10383   0,02644   0,13027   +0,02721
-  #     0,04000   0,04159   0,04056   0,00987   0,05043   +0,00885
+  #     0,19700   0,20016   0,10430   0,11600   0,22030   +0,02014
+  #     0,15760   0,16036   0,08324   0,09260   0,17583   +0,01547
+  #     0,12608   0,12853   0,06638   0,07387   0,14026   +0,01173
+  #     0,10086   0,10306   0,05290   0,05889   0,11180   +0,00874
+  #     0,04000   0,04159   0,02037   0,02274   0,04311   +0,00152
   #
-  # OJO CON LA ULTIMA FILA: con el suelo de compra en 0,04 el TP1 SOLO NO
-  # llega (0,04056 contra 0,04159). Para que el TP1 se baste por si mismo
-  # haria falta un suelo de 0,0748 SOL. Por debajo de eso el capital se
-  # recupera solo si TAMBIEN se ejecuta la venta del suelo subido.
+  # TABLA RECALCULADA EL 31-oct CON LOS NUMEROS DE CODEX. La columna "resto"
+  # ya no es el remanente saliendo por un suelo subido --`margen_stop_tras_tp`
+  # esta en 0-- sino saliendo A LA ENTRADA. Por eso el sobrante cae tanto:
+  # antes eran +0,056 en la compra grande y ahora son +0,020.
   take_profit_percentage: 0.35
   take_profit_sell_percentage: 0.40
   # x4 = +300%. VENDE LO QUE QUEDE (el `sell` es sobre la posicion original y
