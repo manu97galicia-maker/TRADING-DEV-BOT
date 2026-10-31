@@ -4988,6 +4988,18 @@ class UniversalTrader:
                     bal = await self.solana_client.get_sol_balance(self.wallet.pubkey)
                     # Nunca gastar por debajo de la reserva mínima (min_reserve).
                     free = bal - self._reserved_lamports - self.min_reserve_lamports
+                    # Una fuente puede pedir su propia fracción del saldo. Es
+                    # el caso de las calls de Telegram: 15%, mientras la curva
+                    # sigue con el 20% global. Se decide dentro del cerrojo de
+                    # gasto para que dos calls simultáneas no calculen ambas
+                    # contra el mismo saldo.
+                    _signal_fraction = max(
+                        0.0,
+                        min(
+                            1.0,
+                            float(signal_data.get("balance_fraction") or 0),
+                        ),
+                    )
                     # EL TAMANO SALE DEL SALDO. Se calcula aqui dentro, con el
                     # saldo recien leido y bajo el mismo cerrojo que lo reserva:
                     # calculado fuera, dos compras a la vez pedirian cada una el
@@ -5042,7 +5054,9 @@ class UniversalTrader:
                             free / LAMPORTS_PER_SOL,
                         )
                     elif (
-                        self.fraccion_saldo > 0 or self.fracciones_saldo
+                        _signal_fraction > 0
+                        or self.fraccion_saldo > 0
+                        or self.fracciones_saldo
                     ) and self.fraccion_base == "libre":
                         # SOBRE EL SALDO LIBRE (24-sep, pedido: "cada compra
                         # sera del 15% del total de sol libre").
@@ -5057,7 +5071,10 @@ class UniversalTrader:
                         # tamano se frena solo y nunca se llega a comprometer
                         # la cartera entera. Es el freno automatico que se
                         # perdio al pasar a la base "cartera" el 23-sep.
-                        _frac, _peldano = self._fraccion_de_esta_compra()
+                        if _signal_fraction > 0:
+                            _frac, _peldano = _signal_fraction, 0
+                        else:
+                            _frac, _peldano = self._fraccion_de_esta_compra()
                         _importe = max(0.0, free / LAMPORTS_PER_SOL * _frac)
                         if _tope > 0 and _importe > _tope:
                             _importe = _tope
@@ -5071,10 +5088,10 @@ class UniversalTrader:
                             _importe,
                             _frac * 100,
                             f", peldano {_peldano + 1} de {len(self.fracciones_saldo)}"
-                            if self.fracciones_saldo
+                            if self.fracciones_saldo and _signal_fraction <= 0
                             else "",
                         )
-                    elif self.fraccion_saldo > 0:
+                    elif _signal_fraction > 0 or self.fraccion_saldo > 0:
                         # SOBRE LA CARTERA ENTERA, no sobre el saldo libre
                         # (23-sep, pedido: "sobre el portfolio total").
                         #
@@ -5096,9 +5113,8 @@ class UniversalTrader:
                         # jugado a la vez.
                         _dentro = self._valor_en_posiciones_lamports()
                         cartera = bal + _dentro
-                        _importe = max(
-                            0.0, cartera / LAMPORTS_PER_SOL * self.fraccion_saldo
-                        )
+                        _frac = _signal_fraction or self.fraccion_saldo
+                        _importe = max(0.0, cartera / LAMPORTS_PER_SOL * _frac)
                         if _tope > 0 and _importe > _tope:
                             _importe = _tope
                         need = int(
@@ -5112,7 +5128,7 @@ class UniversalTrader:
                             _dentro / LAMPORTS_PER_SOL,
                             free / LAMPORTS_PER_SOL,
                             _importe,
-                            self.fraccion_saldo * 100,
+                            _frac * 100,
                         )
                     # SUELO DE COMPRA. Los costes fijos --renta de la cuenta de
                     # token y comision de prioridad-- no bajan con el tamano:

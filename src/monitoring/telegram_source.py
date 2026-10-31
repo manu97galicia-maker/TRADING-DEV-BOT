@@ -122,12 +122,17 @@ class TelegramSource:
                 signal_amount, nitro_score = _telegram_signal_amount(
                     call.get("text", ""), self._config, source=source
                 )
+                balance_fraction = max(
+                    0.0,
+                    min(1.0, float(self._config.get("balance_fraction", 0) or 0)),
+                )
                 token_info.additional_data = {
                     **(token_info.additional_data or {}),
                     "acquisition_kind": "telegram",
                     "acquisition_source": source,
                     "dextools_nitro_score": nitro_score,
                     "signal_buy_amount": signal_amount,
+                    "balance_fraction": balance_fraction,
                 }
             _log_call(call, bought=token_info is not None)
             if token_info is not None:

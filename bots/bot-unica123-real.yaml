@@ -1169,6 +1169,26 @@ filters:
   buy_on_dex_paid:
     enabled: false
 
+  # CALLS DE TELEGRAM (31-oct): Wagbocooks y LegendsAlphas. Cada call usa
+  # el 15% del SOL libre en ese instante; la curva conserva su 20%. El tope
+  # duro global de 0,20 SOL y las cuatro plazas simultaneas siguen mandando.
+  # `signal_buy_amount: 0` evita que un importe fijo pise el porcentaje.
+  # La deduplicacion persistente y la reserva atomica por mint impiden que la
+  # misma moneda se compre dos veces, incluso si ambos canales la publican a
+  # la vez o si el proceso se reinicia.
+  telegram_calls:
+    enabled: true
+    channels:
+      - "Wagbocooks"
+      - "LegendsAlphas"
+    suffixes:
+      - "pump"
+    session_name: "tg_wagbo_legends"
+    balance_fraction: 0.15
+    normal_buy_amount: 0
+    nitro_buy_amount: 0
+    promoted_buy_amount: 0
+
   # UNICA FUENTE DE ENTRADA: una curva de pump.fun alcanza el 93%. Al existir
   # una fuente de adquisicion activa, el
   # listener normal de monedas nuevas no abre operaciones por su cuenta.
