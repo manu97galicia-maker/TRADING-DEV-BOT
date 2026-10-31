@@ -1,0 +1,440 @@
+{
+  "generated_at": "2026-10-31T22:20:41.851799+00:00",
+  "mode": "synthetic_scenarios_not_backtest",
+  "disclaimer": "Paths are invented, not equally likely observations. No win rate, expected profit or frequency is inferred. Costs are estimates; stop execution is not guaranteed.",
+  "initial_capital_recovery_checkpoint": {
+    "stake_sol": 0.1,
+    "entry_cost_sol": 0.1013,
+    "cash_received_sol": 0.1027734375,
+    "cash_minus_entry_cost_sol": 0.0014734374999999938,
+    "status": "capital_cubierto_en_modelo",
+    "cost_source": "estimated_paper_cash_flows",
+    "estimated_remaining_exit_fees_sol": 0.0002,
+    "cash_surplus_after_estimated_costs_sol": 0.001273437,
+    "capital_shortfall_sol": 0.0,
+    "initial_capital_recovered_in_model": true,
+    "runner_only_in_model": true,
+    "closed": false,
+    "net_sol": null,
+    "remaining_fraction": 0.15000000000000002,
+    "stop_multiple_of_entry": 1.0,
+    "sales": [
+      {
+        "reason": "tp1",
+        "fraction": 0.85,
+        "quote": 1.275,
+        "net_receipt_sol": 0.1027734375
+      }
+    ]
+  },
+  "scenarios": {
+    "stop_before_profit": {
+      "baseline": {
+        "stake_sol": 0.1,
+        "entry_cost_sol": 0.1013,
+        "cash_received_sol": 0.058015,
+        "cash_minus_entry_cost_sol": -0.043285000000000004,
+        "status": "capital_pendiente_en_modelo",
+        "cost_source": "estimated_paper_cash_flows",
+        "estimated_remaining_exit_fees_sol": 0.0,
+        "cash_surplus_after_estimated_costs_sol": -0.043285,
+        "capital_shortfall_sol": 0.043285,
+        "initial_capital_recovered_in_model": false,
+        "runner_only_in_model": false,
+        "closed": true,
+        "net_sol": -0.043285,
+        "remaining_fraction": 0.0,
+        "stop_multiple_of_entry": 0.65,
+        "sales": [
+          {
+            "reason": "stop",
+            "fraction": 1.0,
+            "quote": 0.612,
+            "net_receipt_sol": 0.058015
+          }
+        ]
+      },
+      "candidate": {
+        "stake_sol": 0.1,
+        "entry_cost_sol": 0.1013,
+        "cash_received_sol": 0.058015,
+        "cash_minus_entry_cost_sol": -0.043285000000000004,
+        "status": "capital_pendiente_en_modelo",
+        "cost_source": "estimated_paper_cash_flows",
+        "estimated_remaining_exit_fees_sol": 0.0,
+        "cash_surplus_after_estimated_costs_sol": -0.043285,
+        "capital_shortfall_sol": 0.043285,
+        "initial_capital_recovered_in_model": false,
+        "runner_only_in_model": false,
+        "closed": true,
+        "net_sol": -0.043285,
+        "remaining_fraction": 0.0,
+        "stop_multiple_of_entry": 0.65,
+        "sales": [
+          {
+            "reason": "stop",
+            "fraction": 1.0,
+            "quote": 0.612,
+            "net_receipt_sol": 0.058015
+          }
+        ]
+      },
+      "candidate_minus_baseline_net_sol": 0.0
+    },
+    "below_first_tp_then_return_to_entry": {
+      "baseline": {
+        "stake_sol": 0.1,
+        "entry_cost_sol": 0.1013,
+        "cash_received_sol": 0.09575725000000002,
+        "cash_minus_entry_cost_sol": -0.005542749999999985,
+        "status": "capital_pendiente_en_modelo",
+        "cost_source": "estimated_paper_cash_flows",
+        "estimated_remaining_exit_fees_sol": 0.0,
+        "cash_surplus_after_estimated_costs_sol": -0.00554275,
+        "capital_shortfall_sol": 0.00554275,
+        "initial_capital_recovered_in_model": false,
+        "runner_only_in_model": false,
+        "closed": true,
+        "net_sol": -0.00554275,
+        "remaining_fraction": 0.0,
+        "stop_multiple_of_entry": 0.65,
+        "sales": [
+          {
+            "reason": "timeout",
+            "fraction": 1.0,
+            "quote": 1.0098,
+            "net_receipt_sol": 0.09575725000000002
+          }
+        ]
+      },
+      "candidate": {
+        "stake_sol": 0.1,
+        "entry_cost_sol": 0.1013,
+        "cash_received_sol": 0.09575725000000002,
+        "cash_minus_entry_cost_sol": -0.005542749999999985,
+        "status": "capital_pendiente_en_modelo",
+        "cost_source": "estimated_paper_cash_flows",
+        "estimated_remaining_exit_fees_sol": 0.0,
+        "cash_surplus_after_estimated_costs_sol": -0.00554275,
+        "capital_shortfall_sol": 0.00554275,
+        "initial_capital_recovered_in_model": false,
+        "runner_only_in_model": false,
+        "closed": true,
+        "net_sol": -0.00554275,
+        "remaining_fraction": 0.0,
+        "stop_multiple_of_entry": 0.65,
+        "sales": [
+          {
+            "reason": "timeout",
+            "fraction": 1.0,
+            "quote": 1.0098,
+            "net_receipt_sol": 0.09575725000000002
+          }
+        ]
+      },
+      "candidate_minus_baseline_net_sol": 0.0
+    },
+    "tp1_then_severe_gap": {
+      "baseline": {
+        "stake_sol": 0.1,
+        "entry_cost_sol": 0.1013,
+        "cash_received_sol": 0.1056266875,
+        "cash_minus_entry_cost_sol": 0.0043266874999999955,
+        "status": "capital_cubierto_en_modelo",
+        "cost_source": "estimated_paper_cash_flows",
+        "estimated_remaining_exit_fees_sol": 0.0,
+        "cash_surplus_after_estimated_costs_sol": 0.004326687,
+        "capital_shortfall_sol": 0.0,
+        "initial_capital_recovered_in_model": true,
+        "runner_only_in_model": false,
+        "closed": true,
+        "net_sol": 0.004326687,
+        "remaining_fraction": 0.0,
+        "stop_multiple_of_entry": 1.0,
+        "sales": [
+          {
+            "reason": "tp1",
+            "fraction": 0.85,
+            "quote": 1.275,
+            "net_receipt_sol": 0.1027734375
+          },
+          {
+            "reason": "stop",
+            "fraction": 0.15000000000000002,
+            "quote": 0.20400000000000001,
+            "net_receipt_sol": 0.0028532500000000003
+          }
+        ]
+      },
+      "candidate": {
+        "stake_sol": 0.1,
+        "entry_cost_sol": 0.1013,
+        "cash_received_sol": 0.1056266875,
+        "cash_minus_entry_cost_sol": 0.0043266874999999955,
+        "status": "capital_cubierto_en_modelo",
+        "cost_source": "estimated_paper_cash_flows",
+        "estimated_remaining_exit_fees_sol": 0.0,
+        "cash_surplus_after_estimated_costs_sol": 0.004326687,
+        "capital_shortfall_sol": 0.0,
+        "initial_capital_recovered_in_model": true,
+        "runner_only_in_model": false,
+        "closed": true,
+        "net_sol": 0.004326687,
+        "remaining_fraction": 0.0,
+        "stop_multiple_of_entry": 1.0,
+        "sales": [
+          {
+            "reason": "tp1",
+            "fraction": 0.85,
+            "quote": 1.275,
+            "net_receipt_sol": 0.1027734375
+          },
+          {
+            "reason": "stop",
+            "fraction": 0.15000000000000002,
+            "quote": 0.20400000000000001,
+            "net_receipt_sol": 0.0028532500000000003
+          }
+        ]
+      },
+      "candidate_minus_baseline_net_sol": 0.0
+    },
+    "tp2_then_pullback": {
+      "baseline": {
+        "stake_sol": 0.1,
+        "entry_cost_sol": 0.1013,
+        "cash_received_sol": 0.12057681249999999,
+        "cash_minus_entry_cost_sol": 0.01927681249999999,
+        "status": "capital_cubierto_en_modelo",
+        "cost_source": "estimated_paper_cash_flows",
+        "estimated_remaining_exit_fees_sol": 0.0,
+        "cash_surplus_after_estimated_costs_sol": 0.019276812,
+        "capital_shortfall_sol": 0.0,
+        "initial_capital_recovered_in_model": true,
+        "runner_only_in_model": false,
+        "closed": true,
+        "net_sol": 0.019276812,
+        "remaining_fraction": 0.0,
+        "stop_multiple_of_entry": 1.25,
+        "sales": [
+          {
+            "reason": "tp1",
+            "fraction": 0.85,
+            "quote": 1.275,
+            "net_receipt_sol": 0.1027734375
+          },
+          {
+            "reason": "tp2",
+            "fraction": 0.05,
+            "quote": 1.53,
+            "net_receipt_sol": 0.007208125
+          },
+          {
+            "reason": "stop",
+            "fraction": 0.10000000000000002,
+            "quote": 1.122,
+            "net_receipt_sol": 0.010595250000000004
+          }
+        ]
+      },
+      "candidate": {
+        "stake_sol": 0.1,
+        "entry_cost_sol": 0.1013,
+        "cash_received_sol": 0.1198026125,
+        "cash_minus_entry_cost_sol": 0.0185026125,
+        "status": "capital_cubierto_en_modelo",
+        "cost_source": "estimated_paper_cash_flows",
+        "estimated_remaining_exit_fees_sol": 0.0,
+        "cash_surplus_after_estimated_costs_sol": 0.018502612,
+        "capital_shortfall_sol": 0.0,
+        "initial_capital_recovered_in_model": true,
+        "runner_only_in_model": false,
+        "closed": true,
+        "net_sol": 0.018502612,
+        "remaining_fraction": 0.0,
+        "stop_multiple_of_entry": 1.25,
+        "sales": [
+          {
+            "reason": "tp1",
+            "fraction": 0.85,
+            "quote": 1.275,
+            "net_receipt_sol": 0.1027734375
+          },
+          {
+            "reason": "tp2",
+            "fraction": 0.03,
+            "quote": 1.53,
+            "net_receipt_sol": 0.0043048750000000005
+          },
+          {
+            "reason": "stop",
+            "fraction": 0.12000000000000002,
+            "quote": 1.122,
+            "net_receipt_sol": 0.012724300000000004
+          }
+        ]
+      },
+      "candidate_minus_baseline_net_sol": -0.0007741999999999992
+    },
+    "runner_to_five_times": {
+      "baseline": {
+        "stake_sol": 0.1,
+        "entry_cost_sol": 0.1013,
+        "cash_received_sol": 0.1340753125,
+        "cash_minus_entry_cost_sol": 0.03277531249999999,
+        "status": "capital_cubierto_en_modelo",
+        "cost_source": "estimated_paper_cash_flows",
+        "estimated_remaining_exit_fees_sol": 0.0,
+        "cash_surplus_after_estimated_costs_sol": 0.032775312,
+        "capital_shortfall_sol": 0.0,
+        "initial_capital_recovered_in_model": true,
+        "runner_only_in_model": false,
+        "closed": true,
+        "net_sol": 0.032775312,
+        "remaining_fraction": 1.3877787807814457e-17,
+        "stop_multiple_of_entry": 2.0,
+        "sales": [
+          {
+            "reason": "tp1",
+            "fraction": 0.85,
+            "quote": 1.275,
+            "net_receipt_sol": 0.1027734375
+          },
+          {
+            "reason": "tp2",
+            "fraction": 0.05,
+            "quote": 1.53,
+            "net_receipt_sol": 0.007208125
+          },
+          {
+            "reason": "tp3",
+            "fraction": 0.05,
+            "quote": 2.04,
+            "net_receipt_sol": 0.0096275
+          },
+          {
+            "reason": "tp4",
+            "fraction": 0.05,
+            "quote": 3.06,
+            "net_receipt_sol": 0.01446625
+          }
+        ]
+      },
+      "candidate": {
+        "stake_sol": 0.1,
+        "entry_cost_sol": 0.1013,
+        "cash_received_sol": 0.15047706249999998,
+        "cash_minus_entry_cost_sol": 0.04917706249999998,
+        "status": "capital_cubierto_en_modelo",
+        "cost_source": "estimated_paper_cash_flows",
+        "estimated_remaining_exit_fees_sol": 0.0,
+        "cash_surplus_after_estimated_costs_sol": 0.049177062,
+        "capital_shortfall_sol": 0.0,
+        "initial_capital_recovered_in_model": true,
+        "runner_only_in_model": false,
+        "closed": true,
+        "net_sol": 0.049177062,
+        "remaining_fraction": 2.7755575615628914e-17,
+        "stop_multiple_of_entry": 3.0,
+        "sales": [
+          {
+            "reason": "tp1",
+            "fraction": 0.85,
+            "quote": 1.275,
+            "net_receipt_sol": 0.1027734375
+          },
+          {
+            "reason": "tp2",
+            "fraction": 0.03,
+            "quote": 1.53,
+            "net_receipt_sol": 0.0043048750000000005
+          },
+          {
+            "reason": "tp3",
+            "fraction": 0.03,
+            "quote": 2.04,
+            "net_receipt_sol": 0.0057565
+          },
+          {
+            "reason": "tp4",
+            "fraction": 0.03,
+            "quote": 3.06,
+            "net_receipt_sol": 0.00865975
+          },
+          {
+            "reason": "tp5",
+            "fraction": 0.06,
+            "quote": 5.1,
+            "net_receipt_sol": 0.028982499999999998
+          }
+        ]
+      },
+      "candidate_minus_baseline_net_sol": 0.01640175
+    },
+    "timeout_after_first_profit": {
+      "baseline": {
+        "stake_sol": 0.1,
+        "entry_cost_sol": 0.1013,
+        "cash_received_sol": 0.11869131249999999,
+        "cash_minus_entry_cost_sol": 0.017391312499999992,
+        "status": "capital_cubierto_en_modelo",
+        "cost_source": "estimated_paper_cash_flows",
+        "estimated_remaining_exit_fees_sol": 0.0,
+        "cash_surplus_after_estimated_costs_sol": 0.017391312,
+        "capital_shortfall_sol": 0.0,
+        "initial_capital_recovered_in_model": true,
+        "runner_only_in_model": false,
+        "closed": true,
+        "net_sol": 0.017391312,
+        "remaining_fraction": 0.0,
+        "stop_multiple_of_entry": 1.0,
+        "sales": [
+          {
+            "reason": "tp1",
+            "fraction": 0.85,
+            "quote": 1.275,
+            "net_receipt_sol": 0.1027734375
+          },
+          {
+            "reason": "timeout",
+            "fraction": 0.15000000000000002,
+            "quote": 1.122,
+            "net_receipt_sol": 0.015917875
+          }
+        ]
+      },
+      "candidate": {
+        "stake_sol": 0.1,
+        "entry_cost_sol": 0.1013,
+        "cash_received_sol": 0.11869131249999999,
+        "cash_minus_entry_cost_sol": 0.017391312499999992,
+        "status": "capital_cubierto_en_modelo",
+        "cost_source": "estimated_paper_cash_flows",
+        "estimated_remaining_exit_fees_sol": 0.0,
+        "cash_surplus_after_estimated_costs_sol": 0.017391312,
+        "capital_shortfall_sol": 0.0,
+        "initial_capital_recovered_in_model": true,
+        "runner_only_in_model": false,
+        "closed": true,
+        "net_sol": 0.017391312,
+        "remaining_fraction": 0.0,
+        "stop_multiple_of_entry": 1.0,
+        "sales": [
+          {
+            "reason": "tp1",
+            "fraction": 0.85,
+            "quote": 1.275,
+            "net_receipt_sol": 0.1027734375
+          },
+          {
+            "reason": "timeout",
+            "fraction": 0.15000000000000002,
+            "quote": 1.122,
+            "net_receipt_sol": 0.015917875
+          }
+        ]
+      },
+      "candidate_minus_baseline_net_sol": 0.0
+    }
+  }
+}
