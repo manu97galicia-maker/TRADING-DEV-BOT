@@ -1,0 +1,43 @@
+{
+  "experiment": "Normal pressure: recover initial capital before running the remainder",
+  "mode": "offline_paper_only",
+  "capital_recovery_definition": "SOL cash received covers entry principal and estimated buy/sell costs, with estimated future exit fees reserved. A raised stop or unrealized token value is not recovered capital.",
+  "source": "/root/ai-bot/bots/bot-paper-presion50-24k.yaml",
+  "entry_filter_note": "Recent volume/pressure increases applied only to simulated Mayhem; live normal filters were not changed.",
+  "normal_entry_snapshot": {
+    "min_buy_sol": 0.1,
+    "min_buy_sell_ratio": 1.2,
+    "window_seconds": 8,
+    "min_buyers_total": 5,
+    "min_recent_buyers": 3,
+    "min_entry_mc": 5000,
+    "max_entry_mc": 18000
+  },
+  "simulation": {
+    "enabled": true,
+    "real_trading": false,
+    "trade_size_sol": 0.1,
+    "batch_size": 5,
+    "max_open": 4,
+    "stop_loss": 0.35,
+    "max_hold_seconds": 600,
+    "poll_seconds": 1,
+    "estimated_swap_fee_fraction": 0.0125,
+    "estimated_slippage_fraction": 0.02,
+    "estimated_transaction_fee_sol": 0.00005,
+    "callouts": {"enabled": false}
+  },
+  "baseline_tiers": [
+    {"gain": 0.25, "sell": 0.85},
+    {"gain": 0.50, "sell": 0.05},
+    {"gain": 1.00, "sell": 0.05},
+    {"gain": 2.00, "sell": 0.05}
+  ],
+  "candidate_tiers": [
+    {"gain": 0.25, "sell": 0.85},
+    {"gain": 0.50, "sell": 0.03},
+    {"gain": 1.00, "sell": 0.03},
+    {"gain": 2.00, "sell": 0.03},
+    {"gain": 4.00, "sell": 0.06}
+  ]
+}
