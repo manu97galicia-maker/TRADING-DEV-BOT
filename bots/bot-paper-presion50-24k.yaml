@@ -1,4 +1,5 @@
-# Tercera estrategia, exclusivamente PAPER. No autoriza transacciones reales.
+# Tercera estrategia. NACIO EN PAPEL Y YA NO LO ESTA: desde el 31-oct opera
+# con DINERO REAL (ver el bloque de `paper_trade`, mas abajo).
 name: "PAPER PRESION 50 - ocho holders - TP 24K"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
@@ -46,7 +47,27 @@ retries:
 filters:
   listener_type: "logs"
   max_token_age: 0
-  paper_trade: true
+  # REAL DESDE EL 31-oct, pedido: "44b09e7 este ponlo en real". Venia de
+  # true, que es como lo dejo Codex.
+  #
+  # OJO CON EL NOMBRE DEL FICHERO: se llama `bot-paper-...` pero ya NO es de papel.
+  # El nombre tambien decide el sufijo del estado
+  # (`open_position_bot-paper-presion50-24k__*.json`), asi que renombrarlo
+  # dejaria huerfanas las posiciones vivas. Se deja, pero que no enganie.
+  #
+  # LO QUE COMPRA, y no es lo que dice el umbral: el 50% de curva es solo la
+  # puerta; quien manda es la banda en dolares.
+  #     8.000 $  = curva 53,3%
+  #    13.000 $  = curva 71,0%
+  #
+  # DOS AVISOS QUE SE LE DIERON A MANU ANTES DE ESTO:
+  #   1. Si el servicio `pump-bot` sigue corriendo el c123, habra DOS bots
+  #      reales sobre LA MISMA WALLET. Cada uno calcula su fraccion (15% y
+  #      20%) contra el mismo saldo sin saber del otro, asi que pueden
+  #      comprometer el mismo SOL dos veces. Para evitarlo:
+  #      `systemctl stop pump-bot`.
+  #   2. El stop de este bot es del 70%, no del 30.
+  paper_trade: false
   allow_mayhem: false
   require_mayhem: false
   ignorar_listas_de_devs: true

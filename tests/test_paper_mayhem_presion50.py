@@ -1,4 +1,14 @@
-"""Contratos de los dos experimentos nuevos; ambos deben permanecer en paper."""
+"""Contratos de los dos experimentos nuevos.
+
+EL 31-oct UNO DE LOS DOS PASO A REAL, pedido por Manu ("44b09e7 este ponlo
+en real"). Este fichero nacio diciendo que AMBOS debian quedarse en papel;
+esa regla sigue en pie para `bot-paper-mayhem-24k`, que nadie ha pedido
+mover, y se levanta solo para `bot-paper-presion50-24k`.
+
+Se deja escrito aqui porque es justo lo que estos contratos existen para
+evitar: que un experimento se ponga a operar con dinero sin que nadie lo
+note.
+"""
 
 from pathlib import Path
 
@@ -39,7 +49,8 @@ def test_presion50_exige_ocho_holders_presion_y_antimecha() -> None:
     cfg = _cfg("bot-paper-presion50-24k.yaml")
     trade, filters = cfg["trade"], cfg["filters"]
     curve = filters["curva_96"]
-    assert filters["paper_trade"] is True
+    # paper_trade ya no se comprueba aqui: lo hace, y al contrario, el test
+    # `test_el_presion50_esta_en_real_a_sabiendas` del final del fichero.
     assert filters["min_entry_mc"] == 8000
     assert filters["max_entry_mc"] == 13000
     assert filters["min_holders"] == 8
@@ -61,5 +72,33 @@ def test_presion50_exige_ocho_holders_presion_y_antimecha() -> None:
 
 
 def test_ningun_experimento_nuevo_puede_operar_real() -> None:
-    for name in ("bot-paper-mayhem-24k.yaml", "bot-paper-presion50-24k.yaml"):
+    """El que no se ha pedido mover sigue en papel, y se vigila.
+
+    `bot-paper-presion50-24k` salio de esta lista el 31-oct por orden
+    expresa. El otro no: si algun dia aparece en real sin que se pida, este
+    guardian lo dice.
+    """
+    for name in ("bot-paper-mayhem-24k.yaml",):
         assert _cfg(name)["filters"]["paper_trade"] is True
+
+
+def test_el_presion50_esta_en_real_a_sabiendas() -> None:
+    """Y el que SI se movio, que no vuelva a papel por accidente.
+
+    Un experimento que pasa a real deja de ser un experimento: si alguien lo
+    devuelve a `paper_trade: true` creyendo que sigue siendo una prueba, el
+    bot dejaria de operar sin que nada lo dijera.
+    """
+    cfg = _cfg("bot-paper-presion50-24k.yaml")
+    assert cfg["filters"]["paper_trade"] is False, (
+        "bot-paper-presion50-24k volvio a papel: se puso en real el 31-oct "
+        "por orden expresa de Manu"
+    )
+    # Y QUE EL FICHERO AVISE DE LO QUE ES. El nombre sigue diciendo "paper".
+    texto = (ROOT / "bots" / "bot-paper-presion50-24k.yaml").read_text(
+        encoding="utf-8"
+    )
+    assert "ya NO es de papel" in texto, (
+        "el fichero se llama bot-paper-... y opera con dinero real; tiene "
+        "que decirlo dentro para que nadie se confie del nombre"
+    )
