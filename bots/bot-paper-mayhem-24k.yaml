@@ -62,9 +62,7 @@ filters:
   min_ops: 8
   min_curve_sol: 0.5
   ultimas_tx_compra: 3
-  # Algo menos exigente para recoger mas muestras: las compras deben seguir
-  # superando a las ventas, pero ya no hace falta una ventaja del 40%.
-  min_presion_ratio: 1.2
+  min_presion_ratio: 1.4
   presion_seg: 4
   ignorar_listas_de_devs: false
   bro_address: "top_devs_mayhem_66.json"

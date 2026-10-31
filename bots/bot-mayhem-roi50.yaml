@@ -250,7 +250,9 @@ filters:
   min_ops: 8
   min_curve_sol: 0.5
   ultimas_tx_compra: 3
-  min_presion_ratio: 1.4
+  # Ajustado el 31-oct: baja de 1,4 a 1,2 para exigir una ventaja compradora
+  # del 20% en vez del 40%, sin eliminar por completo la puerta de presion.
+  min_presion_ratio: 1.2
   presion_seg: 4
   max_compras_por_cartera: 1.5
   max_first_block_pct: 0.55

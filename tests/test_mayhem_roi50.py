@@ -230,6 +230,10 @@ class MayhemRoi50Tests(unittest.TestCase):
         self.assertGreater(self.trade["anti_rug_seg"], 0)
         self.assertGreater(self.trade["venta_bajo_entrada_seg"], 0)
 
+    def test_la_presion_compradora_baja_sin_desaparecer(self) -> None:
+        """El ajuste pedido baja la puerta anterior de 1,4 a 1,2."""
+        self.assertEqual(self.filtros["min_presion_ratio"], 1.2)
+
     def test_las_posiciones_caben_en_el_presupuesto_del_nodo(self) -> None:
         """vigilables = max_rps * price_check_interval / 2."""
         vigilables = (

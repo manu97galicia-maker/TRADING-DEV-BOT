@@ -22,7 +22,7 @@ def test_mayhem_usa_importe_fijo_y_lista_medida() -> None:
     assert trade["fraccion_saldo"] == 0
     assert trade["tope_compra_sol"] == 0.03
     assert filters["bro_address"] == "top_devs_mayhem_66.json"
-    assert filters["min_presion_ratio"] == 1.2
+    assert filters["min_presion_ratio"] == 1.4
     assert trade["stop_loss_percentage"] == 0.70
     assert trade["final_target_mc"] == 24000
     assert "take_profit_percentage" not in trade
