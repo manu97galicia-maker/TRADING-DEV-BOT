@@ -44,7 +44,7 @@ def test_presion50_exige_ocho_holders_presion_y_antimecha() -> None:
     assert curve["umbral"] == 0.50
     assert curve["min_compradores"] == 8
     assert curve["min_compradores_ola"] == 3
-    assert curve["min_presion_ratio"] == 1.5
+    assert curve["min_presion_ratio"] == 1.7
     assert curve["min_compra_sol"] == 0.20
     assert curve["vela_seg"] == 1.0
     assert curve["max_subida_vela"] == 0.35

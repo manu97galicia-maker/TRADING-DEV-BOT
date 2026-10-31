@@ -62,7 +62,8 @@ filters:
     min_compradores: 8
     min_compradores_ola: 3
     ventana_presion: 5.0
-    min_presion_ratio: 1.5
+    # Algo mas exigente: 70% mas SOL comprador que vendedor en 5 segundos.
+    min_presion_ratio: 1.7
     min_compra_sol: 0.20
     vela_seg: 1.0
     max_subida_vela: 0.35
