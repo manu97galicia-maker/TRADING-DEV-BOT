@@ -418,7 +418,7 @@ class Curva96Source:
                 else self.max_bundle_pct_sin_historia
             ),
             "curva_progreso": progreso,
-            "estrategia": "curva_95_sin_mecha_1s",
+            "estrategia": f"curva_{self.umbral * 100:.0f}_sin_mecha_1s",
         }
         self._cuenta("comprables")
         # NO SE ANUNCIA UN IMPORTE QUE ESTA FUENTE NO DECIDE.

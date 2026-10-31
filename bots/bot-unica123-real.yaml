@@ -35,7 +35,7 @@
 # hasta ahora iban por separado: que la moneda acabe de nacer, que ya se este
 # moviendo dinero de verdad en ella, y que el creador tenga historial.
 
-name: "UNICA123 REAL - curva 95% con presion y anti-rug"
+name: "UNICA123 REAL - curva 93% con presion y anti-rug"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -127,7 +127,7 @@ trade:
   # 0 = sin tope (el codigo hace `if _tope > 0 and _importe > _tope`).
   # Quien frena ahora es el propio 25%, que mengua con cada compra porque
   # la base es el saldo LIBRE.
-  tope_compra_sol: 0
+  tope_compra_sol: 0.20
   nombre_estrategia: "unica123-real"
   escala_por_sol_ganado: 0
   # 0 EL 13-oct, pedido: "maximo de compras simultaneas son dos pero no que
@@ -189,7 +189,7 @@ trade:
   # OJO CON EL NODO: `max_rps 8 x price_check_interval 1 / 2` da 4 posiciones
   # vigilables. Con 4 plazas se va al limite exacto; una quinta y el take
   # profit empezaria a reaccionar tarde sin que nada avisara.
-  max_posiciones: 4
+  max_posiciones: 2
   mayhem_max_perdidas: 0
 
   # Slippage alto en la compra: en una moneda que se esta moviendo, un margen
@@ -310,8 +310,8 @@ trade:
   # llega (0,04056 contra 0,04159). Para que el TP1 se baste por si mismo
   # haria falta un suelo de 0,0748 SOL. Por debajo de eso el capital se
   # recupera solo si TAMBIEN se ejecuta la venta del suelo subido.
-  take_profit_percentage: 0.40
-  take_profit_sell_percentage: 0.75
+  take_profit_percentage: 0.35
+  take_profit_sell_percentage: 0.40
   # x4 = +300%. VENDE LO QUE QUEDE (el `sell` es sobre la posicion original y
   # el codigo hace `min(original * sell, restante)`, asi que 1.0 se lleva el
   # remanente y cierra).
@@ -369,16 +369,8 @@ trade:
   # SIETE ES EL TOPE DEL CODIGO, no una decision: `bot_runner.py` lee de
   # `tp2_gain` a `tp6_gain` y nada mas. Un `tp7_gain` en este fichero se
   # quedaria escrito y mudo.
-  tp2_gain: 0.89
-  tp2_sell: 0.046
-  tp3_gain: 1.5515
-  tp3_sell: 0.046
-  tp4_gain: 2.4445
-  tp4_sell: 0.046
-  tp5_gain: 3.6501
-  tp5_sell: 0.046
-  tp6_gain: 5.2776
-  tp6_sell: 0.046
+  tp2_gain: 0.73
+  tp2_sell: 0.50
   #
   # Medido sobre la muestra del 20-ago (40 monedas del grupo filtrado, y
   # comprobado tambien en grupos de 156 y 283 con filtros mas flojos):
@@ -399,7 +391,10 @@ trade:
   # Y EL MOONBAG RESTABA: vender el 100% da +0,228, el 80% da +0,161 y el 50%
   # da +0,059. Lo que queda dentro casi nunca sigue subiendo -- vuelve al
   # precio de compra y sale por el suelo del trinquete.
-  mc_take_profit_tiers: []
+  mc_take_profit_tiers:
+    - {target_mc: 200000, sell: 0.07}
+    - {target_mc: 600000, sell: 0.015}
+    - {target_mc: 900000, sell: 0.015}
 
   # Stop defensivo para que la prueba no herede el antiguo suelo del 80%.
   # 30% EL 15-oct, pedido: "pon stop loss 30%". Baja desde el 32%.
@@ -484,7 +479,7 @@ trade:
   #
   # Este mando sube el suelo AL ESCALON ANTERIOR + el margen, asi que tras el
   # TP1 el suelo queda en la entrada +10%, que es lo pedido.
-  margen_stop_tras_tp: 0.10
+  margen_stop_tras_tp: 0
   stop_al_tp_tras_tp: false
   stop_al_tp_anterior: false
 
@@ -1173,7 +1168,7 @@ filters:
   buy_on_dex_paid:
     enabled: false
 
-  # UNICA FUENTE DE ENTRADA: una curva de pump.fun alcanza el 95%. Al existir
+  # UNICA FUENTE DE ENTRADA: una curva de pump.fun alcanza el 93%. Al existir
   # una fuente de adquisicion activa, el
   # listener normal de monedas nuevas no abre operaciones por su cuenta.
   curva_96:
