@@ -1,5 +1,5 @@
 # Tercera estrategia, exclusivamente PAPER. No autoriza transacciones reales.
-name: "PAPER PRESION 71 - ocho holders - TP 24K"
+name: "PAPER PRESION 61 - ocho holders - TP 24K"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -9,7 +9,7 @@ separate_process: false
 platform: "pump_fun"
 
 trade:
-  nombre_estrategia: "paper-presion71-24k"
+  nombre_estrategia: "paper-presion61-24k"
   buy_amount: 0
   mayhem_buy_amount: 0
   fraccion_saldo: 0.15
@@ -54,7 +54,7 @@ filters:
   max_holder_pct: 0
   curva_96:
     enabled: true
-    umbral: 0.71
+    umbral: 0.61
     tope: 0.995
     buy_amount: 0
     max_compras: 0
