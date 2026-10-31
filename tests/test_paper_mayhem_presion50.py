@@ -35,13 +35,13 @@ def test_lista_mayhem_es_el_corte_de_3_y_66_7() -> None:
     assert all(row["pct_pump_30k"] >= 66.7 for row in data["wallets"])
 
 
-def test_presion61_exige_ocho_holders_presion_y_antimecha() -> None:
-    cfg = _cfg("bot-paper-presion61-24k.yaml")
+def test_presion50_exige_ocho_holders_presion_y_antimecha() -> None:
+    cfg = _cfg("bot-paper-presion50-24k.yaml")
     trade, filters = cfg["trade"], cfg["filters"]
     curve = filters["curva_96"]
     assert filters["paper_trade"] is True
     assert filters["min_holders"] == 8
-    assert curve["umbral"] == 0.61
+    assert curve["umbral"] == 0.50
     assert curve["min_compradores"] == 8
     assert curve["min_compradores_ola"] == 3
     assert curve["min_presion_ratio"] == 1.5
@@ -59,5 +59,5 @@ def test_presion61_exige_ocho_holders_presion_y_antimecha() -> None:
 
 
 def test_ningun_experimento_nuevo_puede_operar_real() -> None:
-    for name in ("bot-paper-mayhem-24k.yaml", "bot-paper-presion61-24k.yaml"):
+    for name in ("bot-paper-mayhem-24k.yaml", "bot-paper-presion50-24k.yaml"):
         assert _cfg(name)["filters"]["paper_trade"] is True
