@@ -1,0 +1,18 @@
+{
+  "_README": "Snapshot de mayhem_v2_raw.csv: 3+ lanzamientos Mayhem y 66,7%+ alcanzando 30K. Seleccion retrospectiva; solo para validacion en paper.",
+  "_source": "mayhem_v2_raw.csv",
+  "_count": 11,
+  "wallets": [
+    {"wallet":"8gsx257NbfXFve14fzWT2jTG6TXB6AukAEjUXTANMjk","mayhem_launches":3,"pct_pump_30k":66.7,"median_peak":95691},
+    {"wallet":"8PAuKgUtE11cTcojeoHs8xd8WcJ8epqWnWfzZkTi8xZ1","mayhem_launches":3,"pct_pump_30k":66.7,"median_peak":64800},
+    {"wallet":"EhFRXUdTnJrdRgR9pEq9zx8562oETUKosoQhSPodRe5N","mayhem_launches":3,"pct_pump_30k":66.7,"median_peak":62737},
+    {"wallet":"66onmcvu5jpN4dJoe9sYQYCnMbB5oWXHNAtoQfG2peki","mayhem_launches":3,"pct_pump_30k":100.0,"median_peak":54981},
+    {"wallet":"AwkDaC2n9YfdmUru8J8sFCjsDmqqj7LrpLFo3SjB9DZ4","mayhem_launches":3,"pct_pump_30k":66.7,"median_peak":51193},
+    {"wallet":"8LnVaugnRXtTgr3uNrpkbwFygC5KiyTZwbiXSm4J97NZ","mayhem_launches":3,"pct_pump_30k":66.7,"median_peak":41654},
+    {"wallet":"9ZDfN3PtQVfEoNM5uA5hor2VrEjBfLWZH5QQKNNz6jB4","mayhem_launches":3,"pct_pump_30k":66.7,"median_peak":40274},
+    {"wallet":"7zQs3sdQHj6g4YWsHAzyLjdBB3ixnXFbTZJTYNMwNA4","mayhem_launches":3,"pct_pump_30k":66.7,"median_peak":36985},
+    {"wallet":"9Hdj2LZwajaE8Fr63hYf7ChKtg6krcgtc73WLPtMq25k","mayhem_launches":3,"pct_pump_30k":66.7,"median_peak":34513},
+    {"wallet":"Bu6SV1o3Xn2S1PYye8cvrqjyF9ypiwEhkz3nb5nKmYbV","mayhem_launches":3,"pct_pump_30k":66.7,"median_peak":33697},
+    {"wallet":"2rnm81cudERhgG9V4fQixGYtZEAb35M9X7s8SmM714FR","mayhem_launches":3,"pct_pump_30k":66.7,"median_peak":31447}
+  ]
+}

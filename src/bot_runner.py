@@ -388,6 +388,7 @@ async def start_bot(config_path: str):
             allow_mayhem=cfg.get("filters", {}).get("allow_mayhem", False),
             require_mayhem=cfg.get("filters", {}).get("require_mayhem", False),
             paper_watch_secs=cfg.get("filters", {}).get("paper_watch_secs", 300),
+            paper_max_samples=cfg.get("filters", {}).get("paper_max_samples", 0),
             # Per-bot state files (dedup / open-position) so two bots on the same
             # wallet don't clobber each other. Derived from the config file name.
             state_suffix=Path(config_path).stem,

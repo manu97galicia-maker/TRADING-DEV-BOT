@@ -1,0 +1,82 @@
+# Tercera estrategia, exclusivamente PAPER. No autoriza transacciones reales.
+name: "PAPER PRESION 71 - ocho holders - TP 24K"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: true
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  nombre_estrategia: "paper-presion71-24k"
+  buy_amount: 0
+  mayhem_buy_amount: 0
+  fraccion_saldo: 0.15
+  fraccion_base: "libre"
+  tope_compra_sol: 0
+  min_reserve_sol: 0.03
+  max_posiciones: 4
+  max_real_buys: 0
+  reiniciar_tanda: true
+  buy_slippage: 0.15
+  sell_slippage: 0.25
+  sell_slippage_proteccion: 0.50
+  exit_strategy: "tp_sl"
+  final_target_mc: 24000
+  stop_loss_percentage: 0.70
+  vender_todo_en_stop: true
+  stop_a_entrada_tras_tp: false
+  trailing_stop_percentage: 0
+  max_hold_time: 600
+  price_check_interval: 1
+
+priority_fees:
+  enable_dynamic: true
+  enable_fixed: false
+  fixed_amount: 0
+  extra_percentage: 0.0
+  hard_cap: 5000000
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 0
+  paper_trade: true
+  allow_mayhem: false
+  require_mayhem: false
+  ignorar_listas_de_devs: true
+  min_holders: 8
+  max_holder_pct: 0
+  curva_96:
+    enabled: true
+    umbral: 0.71
+    tope: 0.995
+    buy_amount: 0
+    max_compras: 0
+    parar_tras_perdidas: 0
+    min_compradores: 8
+    min_compradores_ola: 3
+    ventana_presion: 5.0
+    min_presion_ratio: 1.5
+    min_compra_sol: 0.20
+    vela_seg: 1.0
+    max_subida_vela: 0.35
+    exigir_ver_creacion: false
+    max_carteras_primer_bloque: 0
+    max_sol_primer_bloque: 0
+    max_bundle_pct: 0
+    max_bundle_pct_sin_historia: 0
+    heartbeat_interval: 300
+  pumpfun_dev:
+    enabled: false
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+node:
+  max_rps: 12

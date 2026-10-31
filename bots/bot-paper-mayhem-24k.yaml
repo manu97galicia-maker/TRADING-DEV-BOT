@@ -1,0 +1,79 @@
+# Experimento MAYHEM, exclusivamente PAPER. No autoriza transacciones reales.
+name: "PAPER MAYHEM 24K - cinco muestras"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: true
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  nombre_estrategia: "paper-mayhem-24k"
+  buy_amount: 0.03
+  mayhem_buy_amount: 0.03
+  fraccion_saldo: 0
+  tope_compra_sol: 0.03
+  min_reserve_sol: 0.03
+  max_posiciones: 2
+  max_real_buys: 5
+  reiniciar_tanda: false
+  buy_slippage: 0.12
+  sell_slippage: 0.25
+  sell_slippage_proteccion: 0.50
+  exit_strategy: "tp_sl"
+  # Objetivo absoluto: funciona igual aunque cada entrada tenga un MC distinto.
+  final_target_mc: 24000
+  stop_loss_percentage: 0.70
+  vender_todo_en_stop: true
+  stop_a_entrada_tras_tp: false
+  trailing_stop_percentage: 0
+  max_hold_time: 600
+  price_check_interval: 1
+  anti_rug_ratio: 1.6
+  anti_rug_seg: 3
+  anti_rug_min_sol: 1.0
+
+priority_fees:
+  enable_dynamic: true
+  enable_fixed: false
+  fixed_amount: 0
+  extra_percentage: 0.0
+  hard_cap: 5000000
+retries:
+  max_attempts: 2
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  max_token_age: 12
+  min_buy_age: 1
+  max_buy_age: 15
+  paper_trade: true
+  paper_max_samples: 5
+  paper_watch_secs: 600
+  allow_mayhem: true
+  require_mayhem: true
+  min_entry_mc: 2600
+  max_entry_mc: 4200
+  min_buys: 8
+  min_titulares: 8
+  min_ops: 8
+  min_curve_sol: 0.5
+  ultimas_tx_compra: 3
+  # Algo menos exigente para recoger mas muestras: las compras deben seguir
+  # superando a las ventas, pero ya no hace falta una ventaja del 40%.
+  min_presion_ratio: 1.2
+  presion_seg: 4
+  ignorar_listas_de_devs: false
+  bro_address: "top_devs_mayhem_66.json"
+  pumpfun_dev:
+    enabled: false
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+node:
+  max_rps: 12

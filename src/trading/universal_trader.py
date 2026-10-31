@@ -728,6 +728,8 @@ class UniversalTrader:
         mayhem_max_perdidas: int = 0,
         # How long (seconds) a paper candidate's price is followed
         paper_watch_secs: int = 300,
+        # Maximum candidates observed by this process in paper mode. 0 = no cap.
+        paper_max_samples: int = 0,
         # Suffix for per-bot state files so two bots on the same wallet don't
         # clobber each other's dedup / open-position recovery.
         state_suffix: str = "",
@@ -1465,6 +1467,8 @@ class UniversalTrader:
         self._sell_cmd_path = Path(f"sell_cmd{_sfx}.json")
         self._state_suffix = _sfx  # p.ej. "_bot-sniper-gemas" (lo usa el panel)
         self.max_real_buys = max(0, int(max_real_buys or 0))
+        self.paper_max_samples = max(0, int(paper_max_samples or 0))
+        self._paper_samples_started = 0
         #: Compras hechas DESDE QUE ARRANCO ESTE PROCESO. `bought_mints` no
         #: sirve para el tope: se carga de traded_mints*.json y acumula todas
         #: las monedas compradas en la vida del bot -- con 115 dentro, un tope
@@ -2494,6 +2498,13 @@ class UniversalTrader:
         hit = {"tp1": False, "tp2": False, "sl": False}
         paper_executed = [False] * len(self.tp_tiers)
         tier_sale_prices: list[float | None] = [None] * len(self.tp_tiers)
+        final_target_price = (
+            self.final_target_mc / (_PUMP_TOTAL_SUPPLY * _SOL_USD)
+            if self.final_target_mc > 0
+            else None
+        )
+        final_target_hit = False
+        final_target_sale_price: float | None = None
         paper_floor = sl
         stop_exit_return: float | None = None
         strategy_closed = False
@@ -2530,6 +2541,16 @@ class UniversalTrader:
                             paper_executed,
                             tier_sale_prices,
                         )
+                        continue
+                    # El monitor real vende el remanente cuando alcanza un
+                    # market cap absoluto. El observador paper debe simular
+                    # exactamente la misma puerta; convertirlo a un porcentaje
+                    # fijo es incorrecto porque cada entrada tiene otro MC.
+                    if final_target_price is not None and p >= final_target_price:
+                        final_target_hit = True
+                        final_target_sale_price = final_target_price
+                        first_hit = first_hit or "final_target_mc"
+                        strategy_closed = True
                         continue
                     for i in tiers_due(
                         entry_price, p, self.tp_tiers, paper_executed
@@ -2596,6 +2617,18 @@ class UniversalTrader:
                         "price_sol": sale_price,
                     }
                 )
+            if final_target_hit and remaining > 0:
+                sale_price = float(final_target_sale_price or final_target_price or 0)
+                target_return = sale_price / entry_price - 1
+                roi += remaining * target_return
+                sales.append(
+                    {
+                        "reason": "FINAL_TARGET_MC",
+                        "position_pct": round(remaining * 100, 4),
+                        "price_sol": sale_price,
+                    }
+                )
+                remaining = 0.0
             if stop_exit_return is not None and remaining > 0:
                 stop_price = entry_price * (1 + stop_exit_return)
                 roi += remaining * stop_exit_return
@@ -2623,6 +2656,8 @@ class UniversalTrader:
             win = pnl > 0
             if stop_exit_return is not None:
                 exit_reason = "stop"
+            elif final_target_hit:
+                exit_reason = "final_target_mc"
             elif remaining <= 1e-9:
                 exit_reason = "take_profit"
             elif sales:
@@ -2653,6 +2688,8 @@ class UniversalTrader:
                 "tp1": hit["tp1"],
                 "tp2": hit["tp2"],
                 "sl": hit["sl"],
+                "final_target_mc": self.final_target_mc,
+                "final_target_hit": final_target_hit,
                 "stop_exit_pct": (
                     round(stop_exit_return * 100, 1)
                     if stop_exit_return is not None
@@ -4724,6 +4761,20 @@ class UniversalTrader:
 
             # Paper-trade: record the candidate, follow its price, never buy.
             if self.paper_trade:
+                if (
+                    self.paper_max_samples > 0
+                    and self._paper_samples_started >= self.paper_max_samples
+                ):
+                    logger.info(
+                        "PAPER: muestra completada (%d/%d); %s no se simula",
+                        self._paper_samples_started,
+                        self.paper_max_samples,
+                        token_info.symbol,
+                    )
+                    return
+                # No hay await entre comprobar y reservar: dos candidatos no
+                # pueden adjudicarse el mismo quinto hueco en el event loop.
+                self._paper_samples_started += 1
                 if self.fraccion_saldo > 0:
                     try:
                         balance = await self.solana_client.get_sol_balance(
