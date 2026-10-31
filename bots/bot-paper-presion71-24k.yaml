@@ -16,7 +16,8 @@ trade:
   fraccion_base: "libre"
   tope_compra_sol: 0
   min_reserve_sol: 0.03
-  max_posiciones: 4
+  # Sin limite total de operaciones; solo se acotan las abiertas a la vez.
+  max_posiciones: 5
   max_real_buys: 0
   reiniciar_tanda: true
   buy_slippage: 0.15

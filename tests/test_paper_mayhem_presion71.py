@@ -50,6 +50,9 @@ def test_presion71_exige_ocho_holders_presion_y_antimecha() -> None:
     assert curve["max_subida_vela"] == 0.35
     assert trade["fraccion_saldo"] == 0.15
     assert trade["fraccion_base"] == "libre"
+    assert trade["tope_compra_sol"] == 0
+    assert trade["max_posiciones"] == 5
+    assert trade["max_real_buys"] == 0
     assert trade["stop_loss_percentage"] == 0.70
     assert trade["final_target_mc"] == 24000
     assert "take_profit_percentage" not in trade
