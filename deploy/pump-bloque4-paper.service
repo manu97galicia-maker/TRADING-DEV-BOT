@@ -12,6 +12,9 @@ ExecStart=/root/ai-bot/.venv/bin/python -u -c "from bot_runner import run_bot_pr
 Restart=on-failure
 RestartSec=5
 KillMode=control-group
+# Cinturón de seguridad: incluso un arranque directo termina tras una hora.
+# El lanzador interactivo puede sustituirlo temporalmente por otra duración.
+RuntimeMaxSec=3600
 
 [Install]
 WantedBy=multi-user.target
