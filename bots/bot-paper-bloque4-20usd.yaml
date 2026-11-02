@@ -17,6 +17,8 @@ trade:
   max_posiciones: 20
   max_real_buys: 0
   reiniciar_tanda: true
+  buy_slippage: 0.15
+  sell_slippage: 0.25
   exit_strategy: "tp_sl"
   # Sin stop-loss ni take-profit: se observa el recorrido durante 10 minutos
   # y se registra la valoración al último precio.
