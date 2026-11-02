@@ -1,0 +1,17 @@
+[Unit]
+Description=Pump first-block 4TX 375-900 USD experiment (paper only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/ai-bot
+Environment=PYTHONPATH=/root/ai-bot/src
+ExecStart=/root/ai-bot/.venv/bin/python -u -c "from bot_runner import run_bot_process; run_bot_process('/root/ai-bot/bots/bot-paper-bloque4-20usd.yaml')"
+Restart=on-failure
+RestartSec=5
+KillMode=control-group
+
+[Install]
+WantedBy=multi-user.target

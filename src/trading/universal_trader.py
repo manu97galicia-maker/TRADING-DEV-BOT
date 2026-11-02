@@ -519,6 +519,14 @@ class UniversalTrader:
         # Compras que deben estar incluidas en el primer slot/bloque observado
         # para la moneda. 0 = desactivado.
         min_first_block_buys: int = 0,
+        max_first_block_buys: int = 0,
+        # Rango de USD comprados en el bloque de creación. Se convierte usando
+        # la misma cotización SOL/USD viva que emplea el resto del trader.
+        min_first_block_usd: float = 0.0,
+        max_first_block_usd: float = 0.0,
+        # No permite decidir la entrada hasta observar una operación en un slot
+        # posterior al de creación, de modo que el primer bloque ya está cerrado.
+        buy_from_second_block: bool = False,
         # TRANSACCIONES minimas antes de comprar, contadas del stream de logs.
         # Cuenta cada TradeEvent por separado, tambien los que entran juntos en
         # el primer bloque (un bundle son N transacciones y aqui salen como N,
@@ -1146,6 +1154,10 @@ class UniversalTrader:
         self.min_volumen_sol = float(min_volumen_sol or 0)
         self.min_buys = int(min_buys or 0)
         self.min_first_block_buys = int(min_first_block_buys or 0)
+        self.max_first_block_buys = int(max_first_block_buys or 0)
+        self.min_first_block_usd = float(min_first_block_usd or 0)
+        self.max_first_block_usd = float(max_first_block_usd or 0)
+        self.buy_from_second_block = bool(buy_from_second_block)
         self.min_ops = int(min_ops or 0)
         self.min_titulares = int(min_titulares or 0)
         self.max_titulares = int(max_titulares or 0)
@@ -2708,6 +2720,8 @@ class UniversalTrader:
             value = paper_amount * (1 + roi)
             pnl = value - paper_amount
             win = pnl > 0
+            mark_to_market_roi = last_price / entry_price - 1
+            mark_to_market_value = paper_amount * (1 + mark_to_market_roi)
             if stop_exit_return is not None:
                 exit_reason = "stop"
             elif final_target_hit:
@@ -2733,6 +2747,7 @@ class UniversalTrader:
                     signal_data.get("dextools_nitro_score") or 0
                 ),
                 "amount_sol": paper_amount,
+                "amount_usd": float(signal_data.get("paper_amount_usd") or 0),
                 "curve_sol": round(curve_sol, 3),
                 "entry": entry_price,
                 "entry_price_sol": entry_price,
@@ -2791,6 +2806,12 @@ class UniversalTrader:
                 "value_sol": value,
                 "pnl_sol": pnl,
                 "win": win,
+                # Sin TP/SL no hay venta simulada. Estas cifras valoran la
+                # posición al último precio observado para que el experimento
+                # siga siendo medible sin inventar una salida.
+                "mark_to_market_roi_pct": round(mark_to_market_roi * 100, 4),
+                "mark_to_market_value_sol": mark_to_market_value,
+                "mark_to_market_pnl_sol": mark_to_market_value - paper_amount,
                 "first": first_hit,
                 "secs": round(time.time() - start),
             }
@@ -4118,15 +4139,23 @@ class UniversalTrader:
                 or self.min_entry_mc > 0
                 or self.min_buys > 0
                 or self.min_first_block_buys > 0
+                or self.max_first_block_buys > 0
+                or self.min_first_block_usd > 0
+                or self.max_first_block_usd > 0
+                or self.buy_from_second_block
                 or self.min_ops > 0
                 or self.min_titulares > 0
                 or self.second_wave.get("enabled")
             ):
                 from monitoring.volumen import compras as _n_buys
                 from monitoring.volumen import compras_primer_bloque as _n_first_buys
+                from monitoring.volumen import (
+                    en_bloque_posterior_al_inicial as _bloque_dos,
+                )
                 from monitoring.volumen import metricas_segunda_ola as _segunda_ola
                 from monitoring.volumen import operaciones as _n_ops
                 from monitoring.volumen import presion as _presion
+                from monitoring.volumen import sol_primer_bloque as _sol_first_block
                 from monitoring.volumen import titulares as _n_tit
                 from monitoring.volumen import ultimas_son_compra as _ult_compra
                 from monitoring.volumen import volumen_sol as _vol_sol
@@ -4188,6 +4217,8 @@ class UniversalTrader:
                     _o = _n_ops(str(token_info.mint))
                     _b = _n_buys(str(token_info.mint))
                     _fb = _n_first_buys(str(token_info.mint))
+                    _fb_usd = _sol_first_block(str(token_info.mint)) * _SOL_USD
+                    _en_bloque_dos = _bloque_dos(str(token_info.mint))
                     _h = _n_tit(str(token_info.mint))
                     _visto_vol = max(_visto_vol, _v)
                     _visto_buys = max(_visto_buys, _b)
@@ -4232,10 +4263,52 @@ class UniversalTrader:
                             )
                             await asyncio.sleep(_paso)
                             continue
+                    # El bloque inicial solo queda cerrado cuando llega una
+                    # operación de un slot posterior. Antes de eso sus compras
+                    # y su volumen todavía pueden crecer, así que se espera.
+                    if self.buy_from_second_block and not _en_bloque_dos:
+                        await asyncio.sleep(_paso)
+                        continue
+                    if (
+                        self.max_first_block_buys > 0
+                        and _fb > self.max_first_block_buys
+                    ):
+                        logger.info(
+                            "Evitado %s: %d compras en el primer bloque (máx %d)",
+                            token_info.symbol, _fb, self.max_first_block_buys,
+                        )
+                        return
                     if (
                         self.min_first_block_buys > 0
                         and _fb < self.min_first_block_buys
                     ):
+                        if _en_bloque_dos:
+                            logger.info(
+                                "Evitado %s: %d compras en el primer bloque (mín %d)",
+                                token_info.symbol, _fb, self.min_first_block_buys,
+                            )
+                            return
+                        await asyncio.sleep(_paso)
+                        continue
+                    if (
+                        self.max_first_block_usd > 0
+                        and _fb_usd > self.max_first_block_usd
+                    ):
+                        logger.info(
+                            "Evitado %s: $%.2f comprados en el primer bloque (máx $%.2f)",
+                            token_info.symbol, _fb_usd, self.max_first_block_usd,
+                        )
+                        return
+                    if (
+                        self.min_first_block_usd > 0
+                        and _fb_usd < self.min_first_block_usd
+                    ):
+                        if _en_bloque_dos:
+                            logger.info(
+                                "Evitado %s: $%.2f comprados en el primer bloque (mín $%.2f)",
+                                token_info.symbol, _fb_usd, self.min_first_block_usd,
+                            )
+                            return
                         await asyncio.sleep(_paso)
                         continue
                     # BUNDLE EN EL NACIMIENTO. Se descarta entera, no se espera:
@@ -4842,7 +4915,14 @@ class UniversalTrader:
                 # No hay await entre comprobar y reservar: dos candidatos no
                 # pueden adjudicarse el mismo quinto hueco en el event loop.
                 self._paper_samples_started += 1
-                if self.fraccion_saldo > 0:
+                if self.buy_amount_usd > 0:
+                    paper_amount = self.buy_amount_usd / float(_SOL_USD)
+                    token_info.additional_data = {
+                        **(token_info.additional_data or {}),
+                        "signal_buy_amount": paper_amount,
+                        "paper_amount_usd": self.buy_amount_usd,
+                    }
+                elif self.fraccion_saldo > 0:
                     try:
                         balance = await self.solana_client.get_sol_balance(
                             self.wallet.pubkey

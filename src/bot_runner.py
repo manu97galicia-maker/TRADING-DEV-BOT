@@ -314,6 +314,18 @@ async def start_bot(config_path: str):
             min_first_block_buys=cfg.get("filters", {}).get(
                 "min_first_block_buys", 0
             ),
+            max_first_block_buys=cfg.get("filters", {}).get(
+                "max_first_block_buys", 0
+            ),
+            min_first_block_usd=cfg.get("filters", {}).get(
+                "min_first_block_usd", 0.0
+            ),
+            max_first_block_usd=cfg.get("filters", {}).get(
+                "max_first_block_usd", 0.0
+            ),
+            buy_from_second_block=cfg.get("filters", {}).get(
+                "buy_from_second_block", False
+            ),
             min_ops=cfg.get("filters", {}).get("min_ops", 0),
             min_titulares=cfg.get("filters", {}).get("min_titulares", 0),
             redes_originales=cfg.get("filters", {}).get("redes_originales", False),

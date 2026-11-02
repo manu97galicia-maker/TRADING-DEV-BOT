@@ -14,6 +14,7 @@ class VolumeFilterTests(unittest.TestCase):
     def tearDown(self):
         volumen._ops.pop(self.mint, None)
         volumen._first_slot.pop(self.mint, None)
+        volumen._last_slot.pop(self.mint, None)
         volumen._first_slot_buys.pop(self.mint, None)
 
     def test_compras_excludes_sells(self):
@@ -49,9 +50,11 @@ class VolumeFilterTests(unittest.TestCase):
 
         self.assertEqual(volumen.compras_primer_bloque(mint), 4)
         self.assertEqual(volumen.compras(mint), 5)
+        self.assertTrue(volumen.en_bloque_posterior_al_inicial(mint))
 
         volumen._ops.pop(mint, None)
         volumen._first_slot.pop(mint, None)
+        volumen._last_slot.pop(mint, None)
         volumen._first_slot_buys.pop(mint, None)
 
     def test_creation_slot_without_buy_does_not_use_next_block(self):
@@ -59,6 +62,7 @@ class VolumeFilterTests(unittest.TestCase):
         volumen._first_slot_buys[self.mint] = 0
 
         self.assertEqual(volumen.compras_primer_bloque(self.mint), 0)
+        self.assertFalse(volumen.en_bloque_posterior_al_inicial(self.mint))
 
     def test_second_wave_metrics_exclude_creator_from_recent_demand(self):
         volumen._ops[self.mint] = [
