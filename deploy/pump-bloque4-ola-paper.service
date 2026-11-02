@@ -1,0 +1,18 @@
+[Unit]
+Description=Pump 4TX second-block confirmation experiment (paper only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/ai-bot
+Environment=PYTHONPATH=/root/ai-bot/src
+ExecStart=/root/ai-bot/.venv/bin/python -u -c "from bot_runner import run_bot_process; run_bot_process('/root/ai-bot/bots/bot-paper-bloque4-segundo-bloque.yaml')"
+Restart=on-failure
+RestartSec=5
+KillMode=control-group
+RuntimeMaxSec=3600
+
+[Install]
+WantedBy=multi-user.target

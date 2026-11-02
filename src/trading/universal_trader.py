@@ -527,6 +527,7 @@ class UniversalTrader:
         # No permite decidir la entrada hasta observar una operación en un slot
         # posterior al de creación, de modo que el primer bloque ya está cerrado.
         buy_from_second_block: bool = False,
+        second_block_confirmation: dict | None = None,
         # TRANSACCIONES minimas antes de comprar, contadas del stream de logs.
         # Cuenta cada TradeEvent por separado, tambien los que entran juntos en
         # el primer bloque (un bundle son N transacciones y aqui salen como N,
@@ -1158,6 +1159,7 @@ class UniversalTrader:
         self.min_first_block_usd = float(min_first_block_usd or 0)
         self.max_first_block_usd = float(max_first_block_usd or 0)
         self.buy_from_second_block = bool(buy_from_second_block)
+        self.second_block_confirmation = dict(second_block_confirmation or {})
         self.min_ops = int(min_ops or 0)
         self.min_titulares = int(min_titulares or 0)
         self.max_titulares = int(max_titulares or 0)
@@ -4143,6 +4145,7 @@ class UniversalTrader:
                 or self.min_first_block_usd > 0
                 or self.max_first_block_usd > 0
                 or self.buy_from_second_block
+                or self.second_block_confirmation.get("enabled")
                 or self.min_ops > 0
                 or self.min_titulares > 0
                 or self.second_wave.get("enabled")
@@ -4156,6 +4159,7 @@ class UniversalTrader:
                 from monitoring.volumen import operaciones as _n_ops
                 from monitoring.volumen import presion as _presion
                 from monitoring.volumen import sol_primer_bloque as _sol_first_block
+                from monitoring.volumen import metricas_segundo_bloque as _second_block
                 from monitoring.volumen import titulares as _n_tit
                 from monitoring.volumen import ultimas_son_compra as _ult_compra
                 from monitoring.volumen import volumen_sol as _vol_sol
@@ -4269,6 +4273,24 @@ class UniversalTrader:
                     if self.buy_from_second_block and not _en_bloque_dos:
                         await asyncio.sleep(_paso)
                         continue
+                    if self.second_block_confirmation.get("enabled"):
+                        _sb_cfg = self.second_block_confirmation
+                        _sb = _second_block(str(token_info.mint))
+                        if not _sb["observado"]:
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _sb["compradores"] < int(_sb_cfg.get("min_buyers", 0)):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _sb["compra_sol"] < float(_sb_cfg.get("min_buy_sol", 0)):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _sb["neto_sol"] < float(_sb_cfg.get("min_net_sol", 0)):
+                            await asyncio.sleep(_paso)
+                            continue
+                        if _sb["ventas"] > int(_sb_cfg.get("max_sells", 999999)):
+                            await asyncio.sleep(_paso)
+                            continue
                     if (
                         self.max_first_block_buys > 0
                         and _fb > self.max_first_block_buys

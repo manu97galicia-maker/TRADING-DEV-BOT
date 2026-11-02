@@ -16,6 +16,12 @@ class VolumeFilterTests(unittest.TestCase):
         volumen._first_slot.pop(self.mint, None)
         volumen._last_slot.pop(self.mint, None)
         volumen._first_slot_buys.pop(self.mint, None)
+        volumen._second_slot.pop(self.mint, None)
+        volumen._second_slot_buy_sol.pop(self.mint, None)
+        volumen._second_slot_sell_sol.pop(self.mint, None)
+        volumen._second_slot_buyers.pop(self.mint, None)
+        volumen._second_slot_buys.pop(self.mint, None)
+        volumen._second_slot_sells.pop(self.mint, None)
 
     def test_compras_excludes_sells(self):
         now = time.time()
@@ -63,6 +69,32 @@ class VolumeFilterTests(unittest.TestCase):
 
         self.assertEqual(volumen.compras_primer_bloque(self.mint), 0)
         self.assertFalse(volumen.en_bloque_posterior_al_inicial(self.mint))
+
+    def test_metricas_segundo_bloque_exclude_first_and_third_slots(self):
+        volumen._anotar_primer_bloque(
+            self.mint, 100, 1.0, "birth", es_compra=True
+        )
+        volumen._anotar_primer_bloque(
+            self.mint, 101, 0.20, "buyer-a", es_compra=True
+        )
+        volumen._anotar_primer_bloque(
+            self.mint, 101, 0.15, "buyer-b", es_compra=True
+        )
+        volumen._anotar_primer_bloque(
+            self.mint, 101, 0.05, "seller", es_compra=False
+        )
+        volumen._anotar_primer_bloque(
+            self.mint, 102, 9.0, "too-late", es_compra=True
+        )
+
+        metrics = volumen.metricas_segundo_bloque(self.mint)
+        self.assertEqual(metrics["observado"], 1)
+        self.assertEqual(metrics["compras"], 2)
+        self.assertEqual(metrics["ventas"], 1)
+        self.assertEqual(metrics["compradores"], 2)
+        self.assertAlmostEqual(metrics["compra_sol"], 0.35)
+        self.assertAlmostEqual(metrics["venta_sol"], 0.05)
+        self.assertAlmostEqual(metrics["neto_sol"], 0.30)
 
     def test_second_wave_metrics_exclude_creator_from_recent_demand(self):
         volumen._ops[self.mint] = [

@@ -326,6 +326,9 @@ async def start_bot(config_path: str):
             buy_from_second_block=cfg.get("filters", {}).get(
                 "buy_from_second_block", False
             ),
+            second_block_confirmation=cfg.get("filters", {}).get(
+                "second_block_confirmation"
+            ),
             min_ops=cfg.get("filters", {}).get("min_ops", 0),
             min_titulares=cfg.get("filters", {}).get("min_titulares", 0),
             redes_originales=cfg.get("filters", {}).get("redes_originales", False),
