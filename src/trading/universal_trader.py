@@ -2493,11 +2493,25 @@ class UniversalTrader:
         # pareciendo que simplemente "aun no habia terminado".
         _g1 = float(self.tp_tiers[0].gain) if self.tp_tiers else 0.5
         _g2 = float(self.tp_tiers[1].gain) if len(self.tp_tiers) > 1 else None
-        sl = entry_price * (1 - float(self.stop_loss_percentage or 0.3))
+        # Mirror the real exit monitor exactly.  ``0`` means that the
+        # percentage stop is disabled; it must not silently become the old
+        # paper-only -30% fallback.  An absolute MC stop is converted with the
+        # same live SOL/USD snapshot used by the real monitor.
+        _paper_sl_pct = float(self.stop_loss_percentage or 0)
+        sl = entry_price * (1 - _paper_sl_pct) if _paper_sl_pct > 0 else 0.0
+        if self.mc_stop_loss > 0:
+            sl = max(
+                sl,
+                self.mc_stop_loss / (_PUMP_TOTAL_SUPPLY * _SOL_USD),
+            )
         peak = trough = entry_price
         hit = {"tp1": False, "tp2": False, "sl": False}
         paper_executed = [False] * len(self.tp_tiers)
         tier_sale_prices: list[float | None] = [None] * len(self.tp_tiers)
+        paper_mc_executed = [False] * len(self.mc_take_profit_tiers)
+        mc_tier_sale_prices: list[float | None] = [
+            None
+        ] * len(self.mc_take_profit_tiers)
         final_target_price = (
             self.final_target_mc / (_PUMP_TOTAL_SUPPLY * _SOL_USD)
             if self.final_target_mc > 0
@@ -2582,10 +2596,31 @@ class UniversalTrader:
                             tier_sale_prices,
                             nuevo_sl=paper_floor,
                         )
+                    # The real MC ladder is armed only after every percentage
+                    # tier.  Fractions are relative to the original position.
+                    if self.tp_tiers and all(paper_executed):
+                        current_mc = p * _PUMP_TOTAL_SUPPLY * _SOL_USD
+                        for i, (target_mc, _sell) in enumerate(
+                            self.mc_take_profit_tiers
+                        ):
+                            if paper_mc_executed[i] or current_mc < target_mc:
+                                continue
+                            paper_mc_executed[i] = True
+                            mc_tier_sale_prices[i] = (
+                                target_mc / (_PUMP_TOTAL_SUPPLY * _SOL_USD)
+                            )
+                            first_hit = first_hit or f"mc_tp_{target_mc:.0f}"
                     sold_fraction = sum(
                         tier.sell
                         for i, tier in enumerate(self.tp_tiers)
                         if paper_executed[i]
+                    )
+                    sold_fraction += sum(
+                        sell
+                        for i, (_target_mc, sell) in enumerate(
+                            self.mc_take_profit_tiers
+                        )
+                        if paper_mc_executed[i]
                     )
                     if sold_fraction >= 1.0:
                         strategy_closed = True
@@ -2613,6 +2648,25 @@ class UniversalTrader:
                 sales.append(
                     {
                         "reason": f"TP{i + 1}",
+                        "position_pct": round(sold * 100, 4),
+                        "price_sol": sale_price,
+                    }
+                )
+            for i, (target_mc, sell_fraction) in enumerate(
+                self.mc_take_profit_tiers
+            ):
+                if not paper_mc_executed[i] or remaining <= 0:
+                    continue
+                sold = min(float(sell_fraction), remaining)
+                sale_price = float(
+                    mc_tier_sale_prices[i]
+                    or target_mc / (_PUMP_TOTAL_SUPPLY * _SOL_USD)
+                )
+                roi += sold * (sale_price / entry_price - 1)
+                remaining -= sold
+                sales.append(
+                    {
+                        "reason": f"MC_TP_{target_mc:.0f}",
                         "position_pct": round(sold * 100, 4),
                         "price_sol": sale_price,
                     }
@@ -2710,6 +2764,19 @@ class UniversalTrader:
                     }
                     for i, tier in enumerate(self.tp_tiers)
                 ],
+                "mc_take_profit_tiers": [
+                    {
+                        "target_mc": target_mc,
+                        "sell_pct": round(sell * 100, 4),
+                        "price_sol": (
+                            target_mc / (_PUMP_TOTAL_SUPPLY * _SOL_USD)
+                        ),
+                        "hit": paper_mc_executed[i],
+                    }
+                    for i, (target_mc, sell) in enumerate(
+                        self.mc_take_profit_tiers
+                    )
+                ],
                 "sales": sales,
                 "average_sale_price_sol": average_sale_price,
                 "exit_price_sol": (
@@ -2719,7 +2786,7 @@ class UniversalTrader:
                 "strategy_closed": remaining <= 1e-9,
                 "position_sold_pct": round(sold_fraction * 100, 4),
                 "position_remaining_pct": round(remaining * 100, 4),
-                "tp_hits": sum(paper_executed),
+                "tp_hits": sum(paper_executed) + sum(paper_mc_executed),
                 "roi_pct": round(roi * 100, 4),
                 "value_sol": value,
                 "pnl_sol": pnl,
