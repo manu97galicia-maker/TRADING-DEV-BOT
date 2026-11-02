@@ -22,10 +22,14 @@ if [[ ! "$minutos" =~ ^[0-9]+$ ]] || (( minutos < 1 || minutos > 1440 )); then
 fi
 
 segundos=$((minutos * 60))
+override_dir="/run/systemd/system/${SERVICIO}.d"
+override_file="${override_dir}/50-duracion.conf"
 
-# No se toca ningún servicio real. Esta propiedad solo vive hasta el próximo
-# reinicio del sistema; el fichero de unidad conserva 60 min como respaldo.
-systemctl set-property --runtime "$SERVICIO" RuntimeMaxSec="${segundos}s"
+# No se toca ningún servicio real. El override vive en /run y desaparece con
+# el próximo reinicio; el fichero de unidad conserva 60 min como respaldo.
+install -d -m 0755 "$override_dir"
+printf '[Service]\nRuntimeMaxSec=%ss\n' "$segundos" >"$override_file"
+systemctl daemon-reload
 systemctl restart "$SERVICIO"
 
 if [[ "$(systemctl is-active "$SERVICIO")" != "active" ]]; then
