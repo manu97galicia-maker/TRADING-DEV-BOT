@@ -25,14 +25,15 @@ def test_entrada_exige_banda_y_fuerza_sin_minimo_de_volumen(cfg: dict) -> None:
     filters = cfg["filters"]
     curve = filters["curva_96"]
     assert (filters["min_entry_mc"], filters["max_entry_mc"]) == (16000, 18000)
-    assert filters["min_holders"] == 6
+    assert filters["min_holders"] == 4
     assert filters["min_volumen_sol"] == 0
-    assert filters["min_buys"] == 10
-    assert filters["min_ops"] == 12
-    assert filters["min_presion_ratio"] == 1.4
-    assert curve["min_compradores"] == 6
-    assert curve["min_presion_ratio"] == 1.4
-    assert curve["min_compra_sol"] == 0.15
+    assert filters["min_buys"] == 6
+    assert filters["min_ops"] == 8
+    assert filters["min_presion_ratio"] == 1.15
+    assert curve["min_compradores"] == 3
+    assert curve["min_compradores_ola"] == 2
+    assert curve["min_presion_ratio"] == 1.15
+    assert curve["min_compra_sol"] == 0.05
     assert curve["max_subida_vela"] <= 0.35
 
 
