@@ -77,14 +77,14 @@ filters:
 
   min_entry_mc: 16000
   max_entry_mc: 18000
-  min_holders: 8
+  min_holders: 6
   max_holder_pct: 0
   # Sin mínimo de volumen por petición expresa; la demanda se protege con
   # compradores distintos, número de operaciones y presión compra/venta.
   min_volumen_sol: 0
-  min_buys: 12
-  min_ops: 16
-  min_presion_ratio: 1.6
+  min_buys: 10
+  min_ops: 12
+  min_presion_ratio: 1.4
   presion_seg: 5
 
   curva_96:
@@ -95,11 +95,11 @@ filters:
     buy_amount: 0
     max_compras: 0
     parar_tras_perdidas: 0
-    min_compradores: 8
+    min_compradores: 6
     min_compradores_ola: 3
     ventana_presion: 5.0
-    min_presion_ratio: 1.6
-    min_compra_sol: 0.20
+    min_presion_ratio: 1.4
+    min_compra_sol: 0.15
     vela_seg: 1.0
     max_subida_vela: 0.35
     exigir_ver_creacion: false
