@@ -1,7 +1,7 @@
 # Experimento exclusivamente PAPER. No autoriza transacciones reales.
 #
 # Hipotesis que se quiere medir:
-# - entrar solamente con MC entre 17k y 18k, demanda distribuida y volumen;
+# - entrar solamente con MC entre 16k y 18k y demanda distribuida;
 # - cortar en 13,68k;
 # - recuperar capital cerca de 24k vendiendo el 73%;
 # - proteger el 27% restante en la entrada y venderlo en 45k.
@@ -69,18 +69,19 @@ filters:
   paper_trade: true
   max_token_age: 0
   # Da dos minutos desde que aparece la candidata para confirmar banda,
-  # volumen, compradores y presion; no compra si no llega a cumplirlo todo.
+  # compradores y presion; no compra si no llega a cumplirlo todo.
   max_buy_age: 120
   allow_mayhem: false
   require_mayhem: false
   ignorar_listas_de_devs: true
 
-  min_entry_mc: 17000
+  min_entry_mc: 16000
   max_entry_mc: 18000
   min_holders: 8
   max_holder_pct: 0
-  # Volumen acumulado recordado por el bot y actividad distribuida.
-  min_volumen_sol: 8.0
+  # Sin mínimo de volumen por petición expresa; la demanda se protege con
+  # compradores distintos, número de operaciones y presión compra/venta.
+  min_volumen_sol: 0
   min_buys: 12
   min_ops: 16
   min_presion_ratio: 1.6

@@ -21,12 +21,12 @@ def test_es_exclusivamente_paper_y_nace_desactivado(cfg: dict) -> None:
     assert cfg["trade"]["max_real_buys"] == 0
 
 
-def test_entrada_exige_banda_fuerza_y_volumen(cfg: dict) -> None:
+def test_entrada_exige_banda_y_fuerza_sin_minimo_de_volumen(cfg: dict) -> None:
     filters = cfg["filters"]
     curve = filters["curva_96"]
-    assert (filters["min_entry_mc"], filters["max_entry_mc"]) == (17000, 18000)
+    assert (filters["min_entry_mc"], filters["max_entry_mc"]) == (16000, 18000)
     assert filters["min_holders"] >= 8
-    assert filters["min_volumen_sol"] >= 8
+    assert filters["min_volumen_sol"] == 0
     assert filters["min_buys"] >= 12
     assert filters["min_ops"] >= 16
     assert filters["min_presion_ratio"] >= 1.6
