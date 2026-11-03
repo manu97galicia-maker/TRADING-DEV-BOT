@@ -58,12 +58,46 @@ tres posiciones compartidas y pausa de cada estrategia tras tres pérdidas en
 sus últimos cinco cierres verificados. El SL es un disparador de venta y no
 garantiza una pérdida máxima del 25%.
 
-Estos controles no equivalen a detectar manipulación. Contar wallets distintas
-no demuestra que sean independientes. No se ha integrado en este paquete un
-filtro de concentración, wallets relacionadas o wash trading. La confirmación
-de alcance para añadir filtros de subidas bruscas y concentración está pendiente.
+`four_strategies.entry_protection` añade filtros comunes a las cuatro entradas,
+incluidas Telegram y primer bloque. `four_strategy_entry_guard.py` y el comprador
+compartido los ejecutan antes de firmar:
+
+| Comprobación | Rechazo de entrada |
+| --- | --- |
+| Subida rápida | Precio más de 35% por encima del mínimo observado en los últimos 2s |
+| Caída reciente | Precio más de 10% por debajo del máximo observado en los últimos 2s |
+| Carrera mientras se valida | Precio de la curva más de 10% por encima de la primera lectura de esta validación |
+| Un propietario observado | Más de 8% del supply total, sumando sus cuentas observadas |
+| Diez propietarios observados | Más de 30% del supply total entre los diez mayores del conjunto observado |
+| Creador | Más de 5% del supply total, consultando todas sus cuentas devueltas por el RPC |
+| Datos no verificables | Rechazo por evidencia ausente, incompleta, antigua o por exceder 3s de validación |
+
+El precio necesita al menos dos observaciones en la ventana y la última no puede
+tener más de 1s. En lanzamientos nuevos usa la parte de la ventana realmente
+observada, sin exigir esperar dos segundos completos. Los nuevos RPC añaden
+latencia y pueden hacer perder entradas tempranas; no se fuerza una compra para
+compensarlo. Los límites son configurables y no están optimizados por resultados.
+
+El [RPC de Solana devuelve las 20 mayores cuentas de tokens](https://solana.com/docs/rpc/http/gettokenlargestaccounts),
+no una lista completa de propietarios. Se añaden las cuentas del creador y se
+releen juntos mint, curva y cuentas de tokens con `getMultipleAccounts` y un slot
+mínimo. Se agrupan las cuentas observadas de un mismo propietario. Se excluye
+únicamente la ATA de reserva derivada para la curva y programa de token correctos,
+verificando también sus propietarios; no se acepta una dirección arbitraria
+como reserva excluida. Los porcentajes usan el supply total como denominador,
+no el circulante. El modelo de MC sigue esperando mil millones de tokens con
+seis decimales; tolera solo quemas de polvo de hasta una parte por millón.
+
+Estos controles no equivalen a detectar toda manipulación. Contar wallets
+distintas no demuestra que sean independientes. Cuentas pequeñas fuera de la
+muestra, wallets relacionadas y wash trading pueden seguir sin detectarse.
 Presión mantiene su techo de 21K, pero Telegram, primer bloque y el cruce de 21K
 no tienen un techo global de MC. No se anuncia protección completa contra rugs.
+
+El diagnóstico verifica estos métodos RPC con un mint configurable de prueba
+(`rpc_probe_mint`); este mint nunca se convierte en señal ni se compra. Se evita
+usar WSOL como prueba de ranking porque su número enorme de cuentas puede superar
+los límites del proveedor aunque el método funcione para tokens recientes.
 
 `src/trading/four_strategy_book.py` integra la pausa por tres pérdidas entre
 los últimos cinco cierres verificados de cada estrategia. Se evalúa al disponer

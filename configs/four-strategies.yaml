@@ -80,6 +80,19 @@ four_strategies:
   database: estudios/four_strategies/runtime.sqlite3
   callout_outbox: trades/four_strategy_callouts.jsonl
   callout_account: AImemebot
+  entry_protection:
+    enabled: true
+    price_window_seconds: 2.0
+    max_price_age_seconds: 1.0
+    max_rise_fraction: 0.35
+    max_drawdown_fraction: 0.10
+    max_quote_increase_fraction: 0.10
+    max_observed_owner_fraction: 0.08
+    max_top10_observed_owners_fraction: 0.30
+    max_creator_fraction: 0.05
+    rpc_timeout_seconds: 3.0
+    # Diagnostic read only; never used as a trading signal.
+    rpc_probe_mint: CQYoLCLifeH2dwxoJqA41ZfELUtpSbAtCJzseWfWpump
   callout_publication:
     enabled: true
     profile_directory: .pumpfun-callout-profile

@@ -103,7 +103,20 @@
       "shared_position_and_inclusive_budget_limits",
       "initial_stop_loss_and_per_strategy_loss_pause"
     ],
-    "additional_entry_spike_and_concentration_filters": "awaiting_scope_clarification",
+    "additional_entry_spike_and_concentration_filters": {
+      "status": "implemented_enabled_before_signing",
+      "applies_to": "all_four_strategies",
+      "price_window_seconds": 2.0,
+      "max_rise_fraction_from_observed_window_low": 0.35,
+      "max_drawdown_fraction_from_observed_window_peak": 0.10,
+      "max_quote_increase_fraction_during_validation": 0.10,
+      "max_observed_owner_fraction_total_supply": 0.08,
+      "max_top10_observed_owners_fraction_total_supply": 0.30,
+      "max_creator_fraction_total_supply": 0.05,
+      "exclude_verified_curve_reserve_from_ranking": true,
+      "rpc_timeout_seconds": 3.0,
+      "reject_missing_stale_or_incomplete_evidence": true
+    },
     "wash_trading_or_related_wallet_detection_verified": false
   }
 }

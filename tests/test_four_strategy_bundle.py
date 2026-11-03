@@ -16,6 +16,7 @@ import yaml
 from monitoring.four_strategy_signals import choose_signal
 from trading.base import TradeResult
 from trading.four_strategy_book import FourStrategyBook
+from trading.four_strategy_entry_guard import EntryRiskRejected
 from trading.four_strategy_runtime import FourStrategyTrader, SharedBuyer
 from trading.transaction_observer import OBSERVER, PRIORITY_CAP, SUBMISSIONS, observe
 
@@ -223,6 +224,22 @@ class BuyerTests(unittest.IsolatedAsyncioTestCase):
         self.runtime.receipt_writer = lambda nonce, kind: (
             FourStrategyTrader.receipt_writer(self.runtime, nonce, kind)
         )
+        state = {"price_per_token": 1e-7, "complete": False}
+        self.runtime.check_entry_risk = AsyncMock(return_value=(state, {"checked": True}))
+        self.runtime.update_details = lambda nonce, changes: (
+            FourStrategyTrader.update_details(self.runtime, nonce, changes)
+        )
+
+    async def test_entry_risk_rejection_never_reaches_broker_or_keeps_reservation(self):
+        for strategy in ("strong-pressure-8k", "strength-21k", "first-block-four-buyers", "telegram-immediate"):
+            with self.subTest(strategy=strategy):
+                self.runtime.current_signal = lambda token, _strategy=strategy: {"strategy": _strategy, "sol_usd": 100}
+                self.runtime.check_entry_risk.side_effect = EntryRiskRejected("concentrated_creator")
+                broker = SimpleNamespace(execute=AsyncMock())
+                result = await SharedBuyer(self.runtime, broker).execute(self.token)
+                self.assertFalse(result.success)
+                broker.execute.assert_not_awaited()
+                self.assertFalse(self.book.positions())
 
     async def test_real_buy_path_is_sized_by_the_shared_book_and_receipt_is_durable(
         self,
@@ -276,6 +293,7 @@ class BuyerTests(unittest.IsolatedAsyncioTestCase):
         self.runtime.platform_implementations.curve_manager.get_pool_state.return_value[
             "price_per_token"
         ] = 1e-8
+        self.runtime.check_entry_risk.return_value = ({"price_per_token": 1e-8, "complete": False}, {})
         broker = SimpleNamespace(execute=AsyncMock())
         result = await SharedBuyer(self.runtime, broker).execute(self.token)
         self.assertFalse(result.success)

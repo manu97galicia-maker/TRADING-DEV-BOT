@@ -20,11 +20,13 @@ sys.path.insert(0, str(ROOT / "src"))
 
 def check_plan(path: Path) -> dict:
     """Validate explicit shared risk settings without loading credentials."""
+    from trading.four_strategy_entry_guard import validate_policy
     from trading.review_exit_ladder import build_review_ladder
 
     plan = yaml.safe_load(path.read_text(encoding="utf-8"))
     trade = plan["trade"]
     settings = plan["four_strategies"]
+    validate_policy(settings["entry_protection"])
     if trade["max_posiciones"] != 3 or trade["fraccion_saldo"] != 0.20:
         raise ValueError("Bundle requires three positions and a 20% fraction")
     if (

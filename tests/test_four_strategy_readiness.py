@@ -70,7 +70,10 @@ class ReadinessTests(unittest.TestCase):
         self.assertFalse(_finish(report)["ready_for_manual_start"])
 
     def test_preflight_method_allowlist_cannot_sign_or_send(self) -> None:
-        self.assertEqual(READ_METHODS, {"getHealth", "getGenesisHash", "getBalance"})
+        self.assertEqual(READ_METHODS, {
+            "getHealth", "getGenesisHash", "getBalance", "getTokenLargestAccounts",
+            "getMultipleAccounts", "getTokenAccountsByOwner",
+        })
 
     def test_mainnet_identifier_is_a_complete_32_byte_hash(self) -> None:
         self.assertEqual(len(base58.b58decode(MAINNET_GENESIS)), 32)

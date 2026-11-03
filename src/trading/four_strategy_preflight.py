@@ -18,7 +18,16 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 MAINNET_GENESIS = "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"
-READ_METHODS = frozenset({"getHealth", "getGenesisHash", "getBalance"})
+READ_METHODS = frozenset(
+    {
+        "getHealth",
+        "getGenesisHash",
+        "getBalance",
+        "getTokenLargestAccounts",
+        "getMultipleAccounts",
+        "getTokenAccountsByOwner",
+    }
+)
 USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 WSOL = "So11111111111111111111111111111111111111112"
 
@@ -232,6 +241,53 @@ async def inspect_online(plan: dict, config_path: Path) -> dict:  # noqa: C901, 
                 "fail",
                 f"Comprobación fallida: {type(error).__name__}",
             )
+        if plan["four_strategies"].get("entry_protection", {}).get("enabled"):
+            try:
+                probe_mint = plan["four_strategies"]["entry_protection"][
+                    "rpc_probe_mint"
+                ]
+                largest = await rpc(
+                    "getTokenLargestAccounts", [probe_mint, {"commitment": "processed"}]
+                )
+                snapshot = await rpc(
+                    "getMultipleAccounts",
+                    [
+                        [probe_mint],
+                        {
+                            "encoding": "jsonParsed",
+                            "commitment": "processed",
+                            "minContextSlot": largest["context"]["slot"],
+                        },
+                    ],
+                )
+                owned = await rpc(
+                    "getTokenAccountsByOwner",
+                    [
+                        report["configured_public_wallet"],
+                        {"mint": probe_mint},
+                        {"encoding": "jsonParsed", "commitment": "processed"},
+                    ],
+                )
+                available = bool(
+                    largest["value"]
+                    and snapshot["value"][0]
+                    and isinstance(owned["value"], list)
+                )
+                _record(
+                    report,
+                    "entry_protection_rpc",
+                    "pass" if available else "fail",
+                    "Métodos de lectura para concentración disponibles"
+                    if available
+                    else "Datos de concentración incompletos",
+                )
+            except Exception as error:
+                _record(
+                    report,
+                    "entry_protection_rpc",
+                    "fail",
+                    f"Consulta de concentración no disponible: {type(error).__name__}",
+                )
         try:
             async with websockets.connect(
                 env["SOLANA_NODE_WSS_ENDPOINT"], open_timeout=12

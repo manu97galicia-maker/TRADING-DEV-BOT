@@ -24,6 +24,12 @@ from monitoring.pressure_trial_source import PressureTrialSource
 from monitoring.telegram_source import TelegramSource
 from trading.base import TradeResult
 from trading.four_strategy_book import FourStrategyBook
+from trading.four_strategy_entry_guard import (
+    EntryRiskRejected,
+    check_price,
+    concentration_snapshot,
+    validate_policy,
+)
 from trading.review_exit_ladder import build_review_ladder
 from trading.strategy_loss_guard import (
     priority_fee_cap_lamports,
@@ -104,6 +110,10 @@ class SharedBuyer:
             state = await runtime.platform_implementations.curve_manager.get_pool_state(
                 token_info.bonding_curve, commitment="processed"
             )
+            if runtime.four.get("entry_protection", {}).get("enabled"):
+                state, evidence = await runtime.check_entry_risk(token_info, state)
+                token_info.additional_data["entry_protection"] = evidence
+                runtime.update_details(nonce, {"entry_protection": evidence})
             chain_mc = float(state.get("price_per_token") or 0) * 1e9 * runtime.sol_usd
             bounds_ok = (
                 8000 <= chain_mc < 21000
@@ -124,6 +134,10 @@ class SharedBuyer:
                     success=False,
                     error_message="Curve or signal changed before submission",
                 )
+        except EntryRiskRejected as error:
+            runtime.book.cancel_unsubmitted(nonce)
+            logger.info("Entry rejected for %s: %s", token_info.mint, error)
+            return TradeResult(success=False, error_message=f"Entry protection: {error}")
         except Exception:
             runtime.book.cancel_unsubmitted(nonce)
             raise
@@ -177,6 +191,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
         _PROCEEDS.set(value)
 
     def configure_four(self, settings: dict) -> None:
+        validate_policy(settings["entry_protection"])
         if str(self.wallet.pubkey) != settings["expected_wallet"]:
             raise ValueError(
                 "Configured private key does not match the requested public wallet"
@@ -222,6 +237,42 @@ class FourStrategyTrader(legacy.UniversalTrader):
 
     def reference_age(self) -> float:
         return time.time() - self.sol_quote_at
+
+    async def check_entry_risk(self, token: object, initial_state: dict) -> tuple[dict, dict]:
+        policy = self.four["entry_protection"]
+
+        async def inspect() -> tuple[dict, dict]:
+            anchor = float(initial_state.get("price_per_token") or 0)
+            if not math.isfinite(anchor) or anchor <= 0 or initial_state.get("complete"):
+                raise EntryRiskRejected("invalid_curve_before_risk_check")
+            creator = str(initial_state.get("creator") or "")
+            if creator != str(getattr(token, "creator", "")):
+                raise EntryRiskRejected("creator_metadata_mismatch")
+            concentration = await concentration_snapshot(token, creator, self.rpc, policy)
+            current = await self.platform_implementations.curve_manager.get_pool_state(
+                token.bonding_curve, commitment="processed"
+            )
+            if current.get("complete") or str(current.get("creator") or "") != creator:
+                raise EntryRiskRejected("curve_changed_during_risk_check")
+            price = float(current.get("price_per_token") or 0)
+            price_evidence = check_price(
+                list(volumen._historia_precio.get(str(token.mint), [])), price,
+                anchor, time.time(), policy,
+            )
+            # Use exactly the curve price that passed these checks in the buyer's
+            # existing short-lived quote cache, instead of an older builder quote.
+            token.additional_data["precio_curva"] = price
+            token.additional_data["precio_curva_en"] = time.monotonic()
+            return current, {"price": price_evidence, "concentration": concentration}
+
+        try:
+            return await asyncio.wait_for(inspect(), timeout=policy["rpc_timeout_seconds"])
+        except EntryRiskRejected:
+            raise
+        except asyncio.TimeoutError as error:
+            raise EntryRiskRejected("entry_risk_check_timeout") from error
+        except Exception as error:
+            raise EntryRiskRejected("unreadable_entry_risk_evidence") from error
 
     def _cartel_de_configuracion(self) -> str:
         return (
