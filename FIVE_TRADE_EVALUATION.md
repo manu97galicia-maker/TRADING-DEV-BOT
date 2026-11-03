@@ -4,8 +4,9 @@ La configuración `five_trade_evaluation`, fuera de `four_strategies`, prepara
 tandas independientes de **cinco operaciones auditadas por estrategia**. El
 límite global pasa a **cuatro posiciones**, incluidas compras pendientes,
 envíos inciertos y remanentes. El presupuesto de cada nueva operación es el
-**90% del SOL líquido confirmado para las cinco estrategias**, incluidos márgenes
-y gastos. El límite de plazas no permite exceder el saldo ni la reserva de
+**90% del SOL líquido confirmado para las cuatro originales**. La estrategia
+dev usa el menor entre el **80% y 20 USD**, incluidos márgenes y gastos.
+El límite de plazas no permite exceder el saldo ni la reserva de
 0,03 SOL. Cada entrada se recalcula sobre el saldo restante; si el presupuesto
 no deja esa reserva o coincide con otros gastos pendientes, se rechaza la compra.
 Las posiciones previas conservan sus presupuestos registrados.
@@ -81,3 +82,33 @@ ventas, detiene la instancia anterior y solicita el nuevo arranque, conservando
 el libro y los registros de pausas; las pausas históricas de tres pérdidas ya
 no se aplican. Las pruebas de desarrollo usan recibos simulados; no son
 cinco trades reales ni evidencia de rentabilidad futura.
+
+Reactivación manual de la estrategia dev tras una tanda no rentable:
+
+```bash
+cd /root/ai-bot-four-strategies
+.venv/bin/python resume_dev_batch.py --expected-batch 2
+```
+
+Ese comando solo muestra el plan. El número debe coincidir con la última tanda
+dev pausada. La aplicación manual explícita es:
+
+```bash
+.venv/bin/python resume_dev_batch.py --expected-batch 2 --apply
+```
+
+`--apply` habilita nuevas entradas; un proceso real que ya esté abierto puede
+comprar inmediatamente después, sin reinicio. El comando conserva la tanda
+anterior, sus pérdidas, cierres, recibos y estado pausado. Abre la siguiente
+tanda de cinco como `collecting` y registra la decisión del usuario en
+`five_trade_manual_resumptions`; no convierte una tanda perdedora en ganadora.
+La nueva tanda sigue sometida a la misma regla de ROI y a los límites de saldo,
+plazas, tamaño y salidas. No reactiva otras estrategias ni cambia la identidad
+de evaluación. Repetir el mismo número falla, evitando abrir tandas sucesivas
+por ejecutar dos veces el comando.
+
+Solo permite reanudar cinco cierres auditados con costes válidos, ROI no
+positivo y ninguna posición dev ni entrada sin resolver. No permite saltarse
+un bloqueo por costes desconocidos. La vista previa usa SQLite en modo de solo
+lectura; la aplicación usa una transacción `BEGIN IMMEDIATE` y no crea libros
+que no existan. Este script no se ejecuta durante despliegues ni pruebas reales.
