@@ -47,6 +47,8 @@ class SourceTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.policy = yaml.safe_load((ROOT / "configs/second-block-dev.yaml").read_text())
         self.policy["entry_rule"] = "second_block"
+        self.policy.pop("entry_timing", None)
+        self.policy.pop("require_dev_initial_buy", None)
         self.policy["min_first_block_volume_usd"] = 275
         self.impl = SimpleNamespace(event_parser=SimpleNamespace(_idl_parser=IDLParser(str(ROOT / "idl/pump_fun_idl.json"))))
         self.callback = AsyncMock()

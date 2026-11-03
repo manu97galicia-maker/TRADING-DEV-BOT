@@ -15,6 +15,8 @@ class HistoryOnlySourceTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         await stream.SourceTests.asyncSetUp(self)
         self.policy["entry_rule"] = "creator_migration_only"
+        self.policy["entry_timing"] = "any_verified_time"
+        self.policy["require_dev_initial_buy"] = False
         self.policy["require_first_block_activity"] = False
         self.now = 100.0
         clock = SimpleNamespace(monotonic=lambda: self.now, time=lambda: 1800000000+self.now)

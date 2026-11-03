@@ -30,6 +30,8 @@ class DeveloperStreamLatencyTests(unittest.IsolatedAsyncioTestCase):
         trader, token, broker = self.fixture(STRATEGY_ID)
         trader.only_dev = True
         trader.second_policy = copy.deepcopy(only_dev.SECOND_POLICY)
+        trader.second_policy["entry_timing"] = "any_verified_time"
+        trader.second_policy["require_dev_initial_buy"] = False
         if classic:
             trader.second_policy["entry_rule"] = "second_block"
         trader.four = copy.deepcopy(only_dev.PLAN["four_strategies"])

@@ -5,10 +5,16 @@ dev firmante con al menos 1% de migraciones PumpSwap verificadas. Con el selecto
 actual `require_first_block_activity: true`, añade dos compradores distintos
 y al menos 250 USD de volumen total en el bloque de creación. Compras y ventas
 suman al volumen; las operaciones posteriores no completan ese requisito.
-No aplica los límites clásicos de MC, concentración, variaciones del precio
-ni una ventana fija de segundo/tercer bloque.
-Compra cuando termina la verificación del historial y la preparación de una
-curva compatible. Prioridad máxima: compra 0,07 USD, salidas 0,03 USD por intento;
+No aplica los límites clásicos de MC, concentración ni variaciones del precio.
+Con `entry_timing: second_produced_block` y `require_dev_initial_buy: true`,
+exige que la primera operación del mint en la propia transacción de creación
+sea una compra del dev y solo intenta entrar en el siguiente bloque producido,
+identificado por su padre. Si el historial o la preparación llegan tarde,
+descarta la moneda; `third_block_retry_on_sharp_rise: false` impide perseguirla
+en el tercero. La ventana es de 0,6 segundos desde la notificación del bloque,
+con revisión del slot `processed`, antes de firmar y de enviar. No garantiza
+inclusión en ese bloque ni ser su primera compra.
+Prioridad máxima: compra 0,07 USD, salidas 0,03 USD por intento;
 comisiones base, del protocolo y renta aparte. Mantiene TP/SL y controles del libro.
 
 El funcionamiento actual se detalla en `DEV_ONLY.md`. Las secciones siguientes
@@ -23,7 +29,7 @@ el perfil clásico conservan su configuración histórica del 90%.
 La configuración se carga al reiniciar manualmente; instalar estos archivos
 no reinicia un proceso que ya está abierto.
 
-La configuración actual `reject_sharp_price_rise: false` quita a la estrategia
+En el perfil clásico, `reject_sharp_price_rise: false` quita a la estrategia
 dev el límite de subida del 35% frente al mínimo de los últimos dos segundos.
 Mantiene el rechazo por caída superior al 10%, incremento de cotización superior
 al 10%, falta de precios recientes, concentración, MC, historial y saldo.

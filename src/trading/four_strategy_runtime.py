@@ -37,6 +37,7 @@ from trading.second_block_policy import (
     entry_budget_cap_lamports,
     position_exit_plan,
     recovery_allocations,
+    second_produced_block,
     validate_second_policy,
 )
 from trading.strategy_loss_guard import (
@@ -89,6 +90,16 @@ def _configure_history_only_assets(runtime: object) -> None:
         runtime.buyer.require_mayhem = False
 
 
+def _strict_dev_window(token: object, signal: dict | None, target: int) -> bool:
+    """Require an immutable produced-block target and explicit creation-buy proof."""
+    return bool(signal and signal.get("strategy") == STRATEGY_ID
+                and type(signal.get("entry_block")) is int and signal["entry_block"] == 2
+                and type(signal.get("target_slot")) is int and signal["target_slot"] == target
+                and signal.get("dev_initial_buy_verified") is True
+                and type((token.additional_data or {}).get("dev_entry_target_slot")) is int
+                and token.additional_data["dev_entry_target_slot"] == target)
+
+
 class SharedBuyer:
     """Put every source behind the same durable admission transaction."""
 
@@ -115,18 +126,33 @@ class SharedBuyer:
                 success=False,
                 error_message="This bundle accepts unmigrated Pump.fun entries",
             )
-        existing_raw, _ = await runtime.raw_holdings(str(token_info.mint))
+        strict = signal["strategy"] == STRATEGY_ID and second_produced_block(getattr(runtime, "second_policy", {}))
+        strict_target = signal.get("target_slot")
+        if strict and not _strict_dev_window(token_info, signal, strict_target):
+            return TradeResult(success=False, error_message="Second-block creation-buy proof or target unavailable")
+        if strict:
+            (existing_raw, holdings_slot), balance = await asyncio.gather(
+                runtime.raw_holdings(str(token_info.mint), commitment="processed"),
+                runtime.rpc("getBalance", [str(runtime.wallet.pubkey), {"commitment": "finalized"}]),
+            )
+            creation_slot = signal.get("creation_slot")
+            if (type(holdings_slot) is not int or type(creation_slot) is not int
+                    or not creation_slot <= holdings_slot <= strict_target):
+                return TradeResult(success=False, error_message="Second-block holdings context is stale")
+        else:
+            existing_raw, _ = await runtime.raw_holdings(str(token_info.mint))
         if existing_raw:
             return TradeResult(
                 success=False,
                 error_message="Existing holdings in this mint cannot be mixed with this bundle",
             )
-        balance = await runtime.rpc(
-            "getBalance", [str(runtime.wallet.pubkey), {"commitment": "finalized"}]
-        )
+        if not strict:
+            balance = await runtime.rpc(
+                "getBalance", [str(runtime.wallet.pubkey), {"commitment": "finalized"}]
+            )
         # Re-evaluate after the balance read: a slow RPC must not validate old flow.
         signal = runtime.current_signal(token_info)
-        if not signal:
+        if not signal or (strict and not _strict_dev_window(token_info, signal, strict_target)):
             return TradeResult(
                 success=False, error_message="Entry expired while reading balance"
             )
@@ -171,6 +197,7 @@ class SharedBuyer:
             runtime.update_details(nonce, {"entry_exit_policy": policy["exit"],
                 "entry_policy_id": STRATEGY_ID, "target_slot": signal["target_slot"],
                 "entry_rule": policy.get("entry_rule", "second_block"),
+                "entry_timing": policy.get("entry_timing", "any_verified_time"),
                 "entry_budget_cap_usd": policy.get("max_entry_budget_usd"),
                 "entry_budget_sol_usd": runtime.sol_usd,
                 "entry_block": signal.get("entry_block", 2), "retry_reason": signal.get("retry_reason")})
@@ -182,9 +209,16 @@ class SharedBuyer:
         }
         # Unreadable/finalized-wrong curve is rejected before signing.
         try:
-            state = await runtime.platform_implementations.curve_manager.get_pool_state(
-                token_info.bonding_curve, commitment="processed"
-            )
+            curve_read = runtime.platform_implementations.curve_manager.get_pool_state(
+                token_info.bonding_curve, commitment="processed")
+            if strict:
+                state, chain_slot = await asyncio.gather(
+                    curve_read, runtime.rpc("getSlot", [{"commitment": "processed"}]))
+                if type(chain_slot) is not int or chain_slot != strict_target:
+                    runtime.book.cancel_unsubmitted(nonce)
+                    return TradeResult(success=False, error_message="Second produced block is no longer current")
+            else:
+                state = await curve_read
             if runtime.four.get("entry_protection", {}).get("enabled") and not history_only:
                 state, evidence = await runtime.check_entry_risk(token_info, state)
                 token_info.additional_data["entry_protection"] = evidence
@@ -204,6 +238,7 @@ class SharedBuyer:
                 or not bounds_ok
                 or runtime.reference_age() > 30
                 or not runtime.current_signal(token_info)
+                or (strict and not _strict_dev_window(token_info, runtime.current_signal(token_info), strict_target))
                 or (second and str(state.get("creator")) != signal["creator"])
             ):
                 runtime.book.cancel_unsubmitted(nonce)
@@ -214,7 +249,7 @@ class SharedBuyer:
         except EntryRiskRejected as error:
             runtime.book.cancel_unsubmitted(nonce)
             source = getattr(runtime, "second_source", None)
-            if (second and str(error) == "sharp_price_rise" and signal.get("entry_block") == 2
+            if (second and not strict and str(error) == "sharp_price_rise" and signal.get("entry_block") == 2
                     and source is not None and not runtime.book.signatures(nonce)
                     and not any(p["nonce"] == nonce for p in runtime.book.positions())):
                 if source.arm_third_block_retry(str(token_info.mint), signal["target_slot"],
@@ -222,7 +257,7 @@ class SharedBuyer:
                     logger.info("DEV third-block retry armed for %s after unsubmitted sharp-price rejection", token_info.mint)
             logger.info("Entry rejected for %s: %s", token_info.mint, error)
             return TradeResult(success=False, error_message=f"Entry protection: {error}")
-        except Exception:
+        except BaseException:
             runtime.book.cancel_unsubmitted(nonce)
             raise
         if second:
@@ -255,7 +290,8 @@ class SharedBuyer:
                         latest_cap = _entry_budget_cap_lamports(runtime, STRATEGY_ID)
                     except ValueError:
                         return False
-                    return bool(latest and (history_only or latest.get("target_slot") == target_slot)
+                    return bool(latest and (_strict_dev_window(token_info, latest, strict_target) if strict
+                                else history_only or latest.get("target_slot") == target_slot)
                                 and (latest_cap is None or reservation["budget"] <= latest_cap))
                 window_token = ENTRY_WINDOW.set(in_window)
             result = await self.buyer.execute(
@@ -453,9 +489,11 @@ class FourStrategyTrader(legacy.UniversalTrader):
                 if self.second_policy.get("require_first_block_activity", False):
                     selection += (f" · primer bloque: >={self.second_policy['min_distinct_first_block_buyers']} compradores "
                                   f"y >=${self.second_policy['min_first_block_volume_usd']:.0f} volumen total")
+                timing = ("solo segundo bloque producido, dev compra primero en la creacion"
+                          if second_produced_block(self.second_policy) else "sin bloque fijo de entrada")
                 return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
                         f"incluidos gastos{cap_text} · {selection} · "
-                        "sin MC maximo ni bloque fijo de entrada · 4 plazas compartidas · "
+                        f"sin MC maximo · {timing} · 4 plazas compartidas · "
                         "prioridad compra $0.07 / salidas $0.03")
             return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
                     "incluidos gastos · dev >=1% migraciones verificadas · MC <4200 · "
@@ -556,7 +594,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
             else None
         )
 
-    async def _run_curva96_mode(self) -> None:
+    async def _run_curva96_mode(self) -> None:  # noqa: C901 -- log the selected acquisition contract before starting sources
         if self.second_policy.get("enabled"):
             from monitoring.second_block_source import SecondBlockSource
 
@@ -573,6 +611,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
                             self.second_policy["balance_fraction"]*100)
                 logger.info("DEV inclusive entry budget cap USD (including slippage and fee headroom): %s",
                             self.second_policy.get("max_entry_budget_usd", "none"))
+                if second_produced_block(self.second_policy):
+                    logger.info("DEV strict timing: initial developer buy in creation transaction; only next produced block; no later retry; inclusion not guaranteed")
                 logger.info("DEV history providers: %s; fallback=%s, primary deadline=%ss",
                             self.second_policy.get("history_provider"),
                             self.second_policy.get("history_fallback_provider", "none"),

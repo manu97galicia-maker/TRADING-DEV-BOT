@@ -11,6 +11,7 @@ Las posiciones antiguas de cualquier estrategia mantienen sus monitores de
 salida y auditoría. La selección no borra pérdidas ni reinicia la evaluación.
 
 El perfil activo es `entry_rule: creator_migration_only`, con
+`entry_timing: second_produced_block`, `require_dev_initial_buy: true` y
 `require_first_block_activity: true`. Exige que el dev firmante tenga al menos
 un 1% de sus lanzamientos anteriores migrados a PumpSwap y verificados mediante
 Helius. Además, el bloque de creación debe registrar **dos compradores
@@ -33,9 +34,23 @@ se demuestra que el índice la incluye. Datos incompletos de ambos proveedores
 siguen impidiendo la entrada. El trabajo se realiza fuera del colector y se
 reutiliza en caché; la primera consulta de un dev puede añadir latencia.
 
-No exige MC, concentración, historial de variaciones de precio ni entrar en
-un bloque dos/tres concreto. Observa nuevas creaciones y espera a verificar su historial
-y a preparar una curva comprable; no compra monedas ya migradas a un pool.
+La primera operación de ese mint dentro de la transacción de creación debe
+ser una compra del propio dev (`CreateEvent.user`). Se comprueba con los eventos
+de esa misma transacción; el orden de llegada de transacciones al WebSocket no
+demuestra quién compró primero en todo el bloque.
+
+Solo intenta comprar en el siguiente bloque producido cuyo padre es el bloque
+de creación. No se calcula sumando uno al número de slot. La prueba del dev,
+el historial y la curva deben estar disponibles mientras siga vigente esa ventana
+de 0,6 segundos desde su notificación. Si llegan tarde, pasa al siguiente token,
+sin comprar en el tercero ni perseguir una moneda antigua. La comprobación de
+slot `processed` y los controles previos a firma y envío impiden continuar con
+una ventana que ya se sabe caducada; la red puede incluir una transacción más
+tarde y no se garantiza ser la primera compra del segundo bloque.
+
+No exige MC, concentración ni historial de variaciones de precio. No compra
+monedas ya migradas a un pool. Desactivar el selector de tiempo conserva la
+variante opcional de historial sin bloque fijo; no es el perfil actual.
 
 La preparación consulta tanto la curva como la cuenta del token con
 `commitment: processed`, en paralelo, para no esperar la finalización de una
@@ -59,7 +74,8 @@ El historial desconocido o inferior al 1% no ocupa esos preparadores.
 Los datos de entrada conservan `creation_timestamp`, `source_seen_at`,
 `token_prepared_at`, `signal_ready_at` y `signal_age_seconds`. Permiten separar
 el retraso del stream, la preparación y el envío. Estas mejoras de cola no
-imponen por sí solas una edad máxima de compra ni garantizan inclusión inmediata.
+garantizan inclusión inmediata; el selector de segundo bloque descarta las
+preparaciones tardías.
 
 El presupuesto de nuevas entradas del dev es el menor entre el 80% del SOL
 líquido confirmado y **20 USD**, incluidos margen y gastos estimados.
@@ -82,13 +98,14 @@ permitidas con prioridad cero si la referencia está caducada.
 
 Se mantienen la identidad on-chain del dev y de la curva, las verificaciones
 de formato y disponibilidad, la elegibilidad vigente antes de firmar y la
-protección de saldos y envíos inciertos. Los límites de memoria conservan
-candidatos durante diez minutos y evitan repetir un mint en esa ventana.
+protección de saldos y envíos inciertos. El perfil estricto descarta candidatos
+al terminar el segundo bloque y conserva la deduplicación durante diez minutos.
 
 El parámetro clásico de MC permanece en el archivo para compatibilidad, pero
 no se usa en `creator_migration_only`. La actividad del primer bloque sí se
 exige con el selector actual; omitir o desactivar ese selector conserva la
-variante opcional de solo historial. Las otras cuatro estrategias mantienen
+variante opcional sin mínimos de actividad, pero mantiene la prueba del dev y
+el segundo bloque si esos selectores siguen activos. Las otras cuatro estrategias mantienen
 sus filtros e historial.
 
 En el perfil clásico `entry_rule: second_block`, el mecanismo

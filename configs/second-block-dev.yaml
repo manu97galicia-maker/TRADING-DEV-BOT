@@ -2,6 +2,8 @@
 enabled: false
 strategy_id: dev-second-block
 entry_rule: creator_migration_only
+entry_timing: second_produced_block
+require_dev_initial_buy: true
 balance_fraction: 0.80
 # Inclusive entry budget: lower of this USD cap and the balance fraction.
 max_entry_budget_usd: 20.0
@@ -14,7 +16,7 @@ min_distinct_first_block_buyers: 2
 buy_priority_fee_cap_usd: 0.07
 sell_priority_fee_cap_usd: 0.03
 max_slot_age_seconds: 0.6
-third_block_retry_on_sharp_rise: true
+third_block_retry_on_sharp_rise: false
 reject_sharp_price_rise: false
 creator_cache_seconds: 600
 history_timeout_seconds: 12

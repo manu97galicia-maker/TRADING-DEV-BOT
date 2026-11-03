@@ -20,6 +20,10 @@ def creator_history_only(settings: dict) -> bool:
     return settings.get("entry_rule", "second_block") == "creator_migration_only"
 
 
+def second_produced_block(settings: dict) -> bool:
+    return creator_history_only(settings) and settings.get("entry_timing") == "second_produced_block"
+
+
 def validate_second_policy(settings: dict) -> None:
     """Unresolved exits cannot be enabled by a configuration typo."""
     if not isinstance(settings, dict) or type(settings.get("enabled")) is not bool:
@@ -44,6 +48,7 @@ def validate_second_policy(settings: dict) -> None:
             or type(settings.get("require_first_block_activity", False)) is not bool
             or type(settings.get("reject_sharp_price_rise", True)) is not bool):
         raise ValueError("Second-block settings differ from the requested entry policy")
+    validate_entry_timing(settings)
     entry_budget_cap_lamports(settings, 1, quote_age_seconds=0)
     for key in ["max_slot_age_seconds", "creator_cache_seconds", "history_timeout_seconds"]:
         if not isinstance(settings.get(key), (int, float)) or not math.isfinite(settings[key]) or settings[key] <= 0:
@@ -59,6 +64,15 @@ def validate_second_policy(settings: dict) -> None:
             or exit_policy.get("later_sales") != 3):
         raise ValueError("Expected +35%, then three multiplicative +40% targets")
     second_block_ladder(4000, exit_policy)
+
+
+def validate_entry_timing(settings: dict) -> None:
+    if (settings.get("entry_timing", "any_verified_time") not in ("any_verified_time", "second_produced_block")
+            or type(settings.get("require_dev_initial_buy", False)) is not bool
+            or (settings.get("entry_timing") == "second_produced_block" and (
+                not second_produced_block(settings) or settings.get("require_dev_initial_buy") is not True
+                or settings.get("third_block_retry_on_sharp_rise", False)))):
+        raise ValueError("Strict second-block timing requires the initial developer buy and forbids later retries")
 
 
 def validate_history_fallback(settings: dict) -> None:

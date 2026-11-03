@@ -1,6 +1,7 @@
 """Optional developer-entry observer. No network work runs in stream callbacks.
 
 History-only admission keeps bounded creations while preparation/history loads.
+Its explicit second-produced-block selector expires instead of chasing a token.
 Classic admission uses a best-effort second-block window; one explicitly armed,
 unbroadcast sharp-rise rejection may retry in the third produced block. The
 slot clock cannot guarantee transaction order or inclusion.
@@ -23,7 +24,11 @@ from solders.pubkey import Pubkey
 
 from monitoring.creator_history_index import CreatorHistoryCache, curve_address
 from monitoring.pump_event_logs import pump_events
-from trading.second_block_policy import STRATEGY_ID, creator_history_only
+from trading.second_block_policy import (
+    STRATEGY_ID,
+    creator_history_only,
+    second_produced_block,
+)
 from trading.token_builder import build_pumpfun_token_info
 from utils.logger import get_logger
 
@@ -40,6 +45,8 @@ class Candidate:
     name: str
     symbol: str
     developer: str = ""
+    creation_signature: str | None = None
+    dev_initial_buy_verified: bool | None = None
     buyers: set[str] = field(default_factory=set)
     buy_sol: float = 0
     sell_sol: float = 0
@@ -98,11 +105,14 @@ class SecondBlockSource:
         if getattr(self.history, "coverage_start_slot", None) is None:
             self.history.coverage_start_slot = slot
         if creator_history_only(self.policy):
+            if second_produced_block(self.policy):
+                self.advance_second_block_candidates(slot, parent)
             self.refresh_candidates()
             return
         self.advance_second_block_candidates(slot, parent)
 
     def advance_second_block_candidates(self, slot: int, parent: int) -> None:
+        strict = second_produced_block(self.policy)
         for mint, candidate in list(self.candidates.items()):
             if parent == candidate.creation_slot:
                 if candidate.second_slot not in {None, slot}:
@@ -110,18 +120,38 @@ class SecondBlockSource:
                     continue
                 candidate.second_slot = slot
             elif candidate.second_slot is not None and parent == candidate.second_slot:
+                if strict:
+                    self.candidates.pop(mint, None)
+                    continue
                 if candidate.third_slot not in {None, slot}:
                     self.candidates.pop(mint, None)
                     continue
                 candidate.third_slot = slot
-            elif candidate.creation_slot < parent:
+            elif candidate.creation_slot < parent or (strict and slot > candidate.creation_slot):
                 self.candidates.pop(mint, None)
                 continue
-            self.consider(candidate)
+            if strict:
+                if self.second_window_expired(candidate):
+                    self.candidates.pop(mint, None)
+            else:
+                self.consider(candidate)
+
+    def second_window_expired(self, candidate: Candidate) -> bool:
+        """A known later block or an expired immutable target cannot be chased."""
+        if candidate.second_slot is None:
+            return self.slot > candidate.creation_slot and self.parent != candidate.creation_slot
+        return (max(self.slot, self.latest_log_slot, candidate.price_slot) > candidate.second_slot
+                or (self.slot > candidate.creation_slot and
+                    (self.slot != candidate.second_slot or self.parent != candidate.creation_slot))
+                or (self.slot == candidate.second_slot and
+                    not 0 <= time.monotonic()-self.slot_at <= self.policy["max_slot_age_seconds"]))
 
     def refresh_candidates(self) -> None:
         for candidate in self.ordered_history_candidates(list(self.candidates.values())):
             mint = candidate.mint
+            if second_produced_block(self.policy) and self.second_window_expired(candidate):
+                self.candidates.pop(mint, None)
+                continue
             if not 0 <= time.monotonic()-candidate.observed_at <= 600:
                 if candidate.inflight_slot is None:
                     self.candidates.pop(mint, None)
@@ -149,8 +179,8 @@ class SecondBlockSource:
         events = pump_events(logs)
         for raw in events:
             if raw[:8] == CREATE:
-                self.creation(raw, slot)
-        touched = {mint for raw in events if (mint := self.trade(raw, slot))}
+                self.creation(raw, slot, signature)
+        touched = {mint for raw in events if (mint := self.trade(raw, slot, signature))}
         self.consider_touched(touched)
 
     def consider_touched(self, mints: set[str]) -> None:
@@ -162,7 +192,7 @@ class SecondBlockSource:
                 self.refresh(candidate)
             self.consider(candidate)
 
-    def creation(self, raw: bytes, slot: int) -> None:
+    def creation(self, raw: bytes, slot: int, signature: str | None = None) -> None:
         try:
             decoded = self.implementations.event_parser._idl_parser.decode_event_data(raw, "CreateEvent")
             fields = decoded["fields"]
@@ -175,13 +205,16 @@ class SecondBlockSource:
             history_only = creator_history_only(self.policy)
             if not history_only:
                 self.history.warm(user)
-            if history_only and not self.admit_history_candidate(mint):
+            if history_only and (
+                    (second_produced_block(self.policy) and self.slot > slot and self.parent != slot)
+                    or not self.admit_history_candidate(mint)):
                 return
             if (mint in self.candidates or (not history_only and slot < self.parent)
                     or len(self.candidates) >= 256):
                 return
             candidate = Candidate(mint, creator, slot, str(fields.get("name") or ""),
                                   str(fields.get("symbol") or ""), developer=user,
+                                  creation_signature=signature,
                                   observed_at=time.monotonic(), first_seen_wall_at=time.time())
             timestamp = fields.get("timestamp")
             if type(timestamp) in (int, float) and math.isfinite(timestamp) and timestamp > 0:
@@ -212,6 +245,9 @@ class SecondBlockSource:
 
     def refresh(self, candidate: Candidate) -> None:
         """Retry technical preparation and revisit a completed history refresh."""
+        if second_produced_block(self.policy) and (
+                self.candidates.get(candidate.mint) is not candidate or self.second_window_expired(candidate)):
+            return
         if (creator_history_only(self.policy) and
                 (not self.history_activity_ready(candidate) or candidate.mint in self.attempted_mints)):
             return
@@ -244,6 +280,9 @@ class SecondBlockSource:
 
     def history_activity_ready(self, candidate: Candidate, sol_usd: float | None = None) -> bool:
         """Use the same creation-block requirement before consuming network work."""
+        if (second_produced_block(self.policy) and self.policy.get("require_dev_initial_buy", False)
+                and candidate.dev_initial_buy_verified is not True):
+            return False
         if not self.policy.get("require_first_block_activity", False):
             return True
         sol_usd = self.sol_reference() if sol_usd is None else sol_usd
@@ -266,17 +305,43 @@ class SecondBlockSource:
                 "signal_ready_at": candidate.first_signal_wall_at,
                 "signal_age_seconds": now-candidate.creation_timestamp if candidate.creation_timestamp is not None else None}
 
-    def trade(self, raw: bytes, slot: int) -> str | None:
-        if raw[:8] != TRADE or len(raw) < 113 or raw[56] not in {0, 1}:
+    def reject_unidentifiable_initial_trade(self, slot: int, signature: str | None) -> None:
+        """An unreadable earlier trade cannot establish a later trade was first."""
+        for candidate in self.candidates.values():
+            if (signature and candidate.creation_signature == signature
+                    and candidate.creation_slot == slot and candidate.dev_initial_buy_verified is None):
+                candidate.dev_initial_buy_verified = False
+
+    def decode_trade(self, raw: bytes, slot: int, signature: str | None) -> tuple[Candidate, float, int, int] | None:
+        if raw[:8] != TRADE:
+            return None
+        if len(raw) < 40:
+            self.reject_unidentifiable_initial_trade(slot, signature)
             return None
         mint = str(Pubkey.from_bytes(raw[8:40]))
         candidate = self.candidates.get(mint)
         if candidate is None or slot < candidate.creation_slot:
             return None
+        initial_trade = bool(signature and signature == candidate.creation_signature
+                             and slot == candidate.creation_slot and candidate.dev_initial_buy_verified is None)
+        if initial_trade:
+            candidate.dev_initial_buy_verified = False
+        if len(raw) < 113 or raw[56] not in {0, 1}:
+            return None
         sol = struct.unpack_from("<Q", raw, 40)[0] / 1e9
         vsol, vtokens = struct.unpack_from("<QQ", raw, 97)
         if sol <= 0 or vsol == 0 or vtokens == 0:
             return None
+        if initial_trade:
+            candidate.dev_initial_buy_verified = bool(raw[56] and
+                str(Pubkey.from_bytes(raw[57:89])) == candidate.developer)
+        return candidate, sol, vsol, vtokens
+
+    def trade(self, raw: bytes, slot: int, signature: str | None = None) -> str | None:
+        decoded = self.decode_trade(raw, slot, signature)
+        if decoded is None:
+            return None
+        candidate, sol, vsol, vtokens = decoded
         if slot == candidate.creation_slot:
             if raw[56]:
                 if len(candidate.buyers) >= 1024 and not creator_history_only(self.policy):
@@ -290,7 +355,7 @@ class SecondBlockSource:
         if slot >= candidate.price_slot:
             candidate.price, candidate.price_at = vsol / vtokens / 1000, time.monotonic()
             candidate.price_slot = slot
-        return mint
+        return candidate.mint
 
     def signal(self, mint: str) -> dict | None:
         candidate = self.candidates.get(mint)
@@ -329,11 +394,16 @@ class SecondBlockSource:
     def history_signal(self, candidate: Candidate | None, sol_usd: float) -> dict | None:
         """Verified developer history with the explicitly selected first-block activity."""
         now = time.monotonic()
+        strict = second_produced_block(self.policy)
         if (not self.available or candidate is None or candidate.token is None or not self.allowed()
                 or not 0 <= now-candidate.observed_at <= 600
                 or not 0 <= now-self.slot_at <= 30
                 or not 0 <= self.reference_age() <= 30
                 or not math.isfinite(sol_usd) or sol_usd <= 0):
+            return None
+        if strict and (candidate.invalid or candidate.second_slot is None
+                       or self.slot != candidate.second_slot or self.parent != candidate.creation_slot
+                       or self.second_window_expired(candidate)):
             return None
         history = self.history.evidence(candidate.developer, candidate.mint)
         if history is None or not history["migration_fraction"] >= self.policy["min_creator_migration_fraction"]:
@@ -343,10 +413,15 @@ class SecondBlockSource:
         if not self.history_activity_ready(candidate, sol_usd):
             return None
         return {"strategy": STRATEGY_ID, "entry_rule": "creator_migration_only",
+            "entry_timing": "second_produced_block" if strict else None,
             "first_block_activity_required": activity_required,
+            "dev_initial_buy_required": strict and self.policy.get("require_dev_initial_buy", False),
+            "dev_initial_buy_verified": candidate.dev_initial_buy_verified,
+            "dev_initial_buy_signature": candidate.creation_signature if candidate.dev_initial_buy_verified else None,
             "sol_usd": sol_usd, "creator": candidate.creator, "developer": candidate.developer,
             "observed_at": time.time(), "creation_slot": candidate.creation_slot,
-            "target_slot": None, "entry_block": None, "source_generation": self.generation,
+            "target_slot": candidate.second_slot if strict else None,
+            "entry_block": 2 if strict else None, "source_generation": self.generation,
             "retry_reason": None, "buyers": len(candidate.buyers),
             "buy_sol": candidate.buy_sol, "sell_sol": candidate.sell_sol,
             "volume_usd": volume,

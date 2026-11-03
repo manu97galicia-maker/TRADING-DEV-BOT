@@ -36,6 +36,8 @@ POLICY = yaml.safe_load(
 def enabled_history_policy():
     policy = copy.deepcopy(POLICY)
     policy["enabled"] = True  # Fixture only; no runner or wallet is constructed.
+    policy["entry_timing"] = "any_verified_time"
+    policy["require_dev_initial_buy"] = False
     return policy
 
 

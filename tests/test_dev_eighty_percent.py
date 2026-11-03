@@ -47,6 +47,7 @@ class DevEightyPercentBuyerTests(unittest.IsolatedAsyncioTestCase):
         self.runtime.compute_units = {"buy": 200000}
         self.runtime.second_policy = {
             **copy.deepcopy(inherited.SECOND_POLICY), "enabled": True,
+            "entry_timing": "any_verified_time", "require_dev_initial_buy": False,
         }
         self.runtime.current_signal = lambda _token: {
             "strategy": STRATEGY_ID, "creator": "fake-creator",

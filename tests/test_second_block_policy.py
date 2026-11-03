@@ -27,6 +27,7 @@ from trading.second_block_policy import (
     position_exit_plan,
     recovery_allocations,
     second_block_ladder,
+    second_produced_block,
     validate_second_policy,
 )
 from trading.transaction_observer import (
@@ -48,6 +49,8 @@ def enabled_policy():
     policy = copy.deepcopy(POLICY)
     policy["enabled"] = True
     policy["entry_rule"] = "second_block"
+    policy.pop("entry_timing", None)
+    policy.pop("require_dev_initial_buy", None)
     policy.pop("max_entry_budget_usd", None)  # Historical classic profile has no USD cap.
     policy["balance_fraction"] = .90
     policy["buy_priority_fee_cap_usd"] = .06
@@ -58,6 +61,39 @@ def enabled_policy():
 
 
 class PolicyTests(unittest.TestCase):
+    def test_shipped_profile_requires_second_produced_block_and_initial_dev_buy(self):
+        selected = {**copy.deepcopy(POLICY), "enabled": True}
+        self.assertEqual(selected["entry_rule"], "creator_migration_only")
+        self.assertEqual(selected["entry_timing"], "second_produced_block")
+        self.assertTrue(selected["require_dev_initial_buy"] is True)
+        self.assertTrue(selected["third_block_retry_on_sharp_rise"] is False)
+        self.assertTrue(second_produced_block(selected))
+        validate_second_policy(selected)
+
+    def test_strict_selector_rejects_missing_proof_or_later_retry(self):
+        for field, value in (("entry_timing", "second_block"),
+                             ("entry_timing", None),
+                             ("require_dev_initial_buy", False),
+                             ("require_dev_initial_buy", 1),
+                             ("third_block_retry_on_sharp_rise", True),
+                             ("entry_rule", "second_block")):
+            with self.subTest(field=field, value=value):
+                selected = {**copy.deepcopy(POLICY), "enabled": True, field: value}
+                with self.assertRaises(ValueError):
+                    validate_second_policy(selected)
+        selected = {**copy.deepcopy(POLICY), "enabled": True}
+        selected.pop("require_dev_initial_buy")
+        with self.assertRaises(ValueError):
+            validate_second_policy(selected)
+
+    def test_legacy_profiles_do_not_implicitly_select_strict_timing(self):
+        selected = {**copy.deepcopy(POLICY), "enabled": True}
+        selected.pop("entry_timing")
+        selected.pop("require_dev_initial_buy")
+        self.assertFalse(second_produced_block(selected))
+        validate_second_policy(selected)
+        self.assertFalse(second_produced_block(enabled_policy()))
+
     def test_pending_exit_cannot_be_enabled(self):
         validate_second_policy(POLICY)
         pending = copy.deepcopy(POLICY)
