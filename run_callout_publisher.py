@@ -98,7 +98,8 @@ def main() -> None:
 
     from monitoring.callout_publisher import browser_service
 
-    values = dotenv_values(ROOT / ".env", interpolate=False)
+    env_path = ROOT / "configs" / plan.get("env_file", "../.env")
+    values = dotenv_values(env_path, interpolate=False)
     endpoint = values.get("SOLANA_NODE_RPC_ENDPOINT") or os.getenv(
         "SOLANA_NODE_RPC_ENDPOINT", ""
     )

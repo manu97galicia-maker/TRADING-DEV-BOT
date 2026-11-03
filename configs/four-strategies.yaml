@@ -1,6 +1,6 @@
 # Opt-in bundle, outside bots/ to avoid automatic discovery. Never run in tests.
 name: "FOUR STRATEGIES - SHARED WALLET"
-env_file: "../.env"
+env_file: "../.env.four-strategies"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
@@ -76,7 +76,7 @@ callouts:
   enabled: false
 four_strategies:
   enabled: true
-  expected_wallet: HGUXwmjHmqY75q4j9v5wfGZnzFQESnq2wZ2UPJrkg3Uk
+  expected_wallet: 43w6CJkHjZpAjPU3LswTGwur5RvngKoTKakhfLBkpZHV
   database: estudios/four_strategies/runtime.sqlite3
   callout_outbox: trades/four_strategy_callouts.jsonl
   callout_account: AImemebot

@@ -77,7 +77,10 @@ Prepara textos tras compra confirmada. El publicador de navegador descrito abajo
 consume esta cola; no se ha publicado ningún callout real durante la preparación.
 
 El destino autorizado por el usuario el 3 de noviembre de 2026 es
-[@AImemebot](https://pump.fun/profile/AImemebot), asociado a la wallet HGUX…g3Uk.
+[@AImemebot](https://pump.fun/profile/AImemebot). La sesión observada inicialmente
+correspondía a HGUX…g3Uk; después el usuario cambió la wallet de operaciones a
+43w6…pZHV. Antes de publicar, el publicador exige que la cuenta conectada también
+corresponda a esta wallet actual; la autorización de la sesión sigue pendiente.
 `four_strategies.callout_account` se copia a `publisher_account` en cada entrada
 nueva de la cola. La [API oficial de Pump.fun](https://docs.pump.fun/) solo ofrece
 lectura; `src/monitoring/callout_publisher.py` usa el formulario visible de la web.
@@ -139,7 +142,10 @@ Los eventos están en `events.jsonl` junto al ledger.
 `run_four_strategies.py` sin argumentos valida sin cargar `.env`, credenciales,
 sesiones ni conexiones. Ejecutar exige una opción explícita y habilitar la
 configuración. La validación no arranca compras. El runtime exige la wallet
-pública solicitada `HGUXwmjHmqY75q4j9v5wfGZnzFQESnq2wZ2UPJrkg3Uk`.
+pública solicitada `43w6CJkHjZpAjPU3LswTGwur5RvngKoTKakhfLBkpZHV`.
+Las credenciales de este paquete se leen de `.env.four-strategies`, ignorado por
+Git. El `.env` original se conserva para evitar cambiar la identidad de otros
+procesos. El publicador usa el mismo `env_file` indicado por el YAML.
 
 El diagnóstico `--preflight` comprueba en local el entorno y la dirección pública
 que deriva de la clave, sin mostrarla. Con `--online` consulta RPC/mainnet, saldo,
@@ -160,7 +166,7 @@ el estado de ejecución están ignorados por Git. No contienen claves ni direcci
 de RPC privadas, pero sí pueden contener saldo y dirección pública de la wallet.
 
 Se ha actualizado Jupiter a `https://api.jup.ag` con soporte opcional de
-`JUPITER_API_KEY` en `.env`. Sin clave se espacian las peticiones a 0,5 por segundo,
+`JUPITER_API_KEY` en `.env.four-strategies`. Sin clave se espacian las peticiones a 0,5 por segundo,
 según la [documentación oficial](https://developers.jup.ag/docs/portal/setup).
 Esa limitación puede ralentizar las cotizaciones de posiciones migradas.
 
