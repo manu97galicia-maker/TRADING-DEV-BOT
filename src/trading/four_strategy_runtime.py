@@ -1061,9 +1061,13 @@ class FourStrategyTrader(legacy.UniversalTrader):
             for position in self.book.positions():
                 try:
                     await self.audit_position(position)
+                except Exception as error:
+                    logger.warning("Closure audit pending for %s (%s)", position["mint"], type(error).__name__)
+                    continue
+                try:
                     await self.refresh_inactivity(position)
                 except Exception as error:
-                    logger.warning("Closure audit pending (%s)", type(error).__name__)
+                    logger.warning("Inactivity check pending for %s (%s)", position["mint"], type(error).__name__)
             await asyncio.sleep(5)
 
     async def refresh_inactivity(self, position: dict) -> None:

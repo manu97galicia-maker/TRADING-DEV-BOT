@@ -8,6 +8,17 @@ pendientes. El máximo compartido es de cuatro plazas. El filtro de inactividad 
 el SL del 22%, los TP ni las pausas por pérdidas. Los registros anteriores
 conservan la fracción con la que se abrieron y no se recalculan al 90%.
 
+La lectura de posiciones devuelve su fecha `created`, ya guardada en SQLite,
+para conservar su antigüedad al reiniciar y permitir la comprobación de
+inactividad. Los avisos de auditoría de cierre y de comprobación de inactividad
+se registran por separado, con el mint afectado. No se modifica el esquema ni
+se borran posiciones para corregir un `KeyError` en esta comprobación.
+
+El arranque verifica `saldo - presupuesto >= 0,03 SOL`. Con un presupuesto del
+90% requiere aproximadamente 0,30 SOL líquidos. Un saldo de 0,1304 SOL deja
+aproximadamente 0,0130 SOL y el preflight bloquea el arranque; no reduce por su
+cuenta el porcentaje solicitado ni la reserva.
+
 La posición debe tener al menos cinco minutos, la cotización actual debe estar
 por debajo de su precio de compra y el nodo debe confirmar que no ha habido
 actividad en su curva durante esos cinco minutos. Se consulta la operación más

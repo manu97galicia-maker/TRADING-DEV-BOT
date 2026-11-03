@@ -5,12 +5,15 @@
 
 import asyncio
 import json
+import tempfile
 import time
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 from platforms.pumpfun.address_provider import PumpFunAddressProvider
+from trading.four_strategy_book import FourStrategyBook
 from trading.four_strategy_inactivity import (
     fresh_inactivity,
     inactive_curve_evidence,
@@ -113,6 +116,49 @@ class EvidenceTests(unittest.IsolatedAsyncioTestCase):
             unittest.mock.ANY, 50, 9e-8, "muerta_sin_volumen", full_exit=True
         )
         self.assertEqual(json.loads(position["details"])["stopping_reason"], "muerta_sin_volumen")
+
+    async def test_restarted_book_preserves_position_age_for_inactivity_checks(self) -> None:
+        mint = "9mFNn7N6SScpipcKzsTEbHQRB2yZtjbtXG1EsKKZpump"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/"fixture.sqlite3"
+            book = FourStrategyBook(path, "fake-owner", "fake-policy")
+            with patch("trading.four_strategy_book.time.time", return_value=100):
+                reservation = book.reserve(mint, "pressure", 1_000_000_000, 100,
+                                           30_000_000, .15, 3_000_000, {})
+            self.assertIsNotNone(reservation)
+            book.submitting(reservation["nonce"])
+            book.opened(reservation["nonce"], 100, {"entry_price": 1})
+            restored = FourStrategyBook(path, "fake-owner", "fake-policy")
+            position = restored.positions()[0]
+            self.assertEqual(position["created"], 100)
+            runtime = SimpleNamespace(
+                no_volume_exit_seconds=300, _inactive_exit_checked={},
+                _inactive_exit_candidates={},
+                platform_implementations=SimpleNamespace(
+                    address_provider=PumpFunAddressProvider(),
+                    curve_manager=SimpleNamespace(get_pool_state=AsyncMock(
+                        return_value={"complete": False, "price_per_token": .9})),
+                ), rpc=AsyncMock(return_value=history()),
+            )
+            with patch("time.time", return_value=1000):
+                await FourStrategyTrader.refresh_inactivity(runtime, position)
+            self.assertIn(mint, runtime._inactive_exit_candidates)
+            runtime.rpc.assert_awaited_once()
+
+    async def test_inactivity_failure_is_reported_separately_from_closure_audit(self) -> None:
+        runtime = SimpleNamespace(
+            book=SimpleNamespace(positions=lambda: [{"mint": "fixture-mint"}]),
+            audit_position=AsyncMock(), refresh_inactivity=AsyncMock(side_effect=KeyError("created")),
+        )
+        with (
+            patch("trading.four_strategy_runtime.logger.warning") as warning,
+            patch("trading.four_strategy_runtime.asyncio.sleep", side_effect=asyncio.CancelledError),
+        ):
+            with self.assertRaises(asyncio.CancelledError):
+                await FourStrategyTrader.audit_loop(runtime)
+        runtime.audit_position.assert_awaited_once()
+        self.assertIn("Inactivity check pending", warning.call_args.args[0])
+        self.assertNotIn("Closure audit pending", warning.call_args.args[0])
 
 
 if __name__ == "__main__":

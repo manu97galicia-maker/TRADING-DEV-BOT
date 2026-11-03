@@ -60,7 +60,7 @@ class FourStrategyBook:
     def positions(self) -> list[dict]:
         with closing(self.connect()) as db:
             rows = db.execute(
-                "SELECT nonce,mint,strategy,state,budget,debit_slot,details FROM positions ORDER BY created"
+                "SELECT nonce,mint,strategy,state,budget,debit_slot,details,created FROM positions ORDER BY created"
             ).fetchall()
         return [
             dict(
@@ -73,6 +73,7 @@ class FourStrategyBook:
                         "budget",
                         "debit_slot",
                         "details",
+                        "created",
                     ),
                     row,
                     strict=True,
