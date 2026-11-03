@@ -46,6 +46,25 @@ cambia automáticamente a entrada.
 
 ## Coordinador y límites
 
+### Revisión anti pump y dump — 3 de noviembre de 2026
+
+La petición de conservar medidas anti pump y dump queda registrada en
+`request.json`. La salida por detectar ventas de 1 SOL sigue desactivada.
+
+El paquete exige señales recientes, compradores distintos para las fuentes
+on-chain y nueva comprobación de la curva, los límites de MC correspondientes
+y la señal antes de firmar. Conserva SL de −25%, presupuesto por entrada del 20%,
+tres posiciones compartidas y pausa de cada estrategia tras tres pérdidas en
+sus últimos cinco cierres verificados. El SL es un disparador de venta y no
+garantiza una pérdida máxima del 25%.
+
+Estos controles no equivalen a detectar manipulación. Contar wallets distintas
+no demuestra que sean independientes. No se ha integrado en este paquete un
+filtro de concentración, wallets relacionadas o wash trading. La confirmación
+de alcance para añadir filtros de subidas bruscas y concentración está pendiente.
+Presión mantiene su techo de 21K, pero Telegram, primer bloque y el cruce de 21K
+no tienen un techo global de MC. No se anuncia protección completa contra rugs.
+
 `src/trading/four_strategy_book.py` integra la pausa por tres pérdidas entre
 los últimos cinco cierres verificados de cada estrategia. Se evalúa al disponer
 de cinco cierres. Cero no cuenta como pérdida, un recibo duplicado no cuenta

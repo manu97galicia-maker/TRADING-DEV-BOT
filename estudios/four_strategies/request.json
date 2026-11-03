@@ -93,5 +93,17 @@
     "include_losers_and_open_positions_in_review": true,
     "auto_modify_live_parameters": false,
     "compare_entry_features_exit_path_costs_and_net_pnl": true
+  },
+  "anti_pump_dump_review": {
+    "reviewed_date": "2026-11-03",
+    "preserve_disabled_one_sol_sell_pressure_exit": true,
+    "existing_controls": [
+      "fresh_signals_and_recent_distinct_buyers",
+      "curve_and_signal_recheck_before_submission",
+      "shared_position_and_inclusive_budget_limits",
+      "initial_stop_loss_and_per_strategy_loss_pause"
+    ],
+    "additional_entry_spike_and_concentration_filters": "awaiting_scope_clarification",
+    "wash_trading_or_related_wallet_detection_verified": false
   }
 }
