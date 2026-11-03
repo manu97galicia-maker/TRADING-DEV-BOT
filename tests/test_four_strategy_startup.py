@@ -70,11 +70,12 @@ class StartupTests(unittest.IsolatedAsyncioTestCase):
 
             def configure_four(self, settings: dict, *, no_volume_exit_seconds: float = 0,
                                second_block_policy: dict | None = None,
-                               evaluation_policy: dict | None = None) -> None:
+                               evaluation_policy: dict | None = None, only_dev: bool = False) -> None:
                 captured["settings"] = settings
                 captured["inactivity"] = no_volume_exit_seconds
                 captured["second_policy"] = second_block_policy
                 captured["evaluation_policy"] = evaluation_policy
+                captured["only_dev"] = only_dev
 
         with (
             patch.object(bot_runner, "load_bot_config", return_value=plan),

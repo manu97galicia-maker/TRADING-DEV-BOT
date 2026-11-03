@@ -99,9 +99,11 @@ async def _auto_scale(trader, interval: int = 60) -> None:
             )
 
 
-async def start_bot(config_path: str):
+async def start_bot(config_path: str, *, only_dev: bool = False):
     """Start a trading bot with the configuration from the specified path."""
     cfg = load_bot_config(config_path)
+    if only_dev and not (cfg.get("four_strategies") or {}).get("enabled"):
+        raise ValueError("Only-dev mode requires the shared coordinator")
     setup_logging(cfg["name"])
 
     # Que avisos de Telegram se mandan. Sin esta clave se manda todo, que
@@ -429,6 +431,7 @@ async def start_bot(config_path: str):
                 no_volume_exit_seconds=float(cfg["trade"].get("sin_volumen_bajo_entrada_seg", 0)),
                 second_block_policy=load_second_policy(Path(config_path), cfg),
                 evaluation_policy=cfg.get("five_trade_evaluation"),
+                only_dev=only_dev,
             )
         _scale_task = (
             asyncio.create_task(_auto_scale(trader))

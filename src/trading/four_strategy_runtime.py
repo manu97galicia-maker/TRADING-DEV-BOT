@@ -21,7 +21,6 @@ import trading.universal_trader as legacy
 from monitoring import volumen
 from monitoring.four_strategy_signals import choose_signal
 from monitoring.pressure_trial_source import PressureTrialSource
-from monitoring.telegram_source import TelegramSource
 from trading.base import TradeResult
 from trading.buy_budget import inclusive_balance_entry
 from trading.four_strategy_book import FourStrategyBook
@@ -83,6 +82,8 @@ class SharedBuyer:
         runtime = self.runtime
         del amount_sol  # Untrusted signal amounts cannot override shared sizing.
         signal = runtime.current_signal(token_info)
+        if signal and getattr(runtime, "only_dev", False) and signal["strategy"] != STRATEGY_ID:
+            return TradeResult(success=False, error_message="Only-dev mode excludes this entry source")
         if not signal or runtime.reference_age() > 30:
             return TradeResult(
                 success=False, error_message="Four-strategy signal expired"
@@ -253,12 +254,17 @@ class FourStrategyTrader(legacy.UniversalTrader):
 
     def configure_four(self, settings: dict, *, no_volume_exit_seconds: float = 0,
                        second_block_policy: dict | None = None,
-                       evaluation_policy: dict | None = None) -> None:
+                       evaluation_policy: dict | None = None, only_dev: bool = False) -> None:
+        if type(only_dev) is not bool:
+            raise ValueError("Entry selection must be an explicit boolean")
+        self.only_dev = only_dev
         if not math.isfinite(no_volume_exit_seconds) or no_volume_exit_seconds < 0:
             raise ValueError("Inactivity exit requires a nonnegative finite duration")
         self.no_volume_exit_seconds = no_volume_exit_seconds
         self.second_policy = second_block_policy or {"enabled": False}
         validate_second_policy(self.second_policy)
+        if only_dev and not self.second_policy.get("enabled"):
+            raise ValueError("Only-dev mode requires the dev strategy to be enabled")
         self.second_source = None
         self._inactive_exit_candidates: dict[str, dict] = {}
         self._inactive_exit_checked: dict[str, float] = {}
@@ -379,6 +385,10 @@ class FourStrategyTrader(legacy.UniversalTrader):
             raise EntryRiskRejected("unreadable_entry_risk_evidence") from error
 
     def _cartel_de_configuracion(self) -> str:
+        if getattr(self, "only_dev", False):
+            return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
+                    "incluidos gastos · dev >=1% migraciones verificadas · MC <4200 · "
+                    "2 compradores / 275 USD primer bloque · 4 plazas compartidas")
         message = (
             f"CONFIG ACTIVA · FOUR STRATEGIES · {self.fraccion_saldo:.0%} del SOL liquido confirmado "
             "por presupuesto, incluidos gastos · 4 plazas compartidas · "
@@ -422,6 +432,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
         return data["result"]
 
     def signal_for(self, mint: str) -> dict | None:
+        if getattr(self, "only_dev", False):
+            return None
         if self.reference_age() > 30:
             return None
         block = {
@@ -446,6 +458,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
         if data.get("acquisition_kind") == "second-block-dev":
             source = getattr(self, "second_source", None)
             return source.signal(str(token.mint)) if source else None
+        if getattr(self, "only_dev", False):
+            return None
         if data.get("acquisition_kind") == "telegram":
             received = float(data.get("signal_received_at", 0))
             if not 0 <= time.time() - received <= 30:
@@ -497,13 +511,6 @@ class FourStrategyTrader(legacy.UniversalTrader):
             f"pressure {pressure['min_buyers']} buyers/{pressure['min_mc']} USD MC+, "
             "upward crossing 21K; recent flow window 8s"
         )
-        telegram = TelegramSource(
-            self.telegram_calls,
-            self.platform_implementations,
-            self.solana_client,
-            self.platform,
-        )
-
         async def optional_telegram() -> None:
             try:
                 await telegram.run(self._on_dexpaid_token)
@@ -515,9 +522,14 @@ class FourStrategyTrader(legacy.UniversalTrader):
                     type(error).__name__,
                 )
 
-        await asyncio.gather(
-            source.run(self._on_dexpaid_token), optional_telegram(), self.audit_loop()
-        )
+        tasks = [source.run(self._on_dexpaid_token), self.audit_loop()]
+        if not getattr(self, "only_dev", False):
+            from monitoring.telegram_source import TelegramSource
+
+            telegram = TelegramSource(self.telegram_calls, self.platform_implementations,
+                                      self.solana_client, self.platform)
+            tasks.append(optional_telegram())
+        await asyncio.gather(*tasks)
 
     async def _on_dexpaid_token(self, token_info: object) -> None:
         task = asyncio.create_task(self._handle_token(token_info))
@@ -526,6 +538,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
 
     async def _handle_token(self, token_info: object) -> None:
         signal = self.current_signal(token_info)
+        if signal and getattr(self, "only_dev", False) and signal["strategy"] != STRATEGY_ID:
+            return
         if not signal or not self.book.can_admit(signal["strategy"]):
             return
         if (token_info.additional_data or {}).get("migrated"):

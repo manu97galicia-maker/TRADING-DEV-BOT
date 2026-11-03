@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
 
-def check_plan(path: Path) -> dict:
+def check_plan(path: Path, *, only_dev: bool = False) -> dict:
     """Validate explicit shared risk settings without loading credentials."""
     from trading.five_trade_evaluation import validate_evaluation_policy
     from trading.four_strategy_entry_guard import validate_policy
@@ -46,9 +46,9 @@ def check_plan(path: Path) -> dict:
         raise ValueError(
             "Exactly three on-chain policies and the Telegram source are required"
         )
-    if not plan["filters"]["telegram_calls"].get("channels"):
+    if not only_dev and not plan["filters"]["telegram_calls"].get("channels"):
         raise ValueError("Telegram channels must be explicitly restricted")
-    if plan["filters"]["telegram_calls"].get("migrated_channels"):
+    if not only_dev and plan["filters"]["telegram_calls"].get("migrated_channels"):
         raise ValueError("Migrated purchases are outside this bundle")
     for key in required:
         policy = settings["strategies"][key]
@@ -56,7 +56,9 @@ def check_plan(path: Path) -> dict:
             raise ValueError("Positive demand thresholds are required")
     build_review_ladder(8000, settings["exit"])
     build_review_ladder(21000, settings["exit"])
-    load_second_policy(path, plan)
+    second = load_second_policy(path, plan)
+    if only_dev and (not settings.get("enabled") or not second.get("enabled")):
+        raise ValueError("Only-dev mode requires an enabled dev strategy and shared coordinator")
     return plan
 
 
@@ -82,17 +84,18 @@ def main() -> None:
     parser.add_argument(
         "--report", type=Path, help="Save the sanitized preflight report"
     )
+    parser.add_argument("--only-dev", action="store_true", help="Accept dev-second-block entries only; preserve existing exits")
     args = parser.parse_args()
-    plan = check_plan(args.config)
+    plan = check_plan(args.config, only_dev=args.only_dev)
     if (args.online or args.report) and not args.preflight:
         parser.error("--online and --report require --preflight")
     if args.preflight:
         from trading.four_strategy_preflight import inspect_local, inspect_online
 
         report = (
-            asyncio.run(inspect_online(plan, args.config))
+            asyncio.run(inspect_online(plan, args.config, only_dev=args.only_dev))
             if args.online
-            else inspect_local(plan, args.config)
+            else inspect_local(plan, args.config, only_dev=args.only_dev)
         )
         rendered = json.dumps(report, indent=2, ensure_ascii=False)
         if args.report:
@@ -111,10 +114,11 @@ def main() -> None:
                 {
                     "valid": True,
                     "mode": "validation_only",
-                    "strategies": [
-                        *plan["four_strategies"]["strategies"],
-                        "telegram-immediate",
-                    ],
+                    "strategies": (["dev-second-block"] if args.only_dev else [
+                        *plan["four_strategies"]["strategies"], "telegram-immediate",
+                        *(["dev-second-block"] if second["enabled"] else []),
+                    ]),
+                    "entry_mode": "dev_only" if args.only_dev else "all",
                     "max_shared_positions": plan["trade"]["max_posiciones"],
                     "entry_fraction_inclusive": plan["trade"]["fraccion_saldo"],
                     "initial_stop": plan["trade"]["stop_loss_percentage"],
@@ -136,7 +140,7 @@ def main() -> None:
         )
     from trading.four_strategy_preflight import inspect_online
 
-    readiness = asyncio.run(inspect_online(plan, args.config))
+    readiness = asyncio.run(inspect_online(plan, args.config, only_dev=args.only_dev))
     if not readiness["ready_for_manual_start"]:
         print(json.dumps(readiness, indent=2, ensure_ascii=False))
         parser.error("Read-only preflight found blockers; no trader was started")
@@ -158,7 +162,7 @@ def main() -> None:
             import fcntl
 
             fcntl.flock(process_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        asyncio.run(bot_runner.start_bot(str(args.config)))
+        asyncio.run(bot_runner.start_bot(str(args.config), only_dev=args.only_dev))
 
 
 if __name__ == "__main__":

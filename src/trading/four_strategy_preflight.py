@@ -62,7 +62,7 @@ def _finish(report: dict) -> dict:
     return report
 
 
-def inspect_local(plan: dict, config_path: Path) -> dict:
+def inspect_local(plan: dict, config_path: Path, *, only_dev: bool = False) -> dict:
     """Read credentials locally and report public identity and missing prerequisites."""
     env = _environment(plan, config_path)
     report = {
@@ -71,6 +71,7 @@ def inspect_local(plan: dict, config_path: Path) -> dict:
         "execution": "read_only_preflight",
         "live_started": False,
         "enabled": bool(plan.get("enabled")),
+        "entry_mode": "dev_only" if only_dev else "all",
         "checks": [],
     }
     _record(
@@ -82,7 +83,7 @@ def inspect_local(plan: dict, config_path: Path) -> dict:
     )
     missing = [
         name
-        for name in ("aiohttp", "websockets", "solders", "telethon")
+        for name in ("aiohttp", "websockets", "solders", *(() if only_dev else ("telethon",)))
         if importlib.util.find_spec(name) is None
     ]
     _record(
@@ -128,21 +129,13 @@ def inspect_local(plan: dict, config_path: Path) -> dict:
             if env.get(variable, "").startswith(prefix)
             else f"Falta una dirección válida en {variable}",
         )
-    session = plan["filters"]["telegram_calls"]["session_name"]
-    session_path = config_path.resolve().parent.parent / (session + ".session")
-    tg_present = bool(
-        env.get("TELEGRAM_API_ID")
-        and env.get("TELEGRAM_API_HASH")
-        and session_path.exists()
-    )
-    _record(
-        report,
-        "telegram_local",
-        "pass" if tg_present else "warning",
-        "Credenciales y archivo de sesión presentes; autorización por verificar"
-        if tg_present
-        else "Telegram no estará disponible hasta preparar credenciales y sesión",
-    )
+    if not only_dev:
+        session = plan["filters"]["telegram_calls"]["session_name"]
+        session_path = config_path.resolve().parent.parent / (session + ".session")
+        tg_present = bool(env.get("TELEGRAM_API_ID") and env.get("TELEGRAM_API_HASH") and session_path.exists())
+        _record(report, "telegram_local", "pass" if tg_present else "warning",
+                "Credenciales y archivo de sesión presentes; autorización por verificar"
+                if tg_present else "Telegram no estará disponible hasta preparar credenciales y sesión")
     _record(
         report,
         "jupiter_api_key",
@@ -175,14 +168,14 @@ def inspect_local(plan: dict, config_path: Path) -> dict:
     return _finish(report)
 
 
-async def inspect_online(plan: dict, config_path: Path) -> dict:  # noqa: C901, PLR0915 -- independent read-only checks
+async def inspect_online(plan: dict, config_path: Path, *, only_dev: bool = False) -> dict:  # noqa: C901, PLR0915 -- independent read-only checks
     """Verify configured services with read methods only; never start a trader."""
     import aiohttp
     import websockets
 
     from trading.jupiter_access import API_BASE
 
-    report = inspect_local(plan, config_path)
+    report = inspect_local(plan, config_path, only_dev=only_dev)
     report["online"] = True
     env = _environment(plan, config_path)
     async with aiohttp.ClientSession(
@@ -395,7 +388,8 @@ async def inspect_online(plan: dict, config_path: Path) -> dict:  # noqa: C901, 
                 "fail",
                 f"Comprobación fallida: {type(error).__name__}",
             )
-    await _telegram_check(plan, config_path, env, report)
+    if not only_dev:
+        await _telegram_check(plan, config_path, env, report)
     return _finish(report)
 
 

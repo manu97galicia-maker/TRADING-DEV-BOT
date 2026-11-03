@@ -2,13 +2,32 @@
 # Manual execution only. This script is never invoked by deployment or tests.
 set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
-if [[ "${1:-}" != "--real" ]]; then
-  printf '%s\n' 'Uso manual: bash reiniciar_four_strategies.sh --real'
+if [[ "${1:-}" != "--real" || "$#" -gt 2 || ( "$#" -eq 2 && "${2:-}" != "--only-dev" ) ]]; then
+  printf '%s\n' 'Uso manual: bash reiniciar_four_strategies.sh --real [--only-dev]'
   exit 2
 fi
 mkdir -p logs
+MODE_ARGS=()
+RUN_ARGS=(--run)
+if [[ "${2:-}" == "--only-dev" ]]; then
+  MODE_ARGS=(--only-dev)
+  RUN_ARGS+=(--only-dev)
+fi
 exec 9>logs/four-strategies-restart.lock
 flock -n 9 || { printf '%s\n' 'Ya hay un reinicio en curso'; exit 2; }
+.venv/bin/python run_four_strategies.py "${MODE_ARGS[@]}" > logs/start-plan.json
+.venv/bin/python - <<'PY'
+import json
+from pathlib import Path
+plan = json.loads(Path('logs/start-plan.json').read_text())
+if plan.get('enabled') is not True:
+    raise SystemExit('Configuracion global deshabilitada; se conserva la instancia actual')
+PY
+if [[ "${2:-}" == "--only-dev" ]]; then
+  # This selection has no Telegram acquisition session to contend with. Verify
+  # services before stopping any existing position monitors.
+  .venv/bin/python run_four_strategies.py --preflight --online --only-dev > logs/dev-only-preflight.json
+fi
 # Resolve every manual closure before stopping existing monitors.
 .venv/bin/python reconcile_four_manual_sales.py > logs/manual-sale-plan.json
 PIDS=$(.venv/bin/python - <<'PY'
@@ -45,5 +64,5 @@ if [[ -n "$PIDS" ]]; then
   fi
 fi
 .venv/bin/python reconcile_four_manual_sales.py --apply > logs/manual-sale-applied.json
-nohup .venv/bin/python -u run_four_strategies.py --run >> logs/four-strategies.log 2>&1 9>&- &
+nohup .venv/bin/python -u run_four_strategies.py "${RUN_ARGS[@]}" >> logs/four-strategies.log 2>&1 9>&- &
 printf 'Arranque solicitado, PID %s. Comprueba logs/four-strategies.log\n' "$!"
