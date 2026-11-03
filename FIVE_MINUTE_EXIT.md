@@ -2,11 +2,11 @@
 
 `trade.sin_volumen_bajo_entrada_seg: 300` añade una salida por inactividad a las
 cuatro fuentes. Cero la desactiva. El tamaño solicitado para nuevas compras es
-ahora el **40% del saldo nativo de SOL actual**, incluidos el margen de slippage
+ahora el **30% del saldo nativo de SOL actual**, incluidos el margen de slippage
 y las comisiones; sigue sujeto a la reserva de 0,03 SOL y a los presupuestos
 pendientes. El filtro de inactividad no cambia las entradas, las tres plazas,
 el SL del 25%, los TP ni las pausas por pérdidas. Los registros anteriores
-conservan la fracción con la que se abrieron y no se recalculan al 40%.
+conservan la fracción con la que se abrieron y no se recalculan al 30%.
 
 La posición debe tener al menos cinco minutos, la cotización actual debe estar
 por debajo de su precio de compra y el nodo debe confirmar que no ha habido

@@ -32,8 +32,8 @@ def check_plan(path: Path) -> dict:
         raise ValueError("Inactivity duration must be finite and nonnegative")
     settings = plan["four_strategies"]
     validate_policy(settings["entry_protection"])
-    if trade["max_posiciones"] != 3 or trade["fraccion_saldo"] != 0.40:
-        raise ValueError("Bundle requires three positions and a 40% fraction")
+    if trade["max_posiciones"] != 3 or trade["fraccion_saldo"] != 0.30:
+        raise ValueError("Bundle requires three positions and a 30% fraction")
     if (
         trade["stop_loss_percentage"] != 0.25
         or settings["exit"]["stop_loss_fraction"] != 0.25

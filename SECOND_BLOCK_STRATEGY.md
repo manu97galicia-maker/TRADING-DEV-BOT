@@ -27,7 +27,7 @@ Condiciones de entrada:
 El presupuesto es el **23% del SOL líquido confirmado**, incluidos margen de
 slippage y gastos. La prioridad tiene tope de **0,06 USD por intento** con
 cotización SOL/USD reciente; renta, comisión base y comisiones de protocolo
-son conceptos distintos. Las otras cuatro estrategias mantienen su 40%.
+son conceptos distintos. Las otras cuatro estrategias usan el 30% por nueva operación.
 Las cinco comparten tres plazas y la pausa persistente por tres pérdidas en
 los últimos cinco cierres completos de cada estrategia. Permanecen los filtros
 de precio y concentración, el stop y la salida por inactividad configurada;

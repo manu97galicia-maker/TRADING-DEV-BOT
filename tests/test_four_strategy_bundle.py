@@ -206,7 +206,7 @@ class BuyerTests(unittest.IsolatedAsyncioTestCase):
             min_reserve_lamports=30_000_000,
             buy_slippage=0.15,
             _fee_headroom_lamports=3_000_000,
-            fraccion_saldo=0.40,
+            fraccion_saldo=0.30,
             sol_usd=100,
             current_signal=lambda token: {
                 "strategy": "strong-pressure-8k",
@@ -248,8 +248,8 @@ class BuyerTests(unittest.IsolatedAsyncioTestCase):
     ):
         async def execute(token, **kwargs):
             observe("signed", "actual-signature")
-            self.assertGreater(kwargs["amount_sol"], 0.30)
-            self.assertLess(kwargs["amount_sol"], 0.40)
+            self.assertGreater(kwargs["amount_sol"], 0.20)
+            self.assertLess(kwargs["amount_sol"], 0.30)
             return TradeResult(
                 True, tx_signature="actual-signature", amount=1000000, price=1e-7
             )
@@ -261,7 +261,7 @@ class BuyerTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result.success)
         position = self.book.positions()[0]
         self.assertEqual(position["state"], "open")
-        self.assertEqual(json.loads(position["details"])["policy_fraction"], 0.40)
+        self.assertEqual(json.loads(position["details"])["policy_fraction"], 0.30)
         self.assertEqual(
             self.book.signatures(position["nonce"]), [("actual-signature", "buy")]
         )
@@ -366,42 +366,47 @@ class AuditTests(unittest.IsolatedAsyncioTestCase):
         )
 
 
-class FortyPercentSizingTests(unittest.TestCase):
+class ThirtyPercentSizingTests(unittest.TestCase):
     setUp = BookTests.setUp
 
     def reserve(self, mint, balance=SOL, slot=100):
         return self.book.reserve(mint, "pressure", balance, slot, 30_000_000,
-                                 0.15, 3_000_000, {}, fraction=0.40)
+                                 0.15, 3_000_000, {}, fraction=0.30)
 
     def test_concurrent_pending_entries_cannot_overdraw_the_wallet(self):
         with ThreadPoolExecutor(max_workers=4) as pool:
             reservations = list(pool.map(lambda i: self.reserve(str(i)), range(4)))
         filled = [r for r in reservations if r]
-        self.assertEqual(len(filled), 2)
+        self.assertEqual(len(filled), 3)
         self.assertLessEqual(sum(r["budget"] for r in filled), SOL - 30_000_000)
         for row in self.book.positions():
-            self.assertEqual(json.loads(row["details"])["policy_fraction"], .40)
-            self.assertLessEqual(row["budget"], 400_000_000)
+            self.assertEqual(json.loads(row["details"])["policy_fraction"], .30)
+            self.assertLessEqual(row["budget"], 300_000_000)
 
     def test_each_new_budget_tracks_the_fresh_actual_balance_and_three_slot_limit(self):
-        for index, balance in enumerate([SOL, 600_000_000, 360_000_000]):
+        for index, balance in enumerate([SOL, 700_000_000, 490_000_000]):
             reservation = self.reserve(str(index), balance=balance, slot=100+index)
             self.assertIsNotNone(reservation)
-            self.assertLessEqual(reservation["budget"], int(balance * .40))
-            self.assertGreater(reservation["budget"], int(balance * .40) - 3)
+            self.assertLessEqual(reservation["budget"], int(balance * .30))
+            self.assertGreater(reservation["budget"], int(balance * .30) - 3)
             self.book.submitting(reservation["nonce"])
             self.book.opened(reservation["nonce"], 100+index, {})
-        self.assertIsNone(self.reserve("fourth", balance=216_000_000, slot=104))
+        self.assertIsNone(self.reserve("fourth", balance=343_000_000, slot=104))
 
-    def test_old_twenty_percent_positions_keep_their_recorded_size(self):
+    def test_historical_twenty_and_forty_percent_positions_keep_their_recorded_size(self):
         old = self.book.reserve("old", "pressure", SOL, 100, 30_000_000,
                                 .15, 3_000_000, {})
+        old_forty = self.book.reserve("old-forty", "telegram", SOL, 100, 30_000_000,
+                                      .15, 3_000_000, {}, fraction=.40)
+        self.assertIsNotNone(old_forty)
         new = self.reserve("new")
         self.assertIsNotNone(new)
         rows = {p["mint"]: p for p in self.book.positions()}
         self.assertEqual(json.loads(rows["old"]["details"])["policy_fraction"], .20)
         self.assertEqual(rows["old"]["budget"], old["budget"])
-        self.assertEqual(json.loads(rows["new"]["details"])["policy_fraction"], .40)
+        self.assertEqual(json.loads(rows["old-forty"]["details"])["policy_fraction"], .40)
+        self.assertEqual(rows["old-forty"]["budget"], old_forty["budget"])
+        self.assertEqual(json.loads(rows["new"]["details"])["policy_fraction"], .30)
 
     def test_native_sol_reserve_still_blocks_small_balances(self):
         self.assertIsNone(self.reserve("too-small", balance=40_000_000))

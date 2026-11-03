@@ -11,7 +11,7 @@ avisos_telegram: true
 trade:
   nombre_estrategia: four-strategies
   buy_amount: 0
-  fraccion_saldo: 0.40
+  fraccion_saldo: 0.30
   fraccion_base: libre
   min_reserve_sol: 0.03
   max_posiciones: 3

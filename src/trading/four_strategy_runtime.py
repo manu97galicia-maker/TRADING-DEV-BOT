@@ -260,7 +260,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
             )
         if (
             self.max_posiciones != 3
-            or self.fraccion_saldo != 0.40
+            or self.fraccion_saldo != 0.30
             or self.stop_loss_percentage != 0.25
         ):
             raise ValueError(
