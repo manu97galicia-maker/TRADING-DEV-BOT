@@ -1,4 +1,4 @@
-"""Bounded, fully paginated creator history from owned on-chain accounts.
+"""Bounded creator history and a cache shared by read-only history providers.
 
 Only canonical PumpSwap migration pools count. Older Raydium migrations are
 not counted, so the numerator is conservative. No price/ATH proxy is used.
@@ -93,9 +93,18 @@ class CreatorSnapshot:
     migrated_curves: set[str]
     slot: int
     checked_at: float
+    source: str = "canonical_pumpswap_pools_over_creator_curves"
+    migration_count_complete: bool = True
 
 
 async def read_creator_history(creator: str, rpc: object, policy: dict) -> CreatorSnapshot:
+    provider = policy.get("history_provider", "program_accounts")
+    if provider == "helius_transactions":
+        from monitoring.creator_transaction_history import read_transaction_history  # noqa: PLC0415 -- optional provider, avoids a module cycle
+
+        return await read_transaction_history(creator, rpc, policy)
+    if provider != "program_accounts":
+        raise HistoryUnavailableError("Unknown creator history provider")
     Pubkey.from_string(creator)
     curves, slot = await scan_pages(rpc, PUMP, creator, 49, CURVE_DISC, 81, policy)
     if not curves:
@@ -141,6 +150,7 @@ class CreatorHistoryCache:
         self.last_error: str | None = None
         self.generation = 0
         self.overflow: set[str] = set()
+        self.coverage_start_slot: int | None = None
 
     def observe(self, creator: str, mint: str) -> None:
         if creator not in self.observed and len(self.observed) >= 64:
@@ -159,6 +169,7 @@ class CreatorHistoryCache:
     def evidence(self, creator: str, mint: str) -> dict | None:
         snapshot = self.snapshots.get(creator)
         if (creator in self.overflow or creator not in self.observed or not snapshot
+                or (self.coverage_start_slot is not None and snapshot.slot < self.coverage_start_slot)
                 or not 0 <= time.time()-snapshot.checked_at <= self.policy["creator_cache_seconds"]):
             return None
         current = curve_address(mint)
@@ -168,7 +179,8 @@ class CreatorHistoryCache:
             return None
         return {"launches": len(curves), "migrations": len(migrations),
             "migration_fraction": len(migrations)/len(curves), "checked_at": snapshot.checked_at,
-            "slot": snapshot.slot, "source": "canonical_pumpswap_pools_over_creator_curves",
+            "slot": snapshot.slot, "source": snapshot.source,
+            "migration_fraction_is_lower_bound": not snapshot.migration_count_complete,
             "older_raydium_migrations_not_counted": True}
 
     def warm(self, creator: str) -> None:
@@ -176,7 +188,8 @@ class CreatorHistoryCache:
                 or len(self.pending) >= 2 or time.monotonic() < self.retry_after.get(creator, 0)):
             return
         snapshot = self.snapshots.get(creator)
-        if snapshot and 0 <= time.time()-snapshot.checked_at <= self.policy["creator_cache_seconds"]:
+        if (snapshot and 0 <= time.time()-snapshot.checked_at <= self.policy["creator_cache_seconds"]
+                and (self.coverage_start_slot is None or snapshot.slot >= self.coverage_start_slot)):
             return
         task = asyncio.create_task(self.refresh(creator))
         self.pending[creator] = task
@@ -200,6 +213,10 @@ class CreatorHistoryCache:
             while self.snapshots and sum(len(s.curves) for s in self.snapshots.values()) + len(snapshot.curves) > 20000:
                 self.snapshots.pop(next(iter(self.snapshots)))
             self.snapshots[creator] = snapshot
+            # Fully indexed launches no longer need a second live copy. Keep
+            # only observations beyond the historical finalized anchor.
+            observation.difference_update(snapshot.curves)
+            self.retry_after[creator] = time.monotonic()+2
             self.last_error = None
         except asyncio.CancelledError:
             raise
@@ -214,6 +231,7 @@ class CreatorHistoryCache:
         self.observed.clear()
         self.overflow.clear()
         self.retry_after.clear()
+        self.coverage_start_slot = None
         for task in self.pending.values():
             task.cancel()
 

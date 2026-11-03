@@ -1,4 +1,4 @@
-# Fifth strategy. Capital +12% recovery confirmed; disabled pending history verification.
+# Fifth strategy. Helius signer history verified; execution remains manually disabled.
 enabled: false
 strategy_id: dev-second-block
 balance_fraction: 0.23
@@ -10,10 +10,12 @@ buy_priority_fee_cap_usd: 0.06
 max_slot_age_seconds: 0.6
 creator_cache_seconds: 600
 history_timeout_seconds: 12
+history_provider: helius_transactions
 history_max_pages: 64
-history_page_size: 10000
+history_page_size: 100
 history_max_accounts: 10000
-require_creator_is_user: true
+history_max_transactions: 10000
+developer_identity: creation_signer
 exit:
   kind: second-block-capital-recovery
   initial_gain: 0.35

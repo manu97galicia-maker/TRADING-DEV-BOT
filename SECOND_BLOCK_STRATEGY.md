@@ -2,19 +2,23 @@
 
 Configuración: `configs/second-block-dev.yaml`. La referencia está fuera de
 `four_strategies` para conservar la identidad del libro de posiciones y sus
-pausas. La estrategia nueva se llama `dev-second-block` y queda **desactivada**
-mientras no se valide un historial completo de dev. La primera venta ya está
-definida: recuperar el capital invertido más un 12% de beneficio nominal.
+pausas. La estrategia nueva se llama `dev-second-block` y permanece
+**desactivada en la configuración**, con activación manual. El proveedor
+Helius ya se ha verificado con lecturas reales. La primera venta recupera el
+capital invertido más un 12% de beneficio nominal.
 
 Condiciones de entrada:
 
-- Evento real de creación de Pump.fun observado, con curva PDA válida, oferta
-  de 1.000 millones de tokens y creador igual a la wallet que creó el token.
+- Evento real de creación de Pump.fun observado, con curva PDA válida y oferta
+  de 1.000 millones de tokens. El dev es el `user` firmante de la creación:
+  debe ser una wallet con clave pública sobre la curva, no una PDA. El campo
+  `creator` puede ser un receptor de comisiones distinto y se conserva para
+  verificar la curva y construir las cuentas de la operación.
 - Al menos dos wallets compradoras distintas en el bloque de creación.
 - Al menos 275 USD negociados en ese bloque: compras más ventas. Compras de
   bloques posteriores no completan los requisitos del primero.
-- Dev con al menos 1% de migraciones PumpSwap canónicas verificadas sobre sus
-  curvas de Pump.fun; el token candidato queda fuera del cálculo.
+- Dev con al menos 1% de migraciones PumpSwap canónicas verificadas respecto
+  a todos sus lanzamientos originales demostrados; el candidato queda fuera.
 - Capitalización inferior a 4.200 USD al comprobar la curva. El `max_sol_cost`
   de la orden limita además el coste medio de compra, usando la misma
   referencia SOL/USD y 1.000 millones de oferta. No limita la capitalización
@@ -32,6 +36,9 @@ Las cinco comparten tres plazas y la pausa persistente por tres pérdidas en
 los últimos cinco cierres completos de cada estrategia. Permanecen los filtros
 de precio y concentración, el stop y la salida por inactividad configurada;
 la salida por ventas de 1 SOL continúa desactivada.
+En la quinta se consulta también la tenencia del firmante real, incluso fuera
+del top 20, y se le aplica el límite de concentración del 5%, además del mismo
+límite para el receptor de comisiones.
 
 Los objetivos multiplicativos son +35%, +89%, +164,6% y +270,44% respecto a
 la entrada. Tras la primera venta, el resto se reparte en tres partes iguales.
@@ -45,16 +52,38 @@ recalcula con ese precio; queda guardada antes de vender para evitar duplicados
 tras un reinicio. Es una recuperación nominal: gastos, impacto y deslizamiento
 pueden reducir lo cobrado.
 
-El historial se consulta fuera del camino de compra, con paginación completa y
-límites de tiempo/memoria. Una página vacía con cursor no significa historial
-completo. Se vuelve a consultar el denominador después de los pools; las
-creaciones observadas se incorporan al denominador y cualquier interrupción
-del stream invalida la caché. Sin historial completo y reciente se descarta la
-entrada. Las migraciones antiguas a Raydium no cuentan en el numerador; las
-reasignaciones de creador o cuentas cerradas limitan lo que puede demostrarse
-con el estado actual. No es una garantía del historial de toda la vida del dev.
-En la prueba de lectura del proveedor aparecieron páginas vacías con cursor;
-**todavía no hay una comprobación real completa que valide un dev para el 1%**.
+El proveedor configurado es `history_provider: helius_transactions`. Se consulta
+`getTransactionsForAddress` del firmante, con transacciones completas, paginación
+hasta cursor nulo y un límite superior fijo de slot finalizado. Una página corta
+o vacía con cursor no termina el historial. Solo cuentan `CreateEvent` auténticos
+de ejecuciones correctas de Pump.fun y cuyo `user` firmó la transacción. Los
+eventos de invocaciones revertidas se descartan; logs truncados, formatos
+desconocidos, duplicados y paginación incompleta impiden validar el historial.
+
+Se prueban las migraciones leyendo las curvas y los pools PumpSwap canónicos
+con `getMultipleAccounts`. `complete: true` sin pool no acredita migración.
+El receptor de comisiones puede haber cambiado sin borrar los lanzamientos
+originales del denominador. Si ya hay suficientes migraciones demostradas, se
+puede terminar su comprobación antes de recorrer todos los pools: el número de
+lanzamientos permanece completo y el ratio es un mínimo demostrado. Raydium
+antiguo y pools desaparecidos no suman a ese mínimo.
+
+Las consultas son de fondo y están limitadas a 12 segundos, 64 páginas de 100
+transacciones, hasta 10.000 transacciones y 10.000 lanzamientos almacenados por
+consulta. La caché dura como máximo 600 segundos; las creaciones observadas se
+añaden al denominador. Cualquier interrupción invalida la caché. Al conectar,
+el ancla histórica debe alcanzar el primer slot observado para cubrir el hueco
+entre el historial finalizado y el stream. Sin esa cobertura o sin datos
+completos y recientes, se descarta la entrada.
+
+Comprobación real del 3 de noviembre de 2026: la wallet firmante
+`9qGSkpuGWGp7uqxuPw27ZJ2x1zSV8Svm8rmDWMmuG1W6` tuvo 287 transacciones en
+cuatro páginas, un lanzamiento Pump.fun y una migración PumpSwap verificada.
+El lector definitivo lo comprobó en 394 ms con seis lecturas RPC y ancla
+464874793. GMGN devolvió también un lanzamiento y una graduación. En ese token,
+`creator` era otra wallet: consultar su historial daba cero registros en GMGN.
+GMGN se usa aquí como contraste de los datos; no reemplaza la prueba de pools
+ni se toma la longitud de su lista limitada de tokens como historial completo.
 
 No se garantiza ser la primera transacción ni quedar incluido en el segundo
 bloque: el websocket informa de lo procesado por el nodo y el envío puede
@@ -63,8 +92,16 @@ cuando obtiene confirmación final. Ningún filtro garantiza evitar rugs.
 
 La validación sin credenciales es `python run_four_strategies.py`. No inicia
 operaciones. Los cambios de código no reinician el proceso que ya está abierto.
+Para repetir exclusivamente la comprobación del historial:
+
+```bash
+python inspect_creator_history.py --developer 9qGSkpuGWGp7uqxuPw27ZJ2x1zSV8Svm8rmDWMmuG1W6
+```
+
+El diagnóstico utiliza solo el RPC configurado y no importa ninguna wallet.
 
 Referencias técnicas: [slotSubscribe de Solana](https://solana.com/docs/rpc/websocket/slotsubscribe),
-[paginación de Helius](https://www.helius.dev/docs/api-reference/rpc/http/getprogramaccountsv2),
+[historial paginado de Helius](https://www.helius.dev/docs/api-reference/rpc/http/gettransactionsforaddress),
+[consulta de creadores de GMGN](https://github.com/GMGNAI/gmgn-skills/blob/main/skills/gmgn-portfolio/SKILL.md),
 [IDL de Pump](https://github.com/pump-fun/pump-public-docs/blob/main/idl/pump.json) y
 [IDL de PumpSwap](https://github.com/pump-fun/pump-public-docs/blob/main/idl/pump_amm.json).

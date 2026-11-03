@@ -119,8 +119,9 @@ async def concentration_snapshot(
     creator: str,
     rpc: Callable[[str, list], Awaitable[object]],
     policy: dict,
+    *, developer: str | None = None,
 ) -> dict:
-    """Read top accounts plus every creator account, then refresh them together.
+    """Read top accounts and all fee-creator/developer accounts together.
 
     Public top-20 accounts only give a lower bound on holdings for other owners;
     multiple small accounts or related wallets can remain outside that sample.
@@ -138,18 +139,19 @@ async def concentration_snapshot(
     vault = get_associated_token_address(curve, mint, program)
     if str(vault) != str(token.associated_bonding_curve):
         raise EntryRiskRejected("wrong_curve_reserve_address")
-    if creator_key in {curve, mint, Pubkey.default()}:
+    watched = list(dict.fromkeys([str(creator_key), *([developer] if developer else [])]))
+    if any(Pubkey.from_string(owner) in {curve, mint, Pubkey.default()} for owner in watched):
         raise EntryRiskRejected("unverified_creator")
-    largest, owned = await asyncio.gather(
+    largest, *owned_results = await asyncio.gather(
         rpc("getTokenLargestAccounts", [str(mint), {"commitment": "processed"}]),
-        rpc(
+        *(rpc(
             "getTokenAccountsByOwner",
             [
-                str(creator_key),
+                owner,
                 {"mint": str(mint)},
                 {"encoding": "jsonParsed", "commitment": "processed"},
             ],
-        ),
+        ) for owner in watched),
     )
     if not 1 <= len(largest["value"]) <= 20:
         raise EntryRiskRejected("missing_largest_accounts")
@@ -157,11 +159,14 @@ async def concentration_snapshot(
     if len(set(top)) != len(top):
         raise EntryRiskRejected("duplicate_largest_accounts")
     creator_accounts = []
-    for row in owned["value"]:
-        info = _token_info(row["account"], str(mint), str(program))
-        if info["owner"] != str(creator_key):
-            raise EntryRiskRejected("creator_account_owner_mismatch")
-        creator_accounts.append(row["pubkey"])
+    expected_owners = {}
+    for owner, owned in zip(watched, owned_results, strict=True):
+        for row in owned["value"]:
+            info = _token_info(row["account"], str(mint), str(program))
+            if info["owner"] != owner:
+                raise EntryRiskRejected("creator_account_owner_mismatch")
+            creator_accounts.append(row["pubkey"])
+            expected_owners[row["pubkey"]] = owner
     addresses = list(
         dict.fromkeys([str(mint), str(curve), str(vault), *top, *creator_accounts])
     )
@@ -169,9 +174,8 @@ async def concentration_snapshot(
         raise EntryRiskRejected("excessive_creator_accounts")
     for address in addresses:
         Pubkey.from_string(address)
-    minimum_slot = max(
-        _integer(largest["context"]["slot"]), _integer(owned["context"]["slot"])
-    )
+    minimum_slot = max(_integer(largest["context"]["slot"]),
+                       *(_integer(owned["context"]["slot"]) for owned in owned_results))
     snapshot = await rpc(
         "getMultipleAccounts",
         [
@@ -219,12 +223,13 @@ async def concentration_snapshot(
             curve_balance = amount
         else:
             owners[info["owner"]] += amount
-            if address in creator_accounts and info["owner"] != str(creator_key):
+            if address in expected_owners and info["owner"] != expected_owners[address]:
                 raise EntryRiskRejected("creator_owner_changed")
     if observed_total > supply or not any(owners.values()):
         raise EntryRiskRejected("inconsistent_or_empty_holder_snapshot")
     ordered = sorted(owners.values(), reverse=True)
     creator_amount = owners.get(str(creator_key), 0)
+    developer_amount = owners.get(developer, 0) if developer else 0
     for name, amount, limit in (
         (
             "concentrated_observed_owner",
@@ -237,10 +242,11 @@ async def concentration_snapshot(
             policy["max_top10_observed_owners_fraction"],
         ),
         ("concentrated_creator", creator_amount, policy["max_creator_fraction"]),
+        ("concentrated_developer", developer_amount, policy["max_creator_fraction"]),
     ):
         if Decimal(amount) > Decimal(supply) * Decimal(str(limit)):
             raise EntryRiskRejected(name)
-    return {
+    result = {
         "slot": snapshot["context"]["slot"],
         "supply_raw": supply,
         "curve_reserve_excluded_raw": curve_balance,
@@ -249,3 +255,7 @@ async def concentration_snapshot(
         "creator_fraction": creator_amount / supply,
         "coverage": "top20_accounts_plus_creator_accounts; related_wallets_not_identified",
     }
+    if developer:
+        result.update(developer=developer, developer_fraction=developer_amount/supply,
+            coverage="top20_accounts_plus_creator_and_developer_accounts; related_wallets_not_identified")
+    return result

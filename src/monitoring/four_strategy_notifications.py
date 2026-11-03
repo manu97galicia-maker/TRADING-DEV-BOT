@@ -25,10 +25,11 @@ def entry_reason(features: dict) -> str:
         )
     if strategy == STRATEGY_ID:
         history = features.get("creator_history") or {}
+        minimum = "al menos " if history.get("migration_fraction_is_lower_bound") else ""
         return (
             f"Segundo bloque observado: {int(features.get('buyers', 0))} wallets compradoras "
             f"en el primero, volumen ${float(features.get('volume_usd', 0)):,.0f}; "
-            f"dev con {int(history.get('migrations', 0))}/{int(history.get('launches', 0))} "
+            f"dev firmante con {minimum}{int(history.get('migrations', 0))}/{int(history.get('launches', 0))} "
             "migraciones PumpSwap verificadas (no garantiza inclusión en ese bloque)"
         )
     label = "Cruce alcista de 21K" if strategy == "strength-21k" else "Presión compradora desde 8K"

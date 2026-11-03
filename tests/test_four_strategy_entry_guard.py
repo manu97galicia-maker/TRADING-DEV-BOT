@@ -206,6 +206,22 @@ class ConcentrationTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(EntryRiskRejected, "concentrated_creator"):
             await self.check()
 
+    async def test_creation_signer_has_its_own_5_percent_limit_when_fee_recipient_differs(self):
+        developer = str(Pubkey.new_unique())
+        address = self.add(developer, .02)
+        self.top.remove(address)
+        async def rpc(method, params) -> object:
+            if method == "getTokenAccountsByOwner" and params[0] == developer:
+                return {"context": {"slot": 101}, "value": [
+                    {"pubkey": address, "account": self.accounts[address]}]}
+            return await self.read_rpc(method, params)
+        report = await concentration_snapshot(self.token, str(self.creator), rpc, POLICY, developer=developer)
+        self.assertAlmostEqual(report["creator_fraction"], .03)
+        self.assertAlmostEqual(report["developer_fraction"], .02)
+        self.accounts[address]["data"]["parsed"]["info"]["tokenAmount"]["amount"] = str(int(.06*SUPPLY))
+        with self.assertRaisesRegex(EntryRiskRejected, "concentrated_developer"):
+            await concentration_snapshot(self.token, str(self.creator), rpc, POLICY, developer=developer)
+
     async def test_top10_concentration_is_checked_even_when_each_owner_passes(self):
         self.accounts[str(self.vault)]["data"]["parsed"]["info"]["tokenAmount"][
             "amount"

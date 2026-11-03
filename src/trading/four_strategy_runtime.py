@@ -306,7 +306,12 @@ class FourStrategyTrader(legacy.UniversalTrader):
             creator = str(initial_state.get("creator") or "")
             if creator != str(getattr(token, "creator", "")):
                 raise EntryRiskRejected("creator_metadata_mismatch")
-            concentration = await concentration_snapshot(token, creator, self.rpc, policy)
+            entry = (token.additional_data or {}).get("learning_entry") or {}
+            if entry.get("strategy") == STRATEGY_ID:
+                concentration = await concentration_snapshot(token, creator, self.rpc, policy,
+                                                             developer=entry["developer"])
+            else:
+                concentration = await concentration_snapshot(token, creator, self.rpc, policy)
             current = await self.platform_implementations.curve_manager.get_pool_state(
                 token.bonding_curve, commitment="processed"
             )

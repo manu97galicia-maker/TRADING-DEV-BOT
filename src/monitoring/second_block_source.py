@@ -11,17 +11,16 @@ causes a skipped entry, never a later-block fallback.
 from __future__ import annotations
 
 import asyncio
-import base64
 import hashlib
 import math
-import re
 import struct
 import time
 from dataclasses import dataclass, field
 
 from solders.pubkey import Pubkey
 
-from monitoring.creator_history_index import PUMP, CreatorHistoryCache, curve_address
+from monitoring.creator_history_index import CreatorHistoryCache, curve_address
+from monitoring.pump_event_logs import pump_events
 from trading.second_block_policy import STRATEGY_ID
 from trading.token_builder import build_pumpfun_token_info
 from utils.logger import get_logger
@@ -29,31 +28,6 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 CREATE = hashlib.sha256(b"event:CreateEvent").digest()[:8]
 TRADE = hashlib.sha256(b"event:TradeEvent").digest()[:8]
-INVOKE = re.compile(r"^Program ([1-9A-HJ-NP-Za-km-z]+) invoke \[(\d+)\]$")
-RETURN = re.compile(r"^Program ([1-9A-HJ-NP-Za-km-z]+) (?:success|failed:.*)$")
-
-
-def pump_events(logs: list[str]) -> list[bytes]:
-    """Only trust event data while the runtime invocation stack is in Pump."""
-    stack, events = [], []
-    for line in logs:
-        invoked = INVOKE.fullmatch(line)
-        returned = RETURN.fullmatch(line)
-        if invoked:
-            depth = int(invoked[2])
-            if depth != len(stack)+1:
-                return []
-            stack.append(invoked[1])
-        elif returned:
-            if not stack or stack.pop() != returned[1]:
-                return []
-        elif line.startswith("Program data: ") and stack and stack[-1] == str(PUMP):
-            try:
-                events.append(base64.b64decode(line[14:], validate=True))
-            except ValueError:
-                return []
-    # Truncated logs cannot attest to a complete successful invocation.
-    return [] if stack else events
 
 
 @dataclass
@@ -63,6 +37,7 @@ class Candidate:
     creation_slot: int
     name: str
     symbol: str
+    developer: str = ""
     buyers: set[str] = field(default_factory=set)
     buy_sol: float = 0
     sell_sol: float = 0
@@ -103,6 +78,8 @@ class SecondBlockSource:
             return  # Repeated/stale notifications cannot renew a deadline.
         self.slot, self.parent, self.slot_at = slot, parent, time.monotonic()
         self.available = True
+        if getattr(self.history, "coverage_start_slot", None) is None:
+            self.history.coverage_start_slot = slot
         for mint, candidate in list(self.candidates.items()):
             if candidate.creation_slot < parent:
                 self.candidates.pop(mint, None)
@@ -139,15 +116,15 @@ class SecondBlockSource:
             fields = decoded["fields"]
             mint, creator, user = (str(fields[k]) for k in ("mint", "creator", "user"))
             Pubkey.from_string(creator)
-            if (str(fields["bonding_curve"]) != curve_address(mint) or creator != user
+            if (str(fields["bonding_curve"]) != curve_address(mint) or not Pubkey.from_string(user).is_on_curve()
                     or fields.get("token_total_supply") != 1000000000000000):
                 return
-            self.history.observe(creator, mint)
-            self.history.warm(creator)
+            self.history.observe(user, mint)
+            self.history.warm(user)
             if mint in self.candidates or slot < self.parent or len(self.candidates) >= 256:
                 return
             candidate = Candidate(mint, creator, slot, str(fields.get("name") or ""),
-                                  str(fields.get("symbol") or ""))
+                                  str(fields.get("symbol") or ""), developer=user)
             self.candidates[mint] = candidate
             if len(self.building) < 2:
                 self.building.add(mint)
@@ -189,13 +166,14 @@ class SecondBlockSource:
             return None
         volume = (candidate.buy_sol+candidate.sell_sol)*sol_usd
         mc = candidate.price*1e9*sol_usd
-        history = self.history.evidence(candidate.creator, mint)
+        history = self.history.evidence(candidate.developer, mint)
         if (len(candidate.buyers) < self.policy["min_distinct_first_block_buyers"]
                 or volume < self.policy["min_first_block_volume_usd"]
                 or not 0 < mc < self.policy["max_entry_mc_usd"] or history is None
                 or history["migration_fraction"] < self.policy["min_creator_migration_fraction"]):
             return None
         return {"strategy": STRATEGY_ID, "sol_usd": sol_usd, "creator": candidate.creator,
+            "developer": candidate.developer,
             "observed_at": time.time(), "creation_slot": candidate.creation_slot,
             "target_slot": self.slot, "buyers": len(candidate.buyers),
             "buy_sol": candidate.buy_sol, "sell_sol": candidate.sell_sol,

@@ -25,16 +25,19 @@ def validate_second_policy(settings: dict) -> None:
         "strategy_id": STRATEGY_ID, "balance_fraction": .23,
         "max_entry_mc_usd": 4200, "min_creator_migration_fraction": .01,
         "min_first_block_volume_usd": 275, "min_distinct_first_block_buyers": 2,
-        "buy_priority_fee_cap_usd": .06, "require_creator_is_user": True,
+        "buy_priority_fee_cap_usd": .06, "developer_identity": "creation_signer",
+        "history_provider": "helius_transactions",
     }
     if any(settings.get(k) != v for k, v in expected.items()):
         raise ValueError("Second-block settings differ from the requested entry policy")
     for key in ["max_slot_age_seconds", "creator_cache_seconds", "history_timeout_seconds"]:
         if not isinstance(settings.get(key), (int, float)) or not math.isfinite(settings[key]) or settings[key] <= 0:
             raise ValueError("Second-block observation limits must be finite and positive")
-    for key in ["history_max_pages", "history_page_size", "history_max_accounts"]:
+    for key in ["history_max_pages", "history_page_size", "history_max_accounts", "history_max_transactions"]:
         if type(settings.get(key)) is not int or not 1 <= settings[key] <= 10000:
             raise ValueError("History page limits are invalid")
+    if settings["history_page_size"] > 1000:
+        raise ValueError("Helius transaction pages are limited to 1000 records")
     exit_policy = settings["exit"]
     if (exit_policy.get("initial_gain") != .35 or exit_policy.get("later_step_gain") != .40
             or exit_policy.get("later_sales") != 3):

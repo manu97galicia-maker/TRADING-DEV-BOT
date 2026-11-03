@@ -98,6 +98,20 @@ class CacheTests(unittest.IsolatedAsyncioTestCase):
         cache.invalidate()
         self.assertIsNone(cache.evidence(creator, current))
 
+    async def test_history_anchor_must_cover_the_start_of_live_observation(self):
+        creator = str(Pubkey.new_unique())
+        old, current = str(Pubkey.new_unique()), str(Pubkey.new_unique())
+        cache = CreatorHistoryCache(AsyncMock(), POLICY)
+        cache.observe(creator, current)
+        cache.coverage_start_slot = 101
+        snapshot = CreatorSnapshot(creator, {curve_address(old)}, {curve_address(old)}, 100, time.time())
+        cache.snapshots[creator] = snapshot
+        self.assertIsNone(cache.evidence(creator, current))
+        snapshot.slot = 101
+        self.assertIsNotNone(cache.evidence(creator, current))
+        cache.invalidate()
+        self.assertIsNone(cache.coverage_start_slot)
+
     async def test_refresh_started_before_disconnect_cannot_repopulate_history(self):
         creator, mint = str(Pubkey.new_unique()), str(Pubkey.new_unique())
         cache = CreatorHistoryCache(AsyncMock(), POLICY)
@@ -124,6 +138,18 @@ class CacheTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(cache.observed[creator]), 256)
         self.assertIn(creator, cache.overflow)
         self.assertIsNone(cache.evidence(creator, mint))
+
+    async def test_refresh_prunes_indexed_observations_but_keeps_new_unfinalized_launches(self):
+        creator = str(Pubkey.new_unique())
+        old, current = str(Pubkey.new_unique()), str(Pubkey.new_unique())
+        cache = CreatorHistoryCache(AsyncMock(), POLICY)
+        cache.observe(creator, old)
+        cache.observe(creator, current)
+        snapshot = CreatorSnapshot(creator, {curve_address(old)}, {curve_address(old)}, 100, time.time())
+        with patch("monitoring.creator_history_index.read_creator_history", return_value=snapshot):
+            await cache.refresh(creator)
+        self.assertEqual(cache.observed[creator], {curve_address(current)})
+        self.assertEqual(cache.evidence(creator, current)["migration_fraction"], 1)
 
     async def test_evicted_creator_refresh_cannot_reuse_a_new_observation_session(self):
         creator, mint = str(Pubkey.new_unique()), str(Pubkey.new_unique())

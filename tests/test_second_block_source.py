@@ -12,6 +12,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 import yaml
+from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 
 from monitoring.creator_history_index import PUMP, curve_address
@@ -52,7 +53,8 @@ class SourceTests(unittest.IsolatedAsyncioTestCase):
         self.source.history = SimpleNamespace(observe=lambda *a: None, warm=lambda *a: None,
             evidence=lambda *a: {"migration_fraction": .01, "launches": 100, "migrations": 1},
             invalidate=lambda: None, close=AsyncMock())
-        self.mint, self.creator, self.a, self.b = [Pubkey.new_unique() for _ in range(4)]
+        self.mint = Pubkey.new_unique()
+        self.creator, self.a, self.b = [Keypair().pubkey() for _ in range(3)]
         self.token = SimpleNamespace(creator=self.creator, additional_data={})
         self.builder = patch("monitoring.second_block_source.build_pumpfun_token_info", AsyncMock(return_value=self.token))
         self.builder.start()
@@ -93,8 +95,20 @@ class SourceTests(unittest.IsolatedAsyncioTestCase):
         self.source.on_slot({"slot": 101, "parent": 100})
         self.assertAlmostEqual(self.source.signal(str(self.mint))["volume_usd"], 275)
 
-    async def test_no_creation_or_spoofed_creator_cannot_qualify(self):
+    async def test_history_uses_creation_signer_when_royalty_creator_differs(self):
+        self.source.history.observe = Mock()
+        self.source.history.evidence = Mock(return_value={"migration_fraction": .01})
         await self.created(trade(self.mint, self.a), trade(self.mint, self.b), user=self.a)
+        self.source.on_slot({"slot": 101, "parent": 100})
+        signal = self.source.signal(str(self.mint))
+        self.assertEqual(signal["creator"], str(self.creator))
+        self.assertEqual(signal["developer"], str(self.a))
+        self.source.history.observe.assert_called_once_with(str(self.a), str(self.mint))
+        self.source.history.evidence.assert_called_with(str(self.a), str(self.mint))
+
+    async def test_pda_creation_user_cannot_borrow_an_external_wallet_history(self):
+        off_curve = Pubkey.from_string(curve_address(str(self.mint)))
+        await self.created(trade(self.mint, self.a), trade(self.mint, self.b), user=off_curve)
         self.source.on_slot({"slot": 101, "parent": 100})
         self.assertIsNone(self.source.signal(str(self.mint)))
         self.assertFalse(self.source.candidates)
