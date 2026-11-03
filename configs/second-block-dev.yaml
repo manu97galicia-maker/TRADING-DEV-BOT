@@ -19,6 +19,8 @@ reject_sharp_price_rise: false
 creator_cache_seconds: 600
 history_timeout_seconds: 12
 history_provider: helius_transactions
+history_fallback_provider: gmgn
+history_primary_timeout_seconds: 4
 history_max_pages: 64
 history_page_size: 100
 history_max_accounts: 10000

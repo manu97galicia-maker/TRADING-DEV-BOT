@@ -256,6 +256,7 @@ class DevOnlyPreflightTests(unittest.TestCase):
 
         with (
             patch.object(preflight, "_environment", return_value=env),
+            patch("trading.second_block_policy.load_second_policy", return_value=copy.deepcopy(SECOND_POLICY)),
             patch.object(preflight.importlib.util, "find_spec", side_effect=dependency) as lookup,
             patch("solders.keypair.Keypair") as keypair_type,
         ):
@@ -264,6 +265,7 @@ class DevOnlyPreflightTests(unittest.TestCase):
         checks = {check["name"]: check for check in report["checks"]}
         self.assertEqual(report["entry_mode"], "dev_only")
         self.assertNotIn("telegram_local", checks)
+        self.assertEqual(checks["gmgn_history_api"]["status"], "warning")
         self.assertEqual(lookup.call_args_list, [call("aiohttp"), call("websockets"), call("solders")])
         config_path.resolve.assert_not_called()
         for name in ("dependencies", "wallet_identity", "rpc_config", "wss_config"):

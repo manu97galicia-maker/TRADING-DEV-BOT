@@ -573,6 +573,10 @@ class FourStrategyTrader(legacy.UniversalTrader):
                             self.second_policy["balance_fraction"]*100)
                 logger.info("DEV inclusive entry budget cap USD (including slippage and fee headroom): %s",
                             self.second_policy.get("max_entry_budget_usd", "none"))
+                logger.info("DEV history providers: %s; fallback=%s, primary deadline=%ss",
+                            self.second_policy.get("history_provider"),
+                            self.second_policy.get("history_fallback_provider", "none"),
+                            self.second_policy.get("history_primary_timeout_seconds", "default"))
                 if self.second_policy.get("require_first_block_activity", False):
                     logger.info("DEV first-block activity: >=%d distinct buyers, >=%.0f USD total volume",
                                 self.second_policy["min_distinct_first_block_buyers"],

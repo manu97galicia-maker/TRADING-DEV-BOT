@@ -19,6 +19,11 @@ from dataclasses import dataclass
 import base58
 from solders.pubkey import Pubkey
 
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+GMGN_SOURCE = "gmgn_indexed_launches_verified_pumpswap_pools"
+
 PUMP = Pubkey.from_string("6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P")
 AMM = Pubkey.from_string("pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA")
 WSOL = Pubkey.from_string("So11111111111111111111111111111111111111112")
@@ -95,14 +100,33 @@ class CreatorSnapshot:
     checked_at: float
     source: str = "canonical_pumpswap_pools_over_creator_curves"
     migration_count_complete: bool = True
+    indexed_launch_count: int | None = None
+    indexed_reported_migrations: int | None = None
+    indexed_extra_launch_count: int = 0
+
+
+async def read_helius_with_fallback(creator: str, rpc: object, policy: dict) -> CreatorSnapshot:
+    """Keep a valid primary result; an unavailable proof may use the index."""
+    from monitoring.creator_transaction_history import read_transaction_history  # noqa: PLC0415 -- avoid a provider module cycle
+
+    if policy.get("history_fallback_provider") is None:
+        return await read_transaction_history(creator, rpc, policy)
+    if policy["history_fallback_provider"] != "gmgn":
+        raise HistoryUnavailableError("Unknown creator history fallback")
+    from monitoring.gmgn_creator_history import read_gmgn_creator_history  # noqa: PLC0415 -- optional read-only provider
+
+    try:
+        return await asyncio.wait_for(read_transaction_history(creator, rpc, policy),
+                                      timeout=policy.get("history_primary_timeout_seconds", 4))
+    except Exception as error:
+        logger.info("Creator history fallback to GMGN for %s (%s)", creator, type(error).__name__)
+    return await read_gmgn_creator_history(creator, rpc, policy)
 
 
 async def read_creator_history(creator: str, rpc: object, policy: dict) -> CreatorSnapshot:
     provider = policy.get("history_provider", "program_accounts")
     if provider == "helius_transactions":
-        from monitoring.creator_transaction_history import read_transaction_history  # noqa: PLC0415 -- optional provider, avoids a module cycle
-
-        return await read_transaction_history(creator, rpc, policy)
+        return await read_helius_with_fallback(creator, rpc, policy)
     if provider != "program_accounts":
         raise HistoryUnavailableError("Unknown creator history provider")
     Pubkey.from_string(creator)
@@ -169,19 +193,46 @@ class CreatorHistoryCache:
     def evidence(self, creator: str, mint: str) -> dict | None:
         snapshot = self.snapshots.get(creator)
         if (creator in self.overflow or creator not in self.observed or not snapshot
-                or (self.coverage_start_slot is not None and snapshot.slot < self.coverage_start_slot)
+                or snapshot.creator != creator or not self.covers_stream(snapshot)
                 or not 0 <= time.time()-snapshot.checked_at <= self.policy["creator_cache_seconds"]):
             return None
         current = curve_address(mint)
         curves = (snapshot.curves | self.observed.get(creator, set())) - {current}
         migrations = snapshot.migrated_curves - {current}
-        if not curves or not migrations <= curves:
+        launches = len(curves)
+        indexed = snapshot.indexed_launch_count is not None
+        if indexed:
+            total, reported = snapshot.indexed_launch_count, snapshot.indexed_reported_migrations
+            extra = snapshot.indexed_extra_launch_count
+            if (snapshot.source != GMGN_SOURCE or type(total) is not int or total <= 0
+                    or type(reported) is not int or not 0 <= reported <= total
+                    or type(extra) is not int or not 0 <= extra <= len(snapshot.curves)
+                    or len(snapshot.curves) > total+extra or len(snapshot.migrated_curves) > reported
+                    or not snapshot.migrated_curves <= snapshot.curves):
+                return None
+            # GMGN's returned list is truncated. Its global count supplies the
+            # denominator; unseen live launches are extra conservative entries.
+            unseen = (self.observed[creator]-{current})-snapshot.curves
+            launches = total + extra + len(unseen) - int(current in snapshot.curves)
+        if launches <= 0 or not migrations <= curves:
             return None
-        return {"launches": len(curves), "migrations": len(migrations),
-            "migration_fraction": len(migrations)/len(curves), "checked_at": snapshot.checked_at,
-            "slot": snapshot.slot, "source": snapshot.source,
-            "migration_fraction_is_lower_bound": not snapshot.migration_count_complete,
+        evidence = {"launches": launches, "migrations": len(migrations),
+            "migration_fraction": len(migrations)/launches, "checked_at": snapshot.checked_at,
+            "slot": None if indexed else snapshot.slot, "source": snapshot.source,
+            "migration_fraction_is_lower_bound": indexed or not snapshot.migration_count_complete,
             "older_raydium_migrations_not_counted": True}
+        if indexed:
+            evidence.update(denominator_source="gmgn_indexed_aggregate",
+                            indexed_total_launches=snapshot.indexed_launch_count,
+                            indexed_reported_migrations=snapshot.indexed_reported_migrations,
+                            indexed_extra_launches=snapshot.indexed_extra_launch_count)
+        return evidence
+
+    def covers_stream(self, snapshot: CreatorSnapshot) -> bool:
+        """Indexed responses have timestamps, never a fabricated chain slot."""
+        if snapshot.indexed_launch_count is not None:
+            return snapshot.source == GMGN_SOURCE
+        return self.coverage_start_slot is None or snapshot.slot >= self.coverage_start_slot
 
     def warm(self, creator: str) -> None:
         if (creator not in self.observed or creator in self.overflow or creator in self.pending
@@ -189,7 +240,7 @@ class CreatorHistoryCache:
             return
         snapshot = self.snapshots.get(creator)
         if (snapshot and 0 <= time.time()-snapshot.checked_at <= self.policy["creator_cache_seconds"]
-                and (self.coverage_start_slot is None or snapshot.slot >= self.coverage_start_slot)):
+                and self.covers_stream(snapshot)):
             return
         task = asyncio.create_task(self.refresh(creator))
         self.pending[creator] = task
@@ -224,6 +275,7 @@ class CreatorHistoryCache:
             if generation == self.generation and creator in self.observed:
                 self.last_error = type(error).__name__
                 self.retry_after[creator] = time.monotonic()+30
+                logger.warning("Creator history unavailable for %s (%s)", creator, type(error).__name__)
 
     def invalidate(self) -> None:
         self.generation += 1

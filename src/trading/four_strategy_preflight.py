@@ -76,6 +76,14 @@ def inspect_local(plan: dict, config_path: Path, *, only_dev: bool = False) -> d
         "entry_mode": "dev_only" if only_dev else "all",
         "checks": [],
     }
+    from trading.second_block_policy import load_second_policy
+
+    second = load_second_policy(config_path, plan)
+    if second.get("history_fallback_provider") == "gmgn":
+        _record(report, "gmgn_history_api",
+                "pass" if env.get("GMGN_API_KEY") else "warning",
+                "Clave GMGN presente para respaldo de historial; acceso aún no comprobado"
+                if env.get("GMGN_API_KEY") else "Falta GMGN_API_KEY: solo estará disponible el historial primario")
     _record(
         report, "private_purchase_alerts",
         "pass" if env.get("TELEGRAM_BOT_TOKEN") and env.get("TELEGRAM_CHAT_ID") else "warning",

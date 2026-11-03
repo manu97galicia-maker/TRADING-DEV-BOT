@@ -18,6 +18,21 @@ distintos y al menos 250 USD de volumen total**, sumando compras y ventas.
 La misma dirección cuenta una sola vez como comprador; los eventos de bloques
 posteriores no aumentan esos contadores.
 
+Cuando Helius devuelve datos incompletos o supera cuatro segundos, el respaldo
+GMGN consulta los agregados del dev con `GMGN_API_KEY`. El total se obtiene de
+`inner_count + open_count`, no del tamaño de la lista de tokens, que puede
+estar truncada. Las migraciones que cuentan para el 1% se contrastan con la
+curva, el pool PumpSwap canónico y la firma de creación del mismo dev.
+El denominador de ese respaldo es el índice de GMGN, una fuente distinta de
+la reconstrucción completa de transacciones de Helius; queda identificado así
+en los datos de entrada. Las creaciones nuevas observadas que no aparecen en
+la lista se suman conservadoramente. También se suman los tokens que aparecen
+solo en la segunda consulta, evitando combinar éxitos nuevos con un total
+anterior más pequeño. La moneda actual solo se resta cuando
+se demuestra que el índice la incluye. Datos incompletos de ambos proveedores
+siguen impidiendo la entrada. El trabajo se realiza fuera del colector y se
+reutiliza en caché; la primera consulta de un dev puede añadir latencia.
+
 No exige MC, concentración, historial de variaciones de precio ni entrar en
 un bloque dos/tres concreto. Observa nuevas creaciones y espera a verificar su historial
 y a preparar una curva comprable; no compra monedas ya migradas a un pool.

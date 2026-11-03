@@ -130,6 +130,8 @@ def main() -> None:
                     "five_trade_evaluation": plan.get("five_trade_evaluation"),
                     "second_block_dev": {"enabled": second["enabled"],
                         "entry_rule": second.get("entry_rule", "second_block"),
+                        "history_provider": second.get("history_provider"),
+                        "history_fallback_provider": second.get("history_fallback_provider"),
                         "require_first_block_activity": second.get("require_first_block_activity", False),
                         "min_distinct_first_block_buyers": second.get("min_distinct_first_block_buyers"),
                         "min_first_block_volume_usd": second.get("min_first_block_volume_usd"),

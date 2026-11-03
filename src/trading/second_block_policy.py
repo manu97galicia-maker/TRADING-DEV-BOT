@@ -48,6 +48,7 @@ def validate_second_policy(settings: dict) -> None:
     for key in ["max_slot_age_seconds", "creator_cache_seconds", "history_timeout_seconds"]:
         if not isinstance(settings.get(key), (int, float)) or not math.isfinite(settings[key]) or settings[key] <= 0:
             raise ValueError("Second-block observation limits must be finite and positive")
+    validate_history_fallback(settings)
     for key in ["history_max_pages", "history_page_size", "history_max_accounts", "history_max_transactions"]:
         if type(settings.get(key)) is not int or not 1 <= settings[key] <= 10000:
             raise ValueError("History page limits are invalid")
@@ -58,6 +59,16 @@ def validate_second_policy(settings: dict) -> None:
             or exit_policy.get("later_sales") != 3):
         raise ValueError("Expected +35%, then three multiplicative +40% targets")
     second_block_ladder(4000, exit_policy)
+
+
+def validate_history_fallback(settings: dict) -> None:
+    fallback = settings.get("history_fallback_provider")
+    if fallback is None:
+        return
+    primary_timeout = settings.get("history_primary_timeout_seconds")
+    if (fallback != "gmgn" or type(primary_timeout) not in (int, float)
+            or not math.isfinite(primary_timeout) or not 0 < primary_timeout < settings["history_timeout_seconds"]):
+        raise ValueError("GMGN fallback requires a bounded primary-history timeout")
 
 
 def load_second_policy(config_path: Path, plan: dict) -> dict:
