@@ -20,7 +20,22 @@ trade:
   buy_slippage: 0.15
   sell_slippage: 0.25
   exit_strategy: "tp_sl"
-  stop_loss_percentage: 0
+  # Salida que se valida en PAPER antes de cualquier consideración real:
+  # -17% se descarta; se prueba un corte corto del -8%.
+  stop_loss_percentage: 0.08
+  # TP1 +15% vende 50%; TP2 +45% vende 40%; TP3 +100% vende el runner 10%.
+  take_profit_percentage: 0.15
+  take_profit_sell_percentage: 0.50
+  tp2_gain: 0.45
+  tp2_sell: 0.40
+  tp3_gain: 1.00
+  tp3_sell: 0.10
+  # Tras TP1, el suelo del resto pasa a compra +3%. En TP2 el trinquete
+  # avanza al escalón anterior (+15%).
+  stop_a_entrada_tras_tp: true
+  margen_stop_tras_tp: 0.03
+  stop_al_tp_tras_tp: false
+  vender_todo_en_stop: true
   mc_stop_loss: 0
   max_hold_time: 0
   price_check_interval: 1
