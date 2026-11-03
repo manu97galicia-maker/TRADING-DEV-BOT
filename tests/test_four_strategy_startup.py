@@ -112,6 +112,7 @@ class StartupTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(captured["inactivity"], 300)
         self.assertEqual(captured["evaluation_policy"]["batch_size"], 5)
         self.assertEqual(captured["evaluation_policy"]["scope"], "per_strategy")
+        self.assertEqual(captured["evaluation_policy"]["legacy_loss_guard"], "batch_roi_only")
         self.assertIs(captured["kwargs"]["paper_trade"], False)
 
     def test_22_percent_stop_keeps_the_existing_ledger_identity_and_input(self) -> None:
@@ -129,12 +130,14 @@ class StartupTests(unittest.IsolatedAsyncioTestCase):
             trader.fraccion_saldo = .30
             trader.stop_loss_percentage = .22
             trader.buyer = object()
-            trader.configure_four(settings)
+            trader.configure_four(settings, evaluation_policy=plan["five_trade_evaluation"])
             self.assertEqual(trader.four["exit"]["stop_loss_fraction"], .22)
             self.assertEqual(settings, original)
             with closing(trader.book.connect()) as db:
                 self.assertEqual(db.execute("SELECT policy FROM settings WHERE id=1").fetchone()[0], identity)
             self.assertIn("SL -22%", trader._cartel_de_salidas())
+            self.assertIn("ROI neto SOL >0", trader._cartel_de_salidas())
+            self.assertNotIn("3 perdidas", trader._cartel_de_salidas())
 
 
 if __name__ == "__main__":

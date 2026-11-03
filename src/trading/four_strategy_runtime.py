@@ -357,8 +357,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
     def _cartel_de_salidas(self) -> str:
         message = (
             f"SALIDAS FOUR · SL -{self.stop_loss_percentage:.0%} · TP1 +50% vende 50% original; "
-            "TP2 punto medio vende 25%; TP3 28K o entrada x2 vende 25% · "
-            "pausa independiente con 3 perdidas en los ultimos 5 cierres"
+            "TP2 punto medio vende 25%; TP3 28K o entrada x2 vende 25%"
         )
         if getattr(self, "second_policy", {}).get("enabled"):
             policy = self.second_policy["exit"]
@@ -367,6 +366,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
         evaluation = getattr(getattr(self, "book", None), "evaluation", None)
         if evaluation:
             message += " · TANDAS: 5 cierres por estrategia; siguiente tanda solo con ROI neto SOL >0"
+        if not evaluation or evaluation.keep_legacy_loss_guard:
+            message += " · pausa independiente con 3 perdidas en los ultimos 5 cierres"
         return message
 
     def receipt_writer(self, nonce: str, kind: str) -> Callable[[str, str], None]:

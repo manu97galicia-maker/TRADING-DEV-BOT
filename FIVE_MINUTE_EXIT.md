@@ -70,7 +70,8 @@ conservan tokens permanecen abiertas. No importa ni utiliza una clave firmante.
 activo se niega a modificar el libro. Registra cada venta externa y su cierre
 en una sola transacción de SQLite, con el P&L atribuido a los cambios de SOL de
 la wallet. Una discrepancia revierte también los recibos añadidos. Se mantienen
-las estadísticas y la pausa de tres pérdidas en los últimos cinco cierres.
+las estadísticas. La política actual de tandas pausa una estrategia si la suma
+neta de sus cinco cierres es cero o negativa; el número de pérdidas no la pausa.
 
 El siguiente comando es de **ejecución manual** y arranca operaciones reales:
 

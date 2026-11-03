@@ -36,12 +36,16 @@ Los intentos fallidos que llegaron a cadena y pagaron gastos consumen una prueba
 y registran su pérdida. Una cancelación demostrada antes de enviarse libera la
 prueba; un envío incierto conserva su plaza y no se cuenta como victoria.
 
-Se conserva la regla anterior de tres pérdidas en los últimos cinco cierres.
-Puede parar una estrategia aunque su tanda tenga ROI positivo. Las pausas
-anteriores permanecen registradas y activas: presión compradora, primer bloque
-y fuerza en 21k estaban pausadas en la última comprobación. La opción
-`legacy_loss_guard: keep_three_in_five` mantiene ambas reglas. Las posiciones y resultados previos
-se conservan, pero no se convierten en nuevas pruebas de esta evaluación.
+La regla activa es `legacy_loss_guard: batch_roi_only`: importa la suma neta de
+los cinco cierres de cada estrategia. Dos ganadoras pueden compensar tres
+perdedoras y permitir otra tanda si, después de gastos, dejan beneficio neto.
+El número de pérdidas por sí solo no pausa una estrategia. Un resultado neto
+cero o negativo al completar los cinco cierres sí pausa sus nuevas entradas.
+
+Las antiguas pausas por tres pérdidas se conservan como registros históricos,
+pero dejan de bloquear entradas con esta política. Las pausas de la evaluación
+por ROI no positivo o costes sin verificar siguen activas. Las posiciones y
+resultados previos se conservan, pero no se convierten en nuevas pruebas.
 
 Las tablas `five_trade_settings`, `five_trade_batches` y `five_trade_entries`
 se crean al iniciar el código o aplicar una conciliación manual. La reserva de
@@ -71,5 +75,6 @@ bash reiniciar_four_strategies.sh --real
 
 El segundo comando activa la quinta en su archivo. El tercero concilia las
 ventas, detiene la instancia anterior y solicita el nuevo arranque, conservando
-el libro y las pausas. Las pruebas de desarrollo usan recibos simulados; no son
+el libro y los registros de pausas; las pausas históricas de tres pérdidas ya
+no se aplican. Las pruebas de desarrollo usan recibos simulados; no son
 cinco trades reales ni evidencia de rentabilidad futura.

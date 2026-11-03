@@ -92,7 +92,23 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(self.current(STRATEGIES[1])["state"], "passed")
         self.assertEqual(self.current()["batch"], 1)
 
-    def test_existing_three_loss_guard_still_wins_over_positive_batch_roi(self):
+    def test_two_large_winners_outweigh_three_losses_for_every_strategy(self):
+        for strategy in STRATEGIES:
+            with self.subTest(strategy=strategy):
+                self.finish_batch([-10, -10, -10, 20, 20], strategy=strategy, prefix=strategy)
+                self.assertEqual(self.current(strategy)["state"], "passed")
+                self.assertAlmostEqual(self.current(strategy)["net_roi_percent"], 2)
+                self.assertFalse(self.book.paused(strategy))
+                next_entry = self.reserve(strategy+"-sixth", strategy)
+                self.assertIsNotNone(next_entry)
+                self.assertEqual(self.current(strategy)["batch"], 2)
+                self.book.cancel_unsubmitted(next_entry["nonce"])
+
+    def test_explicit_legacy_policy_can_still_keep_the_older_guard(self):
+        path = Path(self.temp.name)/"legacy-batch.sqlite3"
+        legacy_policy = {**POLICY, "legacy_loss_guard": "keep_three_in_five"}
+        self.book = FourStrategyBook(path, "owner", "policy", max_positions=4,
+                                     evaluation_policy=legacy_policy)
         self.finish_batch([-1, -1, -1, 10, 10])
         self.assertEqual(self.current()["state"], "passed")
         self.assertTrue(self.book.paused(STRATEGIES[0]))
@@ -144,7 +160,7 @@ class EvaluationTests(unittest.TestCase):
 
     def test_policy_changes_cannot_reset_existing_batch_history(self):
         changed = copy.deepcopy(POLICY)
-        changed["legacy_loss_guard"] = "batch_roi_only"
+        changed["legacy_loss_guard"] = "keep_three_in_five"
         with self.assertRaises(ValueError):
             FourStrategyBook(self.path, "owner", "policy", max_positions=4, evaluation_policy=changed)
 
@@ -172,13 +188,12 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(self.current()["state"], "not_started")
         self.assertEqual(self.book.research()["strategies"][STRATEGIES[0]]["closed"], 1)
 
-    def test_explicit_roi_only_policy_keeps_legacy_records_without_reactivating_them_as_rules(self):
+    def test_configured_roi_only_policy_keeps_legacy_records_without_reactivating_them_as_rules(self):
         path = Path(self.temp.name)/"explicit-roi-only.sqlite3"
         old = FourStrategyBook(path, "owner", "policy")
         with closing(old.connect()) as db, db:
             db.execute("INSERT INTO pauses VALUES (?)", (STRATEGIES[0],))
-        policy = {**POLICY, "legacy_loss_guard": "batch_roi_only"}
-        current = FourStrategyBook(path, "owner", "policy", max_positions=4, evaluation_policy=policy)
+        current = FourStrategyBook(path, "owner", "policy", max_positions=4, evaluation_policy=POLICY)
         self.assertFalse(current.paused(STRATEGIES[0]))
         with closing(current.connect()) as db:
             self.assertIsNotNone(db.execute("SELECT 1 FROM pauses WHERE strategy=?", (STRATEGIES[0],)).fetchone())
@@ -190,6 +205,8 @@ class EvaluationTests(unittest.TestCase):
         cfg["four_strategies"]["database"] = "ledger.sqlite3"
         policy = hashlib.sha256(json.dumps(cfg["four_strategies"], sort_keys=True, allow_nan=False).encode()).hexdigest()
         book = FourStrategyBook(root/"ledger.sqlite3", cfg["four_strategies"]["expected_wallet"], policy)
+        with closing(book.connect()) as db, db:
+            db.execute("INSERT INTO pauses VALUES (?)", (STRATEGIES[0],))
         config = root/"configs/four-strategies.yaml"
         config.write_text(yaml.safe_dump(cfg), encoding="utf-8")
         with closing(book.connect()) as db:
@@ -198,7 +215,10 @@ class EvaluationTests(unittest.TestCase):
         self.assertTrue(report["read_only"])
         self.assertFalse(report["trader_started"])
         self.assertEqual(report["evaluation"]["state"], "not_started")
+        self.assertFalse(report["legacy_loss_guard_active"])
+        self.assertEqual(report["recorded_legacy_pauses"], [STRATEGIES[0]])
         for strategy in report["evaluation"]["strategies"].values():
             self.assertIsNone(strategy["current"]["net_roi_percent"])
+            self.assertFalse(strategy["blocked_by_legacy_loss_guard"])
         with closing(book.connect()) as db:
             self.assertEqual(db.execute("SELECT name FROM sqlite_master ORDER BY name").fetchall(), before)

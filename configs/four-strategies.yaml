@@ -12,7 +12,7 @@ five_trade_evaluation:
   batch_size: 5
   roi_currency: SOL
   continue_when: strictly_positive_net_roi
-  legacy_loss_guard: keep_three_in_five
+  legacy_loss_guard: batch_roi_only
 platform: pump_fun
 avisos_telegram: true
 trade:
