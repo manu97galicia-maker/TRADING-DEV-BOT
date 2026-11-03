@@ -23,15 +23,15 @@ trade:
   # Salida que se valida en PAPER antes de cualquier consideración real:
   # -17% se descarta; se prueba un corte corto del -8%.
   stop_loss_percentage: 0.08
-  # TP1 +15% vende 50%; TP2 +45% vende 40%; TP3 +100% vende el runner 10%.
+  # TP1 +15%: vende 93,91304348% para recuperar el capital inicial +8%
+  # bruto (1,08 / 1,15). Queda 6,08695652% de la posición original.
   take_profit_percentage: 0.15
-  take_profit_sell_percentage: 0.50
-  tp2_gain: 0.45
-  tp2_sell: 0.40
-  tp3_gain: 1.00
-  tp3_sell: 0.10
-  # Tras TP1, el suelo del resto pasa a compra +3%. En TP2 el trinquete
-  # avanza al escalón anterior (+15%).
+  take_profit_sell_percentage: 0.9391304348
+  # Al x2 (+100%) vende el 75% de lo que quedó: 4,56521739% de la posición
+  # original. El 1,52173913% restante queda como tercer tramo/runner.
+  tp2_gain: 1.00
+  tp2_sell: 0.0456521739
+  # Tras TP1, el suelo del resto pasa a compra +3%.
   stop_a_entrada_tras_tp: true
   margen_stop_tras_tp: 0.03
   stop_al_tp_tras_tp: false

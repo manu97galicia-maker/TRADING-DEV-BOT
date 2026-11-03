@@ -21,11 +21,16 @@ def test_strategy_is_irreversibly_paper_only():
 def test_paper_exit_ladder_and_protected_runner():
     trade = CFG["trade"]
     assert trade["take_profit_percentage"] == 0.15
-    assert trade["take_profit_sell_percentage"] == 0.50
-    assert trade["tp2_gain"] == 0.45
-    assert trade["tp2_sell"] == 0.40
-    assert trade["tp3_gain"] == 1.00
-    assert trade["tp3_sell"] == 0.10
+    assert trade["take_profit_sell_percentage"] == 0.9391304348
+    assert trade["tp2_gain"] == 1.00
+    assert trade["tp2_sell"] == 0.0456521739
+    assert "tp3_gain" not in trade
+    assert "tp3_sell" not in trade
+    # TP1 recupera 108% bruto. TP2 vende el 75% de lo que quedó.
+    assert abs(1.15 * trade["take_profit_sell_percentage"] - 1.08) < 1e-9
+    left_after_tp1 = 1 - trade["take_profit_sell_percentage"]
+    assert abs(trade["tp2_sell"] - left_after_tp1 * 0.75) < 1e-9
+    assert abs(1 - trade["take_profit_sell_percentage"] - trade["tp2_sell"] - 0.0152173913) < 1e-9
     assert trade["stop_a_entrada_tras_tp"] is True
     assert trade["margen_stop_tras_tp"] == 0.03
     assert trade["stop_al_tp_tras_tp"] is False
