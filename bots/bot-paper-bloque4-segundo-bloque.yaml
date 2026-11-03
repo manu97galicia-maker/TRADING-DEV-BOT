@@ -1,9 +1,14 @@
-# Prueba A/B PAPER. No firma ni permite compras reales.
+# Prueba A/B. NACIO EN PAPEL Y YA NO LO ESTA: desde el 3-nov opera con
+# DINERO REAL (ver el bloque de `paper_trade`, mas abajo).
 name: "PAPER 4 TX + CONFIRMACION SEGUNDO BLOQUE"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
+# SE QUEDA EN false A PROPOSITO, tambien en real. `enabled` solo lo mira el
+# arranque de "todas" (bot_runner.py:539). Esta estrategia se lanza sola con
+# `run_bot_process(...)`, que no lo mira. Dejarlo en false es lo que impide
+# que se cuele como cuarta estrategia cuando se arrancan las otras tres.
 enabled: false
 separate_process: false
 platform: "pump_fun"
@@ -54,7 +59,29 @@ retries:
 
 filters:
   listener_type: "logs"
-  paper_trade: true
+  # REAL DESDE EL 3-nov, pedido: "Pon en real dime como pongo en droplet".
+  # Esa misma noche se habia pedido lo contrario ("Si primero prohibo real");
+  # esta orden lo levanta. Ningun otro numero se mueve.
+  #
+  # LOS CUATRO PUNTOS QUE SE AVISARON ANTES, ACEPTADOS COMO ESTAN. Se leyeron
+  # del codigo el 3-nov y se le dijeron a Manu; no se arreglan porque no se
+  # ha pedido. Si algun dia se arregla un numero, su linea sobra.
+  #   ACEPTADO: 20 PLAZAS CON UN NODO QUE VIGILA 6. node.max_rps 12 x
+  #     price_check_interval 1 / 2 = 6 (universal_trader.py:2206). Con el
+  #     stop al 8%, en las otras 14 el stop puede llegar tarde.
+  #   ACEPTADO: SIN RESERVA PARA COMISIONES. min_reserve_sol: 0. Con menos de
+  #     20 x 20 $ = 400 $ en la wallet, las compras acaban dejandola sin SOL
+  #     para pagar la comision de VENDER.
+  #   ACEPTADO: SIN PRIORITY FEE. Con dinamico y fijo apagados, el gestor no
+  #     pone ninguno (priority_fee/manager.py: "No priority fee if both are
+  #     disabled"), y retries.max_attempts: 1 no da segundo intento.
+  #   ACEPTADO: SIN CADUCIDAD. max_hold_time: 0, las posiciones no se cierran
+  #     por tiempo.
+  #
+  # OJO CON EL NOMBRE: se llama `bot-paper-...` pero ya NO es de papel. El
+  # nombre decide el sufijo del estado, asi que renombrarlo dejaria huerfanas
+  # las posiciones vivas.
+  paper_trade: false
   paper_watch_secs: 600
   max_token_age: 0
   max_buy_age: 45

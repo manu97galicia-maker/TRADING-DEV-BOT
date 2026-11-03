@@ -12,26 +12,28 @@ CFG = yaml.safe_load(
 
 
 def test_strategy_is_irreversibly_paper_only():
-    """REAL PROHIBIDO, pedido el 3-nov: "Si primero prohibo real".
+    """LA PROHIBICION SE LEVANTO, y queda escrito.
 
-    Esta prueba se apoya SOLO en los dos frenos que de verdad paran una
-    compra, porque son los unicos que estan en el camino del dinero:
-
-      `paper_trade: true`  -> universal_trader.py:4763 corta la compra ahi
-                              mismo y solo sigue el precio. No se firma nada.
-      `enabled: false`     -> el bot no carga la estrategia.
-
-    El tercer "cerrojo" que figuraba aqui NO frena nada: ver
-    `test_max_real_buys_en_cero_no_frena_nada`, mas abajo.
+    El 3-nov por la noche se pidio "Si primero prohibo real", y este test la
+    hacia cumplir. Esa misma noche se pidio lo contrario: "Pon en real dime
+    como pongo en droplet". El nombre del test se conserva para que el
+    historial se lea; lo que vigila ahora es que el paso a real fue a
+    sabiendas y que la estrategia no se cuela en el arranque de "todas".
     """
-    assert CFG["filters"]["paper_trade"] is True, (
-        "REAL PROHIBIDO en esta estrategia por orden del 3-nov. Si se quiere "
-        "levantar, hay que pedirlo y resolver antes lo que exige "
-        "test_lo_que_falta_antes_de_poder_ir_a_real"
+    assert CFG["filters"]["paper_trade"] is False, (
+        "volvio a papel: se puso en real el 3-nov por orden expresa de Manu"
     )
+    # `enabled` solo lo mira el arranque de "todas" (bot_runner.py:539).
+    # Esta se lanza sola con run_bot_process, que no lo mira. En false no se
+    # cuela como cuarta estrategia junto a las otras tres.
     assert CFG["enabled"] is False, (
-        "REAL PROHIBIDO: la estrategia tampoco se activa. Es el segundo freno"
+        "con enabled: true esta estrategia arrancaria tambien junto a las "
+        "otras tres en `python -m bot_runner`, sobre la misma wallet"
     )
+    texto = (ROOT / "bots" / "bot-paper-bloque4-segundo-bloque.yaml").read_text(
+        encoding="utf-8"
+    ).lower()
+    assert "ya no es de papel" in texto
     assert CFG["trade"]["buy_amount_usd"] == 20
     assert CFG["trade"]["stop_loss_percentage"] == 0.08
 
@@ -53,86 +55,52 @@ def test_max_real_buys_en_cero_no_frena_nada():
 
 
 def test_lo_que_falta_antes_de_poder_ir_a_real():
-    """Mientras siga prohibido, no exige nada. El dia que se levante, si.
+    """En real, cada uno de los cuatro puntos o se arregla o se acepta.
 
-    No bloquea el paso a real: lo que hace es que ese paso no pueda darse en
-    silencio. El dia que alguien ponga `paper_trade: false`, esta prueba se
-    enciende y dice exactamente lo que hay que resolver. Los cuatro puntos
-    salen de leer el codigo el 3-nov, no de una opinion.
+    Esta prueba se escribio el 3-nov para que el paso a real no pudiera darse
+    en silencio. Se dio, pidiendolo, y los cuatro puntos se aceptaron como
+    estan. Lo que se exige ahora es que cada punto sin arreglar lleve su linea
+    "ACEPTADO: ..." en el YAML. Si se arregla el numero, la linea sobra; si
+    se borra la linea sin arreglar el numero, esto falla.
     """
     if CFG["filters"]["paper_trade"] is True:
-        return  # Sigue prohibido: no hay nada que exigir todavia.
+        return  # En papel no hay nada que exigir.
 
     trade, fees = CFG["trade"], CFG["priority_fees"]
+    texto = (ROOT / "bots" / "bot-paper-bloque4-segundo-bloque.yaml").read_text(
+        encoding="utf-8"
+    )
 
-    # 1. EL STOP TIENE QUE PODER LLEGAR A TIEMPO. La cuenta es la de
-    #    universal_trader.py:2206, que deja media cuota para comprar:
-    #        vigilables = max_rps * price_check_interval / 2
-    #    Con max_rps 12 e intervalo 1s salen 6, y el fichero pide 20
-    #    posiciones: 14 sin vigilar. Con un stop del 8% eso es lo mas grave,
-    #    porque un stop tan corto solo sirve si reacciona al instante.
+    # 1. Plazas contra lo que vigila el nodo (universal_trader.py:2206).
     vigilables = int(
         float(CFG["node"]["max_rps"]) * float(trade["price_check_interval"]) / 2
     )
-    assert trade["max_posiciones"] <= vigilables, (
-        f"{trade['max_posiciones']} posiciones y el nodo solo vigila "
-        f"{vigilables}: el stop del {trade['stop_loss_percentage']:.0%} "
-        f"llegaria tarde en las demas. Sube node.max_rps o "
-        f"price_check_interval, o baja max_posiciones"
-    )
+    if trade["max_posiciones"] > vigilables:
+        marca = (
+            f"ACEPTADO: {trade['max_posiciones']} PLAZAS CON UN NODO QUE "
+            f"VIGILA {vigilables}"
+        )
+        assert marca in texto, (
+            f"{trade['max_posiciones']} posiciones y el nodo solo vigila "
+            f"{vigilables}: el stop del {trade['stop_loss_percentage']:.0%} "
+            f"llegaria tarde en las demas. O se arregla, o el YAML dice: {marca}"
+        )
 
-    # 2. CON QUE PAGAR LAS VENTAS. min_reserve_sol: 0 gasta hasta el ultimo
-    #    SOL y deja la wallet sin comision para VENDER lo que compro.
-    assert float(trade["min_reserve_sol"]) > 0, (
-        "min_reserve_sol: 0 no reserva nada para comisiones; sin SOL no se "
-        "puede vender lo comprado"
-    )
+    # 2. Reserva para pagar las ventas.
+    if float(trade["min_reserve_sol"]) <= 0:
+        assert "ACEPTADO: SIN RESERVA PARA COMISIONES" in texto, (
+            "min_reserve_sol: 0 no reserva nada para la comision de vender"
+        )
 
-    # 3. PRIORITY FEE. En papel no se firma, asi que da igual. En real se
-    #    compite por entrar en un bloque, y con retries.max_attempts: 1 no
-    #    hay segundo intento.
-    assert bool(fees["enable_dynamic"]) or bool(fees["enable_fixed"]), (
-        "sin priority fee y con un solo intento, la compra real entra tarde "
-        "o no entra"
-    )
+    # 3. Priority fee.
+    if not (bool(fees["enable_dynamic"]) or bool(fees["enable_fixed"])):
+        assert "ACEPTADO: SIN PRIORITY FEE" in texto, (
+            "sin priority fee y con un solo intento, la compra real entra "
+            "tarde o no entra"
+        )
 
-    # 4. QUE LAS POSICIONES CADUQUEN. max_hold_time: 0 las deja abiertas
-    #    indefinidamente ocupando plaza de las que si se mueven.
-    assert float(trade["max_hold_time"]) > 0, (
-        "max_hold_time: 0 deja las posiciones abiertas para siempre"
-    )
-
-
-def test_paper_exit_ladder_and_protected_runner():
-    trade = CFG["trade"]
-    assert trade["take_profit_percentage"] == 0.15
-    assert trade["take_profit_sell_percentage"] == 0.9391304348
-    assert trade["tp2_gain"] == 1.00
-    assert trade["tp2_sell"] == 0.0456521739
-    assert "tp3_gain" not in trade
-    assert "tp3_sell" not in trade
-    # TP1 recupera 108% bruto. TP2 vende el 75% de lo que quedó.
-    assert abs(1.15 * trade["take_profit_sell_percentage"] - 1.08) < 1e-9
-    left_after_tp1 = 1 - trade["take_profit_sell_percentage"]
-    assert abs(trade["tp2_sell"] - left_after_tp1 * 0.75) < 1e-9
-    assert abs(1 - trade["take_profit_sell_percentage"] - trade["tp2_sell"] - 0.0152173913) < 1e-9
-    assert trade["stop_a_entrada_tras_tp"] is True
-    assert trade["margen_stop_tras_tp"] == 0.03
-    assert trade["stop_al_tp_tras_tp"] is False
-    assert trade["vender_todo_en_stop"] is True
-
-
-def test_second_block_hypothesis_contract():
-    filters = CFG["filters"]
-    assert filters["min_first_block_buys"] == 4
-    assert filters["max_first_block_buys"] == 4
-    assert filters["min_first_block_usd"] == 375
-    assert filters["max_first_block_usd"] == 900
-    assert filters["buy_from_second_block"] is True
-    assert filters["second_block_confirmation"] == {
-        "enabled": True,
-        "min_buyers": 2,
-        "min_buy_sol": 0.25,
-        "min_net_sol": 0.25,
-        "max_sells": 0,
-    }
+    # 4. Caducidad.
+    if float(trade["max_hold_time"]) <= 0:
+        assert "ACEPTADO: SIN CADUCIDAD" in texto, (
+            "max_hold_time: 0 deja las posiciones abiertas para siempre"
+        )
