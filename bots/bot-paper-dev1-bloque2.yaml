@@ -1,0 +1,170 @@
+# DEV CON MIGRADAS + PRIMER BLOQUE + ENTRADA EN EL SEGUNDO BLOQUE.
+# Creada el 3-nov, pedido: "creen una estrategia que sea snipear las monedas
+# con el developer que tenga un minimo 1% de proyectos migrados y que en el
+# primer bloque haya dos compras minimo y por un volumen minimo de $375.
+# Pagamos 6 centimos de fees, de priority fees, para entrar de primeros en el
+# segundo bloque."
+#
+# NACE EN PAPEL, como todas las estrategias nuevas: no se dijo papel ni real.
+# Pasarla a real es una linea (`paper_trade: false`) y se hace cuando se pida.
+#
+# LO QUE NO SE PIDIO Y SE HA TENIDO QUE ELEGIR, para poder cambiarlo luego:
+#   - importe 20 $ fijos y la salida entera: copiados de su hermana,
+#     bot-paper-bloque4-segundo-bloque, tal como Manu la dejo el 3-nov.
+#   - 5 plazas y 0,03 SOL de reserva: el nodo (max_rps 12) vigila 6, y sin
+#     reserva no queda SOL para pagar la comision de vender. Son los dos
+#     puntos que en la hermana hubo que aceptar a sabiendas; aqui no se
+#     repiten porque nadie los pidio.
+name: "PAPER DEV 1% + PRIMER BLOQUE 2 COMPRAS 375$ + ENTRA EN BLOQUE 2"
+env_file: ".env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+# En false a proposito: `enabled` solo lo mira el arranque de "todas"
+# (bot_runner.py). Esta se lanza sola con run_bot_process, y asi no se cuela
+# junto a las otras estrategias sobre la misma wallet.
+enabled: false
+separate_process: false
+platform: "pump_fun"
+
+trade:
+  nombre_estrategia: "paper-dev1-bloque2"
+  buy_amount: 0
+  buy_amount_usd: 20
+  fraccion_saldo: 0
+  min_reserve_sol: 0.03
+  # 5 plazas x 20 $ = 100 $ como maximo dentro a la vez.
+  max_posiciones: 5
+  max_real_buys: 0
+  reiniciar_tanda: true
+  buy_slippage: 0.15
+  sell_slippage: 0.25
+  exit_strategy: "tp_sl"
+  # SALIDA: la misma que la hermana. Stop -8%. TP1 +15% vende el 93,913%
+  # (recupera lo invertido +8% bruto); al x2 vende el 75% de lo que quedo;
+  # el 1,52% restante corre. Tras TP1 el suelo sube a entrada +3%.
+  stop_loss_percentage: 0.08
+  take_profit_percentage: 0.15
+  take_profit_sell_percentage: 0.9391304348
+  tp2_gain: 1.00
+  tp2_sell: 0.0456521739
+  stop_a_entrada_tras_tp: true
+  margen_stop_tras_tp: 0.03
+  stop_al_tp_tras_tp: false
+  vender_todo_en_stop: true
+  mc_stop_loss: 0
+  max_hold_time: 0
+  price_check_interval: 1
+
+# 6 CENTIMOS DE PRIORITY FEE EN LA COMPRA. El bot no cobra en dolares: cobra
+# microlamports por unidad de computo, y la compra reserva 100.000 unidades
+# (pumpfun/instruction_builder.py, get_buy_compute_unit_limit). Con el SOL a
+# 105 $:
+#     0,06 $ / 105 $ = 0,000571429 SOL = 571.429 lamports
+#     571.429 lamports / 100.000 unidades = 5,714286 lamports por unidad
+#                                         = 5.714.286 microlamports
+# OJO, son 6 centimos SOLO con el SOL a 105 $: el numero va fijo en SOL. A
+# 90 $ salen 5,1 centimos y a 120 $ salen 6,9.
+#
+# DOS NUMEROS, A PROPOSITO:
+#   fixed_amount_compra -> SOLO la compra (universal_trader.py, `fee_compra`,
+#                          va como priority_fee_override). Son los 6 centimos.
+#   fixed_amount        -> las ventas. Se deja al mismo precio por unidad,
+#                          pero una venta usa 60.000 unidades y no 100.000:
+#                          unos 3,6 centimos cada una (TP1, TP2 o stop).
+# Asi, si algun dia se cambia la comision de las ventas, la de entrada no se
+# mueve con ella.
+# No lleva `fixed_amount_venta_proteccion` (la comision rapida para stops que
+# si tiene bot-unica123-real): no se pidio.
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount_compra: 5714286
+  fixed_amount: 5714286
+  extra_percentage: 0.0
+  # El tope igual a la compra: nunca paga mas de esos 6 centimos por entrar.
+  # El codigo recorta tambien `fixed_amount_compra` a este tope.
+  hard_cap: 5714286
+
+retries:
+  max_attempts: 1
+  wait_after_creation: 0
+  wait_after_buy: 0
+
+filters:
+  listener_type: "logs"
+  paper_trade: true
+  paper_watch_secs: 600
+  max_token_age: 0
+  # Ventana para esperar a que cierre el primer bloque. Sin ella (0) los
+  # filtros del primer bloque no se comprueban nunca.
+  max_buy_age: 45
+  allow_mayhem: false
+  require_mayhem: false
+  # En false: siguen mandando la BLACKLIST manual de Manu y el auto-baneo de
+  # devs con rugs. Son ordenes anteriores; el 1% de migradas se suma a ellas,
+  # no las sustituye.
+  ignorar_listas_de_devs: false
+
+  # PRIMER BLOQUE: minimo 2 compras y minimo 375 $ entre todas. Cuenta TODAS
+  # las compras del bloque en que nace la moneda, la del propio dev incluida
+  # (monitoring/volumen.py, _anotar_primer_bloque). Sin maximo (0).
+  min_first_block_buys: 2
+  max_first_block_buys: 0
+  min_first_block_usd: 375
+  max_first_block_usd: 0
+  # Espera a que el primer bloque se cierre (ve una operacion de un bloque
+  # posterior) y entonces compra, sin mirar nada mas del segundo bloque.
+  buy_from_second_block: true
+
+  # APAGADA A PROPOSITO. En la hermana esta encendida y obliga a ver el
+  # segundo bloque entero antes de comprar, o sea, a entrar en el tercero.
+  # Aqui se pidio entrar de primeros en el segundo.
+  second_block_confirmation:
+    enabled: false
+    min_buyers: 0
+    min_buy_sol: 0
+    min_net_sol: 0
+    max_sells: 0
+
+  curva_96:
+    enabled: true
+    umbral: 0
+    tope: 0.995
+    buy_amount: 0
+    max_compras: 0
+    parar_tras_perdidas: 0
+    min_compradores: 0
+    min_compradores_ola: 0
+    ventana_presion: 5
+    min_presion_ratio: 0
+    min_compra_sol: 0
+    vela_seg: 1
+    max_subida_vela: 0
+    exigir_ver_creacion: false
+    max_carteras_primer_bloque: 0
+    max_sol_primer_bloque: 0
+    max_bundle_pct: 0
+    max_bundle_pct_sin_historia: 0
+    heartbeat_interval: 300
+
+  # DEV: minimo 1% de sus monedas migradas, y por tanto al menos una.
+  # tasa = migradas / lanzadas, de sus ultimas 200 monedas en la API de
+  # pump.fun (monitoring/pumpfun_dev.py). 1 de 100 pasa (1,00%); 1 de 101 no
+  # (0,99%). Un dev en su primera moneda tiene 0 migradas: no pasa. Si la API
+  # no contesta, tampoco: sin el dato no se compra.
+  # La consulta se lanza al detectar la moneda y se espera al cerrar el
+  # primer bloque, asi que no anade tiempo a la compra.
+  pumpfun_dev:
+    enabled: true
+    min_migrations: 1
+    min_rate: 0.01
+    compra_inmediata: false
+
+cleanup:
+  mode: "post_session"
+  force_close_with_burn: false
+  with_priority_fee: false
+
+node:
+  max_rps: 12

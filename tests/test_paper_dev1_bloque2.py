@@ -1,0 +1,103 @@
+"""Contratos de la estrategia DEV 1% + PRIMER BLOQUE + ENTRADA EN BLOQUE 2.
+
+Creada el 3-nov, pedido: "snipear las monedas con el developer que tenga un
+minimo 1% de proyectos migrados y que en el primer bloque haya dos compras
+minimo y por un volumen minimo de $375. Pagamos 6 centimos de priority fees
+para entrar de primeros en el segundo bloque."
+"""
+
+from pathlib import Path
+
+import yaml
+
+from platforms.pumpfun.instruction_builder import PumpFunInstructionBuilder
+
+ROOT = Path(__file__).resolve().parents[1]
+FICHERO = ROOT / "bots" / "bot-paper-dev1-bloque2.yaml"
+CFG = yaml.safe_load(FICHERO.read_text(encoding="utf-8"))
+TRADER = (ROOT / "src" / "trading" / "universal_trader.py").read_text(
+    encoding="utf-8"
+)
+SOL_USD_REFERENCIA = 105.0
+
+
+def test_nace_en_papel_y_no_se_cuela_en_todas() -> None:
+    # No se dijo papel ni real: nace en papel. Pasarla a real es pedirlo.
+    assert CFG["filters"]["paper_trade"] is True
+    # enabled solo lo mira el arranque de "todas"; en false no arranca junto
+    # a las demas estrategias sobre la misma wallet.
+    assert CFG["enabled"] is False
+
+
+def test_dev_con_minimo_un_uno_por_ciento_de_migradas() -> None:
+    dev = CFG["filters"]["pumpfun_dev"]
+    assert dev["enabled"] is True
+    assert dev["min_rate"] == 0.01
+    # "1% de migradas" exige al menos una: con 0 migradas la tasa es 0.
+    assert dev["min_migrations"] == 1
+    # Sin compra inmediata: se espera al primer bloque antes de comprar.
+    assert dev["compra_inmediata"] is False
+    # Las listas de Manu (blacklist manual y auto-baneo por rugs) siguen
+    # mandando: el 1% se suma a ellas, no las sustituye.
+    assert CFG["filters"]["ignorar_listas_de_devs"] is False
+
+
+def test_primer_bloque_dos_compras_y_375_dolares() -> None:
+    f = CFG["filters"]
+    assert f["min_first_block_buys"] == 2
+    assert f["max_first_block_buys"] == 0
+    assert f["min_first_block_usd"] == 375
+    assert f["max_first_block_usd"] == 0
+    # Sin ventana de espera los filtros del primer bloque no se comprueban.
+    assert f["max_buy_age"] > 0
+
+
+def test_entra_en_el_segundo_bloque_sin_esperar_a_verlo_entero() -> None:
+    f = CFG["filters"]
+    assert f["buy_from_second_block"] is True
+    # Encendida obligaria a ver el segundo bloque entero: entrar en el tercero.
+    assert f["second_block_confirmation"]["enabled"] is False
+
+
+def test_la_compra_paga_seis_centimos_de_priority_fee() -> None:
+    fees = CFG["priority_fees"]
+    assert fees["enable_fixed"] is True
+    assert fees["enable_dynamic"] is False
+    # Las unidades salen del propio constructor de instrucciones: si algun dia
+    # la compra reserva otras, los 6 centimos dejan de serlo y esto lo dice.
+    # Se crea sin __init__ porque este calculo no usa el parser del IDL.
+    builder = object.__new__(PumpFunInstructionBuilder)
+    unidades = builder.get_buy_compute_unit_limit()
+    microlamports = int(fees["fixed_amount_compra"])
+    dolares = microlamports * unidades / 1e6 / 1e9 * SOL_USD_REFERENCIA
+    assert abs(dolares - 0.06) < 0.0005, f"la compra paga {dolares:.4f} $"
+    # El tope no puede recortar la comision de entrada por debajo de lo pedido.
+    assert int(fees["hard_cap"]) >= microlamports
+
+
+def test_los_filtros_corren_antes_del_corte_de_papel() -> None:
+    """Si el corte de papel fuera antes, la prueba en papel no mediria nada."""
+    corte = TRADER.index("            if self.paper_trade:")
+    assert TRADER.index("if self.buy_from_second_block and not _en_bloque_dos") < corte
+    assert TRADER.index('if self.pumpfun_dev.get("enabled") and not self._es_marcado(') < corte
+
+
+def test_plazas_que_el_nodo_vigila_y_reserva_para_vender() -> None:
+    t = CFG["trade"]
+    vigilables = int(
+        float(CFG["node"]["max_rps"]) * float(t["price_check_interval"]) / 2
+    )
+    assert t["max_posiciones"] <= vigilables
+    assert float(t["min_reserve_sol"]) > 0
+
+
+def test_salida_igual_que_la_hermana() -> None:
+    t = CFG["trade"]
+    assert t["buy_amount_usd"] == 20
+    assert t["stop_loss_percentage"] == 0.08
+    assert t["take_profit_percentage"] == 0.15
+    assert t["take_profit_sell_percentage"] == 0.9391304348
+    assert t["tp2_gain"] == 1.00
+    assert t["tp2_sell"] == 0.0456521739
+    assert t["stop_a_entrada_tras_tp"] is True
+    assert t["margen_stop_tras_tp"] == 0.03
