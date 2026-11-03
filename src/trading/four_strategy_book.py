@@ -233,7 +233,10 @@ class FourStrategyBook:
                 (nonce,),
             ).fetchall()
 
-    def settle(self, nonce: str, net: int, context_slot: int, details: dict) -> None:
+    def settle(
+        self, nonce: str, net: int, context_slot: int, details: dict,
+        *, additional_receipts: list[tuple[str, str]] | None = None,
+    ) -> None:
         """Called only after finalized receipts and zero on-chain holdings."""
         if type(net) is not int or not details.get("verified_zero_holdings"):
             raise ValueError("A complete integer-lamport audit is required")
@@ -246,6 +249,19 @@ class FourStrategyBook:
                 return
             if row[2] == "reserved":
                 raise ValueError("Cannot settle an unsubmitted reservation")
+            if additional_receipts:
+                previous = [r[0] for r in db.execute(
+                    "SELECT signature FROM receipts WHERE nonce=? AND kind!='rejected' ORDER BY rowid",
+                    (nonce,),
+                )]
+                if previous != details.get("previous_signatures"):
+                    raise ValueError("Manual reconciliation snapshot changed")
+                for signature, kind in additional_receipts:
+                    if not signature or kind not in {"sell", "failed"}:
+                        raise ValueError("Invalid manual disposal receipt")
+                    # A conflicting signature fails and rolls back this entire
+                    # transaction, including all receipts inserted above it.
+                    db.execute("INSERT INTO receipts VALUES (?,?,?)", (signature, nonce, kind))
             expected = details.get("signatures")
             actual = [
                 r[0]

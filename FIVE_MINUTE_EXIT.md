@@ -47,3 +47,39 @@ Instalar esta revisión no recarga un proceso Python que ya está ejecutándose.
 El proceso anterior conserva su configuración en memoria. Hace falta un reinicio
 manual para activar la nueva regla y los avisos, sin eliminar el libro ni abrir
 otra copia simultánea del bot. No se inicia trading durante las pruebas.
+
+## Reinicio después de ventas manuales
+
+El monitor anterior conserva ocupada una plaza si los tokens desaparecen por una
+venta externa cuya transacción no conoce. No se debe borrar ese registro ni
+poner un resultado inventado para liberar la plaza.
+
+`reconcile_four_manual_sales.py`, sin argumentos, prepara una auditoría de lectura.
+Busca el historial de la cuenta de tokens identificada en la compra original,
+exige llegar hasta esa compra y comprueba las cantidades y los cambios de SOL
+de las transacciones finalizadas. Admite recibos de versión 1 utilizados por
+Phantom. Rechaza adquisiciones adicionales, transferencias sin pago nativo,
+operaciones que cambian varios activos y datos incompletos. Las posiciones que
+conservan tokens permanecen abiertas. No importa ni utiliza una clave firmante.
+
+`--apply` exige adquirir el mismo bloqueo de proceso que el trader; con el bot
+activo se niega a modificar el libro. Registra cada venta externa y su cierre
+en una sola transacción de SQLite, con el P&L atribuido a los cambios de SOL de
+la wallet. Una discrepancia revierte también los recibos añadidos. Se mantienen
+las estadísticas y la pausa de tres pérdidas en los últimos cinco cierres.
+
+El siguiente comando es de **ejecución manual** y arranca operaciones reales:
+
+```bash
+cd /root/ai-bot-four-strategies
+bash reiniciar_four_strategies.sh --real
+```
+
+Primero comprueba las ventas sin modificar el libro. Identifica la única instancia
+de esta carpeta, solicita su terminación y espera hasta 30 segundos. Con el bot
+detenido repite y aplica la conciliación, y solo entonces solicita el nuevo
+arranque. Cualquier fallo anterior impide iniciar una segunda copia. El arranque
+tiene además su preflight y bloqueo habituales; «arranque solicitado» no significa
+que ya haya completado esas verificaciones. El log está en
+`logs/four-strategies.log`. No hay corte forzoso a la hora: los monitores de salida
+deben seguir atendiendo las posiciones abiertas.
