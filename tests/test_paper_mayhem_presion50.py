@@ -25,7 +25,10 @@ def _cfg(name: str) -> dict:
 def test_mayhem_usa_importe_fijo_y_lista_medida() -> None:
     cfg = _cfg("bot-paper-mayhem-24k.yaml")
     trade, filters = cfg["trade"], cfg["filters"]
-    assert filters["paper_trade"] is True
+    # paper_trade ya no se comprueba aqui: lo hace, y al contrario, el test
+    # `test_el_mayhem_esta_en_real_y_acotado`. `paper_max_samples` se queda
+    # escrito pero SIN EFECTO: solo se mira dentro de la rama
+    # `if self.paper_trade:` de universal_trader.py:4763.
     assert filters["paper_max_samples"] == 5
     assert filters["require_mayhem"] is True
     assert trade["buy_amount"] == trade["mayhem_buy_amount"] == 0.03
@@ -71,15 +74,48 @@ def test_presion50_exige_ocho_holders_presion_y_antimecha() -> None:
     assert "take_profit_percentage" not in trade
 
 
-def test_ningun_experimento_nuevo_puede_operar_real() -> None:
-    """El que no se ha pedido mover sigue en papel, y se vigila.
+def test_el_mayhem_esta_en_real_y_acotado() -> None:
+    """LOS DOS EXPERIMENTOS ESTAN YA EN REAL. Este fichero nacio diciendo
+    "ambos deben permanecer en paper"; el 31-oct se levanto para presion50 y
+    el 3-nov para mayhem ("me refiero a estas 3"). No queda ninguno en papel
+    que vigilar, asi que lo que se vigila es lo contrario: que no vuelvan a
+    papel por accidente, y que mayhem siga ACOTADO.
 
-    `bot-paper-presion50-24k` salio de esta lista el 31-oct por orden
-    expresa. El otro no: si algun dia aparece en real sin que se pida, este
-    guardian lo dice.
+    El tope es lo unico que hace esto barato, y son tres numeros a la vez:
+    `max_real_buys: 5` (5 es verdadero, asi que el tope de
+    universal_trader.py:4855 entra), `reiniciar_tanda: false` (las 5 son de
+    por vida, no por tanda) y 0,03 SOL por compra. Si se cae cualquiera de
+    los tres, deja de estar acotado.
     """
-    for name in ("bot-paper-mayhem-24k.yaml",):
-        assert _cfg(name)["filters"]["paper_trade"] is True
+    cfg = _cfg("bot-paper-mayhem-24k.yaml")
+    assert cfg["filters"]["paper_trade"] is False, (
+        "bot-paper-mayhem-24k volvio a papel: se puso en real el 3-nov por "
+        "orden expresa de Manu"
+    )
+    trade = cfg["trade"]
+    assert trade["max_real_buys"] == 5, (
+        "sin el tope de 5 compras esto deja de estar acotado; con 0 el tope "
+        "se APAGA (universal_trader.py:4855) y las compras son ilimitadas"
+    )
+    assert cfg["trade"]["reiniciar_tanda"] is False, (
+        "con reiniciar_tanda: true las 5 compras se renuevan y el tope deja "
+        "de ser de por vida"
+    )
+    assert trade["tope_compra_sol"] == 0.03
+    # 5 x 0,03 = 0,15 SOL. Si esta cuenta cambia, cambio el riesgo.
+    # El `round` es por prudencia con la coma flotante, no porque haga falta
+    # hoy: 5 * 0.03 da 0.15 exacto. Con otros valores (3 * 0.05 da
+    # 0.15000000000000002) fallaria por la aritmetica y no por el riesgo.
+    assert round(trade["max_real_buys"] * trade["tope_compra_sol"], 10) == 0.15
+
+    texto = (ROOT / "bots" / "bot-paper-mayhem-24k.yaml").read_text(
+        encoding="utf-8"
+    )
+    llano = texto.replace("\u00e1", "a").lower()
+    assert "ya no lo esta" in llano, (
+        "el fichero se llama bot-paper-... y opera con dinero real; tiene "
+        "que decirlo dentro para que nadie se confie del nombre"
+    )
 
 
 def test_el_presion50_esta_en_real_a_sabiendas() -> None:
