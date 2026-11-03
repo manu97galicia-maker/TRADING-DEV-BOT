@@ -1,5 +1,21 @@
 # Estrategia adicional: dev y segundo bloque
 
+La opción `third_block_retry_on_sharp_rise: true` permite un único intento
+adicional en el tercer bloque observado cuando el segundo fue rechazado
+exactamente por `sharp_price_rise` antes de firmar. Ambos bloques se identifican
+por su cadena de padres; no se suman números de slot. Un rechazo recibido ya
+en el tercero solo sirve mientras sigan vigentes su reloj y su precio.
+
+Cada intento tiene su propia copia de metadatos, target y nueva reserva. El
+tercero espera que el primer manejador libere las reservas y la coordinación
+por mint. Se vuelven a comprobar MC <4.200, historial del dev >=1%, volumen y
+compradores del primer bloque, concentración, precio, saldo y comisiones. Los
+trades posteriores solo actualizan el precio: no aumentan los compradores ni
+el volumen exigido al primer bloque. Si el precio sigue subiendo bruscamente,
+se vuelve a rechazar. Un recibo, firma, envío incierto, desconexión, cuarto
+bloque o ventana caducada impide reutilizar ese intento. El nonce y el target
+del primer intento nunca se transforman en una compra del tercero.
+
 Configuración: `configs/second-block-dev.yaml`. La referencia está fuera de
 `four_strategies` para conservar la identidad del libro de posiciones y sus
 pausas. La estrategia nueva se llama `dev-second-block` y permanece

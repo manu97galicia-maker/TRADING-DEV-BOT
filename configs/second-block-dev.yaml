@@ -8,6 +8,7 @@ min_first_block_volume_usd: 275
 min_distinct_first_block_buyers: 2
 buy_priority_fee_cap_usd: 0.06
 max_slot_age_seconds: 0.6
+third_block_retry_on_sharp_rise: true
 creator_cache_seconds: 600
 history_timeout_seconds: 12
 history_provider: helius_transactions

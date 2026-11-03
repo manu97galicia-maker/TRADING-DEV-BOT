@@ -78,7 +78,11 @@ class SourceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(signal["target_slot"], 102)
         self.assertFalse(signal["inclusion_guaranteed"])
         await asyncio.gather(*self.source.tasks)
-        self.callback.assert_awaited_once_with(self.token)
+        self.callback.assert_awaited_once()
+        delivered = self.callback.await_args.args[0]
+        self.assertIsNot(delivered, self.token)
+        self.assertEqual(delivered.creator, self.token.creator)
+        self.assertEqual(delivered.additional_data["dev_entry_target_slot"], 102)
         self.source.on_slot({"slot": 103, "parent": 102})
         self.assertIsNone(self.source.signal(str(self.mint)))
 

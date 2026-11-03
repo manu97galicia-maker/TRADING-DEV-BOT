@@ -28,7 +28,8 @@ def validate_second_policy(settings: dict) -> None:
         "buy_priority_fee_cap_usd": .06, "developer_identity": "creation_signer",
         "history_provider": "helius_transactions",
     }
-    if any(settings.get(k) != v for k, v in expected.items()):
+    if (any(settings.get(k) != v for k, v in expected.items())
+            or type(settings.get("third_block_retry_on_sharp_rise", False)) is not bool):
         raise ValueError("Second-block settings differ from the requested entry policy")
     for key in ["max_slot_age_seconds", "creator_cache_seconds", "history_timeout_seconds"]:
         if not isinstance(settings.get(key), (int, float)) or not math.isfinite(settings[key]) or settings[key] <= 0:

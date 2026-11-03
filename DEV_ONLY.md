@@ -16,6 +16,14 @@ primer bloque, MC inferior a 4.200 USD, presupuesto inclusivo del 90% del SOL,
 reserva de 0,03 SOL, SL del 22% y tandas de cinco por ROI neto. La entrada se
 intenta en el siguiente bloque observado; no se garantiza su inclusión.
 
+Con `third_block_retry_on_sharp_rise: true`, un rechazo exacto por subida
+brusca, antes de firmar o enviar en el segundo bloque, permite un único nuevo
+intento en el tercero observado. Se espera la limpieza completa del primer
+intento y se repiten todos los filtros, incluido el de subida brusca. Si el
+rechazo llega todavía dentro de la ventana fresca del tercero, también puede
+intentarse; fuera de esa ventana se descarta. No hay intento en el cuarto,
+ni reintento tras un envío firmado, incierto o con recibo.
+
 Arranque **manual con fondos reales**, desde la consola del droplet:
 
 ```bash

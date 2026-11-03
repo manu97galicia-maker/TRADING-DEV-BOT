@@ -139,7 +139,8 @@ class SharedBuyer:
             # Persist before any possible signed submission; recovery after an
             # unknown acknowledgement must not fall back to the old exits.
             runtime.update_details(nonce, {"entry_exit_policy": policy["exit"],
-                "entry_policy_id": STRATEGY_ID, "target_slot": signal["target_slot"]})
+                "entry_policy_id": STRATEGY_ID, "target_slot": signal["target_slot"],
+                "entry_block": signal.get("entry_block", 2), "retry_reason": signal.get("retry_reason")})
         token_info.additional_data = {
             **(token_info.additional_data or {}),
             "four_strategy_id": signal["strategy"],
@@ -179,6 +180,13 @@ class SharedBuyer:
                 )
         except EntryRiskRejected as error:
             runtime.book.cancel_unsubmitted(nonce)
+            source = getattr(runtime, "second_source", None)
+            if (second and str(error) == "sharp_price_rise" and signal.get("entry_block") == 2
+                    and source is not None and not runtime.book.signatures(nonce)
+                    and not any(p["nonce"] == nonce for p in runtime.book.positions())):
+                if source.arm_third_block_retry(str(token_info.mint), signal["target_slot"],
+                                                signal["source_generation"]):
+                    logger.info("DEV third-block retry armed for %s after unsubmitted sharp-price rejection", token_info.mint)
             logger.info("Entry rejected for %s: %s", token_info.mint, error)
             return TradeResult(success=False, error_message=f"Entry protection: {error}")
         except Exception:
@@ -457,7 +465,13 @@ class FourStrategyTrader(legacy.UniversalTrader):
         data = token.additional_data or {}
         if data.get("acquisition_kind") == "second-block-dev":
             source = getattr(self, "second_source", None)
-            return source.signal(str(token.mint)) if source else None
+            signal = source.signal(str(token.mint)) if source else None
+            if signal and (
+                ("dev_entry_target_slot" in data and data["dev_entry_target_slot"] != signal.get("target_slot"))
+                or ("dev_entry_generation" in data and data["dev_entry_generation"] != signal.get("source_generation"))
+            ):
+                return None
+            return signal
         if getattr(self, "only_dev", False):
             return None
         if data.get("acquisition_kind") == "telegram":
@@ -531,10 +545,11 @@ class FourStrategyTrader(legacy.UniversalTrader):
             tasks.append(optional_telegram())
         await asyncio.gather(*tasks)
 
-    async def _on_dexpaid_token(self, token_info: object) -> None:
+    async def _on_dexpaid_token(self, token_info: object) -> asyncio.Task:
         task = asyncio.create_task(self._handle_token(token_info))
         self._four_tasks.add(task)
         task.add_done_callback(self._four_tasks.discard)
+        return task
 
     async def _handle_token(self, token_info: object) -> None:
         signal = self.current_signal(token_info)
