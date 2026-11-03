@@ -1,4 +1,15 @@
-# Estrategia adicional: dev y segundo bloque
+# Estrategia dev: perfil de historial y perfil clásico
+
+El perfil activo es ahora `entry_rule: creator_migration_only`: exige solo
+dev firmante con al menos 1% de migraciones PumpSwap verificadas como criterio
+de selección. No aplica los límites de MC, volumen, compradores, concentración,
+variaciones del precio ni segundo/tercer bloque descritos en el perfil clásico.
+Compra cuando termina la verificación del historial y la preparación de una
+curva compatible. Prioridad máxima: compra 0,07 USD, salidas 0,03 USD por intento;
+comisiones base, del protocolo y renta aparte. Mantiene TP/SL y controles del libro.
+
+El funcionamiento actual se detalla en `DEV_ONLY.md`. Las secciones siguientes
+documentan el perfil clásico disponible con `entry_rule: second_block`.
 
 La configuración actual `reject_sharp_price_rise: false` quita a la estrategia
 dev el límite de subida del 35% frente al mínimo de los últimos dos segundos.

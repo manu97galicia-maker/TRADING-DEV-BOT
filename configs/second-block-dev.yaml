@@ -1,12 +1,15 @@
 # Fifth strategy. Helius signer history verified; execution remains manually disabled.
 enabled: false
 strategy_id: dev-second-block
+entry_rule: creator_migration_only
 balance_fraction: 0.90
+# Classic second-block thresholds retained for compatibility, unused in history-only mode.
 max_entry_mc_usd: 4200
 min_creator_migration_fraction: 0.01
 min_first_block_volume_usd: 275
 min_distinct_first_block_buyers: 2
-buy_priority_fee_cap_usd: 0.06
+buy_priority_fee_cap_usd: 0.07
+sell_priority_fee_cap_usd: 0.03
 max_slot_age_seconds: 0.6
 third_block_retry_on_sharp_rise: true
 reject_sharp_price_rise: false

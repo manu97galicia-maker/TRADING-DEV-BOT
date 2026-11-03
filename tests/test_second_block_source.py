@@ -46,6 +46,7 @@ def trade(mint, wallet, *, sol=1.4, buy=True, mc=4000):
 class SourceTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.policy = yaml.safe_load((ROOT / "configs/second-block-dev.yaml").read_text())
+        self.policy["entry_rule"] = "second_block"
         self.impl = SimpleNamespace(event_parser=SimpleNamespace(_idl_parser=IDLParser(str(ROOT / "idl/pump_fun_idl.json"))))
         self.callback = AsyncMock()
         self.source = SecondBlockSource(self.policy, AsyncMock(), self.impl, None,

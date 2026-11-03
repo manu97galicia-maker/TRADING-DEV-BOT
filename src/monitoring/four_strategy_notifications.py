@@ -26,6 +26,9 @@ def entry_reason(features: dict) -> str:
     if strategy == STRATEGY_ID:
         history = features.get("creator_history") or {}
         minimum = "al menos " if history.get("migration_fraction_is_lower_bound") else ""
+        if features.get("entry_rule") == "creator_migration_only":
+            return (f"Dev firmante con {minimum}{int(history.get('migrations', 0))}/{int(history.get('launches', 0))} "
+                    "migraciones PumpSwap verificadas; mínimo 1% de sus lanzamientos")
         return (
             f"Segundo bloque observado: {int(features.get('buyers', 0))} wallets compradoras "
             f"en el primero, volumen ${float(features.get('volume_usd', 0)):,.0f}; "

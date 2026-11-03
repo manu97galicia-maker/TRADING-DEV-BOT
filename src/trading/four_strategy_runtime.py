@@ -33,6 +33,7 @@ from trading.four_strategy_entry_guard import (
 from trading.four_strategy_inactivity import fresh_inactivity, inactive_curve_evidence
 from trading.second_block_policy import (
     STRATEGY_ID,
+    creator_history_only,
     position_exit_plan,
     recovery_allocations,
     validate_second_policy,
@@ -54,6 +55,7 @@ logger = get_logger(__name__)
 if TYPE_CHECKING:
     from collections.abc import Callable
 _PROCEEDS: ContextVar[float] = ContextVar("four_strategy_sale_proceeds", default=0)
+_DEV_EXIT_CAP: ContextVar[int | None] = ContextVar("dev_exit_priority_cap", default=None)
 
 
 def _nominal_entry_cap(runtime: object, cap_sol: float = 0) -> float:
@@ -65,6 +67,17 @@ def _nominal_entry_cap(runtime: object, cap_sol: float = 0) -> float:
     if total > 0:
         caps.append(total/(1+runtime.buy_slippage))
     return min((value for value in caps if value > 0), default=0)
+
+
+def _configure_history_only_assets(runtime: object) -> None:
+    """The dev-only history rule does not screen the supported Mayhem subtype."""
+    if not (getattr(runtime, "only_dev", False) and creator_history_only(runtime.second_policy)):
+        return
+    runtime.allow_mayhem, runtime.require_mayhem = True, False
+    if hasattr(runtime.buyer, "allow_mayhem"):
+        runtime.buyer.allow_mayhem = True
+    if hasattr(runtime.buyer, "require_mayhem"):
+        runtime.buyer.require_mayhem = False
 
 
 class SharedBuyer:
@@ -109,12 +122,14 @@ class SharedBuyer:
                 success=False, error_message="Entry expired while reading balance"
             )
         second = signal["strategy"] == STRATEGY_ID
+        history_only = False
         priority_cap = None
         if second:
             policy = getattr(runtime, "second_policy", {"enabled": False})
             if not policy.get("enabled"):
                 return TradeResult(success=False, error_message="Second-block strategy is disabled")
             validate_second_policy(policy)
+            history_only = creator_history_only(policy)
             priority_cap = priority_fee_cap_lamports(runtime.sol_usd,
                 quote_age_seconds=runtime.reference_age(), cap_usd=policy["buy_priority_fee_cap_usd"])
         reservation = runtime.book.reserve(
@@ -140,6 +155,7 @@ class SharedBuyer:
             # unknown acknowledgement must not fall back to the old exits.
             runtime.update_details(nonce, {"entry_exit_policy": policy["exit"],
                 "entry_policy_id": STRATEGY_ID, "target_slot": signal["target_slot"],
+                "entry_rule": policy.get("entry_rule", "second_block"),
                 "entry_block": signal.get("entry_block", 2), "retry_reason": signal.get("retry_reason")})
         token_info.additional_data = {
             **(token_info.additional_data or {}),
@@ -152,13 +168,13 @@ class SharedBuyer:
             state = await runtime.platform_implementations.curve_manager.get_pool_state(
                 token_info.bonding_curve, commitment="processed"
             )
-            if runtime.four.get("entry_protection", {}).get("enabled"):
+            if runtime.four.get("entry_protection", {}).get("enabled") and not history_only:
                 state, evidence = await runtime.check_entry_risk(token_info, state)
                 token_info.additional_data["entry_protection"] = evidence
                 runtime.update_details(nonce, {"entry_protection": evidence})
             chain_mc = float(state.get("price_per_token") or 0) * 1e9 * runtime.sol_usd
             bounds_ok = (
-                0 < chain_mc < policy["max_entry_mc_usd"]
+                chain_mc > 0 if history_only else 0 < chain_mc < policy["max_entry_mc_usd"]
                 if second else 8000 <= chain_mc < 21000
                 if signal["strategy"] == "strong-pressure-8k"
                 else chain_mc >= 21000
@@ -205,11 +221,11 @@ class SharedBuyer:
                 priority_fee_override = priority_price_micro_lamports(
                     priority_cap, runtime.compute_units.get("buy", 200000))
                 cap_token = PRIORITY_CAP.set(priority_cap)
-                price_token = BUY_PRICE_CEILING.set(policy["max_entry_mc_usd"] / (runtime.sol_usd*1e9))
+                price_token = BUY_PRICE_CEILING.set(None if history_only else policy["max_entry_mc_usd"] / (runtime.sol_usd*1e9))
                 target_slot = signal["target_slot"]
                 def in_window() -> bool:
                     latest = runtime.current_signal(token_info)
-                    return bool(latest and latest.get("target_slot") == target_slot)
+                    return bool(latest and (history_only or latest.get("target_slot") == target_slot))
                 window_token = ENTRY_WINDOW.set(in_window)
             result = await self.buyer.execute(
                 token_info,
@@ -307,6 +323,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
             max_positions=self.max_posiciones,
             evaluation_policy=evaluation_policy,
         )
+        _configure_history_only_assets(self)
         self.buyer = SharedBuyer(self, self.buyer)
         self.sol_usd, self.sol_quote_at = 0.0, 0.0
         self._four_tasks: set[asyncio.Task] = set()
@@ -396,6 +413,11 @@ class FourStrategyTrader(legacy.UniversalTrader):
 
     def _cartel_de_configuracion(self) -> str:
         if getattr(self, "only_dev", False):
+            if creator_history_only(self.second_policy):
+                return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
+                        "incluidos gastos · unico criterio: dev >=1% migraciones verificadas · "
+                        "sin limites de MC/volumen/compradores/bloque · 4 plazas compartidas · "
+                        "prioridad compra $0.07 / salidas $0.03")
             return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
                     "incluidos gastos · dev >=1% migraciones verificadas · MC <4200 · "
                     "2 compradores / 275 USD primer bloque · 4 plazas compartidas")
@@ -405,7 +427,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
             "presion 8K / Telegram / primer bloque / cruce 21K"
         )
         if getattr(self, "second_policy", {}).get("enabled"):
-            message += f" · QUINTA: dev/segundo bloque, presupuesto propio {self.second_policy['balance_fraction']:.0%}"
+            label = "dev/historial" if creator_history_only(self.second_policy) else "dev/segundo bloque"
+            message += f" · QUINTA: {label}, presupuesto propio {self.second_policy['balance_fraction']:.0%}"
         return message
 
     def _cartel_de_salidas(self) -> str:
@@ -501,8 +524,12 @@ class FourStrategyTrader(legacy.UniversalTrader):
             self.second_source = SecondBlockSource(self.second_policy, self.rpc,
                 self.platform_implementations, self.solana_client, lambda: self.sol_usd,
                 self.reference_age, lambda: not self.book.paused(STRATEGY_ID), self._on_dexpaid_token)
-            logger.info("SECOND BLOCK enabled: %.0f%% SOL, MC <4200, 2 wallets, $275 first-block volume; inclusion not guaranteed",
-                        self.second_policy["balance_fraction"]*100)
+            if creator_history_only(self.second_policy):
+                logger.info("DEV HISTORY ONLY enabled: >=1%% verified migrations, %.0f%% SOL budget; buy priority $0.07 / all exits $0.03",
+                            self.second_policy["balance_fraction"]*100)
+            else:
+                logger.info("SECOND BLOCK enabled: %.0f%% SOL, MC <4200, 2 wallets, $275 first-block volume; inclusion not guaranteed",
+                            self.second_policy["balance_fraction"]*100)
         source = PressureTrialSource(
             self.wss_endpoint,
             self.platform_implementations,
@@ -599,6 +626,9 @@ class FourStrategyTrader(legacy.UniversalTrader):
                 await asyncio.sleep(10)
 
     def _fee_de_venta_para(self, reason: str) -> int | None:
+        dev_cap = _DEV_EXIT_CAP.get()
+        if dev_cap is not None:
+            return priority_price_micro_lamports(dev_cap, int(self.compute_units.get("sell", 120000)))
         if not self._es_venta_protectora(reason):
             return super()._fee_de_venta_para(reason)
         try:
@@ -640,14 +670,22 @@ class FourStrategyTrader(legacy.UniversalTrader):
         observer_token = OBSERVER.set(self.receipt_writer(position["nonce"], "sell"))
         submissions_token = SUBMISSIONS.set(set())
         cap = 0
-        if self._es_venta_protectora(reason):
+        sell_cap_usd = (getattr(self, "second_policy", {}).get("sell_priority_fee_cap_usd")
+                        if position["strategy"] == STRATEGY_ID else None)
+        if sell_cap_usd is not None:
+            try:
+                cap = priority_fee_cap_lamports(self.sol_usd, quote_age_seconds=self.reference_age(), cap_usd=sell_cap_usd)
+            except ValueError:
+                pass
+        elif self._es_venta_protectora(reason):
             try:
                 cap = priority_fee_cap_lamports(
                     self.sol_usd, quote_age_seconds=self.reference_age()
                 )
             except ValueError:
                 pass
-        cap_token = PRIORITY_CAP.set(cap if self._es_venta_protectora(reason) else None)
+        cap_token = PRIORITY_CAP.set(cap if sell_cap_usd is not None or self._es_venta_protectora(reason) else None)
+        dev_cap_token = _DEV_EXIT_CAP.set(cap if sell_cap_usd is not None else None)
         try:
             return await super()._sell_amount(
                 token_info, amount, ref_price, reason, full_exit=full_exit
@@ -655,6 +693,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
         finally:
             OBSERVER.reset(observer_token)
             PRIORITY_CAP.reset(cap_token)
+            _DEV_EXIT_CAP.reset(dev_cap_token)
             SUBMISSIONS.reset(submissions_token)
 
     def _log_trade(  # noqa: PLR0913, PLR0917 -- legacy override signature
@@ -1011,7 +1050,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
         if details.get("entry_policy_id") == STRATEGY_ID and buys and "actual_buy_slot" not in details:
             actual_slot = int(buys[0]["slot"])
             self.update_details(position["nonce"], {"actual_buy_slot": actual_slot,
-                "target_slot_matched": actual_slot == details.get("target_slot")})
+                **({"target_slot_matched": actual_slot == details["target_slot"]}
+                   if details.get("target_slot") is not None else {})})
         if slot < max(int(s["slot"]) for s in values):
             return
         if raw > 0:

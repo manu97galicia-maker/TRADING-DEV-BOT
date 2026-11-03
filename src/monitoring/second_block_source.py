@@ -1,9 +1,9 @@
-"""Optional second-block observer. No network work runs in stream callbacks.
+"""Optional developer-entry observer. No network work runs in stream callbacks.
 
-The slot clock bounds a best-effort submission window, not transaction order
-or guaranteed inclusion. Unavailable history, a stream gap or a late build
-causes a skipped entry. One explicitly armed, unbroadcast sharp-rise rejection
-may retry in the third produced block, with all admission checks repeated.
+History-only admission keeps bounded creations while preparation/history loads.
+Classic admission uses a best-effort second-block window; one explicitly armed,
+unbroadcast sharp-rise rejection may retry in the third produced block. The
+slot clock cannot guarantee transaction order or inclusion.
 """
 
 # IDL byte offsets and bounded observation limits are intentionally explicit.
@@ -23,7 +23,7 @@ from solders.pubkey import Pubkey
 
 from monitoring.creator_history_index import CreatorHistoryCache, curve_address
 from monitoring.pump_event_logs import pump_events
-from trading.second_block_policy import STRATEGY_ID
+from trading.second_block_policy import STRATEGY_ID, creator_history_only
 from trading.token_builder import build_pumpfun_token_info
 from utils.logger import get_logger
 
@@ -54,6 +54,8 @@ class Candidate:
     inflight_slot: int | None = None
     retry_armed: bool = False
     price_slot: int = 0
+    observed_at: float = 0
+    prepare_after: float = 0
 
 
 class SecondBlockSource:
@@ -72,6 +74,8 @@ class SecondBlockSource:
         self.latest_log_slot = 0
         self.generation = 0
         self.signatures: set[tuple[int, str]] = set()
+        self.attempted_mints: dict[str, float] = {}
+        self.history_refreshes: set[asyncio.Future] = set()
 
     def _track(self, awaitable: object) -> None:
         task = asyncio.create_task(awaitable)
@@ -89,6 +93,12 @@ class SecondBlockSource:
         self.available = slot >= self.latest_log_slot
         if getattr(self.history, "coverage_start_slot", None) is None:
             self.history.coverage_start_slot = slot
+        if creator_history_only(self.policy):
+            self.refresh_candidates()
+            return
+        self.advance_second_block_candidates(slot, parent)
+
+    def advance_second_block_candidates(self, slot: int, parent: int) -> None:
         for mint, candidate in list(self.candidates.items()):
             if parent == candidate.creation_slot:
                 if candidate.second_slot not in {None, slot}:
@@ -103,6 +113,15 @@ class SecondBlockSource:
             elif candidate.creation_slot < parent:
                 self.candidates.pop(mint, None)
                 continue
+            self.consider(candidate)
+
+    def refresh_candidates(self) -> None:
+        for mint, candidate in list(self.candidates.items()):
+            if not 0 <= time.monotonic()-candidate.observed_at <= 600:
+                if candidate.inflight_slot is None:
+                    self.candidates.pop(mint, None)
+                continue
+            self.refresh(candidate)
             self.consider(candidate)
 
     def on_logs(self, logs: list[str], slot: int, signature: str) -> None:
@@ -141,18 +160,62 @@ class SecondBlockSource:
                 return
             self.history.observe(user, mint)
             self.history.warm(user)
-            if mint in self.candidates or slot < self.parent or len(self.candidates) >= 256:
+            history_only = creator_history_only(self.policy)
+            if history_only and not self.admit_history_candidate(mint):
+                return
+            if (mint in self.candidates or (not history_only and slot < self.parent)
+                    or len(self.candidates) >= 256):
                 return
             candidate = Candidate(mint, creator, slot, str(fields.get("name") or ""),
-                                  str(fields.get("symbol") or ""), developer=user)
+                                  str(fields.get("symbol") or ""), developer=user,
+                                  observed_at=time.monotonic())
             if self.available and self.parent == slot:
                 candidate.second_slot = self.slot
             self.candidates[mint] = candidate
+            if history_only:
+                self.refresh(candidate)
+                return
             if len(self.building) < 2:
                 self.building.add(mint)
                 self._track(self.prepare(candidate, self.generation))
         except (ValueError, TypeError, KeyError, struct.error):
             return
+
+    def admit_history_candidate(self, mint: str) -> bool:
+        self.prune_history_attempts()
+        if mint in self.attempted_mints:
+            return False
+        if mint not in self.candidates and len(self.candidates) >= 256:
+            oldest = next((key for key, value in self.candidates.items()
+                           if value.inflight_slot is None), None)
+            if oldest is None:
+                return False
+            self.candidates.pop(oldest)
+        return True
+
+    def refresh(self, candidate: Candidate) -> None:
+        """Retry technical preparation and revisit a completed history refresh."""
+        self.history.warm(candidate.developer)
+        pending = getattr(self.history, "pending", {}).get(candidate.developer)
+        if pending is not None and pending not in self.history_refreshes:
+            self.history_refreshes.add(pending)
+            generation = self.generation
+            developer = candidate.developer
+
+            def ready(completed: asyncio.Future) -> None:
+                self.history_refreshes.discard(completed)
+                if not completed.cancelled() and generation == self.generation:
+                    for current in list(self.candidates.values()):
+                        if current.developer == developer:
+                            self.consider(current)
+
+            pending.add_done_callback(ready)
+        now = time.monotonic()
+        if (candidate.token is None and candidate.mint not in self.building
+                and len(self.building) < 2 and now >= candidate.prepare_after):
+            candidate.prepare_after = now+1
+            self.building.add(candidate.mint)
+            self._track(self.prepare(candidate, self.generation))
 
     def trade(self, raw: bytes, slot: int) -> str | None:
         if raw[:8] != TRADE or len(raw) < 113 or raw[56] not in {0, 1}:
@@ -167,10 +230,11 @@ class SecondBlockSource:
             return None
         if slot == candidate.creation_slot:
             if raw[56]:
-                if len(candidate.buyers) >= 1024:
+                if len(candidate.buyers) >= 1024 and not creator_history_only(self.policy):
                     candidate.invalid = True
                     return None
-                candidate.buyers.add(str(Pubkey.from_bytes(raw[57:89])))
+                if len(candidate.buyers) < 1024:
+                    candidate.buyers.add(str(Pubkey.from_bytes(raw[57:89])))
                 candidate.buy_sol += sol
             else:
                 candidate.sell_sol += sol
@@ -182,6 +246,8 @@ class SecondBlockSource:
     def signal(self, mint: str) -> dict | None:
         candidate = self.candidates.get(mint)
         sol_usd = self.sol_reference()
+        if creator_history_only(self.policy):
+            return self.history_signal(candidate, sol_usd)
         entry_block = (2 if candidate and self.slot == candidate.second_slot and self.parent == candidate.creation_slot
                        else 3 if candidate and self.policy.get("third_block_retry_on_sharp_rise", False)
                        and candidate.retry_armed and self.slot == candidate.third_slot
@@ -211,19 +277,57 @@ class SecondBlockSource:
             "volume_usd": volume, "observed_mc_usd": mc, "creator_history": history,
             "inclusion_guaranteed": False}
 
+    def history_signal(self, candidate: Candidate | None, sol_usd: float) -> dict | None:
+        """The developer's verified migration history is the only selection rule."""
+        now = time.monotonic()
+        if (not self.available or candidate is None or candidate.token is None or not self.allowed()
+                or not 0 <= now-candidate.observed_at <= 600
+                or not 0 <= now-self.slot_at <= 30
+                or not 0 <= self.reference_age() <= 30
+                or not math.isfinite(sol_usd) or sol_usd <= 0):
+            return None
+        history = self.history.evidence(candidate.developer, candidate.mint)
+        if history is None or not history["migration_fraction"] >= self.policy["min_creator_migration_fraction"]:
+            return None
+        return {"strategy": STRATEGY_ID, "entry_rule": "creator_migration_only",
+            "sol_usd": sol_usd, "creator": candidate.creator, "developer": candidate.developer,
+            "observed_at": time.time(), "creation_slot": candidate.creation_slot,
+            "target_slot": None, "entry_block": None, "source_generation": self.generation,
+            "retry_reason": None, "buyers": len(candidate.buyers),
+            "buy_sol": candidate.buy_sol, "sell_sol": candidate.sell_sol,
+            "volume_usd": (candidate.buy_sol+candidate.sell_sol)*sol_usd,
+            "observed_mc_usd": candidate.price*1e9*sol_usd, "creator_history": history,
+            "inclusion_guaranteed": False}
+
     def consider(self, candidate: Candidate) -> None:
+        history_only = creator_history_only(self.policy)
+        if history_only:
+            self.prune_history_attempts()
+            if candidate.mint in self.attempted_mints or len(self.attempted_mints) >= 4096:
+                return
         signal = self.signal(candidate.mint)
+        attempt_key = signal["target_slot"] if signal and signal["target_slot"] is not None else candidate.creation_slot
         if (candidate.token is not None and candidate.inflight_slot is None and signal
-                and signal["target_slot"] not in candidate.attempted_slots):
+                and attempt_key not in candidate.attempted_slots):
             candidate.attempted = True
-            candidate.inflight_slot = signal["target_slot"]
-            candidate.attempted_slots.add(signal["target_slot"])
+            candidate.inflight_slot = attempt_key
+            candidate.attempted_slots.add(attempt_key)
+            if history_only:
+                self.attempted_mints[candidate.mint] = time.monotonic()
             self._track(self.deliver(candidate))
+
+    def prune_history_attempts(self) -> None:
+        now = time.monotonic()
+        while self.attempted_mints:
+            mint = next(iter(self.attempted_mints))
+            if now-self.attempted_mints[mint] <= 600:
+                break
+            self.attempted_mints.pop(mint)
 
     def arm_third_block_retry(self, mint: str, second_slot: int, generation: int) -> bool:
         """Caller proved a sharp-rise rejection happened before any submission."""
         candidate = self.candidates.get(mint)
-        if (not self.policy.get("third_block_retry_on_sharp_rise", False)
+        if (creator_history_only(self.policy) or not self.policy.get("third_block_retry_on_sharp_rise", False)
                 or generation != self.generation or not self.available or candidate is None
                 or candidate.retry_armed or candidate.second_slot != second_slot
                 or candidate.inflight_slot != second_slot or second_slot not in candidate.attempted_slots
@@ -237,11 +341,15 @@ class SecondBlockSource:
     async def deliver(self, candidate: Candidate) -> None:
         target = candidate.inflight_slot
         try:
+            if self.candidates.get(candidate.mint) is not candidate:
+                return
             signal = self.signal(candidate.mint)
-            if signal and signal["target_slot"] == target:
+            attempt_key = signal["target_slot"] if signal and signal["target_slot"] is not None else candidate.creation_slot
+            if signal and attempt_key == target:
                 token = copy.copy(candidate.token)
                 token.additional_data = dict(candidate.token.additional_data or {})
-                token.additional_data.update(dev_entry_target_slot=target, dev_entry_generation=self.generation)
+                token.additional_data.update(dev_entry_target_slot=signal["target_slot"],
+                                             dev_entry_generation=signal["source_generation"])
                 completion = await self.callback(token)
                 if isinstance(completion, asyncio.Future):
                     await completion
@@ -265,7 +373,8 @@ class SecondBlockSource:
                 return
             token.additional_data = {**(token.additional_data or {}),
                 "acquisition_kind": "second-block-dev", "four_strategy_id": STRATEGY_ID,
-                "acquisition_source": "observed_creation_second_block"}
+                "acquisition_source": ("observed_creation_creator_history"
+                    if creator_history_only(self.policy) else "observed_creation_second_block")}
             candidate.token = token
             self.consider(candidate)
         except asyncio.CancelledError:

@@ -10,19 +10,35 @@ Se conservan el mismo libro, bloqueo de proceso, posiciones, tandas y pausas.
 Las posiciones antiguas de cualquier estrategia mantienen sus monitores de
 salida y auditoría. La selección no borra pérdidas ni reinicia la evaluación.
 
-Los parámetros siguen siendo: dev firmante con al menos 1% de migraciones
-PumpSwap verificadas, dos compradores distintos y 275 USD de volumen en el
-primer bloque, MC inferior a 4.200 USD, presupuesto inclusivo del 90% del SOL,
-reserva de 0,03 SOL, SL del 22% y tandas de cinco por ROI neto. La entrada se
-intenta en el siguiente bloque observado; no se garantiza su inclusión.
+El perfil activo es `entry_rule: creator_migration_only`: el único criterio de
+selección es que el dev firmante tenga al menos un 1% de sus lanzamientos
+anteriores migrados a PumpSwap y verificados mediante Helius. No exige MC,
+volumen, compradores, concentración, historial de variaciones de precio ni
+bloques dos/tres. Observa nuevas creaciones y espera a verificar su historial
+y a preparar una curva comprable; no compra monedas ya migradas a un pool.
 
-La configuración actual `reject_sharp_price_rise: false` elimina para la
-estrategia dev el rechazo por superar en un 35% el mínimo de los últimos dos
-segundos. Se conservan la caída máxima del 10%, el aumento máximo del 10%
-durante la comprobación, la frescura del precio y la concentración. Las demás
-estrategias conservan el filtro del 35% y su identidad histórica del libro.
+Mantiene el presupuesto inclusivo del 90% del SOL, reserva de 0,03 SOL, cuatro
+plazas, deduplicación y tandas de cinco por ROI neto. El SL sigue al 22%; al
++35% recupera el equivalente nominal a la inversión más 12% y reparte el resto
+en tres ventas, con objetivos +89%, +164,6% y +270,44% desde la entrada.
 
-El mecanismo `third_block_retry_on_sharp_rise: true` solo actúa si el filtro
+La prioridad de compra tiene un tope de **0,07 USD por intento** y todas las
+salidas del dev, incluidos TP, SL y ruta Jupiter, **0,03 USD por intento**. Son
+límites del componente de prioridad: renta, comisión base y del protocolo van
+aparte. Una referencia SOL/USD no válida impide comprar; las salidas siguen
+permitidas con prioridad cero si la referencia está caducada.
+
+Se mantienen la identidad on-chain del dev y de la curva, las verificaciones
+de formato y disponibilidad, la elegibilidad vigente antes de firmar y la
+protección de saldos y envíos inciertos. Los límites de memoria conservan
+candidatos durante diez minutos y evitan repetir un mint en esa ventana.
+
+Los parámetros clásicos de MC/volumen/compradores permanecen en el archivo
+para compatibilidad, pero no se usan en `creator_migration_only`. Las otras
+cuatro estrategias conservan sus filtros y su historial.
+
+En el perfil clásico `entry_rule: second_block`, el mecanismo
+`third_block_retry_on_sharp_rise: true` solo actúa si el filtro
 de subida brusca está activo y produce ese rechazo antes de firmar o enviar en
 el segundo bloque. Con el filtro quitado no se activa por ese motivo. Cuando
 actúa, permite un único nuevo intento en el tercero observado. Se espera la

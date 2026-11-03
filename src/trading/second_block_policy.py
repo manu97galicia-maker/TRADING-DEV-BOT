@@ -15,6 +15,10 @@ from trading.review_exit_ladder import ReviewTier, build_review_ladder
 STRATEGY_ID = "dev-second-block"
 
 
+def creator_history_only(settings: dict) -> bool:
+    return settings.get("entry_rule", "second_block") == "creator_migration_only"
+
+
 def validate_second_policy(settings: dict) -> None:
     """Unresolved exits cannot be enabled by a configuration typo."""
     if not isinstance(settings, dict) or type(settings.get("enabled")) is not bool:
@@ -23,12 +27,16 @@ def validate_second_policy(settings: dict) -> None:
         return
     expected = {
         "strategy_id": STRATEGY_ID, "balance_fraction": .90,
-        "max_entry_mc_usd": 4200, "min_creator_migration_fraction": .01,
-        "min_first_block_volume_usd": 275, "min_distinct_first_block_buyers": 2,
-        "buy_priority_fee_cap_usd": .06, "developer_identity": "creation_signer",
+        "min_creator_migration_fraction": .01, "developer_identity": "creation_signer",
         "history_provider": "helius_transactions",
     }
+    expected.update(
+        {"buy_priority_fee_cap_usd": .07, "sell_priority_fee_cap_usd": .03}
+        if creator_history_only(settings) else
+        {"max_entry_mc_usd": 4200, "min_first_block_volume_usd": 275,
+         "min_distinct_first_block_buyers": 2, "buy_priority_fee_cap_usd": .06})
     if (any(settings.get(k) != v for k, v in expected.items())
+            or settings.get("entry_rule", "second_block") not in {"second_block", "creator_migration_only"}
             or type(settings.get("third_block_retry_on_sharp_rise", False)) is not bool
             or type(settings.get("reject_sharp_price_rise", True)) is not bool):
         raise ValueError("Second-block settings differ from the requested entry policy")
