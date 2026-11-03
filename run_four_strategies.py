@@ -31,8 +31,8 @@ def check_plan(path: Path) -> dict:
         raise ValueError("Inactivity duration must be finite and nonnegative")
     settings = plan["four_strategies"]
     validate_policy(settings["entry_protection"])
-    if trade["max_posiciones"] != 3 or trade["fraccion_saldo"] != 0.20:
-        raise ValueError("Bundle requires three positions and a 20% fraction")
+    if trade["max_posiciones"] != 3 or trade["fraccion_saldo"] != 0.40:
+        raise ValueError("Bundle requires three positions and a 40% fraction")
     if (
         trade["stop_loss_percentage"] != 0.25
         or settings["exit"]["stop_loss_fraction"] != 0.25
@@ -109,7 +109,7 @@ def main() -> None:
                         "telegram-immediate",
                     ],
                     "max_shared_positions": 3,
-                    "entry_fraction_inclusive": 0.20,
+                    "entry_fraction_inclusive": plan["trade"]["fraccion_saldo"],
                     "initial_stop": 0.25,
                     "enabled": plan["enabled"],
                 },

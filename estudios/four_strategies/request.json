@@ -7,7 +7,7 @@
   "wallet": {
     "expected_wallet": "43w6CJkHjZpAjPU3LswTGwur5RvngKoTKakhfLBkpZHV",
     "credentials_file": ".env.four-strategies",
-    "entry_fraction": 0.20,
+    "entry_fraction": 0.40,
     "base": "confirmed_liquid_sol_before_entry",
     "max_shared_positions": 3,
     "include_pending_buys_and_unsold_runners": true,

@@ -53,7 +53,7 @@ La petición de conservar medidas anti pump y dump queda registrada en
 
 El paquete exige señales recientes, compradores distintos para las fuentes
 on-chain y nueva comprobación de la curva, los límites de MC correspondientes
-y la señal antes de firmar. Conserva SL de −25%, presupuesto por entrada del 20%,
+y la señal antes de firmar. Conserva SL de −25%, presupuesto por entrada del 40%,
 tres posiciones compartidas y pausa de cada estrategia tras tres pérdidas en
 sus últimos cinco cierres verificados. El SL es un disparador de venta y no
 garantiza una pérdida máxima del 25%.
@@ -111,10 +111,10 @@ recompra una moneda cerrada ni se compra desde dos fuentes. Un único colector
 alimenta el volumen para evitar contarlo varias veces. El límite no controla
 bots externos que no utilicen este coordinador.
 
-Cada presupuesto es el 20% del SOL líquido confirmado antes de esa entrada,
+Cada presupuesto es el 40% del SOL líquido confirmado antes de esa entrada,
 incluyendo margen de slippage y reserva estimada para gastos, y conservando
 0,03 SOL. Se recalcula con el saldo nuevo, sin valorar los tokens abiertos.
-La compra nominal es menor que ese 20% porque los gastos están incluidos.
+La compra nominal es menor que ese 40% porque los gastos están incluidos.
 
 La función de tope de prioridad convierte 0,08 USD a lamports con una cotización
 SOL/USD de hasta 30 segundos y redondea hacia abajo el precio por CU. No es un

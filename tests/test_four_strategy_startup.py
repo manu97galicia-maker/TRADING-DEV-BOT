@@ -94,7 +94,7 @@ class StartupTests(unittest.IsolatedAsyncioTestCase):
             finally:
                 notifier.configurar_avisos(None)
         captured["trader"].start.assert_awaited_once()
-        self.assertEqual(captured["kwargs"]["fraccion_saldo"], 0.20)
+        self.assertEqual(captured["kwargs"]["fraccion_saldo"], 0.40)
         self.assertEqual(captured["settings"], plan["four_strategies"])
         self.assertEqual(captured["inactivity"], 300)
         self.assertIs(captured["kwargs"]["paper_trade"], False)

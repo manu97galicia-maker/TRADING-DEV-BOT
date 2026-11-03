@@ -93,6 +93,7 @@ class SharedBuyer:
             runtime.buy_slippage,
             runtime._fee_headroom_lamports,
             signal,
+            fraction=runtime.fraccion_saldo,
         )
         if not reservation:
             return TradeResult(
@@ -209,7 +210,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
             )
         if (
             self.max_posiciones != 3
-            or self.fraccion_saldo != 0.20
+            or self.fraccion_saldo != 0.40
             or self.stop_loss_percentage != 0.25
         ):
             raise ValueError(
@@ -283,7 +284,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
 
     def _cartel_de_configuracion(self) -> str:
         return (
-            "CONFIG ACTIVA · FOUR STRATEGIES · 20% del SOL liquido confirmado "
+            f"CONFIG ACTIVA · FOUR STRATEGIES · {self.fraccion_saldo:.0%} del SOL liquido confirmado "
             "por presupuesto, incluidos gastos · 3 plazas compartidas · "
             "presion 8K / Telegram / primer bloque / cruce 21K"
         )

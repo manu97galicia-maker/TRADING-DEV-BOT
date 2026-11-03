@@ -93,8 +93,13 @@ class FourStrategyBook:
         slippage: float,
         fees: int,
         features: dict,
+        *, fraction: float = 0.20,
     ) -> dict | None:
-        """Reserve 20% of current native SOL inclusive of slippage and fees."""
+        """Reserve the configured fraction, inclusive of slippage and fees.
+
+        The default preserves historical callers; the runtime supplies the
+        current explicitly validated fraction for every new reservation.
+        """
         if not mint or not strategy or min(balance, slot, reserve, fees) < 0:
             raise ValueError("Invalid reservation inputs")
         with closing(self.connect()) as db, db:
@@ -127,7 +132,7 @@ class FourStrategyBook:
                 for state, budget, debit in rows
                 if state == "reserved" or debit is None or debit > slot
             )
-            amount, budget = inclusive_balance_entry(balance, 0.20, slippage, fees)
+            amount, budget = inclusive_balance_entry(balance, fraction, slippage, fees)
             if amount <= 0 or budget > balance - reserve - pending:
                 return None
             nonce = uuid.uuid4().hex
@@ -135,7 +140,7 @@ class FourStrategyBook:
                 "mint": mint,
                 "features": features,
                 "amount_sol": amount,
-                "policy_fraction": 0.20,
+                "policy_fraction": fraction,
                 "balance_lamports": balance,
             }
             db.execute(
