@@ -278,7 +278,7 @@ class SecondBlockSource:
             "inclusion_guaranteed": False}
 
     def history_signal(self, candidate: Candidate | None, sol_usd: float) -> dict | None:
-        """The developer's verified migration history is the only selection rule."""
+        """Verified developer history with the explicitly selected first-block activity."""
         now = time.monotonic()
         if (not self.available or candidate is None or candidate.token is None or not self.allowed()
                 or not 0 <= now-candidate.observed_at <= 600
@@ -289,13 +289,19 @@ class SecondBlockSource:
         history = self.history.evidence(candidate.developer, candidate.mint)
         if history is None or not history["migration_fraction"] >= self.policy["min_creator_migration_fraction"]:
             return None
+        volume = (candidate.buy_sol+candidate.sell_sol)*sol_usd
+        activity_required = self.policy.get("require_first_block_activity", False)
+        if activity_required and (len(candidate.buyers) < self.policy["min_distinct_first_block_buyers"]
+                                  or volume < self.policy["min_first_block_volume_usd"]):
+            return None
         return {"strategy": STRATEGY_ID, "entry_rule": "creator_migration_only",
+            "first_block_activity_required": activity_required,
             "sol_usd": sol_usd, "creator": candidate.creator, "developer": candidate.developer,
             "observed_at": time.time(), "creation_slot": candidate.creation_slot,
             "target_slot": None, "entry_block": None, "source_generation": self.generation,
             "retry_reason": None, "buyers": len(candidate.buyers),
             "buy_sol": candidate.buy_sol, "sell_sol": candidate.sell_sol,
-            "volume_usd": (candidate.buy_sol+candidate.sell_sol)*sol_usd,
+            "volume_usd": volume,
             "observed_mc_usd": candidate.price*1e9*sol_usd, "creator_history": history,
             "inclusion_guaranteed": False}
 

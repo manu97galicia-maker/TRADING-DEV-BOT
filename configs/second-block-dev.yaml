@@ -3,10 +3,11 @@ enabled: false
 strategy_id: dev-second-block
 entry_rule: creator_migration_only
 balance_fraction: 0.90
-# Classic second-block thresholds retained for compatibility, unused in history-only mode.
+# MC threshold is retained for the classic profile, unused in history-only mode.
 max_entry_mc_usd: 4200
 min_creator_migration_fraction: 0.01
-min_first_block_volume_usd: 275
+require_first_block_activity: true
+min_first_block_volume_usd: 250
 min_distinct_first_block_buyers: 2
 buy_priority_fee_cap_usd: 0.07
 sell_priority_fee_cap_usd: 0.03

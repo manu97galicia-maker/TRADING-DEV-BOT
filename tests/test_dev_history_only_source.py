@@ -15,6 +15,7 @@ class HistoryOnlySourceTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         await stream.SourceTests.asyncSetUp(self)
         self.policy["entry_rule"] = "creator_migration_only"
+        self.policy["require_first_block_activity"] = False
         self.now = 100.0
         clock = SimpleNamespace(monotonic=lambda: self.now, time=lambda: 1800000000+self.now)
         clock_patch = patch("monitoring.second_block_source.time", clock)

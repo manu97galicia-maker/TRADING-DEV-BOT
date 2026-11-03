@@ -414,9 +414,13 @@ class FourStrategyTrader(legacy.UniversalTrader):
     def _cartel_de_configuracion(self) -> str:
         if getattr(self, "only_dev", False):
             if creator_history_only(self.second_policy):
+                selection = "dev >=1% migraciones verificadas"
+                if self.second_policy.get("require_first_block_activity", False):
+                    selection += (f" · primer bloque: >={self.second_policy['min_distinct_first_block_buyers']} compradores "
+                                  f"y >=${self.second_policy['min_first_block_volume_usd']:.0f} volumen total")
                 return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
-                        "incluidos gastos · unico criterio: dev >=1% migraciones verificadas · "
-                        "sin limites de MC/volumen/compradores/bloque · 4 plazas compartidas · "
+                        f"incluidos gastos · {selection} · "
+                        "sin MC maximo ni bloque fijo de entrada · 4 plazas compartidas · "
                         "prioridad compra $0.07 / salidas $0.03")
             return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
                     "incluidos gastos · dev >=1% migraciones verificadas · MC <4200 · "
@@ -527,6 +531,10 @@ class FourStrategyTrader(legacy.UniversalTrader):
             if creator_history_only(self.second_policy):
                 logger.info("DEV HISTORY ONLY enabled: >=1%% verified migrations, %.0f%% SOL budget; buy priority $0.07 / all exits $0.03",
                             self.second_policy["balance_fraction"]*100)
+                if self.second_policy.get("require_first_block_activity", False):
+                    logger.info("DEV first-block activity: >=%d distinct buyers, >=%.0f USD total volume",
+                                self.second_policy["min_distinct_first_block_buyers"],
+                                self.second_policy["min_first_block_volume_usd"])
             else:
                 logger.info("SECOND BLOCK enabled: %.0f%% SOL, MC <4200, 2 wallets, $275 first-block volume; inclusion not guaranteed",
                             self.second_policy["balance_fraction"]*100)

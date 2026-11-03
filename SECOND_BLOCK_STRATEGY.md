@@ -1,9 +1,12 @@
 # Estrategia dev: perfil de historial y perfil clásico
 
-El perfil activo es ahora `entry_rule: creator_migration_only`: exige solo
-dev firmante con al menos 1% de migraciones PumpSwap verificadas como criterio
-de selección. No aplica los límites de MC, volumen, compradores, concentración,
-variaciones del precio ni segundo/tercer bloque descritos en el perfil clásico.
+El perfil activo es ahora `entry_rule: creator_migration_only`: exige un
+dev firmante con al menos 1% de migraciones PumpSwap verificadas. Con el selector
+actual `require_first_block_activity: true`, añade dos compradores distintos
+y al menos 250 USD de volumen total en el bloque de creación. Compras y ventas
+suman al volumen; las operaciones posteriores no completan ese requisito.
+No aplica los límites clásicos de MC, concentración, variaciones del precio
+ni una ventana fija de segundo/tercer bloque.
 Compra cuando termina la verificación del historial y la preparación de una
 curva compatible. Prioridad máxima: compra 0,07 USD, salidas 0,03 USD por intento;
 comisiones base, del protocolo y renta aparte. Mantiene TP/SL y controles del libro.

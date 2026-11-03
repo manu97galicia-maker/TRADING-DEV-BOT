@@ -10,11 +10,16 @@ Se conservan el mismo libro, bloqueo de proceso, posiciones, tandas y pausas.
 Las posiciones antiguas de cualquier estrategia mantienen sus monitores de
 salida y auditoría. La selección no borra pérdidas ni reinicia la evaluación.
 
-El perfil activo es `entry_rule: creator_migration_only`: el único criterio de
-selección es que el dev firmante tenga al menos un 1% de sus lanzamientos
-anteriores migrados a PumpSwap y verificados mediante Helius. No exige MC,
-volumen, compradores, concentración, historial de variaciones de precio ni
-bloques dos/tres. Observa nuevas creaciones y espera a verificar su historial
+El perfil activo es `entry_rule: creator_migration_only`, con
+`require_first_block_activity: true`. Exige que el dev firmante tenga al menos
+un 1% de sus lanzamientos anteriores migrados a PumpSwap y verificados mediante
+Helius. Además, el bloque de creación debe registrar **dos compradores
+distintos y al menos 250 USD de volumen total**, sumando compras y ventas.
+La misma dirección cuenta una sola vez como comprador; los eventos de bloques
+posteriores no aumentan esos contadores.
+
+No exige MC, concentración, historial de variaciones de precio ni entrar en
+un bloque dos/tres concreto. Observa nuevas creaciones y espera a verificar su historial
 y a preparar una curva comprable; no compra monedas ya migradas a un pool.
 
 Mantiene el presupuesto inclusivo del 90% del SOL, reserva de 0,03 SOL, cuatro
@@ -33,9 +38,11 @@ de formato y disponibilidad, la elegibilidad vigente antes de firmar y la
 protección de saldos y envíos inciertos. Los límites de memoria conservan
 candidatos durante diez minutos y evitan repetir un mint en esa ventana.
 
-Los parámetros clásicos de MC/volumen/compradores permanecen en el archivo
-para compatibilidad, pero no se usan en `creator_migration_only`. Las otras
-cuatro estrategias conservan sus filtros y su historial.
+El parámetro clásico de MC permanece en el archivo para compatibilidad, pero
+no se usa en `creator_migration_only`. La actividad del primer bloque sí se
+exige con el selector actual; omitir o desactivar ese selector conserva la
+variante opcional de solo historial. Las otras cuatro estrategias mantienen
+sus filtros e historial.
 
 En el perfil clásico `entry_rule: second_block`, el mecanismo
 `third_block_retry_on_sharp_rise: true` solo actúa si el filtro

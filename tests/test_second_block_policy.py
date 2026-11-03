@@ -49,6 +49,7 @@ def enabled_policy():
     policy["enabled"] = True
     policy["entry_rule"] = "second_block"
     policy["buy_priority_fee_cap_usd"] = .06
+    policy["min_first_block_volume_usd"] = 275
     policy["exit"].update(first_sale_mode="recover_capital", recovery_profit_fraction=None,
                           stop_loss_fraction=.12)
     return policy

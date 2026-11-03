@@ -35,9 +35,12 @@ def validate_second_policy(settings: dict) -> None:
         if creator_history_only(settings) else
         {"max_entry_mc_usd": 4200, "min_first_block_volume_usd": 275,
          "min_distinct_first_block_buyers": 2, "buy_priority_fee_cap_usd": .06})
+    expected.update({"min_first_block_volume_usd": 250, "min_distinct_first_block_buyers": 2}
+                    if creator_history_only(settings) and settings.get("require_first_block_activity", False) else {})
     if (any(settings.get(k) != v for k, v in expected.items())
             or settings.get("entry_rule", "second_block") not in {"second_block", "creator_migration_only"}
             or type(settings.get("third_block_retry_on_sharp_rise", False)) is not bool
+            or type(settings.get("require_first_block_activity", False)) is not bool
             or type(settings.get("reject_sharp_price_rise", True)) is not bool):
         raise ValueError("Second-block settings differ from the requested entry policy")
     for key in ["max_slot_age_seconds", "creator_cache_seconds", "history_timeout_seconds"]:
