@@ -47,7 +47,8 @@ POLICY = yaml.safe_load((ROOT / "configs/second-block-dev.yaml").read_text())
 def enabled_policy():
     policy = copy.deepcopy(POLICY)
     policy["enabled"] = True
-    policy["exit"].update(first_sale_mode="recover_capital", stop_loss_fraction=.12)
+    policy["exit"].update(first_sale_mode="recover_capital", recovery_profit_fraction=None,
+                          stop_loss_fraction=.12)
     return policy
 
 
@@ -56,9 +57,25 @@ class PolicyTests(unittest.TestCase):
         validate_second_policy(POLICY)
         pending = copy.deepcopy(POLICY)
         pending["enabled"] = True
+        pending["exit"]["first_sale_mode"] = "pending"
         with self.assertRaises(ValueError):
             validate_second_policy(pending)
         validate_second_policy(enabled_policy())
+
+    def test_saved_user_selection_recovers_capital_plus_12_at_35_and_keeps_25_stop(self):
+        selected = copy.deepcopy(POLICY)
+        self.assertFalse(selected["enabled"])
+        selected["enabled"] = True  # Pure validation of a fixture; no trader is started.
+        validate_second_policy(selected)
+        self.assertEqual(selected["exit"]["first_sale_mode"], "recover_capital_plus_profit")
+        self.assertEqual(selected["exit"]["recovery_profit_fraction"], .12)
+        self.assertEqual(selected["exit"]["stop_loss_fraction"], .25)
+        fractions = recovery_allocations(selected["exit"], 1, 1.35)
+        self.assertAlmostEqual(fractions[0]*1.35, 1.12)
+        self.assertAlmostEqual(fractions[0], 1.12/1.35)
+        self.assertAlmostEqual(sum(fractions), 1)
+        for fraction in fractions[1:]:
+            self.assertAlmostEqual(fraction, (1-1.12/1.35)/3)
 
     def test_compounded_targets_and_capital_recovery(self):
         policy = enabled_policy()["exit"]

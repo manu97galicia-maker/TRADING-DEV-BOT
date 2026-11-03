@@ -3,7 +3,8 @@
 Configuración: `configs/second-block-dev.yaml`. La referencia está fuera de
 `four_strategies` para conservar la identidad del libro de posiciones y sus
 pausas. La estrategia nueva se llama `dev-second-block` y queda **desactivada**
-mientras no se aclare qué significa «12» en la primera venta/stop.
+mientras no se valide un historial completo de dev. La primera venta ya está
+definida: recuperar el capital invertido más un 12% de beneficio nominal.
 
 Condiciones de entrada:
 
@@ -34,11 +35,13 @@ la salida por ventas de 1 SOL continúa desactivada.
 
 Los objetivos multiplicativos son +35%, +89%, +164,6% y +270,44% respecto a
 la entrada. Tras la primera venta, el resto se reparte en tres partes iguales.
-El código admite explícitamente recuperar capital, recuperar capital más un
-beneficio definido o vender una fracción original. **No se ha elegido ninguna**:
-`first_sale_mode: pending` y `stop_loss_fraction: null` impiden activar esta
-configuración. Recuperar capital se calcula con el precio observado al primer
-disparo; la asignación queda guardada antes de vender para evitar duplicados
+La opción elegida es `first_sale_mode: recover_capital_plus_profit`, con
+`recovery_profit_fraction: 0.12`. El stop conserva el 25% de la configuración
+anterior; el «12» corresponde al beneficio recuperado. Al primer objetivo exacto
+de +35%, se vende el 82,962963% de los tokens para recuperar el equivalente al
+112% de la inversión. Cada venta posterior corresponde al 5,679012% original.
+Si el primer precio observado supera +35%, la fracción de recuperación se
+recalcula con ese precio; queda guardada antes de vender para evitar duplicados
 tras un reinicio. Es una recuperación nominal: gastos, impacto y deslizamiento
 pueden reducir lo cobrado.
 
