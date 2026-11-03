@@ -122,4 +122,7 @@ def position_exit_plan(details: dict, default_exit: dict) -> tuple[list[ReviewTi
     policy = details.get("entry_exit_policy")
     if policy is None:
         return build_review_ladder(entry_mc, default_exit), float(default_exit["stop_loss_fraction"])
-    return second_block_ladder(entry_mc, policy, details.get("exit_allocations")), float(policy["stop_loss_fraction"])
+    # A newly tightened global stop also protects older persisted positions;
+    # never loosen a position whose saved stop was already more restrictive.
+    stop = min(float(default_exit["stop_loss_fraction"]), float(policy["stop_loss_fraction"]))
+    return second_block_ladder(entry_mc, policy, details.get("exit_allocations")), stop

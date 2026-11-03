@@ -25,5 +25,5 @@ exit:
   first_sale_mode: recover_capital_plus_profit
   recovery_profit_fraction: 0.12
   first_sale_original_fraction: null
-  # Keep the existing 25% stop; "12" refers to recovered profit.
-  stop_loss_fraction: 0.25
+  # Requested 22% stop; "12" refers to recovered profit.
+  stop_loss_fraction: 0.22

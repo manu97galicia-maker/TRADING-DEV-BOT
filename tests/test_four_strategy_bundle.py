@@ -458,7 +458,7 @@ class MonitorTests(unittest.IsolatedAsyncioTestCase):
 
     async def exercise(
         self, *, stop=False, restart_partial=False, commitment="finalized", pressure=(1, 0),
-        entry_overrides=None, live_price=None, initial_remaining=None,
+        entry_overrides=None, live_price=None, initial_remaining=None, live_prices=None,
     ):
         reservation = self.reserve("mint")
         nonce = reservation["nonce"]
@@ -480,7 +480,10 @@ class MonitorTests(unittest.IsolatedAsyncioTestCase):
         sales = []
         runtime = SimpleNamespace(
             book=self.book,
-            four=CONFIG["four_strategies"],
+            four={**CONFIG["four_strategies"], "exit": {
+                **CONFIG["four_strategies"]["exit"],
+                "stop_loss_fraction": CONFIG["trade"]["stop_loss_percentage"],
+            }},
             anti_rug_seg=CONFIG["trade"]["anti_rug_seg"],
             anti_rug_min_sol=CONFIG["trade"]["anti_rug_min_sol"],
             anti_rug_ratio=CONFIG["trade"]["anti_rug_ratio"],
@@ -489,7 +492,8 @@ class MonitorTests(unittest.IsolatedAsyncioTestCase):
         runtime.update_details = lambda nonce, changes: (
             FourStrategyTrader.update_details(runtime, nonce, changes)
         )
-        runtime.market_price = AsyncMock(return_value=live_price if live_price is not None else 7.4e-8 if stop else 2.8e-7)
+        runtime.market_price = (AsyncMock(side_effect=live_prices) if live_prices is not None else
+            AsyncMock(return_value=live_price if live_price is not None else 7.4e-8 if stop else 2.8e-7))
 
         async def holdings(mint, *, commitment="finalized"):
             return round(remaining * 1e6), 200
@@ -555,6 +559,14 @@ class MonitorTests(unittest.IsolatedAsyncioTestCase):
     async def test_stop_dumps_all_remaining_tokens(self):
         sales = await self.exercise(stop=True)
         self.assertEqual(sales, [(100, "stop_loss", True)])
+
+    async def test_exact_22_percent_loss_exits_before_the_old_25_percent_stop(self):
+        sales = await self.exercise(live_price=1e-7*(1-.22))
+        self.assertEqual(sales, [(100, "stop_loss", True)])
+
+    async def test_loss_below_22_percent_does_not_exit_before_recovery(self):
+        sales = await self.exercise(live_prices=[7.81e-8, *([2.8e-7]*6)])
+        self.assertEqual([s[1] for s in sales], ["take_profit_1", "take_profit_2", "take_profit_3"])
 
     async def test_sell_pressure_does_not_trigger_the_disabled_protective_exit(self):
         sales = await self.exercise(pressure=(0, 100))

@@ -47,6 +47,7 @@ def inspect(config: Path) -> dict:
     for strategy, data in batches["strategies"].items():
         data["blocked_by_legacy_loss_guard"] = legacy_active and strategy in legacy_pauses
     return {"read_only": True, "prepared_max_positions": cfg["trade"]["max_posiciones"],
+        "prepared_stop_loss_fraction": cfg["trade"]["stop_loss_percentage"],
         "configured_evaluation": policy, "legacy_loss_guard_active": legacy_active,
         "recorded_legacy_pauses": legacy_pauses, "evaluation": batches, "trader_started": False}
 

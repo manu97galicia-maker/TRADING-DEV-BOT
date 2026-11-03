@@ -62,14 +62,14 @@ class PolicyTests(unittest.TestCase):
             validate_second_policy(pending)
         validate_second_policy(enabled_policy())
 
-    def test_saved_user_selection_recovers_capital_plus_12_at_35_and_keeps_25_stop(self):
+    def test_saved_user_selection_recovers_capital_plus_12_at_35_with_22_stop(self):
         selected = copy.deepcopy(POLICY)
         self.assertFalse(selected["enabled"])
         selected["enabled"] = True  # Pure validation of a fixture; no trader is started.
         validate_second_policy(selected)
         self.assertEqual(selected["exit"]["first_sale_mode"], "recover_capital_plus_profit")
         self.assertEqual(selected["exit"]["recovery_profit_fraction"], .12)
-        self.assertEqual(selected["exit"]["stop_loss_fraction"], .25)
+        self.assertEqual(selected["exit"]["stop_loss_fraction"], .22)
         fractions = recovery_allocations(selected["exit"], 1, 1.35)
         self.assertAlmostEqual(fractions[0]*1.35, 1.12)
         self.assertAlmostEqual(fractions[0], 1.12/1.35)
@@ -118,6 +118,14 @@ class PolicyTests(unittest.TestCase):
             bundle.CONFIG["four_strategies"]["exit"])
         for expected in ["Segundo bloque", "2 wallets", "275", "2/100", "TP4", "12%"]:
             self.assertIn(expected, msg)
+
+    def test_older_position_stop_is_tightened_to_22_without_loosening_a_stricter_stop(self):
+        defaults = {**bundle.CONFIG["four_strategies"]["exit"], "stop_loss_fraction": .22}
+        saved = {"entry_price": 1e-7, "entry_sol_usd": 100,
+                 "entry_exit_policy": {**enabled_policy()["exit"], "stop_loss_fraction": .25}}
+        self.assertEqual(position_exit_plan(saved, defaults)[1], .22)
+        saved["entry_exit_policy"]["stop_loss_fraction"] = .12
+        self.assertEqual(position_exit_plan(saved, defaults)[1], .12)
 
     def test_average_buy_cost_ceiling_is_strict_and_never_enlarges_a_budget(self):
         token = BUY_PRICE_CEILING.set(4.2e-8)

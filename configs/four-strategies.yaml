@@ -28,7 +28,7 @@ trade:
   exit_strategy: tp_sl
   take_profit_percentage: 0.50
   take_profit_sell_percentage: 0.50
-  stop_loss_percentage: 0.25
+  stop_loss_percentage: 0.22
   vender_todo_en_stop: true
   stop_a_entrada_tras_tp: false
   stop_al_tp_tras_tp: false
@@ -110,6 +110,7 @@ four_strategies:
     max_age_seconds: 120
     poll_interval_seconds: 2
   exit:
+    # Historical ledger identity. Active SL uses trade.stop_loss_percentage.
     stop_loss_fraction: 0.25
     initial_tp_gain: 0.50
     proposed_original_quantity_fractions: [0.50, 0.25, 0.25]

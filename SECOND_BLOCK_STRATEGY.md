@@ -45,8 +45,8 @@ límite para el receptor de comisiones.
 Los objetivos multiplicativos son +35%, +89%, +164,6% y +270,44% respecto a
 la entrada. Tras la primera venta, el resto se reparte en tres partes iguales.
 La opción elegida es `first_sale_mode: recover_capital_plus_profit`, con
-`recovery_profit_fraction: 0.12`. El stop conserva el 25% de la configuración
-anterior; el «12» corresponde al beneficio recuperado. Al primer objetivo exacto
+`recovery_profit_fraction: 0.12`. El stop solicitado es del 22%; el «12»
+corresponde al beneficio recuperado. Al primer objetivo exacto
 de +35%, se vende el 82,962963% de los tokens para recuperar el equivalente al
 112% de la inversión. Cada venta posterior corresponde al 5,679012% original.
 Si el primer precio observado supera +35%, la fracción de recuperación se

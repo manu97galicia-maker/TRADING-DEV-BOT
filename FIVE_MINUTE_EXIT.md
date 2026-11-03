@@ -5,7 +5,7 @@ cuatro fuentes. Cero la desactiva. El tamaño solicitado para nuevas compras es
 ahora el **30% del saldo nativo de SOL actual**, incluidos el margen de slippage
 y las comisiones; sigue sujeto a la reserva de 0,03 SOL y a los presupuestos
 pendientes. El máximo compartido es de cuatro plazas. El filtro de inactividad no cambia las entradas,
-el SL del 25%, los TP ni las pausas por pérdidas. Los registros anteriores
+el SL del 22%, los TP ni las pausas por pérdidas. Los registros anteriores
 conservan la fracción con la que se abrieron y no se recalculan al 30%.
 
 La posición debe tener al menos cinco minutos, la cotización actual debe estar

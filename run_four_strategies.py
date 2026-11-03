@@ -37,10 +37,10 @@ def check_plan(path: Path) -> dict:
     if trade["max_posiciones"] != 4 or trade["fraccion_saldo"] != 0.30:
         raise ValueError("Bundle requires four positions and a 30% fraction")
     if (
-        trade["stop_loss_percentage"] != 0.25
+        trade["stop_loss_percentage"] != 0.22
         or settings["exit"]["stop_loss_fraction"] != 0.25
     ):
-        raise ValueError("Bundle requires a 25% initial stop")
+        raise ValueError("Bundle requires a 22% initial stop and the unchanged ledger baseline")
     required = {"strong-pressure-8k", "strength-21k", "first-block-four-buyers"}
     if set(settings["strategies"]) != required:
         raise ValueError(
@@ -117,7 +117,7 @@ def main() -> None:
                     ],
                     "max_shared_positions": plan["trade"]["max_posiciones"],
                     "entry_fraction_inclusive": plan["trade"]["fraccion_saldo"],
-                    "initial_stop": 0.25,
+                    "initial_stop": plan["trade"]["stop_loss_percentage"],
                     "enabled": plan["enabled"],
                     "five_trade_evaluation": plan.get("five_trade_evaluation"),
                     "second_block_dev": {"enabled": second["enabled"],

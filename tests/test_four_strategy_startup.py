@@ -4,9 +4,14 @@
 # ruff: noqa: SLF001, FBT003
 
 import copy
+import hashlib
 import inspect
+import json
+import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import yaml
@@ -14,6 +19,7 @@ import yaml
 import bot_runner
 from interfaces.core import Platform
 from monitoring import notifier
+from trading.four_strategy_runtime import FourStrategyTrader
 from trading.universal_trader import UniversalTrader
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -101,11 +107,34 @@ class StartupTests(unittest.IsolatedAsyncioTestCase):
         captured["trader"].start.assert_awaited_once()
         self.assertEqual(captured["kwargs"]["fraccion_saldo"], 0.30)
         self.assertEqual(captured["kwargs"]["max_posiciones"], 4)
+        self.assertEqual(captured["kwargs"]["stop_loss_percentage"], .22)
         self.assertEqual(captured["settings"], plan["four_strategies"])
         self.assertEqual(captured["inactivity"], 300)
         self.assertEqual(captured["evaluation_policy"]["batch_size"], 5)
         self.assertEqual(captured["evaluation_policy"]["scope"], "per_strategy")
         self.assertIs(captured["kwargs"]["paper_trade"], False)
+
+    def test_22_percent_stop_keeps_the_existing_ledger_identity_and_input(self) -> None:
+        plan = yaml.safe_load((ROOT / "configs/four-strategies.yaml").read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as directory:
+            settings = copy.deepcopy(plan["four_strategies"])
+            settings["database"] = str(Path(directory) / "book.sqlite3")
+            original = copy.deepcopy(settings)
+            identity = hashlib.sha256(json.dumps(settings, sort_keys=True, allow_nan=False).encode()).hexdigest()
+            trader = object.__new__(FourStrategyTrader)
+            trader.wallet = SimpleNamespace(pubkey=settings["expected_wallet"])
+            trader.wallet_pool = None
+            trader.paper_trade = False
+            trader.max_posiciones = 4
+            trader.fraccion_saldo = .30
+            trader.stop_loss_percentage = .22
+            trader.buyer = object()
+            trader.configure_four(settings)
+            self.assertEqual(trader.four["exit"]["stop_loss_fraction"], .22)
+            self.assertEqual(settings, original)
+            with closing(trader.book.connect()) as db:
+                self.assertEqual(db.execute("SELECT policy FROM settings WHERE id=1").fetchone()[0], identity)
+            self.assertIn("SL -22%", trader._cartel_de_salidas())
 
 
 if __name__ == "__main__":

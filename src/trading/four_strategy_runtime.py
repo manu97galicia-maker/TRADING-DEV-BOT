@@ -262,12 +262,16 @@ class FourStrategyTrader(legacy.UniversalTrader):
         if (
             self.max_posiciones != 4
             or self.fraccion_saldo != 0.30
-            or self.stop_loss_percentage != 0.25
+            or self.stop_loss_percentage != 0.22
         ):
             raise ValueError(
                 "Four-strategy risk settings differ from the requested policy"
             )
-        self.four = settings
+        # Preserve the historical ledger identity and all outcomes/pauses while
+        # applying the explicitly configured stop to active position monitors.
+        self.four = {**settings, "exit": {
+            **settings["exit"], "stop_loss_fraction": self.stop_loss_percentage,
+        }}
         policy = json.dumps(settings, sort_keys=True, allow_nan=False)
         self.book = FourStrategyBook(
             Path(settings["database"]),
@@ -352,7 +356,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
 
     def _cartel_de_salidas(self) -> str:
         message = (
-            "SALIDAS FOUR · SL -25% · TP1 +50% vende 50% original; "
+            f"SALIDAS FOUR · SL -{self.stop_loss_percentage:.0%} · TP1 +50% vende 50% original; "
             "TP2 punto medio vende 25%; TP3 28K o entrada x2 vende 25% · "
             "pausa independiente con 3 perdidas en los ultimos 5 cierres"
         )

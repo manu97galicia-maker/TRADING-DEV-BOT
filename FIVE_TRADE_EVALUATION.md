@@ -7,6 +7,14 @@ envíos inciertos y remanentes. Los presupuestos siguen siendo 30% del SOL para
 las cuatro estrategias originales y 23% para la quinta, incluidos márgenes y
 gastos. El límite de plazas no permite exceder el saldo ni la reserva de SOL.
 
+El SL activo solicitado es **22%** para las cinco estrategias. Para las cuatro
+originales se toma de `trade.stop_loss_percentage`; para la quinta también se
+guarda en `configs/second-block-dev.yaml`. Al reiniciar, los monitores limitan
+también los stops antiguos al 22%, conservando cualquier stop previo más estricto.
+La base `four_strategies.exit.stop_loss_fraction: 0.25` permanece solo dentro de
+la identidad histórica del libro: no es el SL activo ni requiere borrar o migrar
+posiciones, resultados, tandas o pausas. No debe editarse esa base histórica.
+
 Una estrategia puede admitir como máximo cinco operaciones en su tanda. La
 sexta espera hasta que las cinco tengan cierre completo, cero tokens verificado
 y recibos finalizados. Entonces:
