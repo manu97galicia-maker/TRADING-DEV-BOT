@@ -1,6 +1,14 @@
 # Estrategia adicional: dev y segundo bloque
 
-La opción `third_block_retry_on_sharp_rise: true` permite un único intento
+La configuración actual `reject_sharp_price_rise: false` quita a la estrategia
+dev el límite de subida del 35% frente al mínimo de los últimos dos segundos.
+Mantiene el rechazo por caída superior al 10%, incremento de cotización superior
+al 10%, falta de precios recientes, concentración, MC, historial y saldo.
+Las otras estrategias mantienen sus límites de precio. Al no producirse un
+rechazo `sharp_price_rise` del dev, el reintento del tercero por ese motivo
+queda inactivo; no se amplía a otros motivos de rechazo.
+
+Si se reactiva el filtro, `third_block_retry_on_sharp_rise: true` permite un único intento
 adicional en el tercer bloque observado cuando el segundo fue rechazado
 exactamente por `sharp_price_rise` antes de firmar. Ambos bloques se identifican
 por su cadena de padres; no se suman números de slot. Un rechazo recibido ya

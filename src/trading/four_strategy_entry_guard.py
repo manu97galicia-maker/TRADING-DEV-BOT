@@ -60,10 +60,13 @@ def validate_policy(policy: dict) -> None:
         raise ValueError("Price age cannot exceed the entry observation window")
 
 
-def check_price(
-    points: list, price: float, anchor: float, now: float, policy: dict
+def check_price(  # noqa: PLR0913 -- explicit per-strategy exception preserves the default protection
+    points: list, price: float, anchor: float, now: float, policy: dict,
+    *, reject_sharp_rise: bool = True,
 ) -> dict:
     """Measure the observed part of a short window; never invent missing history."""
+    if type(reject_sharp_rise) is not bool:
+        raise EntryRiskRejected("invalid_sharp_rise_policy")
     if not all(math.isfinite(x) and x > 0 for x in (price, anchor, now)):
         raise EntryRiskRejected("invalid_entry_price")
     recent = []
@@ -80,7 +83,7 @@ def check_price(
     rise = price / low - 1
     drawdown = 1 - price / high
     drift = price / anchor - 1
-    if rise > policy["max_rise_fraction"] + 1e-12:
+    if reject_sharp_rise and rise > policy["max_rise_fraction"] + 1e-12:
         raise EntryRiskRejected("sharp_price_rise")
     if drawdown > policy["max_drawdown_fraction"] + 1e-12:
         raise EntryRiskRejected("price_dump_from_recent_peak")
@@ -88,6 +91,7 @@ def check_price(
         raise EntryRiskRejected("price_ran_during_validation")
     return {
         "rise_fraction": rise,
+        "sharp_rise_filter_enabled": reject_sharp_rise,
         "drawdown_fraction": drawdown,
         "quote_increase_fraction": drift,
         "observed_window_seconds": now - recent[0][0],

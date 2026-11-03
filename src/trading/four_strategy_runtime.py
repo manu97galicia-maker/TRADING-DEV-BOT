@@ -376,6 +376,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
             price_evidence = check_price(
                 list(volumen._historia_precio.get(str(token.mint), [])), price,
                 anchor, time.time(), policy,
+                reject_sharp_rise=(getattr(self, "second_policy", {}).get("reject_sharp_price_rise", True)
+                                   if entry.get("strategy") == STRATEGY_ID else True),
             )
             # Use exactly the curve price that passed these checks in the buyer's
             # existing short-lived quote cache, instead of an older builder quote.
