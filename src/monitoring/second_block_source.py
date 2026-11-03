@@ -56,6 +56,10 @@ class Candidate:
     price_slot: int = 0
     observed_at: float = 0
     prepare_after: float = 0
+    creation_timestamp: float | None = None
+    first_seen_wall_at: float = 0
+    prepared_wall_at: float = 0
+    first_signal_wall_at: float = 0
 
 
 class SecondBlockSource:
@@ -116,7 +120,8 @@ class SecondBlockSource:
             self.consider(candidate)
 
     def refresh_candidates(self) -> None:
-        for mint, candidate in list(self.candidates.items()):
+        for candidate in self.ordered_history_candidates(list(self.candidates.values())):
+            mint = candidate.mint
             if not 0 <= time.monotonic()-candidate.observed_at <= 600:
                 if candidate.inflight_slot is None:
                     self.candidates.pop(mint, None)
@@ -146,8 +151,16 @@ class SecondBlockSource:
             if raw[:8] == CREATE:
                 self.creation(raw, slot)
         touched = {mint for raw in events if (mint := self.trade(raw, slot))}
-        for mint in touched:
-            self.consider(self.candidates[mint])
+        self.consider_touched(touched)
+
+    def consider_touched(self, mints: set[str]) -> None:
+        candidates = [self.candidates[mint] for mint in mints]
+        if creator_history_only(self.policy):
+            candidates = self.ordered_history_candidates(candidates)
+        for candidate in candidates:
+            if creator_history_only(self.policy):
+                self.refresh(candidate)
+            self.consider(candidate)
 
     def creation(self, raw: bytes, slot: int) -> None:
         try:
@@ -159,8 +172,9 @@ class SecondBlockSource:
                     or fields.get("token_total_supply") != 1000000000000000):
                 return
             self.history.observe(user, mint)
-            self.history.warm(user)
             history_only = creator_history_only(self.policy)
+            if not history_only:
+                self.history.warm(user)
             if history_only and not self.admit_history_candidate(mint):
                 return
             if (mint in self.candidates or (not history_only and slot < self.parent)
@@ -168,7 +182,10 @@ class SecondBlockSource:
                 return
             candidate = Candidate(mint, creator, slot, str(fields.get("name") or ""),
                                   str(fields.get("symbol") or ""), developer=user,
-                                  observed_at=time.monotonic())
+                                  observed_at=time.monotonic(), first_seen_wall_at=time.time())
+            timestamp = fields.get("timestamp")
+            if type(timestamp) in (int, float) and math.isfinite(timestamp) and timestamp > 0:
+                candidate.creation_timestamp = float(timestamp)
             if self.available and self.parent == slot:
                 candidate.second_slot = self.slot
             self.candidates[mint] = candidate
@@ -195,9 +212,12 @@ class SecondBlockSource:
 
     def refresh(self, candidate: Candidate) -> None:
         """Retry technical preparation and revisit a completed history refresh."""
+        if (creator_history_only(self.policy) and
+                (not self.history_activity_ready(candidate) or candidate.mint in self.attempted_mints)):
+            return
         self.history.warm(candidate.developer)
         pending = getattr(self.history, "pending", {}).get(candidate.developer)
-        if pending is not None and pending not in self.history_refreshes:
+        if pending is not None and not pending.done() and pending not in self.history_refreshes:
             self.history_refreshes.add(pending)
             generation = self.generation
             developer = candidate.developer
@@ -205,17 +225,46 @@ class SecondBlockSource:
             def ready(completed: asyncio.Future) -> None:
                 self.history_refreshes.discard(completed)
                 if not completed.cancelled() and generation == self.generation:
-                    for current in list(self.candidates.values()):
-                        if current.developer == developer:
-                            self.consider(current)
+                    matching = [current for current in self.candidates.values() if current.developer == developer]
+                    for current in self.ordered_history_candidates(matching):
+                        self.refresh(current)
+                        self.consider(current)
 
             pending.add_done_callback(ready)
+        if creator_history_only(self.policy):
+            history = self.history.evidence(candidate.developer, candidate.mint)
+            if history is None or not history["migration_fraction"] >= self.policy["min_creator_migration_fraction"]:
+                return
         now = time.monotonic()
         if (candidate.token is None and candidate.mint not in self.building
                 and len(self.building) < 2 and now >= candidate.prepare_after):
             candidate.prepare_after = now+1
             self.building.add(candidate.mint)
             self._track(self.prepare(candidate, self.generation))
+
+    def history_activity_ready(self, candidate: Candidate, sol_usd: float | None = None) -> bool:
+        """Use the same creation-block requirement before consuming network work."""
+        if not self.policy.get("require_first_block_activity", False):
+            return True
+        sol_usd = self.sol_reference() if sol_usd is None else sol_usd
+        return (math.isfinite(sol_usd) and sol_usd > 0
+                and len(candidate.buyers) >= self.policy["min_distinct_first_block_buyers"]
+                and (candidate.buy_sol+candidate.sell_sol)*sol_usd >= self.policy["min_first_block_volume_usd"])
+
+    def ordered_history_candidates(self, candidates: list[Candidate]) -> list[Candidate]:
+        """Prefer qualifying recent creations over delayed delivery of older logs."""
+        return sorted(candidates, key=lambda candidate: (
+            self.history_activity_ready(candidate), candidate.creation_slot, candidate.observed_at), reverse=True)
+
+    def timing_features(self, candidate: Candidate) -> dict:
+        now = time.time()
+        if not candidate.first_signal_wall_at:
+            candidate.first_signal_wall_at = now
+        return {"creation_timestamp": candidate.creation_timestamp,
+                "source_seen_at": candidate.first_seen_wall_at,
+                "token_prepared_at": candidate.prepared_wall_at,
+                "signal_ready_at": candidate.first_signal_wall_at,
+                "signal_age_seconds": now-candidate.creation_timestamp if candidate.creation_timestamp is not None else None}
 
     def trade(self, raw: bytes, slot: int) -> str | None:
         if raw[:8] != TRADE or len(raw) < 113 or raw[56] not in {0, 1}:
@@ -275,7 +324,7 @@ class SecondBlockSource:
             "retry_reason": "sharp_price_rise" if entry_block == 3 else None,
             "buy_sol": candidate.buy_sol, "sell_sol": candidate.sell_sol,
             "volume_usd": volume, "observed_mc_usd": mc, "creator_history": history,
-            "inclusion_guaranteed": False}
+            "inclusion_guaranteed": False, **self.timing_features(candidate)}
 
     def history_signal(self, candidate: Candidate | None, sol_usd: float) -> dict | None:
         """Verified developer history with the explicitly selected first-block activity."""
@@ -291,8 +340,7 @@ class SecondBlockSource:
             return None
         volume = (candidate.buy_sol+candidate.sell_sol)*sol_usd
         activity_required = self.policy.get("require_first_block_activity", False)
-        if activity_required and (len(candidate.buyers) < self.policy["min_distinct_first_block_buyers"]
-                                  or volume < self.policy["min_first_block_volume_usd"]):
+        if not self.history_activity_ready(candidate, sol_usd):
             return None
         return {"strategy": STRATEGY_ID, "entry_rule": "creator_migration_only",
             "first_block_activity_required": activity_required,
@@ -303,7 +351,7 @@ class SecondBlockSource:
             "buy_sol": candidate.buy_sol, "sell_sol": candidate.sell_sol,
             "volume_usd": volume,
             "observed_mc_usd": candidate.price*1e9*sol_usd, "creator_history": history,
-            "inclusion_guaranteed": False}
+            "inclusion_guaranteed": False, **self.timing_features(candidate)}
 
     def consider(self, candidate: Candidate) -> None:
         history_only = creator_history_only(self.policy)
@@ -382,6 +430,7 @@ class SecondBlockSource:
                 "acquisition_source": ("observed_creation_creator_history"
                     if creator_history_only(self.policy) else "observed_creation_second_block")}
             candidate.token = token
+            candidate.prepared_wall_at = time.time()
             self.consider(candidate)
         except asyncio.CancelledError:
             raise

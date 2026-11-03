@@ -235,8 +235,11 @@ class CreatorHistoryCache:
         return self.coverage_start_slot is None or snapshot.slot >= self.coverage_start_slot
 
     def warm(self, creator: str) -> None:
+        # The active history profile selects a fresh candidate when capacity
+        # returns, instead of holding a second request behind a 12-second read.
+        pending_limit = 1 if self.policy.get("entry_rule") == "creator_migration_only" else 2
         if (creator not in self.observed or creator in self.overflow or creator in self.pending
-                or len(self.pending) >= 2 or time.monotonic() < self.retry_after.get(creator, 0)):
+                or len(self.pending) >= pending_limit or time.monotonic() < self.retry_after.get(creator, 0)):
             return
         snapshot = self.snapshots.get(creator)
         if (snapshot and 0 <= time.time()-snapshot.checked_at <= self.policy["creator_cache_seconds"]

@@ -47,6 +47,20 @@ por la red siguen siendo necesarias; no se garantiza una latencia fija ni
 ejecución instantánea. Instalar esta mejora requiere un reinicio manual para
 cargarla en un proceso que ya esté abierto.
 
+El colector sigue registrando todos los lanzamientos para calcular el historial,
+pero reserva las consultas y la preparación para candidatos que ya cumplen
+los compradores y el volumen exigidos. Con historial positivo en caché, el
+evento que completa esos mínimos puede iniciar la preparación inmediatamente.
+Las colas priorizan creaciones recientes aptas. El perfil de historial mantiene
+una sola consulta pendiente, sin un segundo dev esperando detrás del semáforo;
+las dos lecturas de preparación de curvas siguen limitadas y en paralelo.
+El historial desconocido o inferior al 1% no ocupa esos preparadores.
+
+Los datos de entrada conservan `creation_timestamp`, `source_seen_at`,
+`token_prepared_at`, `signal_ready_at` y `signal_age_seconds`. Permiten separar
+el retraso del stream, la preparación y el envío. Estas mejoras de cola no
+imponen por sí solas una edad máxima de compra ni garantizan inclusión inmediata.
+
 El presupuesto de nuevas entradas del dev es el menor entre el 80% del SOL
 líquido confirmado y **20 USD**, incluidos margen y gastos estimados.
 `max_entry_budget_usd: 20.0` se convierte a SOL con una referencia reciente;
