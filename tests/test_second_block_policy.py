@@ -55,6 +55,7 @@ def enabled_policy():
     policy["balance_fraction"] = .90
     policy["buy_priority_fee_cap_usd"] = .06
     policy["min_first_block_volume_usd"] = 275
+    policy["require_first_block_activity"] = True
     policy["exit"].update(first_sale_mode="recover_capital", recovery_profit_fraction=None,
                           stop_loss_fraction=.12)
     return policy
@@ -67,6 +68,8 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(selected["entry_timing"], "second_produced_block")
         self.assertTrue(selected["require_dev_initial_buy"] is True)
         self.assertTrue(selected["third_block_retry_on_sharp_rise"] is False)
+        self.assertFalse(selected["require_first_block_activity"])
+        self.assertEqual(selected["min_creator_migration_fraction"], .01)
         self.assertTrue(second_produced_block(selected))
         validate_second_policy(selected)
 

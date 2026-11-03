@@ -12,12 +12,11 @@ salida y auditoría. La selección no borra pérdidas ni reinicia la evaluación
 
 El perfil activo es `entry_rule: creator_migration_only`, con
 `entry_timing: second_produced_block`, `require_dev_initial_buy: true` y
-`require_first_block_activity: true`. Exige que el dev firmante tenga al menos
+`require_first_block_activity: false`. Exige que el dev firmante tenga al menos
 un 1% de sus lanzamientos anteriores migrados a PumpSwap y verificados mediante
-Helius. Además, el bloque de creación debe registrar **dos compradores
-distintos y al menos 250 USD de volumen total**, sumando compras y ventas.
-La misma dirección cuenta una sola vez como comprador; los eventos de bloques
-posteriores no aumentan esos contadores.
+Helius. No exige un mínimo de volumen ni dos compradores distintos en el
+primer bloque. Los umbrales de 250 USD y dos compradores quedan guardados
+para el perfil opcional de actividad, pero no se aplican con este selector.
 
 Cuando Helius devuelve datos incompletos o supera cuatro segundos, el respaldo
 GMGN consulta los agregados del dev con `GMGN_API_KEY`. El total se obtiene de
@@ -63,9 +62,9 @@ ejecución instantánea. Instalar esta mejora requiere un reinicio manual para
 cargarla en un proceso que ya esté abierto.
 
 El colector sigue registrando todos los lanzamientos para calcular el historial,
-pero reserva las consultas y la preparación para candidatos que ya cumplen
-los compradores y el volumen exigidos. Con historial positivo en caché, el
-evento que completa esos mínimos puede iniciar la preparación inmediatamente.
+pero reserva las consultas y la preparación para candidatos con la compra
+inicial del dev verificada. Con historial positivo en caché, ese evento puede
+iniciar la preparación inmediatamente, sin esperar volumen ni otra wallet.
 Las colas priorizan creaciones recientes aptas. El perfil de historial mantiene
 una sola consulta pendiente, sin un segundo dev esperando detrás del semáforo;
 las dos lecturas de preparación de curvas siguen limitadas y en paralelo.
@@ -102,10 +101,9 @@ protección de saldos y envíos inciertos. El perfil estricto descarta candidato
 al terminar el segundo bloque y conserva la deduplicación durante diez minutos.
 
 El parámetro clásico de MC permanece en el archivo para compatibilidad, pero
-no se usa en `creator_migration_only`. La actividad del primer bloque sí se
-exige con el selector actual; omitir o desactivar ese selector conserva la
-variante opcional sin mínimos de actividad, pero mantiene la prueba del dev y
-el segundo bloque si esos selectores siguen activos. Las otras cuatro estrategias mantienen
+no se usa en `creator_migration_only`. Activar `require_first_block_activity`
+añade los mínimos opcionales de dos compradores y 250 USD. El selector actual
+los omite, pero mantiene la prueba del dev y el segundo bloque. Las otras cuatro estrategias mantienen
 sus filtros e historial.
 
 En el perfil clásico `entry_rule: second_block`, el mecanismo

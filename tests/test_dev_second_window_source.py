@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 import test_second_block_source as stream
+import yaml
 
 
 class DevSecondWindowSourceTests(unittest.IsolatedAsyncioTestCase):
@@ -333,6 +334,55 @@ class DevSecondWindowSourceTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(signal["dev_initial_buy_verified"])
         self.assertEqual(signal["buyers"], 1)
         self.assertAlmostEqual(signal["volume_usd"], .1)
+
+    async def test_shipped_profile_accepts_one_tiny_dev_buy_with_one_percent_history(self):
+        # Exercise the actual selector, independently of the historical activity fixture.
+        self.policy.clear()
+        self.policy.update(yaml.safe_load((stream.ROOT / "configs/second-block-dev.yaml").read_text()))
+        self.assertFalse(self.policy["require_first_block_activity"])
+        self.source.history.evidence = Mock(return_value={"migration_fraction": .01})
+        await self.created(stream.trade(self.mint, self.creator, sol=.000001))
+        self.callback.assert_not_awaited()
+        self.source.on_slot({"slot": 105, "parent": 100})
+        await self.settle()
+        self.callback.assert_awaited_once()
+        signal = self.source.signal(str(self.mint))
+        self.assertEqual(signal["target_slot"], 105)
+        self.assertEqual(signal["entry_block"], 2)
+        self.assertIs(signal["dev_initial_buy_verified"], True)
+        self.assertFalse(signal["first_block_activity_required"])
+        self.assertEqual(signal["buyers"], 1)
+        self.assertAlmostEqual(signal["volume_usd"], .0001)
+
+    async def test_shipped_profile_still_rejects_unknown_or_below_one_percent_history(self):
+        self.policy.clear()
+        self.policy.update(yaml.safe_load((stream.ROOT / "configs/second-block-dev.yaml").read_text()))
+        self.assertFalse(self.policy["require_first_block_activity"])
+        self.source.history.evidence = Mock(return_value=None)
+        with patch("monitoring.second_block_source.build_pumpfun_token_info", new_callable=AsyncMock) as builder:
+            await self.created(stream.trade(self.mint, self.creator, sol=.000001))
+            self.source.on_slot({"slot": 105, "parent": 100})
+            for history in (None, {"migration_fraction": 0}, {"migration_fraction": .009999}):
+                with self.subTest(history=history):
+                    self.source.history.evidence.return_value = history
+                    self.source.refresh_candidates()
+                    await self.settle()
+                    self.assertIsNone(self.source.signal(str(self.mint)))
+            builder.assert_not_awaited()
+        self.callback.assert_not_awaited()
+
+    async def test_shipped_profile_keeps_initial_dev_buy_proof_without_activity_minimums(self):
+        self.policy.clear()
+        self.policy.update(yaml.safe_load((stream.ROOT / "configs/second-block-dev.yaml").read_text()))
+        self.source.history.evidence = Mock(return_value={"migration_fraction": .01})
+        with patch("monitoring.second_block_source.build_pumpfun_token_info", new_callable=AsyncMock) as builder:
+            await self.created(stream.trade(self.mint, self.a, sol=.000001))
+            self.source.on_slot({"slot": 105, "parent": 100})
+            await self.settle()
+            builder.assert_not_awaited()
+        self.assertIs(self.source.candidates[str(self.mint)].dev_initial_buy_verified, False)
+        self.assertIsNone(self.source.signal(str(self.mint)))
+        self.callback.assert_not_awaited()
 
     async def test_second_block_trade_cannot_supply_missing_first_block_buyers_or_volume(self):
         await self.created(stream.trade(self.mint, self.creator, sol=1))

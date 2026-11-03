@@ -10,7 +10,8 @@ max_entry_budget_usd: 20.0
 # MC threshold is retained for the classic profile, unused in history-only mode.
 max_entry_mc_usd: 4200
 min_creator_migration_fraction: 0.01
-require_first_block_activity: true
+require_first_block_activity: false
+# Retained for the optional activity profile; inactive with the selector above.
 min_first_block_volume_usd: 250
 min_distinct_first_block_buyers: 2
 buy_priority_fee_cap_usd: 0.07

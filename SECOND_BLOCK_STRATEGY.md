@@ -2,9 +2,9 @@
 
 El perfil activo es ahora `entry_rule: creator_migration_only`: exige un
 dev firmante con al menos 1% de migraciones PumpSwap verificadas. Con el selector
-actual `require_first_block_activity: true`, añade dos compradores distintos
-y al menos 250 USD de volumen total en el bloque de creación. Compras y ventas
-suman al volumen; las operaciones posteriores no completan ese requisito.
+actual `require_first_block_activity: false`, no exige volumen mínimo ni dos
+compradores distintos. Los umbrales de 250 USD y dos compradores siguen en el
+archivo para el perfil opcional de actividad, pero están inactivos.
 No aplica los límites clásicos de MC, concentración ni variaciones del precio.
 Con `entry_timing: second_produced_block` y `require_dev_initial_buy: true`,
 exige que la primera operación del mint en la propia transacción de creación
