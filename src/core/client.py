@@ -251,6 +251,12 @@ class SolanaClient:
         )
 
         # Add compute budget instructions if applicable
+        from trading.transaction_observer import PRIORITY_CAP
+
+        priority_cap = PRIORITY_CAP.get()
+        if priority_cap is not None:
+            actual_limit = compute_unit_limit if compute_unit_limit is not None else 85_000
+            priority_fee = min(priority_fee or 0, priority_cap * 1_000_000 // actual_limit)
         if (
             priority_fee is not None
             or compute_unit_limit is not None
@@ -278,6 +284,10 @@ class SolanaClient:
         message = Message(instructions, signer_keypair.pubkey())
         transaction = Transaction([signer_keypair], message, recent_blockhash)
 
+        from trading.transaction_observer import observe
+
+        observe("signed", str(transaction.signatures[0]))
+
         for attempt in range(max_retries):
             try:
                 await self._rate_limiter.acquire()
@@ -288,6 +298,13 @@ class SolanaClient:
                 return response.value
 
             except Exception as e:
+                from solana.rpc.core import RPCException
+                from solders.rpc.errors import SendTransactionPreflightFailureMessage
+
+                if isinstance(e, RPCException) and e.args and isinstance(
+                    e.args[0], SendTransactionPreflightFailureMessage
+                ):
+                    observe("preflight_rejected", str(transaction.signatures[0]))
                 if attempt == max_retries - 1:
                     logger.exception(
                         f"Failed to send transaction after {max_retries} attempts"

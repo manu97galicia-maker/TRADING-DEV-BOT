@@ -1408,7 +1408,8 @@ class UniversalTrader:
         # trailing tiene que ser corto para no devolver media ganancia desde
         # el techo. Si no se configura, se comporta como antes.
         self.trailing_stop_percentage = float(
-            trailing_stop_percentage or stop_loss_percentage or 0
+            (stop_loss_percentage or 0)
+            if trailing_stop_percentage is None else trailing_stop_percentage
         )
         self.vender_todo_en_stop = bool(vender_todo_en_stop)
         self.second_wave = dict(second_wave or {})
@@ -5965,6 +5966,8 @@ class UniversalTrader:
         amount: float,
         ref_price: float,
         reason: str,
+        *,
+        full_exit: bool = False,
     ) -> bool:
         """Sell a specific token amount and log it. Returns success.
 
@@ -6006,6 +6009,8 @@ class UniversalTrader:
         # rellena, y asi ningun fallo puede dejar el valor de la venta anterior.
         self._ultimo_cobro = 0.0
 
+        from trading.sell_precision import align_full_sell
+
         real = await self._saldo_real_tokens(token_info)
         if real is not None:
             if real <= 0:
@@ -6024,6 +6029,8 @@ class UniversalTrader:
                     f"{real:.6f}; ajusto al saldo real"
                 )
                 amount = real
+
+            amount, _ = align_full_sell(amount, real, TOKEN_DECIMALS, full_exit=full_exit)
 
         _seller = self._vendedor_para(reason)
         sell_result = await _seller.execute(

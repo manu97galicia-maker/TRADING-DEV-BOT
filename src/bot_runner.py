@@ -145,7 +145,12 @@ async def start_bot(config_path: str):
 
     # Initialize universal trader with platform-specific configuration
     try:
-        trader = UniversalTrader(
+        trader_type = UniversalTrader
+        if (cfg.get("four_strategies") or {}).get("enabled"):
+            from trading.four_strategy_runtime import FourStrategyTrader
+
+            trader_type = FourStrategyTrader
+        trader = trader_type(
             # Connection settings
             rpc_endpoint=cfg["rpc_endpoint"],
             wss_endpoint=cfg["wss_endpoint"],
@@ -390,7 +395,7 @@ async def start_bot(config_path: str):
             ),
             tp_marcados=cfg["trade"].get("tp_marcados", 0),
             tp_sell_marcados=cfg["trade"].get("tp_sell_marcados", 0),
-            trailing_stop_percentage=cfg["trade"].get("trailing_stop_percentage", 0),
+            trailing_stop_percentage=cfg["trade"].get("trailing_stop_percentage"),
             vender_todo_en_stop=cfg["trade"].get("vender_todo_en_stop", False),
             mayhem_buy_amount=cfg["trade"].get("mayhem_buy_amount", 0),
             mayhem_max_perdidas=cfg["trade"].get("mayhem_max_perdidas", 0),
@@ -416,15 +421,21 @@ async def start_bot(config_path: str):
         # Escalar posicion un 30% cada vez que el saldo de la wallet se doble
         # respecto al momento de arranque. El check es cada 60 s y es una
         # tarea de fondo: no bloquea el trading en ningún caso.
-        _scale_task = asyncio.create_task(_auto_scale(trader))
+        if (cfg.get("four_strategies") or {}).get("enabled"):
+            trader.configure_four(cfg["four_strategies"])
+        _scale_task = (
+            asyncio.create_task(_auto_scale(trader))
+            if not (cfg.get("four_strategies") or {}).get("enabled") else None
+        )
         try:
             await trader.start()
         finally:
-            _scale_task.cancel()
-            try:
-                await _scale_task
-            except asyncio.CancelledError:
-                pass
+            if _scale_task is not None:
+                _scale_task.cancel()
+                try:
+                    await _scale_task
+                except asyncio.CancelledError:
+                    pass
 
     except Exception as e:
         logging.exception(f"Failed to initialize or start trader: {e}")

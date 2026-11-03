@@ -1,0 +1,96 @@
+{
+  "status": "implemented_opt_in_disabled",
+  "runtime_config": "configs/four-strategies.yaml",
+  "runtime_entrypoint": "run_four_strategies.py",
+  "requested_date": "2026-11-02",
+  "execution": "offline_review_only",
+  "wallet": {
+    "expected_wallet": "HGUXwmjHmqY75q4j9v5wfGZnzFQESnq2wZ2UPJrkg3Uk",
+    "entry_fraction": 0.18,
+    "base": "confirmed_liquid_sol_before_entry",
+    "max_shared_positions": 3,
+    "include_pending_buys_and_unsold_runners": true,
+    "deduplicate_mints_across_strategies": true
+  },
+  "strategy_loss_guard": {
+    "window_closed_trades": 5,
+    "pause_at_losses": 3,
+    "pnl_source": "verified_closed_net_cashflow_including_fees",
+    "persistent_pause": true,
+    "keep_managing_existing_positions": true
+  },
+  "exit": {
+    "stop_loss_fraction": 0.25,
+    "initial_tp_gain": 0.50,
+    "proposed_original_quantity_fractions": [0.50, 0.25, 0.25],
+    "last_target_market_cap_usd": 28000,
+    "ladder_policy": "keep_first_tp_raise_later_targets_when_needed",
+    "middle_target_rule": "midpoint_between_first_and_last",
+    "fallback_last_gain": 1.0,
+    "resolution": "First TP is entry times 1.5. Last target is 28000 if strictly above first TP; otherwise entry times 2.0. Middle target is their midpoint. Local preparation only.",
+    "emergency_priority_fee_cap_usd": 0.08,
+    "anti_rug_window_seconds": 1.55,
+    "anti_rug_min_sell_sol": 1,
+    "anti_rug_sell_to_buy_ratio": 0,
+    "anti_rug_enabled": false,
+    "fee_conversion": "requires_fresh_SOL_USD_and_compute_unit_budget",
+    "fee_scope_pending": "priority_fee_or_total_fee_including_network_fee_and_retries"
+  },
+  "strategies": [
+    {
+      "id": "strong-pressure-8k",
+      "entry_min_market_cap_usd": 8000,
+      "min_buyers": 12,
+      "buyers_threshold_status": "relaxed_on_2026_11_03_at_user_request",
+      "pressure_ratio_proposal": 2.0,
+      "buy_volume_sol_proposal": 2.5,
+      "total_volume_usd_proposal": 1300,
+      "pressure_window_seconds_proposal": 8,
+      "desired_trade_interval_seconds": [60, 120],
+      "force_entries_to_hit_frequency": false
+    },
+    {
+      "id": "telegram-immediate",
+      "channels_from_existing_config": [
+        "Wagbocooks", "LegendsAlphas", "calledbyblakee",
+        "dextools_nitro", "cryptolistings"
+      ],
+      "backfill_old_messages": false,
+      "session_access_verified": false,
+      "buy_on_new_message_subject_to_shared_limits": true
+    },
+    {
+      "id": "first-block-four-buyers",
+      "min_distinct_buyers_in_creation_slot": 4,
+      "require_observed_creation_slot": true,
+      "first_block_volume_usd": 450,
+      "volume_assumption": "450 USD from the historical first-block snapshot; configurable in runtime YAML."
+    },
+    {
+      "id": "strength-21k",
+      "entry_min_market_cap_usd": 21000,
+      "require_observed_upward_crossing": true,
+      "pressure_ratio_proposal": 2.2,
+      "buy_volume_sol_proposal": 3.0,
+      "total_volume_usd_proposal": 1800,
+      "pressure_window_seconds_proposal": 8
+    }
+  ],
+  "callouts": {
+    "event": "confirmed_purchase",
+    "unique_intro_across_strategies_and_restarts": true,
+    "public_publishing_enabled": false,
+    "public_publishing_configured": true,
+    "publisher_entrypoint": "run_callout_publisher.py",
+    "publisher_session_status": "manual_setup_required",
+    "authorized_publisher_account": "AImemebot",
+    "publisher_profile": "https://pump.fun/profile/AImemebot",
+    "existing_queue": "trades/four_strategy_callouts.jsonl"
+  },
+  "learning": {
+    "separate_results_by_strategy": true,
+    "include_losers_and_open_positions_in_review": true,
+    "auto_modify_live_parameters": false,
+    "compare_entry_features_exit_path_costs_and_net_pnl": true
+  }
+}

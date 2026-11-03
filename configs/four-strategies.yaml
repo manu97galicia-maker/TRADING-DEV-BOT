@@ -1,0 +1,115 @@
+# Opt-in bundle, outside bots/ to avoid automatic discovery. Never run in tests.
+name: "FOUR STRATEGIES - SHARED WALLET"
+env_file: "../.env"
+rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
+wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
+private_key: "${SOLANA_PRIVATE_KEY}"
+enabled: false
+platform: pump_fun
+avisos_telegram: true
+trade:
+  nombre_estrategia: four-strategies
+  buy_amount: 0
+  fraccion_saldo: 0.18
+  fraccion_base: libre
+  min_reserve_sol: 0.03
+  max_posiciones: 3
+  buy_slippage: 0.15
+  sell_slippage: 0.25
+  sell_slippage_proteccion: 0.50
+  exit_strategy: tp_sl
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 0.50
+  stop_loss_percentage: 0.25
+  vender_todo_en_stop: true
+  stop_a_entrada_tras_tp: false
+  stop_al_tp_tras_tp: false
+  trailing_stop_percentage: 0
+  anti_rug_ratio: 0
+  anti_rug_seg: 1.55
+  anti_rug_min_sol: 1
+  max_hold_time: 0
+  price_check_interval: 1
+  pausar_compras: false
+  resumen_descartes_seg: 0
+compute_units:
+  buy: 200000
+  sell: 120000
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount: 10000
+  extra_percentage: 0.0
+  hard_cap: 5000000
+retries:
+  max_attempts: 1
+  wait_after_creation: 0
+  wait_after_buy: 0
+  wait_before_new_token: 0
+filters:
+  listener_type: logs
+  max_token_age: 0
+  paper_trade: false
+  yolo_mode: true
+  allow_mayhem: false
+  require_mayhem: false
+  ignorar_listas_de_devs: true
+  min_entry_mc: 0
+  max_entry_mc: 0
+  curva_96:
+    enabled: true
+    parar_tras_perdidas: 0
+    max_compras: 0
+  telegram_calls:
+    # Started by the shared coordinator, not a second independent task.
+    enabled: false
+    session_name: moontok_watcher
+    max_message_age_seconds: 30
+    non_interactive: true
+    normal_buy_amount: 0
+    nitro_buy_amount: 0
+    promoted_buy_amount: 0
+    channels: [Wagbocooks, LegendsAlphas, calledbyblakee, dextools_nitro, cryptolistings]
+    suffixes: [pump]
+    migrated_channels: []
+callouts:
+  enabled: false
+four_strategies:
+  enabled: true
+  expected_wallet: HGUXwmjHmqY75q4j9v5wfGZnzFQESnq2wZ2UPJrkg3Uk
+  database: estudios/four_strategies/runtime.sqlite3
+  callout_outbox: trades/four_strategy_callouts.jsonl
+  callout_account: AImemebot
+  callout_publication:
+    enabled: true
+    profile_directory: .pumpfun-callout-profile
+    state_database: estudios/four_strategies/callout-publications.sqlite3
+    max_age_seconds: 120
+    poll_interval_seconds: 2
+  exit:
+    stop_loss_fraction: 0.25
+    initial_tp_gain: 0.50
+    proposed_original_quantity_fractions: [0.50, 0.25, 0.25]
+    last_target_market_cap_usd: 28000
+    ladder_policy: keep_first_tp_raise_later_targets_when_needed
+    fallback_last_gain: 1.0
+  strategies:
+    strong-pressure-8k:
+      min_mc: 8000
+      min_buyers: 12
+      min_ratio: 2.0
+      min_buy_sol: 2.5
+      min_volume_usd: 1300
+    strength-21k:
+      min_buyers: 13
+      min_ratio: 2.2
+      min_buy_sol: 3.0
+      min_volume_usd: 1800
+    first-block-four-buyers:
+      min_buyers: 4
+      min_volume_usd: 450
+      max_age_seconds: 8
+node:
+  max_rps: 20
+cleanup:
+  mode: disabled

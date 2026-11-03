@@ -15,6 +15,7 @@ from core.wallet import Wallet
 from interfaces.core import AddressProvider, Platform, TokenInfo
 from platforms import get_platform_implementations
 from trading.base import Trader, TradeResult
+from trading.sell_precision import raw_sell_amount
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -329,7 +330,7 @@ class PlatformAwareBuyer(Trader):
                 max_retries=self.max_retries,
                 priority_fee=(
                     priority_fee_override
-                    if priority_fee_override
+                    if priority_fee_override is not None
                     else await self.priority_fee_manager.calculate_priority_fee(
                         priority_accounts
                     )
@@ -581,7 +582,7 @@ class PlatformAwareSeller(Trader):
 
             # Use pre-known amount and price (no RPC delay)
             token_balance_decimal = token_amount
-            token_balance = int(token_amount * 10**TOKEN_DECIMALS)
+            token_balance = raw_sell_amount(token_amount, TOKEN_DECIMALS)
             token_price_sol = token_price
 
             logger.info(f"Token balance: {token_balance_decimal:.6f}")
@@ -648,7 +649,7 @@ class PlatformAwareSeller(Trader):
                 max_retries=self.max_retries,
                 priority_fee=(
                     priority_fee_override
-                    if priority_fee_override
+                    if priority_fee_override is not None
                     else await self.priority_fee_manager.calculate_priority_fee(
                         priority_accounts
                     )
