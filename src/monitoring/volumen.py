@@ -48,6 +48,7 @@ _ops: dict[str, list[tuple[float, float, bool, str]]] = defaultdict(list)
 # bloque. Se mantiene separado de ``_ops`` para no cambiar el formato de los
 # contadores existentes.
 _first_slot: dict[str, int] = {}
+_last_slot: dict[str, int] = {}
 _first_slot_buys: dict[str, int] = defaultdict(int)
 
 #: Wallets distintas que compraron en el bloque de creacion, y SOL que
@@ -56,6 +57,16 @@ _first_slot_buys: dict[str, int] = defaultdict(int)
 #: antes que nadie y soltarlo despues sobre quien llegue.
 _first_slot_wallets: dict[str, set[str]] = defaultdict(set)
 _first_slot_sol: dict[str, float] = defaultdict(float)
+
+# Primer slot posterior al de creacion. Se guarda por separado para poder
+# probar, en paper, si la demanda continua en el bloque siguiente en vez de
+# confundirla con las cuatro compras del nacimiento.
+_second_slot: dict[str, int] = {}
+_second_slot_buy_sol: dict[str, float] = defaultdict(float)
+_second_slot_sell_sol: dict[str, float] = defaultdict(float)
+_second_slot_buyers: dict[str, set[str]] = defaultdict(set)
+_second_slot_buys: dict[str, int] = defaultdict(int)
+_second_slot_sells: dict[str, int] = defaultdict(int)
 
 #: mint -> (momento, tokens_reales, sol_reales, tope_tokens_visto).
 #:
@@ -299,9 +310,16 @@ def _olvidar(mint: str) -> None:
     uno olvidado aqui es una fuga de memoria que solo se nota tras dias."""
     _ops.pop(mint, None)
     _first_slot.pop(mint, None)
+    _last_slot.pop(mint, None)
     _first_slot_buys.pop(mint, None)
     _first_slot_wallets.pop(mint, None)
     _first_slot_sol.pop(mint, None)
+    _second_slot.pop(mint, None)
+    _second_slot_buy_sol.pop(mint, None)
+    _second_slot_sell_sol.pop(mint, None)
+    _second_slot_buyers.pop(mint, None)
+    _second_slot_buys.pop(mint, None)
+    _second_slot_sells.pop(mint, None)
     _curva.pop(mint, None)
     # Olvidar el precio no deja ninguna posicion a ciegas: `precio_en_vivo`
     # devuelve None y quien lo use vuelve a preguntar al nodo.
@@ -325,6 +343,7 @@ def registrar_bloque_inicial(mint: str, slot: int | None) -> None:
     primero = _first_slot.get(mint)
     if primero is None or bloque < primero:
         _first_slot[mint] = bloque
+        _last_slot[mint] = bloque
         _first_slot_buys[mint] = 0
         _first_slot_wallets[mint] = set()
         _first_slot_sol[mint] = 0.0
@@ -406,6 +425,7 @@ def _anotar_primer_bloque(
 ) -> None:
     """Acumula quien compro en el bloque de creacion, que es donde se ve el
     bundle: muchas carteras entrando a la vez que nace la moneda."""
+    _last_slot[mint] = max(bloque, _last_slot.get(mint, bloque))
     primero = _first_slot.get(mint)
     if primero is None or bloque < primero:
         _first_slot[mint] = bloque
@@ -413,12 +433,43 @@ def _anotar_primer_bloque(
         _first_slot_wallets[mint] = {wallet} if es_compra and wallet else set()
         _first_slot_sol[mint] = sol if es_compra else 0.0
         return
-    if bloque != primero or not es_compra:
+    if bloque != primero:
+        segundo = _second_slot.get(mint)
+        if segundo is None:
+            _second_slot[mint] = bloque
+            segundo = bloque
+        # Solo interesa el primer bloque posterior, no todos los siguientes.
+        if bloque == segundo:
+            if es_compra:
+                _second_slot_buys[mint] += 1
+                _second_slot_buy_sol[mint] += sol
+                if wallet:
+                    _second_slot_buyers[mint].add(wallet)
+            else:
+                _second_slot_sells[mint] += 1
+                _second_slot_sell_sol[mint] += sol
+        return
+    if not es_compra:
         return
     _first_slot_buys[mint] += 1
     _first_slot_sol[mint] += sol
     if wallet:
         _first_slot_wallets[mint].add(wallet)
+
+
+def metricas_segundo_bloque(mint: str) -> dict[str, float | int]:
+    """Flujo observado exclusivamente en el primer slot tras la creacion."""
+    compra = float(_second_slot_buy_sol.get(mint, 0.0))
+    venta = float(_second_slot_sell_sol.get(mint, 0.0))
+    return {
+        "observado": int(mint in _second_slot),
+        "compras": int(_second_slot_buys.get(mint, 0)),
+        "ventas": int(_second_slot_sells.get(mint, 0)),
+        "compradores": len(_second_slot_buyers.get(mint) or ()),
+        "compra_sol": compra,
+        "venta_sol": venta,
+        "neto_sol": compra - venta,
+    }
 
 
 #: Retraso maximo que se considera creible. Por encima no es retraso: es un
@@ -520,6 +571,13 @@ def compras(mint: str) -> int:
 def compras_primer_bloque(mint: str) -> int:
     """Numero de compras vistas en el slot donde se creo la moneda."""
     return int(_first_slot_buys.get(mint, 0))
+
+
+def en_bloque_posterior_al_inicial(mint: str) -> bool:
+    """True tras observar una operación en un slot posterior al de creación."""
+    primero = _first_slot.get(mint)
+    ultimo = _last_slot.get(mint)
+    return primero is not None and ultimo is not None and ultimo > primero
 
 
 def precio_en_vivo(mint: str, max_edad: float) -> float | None:

@@ -1,0 +1,20 @@
+[Unit]
+Description=Pump first-block 4TX 375-900 USD experiment (paper only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/ai-bot
+Environment=PYTHONPATH=/root/ai-bot/src
+ExecStart=/root/ai-bot/.venv/bin/python -u -c "from bot_runner import run_bot_process; run_bot_process('/root/ai-bot/bots/bot-paper-bloque4-20usd.yaml')"
+Restart=on-failure
+RestartSec=5
+KillMode=control-group
+# Cinturón de seguridad: incluso un arranque directo termina tras una hora.
+# El lanzador interactivo puede sustituirlo temporalmente por otra duración.
+RuntimeMaxSec=3600
+
+[Install]
+WantedBy=multi-user.target
