@@ -22,6 +22,16 @@ No exige MC, concentración, historial de variaciones de precio ni entrar en
 un bloque dos/tres concreto. Observa nuevas creaciones y espera a verificar su historial
 y a preparar una curva comprable; no compra monedas ya migradas a un pool.
 
+La preparación consulta tanto la curva como la cuenta del token con
+`commitment: processed`, en paralelo, para no esperar la finalización de una
+creación recién observada. El colector del perfil de historial no consulta
+SQLite por cada candidato y evento: las pausas y el ROI se verifican al entrar
+en el manejador y de nuevo en la reserva atómica antes de enviar.
+La verificación del historial del dev, una conexión operativa y la inclusión
+por la red siguen siendo necesarias; no se garantiza una latencia fija ni
+ejecución instantánea. Instalar esta mejora requiere un reinicio manual para
+cargarla en un proceso que ya esté abierto.
+
 El presupuesto de nuevas entradas del dev es el menor entre el 80% del SOL
 líquido confirmado y **20 USD**, incluidos margen y gastos estimados.
 `max_entry_budget_usd: 20.0` se convierte a SOL con una referencia reciente;

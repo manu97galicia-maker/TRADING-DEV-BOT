@@ -560,9 +560,14 @@ class FourStrategyTrader(legacy.UniversalTrader):
         if self.second_policy.get("enabled"):
             from monitoring.second_block_source import SecondBlockSource
 
+            # History observation must not open SQLite for every candidate/slot.
+            # Actual entries still check book.can_admit in _handle_token, then
+            # recheck pause/ROI atomically inside Book.reserve before submission.
+            allowed = (lambda: True) if creator_history_only(self.second_policy) else (
+                lambda: not self.book.paused(STRATEGY_ID))
             self.second_source = SecondBlockSource(self.second_policy, self.rpc,
                 self.platform_implementations, self.solana_client, lambda: self.sol_usd,
-                self.reference_age, lambda: not self.book.paused(STRATEGY_ID), self._on_dexpaid_token)
+                self.reference_age, allowed, self._on_dexpaid_token)
             if creator_history_only(self.second_policy):
                 logger.info("DEV HISTORY ONLY enabled: >=1%% verified migrations, %.0f%% SOL budget; buy priority $0.07 / all exits $0.03",
                             self.second_policy["balance_fraction"]*100)
