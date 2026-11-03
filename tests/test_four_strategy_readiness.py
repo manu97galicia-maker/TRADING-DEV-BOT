@@ -72,7 +72,7 @@ class ReadinessTests(unittest.TestCase):
     def test_preflight_method_allowlist_cannot_sign_or_send(self) -> None:
         self.assertEqual(READ_METHODS, {
             "getHealth", "getGenesisHash", "getBalance", "getTokenLargestAccounts",
-            "getMultipleAccounts", "getTokenAccountsByOwner",
+            "getMultipleAccounts", "getTokenAccountsByOwner", "getSignaturesForAddress",
         })
 
     def test_mainnet_identifier_is_a_complete_32_byte_hash(self) -> None:

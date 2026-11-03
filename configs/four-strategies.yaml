@@ -29,6 +29,8 @@ trade:
   anti_rug_seg: 1.55
   anti_rug_min_sol: 1
   max_hold_time: 0
+  # Only an underwater, unmigrated curve with verified inactivity may trigger.
+  sin_volumen_bajo_entrada_seg: 300
   price_check_interval: 1
   pausar_compras: false
   resumen_descartes_seg: 0

@@ -26,6 +26,7 @@ READ_METHODS = frozenset(
         "getTokenLargestAccounts",
         "getMultipleAccounts",
         "getTokenAccountsByOwner",
+        "getSignaturesForAddress",
     }
 )
 USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
@@ -72,6 +73,13 @@ def inspect_local(plan: dict, config_path: Path) -> dict:
         "enabled": bool(plan.get("enabled")),
         "checks": [],
     }
+    _record(
+        report, "private_purchase_alerts",
+        "pass" if env.get("TELEGRAM_BOT_TOKEN") and env.get("TELEGRAM_CHAT_ID") else "warning",
+        "Bot y destinatario de Telegram configurados; entrega aún no comprobada"
+        if env.get("TELEGRAM_BOT_TOKEN") and env.get("TELEGRAM_CHAT_ID")
+        else "Falta TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID para enviar cada compra",
+    )
     missing = [
         name
         for name in ("aiohttp", "websockets", "solders", "telethon")
@@ -288,6 +296,18 @@ async def inspect_online(plan: dict, config_path: Path) -> dict:  # noqa: C901, 
                     "fail",
                     f"Consulta de concentración no disponible: {type(error).__name__}",
                 )
+        if float(plan["trade"].get("sin_volumen_bajo_entrada_seg", 0)) > 0:
+            try:
+                history = await rpc(
+                    "getSignaturesForAddress",
+                    [plan["four_strategies"]["expected_wallet"], {"commitment": "confirmed", "limit": 1}],
+                )
+                _record(
+                    report, "inactivity_history_rpc", "pass" if isinstance(history, list) else "fail",
+                    "Consulta de historial disponible; esta prueba no afirma ausencia de volumen",
+                )
+            except Exception as error:
+                _record(report, "inactivity_history_rpc", "fail", f"Historial no disponible: {type(error).__name__}")
         try:
             async with websockets.connect(
                 env["SOLANA_NODE_WSS_ENDPOINT"], open_timeout=12

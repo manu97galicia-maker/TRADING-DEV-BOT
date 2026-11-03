@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -25,6 +26,9 @@ def check_plan(path: Path) -> dict:
 
     plan = yaml.safe_load(path.read_text(encoding="utf-8"))
     trade = plan["trade"]
+    inactivity = float(trade.get("sin_volumen_bajo_entrada_seg", 0))
+    if not math.isfinite(inactivity) or inactivity < 0:
+        raise ValueError("Inactivity duration must be finite and nonnegative")
     settings = plan["four_strategies"]
     validate_policy(settings["entry_protection"])
     if trade["max_posiciones"] != 3 or trade["fraccion_saldo"] != 0.20:

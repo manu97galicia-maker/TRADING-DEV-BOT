@@ -62,8 +62,9 @@ class StartupTests(unittest.IsolatedAsyncioTestCase):
                 self.start = AsyncMock()
                 captured["trader"] = self
 
-            def configure_four(self, settings: dict) -> None:
+            def configure_four(self, settings: dict, *, no_volume_exit_seconds: float = 0) -> None:
                 captured["settings"] = settings
+                captured["inactivity"] = no_volume_exit_seconds
 
         with (
             patch.object(bot_runner, "load_bot_config", return_value=plan),
@@ -95,6 +96,7 @@ class StartupTests(unittest.IsolatedAsyncioTestCase):
         captured["trader"].start.assert_awaited_once()
         self.assertEqual(captured["kwargs"]["fraccion_saldo"], 0.20)
         self.assertEqual(captured["settings"], plan["four_strategies"])
+        self.assertEqual(captured["inactivity"], 300)
         self.assertIs(captured["kwargs"]["paper_trade"], False)
 
 

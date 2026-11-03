@@ -30,6 +30,7 @@ from trading.four_strategy_entry_guard import (
     concentration_snapshot,
     validate_policy,
 )
+from trading.four_strategy_inactivity import fresh_inactivity, inactive_curve_evidence
 from trading.review_exit_ladder import build_review_ladder
 from trading.strategy_loss_guard import (
     priority_fee_cap_lamports,
@@ -190,7 +191,13 @@ class FourStrategyTrader(legacy.UniversalTrader):
     def _ultimo_cobro(self, value: float) -> None:
         _PROCEEDS.set(value)
 
-    def configure_four(self, settings: dict) -> None:
+    def configure_four(self, settings: dict, *, no_volume_exit_seconds: float = 0) -> None:
+        if not math.isfinite(no_volume_exit_seconds) or no_volume_exit_seconds < 0:
+            raise ValueError("Inactivity exit requires a nonnegative finite duration")
+        self.no_volume_exit_seconds = no_volume_exit_seconds
+        self._inactive_exit_candidates: dict[str, dict] = {}
+        self._inactive_exit_checked: dict[str, float] = {}
+        self._purchase_notices: set[str] = set()
         validate_policy(settings["entry_protection"])
         if str(self.wallet.pubkey) != settings["expected_wallet"]:
             raise ValueError(
@@ -532,21 +539,45 @@ class FourStrategyTrader(legacy.UniversalTrader):
         buy_reason: str | None = None,
         **kwargs: object,
     ) -> None:
-        # Use the standard confirmed-buy path, but let this runtime queue its
-        # own strategy identity instead of the generic bundle name.
-        from monitoring.confirmed_callouts import schedule_confirmed_callout
-
-        schedule_confirmed_callout(
-            token_info.name or token_info.symbol,
-            str(token_info.mint),
-            str(buy_result.tx_signature or ""),
-            outbox=Path(self.four["callout_outbox"]),
-            strategy_name=token_info.additional_data["four_strategy_id"],
-            publisher_account=self.four.get("callout_account", ""),
-        )
+        # Start exits immediately; optional labels/Telegram run separately.
+        token_info.additional_data["four_purchase_notice"] = True
+        signature = str(buy_result.tx_signature or "")
+        if signature and signature not in self._purchase_notices:
+            self._purchase_notices.add(signature)
+            task = asyncio.create_task(self._notify_four_purchase(token_info, buy_result))
+            self._four_tasks.add(task)
+            task.add_done_callback(self._four_tasks.discard)
         await super()._handle_successful_buy(
             token_info, buy_result, buy_reason, **kwargs
         )
+
+    async def _notify_four_purchase(self, token: object, result: TradeResult) -> None:
+        from monitoring.confirmed_callouts import schedule_confirmed_callout
+        from monitoring.four_strategy_notifications import purchase_message, token_labels
+        from monitoring.notifier import notify
+
+        try:
+            token.name, token.symbol = await token_labels(token, self.rpc)
+            position = next(
+                (p for p in self.book.positions() if p["mint"] == str(token.mint)), None
+            )
+            details = json.loads(position["details"]) if position else {
+                "features": token.additional_data.get("learning_entry", {}),
+                "entry_sol_usd": self.sol_usd,
+            }
+            if position:
+                self.update_details(position["nonce"], {"name": token.name, "symbol": token.symbol})
+            notify(purchase_message(token, result, details, self.four["exit"]), tipo="compra")
+            schedule_confirmed_callout(
+                token.name, str(token.mint), str(result.tx_signature),
+                outbox=Path(self.four["callout_outbox"]),
+                strategy_name=token.additional_data["four_strategy_id"],
+                publisher_account=self.four.get("callout_account", ""),
+            )
+        except asyncio.CancelledError:
+            raise
+        except Exception as error:
+            logger.warning("Purchase notice unavailable (%s)", type(error).__name__)
 
     async def _reanudar_posiciones(self) -> None:
         for position in self.book.positions():
@@ -648,6 +679,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
                 (p for p in self.book.positions() if p["mint"] == mint), None
             )
             if position is None:
+                getattr(self, "_inactive_exit_candidates", {}).pop(mint, None)
+                getattr(self, "_inactive_exit_checked", {}).pop(mint, None)
                 self._clear_open_position(mint)
                 return
             try:
@@ -702,16 +735,25 @@ class FourStrategyTrader(legacy.UniversalTrader):
                         sold >= self.anti_rug_min_sol
                         and sold > bought * self.anti_rug_ratio
                     )
-                stopping = (
-                    details.get("stopping", False) or price <= entry * 0.75 or rug
+                inactive = price < entry and fresh_inactivity(
+                    getattr(self, "_inactive_exit_candidates", {}).get(mint),
+                    time.time(), getattr(self, "no_volume_exit_seconds", 0),
                 )
+                stopping = details.get("stopping", False) or price <= entry * 0.75 or rug or inactive
                 if stopping:
-                    self.update_details(position["nonce"], {"stopping": True})
+                    reason = details.get("stopping_reason") or (
+                        "anti_rug" if rug else "stop_loss" if price <= entry * 0.75
+                        else "muerta_sin_volumen" if inactive else "stop_loss"
+                    )
+                    changes = {"stopping": True, "stopping_reason": reason}
+                    if inactive:
+                        changes["inactivity_exit_evidence"] = self._inactive_exit_candidates[mint]
+                    self.update_details(position["nonce"], changes)
                     await self._sell_amount(
                         token,
                         remaining,
                         price,
-                        "anti_rug" if rug else "stop_loss",
+                        reason,
                         full_exit=True,
                     )
                 else:
@@ -915,6 +957,40 @@ class FourStrategyTrader(legacy.UniversalTrader):
             for position in self.book.positions():
                 try:
                     await self.audit_position(position)
+                    await self.refresh_inactivity(position)
                 except Exception as error:
                     logger.warning("Closure audit pending (%s)", type(error).__name__)
             await asyncio.sleep(5)
+
+    async def refresh_inactivity(self, position: dict) -> None:
+        """Probe in the audit task so slow history reads never block TP/SL."""
+        seconds = self.no_volume_exit_seconds
+        mint = position["mint"]
+        now = time.time()
+        if seconds <= 0 or not seconds <= now - position["created"]:
+            return
+        if now - self._inactive_exit_checked.get(mint, 0) < 15:
+            return
+        self._inactive_exit_checked[mint] = now
+        self._inactive_exit_candidates.pop(mint, None)
+        details = json.loads(position["details"])
+        entry = float(details.get("entry_price") or 0)
+        derive_curve = self.platform_implementations.address_provider.derive_pool_address
+        # Resolve the same verified curve PDA used by the platform, not a DEX feed.
+        from solders.pubkey import Pubkey
+
+        curve = derive_curve(Pubkey.from_string(mint))
+        if entry <= 0:
+            return
+        try:
+            evidence = await asyncio.wait_for(
+                inactive_curve_evidence(
+                    curve, entry, seconds, self.rpc, self.platform_implementations.curve_manager
+                ), timeout=3,
+            )
+            if evidence:
+                self._inactive_exit_candidates[mint] = evidence
+        except asyncio.CancelledError:
+            raise
+        except Exception as error:
+            logger.debug("Inactivity evidence unavailable (%s)", type(error).__name__)
