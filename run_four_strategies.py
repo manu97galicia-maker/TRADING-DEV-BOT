@@ -23,6 +23,7 @@ def check_plan(path: Path) -> dict:
     """Validate explicit shared risk settings without loading credentials."""
     from trading.four_strategy_entry_guard import validate_policy
     from trading.review_exit_ladder import build_review_ladder
+    from trading.second_block_policy import load_second_policy
 
     plan = yaml.safe_load(path.read_text(encoding="utf-8"))
     trade = plan["trade"]
@@ -53,6 +54,7 @@ def check_plan(path: Path) -> dict:
             raise ValueError("Positive demand thresholds are required")
     build_review_ladder(8000, settings["exit"])
     build_review_ladder(21000, settings["exit"])
+    load_second_policy(path, plan)
     return plan
 
 
@@ -99,6 +101,9 @@ def main() -> None:
             raise SystemExit(2)
         return
     if not args.run:
+        from trading.second_block_policy import load_second_policy
+
+        second = load_second_policy(args.config, plan)
         print(
             json.dumps(
                 {
@@ -112,6 +117,9 @@ def main() -> None:
                     "entry_fraction_inclusive": plan["trade"]["fraccion_saldo"],
                     "initial_stop": 0.25,
                     "enabled": plan["enabled"],
+                    "second_block_dev": {"enabled": second["enabled"],
+                        "entry_fraction_inclusive": second.get("balance_fraction"),
+                        "exit_definition": (second.get("exit") or {}).get("first_sale_mode", "absent")},
                 },
                 indent=2,
             )

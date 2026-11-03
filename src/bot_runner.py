@@ -422,9 +422,12 @@ async def start_bot(config_path: str):
         # respecto al momento de arranque. El check es cada 60 s y es una
         # tarea de fondo: no bloquea el trading en ningún caso.
         if (cfg.get("four_strategies") or {}).get("enabled"):
+            from trading.second_block_policy import load_second_policy  # noqa: PLC0415 -- optional bundle only
+
             trader.configure_four(
                 cfg["four_strategies"],
                 no_volume_exit_seconds=float(cfg["trade"].get("sin_volumen_bajo_entrada_seg", 0)),
+                second_block_policy=load_second_policy(Path(config_path), cfg),
             )
         _scale_task = (
             asyncio.create_task(_auto_scale(trader))

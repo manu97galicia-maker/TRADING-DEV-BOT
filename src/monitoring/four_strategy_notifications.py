@@ -6,7 +6,7 @@ import asyncio
 import math
 
 from monitoring.notifier import build_purchase_notification
-from trading.review_exit_ladder import build_review_ladder
+from trading.second_block_policy import STRATEGY_ID, position_exit_plan
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -22,6 +22,14 @@ def entry_reason(features: dict) -> str:
         return (
             f"Primer bloque: {int(block.get('buyers', 0))} compradores distintos, "
             f"{float(block.get('buy_sol', 0)):.3f} SOL comprados"
+        )
+    if strategy == STRATEGY_ID:
+        history = features.get("creator_history") or {}
+        return (
+            f"Segundo bloque observado: {int(features.get('buyers', 0))} wallets compradoras "
+            f"en el primero, volumen ${float(features.get('volume_usd', 0)):,.0f}; "
+            f"dev con {int(history.get('migrations', 0))}/{int(history.get('launches', 0))} "
+            "migraciones PumpSwap verificadas (no garantiza inclusión en ese bloque)"
         )
     label = "Cruce alcista de 21K" if strategy == "strength-21k" else "Presión compradora desde 8K"
     return (
@@ -62,7 +70,7 @@ def purchase_message(token: object, result: object, details: dict, exits: dict) 
     features = details.get("features") or {}
     sol_usd = float(details.get("entry_sol_usd") or 0)
     mc = float(result.price or 0) * 1e9 * sol_usd
-    tiers = build_review_ladder(mc, exits) if math.isfinite(mc) and mc > 0 else []
+    tiers, stop = position_exit_plan({**details, "entry_price": float(result.price or 0)}, exits) if math.isfinite(mc) and mc > 0 else ([], float(exits["stop_loss_fraction"]))
     return build_purchase_notification(
         symbol=token.symbol,
         name=token.name,
@@ -71,7 +79,7 @@ def purchase_message(token: object, result: object, details: dict, exits: dict) 
         source_data={"acquisition_source": entry_reason(features)},
         market_cap_usd=mc,
         strategy=str(features.get("strategy") or "four-strategies"),
-        stop_loss_pct=25,
+        stop_loss_pct=stop*100,
         entry_price_sol=float(result.price or 0),
         take_profit_tiers=[(tier.gain_from_entry, tier.sell_original_fraction) for tier in tiers],
     )

@@ -1,0 +1,26 @@
+# Fifth strategy. Disabled until the first sale and the meaning of "12" are confirmed.
+enabled: false
+strategy_id: dev-second-block
+balance_fraction: 0.23
+max_entry_mc_usd: 4200
+min_creator_migration_fraction: 0.01
+min_first_block_volume_usd: 275
+min_distinct_first_block_buyers: 2
+buy_priority_fee_cap_usd: 0.06
+max_slot_age_seconds: 0.6
+creator_cache_seconds: 600
+history_timeout_seconds: 12
+history_max_pages: 64
+history_page_size: 10000
+history_max_accounts: 10000
+require_creator_is_user: true
+exit:
+  kind: second-block-capital-recovery
+  initial_gain: 0.35
+  later_step_gain: 0.40
+  later_sales: 3
+  # Pending: recover_capital, recover_capital_plus_profit, or original_fraction.
+  first_sale_mode: pending
+  recovery_profit_fraction: null
+  first_sale_original_fraction: null
+  stop_loss_fraction: null

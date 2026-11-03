@@ -20,6 +20,7 @@ from solders.pubkey import Pubkey
 from solders.transaction import Transaction
 
 from core.rpc_rate_limiter import TokenBucketRateLimiter
+from trading.transaction_observer import ENTRY_WINDOW, PRIORITY_CAP, check_entry_window
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -218,7 +219,7 @@ class SolanaClient:
         response = await client.get_latest_blockhash(commitment="processed")
         return response.value.blockhash
 
-    async def build_and_send_transaction(
+    async def build_and_send_transaction(  # noqa: C901 -- receipt persistence and timed-entry expiry at each await boundary
         self,
         instructions: list[Instruction],
         signer_keypair: Keypair,
@@ -251,8 +252,6 @@ class SolanaClient:
         )
 
         # Add compute budget instructions if applicable
-        from trading.transaction_observer import PRIORITY_CAP
-
         priority_cap = PRIORITY_CAP.get()
         if priority_cap is not None:
             actual_limit = compute_unit_limit if compute_unit_limit is not None else 85_000
@@ -281,19 +280,26 @@ class SolanaClient:
             instructions = fee_instructions + instructions
 
         recent_blockhash = await self.get_cached_blockhash()
+        check_entry_window()
         message = Message(instructions, signer_keypair.pubkey())
         transaction = Transaction([signer_keypair], message, recent_blockhash)
 
         from trading.transaction_observer import observe
 
-        observe("signed", str(transaction.signatures[0]))
+        timed_entry = ENTRY_WINDOW.get() is not None
+        if not timed_entry:
+            observe("signed", str(transaction.signatures[0]))
 
-        for attempt in range(max_retries):
+        for attempt in range(1 if timed_entry else max_retries):
             try:
                 await self._rate_limiter.acquire()
+                check_entry_window()
                 tx_opts = TxOpts(
-                    skip_preflight=skip_preflight, preflight_commitment=Processed
+                    skip_preflight=skip_preflight, preflight_commitment=Processed,
+                    max_retries=0 if timed_entry else None,
                 )
+                if timed_entry:
+                    observe("signed", str(transaction.signatures[0]))
                 response = await client.send_transaction(transaction, tx_opts)
                 return response.value
 
@@ -305,7 +311,7 @@ class SolanaClient:
                     e.args[0], SendTransactionPreflightFailureMessage
                 ):
                     observe("preflight_rejected", str(transaction.signatures[0]))
-                if attempt == max_retries - 1:
+                if timed_entry or attempt == max_retries - 1:
                     logger.exception(
                         f"Failed to send transaction after {max_retries} attempts"
                     )

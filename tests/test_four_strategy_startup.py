@@ -62,12 +62,15 @@ class StartupTests(unittest.IsolatedAsyncioTestCase):
                 self.start = AsyncMock()
                 captured["trader"] = self
 
-            def configure_four(self, settings: dict, *, no_volume_exit_seconds: float = 0) -> None:
+            def configure_four(self, settings: dict, *, no_volume_exit_seconds: float = 0,
+                               second_block_policy: dict | None = None) -> None:
                 captured["settings"] = settings
                 captured["inactivity"] = no_volume_exit_seconds
+                captured["second_policy"] = second_block_policy
 
         with (
             patch.object(bot_runner, "load_bot_config", return_value=plan),
+            patch("trading.second_block_policy.load_second_policy", return_value={"enabled": False}),
             patch.object(bot_runner, "setup_logging"),
             patch.object(bot_runner, "print_config_summary"),
             patch.object(

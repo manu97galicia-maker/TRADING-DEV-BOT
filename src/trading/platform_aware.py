@@ -16,6 +16,7 @@ from interfaces.core import AddressProvider, Platform, TokenInfo
 from platforms import get_platform_implementations
 from trading.base import Trader, TradeResult
 from trading.sell_precision import raw_sell_amount
+from trading.transaction_observer import capped_buy_cost_lamports
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -279,6 +280,10 @@ class PlatformAwareBuyer(Trader):
 
             # Calculate maximum SOL to spend with slippage
             max_amount_lamports = int(amount_lamports * (1 + self.slippage))
+            if token_info.platform == Platform.PUMP_FUN:
+                max_amount_lamports = capped_buy_cost_lamports(
+                    max_amount_lamports, minimum_token_amount_raw
+                )
 
             # Build buy instructions using platform-specific builder
             instructions = await instruction_builder.build_buy_instruction(

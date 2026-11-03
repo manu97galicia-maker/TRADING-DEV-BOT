@@ -91,6 +91,7 @@ class EvidenceTests(unittest.IsolatedAsyncioTestCase):
         book = SimpleNamespace(positions=lambda: [position], signatures=lambda _nonce: [])
         runtime = SimpleNamespace(
             book=book, four={"exit": {
+                "stop_loss_fraction": .25,
                 "initial_tp_gain": .5, "last_target_market_cap_usd": 28000,
                 "fallback_last_gain": 1, "proposed_original_quantity_fractions": [.5,.25,.25],
                 "ladder_policy": "keep_first_tp_raise_later_targets_when_needed",

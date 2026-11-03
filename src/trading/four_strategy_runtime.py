@@ -31,12 +31,23 @@ from trading.four_strategy_entry_guard import (
     validate_policy,
 )
 from trading.four_strategy_inactivity import fresh_inactivity, inactive_curve_evidence
-from trading.review_exit_ladder import build_review_ladder
+from trading.second_block_policy import (
+    STRATEGY_ID,
+    position_exit_plan,
+    recovery_allocations,
+    validate_second_policy,
+)
 from trading.strategy_loss_guard import (
     priority_fee_cap_lamports,
     priority_price_micro_lamports,
 )
-from trading.transaction_observer import OBSERVER, PRIORITY_CAP, SUBMISSIONS
+from trading.transaction_observer import (
+    BUY_PRICE_CEILING,
+    ENTRY_WINDOW,
+    OBSERVER,
+    PRIORITY_CAP,
+    SUBMISSIONS,
+)
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -51,7 +62,7 @@ class SharedBuyer:
     def __init__(self, runtime: FourStrategyTrader, buyer: object) -> None:
         self.runtime, self.buyer = runtime, buyer
 
-    async def execute(  # noqa: C901, PLR0911, PLR0912 -- reject each invalid state before signing
+    async def execute(  # noqa: C901, PLR0911, PLR0912, PLR0915 -- reject each invalid state before signing
         self,
         token_info: object,
         amount_sol: float | None = None,
@@ -84,6 +95,15 @@ class SharedBuyer:
             return TradeResult(
                 success=False, error_message="Entry expired while reading balance"
             )
+        second = signal["strategy"] == STRATEGY_ID
+        priority_cap = None
+        if second:
+            policy = getattr(runtime, "second_policy", {"enabled": False})
+            if not policy.get("enabled"):
+                return TradeResult(success=False, error_message="Second-block strategy is disabled")
+            validate_second_policy(policy)
+            priority_cap = priority_fee_cap_lamports(runtime.sol_usd,
+                quote_age_seconds=runtime.reference_age(), cap_usd=policy["buy_priority_fee_cap_usd"])
         reservation = runtime.book.reserve(
             str(token_info.mint),
             signal["strategy"],
@@ -91,9 +111,9 @@ class SharedBuyer:
             int(balance["context"]["slot"]),
             runtime.min_reserve_lamports,
             runtime.buy_slippage,
-            runtime._fee_headroom_lamports,
+            runtime._fee_headroom_lamports + (priority_cap or 0),
             signal,
-            fraction=runtime.fraccion_saldo,
+            fraction=policy["balance_fraction"] if second else runtime.fraccion_saldo,
         )
         if not reservation:
             return TradeResult(
@@ -101,6 +121,11 @@ class SharedBuyer:
                 error_message="Shared slots, budget or strategy pause blocks entry",
             )
         nonce = reservation["nonce"]
+        if second:
+            # Persist before any possible signed submission; recovery after an
+            # unknown acknowledgement must not fall back to the old exits.
+            runtime.update_details(nonce, {"entry_exit_policy": policy["exit"],
+                "entry_policy_id": STRATEGY_ID, "target_slot": signal["target_slot"]})
         token_info.additional_data = {
             **(token_info.additional_data or {}),
             "four_strategy_id": signal["strategy"],
@@ -118,7 +143,8 @@ class SharedBuyer:
                 runtime.update_details(nonce, {"entry_protection": evidence})
             chain_mc = float(state.get("price_per_token") or 0) * 1e9 * runtime.sol_usd
             bounds_ok = (
-                8000 <= chain_mc < 21000
+                0 < chain_mc < policy["max_entry_mc_usd"]
+                if second else 8000 <= chain_mc < 21000
                 if signal["strategy"] == "strong-pressure-8k"
                 else chain_mc >= 21000
                 if signal["strategy"] == "strength-21k"
@@ -130,6 +156,7 @@ class SharedBuyer:
                 or not bounds_ok
                 or runtime.reference_age() > 30
                 or not runtime.current_signal(token_info)
+                or (second and str(state.get("creator")) != signal["creator"])
             ):
                 runtime.book.cancel_unsubmitted(nonce)
                 return TradeResult(
@@ -148,7 +175,20 @@ class SharedBuyer:
                 success=False, error_message="Missing shared spend reservation"
             )
         observer_token = OBSERVER.set(runtime.receipt_writer(nonce, "buy"))
+        cap_token = window_token = price_token = None
         try:
+            if second:
+                priority_cap = min(priority_cap, priority_fee_cap_lamports(runtime.sol_usd,
+                    quote_age_seconds=runtime.reference_age(), cap_usd=policy["buy_priority_fee_cap_usd"]))
+                priority_fee_override = priority_price_micro_lamports(
+                    priority_cap, runtime.compute_units.get("buy", 200000))
+                cap_token = PRIORITY_CAP.set(priority_cap)
+                price_token = BUY_PRICE_CEILING.set(policy["max_entry_mc_usd"] / (runtime.sol_usd*1e9))
+                target_slot = signal["target_slot"]
+                def in_window() -> bool:
+                    latest = runtime.current_signal(token_info)
+                    return bool(latest and latest.get("target_slot") == target_slot)
+                window_token = ENTRY_WINDOW.set(in_window)
             result = await self.buyer.execute(
                 token_info,
                 amount_sol=reservation["amount_sol"],
@@ -159,6 +199,12 @@ class SharedBuyer:
             raise
         finally:
             OBSERVER.reset(observer_token)
+            if window_token is not None:
+                ENTRY_WINDOW.reset(window_token)
+            if cap_token is not None:
+                PRIORITY_CAP.reset(cap_token)
+            if price_token is not None:
+                BUY_PRICE_CEILING.reset(price_token)
         # A failed/unknown submission remains occupied until reconciled, never
         # released on a timeout or a missing acknowledgement.
         if result.tx_signature and str(result.tx_signature) not in {
@@ -192,10 +238,14 @@ class FourStrategyTrader(legacy.UniversalTrader):
     def _ultimo_cobro(self, value: float) -> None:
         _PROCEEDS.set(value)
 
-    def configure_four(self, settings: dict, *, no_volume_exit_seconds: float = 0) -> None:
+    def configure_four(self, settings: dict, *, no_volume_exit_seconds: float = 0,
+                       second_block_policy: dict | None = None) -> None:
         if not math.isfinite(no_volume_exit_seconds) or no_volume_exit_seconds < 0:
             raise ValueError("Inactivity exit requires a nonnegative finite duration")
         self.no_volume_exit_seconds = no_volume_exit_seconds
+        self.second_policy = second_block_policy or {"enabled": False}
+        validate_second_policy(self.second_policy)
+        self.second_source = None
         self._inactive_exit_candidates: dict[str, dict] = {}
         self._inactive_exit_checked: dict[str, float] = {}
         self._purchase_notices: set[str] = set()
@@ -283,18 +333,26 @@ class FourStrategyTrader(legacy.UniversalTrader):
             raise EntryRiskRejected("unreadable_entry_risk_evidence") from error
 
     def _cartel_de_configuracion(self) -> str:
-        return (
+        message = (
             f"CONFIG ACTIVA · FOUR STRATEGIES · {self.fraccion_saldo:.0%} del SOL liquido confirmado "
             "por presupuesto, incluidos gastos · 3 plazas compartidas · "
             "presion 8K / Telegram / primer bloque / cruce 21K"
         )
+        if getattr(self, "second_policy", {}).get("enabled"):
+            message += " · QUINTA: dev/segundo bloque, presupuesto propio 23%"
+        return message
 
     def _cartel_de_salidas(self) -> str:
-        return (
+        message = (
             "SALIDAS FOUR · SL -25% · TP1 +50% vende 50% original; "
             "TP2 punto medio vende 25%; TP3 28K o entrada x2 vende 25% · "
             "pausa independiente con 3 perdidas en los ultimos 5 cierres"
         )
+        if getattr(self, "second_policy", {}).get("enabled"):
+            policy = self.second_policy["exit"]
+            message += (f" · QUINTA: SL -{policy['stop_loss_fraction']:.0%}, "
+                f"primera venta {policy['first_sale_mode']}; objetivos +35/+89/+164.6/+270.44%")
+        return message
 
     def receipt_writer(self, nonce: str, kind: str) -> Callable[[str, str], None]:
         def write(event: str, signature: str) -> None:
@@ -335,6 +393,9 @@ class FourStrategyTrader(legacy.UniversalTrader):
 
     def current_signal(self, token: object) -> dict | None:
         data = token.additional_data or {}
+        if data.get("acquisition_kind") == "second-block-dev":
+            source = getattr(self, "second_source", None)
+            return source.signal(str(token.mint)) if source else None
         if data.get("acquisition_kind") == "telegram":
             received = float(data.get("signal_received_at", 0))
             if not 0 <= time.time() - received <= 30:
@@ -354,6 +415,13 @@ class FourStrategyTrader(legacy.UniversalTrader):
         )
 
     async def _run_curva96_mode(self) -> None:
+        if self.second_policy.get("enabled"):
+            from monitoring.second_block_source import SecondBlockSource
+
+            self.second_source = SecondBlockSource(self.second_policy, self.rpc,
+                self.platform_implementations, self.solana_client, lambda: self.sol_usd,
+                self.reference_age, lambda: not self.book.paused(STRATEGY_ID), self._on_dexpaid_token)
+            logger.info("SECOND BLOCK enabled: 23%% SOL, MC <4200, 2 wallets, $275 first-block volume; inclusion not guaranteed")
         source = PressureTrialSource(
             self.wss_endpoint,
             self.platform_implementations,
@@ -361,6 +429,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
             self.signal_for,
             lambda mint: mint in self.bought_mints,
             lambda: True,
+            event_observer=self.second_source,
         )
 
         # Source logs use these fields without imposing its historical policy.
@@ -554,7 +623,10 @@ class FourStrategyTrader(legacy.UniversalTrader):
 
     async def _notify_four_purchase(self, token: object, result: TradeResult) -> None:
         from monitoring.confirmed_callouts import schedule_confirmed_callout
-        from monitoring.four_strategy_notifications import purchase_message, token_labels
+        from monitoring.four_strategy_notifications import (
+            purchase_message,
+            token_labels,
+        )
         from monitoring.notifier import notify
 
         try:
@@ -691,9 +763,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
                     continue
                 quantity = float(details["original_qty"])
                 entry = float(details["entry_price"])
-                tiers = build_review_ladder(
-                    entry * 1e9 * details["entry_sol_usd"], self.four["exit"]
-                )
+                tiers, stop_fraction = position_exit_plan(details, self.four["exit"])
                 price = await self.market_price(token, quantity)
                 if not price or not math.isfinite(price) or price <= 0:
                     await asyncio.sleep(0.25)
@@ -740,10 +810,11 @@ class FourStrategyTrader(legacy.UniversalTrader):
                     getattr(self, "_inactive_exit_candidates", {}).get(mint),
                     time.time(), getattr(self, "no_volume_exit_seconds", 0),
                 )
-                stopping = details.get("stopping", False) or price <= entry * 0.75 or rug or inactive
+                stop_price = entry * (1-stop_fraction)
+                stopping = details.get("stopping", False) or price <= stop_price or rug or inactive
                 if stopping:
                     reason = details.get("stopping_reason") or (
-                        "anti_rug" if rug else "stop_loss" if price <= entry * 0.75
+                        "anti_rug" if rug else "stop_loss" if price <= stop_price
                         else "muerta_sin_volumen" if inactive else "stop_loss"
                     )
                     changes = {"stopping": True, "stopping_reason": reason}
@@ -759,11 +830,16 @@ class FourStrategyTrader(legacy.UniversalTrader):
                     )
                 else:
                     completed = set(details.get("executed", []))
-                    index = next((i for i in range(3) if i not in completed), None)
+                    index = next((i for i in range(len(tiers)) if i not in completed), None)
                     if index is not None:
                         trigger = entry * (1 + tiers[index].gain_from_entry)
                         pending = details.get("pending_tier") == index
                         if price >= trigger or pending:
+                            if index == 0 and details.get("entry_exit_policy") and "exit_allocations" not in details:
+                                allocations = recovery_allocations(details["entry_exit_policy"], entry, price)
+                                self.update_details(position["nonce"], {"exit_allocations": allocations})
+                                details["exit_allocations"] = allocations
+                                tiers, stop_fraction = position_exit_plan(details, self.four["exit"])
                             target_remaining = quantity * (
                                 1
                                 - sum(
@@ -788,7 +864,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
                                     amount,
                                     price,
                                     f"take_profit_{index + 1}",
-                                    full_exit=index == 2,
+                                    full_exit=index == len(tiers)-1,
                                 )
                 await asyncio.sleep(1)
             except asyncio.CancelledError:
@@ -850,6 +926,10 @@ class FourStrategyTrader(legacy.UniversalTrader):
                 )
         raw, slot = await self.raw_holdings(position["mint"])
         details = json.loads(position["details"])
+        if details.get("entry_policy_id") == STRATEGY_ID and buys and "actual_buy_slot" not in details:
+            actual_slot = int(buys[0]["slot"])
+            self.update_details(position["nonce"], {"actual_buy_slot": actual_slot,
+                "target_slot_matched": actual_slot == details.get("target_slot")})
         if slot < max(int(s["slot"]) for s in values):
             return
         if raw > 0:

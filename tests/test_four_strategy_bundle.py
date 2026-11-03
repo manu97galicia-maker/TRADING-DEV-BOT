@@ -432,7 +432,8 @@ class MonitorTests(unittest.IsolatedAsyncioTestCase):
     reserve = BookTests.reserve
 
     async def exercise(
-        self, *, stop=False, restart_partial=False, commitment="finalized", pressure=(1, 0)
+        self, *, stop=False, restart_partial=False, commitment="finalized", pressure=(1, 0),
+        entry_overrides=None, live_price=None, initial_remaining=None,
     ):
         reservation = self.reserve("mint")
         nonce = reservation["nonce"]
@@ -447,9 +448,10 @@ class MonitorTests(unittest.IsolatedAsyncioTestCase):
                 "entry_sol_usd": 100,
                 "executed": [],
                 "pending_tier": 0 if restart_partial else None,
+                **(entry_overrides or {}),
             },
         )
-        remaining = 50.0 if restart_partial else 100.0
+        remaining = initial_remaining if initial_remaining is not None else 50.0 if restart_partial else 100.0
         sales = []
         runtime = SimpleNamespace(
             book=self.book,
@@ -462,7 +464,7 @@ class MonitorTests(unittest.IsolatedAsyncioTestCase):
         runtime.update_details = lambda nonce, changes: (
             FourStrategyTrader.update_details(runtime, nonce, changes)
         )
-        runtime.market_price = AsyncMock(return_value=7.4e-8 if stop else 2.8e-7)
+        runtime.market_price = AsyncMock(return_value=live_price if live_price is not None else 7.4e-8 if stop else 2.8e-7)
 
         async def holdings(mint, *, commitment="finalized"):
             return round(remaining * 1e6), 200

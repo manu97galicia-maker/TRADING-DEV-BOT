@@ -30,6 +30,7 @@ MAX_PRICE_AGE_SECONDS = 1.0
 MAX_PARALLEL_READS = 4
 MAX_NOTIFICATIONS = 20000
 PUMP_PROGRAM = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
+SLOT_SUBSCRIPTION_REQUEST = 2
 
 
 def pressure_signal(  # noqa: PLR0911 -- each signal rejection is explicit
@@ -84,11 +85,13 @@ class PressureTrialSource:
         signal_reader: Callable[[str], dict | None],
         is_consumed: Callable[[str], bool],
         is_allowed: Callable[[], bool],
+        *, event_observer: object | None = None,
     ) -> None:
         self.wss, self.implementations, self.client = wss, implementations, client
         self.signal_reader = signal_reader
         self.is_consumed = is_consumed
         self.is_allowed = is_allowed
+        self.event_observer = event_observer
         self.tasks = set()
         self.in_flight = set()
         self.completed = set()
@@ -156,7 +159,17 @@ class PressureTrialSource:
             self.tasks.add(task)
             task.add_done_callback(self.tasks.discard)
 
-    async def run(self, callback: Callable[[TokenInfo], Awaitable[None]]) -> None:  # noqa: C901 -- subscription and reconnect boundary
+    def notify_observer(self, method: str, *args: object) -> bool:
+        """A fifth-source failure cannot disable the existing four sources."""
+        try:
+            getattr(self.event_observer, method)(*args)
+        except Exception as error:  # noqa: BLE001 -- optional observer isolation
+            self.event_observer.disconnect()
+            logger.warning("Second-block observer unavailable (%s); four sources continue", type(error).__name__)
+            return False
+        return True
+
+    async def run(self, callback: Callable[[TokenInfo], Awaitable[None]]) -> None:  # noqa: C901, PLR0912, PLR0915 -- subscription and reconnect boundary
         logger.info(getattr(self, "description", "PRESSURE source active: >=1000 USD/10s, >=5 buyers, buy/sell >=2, no recent price fall"))
         while True:
             try:
@@ -179,8 +192,23 @@ class PressureTrialSource:
                         message = "Pump.fun subscription rejected"
                         raise RuntimeError(message)  # noqa: TRY301 -- subscription response validation
                     logger.info("PRESSURE subscribed to Pump.fun trades")
+                    slot_subscription = False
+                    if self.event_observer is not None:
+                        await ws.send(json.dumps({"jsonrpc": "2.0", "id": SLOT_SUBSCRIPTION_REQUEST,
+                                                  "method": "slotSubscribe"}))
                     while True:
                         data = json.loads(await asyncio.wait_for(ws.recv(), timeout=60))
+                        if self.event_observer is not None:
+                            if data.get("id") == SLOT_SUBSCRIPTION_REQUEST:
+                                slot_subscription = type(data.get("result")) is int
+                                if not slot_subscription:
+                                    self.event_observer.disconnect()
+                                    logger.warning("Second-block slot clock unavailable; four sources continue")
+                                continue
+                            if data.get("method") == "slotNotification":
+                                if slot_subscription:
+                                    slot_subscription = self.notify_observer("on_slot", data["params"]["result"])
+                                continue
                         if data.get("method") != "logsNotification":
                             continue
                         result = data["params"]["result"]
@@ -195,13 +223,19 @@ class PressureTrialSource:
                         if len(self.notifications) > MAX_NOTIFICATIONS:
                             self.notifications.pop(next(iter(self.notifications)))
                         mints = volumen.registrar_logs(value.get("logs", []), slot=slot)
+                        if self.event_observer is not None and slot_subscription:
+                            slot_subscription = self.notify_observer("on_logs", value.get("logs", []), slot, value.get("signature"))
                         self.consider(mints, callback)
             except asyncio.CancelledError:
+                if self.event_observer is not None:
+                    await self.event_observer.close()
                 for task in list(self.tasks):
                     task.cancel()
                 await asyncio.gather(*self.tasks, return_exceptions=True)
                 raise
             except Exception:
+                if self.event_observer is not None:
+                    self.event_observer.disconnect()
                 logger.warning(
                     "Pressure stream interrupted; reconnecting", exc_info=True
                 )
