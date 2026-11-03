@@ -187,7 +187,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
             )
         if (
             self.max_posiciones != 3
-            or self.fraccion_saldo != 0.18
+            or self.fraccion_saldo != 0.20
             or self.stop_loss_percentage != 0.25
         ):
             raise ValueError(
@@ -225,7 +225,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
 
     def _cartel_de_configuracion(self) -> str:
         return (
-            "CONFIG ACTIVA · FOUR STRATEGIES · 18% del SOL liquido confirmado "
+            "CONFIG ACTIVA · FOUR STRATEGIES · 20% del SOL liquido confirmado "
             "por presupuesto, incluidos gastos · 3 plazas compartidas · "
             "presion 8K / Telegram / primer bloque / cruce 21K"
         )

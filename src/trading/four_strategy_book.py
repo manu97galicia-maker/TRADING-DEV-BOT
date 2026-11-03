@@ -94,7 +94,7 @@ class FourStrategyBook:
         fees: int,
         features: dict,
     ) -> dict | None:
-        """Reserve 18% of current native SOL inclusive of slippage and fees."""
+        """Reserve 20% of current native SOL inclusive of slippage and fees."""
         if not mint or not strategy or min(balance, slot, reserve, fees) < 0:
             raise ValueError("Invalid reservation inputs")
         with closing(self.connect()) as db, db:
@@ -127,7 +127,7 @@ class FourStrategyBook:
                 for state, budget, debit in rows
                 if state == "reserved" or debit is None or debit > slot
             )
-            amount, budget = inclusive_balance_entry(balance, 0.18, slippage, fees)
+            amount, budget = inclusive_balance_entry(balance, 0.20, slippage, fees)
             if amount <= 0 or budget > balance - reserve - pending:
                 return None
             nonce = uuid.uuid4().hex
@@ -135,7 +135,7 @@ class FourStrategyBook:
                 "mint": mint,
                 "features": features,
                 "amount_sol": amount,
-                "policy_fraction": 0.18,
+                "policy_fraction": 0.20,
                 "balance_lamports": balance,
             }
             db.execute(

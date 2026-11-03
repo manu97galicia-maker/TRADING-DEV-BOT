@@ -25,8 +25,8 @@ def check_plan(path: Path) -> dict:
     plan = yaml.safe_load(path.read_text(encoding="utf-8"))
     trade = plan["trade"]
     settings = plan["four_strategies"]
-    if trade["max_posiciones"] != 3 or trade["fraccion_saldo"] != 0.18:
-        raise ValueError("Bundle requires three positions and an 18% fraction")
+    if trade["max_posiciones"] != 3 or trade["fraccion_saldo"] != 0.20:
+        raise ValueError("Bundle requires three positions and a 20% fraction")
     if (
         trade["stop_loss_percentage"] != 0.25
         or settings["exit"]["stop_loss_fraction"] != 0.25
@@ -103,7 +103,7 @@ def main() -> None:
                         "telegram-immediate",
                     ],
                     "max_shared_positions": 3,
-                    "entry_fraction_inclusive": 0.18,
+                    "entry_fraction_inclusive": 0.20,
                     "initial_stop": 0.25,
                     "enabled": plan["enabled"],
                 },

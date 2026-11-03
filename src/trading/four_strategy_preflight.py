@@ -209,7 +209,10 @@ async def inspect_online(plan: dict, config_path: Path) -> dict:  # noqa: C901, 
                 from trading.buy_budget import inclusive_balance_entry
 
                 amount, budget = inclusive_balance_entry(
-                    lamports, 0.18, plan["trade"]["buy_slippage"], 3_000_000
+                    lamports,
+                    plan["trade"]["fraccion_saldo"],
+                    plan["trade"]["buy_slippage"],
+                    3_000_000,
                 )
                 enough = amount > 0 and budget <= lamports - int(
                     plan["trade"]["min_reserve_sol"] * 1e9

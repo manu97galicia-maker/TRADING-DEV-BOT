@@ -13,25 +13,25 @@ from trading.sell_precision import align_full_sell, raw_sell_amount
 
 
 class BudgetTests(unittest.TestCase):
-    def test_eighteen_percent_includes_slippage_and_costs(self):
+    def test_twenty_percent_includes_slippage_and_costs(self):
         for balance in (50_000_000, 224_361_565, 1_000_000_000):
             for margin in (0, .15, .25):
-                amount, reserved = inclusive_balance_entry(balance, .18, margin, 3_000_000)
-                limit = int(Decimal(balance) * Decimal('.18'))
+                amount, reserved = inclusive_balance_entry(balance, .20, margin, 3_000_000)
+                limit = int(Decimal(balance) * Decimal('.20'))
                 self.assertGreater(amount, 0)
                 self.assertLessEqual(reserved, limit)
                 self.assertLessEqual(int(int(amount * 1e9) * (1 + margin)) + 3_000_000, limit)
 
     def test_fee_only_entry_is_rejected(self):
-        self.assertEqual(inclusive_balance_entry(1_000_000, .18, .15, 3_000_000), (0, 0))
+        self.assertEqual(inclusive_balance_entry(1_000_000, .20, .15, 3_000_000), (0, 0))
 
     def test_invalid_budget_is_rejected(self):
-        for args in ((-1, .18, .15, 1), (100, 1.1, .15, 1), (100, .18, -.1, 1)):
+        for args in ((-1, .20, .15, 1), (100, 1.1, .15, 1), (100, .20, -.1, 1)):
             with self.assertRaises(ValueError):
                 inclusive_balance_entry(*args)
 
     def test_optional_absolute_cap_is_preserved(self):
-        amount, reserved = inclusive_balance_entry(1_000_000_000, .18, .15, 3_000_000, .05)
+        amount, reserved = inclusive_balance_entry(1_000_000_000, .20, .15, 3_000_000, .05)
         self.assertEqual(amount, .05)
         self.assertEqual(reserved, 60_500_000)
 

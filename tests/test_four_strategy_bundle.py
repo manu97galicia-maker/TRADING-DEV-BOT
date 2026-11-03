@@ -113,7 +113,7 @@ class BookTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=8) as pool:
             entries = [r for r in pool.map(reserve, range(8)) if r]
         self.assertEqual(len(entries), 3)
-        self.assertTrue(all(r["budget"] <= 180_000_000 for r in entries))
+        self.assertTrue(all(r["budget"] <= 200_000_000 for r in entries))
         self.assertLessEqual(sum(r["budget"] for r in entries), SOL - 30_000_000)
 
     def test_same_mint_cannot_be_bought_by_two_strategies(self):
@@ -137,14 +137,16 @@ class BookTests(unittest.TestCase):
         self.book.release_unbroadcast(first["nonce"])
         self.assertFalse(self.book.positions())
 
-    def test_18_percent_recalculates_from_the_current_liquid_balance(self):
+    def test_20_percent_recalculates_from_the_current_liquid_balance(self):
         one = self.reserve("one")
+        self.assertLessEqual(one["budget"], 200_000_000)
+        self.assertGreater(one["budget"], 199_999_997)
         self.book.submitting(one["nonce"])
         self.book.opened(one["nonce"], 100, {})
-        two = self.reserve("two", balance=820_000_000)
-        self.assertLessEqual(two["budget"], int(820_000_000 * 0.18))
-        self.assertGreater(two["budget"], int(820_000_000 * 0.18) - 3)
-        self.assertLess(two["amount_sol"], 0.18 * 0.82)  # Inclusive costs.
+        two = self.reserve("two", balance=800_000_000)
+        self.assertLessEqual(two["budget"], int(800_000_000 * 0.20))
+        self.assertGreater(two["budget"], int(800_000_000 * 0.20) - 3)
+        self.assertLess(two["amount_sol"], 0.20 * 0.80)  # Inclusive costs.
 
     def test_full_budget_must_fit_reserve_and_other_pending_spends(self):
         self.assertIsNone(self.reserve("empty", balance=31_000_000))
@@ -227,7 +229,7 @@ class BuyerTests(unittest.IsolatedAsyncioTestCase):
     ):
         async def execute(token, **kwargs):
             observe("signed", "actual-signature")
-            self.assertLess(kwargs["amount_sol"], 0.18)
+            self.assertLess(kwargs["amount_sol"], 0.20)
             return TradeResult(
                 True, tx_signature="actual-signature", amount=1000000, price=1e-7
             )

@@ -58,10 +58,10 @@ recompra una moneda cerrada ni se compra desde dos fuentes. Un único colector
 alimenta el volumen para evitar contarlo varias veces. El límite no controla
 bots externos que no utilicen este coordinador.
 
-Cada presupuesto es el 18% del SOL líquido confirmado antes de esa entrada,
+Cada presupuesto es el 20% del SOL líquido confirmado antes de esa entrada,
 incluyendo margen de slippage y reserva estimada para gastos, y conservando
 0,03 SOL. Se recalcula con el saldo nuevo, sin valorar los tokens abiertos.
-La compra nominal es menor que ese 18% porque los gastos están incluidos.
+La compra nominal es menor que ese 20% porque los gastos están incluidos.
 
 La función de tope de prioridad convierte 0,08 USD a lamports con una cotización
 SOL/USD de hasta 30 segundos y redondea hacia abajo el precio por CU. No es un

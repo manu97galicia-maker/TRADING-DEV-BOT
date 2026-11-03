@@ -6,7 +6,7 @@
   "execution": "offline_review_only",
   "wallet": {
     "expected_wallet": "HGUXwmjHmqY75q4j9v5wfGZnzFQESnq2wZ2UPJrkg3Uk",
-    "entry_fraction": 0.18,
+    "entry_fraction": 0.20,
     "base": "confirmed_liquid_sol_before_entry",
     "max_shared_positions": 3,
     "include_pending_buys_and_unsold_runners": true,

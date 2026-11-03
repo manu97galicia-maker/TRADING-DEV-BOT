@@ -4,7 +4,7 @@
 
 La configuración [configs/four-strategies.yaml](configs/four-strategies.yaml)
 reúne presión desde 8K MC, cruce de 21K, primer bloque y señales de Telegram.
-Comparte tres posiciones, presupuesto del 18% del SOL líquido y SL del 25%.
+Comparte tres posiciones, presupuesto del 20% del SOL líquido y SL del 25%.
 La presión usa 12 compradores y 1.300 USD/8s; la salida por volumen vendedor
 está desactivada. Este paquete está **deshabilitado** (`enabled: false`).
 
