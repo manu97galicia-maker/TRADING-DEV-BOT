@@ -31,6 +31,7 @@ from trading.four_strategy_entry_guard import (
     validate_policy,
 )
 from trading.four_strategy_inactivity import fresh_inactivity, inactive_curve_evidence
+from trading.pump_fee_identity import bind_dev_fee_creator, fee_creator_allowed
 from trading.second_block_policy import (
     STRATEGY_ID,
     creator_history_only,
@@ -100,6 +101,22 @@ def _strict_dev_window(token: object, signal: dict | None, target: int) -> bool:
                 and token.additional_data["dev_entry_target_slot"] == target)
 
 
+def _bind_dev_curve_fee(token: object, signal: dict, state: dict) -> bool:
+    """Allow the mint's official fee-sharing transition, preserving its launch identity."""
+    if "creation_fee_creator" not in signal:
+        return str(state.get("creator")) == signal["creator"]
+    original = signal["creation_fee_creator"]
+    return (signal["creator"] == original
+            and bind_dev_fee_creator(token, original, state.get("creator")))
+
+
+def _same_dev_fee_origin(signal: dict | None, origin: str | None, *, required: bool) -> bool:
+    if not signal or signal.get("strategy") != STRATEGY_ID:
+        return False
+    return (signal.get("creation_fee_creator") == origin and signal.get("creator") == origin
+            if required else "creation_fee_creator" not in signal)
+
+
 class SharedBuyer:
     """Put every source behind the same durable admission transaction."""
 
@@ -121,6 +138,12 @@ class SharedBuyer:
             return TradeResult(
                 success=False, error_message="Four-strategy signal expired"
             )
+        initial_dev = signal["strategy"] == STRATEGY_ID
+        has_fee_origin = initial_dev and "creation_fee_creator" in signal
+        fee_origin = signal.get("creation_fee_creator") if has_fee_origin else None
+        if has_fee_origin and (not _same_dev_fee_origin(signal, fee_origin, required=True)
+                               or not fee_creator_allowed(token_info.mint, fee_origin, token_info.creator)):
+            return TradeResult(success=False, error_message="Dev fee origin or prepared recipient unavailable")
         if (token_info.additional_data or {}).get("migrated"):
             return TradeResult(
                 success=False,
@@ -152,7 +175,8 @@ class SharedBuyer:
             )
         # Re-evaluate after the balance read: a slow RPC must not validate old flow.
         signal = runtime.current_signal(token_info)
-        if not signal or (strict and not _strict_dev_window(token_info, signal, strict_target)):
+        if (not signal or (strict and not _strict_dev_window(token_info, signal, strict_target))
+                or (initial_dev and not _same_dev_fee_origin(signal, fee_origin, required=has_fee_origin))):
             return TradeResult(
                 success=False, error_message="Entry expired while reading balance"
             )
@@ -239,13 +263,25 @@ class SharedBuyer:
                 or runtime.reference_age() > 30
                 or not runtime.current_signal(token_info)
                 or (strict and not _strict_dev_window(token_info, runtime.current_signal(token_info), strict_target))
-                or (second and str(state.get("creator")) != signal["creator"])
+                or (second and not _same_dev_fee_origin(runtime.current_signal(token_info), fee_origin,
+                                                        required=has_fee_origin))
+                or (second and not _bind_dev_curve_fee(token_info, signal, state))
             ):
                 runtime.book.cancel_unsubmitted(nonce)
                 return TradeResult(
                     success=False,
                     error_message="Curve or signal changed before submission",
                 )
+            if second and fee_origin is not None:
+                # Reuse the price and flags from this same verified curve read.
+                # The broker must not combine its older prepared vault with a
+                # fresh, officially migrated fee recipient.
+                token_info.additional_data.update(precio_curva=float(state["price_per_token"]),
+                                                 precio_curva_en=time.monotonic())
+                token_info.is_mayhem_mode = bool(state.get("is_mayhem_mode", False))
+                token_info.is_cashback_coin = bool(state.get("is_cashback_coin", False))
+                runtime.update_details(nonce, {"creation_fee_creator": fee_origin,
+                    "entry_fee_creator": str(token_info.creator)})
         except EntryRiskRejected as error:
             runtime.book.cancel_unsubmitted(nonce)
             source = getattr(runtime, "second_source", None)
@@ -292,6 +328,10 @@ class SharedBuyer:
                         return False
                     return bool(latest and (_strict_dev_window(token_info, latest, strict_target) if strict
                                 else history_only or latest.get("target_slot") == target_slot)
+                                and _same_dev_fee_origin(latest, fee_origin, required=has_fee_origin)
+                                and (not has_fee_origin or (
+                                    (token_info.additional_data or {}).get("dev_creation_fee_creator") == fee_origin
+                                    and fee_creator_allowed(token_info.mint, fee_origin, token_info.creator)))
                                 and (latest_cap is None or reservation["budget"] <= latest_cap))
                 window_token = ENTRY_WINDOW.set(in_window)
             result = await self.buyer.execute(
@@ -611,6 +651,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
                             self.second_policy["balance_fraction"]*100)
                 logger.info("DEV inclusive entry budget cap USD (including slippage and fee headroom): %s",
                             self.second_policy.get("max_entry_budget_usd", "none"))
+                logger.info("DEV fee identity: original recipient or this mint's official Pump Fees sharing config; developer remains creation signer")
                 if second_produced_block(self.second_policy):
                     logger.info("DEV strict timing: initial developer buy in creation transaction; only next produced block; no later retry; inclusion not guaranteed")
                 logger.info("DEV history providers: %s; fallback=%s, primary deadline=%ss",

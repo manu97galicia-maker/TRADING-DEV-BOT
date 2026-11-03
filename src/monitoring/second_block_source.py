@@ -24,6 +24,7 @@ from solders.pubkey import Pubkey
 
 from monitoring.creator_history_index import CreatorHistoryCache, curve_address
 from monitoring.pump_event_logs import pump_events
+from trading.pump_fee_identity import fee_creator_allowed
 from trading.second_block_policy import (
     STRATEGY_ID,
     creator_history_only,
@@ -382,6 +383,8 @@ class SecondBlockSource:
                 or history["migration_fraction"] < self.policy["min_creator_migration_fraction"]):
             return None
         return {"strategy": STRATEGY_ID, "sol_usd": sol_usd, "creator": candidate.creator,
+            "creation_fee_creator": candidate.creator,
+            "prepared_fee_creator": str(candidate.token.creator) if candidate.token is not None else None,
             "developer": candidate.developer,
             "observed_at": time.time(), "creation_slot": candidate.creation_slot,
             "target_slot": self.slot, "buyers": len(candidate.buyers),
@@ -419,6 +422,7 @@ class SecondBlockSource:
             "dev_initial_buy_verified": candidate.dev_initial_buy_verified,
             "dev_initial_buy_signature": candidate.creation_signature if candidate.dev_initial_buy_verified else None,
             "sol_usd": sol_usd, "creator": candidate.creator, "developer": candidate.developer,
+            "creation_fee_creator": candidate.creator, "prepared_fee_creator": str(candidate.token.creator),
             "observed_at": time.time(), "creation_slot": candidate.creation_slot,
             "target_slot": candidate.second_slot if strict else None,
             "entry_block": 2 if strict else None, "source_generation": self.generation,
@@ -498,8 +502,10 @@ class SecondBlockSource:
                 symbol=candidate.symbol, name=candidate.name), timeout=2)
             if (token is None or generation != self.generation
                     or self.candidates.get(candidate.mint) is not candidate
-                    or str(token.creator) != candidate.creator):
+                    or not fee_creator_allowed(candidate.mint, candidate.creator, token.creator)):
                 return
+            if str(token.creator) != candidate.creator:
+                logger.info("DEV official fee-sharing recipient prepared for %s", candidate.mint)
             token.additional_data = {**(token.additional_data or {}),
                 "acquisition_kind": "second-block-dev", "four_strategy_id": STRATEGY_ID,
                 "acquisition_source": ("observed_creation_creator_history"

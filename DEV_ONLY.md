@@ -38,6 +38,21 @@ ser una compra del propio dev (`CreateEvent.user`). Se comprueba con los eventos
 de esa misma transacción; el orden de llegada de transacciones al WebSocket no
 demuestra quién compró primero en todo el bloque.
 
+El dev se identifica siempre por `CreateEvent.user`, independientemente de quién
+reciba las comisiones. Si Pump.fun activa su reparto oficial de comisiones,
+`BondingCurve.creator` puede pasar a la PDA `sharing-config` del mismo mint,
+derivada bajo el programa Pump Fees. La preparación y la revisión previa a
+compra aceptan el destinatario original o esa PDA exacta; otros cambios siguen
+rechazados. Antes de construir la compra se actualizan `creator` y su
+`creator_vault`, conservando el dev original, la prueba de su compra inicial y
+el historial exigido. Los registros guardan `creation_fee_creator` y
+`entry_fee_creator` para distinguir ambas identidades.
+
+La curva se autentica con su propietario Pump.fun y su discriminador antes de
+decodificarla, utilizando la misma lectura existente. El comprador vuelve a
+validar la identidad de comisiones si relee el estado. La compatibilidad no
+amplía la ventana del segundo bloque ni exige otra consulta al proveedor.
+
 Solo intenta comprar en el siguiente bloque producido cuyo padre es el bloque
 de creación. No se calcula sumando uno al número de slot. La prueba del dev,
 el historial y la curva deben estar disponibles mientras siga vigente esa ventana

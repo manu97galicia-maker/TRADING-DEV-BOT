@@ -15,6 +15,7 @@ from core.wallet import Wallet
 from interfaces.core import AddressProvider, Platform, TokenInfo
 from platforms import get_platform_implementations
 from trading.base import Trader, TradeResult
+from trading.pump_fee_identity import refresh_bound_dev_fee_creator
 from trading.sell_precision import raw_sell_amount
 from trading.transaction_observer import capped_buy_cost_lamports
 from utils.logger import get_logger
@@ -235,6 +236,11 @@ class PlatformAwareBuyer(Trader):
                     "is_cashback_coin", token_info.is_cashback_coin
                 )
                 token_amount = amount / token_price_sol
+
+            # A dev entry retains its original launch identity while Pump Fees
+            # may migrate the fee recipient to this mint's sharing config.
+            # Check both cached and reread states before building instructions.
+            refresh_bound_dev_fee_creator(token_info, pool_state or {})
 
             # Avoid pump.fun "mayhem mode" tokens unless this strategy allows them.
             if not self.allow_mayhem and getattr(token_info, "is_mayhem_mode", False):
