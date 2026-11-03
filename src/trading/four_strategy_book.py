@@ -105,7 +105,7 @@ class FourStrategyBook:
         slippage: float,
         fees: int,
         features: dict,
-        *, fraction: float = 0.20,
+        *, fraction: float = 0.20, cap_sol: float = 0,
     ) -> dict | None:
         """Reserve the configured fraction, inclusive of slippage and fees.
 
@@ -142,7 +142,7 @@ class FourStrategyBook:
                 for state, budget, debit in rows
                 if state == "reserved" or debit is None or debit > slot
             )
-            amount, budget = inclusive_balance_entry(balance, fraction, slippage, fees)
+            amount, budget = inclusive_balance_entry(balance, fraction, slippage, fees, cap_sol)
             if amount <= 0 or budget > balance - reserve - pending:
                 return None
             nonce = uuid.uuid4().hex

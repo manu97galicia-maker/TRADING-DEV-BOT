@@ -14,18 +14,21 @@ def inclusive_balance_entry(
 ) -> tuple[float, int]:
     """Return nominal SOL and total reserved lamports, never exceeding the budget."""
     share, margin = Decimal(str(fraction)), Decimal(str(slippage))
+    cap = Decimal(str(cap_sol))
     if (
         balance_lamports < 0 or fee_lamports < 0
         or not share.is_finite() or not 0 <= share <= 1
         or not margin.is_finite() or margin < 0
+        or not cap.is_finite() or cap < 0
     ):
-        raise ValueError("Invalid inclusive entry budget")
+        message = "Invalid inclusive entry budget"
+        raise ValueError(message)
     budget = int(Decimal(balance_lamports) * share)
     if budget <= fee_lamports:
         return 0.0, 0
     nominal = int(Decimal(budget - fee_lamports) / (1 + margin))
-    if cap_sol > 0:
-        nominal = min(nominal, int(Decimal(str(cap_sol)) * LAMPORTS_PER_SOL))
+    if cap > 0:
+        nominal = min(nominal, int(cap * LAMPORTS_PER_SOL))
     if nominal <= 0:
         return 0.0, 0
     # Match the buyer's maximum SOL cost, then include rent/fee headroom.

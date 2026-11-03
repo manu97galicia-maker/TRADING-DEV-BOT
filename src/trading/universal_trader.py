@@ -5225,7 +5225,25 @@ class UniversalTrader:
                     # saldo recien leido y bajo el mismo cerrojo que lo reserva:
                     # calculado fuera, dos compras a la vez pedirian cada una el
                     # 70% del mismo saldo y sumarian el 140%.
-                    if self.buy_amount_usd > 0:
+                    _inclusive_sizer = getattr(self, "_inclusive_entry_budget", None)
+                    _inclusive_budget = (
+                        _inclusive_sizer(token_info, bal, cap_sol=_tope)
+                        if callable(_inclusive_sizer) else None
+                    )
+                    if _inclusive_budget is not None:
+                        # Shared runtimes provide a total budget that already
+                        # includes slippage and fees. Do not size nominal SOL
+                        # from the fraction again before their durable buyer.
+                        _importe, need = _inclusive_budget
+                        if _importe <= 0:
+                            logger.info("Shared inclusive budget unavailable for %s", token_info.symbol)
+                            _suelta_moneda(_mint_str)
+                            return
+                        logger.info(
+                            "INCLUSIVE SHARED: %.6f SOL nominal, %.6f total; %.6f free",
+                            _importe, need / LAMPORTS_PER_SOL, free / LAMPORTS_PER_SOL,
+                        )
+                    elif self.buy_amount_usd > 0:
                         # IMPORTE EN DOLARES (23-sep, pedido: "10 $ por
                         # operacion en SOL"). Los SOL salen de dividir por el
                         # precio de SOL EN VIVO, no por un numero escrito a

@@ -19,6 +19,13 @@ El arranque verifica `saldo - presupuesto >= 0,03 SOL`. Con un presupuesto del
 aproximadamente 0,0130 SOL y el preflight bloquea el arranque; no reduce por su
 cuenta el porcentaje solicitado ni la reserva.
 
+El filtro de gasto heredado usa ahora el mismo presupuesto inclusivo que el
+comprador compartido. Antes tomaba el 90% como importe nominal y sumaba de nuevo
+el margen del 15% y los gastos, solicitando más saldo libre del disponible antes
+de llegar al comprador. La corrección conserva la reserva, los topes y la
+reserva atómica de gastos; el libro vuelve a comprobar el saldo finalizado antes
+de admitir cualquier entrada. Los demás modos conservan su cálculo anterior.
+
 La posición debe tener al menos cinco minutos, la cotización actual debe estar
 por debajo de su precio de compra y el nodo debe confirmar que no ha habido
 actividad en su curva durante esos cinco minutos. Se consulta la operación más

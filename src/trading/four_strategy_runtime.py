@@ -23,6 +23,7 @@ from monitoring.four_strategy_signals import choose_signal
 from monitoring.pressure_trial_source import PressureTrialSource
 from monitoring.telegram_source import TelegramSource
 from trading.base import TradeResult
+from trading.buy_budget import inclusive_balance_entry
 from trading.four_strategy_book import FourStrategyBook
 from trading.four_strategy_entry_guard import (
     EntryRiskRejected,
@@ -54,6 +55,17 @@ logger = get_logger(__name__)
 if TYPE_CHECKING:
     from collections.abc import Callable
 _PROCEEDS: ContextVar[float] = ContextVar("four_strategy_sale_proceeds", default=0)
+
+
+def _nominal_entry_cap(runtime: object, cap_sol: float = 0) -> float:
+    """Use the same absolute caps before and inside durable admission."""
+    caps = [float(cap_sol), float(getattr(runtime, "tope_compra_sol", 0) or 0)]
+    total = float(getattr(runtime, "tope_compra_total_sol", 0) or 0)
+    if not all(math.isfinite(value) and value >= 0 for value in [*caps, total]):
+        raise ValueError("Entry caps must be finite and nonnegative")
+    if total > 0:
+        caps.append(total/(1+runtime.buy_slippage))
+    return min((value for value in caps if value > 0), default=0)
 
 
 class SharedBuyer:
@@ -114,6 +126,7 @@ class SharedBuyer:
             runtime._fee_headroom_lamports + (priority_cap or 0),
             signal,
             fraction=policy["balance_fraction"] if second else runtime.fraccion_saldo,
+            cap_sol=_nominal_entry_cap(runtime),
         )
         if not reservation:
             return TradeResult(
@@ -302,6 +315,27 @@ class FourStrategyTrader(legacy.UniversalTrader):
 
     def reference_age(self) -> float:
         return time.time() - self.sol_quote_at
+
+    def _inclusive_entry_budget(self, token: object, balance_lamports: int,
+                                *, cap_sol: float = 0) -> tuple[float, int]:
+        """Match the durable buyer before the inherited spend guard runs."""
+        signal = self.current_signal(token)
+        if not signal or self.reference_age() > 30:
+            return 0.0, 0
+        fees = self._fee_headroom_lamports
+        fraction = self.fraccion_saldo
+        if signal["strategy"] == STRATEGY_ID:
+            policy = self.second_policy
+            if not policy.get("enabled"):
+                return 0.0, 0
+            fraction = policy["balance_fraction"]
+            try:
+                fees += priority_fee_cap_lamports(self.sol_usd,
+                    quote_age_seconds=self.reference_age(), cap_usd=policy["buy_priority_fee_cap_usd"])
+            except ValueError:
+                return 0.0, 0
+        return inclusive_balance_entry(balance_lamports, fraction, self.buy_slippage, fees,
+                                       _nominal_entry_cap(self, cap_sol))
 
     async def check_entry_risk(self, token: object, initial_state: dict) -> tuple[dict, dict]:
         policy = self.four["entry_protection"]
