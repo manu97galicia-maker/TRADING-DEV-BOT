@@ -3,9 +3,12 @@
 La configuración `five_trade_evaluation`, fuera de `four_strategies`, prepara
 tandas independientes de **cinco operaciones auditadas por estrategia**. El
 límite global pasa a **cuatro posiciones**, incluidas compras pendientes,
-envíos inciertos y remanentes. Los presupuestos siguen siendo 30% del SOL para
-las cuatro estrategias originales y 23% para la quinta, incluidos márgenes y
-gastos. El límite de plazas no permite exceder el saldo ni la reserva de SOL.
+envíos inciertos y remanentes. El presupuesto de cada nueva operación es el
+**90% del SOL líquido confirmado para las cinco estrategias**, incluidos márgenes
+y gastos. El límite de plazas no permite exceder el saldo ni la reserva de
+0,03 SOL. Cada entrada se recalcula sobre el saldo restante; si el presupuesto
+no deja esa reserva o coincide con otros gastos pendientes, se rechaza la compra.
+Las posiciones previas conservan sus presupuestos registrados.
 
 El SL activo solicitado es **22%** para las cinco estrategias. Para las cuatro
 originales se toma de `trade.stop_loss_percentage`; para la quinta también se

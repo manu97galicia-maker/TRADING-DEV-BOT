@@ -22,7 +22,7 @@ def validate_second_policy(settings: dict) -> None:
     if not settings["enabled"]:
         return
     expected = {
-        "strategy_id": STRATEGY_ID, "balance_fraction": .23,
+        "strategy_id": STRATEGY_ID, "balance_fraction": .90,
         "max_entry_mc_usd": 4200, "min_creator_migration_fraction": .01,
         "min_first_block_volume_usd": 275, "min_distinct_first_block_buyers": 2,
         "buy_priority_fee_cap_usd": .06, "developer_identity": "creation_signer",

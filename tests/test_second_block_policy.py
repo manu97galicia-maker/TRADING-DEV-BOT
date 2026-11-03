@@ -146,9 +146,10 @@ class SharedEntryTests(unittest.IsolatedAsyncioTestCase):
         self.runtime.current_signal = lambda _token: self.features
         self.runtime.check_entry_risk.return_value = ({"price_per_token": 4e-8, "complete": False, "creator": "dev"}, {})
 
-    async def test_new_entry_has_23_percent_inclusive_budget_and_persisted_exits(self):
+    async def test_new_entry_has_90_percent_inclusive_budget_and_persisted_exits(self):
         async def buy(token, **kwargs):
-            self.assertLess(kwargs["amount_sol"], .23)
+            self.assertGreater(kwargs["amount_sol"], .70)
+            self.assertLess(kwargs["amount_sol"], .90)
             self.assertEqual(PRIORITY_CAP.get(), 600000)
             self.assertEqual(BUY_PRICE_CEILING.get(), 4.2e-8)
             self.assertLessEqual((kwargs["priority_fee_override"]*200000+999999)//1000000, 600000)
@@ -159,9 +160,9 @@ class SharedEntryTests(unittest.IsolatedAsyncioTestCase):
             return TradeResult(success=True, tx_signature="new-buy", price=4e-8, amount=1e6)
         await SharedBuyer(self.runtime, SimpleNamespace(execute=AsyncMock(side_effect=buy))).execute(self.token)
         position = self.book.positions()[0]
-        self.assertLessEqual(position["budget"], 230000000)
-        self.assertGreater(position["budget"], 229999997)
-        self.assertEqual(json.loads(position["details"])["policy_fraction"], .23)
+        self.assertLessEqual(position["budget"], 900000000)
+        self.assertGreater(position["budget"], 899999997)
+        self.assertEqual(json.loads(position["details"])["policy_fraction"], .90)
         self.assertIsNone(PRIORITY_CAP.get())
         self.assertIsNone(ENTRY_WINDOW.get())
         self.assertIsNone(BUY_PRICE_CEILING.get())

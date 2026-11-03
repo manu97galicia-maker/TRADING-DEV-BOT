@@ -105,7 +105,7 @@ class StartupTests(unittest.IsolatedAsyncioTestCase):
             finally:
                 notifier.configurar_avisos(None)
         captured["trader"].start.assert_awaited_once()
-        self.assertEqual(captured["kwargs"]["fraccion_saldo"], 0.30)
+        self.assertEqual(captured["kwargs"]["fraccion_saldo"], 0.90)
         self.assertEqual(captured["kwargs"]["max_posiciones"], 4)
         self.assertEqual(captured["kwargs"]["stop_loss_percentage"], .22)
         self.assertEqual(captured["settings"], plan["four_strategies"])
@@ -127,7 +127,7 @@ class StartupTests(unittest.IsolatedAsyncioTestCase):
             trader.wallet_pool = None
             trader.paper_trade = False
             trader.max_posiciones = 4
-            trader.fraccion_saldo = .30
+            trader.fraccion_saldo = .90
             trader.stop_loss_percentage = .22
             trader.buyer = object()
             trader.configure_four(settings, evaluation_policy=plan["five_trade_evaluation"])

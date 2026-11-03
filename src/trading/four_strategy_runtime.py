@@ -261,7 +261,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
             )
         if (
             self.max_posiciones != 4
-            or self.fraccion_saldo != 0.30
+            or self.fraccion_saldo != 0.90
             or self.stop_loss_percentage != 0.22
         ):
             raise ValueError(
@@ -351,7 +351,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
             "presion 8K / Telegram / primer bloque / cruce 21K"
         )
         if getattr(self, "second_policy", {}).get("enabled"):
-            message += " · QUINTA: dev/segundo bloque, presupuesto propio 23%"
+            message += f" · QUINTA: dev/segundo bloque, presupuesto propio {self.second_policy['balance_fraction']:.0%}"
         return message
 
     def _cartel_de_salidas(self) -> str:
@@ -437,7 +437,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
             self.second_source = SecondBlockSource(self.second_policy, self.rpc,
                 self.platform_implementations, self.solana_client, lambda: self.sol_usd,
                 self.reference_age, lambda: not self.book.paused(STRATEGY_ID), self._on_dexpaid_token)
-            logger.info("SECOND BLOCK enabled: 23%% SOL, MC <4200, 2 wallets, $275 first-block volume; inclusion not guaranteed")
+            logger.info("SECOND BLOCK enabled: %.0f%% SOL, MC <4200, 2 wallets, $275 first-block volume; inclusion not guaranteed",
+                        self.second_policy["balance_fraction"]*100)
         source = PressureTrialSource(
             self.wss_endpoint,
             self.platform_implementations,

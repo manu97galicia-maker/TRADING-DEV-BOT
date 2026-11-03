@@ -28,10 +28,11 @@ Condiciones de entrada:
   hasta 0,6 segundos desde que se recibe la notificación. Hay nueva revisión
   antes de firmar y antes de enviar. Sin reintentos de envío ni del RPC.
 
-El presupuesto es el **23% del SOL líquido confirmado**, incluidos margen de
+El presupuesto es el **90% del SOL líquido confirmado**, incluidos margen de
 slippage y gastos. La prioridad tiene tope de **0,06 USD por intento** con
 cotización SOL/USD reciente; renta, comisión base y comisiones de protocolo
-son conceptos distintos. Las otras cuatro estrategias usan el 30% por nueva operación.
+son conceptos distintos. Las otras cuatro estrategias también usan el 90% por
+nueva operación, siempre respetando la reserva de 0,03 SOL y los gastos pendientes.
 Las cinco comparten cuatro plazas y se evalúan por la suma neta de cada tanda
 de cinco cierres, sin pausa por el número de pérdidas. Permanecen los filtros
 de precio y concentración, el stop y la salida por inactividad configurada;
