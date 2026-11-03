@@ -34,6 +34,7 @@ from trading.four_strategy_inactivity import fresh_inactivity, inactive_curve_ev
 from trading.second_block_policy import (
     STRATEGY_ID,
     creator_history_only,
+    entry_budget_cap_lamports,
     position_exit_plan,
     recovery_allocations,
     validate_second_policy,
@@ -67,6 +68,14 @@ def _nominal_entry_cap(runtime: object, cap_sol: float = 0) -> float:
     if total > 0:
         caps.append(total/(1+runtime.buy_slippage))
     return min((value for value in caps if value > 0), default=0)
+
+
+def _entry_budget_cap_lamports(runtime: object, strategy: str) -> int | None:
+    """Only the dev source has the additional USD-inclusive entry limit."""
+    if strategy != STRATEGY_ID:
+        return None
+    return entry_budget_cap_lamports(runtime.second_policy, runtime.sol_usd,
+                                     quote_age_seconds=runtime.reference_age())
 
 
 def _configure_history_only_assets(runtime: object) -> None:
@@ -124,14 +133,19 @@ class SharedBuyer:
         second = signal["strategy"] == STRATEGY_ID
         history_only = False
         priority_cap = None
+        budget_cap = None
         if second:
             policy = getattr(runtime, "second_policy", {"enabled": False})
             if not policy.get("enabled"):
                 return TradeResult(success=False, error_message="Second-block strategy is disabled")
             validate_second_policy(policy)
             history_only = creator_history_only(policy)
-            priority_cap = priority_fee_cap_lamports(runtime.sol_usd,
-                quote_age_seconds=runtime.reference_age(), cap_usd=policy["buy_priority_fee_cap_usd"])
+            try:
+                priority_cap = priority_fee_cap_lamports(runtime.sol_usd,
+                    quote_age_seconds=runtime.reference_age(), cap_usd=policy["buy_priority_fee_cap_usd"])
+                budget_cap = _entry_budget_cap_lamports(runtime, signal["strategy"])
+            except ValueError:
+                return TradeResult(success=False, error_message="USD entry budget reference unavailable")
         reservation = runtime.book.reserve(
             str(token_info.mint),
             signal["strategy"],
@@ -143,6 +157,7 @@ class SharedBuyer:
             signal,
             fraction=policy["balance_fraction"] if second else runtime.fraccion_saldo,
             cap_sol=_nominal_entry_cap(runtime),
+            budget_cap_lamports=budget_cap,
         )
         if not reservation:
             return TradeResult(
@@ -156,6 +171,8 @@ class SharedBuyer:
             runtime.update_details(nonce, {"entry_exit_policy": policy["exit"],
                 "entry_policy_id": STRATEGY_ID, "target_slot": signal["target_slot"],
                 "entry_rule": policy.get("entry_rule", "second_block"),
+                "entry_budget_cap_usd": policy.get("max_entry_budget_usd"),
+                "entry_budget_sol_usd": runtime.sol_usd,
                 "entry_block": signal.get("entry_block", 2), "retry_reason": signal.get("retry_reason")})
         token_info.additional_data = {
             **(token_info.additional_data or {}),
@@ -208,6 +225,15 @@ class SharedBuyer:
         except Exception:
             runtime.book.cancel_unsubmitted(nonce)
             raise
+        if second:
+            try:
+                current_cap = _entry_budget_cap_lamports(runtime, signal["strategy"])
+                within_usd_cap = current_cap is None or reservation["budget"] <= current_cap
+            except ValueError:
+                within_usd_cap = False
+            if not within_usd_cap:
+                runtime.book.cancel_unsubmitted(nonce)
+                return TradeResult(success=False, error_message="USD entry budget changed before submission")
         if not runtime.book.submitting(nonce):
             return TradeResult(
                 success=False, error_message="Missing shared spend reservation"
@@ -225,7 +251,12 @@ class SharedBuyer:
                 target_slot = signal["target_slot"]
                 def in_window() -> bool:
                     latest = runtime.current_signal(token_info)
-                    return bool(latest and (history_only or latest.get("target_slot") == target_slot))
+                    try:
+                        latest_cap = _entry_budget_cap_lamports(runtime, STRATEGY_ID)
+                    except ValueError:
+                        return False
+                    return bool(latest and (history_only or latest.get("target_slot") == target_slot)
+                                and (latest_cap is None or reservation["budget"] <= latest_cap))
                 window_token = ENTRY_WINDOW.set(in_window)
             result = await self.buyer.execute(
                 token_info,
@@ -355,6 +386,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
             return 0.0, 0
         fees = self._fee_headroom_lamports
         fraction = self.fraccion_saldo
+        budget_cap = None
         if signal["strategy"] == STRATEGY_ID:
             policy = self.second_policy
             if not policy.get("enabled"):
@@ -363,10 +395,11 @@ class FourStrategyTrader(legacy.UniversalTrader):
             try:
                 fees += priority_fee_cap_lamports(self.sol_usd,
                     quote_age_seconds=self.reference_age(), cap_usd=policy["buy_priority_fee_cap_usd"])
+                budget_cap = _entry_budget_cap_lamports(self, signal["strategy"])
             except ValueError:
                 return 0.0, 0
         return inclusive_balance_entry(balance_lamports, fraction, self.buy_slippage, fees,
-                                       _nominal_entry_cap(self, cap_sol))
+                                       _nominal_entry_cap(self, cap_sol), budget_cap_lamports=budget_cap)
 
     async def check_entry_risk(self, token: object, initial_state: dict) -> tuple[dict, dict]:
         policy = self.four["entry_protection"]
@@ -412,6 +445,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
             raise EntryRiskRejected("unreadable_entry_risk_evidence") from error
 
     def _cartel_de_configuracion(self) -> str:
+        usd_cap = getattr(self, "second_policy", {}).get("max_entry_budget_usd")
+        cap_text = f" · tope ${usd_cap:.2f} por entrada incluidos gastos estimados" if usd_cap is not None else ""
         if getattr(self, "only_dev", False):
             if creator_history_only(self.second_policy):
                 selection = "dev >=1% migraciones verificadas"
@@ -419,12 +454,12 @@ class FourStrategyTrader(legacy.UniversalTrader):
                     selection += (f" · primer bloque: >={self.second_policy['min_distinct_first_block_buyers']} compradores "
                                   f"y >=${self.second_policy['min_first_block_volume_usd']:.0f} volumen total")
                 return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
-                        f"incluidos gastos · {selection} · "
+                        f"incluidos gastos{cap_text} · {selection} · "
                         "sin MC maximo ni bloque fijo de entrada · 4 plazas compartidas · "
                         "prioridad compra $0.07 / salidas $0.03")
             return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
                     "incluidos gastos · dev >=1% migraciones verificadas · MC <4200 · "
-                    "2 compradores / 275 USD primer bloque · 4 plazas compartidas")
+                    f"2 compradores / 275 USD primer bloque · 4 plazas compartidas{cap_text}")
         message = (
             f"CONFIG ACTIVA · FOUR STRATEGIES · {self.fraccion_saldo:.0%} del SOL liquido confirmado "
             "por presupuesto, incluidos gastos · 4 plazas compartidas · "
@@ -432,7 +467,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
         )
         if getattr(self, "second_policy", {}).get("enabled"):
             label = "dev/historial" if creator_history_only(self.second_policy) else "dev/segundo bloque"
-            message += f" · QUINTA: {label}, presupuesto propio {self.second_policy['balance_fraction']:.0%}"
+            message += f" · QUINTA: {label}, presupuesto propio {self.second_policy['balance_fraction']:.0%}{cap_text}"
         return message
 
     def _cartel_de_salidas(self) -> str:
@@ -531,6 +566,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
             if creator_history_only(self.second_policy):
                 logger.info("DEV HISTORY ONLY enabled: >=1%% verified migrations, %.0f%% SOL budget; buy priority $0.07 / all exits $0.03",
                             self.second_policy["balance_fraction"]*100)
+                logger.info("DEV inclusive entry budget cap USD (including slippage and fee headroom): %s",
+                            self.second_policy.get("max_entry_budget_usd", "none"))
                 if self.second_policy.get("require_first_block_activity", False):
                     logger.info("DEV first-block activity: >=%d distinct buyers, >=%.0f USD total volume",
                                 self.second_policy["min_distinct_first_block_buyers"],

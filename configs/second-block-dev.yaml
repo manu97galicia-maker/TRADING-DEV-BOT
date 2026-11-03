@@ -3,6 +3,8 @@ enabled: false
 strategy_id: dev-second-block
 entry_rule: creator_migration_only
 balance_fraction: 0.80
+# Inclusive entry budget: lower of this USD cap and the balance fraction.
+max_entry_budget_usd: 20.0
 # MC threshold is retained for the classic profile, unused in history-only mode.
 max_entry_mc_usd: 4200
 min_creator_migration_fraction: 0.01

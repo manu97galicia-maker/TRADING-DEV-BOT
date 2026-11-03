@@ -14,9 +14,14 @@ comisiones base, del protocolo y renta aparte. Mantiene TP/SL y controles del li
 El funcionamiento actual se detalla en `DEV_ONLY.md`. Las secciones siguientes
 documentan el perfil clásico disponible con `entry_rule: second_block`.
 
-El presupuesto activo de nuevas operaciones del dev es el 80% inclusivo del SOL
-líquido, manteniendo 0,03 SOL de reserva. Las cuatro estrategias originales y
+El presupuesto activo de nuevas operaciones del dev es el menor entre el 80%
+inclusivo del SOL líquido y **20 USD**, incluyendo margen y gastos estimados,
+manteniendo 0,03 SOL de reserva. El tope `max_entry_budget_usd: 20.0` se
+convierte a SOL con referencia reciente y se revisa antes de enviar; sin una
+referencia válida, no se compra. Las cuatro estrategias originales y
 el perfil clásico conservan su configuración histórica del 90%.
+La configuración se carga al reiniciar manualmente; instalar estos archivos
+no reinicia un proceso que ya está abierto.
 
 La configuración actual `reject_sharp_price_rise: false` quita a la estrategia
 dev el límite de subida del 35% frente al mínimo de los últimos dos segundos.

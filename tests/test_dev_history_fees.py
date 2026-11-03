@@ -103,8 +103,8 @@ class HistoryEntryTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(details["entry_exit_policy"], policy["exit"])
             self.assertEqual(details["policy_fraction"], .80)
             inclusive = round(kwargs["amount_sol"] * 1e9 * 1.15) + 3_700_000
-            self.assertLessEqual(inclusive, 800_000_000)
-            self.assertGreater(inclusive, 799_999_990)
+            self.assertLessEqual(inclusive, 200_000_000)  # $20 inclusive at $100/SOL.
+            self.assertGreater(inclusive, 199_999_990)
             observe("signed", "history-buy")
             return TradeResult(True, tx_signature="history-buy", price=5e-7, amount=1e6)
 
@@ -180,6 +180,7 @@ class HistoryEntryTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(self.book.positions()), 1)
 
     async def test_sol_quote_is_rechecked_before_the_final_buy_priority_cap(self):
+        self.runtime.tope_compra_sol = .05  # Remains below $20 even after the quote doubles.
         async def curve(*args, **kwargs):
             self.runtime.sol_usd = 200
             return self.state
@@ -197,6 +198,7 @@ class HistoryEntryTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(PRIORITY_CAP.get())
 
     async def test_pending_90_percent_buy_cannot_share_its_sol_with_another_mint(self):
+        self.runtime.rpc.return_value = {"value": 250_000_000, "context": {"slot": 100}}
         entered, release = asyncio.Event(), asyncio.Event()
 
         async def buy(*args, **kwargs):

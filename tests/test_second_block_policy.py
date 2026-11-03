@@ -48,6 +48,7 @@ def enabled_policy():
     policy = copy.deepcopy(POLICY)
     policy["enabled"] = True
     policy["entry_rule"] = "second_block"
+    policy.pop("max_entry_budget_usd", None)  # Historical classic profile has no USD cap.
     policy["balance_fraction"] = .90
     policy["buy_priority_fee_cap_usd"] = .06
     policy["min_first_block_volume_usd"] = 275

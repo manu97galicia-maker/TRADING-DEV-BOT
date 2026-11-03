@@ -22,16 +22,18 @@ No exige MC, concentración, historial de variaciones de precio ni entrar en
 un bloque dos/tres concreto. Observa nuevas creaciones y espera a verificar su historial
 y a preparar una curva comprable; no compra monedas ya migradas a un pool.
 
-El presupuesto de nuevas entradas del dev es el 80% del SOL líquido confirmado,
-incluidos margen y gastos. Mantiene la reserva de 0,03 SOL, cuatro
+El presupuesto de nuevas entradas del dev es el menor entre el 80% del SOL
+líquido confirmado y **20 USD**, incluidos margen y gastos estimados.
+`max_entry_budget_usd: 20.0` se convierte a SOL con una referencia reciente;
+si falta esa referencia, no se admite la compra. Mantiene la reserva de 0,03 SOL, cuatro
 plazas, deduplicación y tandas de cinco por ROI neto. El SL sigue al 22%; al
 +35% recupera el equivalente nominal a la inversión más 12% y reparte el resto
 en tres ventas, con objetivos +89%, +164,6% y +270,44% desde la entrada.
 
-La validación de arranque `--only-dev` usa también ese 80%, no el 90% de las
-otras estrategias. Con el saldo de ejemplo de 0,228667072 SOL, el presupuesto
-máximo es aproximadamente 0,182933657 SOL y deja 0,045733415 SOL, por encima
-de la reserva. Las posiciones ya abiertas conservan sus importes registrados.
+La validación de arranque `--only-dev` usa también el 80% y el tope inclusivo
+de 20 USD. El tope se vuelve a comprobar antes de enviar: si la referencia
+SOL/USD aumenta y el presupuesto ya lo supera, se descarta ese intento.
+Las posiciones ya abiertas conservan sus importes registrados.
 
 La prioridad de compra tiene un tope de **0,07 USD por intento** y todas las
 salidas del dev, incluidos TP, SL y ruta Jupiter, **0,03 USD por intento**. Son
@@ -79,6 +81,8 @@ La estrategia dev debe tener `enabled: true` en
 desactivada por defecto; el archivo del droplet conserva su activación previa.
 No se deben borrar las otras políticas del YAML: forman parte de la identidad
 histórica del libro. El cartel del nuevo proceso identifica `SOLO DEV`.
+Los cambios del tope requieren reiniciar manualmente para cargar la nueva
+configuración en el proceso.
 
 Para diagnóstico sin arrancar:
 

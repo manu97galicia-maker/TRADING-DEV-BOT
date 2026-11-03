@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import math
+from decimal import Decimal
 from pathlib import Path
 
 import yaml
@@ -43,6 +44,7 @@ def validate_second_policy(settings: dict) -> None:
             or type(settings.get("require_first_block_activity", False)) is not bool
             or type(settings.get("reject_sharp_price_rise", True)) is not bool):
         raise ValueError("Second-block settings differ from the requested entry policy")
+    entry_budget_cap_lamports(settings, 1, quote_age_seconds=0)
     for key in ["max_slot_age_seconds", "creator_cache_seconds", "history_timeout_seconds"]:
         if not isinstance(settings.get(key), (int, float)) or not math.isfinite(settings[key]) or settings[key] <= 0:
             raise ValueError("Second-block observation limits must be finite and positive")
@@ -75,6 +77,18 @@ def entry_balance_fraction(config_path: Path, plan: dict, *, only_dev: bool = Fa
     """Use the selected source's budget in readiness and CLI reports."""
     return float(load_second_policy(config_path, plan)["balance_fraction"]
                  if only_dev else plan["trade"]["fraccion_saldo"])
+
+
+def entry_budget_cap_lamports(settings: dict, sol_usd: float, *, quote_age_seconds: float) -> int | None:
+    """Floor an inclusive USD entry limit using a fresh SOL/USD reference."""
+    if "max_entry_budget_usd" not in settings:
+        return None
+    cap_usd = settings["max_entry_budget_usd"]
+    values = (cap_usd, sol_usd, quote_age_seconds)
+    if (not all(type(value) in (int, float) and math.isfinite(value) for value in values)
+            or cap_usd <= 0 or sol_usd <= 0 or not 0 <= quote_age_seconds <= 30):
+        raise ValueError("USD entry budget requires a positive cap and a fresh SOL/USD quote")
+    return int(Decimal(str(cap_usd)) / Decimal(str(sol_usd)) * 1_000_000_000)
 
 
 def second_block_ladder(

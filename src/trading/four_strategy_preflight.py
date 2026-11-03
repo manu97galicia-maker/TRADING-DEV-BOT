@@ -8,7 +8,9 @@ from __future__ import annotations
 import asyncio
 import importlib.util
 import json
+import math
 import os
+import time
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
@@ -168,7 +170,20 @@ def inspect_local(plan: dict, config_path: Path, *, only_dev: bool = False) -> d
     return _finish(report)
 
 
-async def inspect_online(plan: dict, config_path: Path, *, only_dev: bool = False) -> dict:  # noqa: C901, PLR0915 -- independent read-only checks
+async def _sol_usd_reference(session: object) -> float:
+    """Read the same highest-liquidity SOL reference selected by the runtime."""
+    async with session.get(f"https://api.dexscreener.com/latest/dex/tokens/{WSOL}") as response:
+        response.raise_for_status()
+        pairs = (await response.json()).get("pairs") or []
+    pairs = [p for p in pairs if (p.get("baseToken") or {}).get("address") == WSOL]
+    best = max(pairs, key=lambda p: float((p.get("liquidity") or {}).get("usd") or 0))
+    price = float(best["priceUsd"])
+    if not math.isfinite(price) or price <= 0:
+        raise ValueError("Invalid SOL/USD reference")
+    return price
+
+
+async def inspect_online(plan: dict, config_path: Path, *, only_dev: bool = False) -> dict:  # noqa: C901, PLR0912, PLR0915 -- independent read-only checks
     """Verify configured services with read methods only; never start a trader."""
     import aiohttp
     import websockets
@@ -195,6 +210,14 @@ async def inspect_online(plan: dict, config_path: Path, *, only_dev: bool = Fals
                 raise ValueError("Read method failed")
             return data["result"]
 
+        sol_usd, sol_quote_at = 0.0, 0.0
+        try:
+            sol_usd = await _sol_usd_reference(session)
+            sol_quote_at = time.monotonic()
+            _record(report, "sol_usd_reference", "pass", "Fuente de cotización SOL/USD comprobada")
+        except Exception as error:
+            _record(report, "sol_usd_reference", "fail", f"Comprobación fallida: {type(error).__name__}")
+
         try:
             health = await rpc("getHealth", [])
             genesis = await rpc("getGenesisHash", [])
@@ -217,14 +240,31 @@ async def inspect_online(plan: dict, config_path: Path, *, only_dev: bool = Fals
                 lamports = int(balance["value"])
                 report["confirmed_sol_balance"] = lamports / 1e9
                 from trading.buy_budget import inclusive_balance_entry
-                from trading.second_block_policy import entry_balance_fraction
+                from trading.second_block_policy import (
+                    entry_balance_fraction,
+                    entry_budget_cap_lamports,
+                    load_second_policy,
+                )
+
+                budget_cap, fees = None, 3_000_000
+                if only_dev:
+                    from trading.strategy_loss_guard import priority_fee_cap_lamports
+
+                    second = load_second_policy(config_path, plan)
+                    quote_age = time.monotonic() - sol_quote_at
+                    budget_cap = entry_budget_cap_lamports(second, sol_usd, quote_age_seconds=quote_age)
+                    fees += priority_fee_cap_lamports(sol_usd, quote_age_seconds=quote_age,
+                                                     cap_usd=second["buy_priority_fee_cap_usd"])
+                    report["entry_budget_cap_usd"] = second.get("max_entry_budget_usd")
 
                 amount, budget = inclusive_balance_entry(
                     lamports,
                     entry_balance_fraction(config_path, plan, only_dev=only_dev),
                     plan["trade"]["buy_slippage"],
-                    3_000_000,
+                    fees,
+                    budget_cap_lamports=budget_cap,
                 )
+                report["prepared_entry_budget_sol"] = budget / 1e9
                 enough = amount > 0 and budget <= lamports - int(
                     plan["trade"]["min_reserve_sol"] * 1e9
                 )
@@ -361,31 +401,6 @@ async def inspect_online(plan: dict, config_path: Path, *, only_dev: bool = Fals
             _record(
                 report,
                 "jupiter_quote",
-                "fail",
-                f"Comprobación fallida: {type(error).__name__}",
-            )
-        try:
-            async with session.get(
-                f"https://api.dexscreener.com/latest/dex/tokens/{WSOL}"
-            ) as response:
-                response.raise_for_status()
-                pairs = (await response.json()).get("pairs") or []
-            valid = [
-                p
-                for p in pairs
-                if (p.get("baseToken") or {}).get("address") == WSOL
-                and float(p.get("priceUsd") or 0) > 0
-            ]
-            _record(
-                report,
-                "sol_usd_reference",
-                "pass" if valid else "fail",
-                "Fuente de cotización SOL/USD comprobada",
-            )
-        except Exception as error:
-            _record(
-                report,
-                "sol_usd_reference",
                 "fail",
                 f"Comprobación fallida: {type(error).__name__}",
             )

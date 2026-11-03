@@ -161,7 +161,11 @@ class InheritedInclusiveEntryTests(unittest.IsolatedAsyncioTestCase):
                 logger, release_mint = await self.handle(trader, token)
                 broker.execute.assert_awaited_once()
                 fraction_tenths = 8 if strategy == STRATEGY_ID else 9
-                self.assertGreater(during_buy["nominal"], balance / SOL * (.60 if strategy == STRATEGY_ID else .70))
+                if strategy == STRATEGY_ID:
+                    self.assertGreater(during_buy["nominal"], .15)
+                    self.assertLessEqual(during_buy["position"]["budget"], 200_000_000)
+                else:
+                    self.assertGreater(during_buy["nominal"], balance / SOL * .70)
                 self.assertLess(during_buy["nominal"], balance / SOL * fraction_tenths/10)
                 self.assertLessEqual(during_buy["reserved"], balance * fraction_tenths // 10)
                 self.assertLessEqual(during_buy["position"]["budget"], balance * fraction_tenths // 10)
