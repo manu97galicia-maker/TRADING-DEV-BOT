@@ -217,10 +217,11 @@ async def inspect_online(plan: dict, config_path: Path, *, only_dev: bool = Fals
                 lamports = int(balance["value"])
                 report["confirmed_sol_balance"] = lamports / 1e9
                 from trading.buy_budget import inclusive_balance_entry
+                from trading.second_block_policy import entry_balance_fraction
 
                 amount, budget = inclusive_balance_entry(
                     lamports,
-                    plan["trade"]["fraccion_saldo"],
+                    entry_balance_fraction(config_path, plan, only_dev=only_dev),
                     plan["trade"]["buy_slippage"],
                     3_000_000,
                 )

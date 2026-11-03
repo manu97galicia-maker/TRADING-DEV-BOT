@@ -101,10 +101,10 @@ class HistoryEntryTests(unittest.IsolatedAsyncioTestCase):
             reservation = self.book.positions()[0]
             details = json.loads(reservation["details"])
             self.assertEqual(details["entry_exit_policy"], policy["exit"])
-            self.assertEqual(details["policy_fraction"], .90)
+            self.assertEqual(details["policy_fraction"], .80)
             inclusive = round(kwargs["amount_sol"] * 1e9 * 1.15) + 3_700_000
-            self.assertLessEqual(inclusive, 900_000_000)
-            self.assertGreater(inclusive, 899_999_990)
+            self.assertLessEqual(inclusive, 800_000_000)
+            self.assertGreater(inclusive, 799_999_990)
             observe("signed", "history-buy")
             return TradeResult(True, tx_signature="history-buy", price=5e-7, amount=1e6)
 

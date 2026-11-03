@@ -106,7 +106,10 @@ def main() -> None:
             raise SystemExit(2)
         return
     if not args.run:
-        from trading.second_block_policy import load_second_policy
+        from trading.second_block_policy import (
+            entry_balance_fraction,
+            load_second_policy,
+        )
 
         second = load_second_policy(args.config, plan)
         print(
@@ -120,7 +123,7 @@ def main() -> None:
                     ]),
                     "entry_mode": "dev_only" if args.only_dev else "all",
                     "max_shared_positions": plan["trade"]["max_posiciones"],
-                    "entry_fraction_inclusive": plan["trade"]["fraccion_saldo"],
+                    "entry_fraction_inclusive": entry_balance_fraction(args.config, plan, only_dev=args.only_dev),
                     "initial_stop": plan["trade"]["stop_loss_percentage"],
                     "enabled": plan["enabled"],
                     "five_trade_evaluation": plan.get("five_trade_evaluation"),

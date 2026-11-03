@@ -22,10 +22,16 @@ No exige MC, concentración, historial de variaciones de precio ni entrar en
 un bloque dos/tres concreto. Observa nuevas creaciones y espera a verificar su historial
 y a preparar una curva comprable; no compra monedas ya migradas a un pool.
 
-Mantiene el presupuesto inclusivo del 90% del SOL, reserva de 0,03 SOL, cuatro
+El presupuesto de nuevas entradas del dev es el 80% del SOL líquido confirmado,
+incluidos margen y gastos. Mantiene la reserva de 0,03 SOL, cuatro
 plazas, deduplicación y tandas de cinco por ROI neto. El SL sigue al 22%; al
 +35% recupera el equivalente nominal a la inversión más 12% y reparte el resto
 en tres ventas, con objetivos +89%, +164,6% y +270,44% desde la entrada.
+
+La validación de arranque `--only-dev` usa también ese 80%, no el 90% de las
+otras estrategias. Con el saldo de ejemplo de 0,228667072 SOL, el presupuesto
+máximo es aproximadamente 0,182933657 SOL y deja 0,045733415 SOL, por encima
+de la reserva. Las posiciones ya abiertas conservan sus importes registrados.
 
 La prioridad de compra tiene un tope de **0,07 USD por intento** y todas las
 salidas del dev, incluidos TP, SL y ruta Jupiter, **0,03 USD por intento**. Son

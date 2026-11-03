@@ -26,14 +26,14 @@ def validate_second_policy(settings: dict) -> None:
     if not settings["enabled"]:
         return
     expected = {
-        "strategy_id": STRATEGY_ID, "balance_fraction": .90,
+        "strategy_id": STRATEGY_ID,
         "min_creator_migration_fraction": .01, "developer_identity": "creation_signer",
         "history_provider": "helius_transactions",
     }
     expected.update(
-        {"buy_priority_fee_cap_usd": .07, "sell_priority_fee_cap_usd": .03}
+        {"balance_fraction": .80, "buy_priority_fee_cap_usd": .07, "sell_priority_fee_cap_usd": .03}
         if creator_history_only(settings) else
-        {"max_entry_mc_usd": 4200, "min_first_block_volume_usd": 275,
+        {"balance_fraction": .90, "max_entry_mc_usd": 4200, "min_first_block_volume_usd": 275,
          "min_distinct_first_block_buyers": 2, "buy_priority_fee_cap_usd": .06})
     expected.update({"min_first_block_volume_usd": 250, "min_distinct_first_block_buyers": 2}
                     if creator_history_only(settings) and settings.get("require_first_block_activity", False) else {})
@@ -69,6 +69,12 @@ def load_second_policy(config_path: Path, plan: dict) -> dict:
     value = yaml.safe_load(path.read_text(encoding="utf-8"))
     validate_second_policy(value)
     return value
+
+
+def entry_balance_fraction(config_path: Path, plan: dict, *, only_dev: bool = False) -> float:
+    """Use the selected source's budget in readiness and CLI reports."""
+    return float(load_second_policy(config_path, plan)["balance_fraction"]
+                 if only_dev else plan["trade"]["fraccion_saldo"])
 
 
 def second_block_ladder(
