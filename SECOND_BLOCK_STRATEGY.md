@@ -32,10 +32,12 @@ El presupuesto es el **23% del SOL líquido confirmado**, incluidos margen de
 slippage y gastos. La prioridad tiene tope de **0,06 USD por intento** con
 cotización SOL/USD reciente; renta, comisión base y comisiones de protocolo
 son conceptos distintos. Las otras cuatro estrategias usan el 30% por nueva operación.
-Las cinco comparten tres plazas y la pausa persistente por tres pérdidas en
+Las cinco comparten cuatro plazas y la pausa persistente por tres pérdidas en
 los últimos cinco cierres completos de cada estrategia. Permanecen los filtros
 de precio y concentración, el stop y la salida por inactividad configurada;
-la salida por ventas de 1 SOL continúa desactivada.
+la salida por ventas de 1 SOL continúa desactivada. Además, cada estrategia usa
+tandas independientes de cinco operaciones auditadas; el siguiente grupo solo
+se admite con ROI neto positivo. Véase `FIVE_TRADE_EVALUATION.md`.
 En la quinta se consulta también la tenencia del firmante real, incluso fuera
 del top 20, y se le aplica el límite de concentración del 5%, además del mismo
 límite para el receptor de comisiones.

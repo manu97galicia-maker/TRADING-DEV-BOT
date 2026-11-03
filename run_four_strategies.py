@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 def check_plan(path: Path) -> dict:
     """Validate explicit shared risk settings without loading credentials."""
+    from trading.five_trade_evaluation import validate_evaluation_policy
     from trading.four_strategy_entry_guard import validate_policy
     from trading.review_exit_ladder import build_review_ladder
     from trading.second_block_policy import load_second_policy
@@ -31,9 +32,10 @@ def check_plan(path: Path) -> dict:
     if not math.isfinite(inactivity) or inactivity < 0:
         raise ValueError("Inactivity duration must be finite and nonnegative")
     settings = plan["four_strategies"]
+    validate_evaluation_policy(plan.get("five_trade_evaluation"))
     validate_policy(settings["entry_protection"])
-    if trade["max_posiciones"] != 3 or trade["fraccion_saldo"] != 0.30:
-        raise ValueError("Bundle requires three positions and a 30% fraction")
+    if trade["max_posiciones"] != 4 or trade["fraccion_saldo"] != 0.30:
+        raise ValueError("Bundle requires four positions and a 30% fraction")
     if (
         trade["stop_loss_percentage"] != 0.25
         or settings["exit"]["stop_loss_fraction"] != 0.25
@@ -113,10 +115,11 @@ def main() -> None:
                         *plan["four_strategies"]["strategies"],
                         "telegram-immediate",
                     ],
-                    "max_shared_positions": 3,
+                    "max_shared_positions": plan["trade"]["max_posiciones"],
                     "entry_fraction_inclusive": plan["trade"]["fraccion_saldo"],
                     "initial_stop": 0.25,
                     "enabled": plan["enabled"],
+                    "five_trade_evaluation": plan.get("five_trade_evaluation"),
                     "second_block_dev": {"enabled": second["enabled"],
                         "entry_fraction_inclusive": second.get("balance_fraction"),
                         "exit_definition": (second.get("exit") or {}).get("first_sale_mode", "absent")},

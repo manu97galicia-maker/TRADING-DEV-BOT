@@ -63,10 +63,12 @@ class StartupTests(unittest.IsolatedAsyncioTestCase):
                 captured["trader"] = self
 
             def configure_four(self, settings: dict, *, no_volume_exit_seconds: float = 0,
-                               second_block_policy: dict | None = None) -> None:
+                               second_block_policy: dict | None = None,
+                               evaluation_policy: dict | None = None) -> None:
                 captured["settings"] = settings
                 captured["inactivity"] = no_volume_exit_seconds
                 captured["second_policy"] = second_block_policy
+                captured["evaluation_policy"] = evaluation_policy
 
         with (
             patch.object(bot_runner, "load_bot_config", return_value=plan),
@@ -98,8 +100,11 @@ class StartupTests(unittest.IsolatedAsyncioTestCase):
                 notifier.configurar_avisos(None)
         captured["trader"].start.assert_awaited_once()
         self.assertEqual(captured["kwargs"]["fraccion_saldo"], 0.30)
+        self.assertEqual(captured["kwargs"]["max_posiciones"], 4)
         self.assertEqual(captured["settings"], plan["four_strategies"])
         self.assertEqual(captured["inactivity"], 300)
+        self.assertEqual(captured["evaluation_policy"]["batch_size"], 5)
+        self.assertEqual(captured["evaluation_policy"]["scope"], "per_strategy")
         self.assertIs(captured["kwargs"]["paper_trade"], False)
 
 

@@ -74,7 +74,9 @@ def main() -> None:  # noqa: C901 -- separate read-only and process-locked apply
         if args.apply:
             from trading.four_strategy_book import FourStrategyBook
 
-            book = FourStrategyBook(path, owner, policy)
+            book = FourStrategyBook(path, owner, policy,
+                max_positions=cfg.get("trade", {}).get("max_posiciones", 3),
+                evaluation_policy=cfg.get("five_trade_evaluation"))
             for audit in audits:
                 if audit["state"] != "ready":
                     continue
@@ -83,6 +85,8 @@ def main() -> None:  # noqa: C901 -- separate read-only and process-locked apply
                     "signatures": audit["signatures"],
                     "previous_signatures": [s for s, _ in audit["known_receipts"]],
                     "manual_reconciliation": True,
+                    "buy_debit_lamports": audit["buy_debit_lamports"],
+                    "buy_debit_verified": audit["buy_debit_verified"],
                 }, additional_receipts=audit["additional_receipts"])
         print(json.dumps({"mode": "apply" if args.apply else "read_only_plan", "wallet": owner,
             "positions": audits, "trader_started": False}, ensure_ascii=False, indent=2))

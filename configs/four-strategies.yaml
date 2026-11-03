@@ -6,6 +6,13 @@ wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
 enabled: false
 second_block_dev_config: second-block-dev.yaml
+five_trade_evaluation:
+  enabled: true
+  scope: per_strategy
+  batch_size: 5
+  roi_currency: SOL
+  continue_when: strictly_positive_net_roi
+  legacy_loss_guard: keep_three_in_five
 platform: pump_fun
 avisos_telegram: true
 trade:
@@ -14,7 +21,7 @@ trade:
   fraccion_saldo: 0.30
   fraccion_base: libre
   min_reserve_sol: 0.03
-  max_posiciones: 3
+  max_posiciones: 4
   buy_slippage: 0.15
   sell_slippage: 0.25
   sell_slippage_proteccion: 0.50

@@ -15,12 +15,17 @@ from itertools import pairwise
 from pathlib import Path
 
 from trading.buy_budget import inclusive_balance_entry
+from trading.five_trade_evaluation import FiveTradeEvaluation, evaluation_report
 
 
 class FourStrategyBook:
-    """Keep three positions, including pending submissions and unsold runners."""
+    """Keep a shared limit, including pending submissions and unsold runners."""
 
-    def __init__(self, path: Path, owner: str, policy_id: str) -> None:
+    def __init__(self, path: Path, owner: str, policy_id: str, *, max_positions: int = 3,
+                 evaluation_policy: dict | None = None) -> None:
+        if type(max_positions) is not int or not 1 <= max_positions <= 4:
+            raise ValueError("Invalid shared position limit")
+        self.max_positions = max_positions
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with closing(self.connect()) as db, db:
@@ -45,6 +50,7 @@ class FourStrategyBook:
             db.execute(
                 "INSERT OR IGNORE INTO settings VALUES (1,?,?,0)", (owner, policy_id)
             )
+            self.evaluation = FiveTradeEvaluation.configure(db, evaluation_policy)
 
     def connect(self) -> sqlite3.Connection:
         db = sqlite3.connect(self.path, timeout=10)
@@ -77,11 +83,16 @@ class FourStrategyBook:
 
     def paused(self, strategy: str) -> bool:
         with closing(self.connect()) as db:
-            return bool(
-                db.execute(
-                    "SELECT 1 FROM pauses WHERE strategy=?", (strategy,)
-                ).fetchone()
-            )
+            return self._paused_in(db, strategy)
+
+    def _paused_in(self, db: object, strategy: str) -> bool:
+        legacy = (not self.evaluation or self.evaluation.keep_legacy_loss_guard) and db.execute(
+            "SELECT 1 FROM pauses WHERE strategy=?", (strategy,)).fetchone()
+        return bool(legacy or (self.evaluation and self.evaluation.paused(db, strategy)))
+
+    def can_admit(self, strategy: str) -> bool:
+        with closing(self.connect()) as db:
+            return not self._paused_in(db, strategy) and (not self.evaluation or self.evaluation.can_admit(db, strategy))
 
     def reserve(  # noqa: PLR0913, PLR0917 -- all inputs belong to one atomic admission
         self,
@@ -104,9 +115,7 @@ class FourStrategyBook:
             raise ValueError("Invalid reservation inputs")
         with closing(self.connect()) as db, db:
             db.execute("BEGIN IMMEDIATE")
-            if db.execute(
-                "SELECT 1 FROM pauses WHERE strategy=?", (strategy,)
-            ).fetchone():
+            if self._paused_in(db, strategy):
                 return None
             watermark = db.execute(
                 "SELECT watermark FROM settings WHERE id=1"
@@ -116,7 +125,7 @@ class FourStrategyBook:
             ).fetchall()
             if (
                 slot < watermark
-                or len(rows) >= 3
+                or len(rows) >= self.max_positions
                 or any(r[0] == "uncertain" for r in rows)
                 or db.execute(
                     "SELECT 1 FROM positions WHERE mint=?", (mint,)
@@ -136,6 +145,9 @@ class FourStrategyBook:
             if amount <= 0 or budget > balance - reserve - pending:
                 return None
             nonce = uuid.uuid4().hex
+            evaluation = self.evaluation.admit(db, strategy, nonce) if self.evaluation else None
+            if self.evaluation and evaluation is None:
+                return None
             details = {
                 "mint": mint,
                 "features": features,
@@ -143,6 +155,8 @@ class FourStrategyBook:
                 "policy_fraction": fraction,
                 "balance_lamports": balance,
             }
+            if evaluation is not None:
+                details["five_trade_evaluation"] = evaluation
             db.execute(
                 "INSERT INTO positions VALUES (?,?,?,'reserved',?,NULL,?,?)",
                 (
@@ -169,9 +183,11 @@ class FourStrategyBook:
 
     def cancel_unsubmitted(self, nonce: str) -> None:
         with closing(self.connect()) as db, db:
-            db.execute(
+            deleted = db.execute(
                 "DELETE FROM positions WHERE nonce=? AND state='reserved'", (nonce,)
-            )
+            ).rowcount
+            if deleted and self.evaluation:
+                self.evaluation.release_unbroadcast(db, nonce)
 
     def receipt(self, nonce: str, signature: str, kind: str) -> None:
         if not signature or kind not in {"buy", "sell", "failed"}:
@@ -213,10 +229,12 @@ class FourStrategyBook:
             if not db.execute(
                 "SELECT 1 FROM receipts WHERE nonce=? AND kind!='rejected'", (nonce,)
             ).fetchone():
-                db.execute(
+                deleted = db.execute(
                     "DELETE FROM positions WHERE nonce=? AND state IN ('reserved','uncertain')",
                     (nonce,),
-                )
+                ).rowcount
+                if deleted and self.evaluation:
+                    self.evaluation.release_unbroadcast(db, nonce)
 
     def opened(self, nonce: str, slot: int, entry: dict) -> None:
         with closing(self.connect()) as db, db:
@@ -238,7 +256,7 @@ class FourStrategyBook:
                 (nonce,),
             ).fetchall()
 
-    def settle(
+    def settle(  # noqa: C901 -- atomically reconcile receipts, loss guard and evaluation outcome
         self, nonce: str, net: int, context_slot: int, details: dict,
         *, additional_receipts: list[tuple[str, str]] | None = None,
     ) -> None:
@@ -286,8 +304,11 @@ class FourStrategyBook:
                 "SELECT net FROM outcomes WHERE strategy=? ORDER BY sequence DESC LIMIT 5",
                 (row[0],),
             ).fetchall()
-            if len(recent) == 5 and sum(r[0] < 0 for r in recent) >= 3:
+            if (not self.evaluation or self.evaluation.keep_legacy_loss_guard) and len(recent) == 5 and sum(r[0] < 0 for r in recent) >= 3:
                 db.execute("INSERT OR IGNORE INTO pauses VALUES (?)", (row[0],))
+            if self.evaluation:
+                cost = evidence.get("buy_debit_lamports") if evidence.get("buy_debit_verified") is True else None
+                self.evaluation.closed(db, nonce, net, cost)
             db.execute(
                 "UPDATE settings SET watermark=MAX(watermark,?) WHERE id=1",
                 (context_slot,),
@@ -300,6 +321,7 @@ class FourStrategyBook:
             rows = db.execute(
                 "SELECT strategy,net,details FROM outcomes ORDER BY sequence"
             ).fetchall()
+            batches = evaluation_report(db)
         groups: dict[str, dict] = {}
         for strategy, net, raw in rows:
             group = groups.setdefault(
@@ -347,4 +369,6 @@ class FourStrategyBook:
             "strategies": groups,
             "open_or_uncertain": len(self.positions()),
             "automatic_parameter_changes": False,
+            "max_shared_positions": self.max_positions,
+            "five_trade_evaluation": batches,
         }

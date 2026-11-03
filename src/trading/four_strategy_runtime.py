@@ -239,7 +239,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
         _PROCEEDS.set(value)
 
     def configure_four(self, settings: dict, *, no_volume_exit_seconds: float = 0,
-                       second_block_policy: dict | None = None) -> None:
+                       second_block_policy: dict | None = None,
+                       evaluation_policy: dict | None = None) -> None:
         if not math.isfinite(no_volume_exit_seconds) or no_volume_exit_seconds < 0:
             raise ValueError("Inactivity exit requires a nonnegative finite duration")
         self.no_volume_exit_seconds = no_volume_exit_seconds
@@ -259,7 +260,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
                 "The opt-in runtime requires one wallet; use fake brokers in tests"
             )
         if (
-            self.max_posiciones != 3
+            self.max_posiciones != 4
             or self.fraccion_saldo != 0.30
             or self.stop_loss_percentage != 0.25
         ):
@@ -272,6 +273,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
             Path(settings["database"]),
             str(self.wallet.pubkey),
             hashlib.sha256(policy.encode()).hexdigest(),
+            max_positions=self.max_posiciones,
+            evaluation_policy=evaluation_policy,
         )
         self.buyer = SharedBuyer(self, self.buyer)
         self.sol_usd, self.sol_quote_at = 0.0, 0.0
@@ -340,7 +343,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
     def _cartel_de_configuracion(self) -> str:
         message = (
             f"CONFIG ACTIVA · FOUR STRATEGIES · {self.fraccion_saldo:.0%} del SOL liquido confirmado "
-            "por presupuesto, incluidos gastos · 3 plazas compartidas · "
+            "por presupuesto, incluidos gastos · 4 plazas compartidas · "
             "presion 8K / Telegram / primer bloque / cruce 21K"
         )
         if getattr(self, "second_policy", {}).get("enabled"):
@@ -357,6 +360,9 @@ class FourStrategyTrader(legacy.UniversalTrader):
             policy = self.second_policy["exit"]
             message += (f" · QUINTA: SL -{policy['stop_loss_fraction']:.0%}, "
                 f"primera venta {policy['first_sale_mode']}; objetivos +35/+89/+164.6/+270.44%")
+        evaluation = getattr(getattr(self, "book", None), "evaluation", None)
+        if evaluation:
+            message += " · TANDAS: 5 cierres por estrategia; siguiente tanda solo con ROI neto SOL >0"
         return message
 
     def receipt_writer(self, nonce: str, kind: str) -> Callable[[str, str], None]:
@@ -480,7 +486,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
 
     async def _handle_token(self, token_info: object) -> None:
         signal = self.current_signal(token_info)
-        if not signal or self.book.paused(signal["strategy"]):
+        if not signal or not self.book.can_admit(signal["strategy"]):
             return
         if (token_info.additional_data or {}).get("migrated"):
             return
@@ -947,7 +953,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
                         {
                             "encoding": "jsonParsed",
                             "commitment": "finalized",
-                            "maxSupportedTransactionVersion": 0,
+                            "maxSupportedTransactionVersion": 1,
                         },
                     ],
                 )
@@ -991,8 +997,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
             and not any(kind == "sell" for _, kind in signatures)
         ):
             return  # An unrelated manual exit cannot supply attributed P&L.
-        net = 0
-        for (signature, _), status in zip(signatures, values, strict=True):
+        net, buy_debit, buy_debit_verified = 0, 0, True
+        for (signature, kind), status in zip(signatures, values, strict=True):
             tx = await self.rpc(
                 "getTransaction",
                 [
@@ -1000,7 +1006,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
                     {
                         "encoding": "jsonParsed",
                         "commitment": "finalized",
-                        "maxSupportedTransactionVersion": 0,
+                        "maxSupportedTransactionVersion": 1,
                     },
                 ],
             )
@@ -1013,9 +1019,13 @@ class FourStrategyTrader(legacy.UniversalTrader):
                 for k in tx["transaction"]["message"]["accountKeys"]
             ]
             owner_index = keys.index(str(self.wallet.pubkey))
-            net += int(tx["meta"]["postBalances"][owner_index]) - int(
+            native = int(tx["meta"]["postBalances"][owner_index]) - int(
                 tx["meta"]["preBalances"][owner_index]
             )
+            net += native
+            if kind == "buy":
+                buy_debit_verified = buy_debit_verified and native < 0
+                buy_debit += max(0, -native)
         # Serialize against receipt writers: new receipt means the audit must
         # be repeated before a slot or a loss-window outcome can be released.
         if self.book.signatures(position["nonce"]) != signatures:
@@ -1028,6 +1038,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
                 "verified_zero_holdings": True,
                 "commitment": "finalized",
                 "signatures": [s for s, _ in signatures],
+                "buy_debit_lamports": buy_debit,
+                "buy_debit_verified": buy_debit_verified and buy_debit > 0,
             },
         )
         report = Path(self.four["database"]).parent / "report.json"

@@ -121,12 +121,15 @@ def audit_manual_sale(  # noqa: C901, PLR0912, PLR0915 -- reject each incomplete
     all_receipts = known + additional
     if not any(kind == "sell" for _, kind in all_receipts):
         raise IncompleteManualAuditError("No attributed disposal found")
-    total_tokens, net, max_slot = 0, 0, 0
-    for signature, _kind in all_receipts:
+    total_tokens, net, max_slot, buy_debit, buy_debit_verified = 0, 0, 0, 0, True
+    for signature, kind in all_receipts:
         t = transaction(signature)
         flow, native = attributed_flow(t, owner, mint)
         total_tokens += flow
         net += native
+        if kind == "buy":
+            buy_debit_verified = buy_debit_verified and native < 0
+            buy_debit += max(0, -native)
         max_slot = max(max_slot, int(t["slot"]))
     if total_tokens != 0:
         raise IncompleteManualAuditError("Receipt token quantities do not close to zero")
@@ -139,5 +142,6 @@ def audit_manual_sale(  # noqa: C901, PLR0912, PLR0915 -- reject each incomplete
         raise IncompleteManualAuditError("Final zero holdings could not be verified")
     return {"mint": mint, "nonce": position["nonce"], "state": "ready",
             "net_lamports": net, "context_slot": int(final["context"]["slot"]),
+            "buy_debit_lamports": buy_debit, "buy_debit_verified": buy_debit_verified and buy_debit > 0,
             "known_receipts": known, "additional_receipts": additional,
             "signatures": [s for s, _ in all_receipts]}

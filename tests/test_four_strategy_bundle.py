@@ -105,7 +105,7 @@ class BookTests(unittest.TestCase):
             {"verified_zero_holdings": True, "signatures": [mint + "-buy"]},
         )
 
-    def test_all_four_sources_share_exactly_three_slots(self):
+    def test_legacy_default_preserves_exactly_three_slots(self):
         def reserve(index):
             other = FourStrategyBook(self.path, "owner", "policy")
             return other.reserve(
@@ -364,6 +364,9 @@ class AuditTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             self.book.research()["strategies"]["pressure"]["net_lamports"], 100
         )
+        observation = self.book.research()["strategies"]["pressure"]["observations"][0]
+        self.assertEqual(observation["buy_debit_lamports"], 200)
+        self.assertTrue(observation["buy_debit_verified"])
 
 
 class ThirtyPercentSizingTests(unittest.TestCase):
@@ -411,6 +414,23 @@ class ThirtyPercentSizingTests(unittest.TestCase):
     def test_native_sol_reserve_still_blocks_small_balances(self):
         self.assertIsNone(self.reserve("too-small", balance=40_000_000))
         self.assertFalse(self.book.positions())
+
+    def test_four_shared_positions_fit_after_confirmed_debits_but_a_fifth_is_rejected(self):
+        self.book = FourStrategyBook(self.path, "owner", "policy", max_positions=4)
+        for index, balance in enumerate([SOL, 700_000_000, 490_000_000, 343_000_000]):
+            reservation = self.reserve(str(index), balance=balance, slot=100+index)
+            self.assertIsNotNone(reservation)
+            self.book.submitting(reservation["nonce"])
+            self.book.opened(reservation["nonce"], 100+index, {})
+        self.assertEqual(len(self.book.positions()), 4)
+        self.assertIsNone(self.reserve("fifth", balance=240_100_000, slot=105))
+
+    def test_four_slot_limit_still_rejects_pending_spends_that_exceed_cash(self):
+        self.book = FourStrategyBook(self.path, "owner", "policy", max_positions=4)
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            reservations = list(pool.map(lambda i: self.reserve(str(i)), range(8)))
+        self.assertEqual(len([r for r in reservations if r]), 3)
+        self.assertLessEqual(sum(r["budget"] for r in reservations if r), SOL-30_000_000)
 
 
 class ObserverTests(unittest.TestCase):

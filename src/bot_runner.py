@@ -428,6 +428,7 @@ async def start_bot(config_path: str):
                 cfg["four_strategies"],
                 no_volume_exit_seconds=float(cfg["trade"].get("sin_volumen_bajo_entrada_seg", 0)),
                 second_block_policy=load_second_policy(Path(config_path), cfg),
+                evaluation_policy=cfg.get("five_trade_evaluation"),
             )
         _scale_task = (
             asyncio.create_task(_auto_scale(trader))

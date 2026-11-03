@@ -54,6 +54,8 @@ class ManualAuditTests(unittest.TestCase):
         result = self.audit()
         self.assertEqual(result["state"], "ready")
         self.assertEqual(result["net_lamports"], 20_000)
+        self.assertEqual(result["buy_debit_lamports"], 100_000)
+        self.assertTrue(result["buy_debit_verified"])
         self.assertEqual(result["additional_receipts"], [("manual-sell", "sell")])
         self.assertTrue(all(p[1]["maxSupportedTransactionVersion"] == 1
                             for method, p in self.calls if method == "getTransaction"))
