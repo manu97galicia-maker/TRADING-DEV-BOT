@@ -11,6 +11,12 @@ No calcula señales de presión ni guarda estadísticas de monedas ajenas a las
 posiciones vigiladas. Conserva precios y actividad para sus salidas, y sigue
 observando todas las creaciones para verificar el historial del dev.
 
+Si el WebSocket falla, la reconexión usa una espera creciente. Ante HTTP 429
+espera al menos 60 segundos y respeta un `Retry-After` válido más largo.
+Solo recibir datos válidos reinicia esa espera; abrir la conexión o recibir
+un acuse no basta. Esto reduce los reintentos y el ruido del registro, pero
+no repone créditos agotados ni sustituye la reducción de datos del stream.
+
 Solo admite nuevas compras de tokens normales de Pump.fun. Mayhem queda
 excluido en todos los perfiles del coordinador, incluido el filtro de historial
 del dev. Se comprueba la bandera preparada y se vuelve a comprobar con la

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 import websockets
 
 from monitoring import volumen
+from monitoring.stream_reconnect import reconnect_delay, valid_subscription_data
 from trading.token_builder import build_pumpfun_token_info
 
 if TYPE_CHECKING:
@@ -173,8 +174,16 @@ class PressureTrialSource:
             return False
         return True
 
+    async def _cancel_collection(self) -> None:
+        if self.event_observer is not None:
+            await self.event_observer.close()
+        for task in list(self.tasks):
+            task.cancel()
+        await asyncio.gather(*self.tasks, return_exceptions=True)
+
     async def run(self, callback: Callable[[TokenInfo], Awaitable[None]]) -> None:  # noqa: C901, PLR0912, PLR0915 -- subscription and reconnect boundary
         logger.info(getattr(self, "description", "PRESSURE source active: >=1000 USD/10s, >=5 buyers, buy/sell >=2, no recent price fall"))
+        failures = 0
         while True:
             try:
                 async with websockets.connect(self.wss) as ws:
@@ -202,6 +211,8 @@ class PressureTrialSource:
                                                   "method": "slotSubscribe"}))
                     while True:
                         data = json.loads(await asyncio.wait_for(ws.recv(), timeout=60))
+                        if valid_subscription_data(data, allow_slots=slot_subscription):
+                            failures = 0
                         if self.event_observer is not None:
                             if data.get("id") == SLOT_SUBSCRIPTION_REQUEST:
                                 slot_subscription = type(data.get("result")) is int
@@ -240,16 +251,19 @@ class PressureTrialSource:
                             slot_subscription = self.notify_observer("on_logs", value.get("logs", []), slot, value.get("signature"))
                         self.consider(mints, callback)
             except asyncio.CancelledError:
-                if self.event_observer is not None:
-                    await self.event_observer.close()
-                for task in list(self.tasks):
-                    task.cancel()
-                await asyncio.gather(*self.tasks, return_exceptions=True)
+                await self._cancel_collection()
                 raise
-            except Exception:
+            except Exception as error:  # noqa: BLE001 -- reconnect only; never log response bodies or credentials
                 if self.event_observer is not None:
                     self.event_observer.disconnect()
+                failures += 1
+                status, delay = reconnect_delay(error, failures)
                 logger.warning(
-                    "Pressure stream interrupted; reconnecting", exc_info=True
+                    "Pressure stream interrupted (%s, HTTP %s); reconnecting in %.1f s",
+                    type(error).__name__, status if status is not None else "unknown", delay,
                 )
-                await asyncio.sleep(MAX_REFERENCE_GAP_SECONDS)
+                try:
+                    await asyncio.sleep(delay)
+                except asyncio.CancelledError:
+                    await self._cancel_collection()
+                    raise
