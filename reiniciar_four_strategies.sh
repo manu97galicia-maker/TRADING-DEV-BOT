@@ -33,6 +33,10 @@ for p in Path('/proc').iterdir():
         continue
     try:
         args = (p/'cmdline').read_bytes().split(b'\0')
+        # `timeout` carries the Python command as arguments. Count only the
+        # Python child so a timed live session can be restarted safely.
+        if not args or not args[0].rsplit(b'/', 1)[-1].startswith(b'python'):
+            continue
         if any(b'run_bot_process' in a and b'bot-paper-bloque4-segundo-bloque.yaml' in a for a in args):
             raise SystemExit('El otro bot de bloque 4 está activo; revisar antes de iniciar otra estrategia')
         if any(a == b'run_four_strategies.py' or a.endswith(b'/run_four_strategies.py') for a in args):
