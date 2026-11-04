@@ -136,6 +136,7 @@ def main() -> None:
                         "require_dev_initial_buy": second.get("require_dev_initial_buy", False),
                         "min_creator_migration_fraction": second.get("min_creator_migration_fraction"),
                         "creator_migration_strictly_above": second.get("creator_migration_strictly_above", False),
+                        "batch_gate_enabled": second.get("batch_gate_enabled", True),
                         "fee_identity_policy": "original_or_mint_sharing_config",
                         "history_provider": second.get("history_provider"),
                         "history_fallback_provider": second.get("history_fallback_provider"),

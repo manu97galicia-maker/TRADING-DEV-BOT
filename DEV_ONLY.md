@@ -36,7 +36,10 @@ lectura real de la curva antes de enviar, sin añadir llamadas RPC. El historial
 del dev sigue contando todos sus lanzamientos; no se elimina Mayhem del
 denominador. Las ventas y los monitores de posiciones ya abiertas se conservan.
 
-Se conservan el mismo libro, bloqueo de proceso, posiciones, tandas y pausas.
+Se conservan el mismo libro, bloqueo de proceso, posiciones y registros de las
+tandas y pausas anteriores. `batch_gate_enabled: false` evita que una tanda
+pendiente o con ROI negativo impida nuevas entradas del dev. No borra sus
+resultados ni marca cerrada una posición que sigue abierta.
 Las posiciones antiguas de cualquier estrategia mantienen sus monitores de
 salida y auditoría. La selección no borra pérdidas ni reinicia la evaluación.
 
@@ -99,8 +102,8 @@ variante opcional de historial sin bloque fijo; no es el perfil actual.
 La preparación consulta tanto la curva como la cuenta del token con
 `commitment: processed`, en paralelo, para no esperar la finalización de una
 creación recién observada. El colector del perfil de historial no consulta
-SQLite por cada candidato y evento: las pausas y el ROI se verifican al entrar
-en el manejador y de nuevo en la reserva atómica antes de enviar.
+SQLite por cada candidato y evento: las plazas y el presupuesto se verifican
+al entrar en el manejador y de nuevo en la reserva atómica antes de enviar.
 
 La ruta dev evita las lecturas duplicadas del manejador general. Reutiliza el
 programa real del mint leído por el constructor mediante una prueba en memoria
@@ -141,8 +144,8 @@ preparaciones tardías.
 El presupuesto de nuevas entradas del dev es el menor entre el 80% del SOL
 líquido confirmado y **30 USD**, incluidos margen y gastos estimados.
 `max_entry_budget_usd: 30.0` se convierte a SOL con una referencia reciente;
-si falta esa referencia, no se admite la compra. Mantiene la reserva de 0,03 SOL, nueve
-plazas, deduplicación y tandas de cinco por ROI neto. El SL sigue al 22%; al
+si falta esa referencia, no se admite la compra. Mantiene la reserva de 0,03 SOL,
+nueve plazas y deduplicación. El SL sigue al 22%; al
 +35% recupera el equivalente nominal a la inversión más 12% y reparte el resto
 en tres ventas, con objetivos +89%, +164,6% y +270,44% desde la entrada.
 
@@ -152,11 +155,11 @@ SOL/USD aumenta y el presupuesto ya lo supera, se descarta ese intento.
 Las posiciones ya abiertas conservan sus importes registrados.
 
 Las nueve plazas son el techo compartido, incluidas reservas, envíos inciertos
-y remanentes. La evaluación independiente sigue siendo de cinco operaciones:
-en modo solo dev, una tanda admite hasta cinco y espera sus cierres antes de
-continuar. El techo de nueve no elimina esa regla ni garantiza ocupar nueve
-plazas con una sola estrategia. Una tanda con ROI neto no positivo conserva
-su pausa; subir estos límites no la reinicia.
+y remanentes. El dev no espera a completar tandas de cinco ni se pausa por su
+ROI. Las entradas posteriores al cambio siguen registrando sus resultados,
+pero no se agregan a las tandas anteriores. La posición DICE y las tandas ya
+registradas conservan sus pruebas de compra y cierre. Las otras estrategias
+mantienen su evaluación de cinco si se ejecutan en otro modo.
 
 La prioridad de compra tiene un tope de **0,07 USD por intento** y todas las
 salidas del dev, incluidos TP, SL y ruta Jupiter, **0,03 USD por intento**. Son

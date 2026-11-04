@@ -70,8 +70,16 @@ class PolicyTests(unittest.TestCase):
         self.assertTrue(selected["third_block_retry_on_sharp_rise"] is False)
         self.assertFalse(selected["require_first_block_activity"])
         self.assertEqual(selected["min_creator_migration_fraction"], .01)
+        self.assertFalse(selected["batch_gate_enabled"])
         self.assertTrue(second_produced_block(selected))
         validate_second_policy(selected)
+
+    def test_batch_gate_requires_a_boolean(self):
+        for invalid in (None, 0, 1, "false", "true"):
+            with self.subTest(invalid=invalid):
+                selected = {**copy.deepcopy(POLICY), "enabled": True, "batch_gate_enabled": invalid}
+                with self.assertRaises(ValueError):
+                    validate_second_policy(selected)
 
     def test_strict_selector_rejects_missing_proof_or_later_retry(self):
         for field, value in (("entry_timing", "second_block"),

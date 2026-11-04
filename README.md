@@ -7,7 +7,8 @@ reúne presión desde 8K MC, cruce de 21K, primer bloque y señales de Telegram.
 Comparte hasta nueve posiciones y un SL del 22%. Las cuatro estrategias
 originales usan el 90% del SOL líquido por entrada; el modo
 [solo dev](DEV_ONLY.md) usa el menor entre el 80% y 30 USD, incluidos gastos
-estimados. Conserva las tandas independientes de cinco por ROI neto.
+estimados. La estrategia dev entra sin esperar tandas de cinco; las tandas históricas
+siguen registradas y las otras estrategias conservan su evaluación.
 La presión usa 12 compradores y 1.300 USD/8s; la salida por volumen vendedor
 está desactivada. Este paquete está **deshabilitado** (`enabled: false`).
 

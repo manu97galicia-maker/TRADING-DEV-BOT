@@ -447,6 +447,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
             hashlib.sha256(policy.encode()).hexdigest(),
             max_positions=self.max_posiciones,
             evaluation_policy=evaluation_policy,
+            dev_batch_gate_enabled=self.second_policy.get("batch_gate_enabled", True),
         )
         _configure_normal_only_assets(self)
         self.buyer = SharedBuyer(self, self.buyer)
@@ -570,6 +571,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
 
     def _cartel_de_configuracion(self) -> str:
         position_limit = getattr(self, "max_posiciones", 9)
+        batch_text = " · sin tandas" if getattr(self, "second_policy", {}).get("batch_gate_enabled", True) is False else ""
         usd_cap = getattr(self, "second_policy", {}).get("max_entry_budget_usd")
         cap_text = f" · tope ${usd_cap:.2f} por entrada incluidos gastos estimados" if usd_cap is not None else ""
         migration_op = ">" if getattr(self, "second_policy", {}).get("creator_migration_strictly_above", False) else ">="
@@ -583,7 +585,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
                           if second_produced_block(self.second_policy) else "sin bloque fijo de entrada")
                 return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
                         f"incluidos gastos{cap_text} · {selection} · "
-                        f"sin MC maximo · {timing} · {position_limit} plazas compartidas · "
+                        f"sin MC maximo · {timing} · {position_limit} plazas compartidas{batch_text} · "
                         "prioridad compra $0.07 / salidas $0.03")
             return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
                     f"incluidos gastos · dev {migration_op}1% migraciones verificadas · MC <4200 · "

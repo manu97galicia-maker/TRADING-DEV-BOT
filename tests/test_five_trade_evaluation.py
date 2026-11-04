@@ -73,6 +73,57 @@ class EvaluationTests(unittest.TestCase):
         details = json.loads(next(p["details"] for p in self.book.positions() if p["nonce"] == sixth))
         self.assertEqual(details["five_trade_evaluation"]["batch"], 2)
 
+    def test_dev_can_enter_without_batch_gate_while_old_fifth_position_stays_open(self):
+        dev = STRATEGIES[-1]
+        first_four = [self.opened(f"old-dev-{index}", dev) for index in range(4)]
+        for nonce in first_four:
+            self.close(nonce, net=10)
+        fifth = self.opened("old-dev-fifth", dev)
+        self.assertEqual(self.current(dev)["state"], "waiting_for_closures")
+        self.assertFalse(self.book.can_admit(dev))
+        with closing(self.book.connect()) as db:
+            before = list(db.iterdump())
+
+        self.book = FourStrategyBook(self.path, "owner", "policy", max_positions=4,
+                                     evaluation_policy=POLICY, dev_batch_gate_enabled=False)
+        with closing(self.book.connect()) as db:
+            self.assertEqual(list(db.iterdump()), before)
+        self.assertTrue(self.book.can_admit(dev))
+        self.assertFalse(self.book.paused(dev))
+        sixth = self.opened("unbatched-dev", dev)
+        details = json.loads(next(p["details"] for p in self.book.positions() if p["nonce"] == sixth))
+        self.assertNotIn("five_trade_evaluation", details)
+        self.assertEqual(self.current(dev)["admitted"], 5)
+        self.assertEqual(self.current(dev)["closed"], 4)
+
+        self.close(sixth, net=-200)
+        self.close(fifth, net=-100)
+        self.assertEqual(self.current(dev)["state"], "paused_nonpositive_roi")
+        self.assertTrue(self.book.can_admit(dev))
+        self.assertFalse(self.book.paused(dev))
+        self.assertFalse(self.book.research()["dev_batch_gate_enabled"])
+        with closing(self.book.connect()) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM five_trade_entries WHERE strategy=?", (dev,)).fetchone()[0], 5)
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM outcomes WHERE strategy=?", (dev,)).fetchone()[0], 6)
+
+    def test_disabling_dev_batch_keeps_other_strategies_batched_and_shared_limit(self):
+        path = Path(self.temp.name)/"dev-unbatched.sqlite3"
+        self.book = FourStrategyBook(path, "owner", "policy", max_positions=9,
+                                     evaluation_policy=POLICY, dev_batch_gate_enabled=False)
+        def reserve_many(mint, strategy) -> dict | None:
+            return self.book.reserve(mint, strategy, 10_000_000_000, 1000, 30_000_000,
+                                     .15, 3_000_000, {}, fraction=.05)
+        other = STRATEGIES[0]
+        for index in range(5):
+            self.assertIsNotNone(reserve_many(f"other-{index}", other))
+        self.assertFalse(self.book.can_admit(other))
+        self.assertIsNone(reserve_many("other-sixth", other))
+        self.assertTrue(self.book.can_admit(STRATEGIES[-1]))
+        for index in range(4):
+            self.assertIsNotNone(reserve_many(f"dev-{index}", STRATEGIES[-1]))
+        self.assertIsNone(reserve_many("dev-fifth", STRATEGIES[-1]))
+        self.assertEqual(len(self.book.positions()), 9)
+
     def test_zero_net_roi_stops_even_with_four_winning_trades(self):
         self.finish_batch([1, 1, 1, 1, -4])
         self.assertEqual(self.current()["state"], "paused_nonpositive_roi")
@@ -209,11 +260,14 @@ class EvaluationTests(unittest.TestCase):
             db.execute("INSERT INTO pauses VALUES (?)", (STRATEGIES[0],))
         config = root/"configs/four-strategies.yaml"
         config.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+        (root/"configs/second-block-dev.yaml").write_text(
+            (ROOT/"configs/second-block-dev.yaml").read_text(encoding="utf-8"), encoding="utf-8")
         with closing(book.connect()) as db:
             before = db.execute("SELECT name FROM sqlite_master ORDER BY name").fetchall()
         report = inspect(config)
         self.assertTrue(report["read_only"])
         self.assertFalse(report["trader_started"])
+        self.assertFalse(report["dev_batch_gate_enabled"])
         self.assertEqual(report["evaluation"]["state"], "not_started")
         self.assertFalse(report["legacy_loss_guard_active"])
         self.assertEqual(report["recorded_legacy_pauses"], [STRATEGIES[0]])

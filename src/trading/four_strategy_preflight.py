@@ -84,6 +84,7 @@ def inspect_local(plan: dict, config_path: Path, *, only_dev: bool = False) -> d
         "fraction": second.get("min_creator_migration_fraction"),
         "comparison": ">" if second.get("creator_migration_strictly_above", False) else ">=",
     }
+    report["dev_batch_gate_enabled"] = second.get("batch_gate_enabled", True)
     if second.get("history_fallback_provider") == "gmgn":
         _record(report, "gmgn_history_api",
                 "pass" if env.get("GMGN_API_KEY") else "warning",

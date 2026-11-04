@@ -221,6 +221,7 @@ class DevOnlyLedgerTests(unittest.TestCase):
             selected.configure_four(settings, second_block_policy=copy.deepcopy(SECOND_POLICY),
                                     evaluation_policy=PLAN["five_trade_evaluation"], only_dev=True)
             self.assertTrue(selected.only_dev)
+            self.assertFalse(selected.book.dev_batch_gate_enabled)
             self.assertEqual(selected.book.positions(), positions)
             self.assertEqual(settings, original)
             self.assertEqual(selected.fraccion_saldo, .90)
@@ -264,6 +265,7 @@ class DevOnlyPreflightTests(unittest.TestCase):
             report = preflight.inspect_local(plan, config_path, only_dev=True)
         checks = {check["name"]: check for check in report["checks"]}
         self.assertEqual(report["entry_mode"], "dev_only")
+        self.assertFalse(report["dev_batch_gate_enabled"])
         self.assertNotIn("telegram_local", checks)
         self.assertEqual(checks["gmgn_history_api"]["status"], "warning")
         self.assertEqual(lookup.call_args_list, [call("aiohttp"), call("websockets"), call("solders")])
@@ -347,6 +349,7 @@ class DevOnlyCliTests(unittest.TestCase):
         self.assertEqual(report["entry_fraction_inclusive"], .80)
         self.assertEqual(report["initial_stop"], .22)
         self.assertEqual(report["max_shared_positions"], 9)
+        self.assertFalse(report["second_block_dev"]["batch_gate_enabled"])
         self.assertEqual(report["five_trade_evaluation"]["legacy_loss_guard"], "batch_roi_only")
         validate.assert_called_once_with(Path("unused.yaml"), only_dev=True)
 

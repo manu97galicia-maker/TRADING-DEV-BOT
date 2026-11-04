@@ -16,16 +16,20 @@ from pathlib import Path
 
 from trading.buy_budget import inclusive_balance_entry
 from trading.five_trade_evaluation import FiveTradeEvaluation, evaluation_report
+from trading.second_block_policy import STRATEGY_ID
 
 
 class FourStrategyBook:
     """Keep a shared limit, including pending submissions and unsold runners."""
 
-    def __init__(self, path: Path, owner: str, policy_id: str, *, max_positions: int = 3,
-                 evaluation_policy: dict | None = None) -> None:
+    def __init__(self, path: Path, owner: str, policy_id: str, *, max_positions: int = 3,  # noqa: PLR0913 -- ledger policy and runtime gate are distinct
+                 evaluation_policy: dict | None = None, dev_batch_gate_enabled: bool = True) -> None:
         if type(max_positions) is not int or not 1 <= max_positions <= 9:
             raise ValueError("Invalid shared position limit")
+        if type(dev_batch_gate_enabled) is not bool:
+            raise ValueError("Dev batch gate must be an explicit boolean")
         self.max_positions = max_positions
+        self.dev_batch_gate_enabled = dev_batch_gate_enabled
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with closing(self.connect()) as db, db:
@@ -86,14 +90,19 @@ class FourStrategyBook:
         with closing(self.connect()) as db:
             return self._paused_in(db, strategy)
 
+    def _batch_applies(self, strategy: str) -> bool:
+        return self.evaluation is not None and (strategy != STRATEGY_ID or self.dev_batch_gate_enabled)
+
     def _paused_in(self, db: object, strategy: str) -> bool:
         legacy = (not self.evaluation or self.evaluation.keep_legacy_loss_guard) and db.execute(
             "SELECT 1 FROM pauses WHERE strategy=?", (strategy,)).fetchone()
-        return bool(legacy or (self.evaluation and self.evaluation.paused(db, strategy)))
+        return bool(legacy or (self._batch_applies(strategy) and self.evaluation.paused(db, strategy)))
 
     def can_admit(self, strategy: str) -> bool:
         with closing(self.connect()) as db:
-            return not self._paused_in(db, strategy) and (not self.evaluation or self.evaluation.can_admit(db, strategy))
+            return not self._paused_in(db, strategy) and (
+                not self._batch_applies(strategy) or self.evaluation.can_admit(db, strategy)
+            )
 
     def reserve(  # noqa: PLR0913, PLR0917 -- all inputs belong to one atomic admission
         self,
@@ -148,8 +157,9 @@ class FourStrategyBook:
             if amount <= 0 or budget > balance - reserve - pending:
                 return None
             nonce = uuid.uuid4().hex
-            evaluation = self.evaluation.admit(db, strategy, nonce) if self.evaluation else None
-            if self.evaluation and evaluation is None:
+            batch_applies = self._batch_applies(strategy)
+            evaluation = self.evaluation.admit(db, strategy, nonce) if batch_applies else None
+            if batch_applies and evaluation is None:
                 return None
             details = {
                 "mint": mint,
@@ -375,5 +385,6 @@ class FourStrategyBook:
             "open_or_uncertain": len(self.positions()),
             "automatic_parameter_changes": False,
             "max_shared_positions": self.max_positions,
+            "dev_batch_gate_enabled": self.dev_batch_gate_enabled,
             "five_trade_evaluation": batches,
         }

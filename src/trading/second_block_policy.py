@@ -49,8 +49,9 @@ def required_migrations(denominator: int, settings: dict) -> int:
 def validate_second_policy(settings: dict) -> None:
     """Unresolved exits cannot be enabled by a configuration typo."""
     if (not isinstance(settings, dict) or type(settings.get("enabled")) is not bool
-            or type(settings.get("creator_migration_strictly_above", False)) is not bool):
-        raise ValueError("Second-block strategy needs explicit enable and migration-threshold booleans")
+            or type(settings.get("creator_migration_strictly_above", False)) is not bool
+            or type(settings.get("batch_gate_enabled", True)) is not bool):
+        raise ValueError("Second-block strategy needs explicit enable, threshold and batch-gate booleans")
     if not settings["enabled"]:
         return
     expected = {

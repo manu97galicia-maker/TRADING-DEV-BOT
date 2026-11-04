@@ -24,10 +24,12 @@ def inspect(config: Path) -> dict:
         evaluation_report,
         validate_evaluation_policy,
     )
+    from trading.second_block_policy import STRATEGY_ID, load_second_policy
 
     cfg = yaml.safe_load(config.read_text(encoding="utf-8"))
     policy = cfg.get("five_trade_evaluation")
     validate_evaluation_policy(policy)
+    dev_batch_gate_enabled = load_second_policy(config, cfg).get("batch_gate_enabled", True)
     settings = cfg["four_strategies"]
     ledger = (config.resolve().parent.parent/settings["database"]).resolve()
     legacy_pauses = []
@@ -46,8 +48,10 @@ def inspect(config: Path) -> dict:
     legacy_active = stored.get("legacy_loss_guard", "keep_three_in_five") == "keep_three_in_five"
     for strategy, data in batches["strategies"].items():
         data["blocked_by_legacy_loss_guard"] = legacy_active and strategy in legacy_pauses
+        data["admission_batch_gate_enabled"] = dev_batch_gate_enabled if strategy == STRATEGY_ID else True
     return {"read_only": True, "prepared_max_positions": cfg["trade"]["max_posiciones"],
         "prepared_stop_loss_fraction": cfg["trade"]["stop_loss_percentage"],
+        "dev_batch_gate_enabled": dev_batch_gate_enabled,
         "configured_evaluation": policy, "legacy_loss_guard_active": legacy_active,
         "recorded_legacy_pauses": legacy_pauses, "evaluation": batches, "trader_started": False}
 

@@ -11,6 +11,9 @@ max_entry_budget_usd: 30.0
 max_entry_mc_usd: 4200
 min_creator_migration_fraction: 0.01
 creator_migration_strictly_above: true
+# Admit dev entries without waiting for five closures or pausing on batch ROI.
+# Historical batch records and the still-open position remain intact.
+batch_gate_enabled: false
 require_first_block_activity: false
 # Retained for the optional activity profile; inactive with the selector above.
 min_first_block_volume_usd: 250
