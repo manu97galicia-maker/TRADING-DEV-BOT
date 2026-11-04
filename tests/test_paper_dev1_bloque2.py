@@ -91,7 +91,11 @@ def test_plazas_que_el_nodo_vigila_y_reserva_para_vender() -> None:
     vigilables = int(
         float(CFG["node"]["max_rps"]) * float(t["price_check_interval"]) / 2
     )
-    assert t["max_posiciones"] <= vigilables
+    # 7 plazas pedidas el 4-nov; max_rps 14 para que el nodo vigile las 7.
+    assert t["max_posiciones"] == 7
+    assert t["max_posiciones"] <= vigilables, (
+        f"{t['max_posiciones']} plazas y el nodo solo vigila {vigilables}"
+    )
     assert float(t["min_reserve_sol"]) > 0
 
 
@@ -133,3 +137,9 @@ def test_tope_de_entrada_4100_dolares_con_el_sol_a_105() -> None:
     assert abs(dolares - 4100) < 5, f"el tope equivale a {dolares:,.0f} $"
     # Y se reescala de verdad: si se quitara, el tope serian 3.563 $.
     assert "self.max_entry_mc = antes * razon" in TRADER
+
+
+def test_sin_mayhem() -> None:
+    # "no mayhem" (4-nov).
+    assert CFG["filters"]["allow_mayhem"] is False
+    assert CFG["filters"]["require_mayhem"] is False

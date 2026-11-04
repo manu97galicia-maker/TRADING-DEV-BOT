@@ -18,10 +18,8 @@
 # dejaria huerfanas las posiciones vivas.
 #
 # LO QUE NO SE PIDIO Y SE HA TENIDO QUE ELEGIR, para poder cambiarlo luego:
-#   - 5 plazas y 0,03 SOL de reserva: el nodo (max_rps 12) vigila 6, y sin
-#     reserva no queda SOL para pagar la comision de vender. Son los dos
-#     puntos que en la hermana hubo que aceptar a sabiendas; aqui no se
-#     repiten porque nadie los pidio.
+#   - 0,03 SOL de reserva: sin ella no queda SOL para pagar la comision de
+#     vender.
 name: "REAL DEV 1% + PRIMER BLOQUE 2 COMPRAS 375$ + BLOQUE 2 BAJO 4,1K"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
@@ -40,8 +38,11 @@ trade:
   buy_amount_usd: 30
   fraccion_saldo: 0
   min_reserve_sol: 0.03
-  # 5 plazas x 30 $ = 150 $ como maximo dentro a la vez.
-  max_posiciones: 5
+  # 7 PLAZAS, pedido el 4-nov: "maximo 7 operaciones simultaneas". Venia
+  # de 5. 7 x 30 $ = 210 $ como maximo dentro a la vez.
+  # Para que el nodo las vigile todas hubo que subir node.max_rps de 12 a 14
+  # (ver abajo).
+  max_posiciones: 7
   max_real_buys: 0
   reiniciar_tanda: true
   buy_slippage: 0.15
@@ -143,6 +144,7 @@ filters:
   # Ventana para esperar a que cierre el primer bloque. Sin ella (0) los
   # filtros del primer bloque no se comprueban nunca.
   max_buy_age: 45
+  # SIN MAYHEM, pedido el 4-nov ("no mayhem"). Ya estaba asi.
   allow_mayhem: false
   require_mayhem: false
   # En false: siguen mandando la BLACKLIST manual de Manu y el auto-baneo de
@@ -211,4 +213,11 @@ cleanup:
   with_priority_fee: false
 
 node:
-  max_rps: 12
+  # 14, NO 12, por las 7 plazas (4-nov). Cada posicion abierta consulta su
+  # precio cada price_check_interval (1 s), y el bot deja media cuota para
+  # comprar (universal_trader.py, _avisa_si_el_nodo_no_da_mas):
+  #     vigilables = max_rps x 1 / 2      12 -> 6     14 -> 7
+  # Con 12, la septima posicion haria cola y su stop podria llegar tarde.
+  # Es un TOPE, no un gasto fijo: solo se llega a 14 consultas por segundo
+  # con las 7 abiertas a la vez.
+  max_rps: 14
