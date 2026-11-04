@@ -28,6 +28,7 @@ from trading.pump_fee_identity import fee_creator_allowed
 from trading.second_block_policy import (
     STRATEGY_ID,
     creator_history_only,
+    creator_migration_allowed,
     second_produced_block,
 )
 from trading.token_builder import build_pumpfun_token_info
@@ -270,7 +271,7 @@ class SecondBlockSource:
             pending.add_done_callback(ready)
         if creator_history_only(self.policy):
             history = self.history.evidence(candidate.developer, candidate.mint)
-            if history is None or not history["migration_fraction"] >= self.policy["min_creator_migration_fraction"]:
+            if not creator_migration_allowed(history, self.policy):
                 return
         now = time.monotonic()
         if (candidate.token is None and candidate.mint not in self.building
@@ -379,8 +380,8 @@ class SecondBlockSource:
         history = self.history.evidence(candidate.developer, mint)
         if (len(candidate.buyers) < self.policy["min_distinct_first_block_buyers"]
                 or volume < self.policy["min_first_block_volume_usd"]
-                or not 0 < mc < self.policy["max_entry_mc_usd"] or history is None
-                or history["migration_fraction"] < self.policy["min_creator_migration_fraction"]):
+                or not 0 < mc < self.policy["max_entry_mc_usd"]
+                or not creator_migration_allowed(history, self.policy)):
             return None
         return {"strategy": STRATEGY_ID, "sol_usd": sol_usd, "creator": candidate.creator,
             "creation_fee_creator": candidate.creator,
@@ -409,7 +410,7 @@ class SecondBlockSource:
                        or self.second_window_expired(candidate)):
             return None
         history = self.history.evidence(candidate.developer, candidate.mint)
-        if history is None or not history["migration_fraction"] >= self.policy["min_creator_migration_fraction"]:
+        if not creator_migration_allowed(history, self.policy):
             return None
         volume = (candidate.buy_sol+candidate.sell_sol)*sol_usd
         activity_required = self.policy.get("require_first_block_activity", False)

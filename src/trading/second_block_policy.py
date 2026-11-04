@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import math
-from decimal import Decimal
+from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal
 from pathlib import Path
 
 import yaml
@@ -24,10 +24,33 @@ def second_produced_block(settings: dict) -> bool:
     return creator_history_only(settings) and settings.get("entry_timing") == "second_produced_block"
 
 
+def creator_migration_allowed(history: dict | None, settings: dict) -> bool:
+    """Compare verified history with the explicitly selected threshold operator."""
+    if history is None:
+        return False
+    fraction = history.get("migration_fraction")
+    if type(fraction) not in (int, float) or not math.isfinite(fraction):
+        return False
+    minimum = settings["min_creator_migration_fraction"]
+    return (fraction > minimum if settings.get("creator_migration_strictly_above", False)
+            else fraction >= minimum)
+
+
+def required_migrations(denominator: int, settings: dict) -> int:
+    """Exact conservative proof count for either an inclusive or strict ratio."""
+    if type(denominator) is not int or denominator < 0:
+        raise ValueError("Migration proof denominator must be a nonnegative integer")
+    target = denominator * Decimal(str(settings["min_creator_migration_fraction"]))
+    if settings.get("creator_migration_strictly_above", False):
+        return int(target.to_integral_value(rounding=ROUND_FLOOR)) + 1
+    return int(target.to_integral_value(rounding=ROUND_CEILING))
+
+
 def validate_second_policy(settings: dict) -> None:
     """Unresolved exits cannot be enabled by a configuration typo."""
-    if not isinstance(settings, dict) or type(settings.get("enabled")) is not bool:
-        raise ValueError("Second-block strategy needs an explicit enabled boolean")
+    if (not isinstance(settings, dict) or type(settings.get("enabled")) is not bool
+            or type(settings.get("creator_migration_strictly_above", False)) is not bool):
+        raise ValueError("Second-block strategy needs explicit enable and migration-threshold booleans")
     if not settings["enabled"]:
         return
     expected = {

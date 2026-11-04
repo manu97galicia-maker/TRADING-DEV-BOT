@@ -7,12 +7,9 @@ if [[ "${1:-}" != "--real" || "$#" -gt 2 || ( "$#" -eq 2 && "${2:-}" != "--only-
   exit 2
 fi
 mkdir -p logs
-MODE_ARGS=()
-RUN_ARGS=(--run)
-if [[ "${2:-}" == "--only-dev" ]]; then
-  MODE_ARGS=(--only-dev)
-  RUN_ARGS+=(--only-dev)
-fi
+# This supported launcher always selects the single retained dev strategy.
+MODE_ARGS=(--only-dev)
+RUN_ARGS=(--run --only-dev)
 exec 9>logs/four-strategies-restart.lock
 flock -n 9 || { printf '%s\n' 'Ya hay un reinicio en curso'; exit 2; }
 .venv/bin/python run_four_strategies.py "${MODE_ARGS[@]}" > logs/start-plan.json
@@ -23,11 +20,8 @@ plan = json.loads(Path('logs/start-plan.json').read_text())
 if plan.get('enabled') is not True:
     raise SystemExit('Configuracion global deshabilitada; se conserva la instancia actual')
 PY
-if [[ "${2:-}" == "--only-dev" ]]; then
-  # This selection has no Telegram acquisition session to contend with. Verify
-  # services before stopping any existing position monitors.
-  .venv/bin/python run_four_strategies.py --preflight --online --only-dev > logs/dev-only-preflight.json
-fi
+# Verify services before stopping any existing position monitors.
+.venv/bin/python run_four_strategies.py --preflight --online --only-dev > logs/dev-only-preflight.json
 # Resolve every manual closure before stopping existing monitors.
 .venv/bin/python reconcile_four_manual_sales.py > logs/manual-sale-plan.json
 PIDS=$(.venv/bin/python - <<'PY'

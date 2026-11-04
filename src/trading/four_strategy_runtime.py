@@ -572,9 +572,10 @@ class FourStrategyTrader(legacy.UniversalTrader):
         position_limit = getattr(self, "max_posiciones", 9)
         usd_cap = getattr(self, "second_policy", {}).get("max_entry_budget_usd")
         cap_text = f" · tope ${usd_cap:.2f} por entrada incluidos gastos estimados" if usd_cap is not None else ""
+        migration_op = ">" if getattr(self, "second_policy", {}).get("creator_migration_strictly_above", False) else ">="
         if getattr(self, "only_dev", False):
             if creator_history_only(self.second_policy):
-                selection = "dev >=1% migraciones verificadas"
+                selection = f"dev {migration_op}1% migraciones verificadas"
                 if self.second_policy.get("require_first_block_activity", False):
                     selection += (f" · primer bloque: >={self.second_policy['min_distinct_first_block_buyers']} compradores "
                                   f"y >=${self.second_policy['min_first_block_volume_usd']:.0f} volumen total")
@@ -585,7 +586,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
                         f"sin MC maximo · {timing} · {position_limit} plazas compartidas · "
                         "prioridad compra $0.07 / salidas $0.03")
             return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
-                    "incluidos gastos · dev >=1% migraciones verificadas · MC <4200 · "
+                    f"incluidos gastos · dev {migration_op}1% migraciones verificadas · MC <4200 · "
                     f"2 compradores / 275 USD primer bloque · {position_limit} plazas compartidas{cap_text}")
         message = (
             f"CONFIG ACTIVA · FOUR STRATEGIES · {self.fraccion_saldo:.0%} del SOL liquido confirmado "
@@ -697,7 +698,9 @@ class FourStrategyTrader(legacy.UniversalTrader):
                 self.platform_implementations, self.solana_client, lambda: self.sol_usd,
                 self.reference_age, allowed, self._on_dexpaid_token)
             if creator_history_only(self.second_policy):
-                logger.info("DEV HISTORY ONLY enabled: >=1%% verified migrations, %.0f%% SOL budget; buy priority $0.07 / all exits $0.03",
+                migration_op = ">" if self.second_policy.get("creator_migration_strictly_above", False) else ">="
+                logger.info("DEV HISTORY ONLY enabled: %s1%% verified migrations, %.0f%% SOL budget; buy priority $0.07 / all exits $0.03",
+                            migration_op,
                             self.second_policy["balance_fraction"]*100)
                 logger.info("DEV inclusive entry budget cap USD (including slippage and fee headroom): %s",
                             self.second_policy.get("max_entry_budget_usd", "none"))

@@ -335,12 +335,13 @@ class DevSecondWindowSourceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(signal["buyers"], 1)
         self.assertAlmostEqual(signal["volume_usd"], .1)
 
-    async def test_shipped_profile_accepts_one_tiny_dev_buy_with_one_percent_history(self):
+    async def test_shipped_profile_accepts_one_tiny_dev_buy_with_above_one_percent_history(self):
         # Exercise the actual selector, independently of the historical activity fixture.
         self.policy.clear()
         self.policy.update(yaml.safe_load((stream.ROOT / "configs/second-block-dev.yaml").read_text()))
         self.assertFalse(self.policy["require_first_block_activity"])
-        self.source.history.evidence = Mock(return_value={"migration_fraction": .01})
+        self.assertTrue(self.policy["creator_migration_strictly_above"])
+        self.source.history.evidence = Mock(return_value={"migration_fraction": .010001})
         await self.created(stream.trade(self.mint, self.creator, sol=.000001))
         self.callback.assert_not_awaited()
         self.source.on_slot({"slot": 105, "parent": 100})
@@ -354,7 +355,7 @@ class DevSecondWindowSourceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(signal["buyers"], 1)
         self.assertAlmostEqual(signal["volume_usd"], .0001)
 
-    async def test_shipped_profile_still_rejects_unknown_or_below_one_percent_history(self):
+    async def test_shipped_profile_rejects_unknown_or_at_most_one_percent_history(self):
         self.policy.clear()
         self.policy.update(yaml.safe_load((stream.ROOT / "configs/second-block-dev.yaml").read_text()))
         self.assertFalse(self.policy["require_first_block_activity"])
@@ -362,7 +363,8 @@ class DevSecondWindowSourceTests(unittest.IsolatedAsyncioTestCase):
         with patch("monitoring.second_block_source.build_pumpfun_token_info", new_callable=AsyncMock) as builder:
             await self.created(stream.trade(self.mint, self.creator, sol=.000001))
             self.source.on_slot({"slot": 105, "parent": 100})
-            for history in (None, {"migration_fraction": 0}, {"migration_fraction": .009999}):
+            for history in (None, {"migration_fraction": 0}, {"migration_fraction": .009999},
+                            {"migration_fraction": .01}):
                 with self.subTest(history=history):
                     self.source.history.evidence.return_value = history
                     self.source.refresh_candidates()
@@ -374,7 +376,7 @@ class DevSecondWindowSourceTests(unittest.IsolatedAsyncioTestCase):
     async def test_shipped_profile_keeps_initial_dev_buy_proof_without_activity_minimums(self):
         self.policy.clear()
         self.policy.update(yaml.safe_load((stream.ROOT / "configs/second-block-dev.yaml").read_text()))
-        self.source.history.evidence = Mock(return_value={"migration_fraction": .01})
+        self.source.history.evidence = Mock(return_value={"migration_fraction": .010001})
         with patch("monitoring.second_block_source.build_pumpfun_token_info", new_callable=AsyncMock) as builder:
             await self.created(stream.trade(self.mint, self.a, sol=.000001))
             self.source.on_slot({"slot": 105, "parent": 100})

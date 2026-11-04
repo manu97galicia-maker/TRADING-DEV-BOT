@@ -6,6 +6,18 @@ Telegram no abren posiciones en este modo. El colector de Solana permanece
 conectado para observar creación, primer bloque, historial del dev y segundo
 bloque; no se abre la sesión de señales de Telegram.
 
+El lanzador `reiniciar_four_strategies.sh --real` selecciona siempre este
+modo único, también si se omite `--only-dev`.
+
+`retirar_bots_antiguos.py` muestra por defecto una vista previa sin detener
+procesos ni modificar servicios. Su opción manual `--apply` retira los tres
+servicios antiguos, el dashboard y el bot manual de dev1, conservando la
+instancia `--run --only-dev` de esta carpeta. Guarda sus estados para revisión
+y verifica que ambos `.env` sigan intactos. No borra archivos ni vende tokens:
+las posiciones de los bots retirados pierden sus monitores antiguos. La
+vigilancia del coordinador conservado continúa. La retirada final se ejecuta
+manualmente, nunca durante el despliegue o las pruebas.
+
 En el perfil actual de historial el colector entrega primero los eventos al observador del dev.
 No calcula señales de presión ni guarda estadísticas de monedas ajenas a las
 posiciones vigiladas. Conserva precios y actividad para sus salidas, y sigue
@@ -30,9 +42,9 @@ salida y auditoría. La selección no borra pérdidas ni reinicia la evaluación
 
 El perfil activo es `entry_rule: creator_migration_only`, con
 `entry_timing: second_produced_block`, `require_dev_initial_buy: true` y
-`require_first_block_activity: false`. Exige que el dev firmante tenga al menos
-un 1% de sus lanzamientos anteriores migrados a PumpSwap y verificados mediante
-Helius. No exige un mínimo de volumen ni dos compradores distintos en el
+`require_first_block_activity: false`. Exige que el dev firmante tenga más
+del 1% de sus lanzamientos anteriores migrados a PumpSwap y verificados
+mediante Helius. No exige un mínimo de volumen ni dos compradores distintos en el
 primer bloque. Los umbrales de 250 USD y dos compradores quedan guardados
 para el perfil opcional de actividad, pero no se aplican con este selector.
 
@@ -117,7 +129,8 @@ iniciar la preparación inmediatamente, sin esperar volumen ni otra wallet.
 Las colas priorizan creaciones recientes aptas. El perfil de historial mantiene
 una sola consulta pendiente, sin un segundo dev esperando detrás del semáforo;
 las dos lecturas de preparación de curvas siguen limitadas y en paralelo.
-El historial desconocido o inferior al 1% no ocupa esos preparadores.
+El historial desconocido o igual o inferior al 1% no ocupa esos preparadores
+con `creator_migration_strictly_above: true`; un 1% exacto no cumple.
 
 Los datos de entrada conservan `creation_timestamp`, `source_seen_at`,
 `token_prepared_at`, `signal_ready_at` y `signal_age_seconds`. Permiten separar

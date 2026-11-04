@@ -10,7 +10,6 @@ from verified PumpSwap migrations; the capped GMGN token list is never a count.
 from __future__ import annotations
 
 import asyncio
-import math
 import os
 import re
 import socket
@@ -33,6 +32,7 @@ from monitoring.creator_transaction_history import (
     pool_address,
 )
 from monitoring.pump_event_logs import IncompletePumpLogsError, pump_events
+from trading.second_block_policy import required_migrations
 
 GMGN_URL = "https://openapi.gmgn.ai/v1/user/created_tokens"
 _RATE_LIMIT_STATE = {"until": 0.0, "next_at": 0.0}
@@ -252,7 +252,7 @@ async def read_gmgn_creator_history(developer: str, rpc: object, policy: dict) -
         anchor = await rpc("getSlot", [{"commitment": "finalized"}])
         if type(anchor) is not int or anchor <= 0:
             raise HistoryUnavailableError("GMGN migration proof anchor is unavailable")
-        sufficient = math.ceil((total + extra_launches + 256) * policy["min_creator_migration_fraction"])
+        sufficient = required_migrations(total + extra_launches + 256, policy)
         verified = await _verified_migrations(candidates, developer, rpc, anchor, sufficient)
         return CreatorSnapshot(
             developer, {curve_address(mint) for mint in known}, verified, 0, time.time(),

@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import math
 import time
 from functools import lru_cache
 from pathlib import Path
@@ -30,6 +29,7 @@ from monitoring.creator_history_index import (
     curve_address,
 )
 from monitoring.pump_event_logs import IncompletePumpLogsError, pump_events
+from trading.second_block_policy import required_migrations
 from utils.idl_parser import IDLParser
 
 CREATE = hashlib.sha256(b"event:CreateEvent").digest()[:8]
@@ -166,9 +166,9 @@ def migration_proven(mint: str, curve: dict | None, pool: dict | None) -> bool:
 
 async def verify_migrations(mints: set[str], rpc: object, policy: dict, anchor: int) -> tuple[set[str], bool]:
     ordered, migrated = sorted(mints), set()
-    # A lower bound is sufficient for >=1%. Extra proof covers the bounded
+    # A lower bound is sufficient for the selected ratio. Extra proof covers the bounded
     # live-launch buffer while avoiding an unbounded number of RPC reads.
-    sufficient = math.ceil((len(ordered)+256)*policy["min_creator_migration_fraction"])
+    sufficient = required_migrations(len(ordered)+256, policy)
     for start in range(0, len(ordered), 50):
         batch = ordered[start:start+50]
         addresses = [address for mint in batch for address in (curve_address(mint), pool_address(mint)[0])]

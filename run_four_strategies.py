@@ -134,6 +134,8 @@ def main() -> None:
                         "entry_rule": second.get("entry_rule", "second_block"),
                         "entry_timing": second.get("entry_timing", "any_verified_time"),
                         "require_dev_initial_buy": second.get("require_dev_initial_buy", False),
+                        "min_creator_migration_fraction": second.get("min_creator_migration_fraction"),
+                        "creator_migration_strictly_above": second.get("creator_migration_strictly_above", False),
                         "fee_identity_policy": "original_or_mint_sharing_config",
                         "history_provider": second.get("history_provider"),
                         "history_fallback_provider": second.get("history_fallback_provider"),

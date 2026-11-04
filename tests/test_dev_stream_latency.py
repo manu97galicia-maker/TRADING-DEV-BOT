@@ -92,7 +92,7 @@ class DeveloperStreamLatencyTests(unittest.IsolatedAsyncioTestCase):
             observed_at=time.monotonic(),
         )
         source.candidates[candidate.mint] = candidate
-        source.history.evidence.return_value = {"migration_fraction": .01}
+        source.history.evidence.return_value = {"migration_fraction": .02}
         trader.book.can_admit = Mock(wraps=trader.book.can_admit)
         with closing(self.book.connect()) as db, db:
             db.execute("INSERT INTO pauses VALUES (?)", (STRATEGY_ID,))

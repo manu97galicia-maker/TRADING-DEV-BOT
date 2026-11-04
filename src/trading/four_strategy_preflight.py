@@ -80,6 +80,10 @@ def inspect_local(plan: dict, config_path: Path, *, only_dev: bool = False) -> d
     from trading.second_block_policy import load_second_policy
 
     second = load_second_policy(config_path, plan)
+    report["creator_migration_threshold"] = {
+        "fraction": second.get("min_creator_migration_fraction"),
+        "comparison": ">" if second.get("creator_migration_strictly_above", False) else ">=",
+    }
     if second.get("history_fallback_provider") == "gmgn":
         _record(report, "gmgn_history_api",
                 "pass" if env.get("GMGN_API_KEY") else "warning",
