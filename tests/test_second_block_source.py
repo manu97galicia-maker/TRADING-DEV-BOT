@@ -48,6 +48,8 @@ class SourceTests(unittest.IsolatedAsyncioTestCase):
         self.policy = yaml.safe_load((ROOT / "configs/second-block-dev.yaml").read_text())
         self.policy["creator_migration_strictly_above"] = False  # Historical inclusive fixtures.
         self.policy["entry_rule"] = "second_block"
+        self.policy.update(min_creator_migration_fraction=.01, max_entry_mc_usd=4200,
+                           min_distinct_first_block_buyers=2)
         self.policy.pop("entry_timing", None)
         self.policy.pop("require_dev_initial_buy", None)
         self.policy["min_first_block_volume_usd"] = 275

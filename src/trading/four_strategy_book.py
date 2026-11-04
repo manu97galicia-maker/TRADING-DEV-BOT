@@ -104,6 +104,23 @@ class FourStrategyBook:
                 not self._batch_applies(strategy) or self.evaluation.can_admit(db, strategy)
             )
 
+    def trial_count(self, trial_id: str) -> int:
+        """Count accepted or unresolved buys across process restarts."""
+        with closing(self.connect()) as db:
+            return self._trial_count_in(db, trial_id)
+
+    @staticmethod
+    def _trial_count_in(db: sqlite3.Connection, trial_id: str) -> int:
+        current = db.execute(
+            "SELECT COUNT(*) FROM positions WHERE json_extract(details,'$.features.trial_id')=?",
+            (trial_id,),
+        ).fetchone()[0]
+        closed = db.execute(
+            "SELECT COUNT(*) FROM outcomes WHERE json_extract(details,'$.features.trial_id')=?",
+            (trial_id,),
+        ).fetchone()[0]
+        return current + closed
+
     def reserve(  # noqa: PLR0913, PLR0917 -- all inputs belong to one atomic admission
         self,
         mint: str,
@@ -124,9 +141,16 @@ class FourStrategyBook:
         """
         if not mint or not strategy or min(balance, slot, reserve, fees) < 0:
             raise ValueError("Invalid reservation inputs")
+        trial_id = features.get("trial_id") if strategy == STRATEGY_ID else None
+        trial_limit = features.get("max_trial_buys") if strategy == STRATEGY_ID else None
+        if trial_id is not None and (not isinstance(trial_id, str) or not trial_id
+                                     or type(trial_limit) is not int or trial_limit != 5):
+            raise ValueError("Invalid durable five-buy trial")
         with closing(self.connect()) as db, db:
             db.execute("BEGIN IMMEDIATE")
             if self._paused_in(db, strategy):
+                return None
+            if trial_id is not None and self._trial_count_in(db, trial_id) >= trial_limit:
                 return None
             watermark = db.execute(
                 "SELECT watermark FROM settings WHERE id=1"

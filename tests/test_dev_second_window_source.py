@@ -7,8 +7,8 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
+import test_second_block_policy as historical
 import test_second_block_source as stream
-import yaml
 
 
 class DevSecondWindowSourceTests(unittest.IsolatedAsyncioTestCase):
@@ -338,7 +338,7 @@ class DevSecondWindowSourceTests(unittest.IsolatedAsyncioTestCase):
     async def test_shipped_profile_accepts_one_tiny_dev_buy_with_above_one_percent_history(self):
         # Exercise the actual selector, independently of the historical activity fixture.
         self.policy.clear()
-        self.policy.update(yaml.safe_load((stream.ROOT / "configs/second-block-dev.yaml").read_text()))
+        self.policy.update(historical.POLICY)
         self.assertFalse(self.policy["require_first_block_activity"])
         self.assertTrue(self.policy["creator_migration_strictly_above"])
         self.source.history.evidence = Mock(return_value={"migration_fraction": .010001})
@@ -357,7 +357,7 @@ class DevSecondWindowSourceTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_shipped_profile_rejects_unknown_or_at_most_one_percent_history(self):
         self.policy.clear()
-        self.policy.update(yaml.safe_load((stream.ROOT / "configs/second-block-dev.yaml").read_text()))
+        self.policy.update(historical.POLICY)
         self.assertFalse(self.policy["require_first_block_activity"])
         self.source.history.evidence = Mock(return_value=None)
         with patch("monitoring.second_block_source.build_pumpfun_token_info", new_callable=AsyncMock) as builder:
@@ -375,7 +375,7 @@ class DevSecondWindowSourceTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_shipped_profile_keeps_initial_dev_buy_proof_without_activity_minimums(self):
         self.policy.clear()
-        self.policy.update(yaml.safe_load((stream.ROOT / "configs/second-block-dev.yaml").read_text()))
+        self.policy.update(historical.POLICY)
         self.source.history.evidence = Mock(return_value={"migration_fraction": .010001})
         with patch("monitoring.second_block_source.build_pumpfun_token_info", new_callable=AsyncMock) as builder:
             await self.created(stream.trade(self.mint, self.a, sol=.000001))

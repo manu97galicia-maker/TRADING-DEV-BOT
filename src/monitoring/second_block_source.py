@@ -8,7 +8,7 @@ slot clock cannot guarantee transaction order or inclusion.
 """
 
 # IDL byte offsets and bounded observation limits are intentionally explicit.
-# ruff: noqa: SLF001, PLR2004, BLE001
+# ruff: noqa: SLF001, PLR2004, BLE001, C901
 
 from __future__ import annotations
 
@@ -29,6 +29,8 @@ from trading.second_block_policy import (
     STRATEGY_ID,
     creator_history_only,
     creator_migration_allowed,
+    fast_second_block,
+    first_block_activity_only,
     second_produced_block,
 )
 from trading.token_builder import build_pumpfun_token_info
@@ -106,7 +108,7 @@ class SecondBlockSource:
         self.available = slot >= self.latest_log_slot
         if getattr(self.history, "coverage_start_slot", None) is None:
             self.history.coverage_start_slot = slot
-        if creator_history_only(self.policy):
+        if fast_second_block(self.policy):
             if second_produced_block(self.policy):
                 self.advance_second_block_candidates(slot, parent)
             self.refresh_candidates()
@@ -187,10 +189,10 @@ class SecondBlockSource:
 
     def consider_touched(self, mints: set[str]) -> None:
         candidates = [self.candidates[mint] for mint in mints]
-        if creator_history_only(self.policy):
+        if fast_second_block(self.policy):
             candidates = self.ordered_history_candidates(candidates)
         for candidate in candidates:
-            if creator_history_only(self.policy):
+            if fast_second_block(self.policy):
                 self.refresh(candidate)
             self.consider(candidate)
 
@@ -203,15 +205,16 @@ class SecondBlockSource:
             if (str(fields["bonding_curve"]) != curve_address(mint) or not Pubkey.from_string(user).is_on_curve()
                     or fields.get("token_total_supply") != 1000000000000000):
                 return
-            self.history.observe(user, mint)
-            history_only = creator_history_only(self.policy)
-            if not history_only:
+            fast = fast_second_block(self.policy)
+            if not first_block_activity_only(self.policy):
+                self.history.observe(user, mint)
+            if not fast:
                 self.history.warm(user)
-            if history_only and (
+            if fast and (
                     (second_produced_block(self.policy) and self.slot > slot and self.parent != slot)
                     or not self.admit_history_candidate(mint)):
                 return
-            if (mint in self.candidates or (not history_only and slot < self.parent)
+            if (mint in self.candidates or (not fast and slot < self.parent)
                     or len(self.candidates) >= 256):
                 return
             candidate = Candidate(mint, creator, slot, str(fields.get("name") or ""),
@@ -224,7 +227,7 @@ class SecondBlockSource:
             if self.available and self.parent == slot:
                 candidate.second_slot = self.slot
             self.candidates[mint] = candidate
-            if history_only:
+            if fast:
                 self.refresh(candidate)
                 return
             if len(self.building) < 2:
@@ -250,8 +253,11 @@ class SecondBlockSource:
         if second_produced_block(self.policy) and (
                 self.candidates.get(candidate.mint) is not candidate or self.second_window_expired(candidate)):
             return
-        if (creator_history_only(self.policy) and
+        if (fast_second_block(self.policy) and
                 (not self.history_activity_ready(candidate) or candidate.mint in self.attempted_mints)):
+            return
+        if first_block_activity_only(self.policy):
+            self.prepare_if_ready(candidate)
             return
         self.history.warm(candidate.developer)
         pending = getattr(self.history, "pending", {}).get(candidate.developer)
@@ -273,6 +279,9 @@ class SecondBlockSource:
             history = self.history.evidence(candidate.developer, candidate.mint)
             if not creator_migration_allowed(history, self.policy):
                 return
+        self.prepare_if_ready(candidate)
+
+    def prepare_if_ready(self, candidate: Candidate) -> None:
         now = time.monotonic()
         if (candidate.token is None and candidate.mint not in self.building
                 and len(self.building) < 2 and now >= candidate.prepare_after):
@@ -346,7 +355,7 @@ class SecondBlockSource:
         candidate, sol, vsol, vtokens = decoded
         if slot == candidate.creation_slot:
             if raw[56]:
-                if len(candidate.buyers) >= 1024 and not creator_history_only(self.policy):
+                if len(candidate.buyers) >= 1024 and not fast_second_block(self.policy):
                     candidate.invalid = True
                     return None
                 if len(candidate.buyers) < 1024:
@@ -362,7 +371,7 @@ class SecondBlockSource:
     def signal(self, mint: str) -> dict | None:
         candidate = self.candidates.get(mint)
         sol_usd = self.sol_reference()
-        if creator_history_only(self.policy):
+        if fast_second_block(self.policy):
             return self.history_signal(candidate, sol_usd)
         entry_block = (2 if candidate and self.slot == candidate.second_slot and self.parent == candidate.creation_slot
                        else 3 if candidate and self.policy.get("third_block_retry_on_sharp_rise", False)
@@ -409,14 +418,16 @@ class SecondBlockSource:
                        or self.slot != candidate.second_slot or self.parent != candidate.creation_slot
                        or self.second_window_expired(candidate)):
             return None
-        history = self.history.evidence(candidate.developer, candidate.mint)
-        if not creator_migration_allowed(history, self.policy):
-            return None
+        history = None
+        if creator_history_only(self.policy):
+            history = self.history.evidence(candidate.developer, candidate.mint)
+            if not creator_migration_allowed(history, self.policy):
+                return None
         volume = (candidate.buy_sol+candidate.sell_sol)*sol_usd
         activity_required = self.policy.get("require_first_block_activity", False)
         if not self.history_activity_ready(candidate, sol_usd):
             return None
-        return {"strategy": STRATEGY_ID, "entry_rule": "creator_migration_only",
+        return {"strategy": STRATEGY_ID, "entry_rule": self.policy["entry_rule"],
             "entry_timing": "second_produced_block" if strict else None,
             "first_block_activity_required": activity_required,
             "dev_initial_buy_required": strict and self.policy.get("require_dev_initial_buy", False),
@@ -431,11 +442,13 @@ class SecondBlockSource:
             "buy_sol": candidate.buy_sol, "sell_sol": candidate.sell_sol,
             "volume_usd": volume,
             "observed_mc_usd": candidate.price*1e9*sol_usd, "creator_history": history,
+            "trial_id": self.policy.get("trial_id"),
+            "max_trial_buys": self.policy.get("max_trial_buys"),
             "inclusion_guaranteed": False, **self.timing_features(candidate)}
 
     def consider(self, candidate: Candidate) -> None:
-        history_only = creator_history_only(self.policy)
-        if history_only:
+        fast = fast_second_block(self.policy)
+        if fast:
             self.prune_history_attempts()
             if candidate.mint in self.attempted_mints or len(self.attempted_mints) >= 4096:
                 return
@@ -446,7 +459,7 @@ class SecondBlockSource:
             candidate.attempted = True
             candidate.inflight_slot = attempt_key
             candidate.attempted_slots.add(attempt_key)
-            if history_only:
+            if fast:
                 self.attempted_mints[candidate.mint] = time.monotonic()
             self._track(self.deliver(candidate))
 
@@ -461,7 +474,7 @@ class SecondBlockSource:
     def arm_third_block_retry(self, mint: str, second_slot: int, generation: int) -> bool:
         """Caller proved a sharp-rise rejection happened before any submission."""
         candidate = self.candidates.get(mint)
-        if (creator_history_only(self.policy) or not self.policy.get("third_block_retry_on_sharp_rise", False)
+        if (fast_second_block(self.policy) or not self.policy.get("third_block_retry_on_sharp_rise", False)
                 or generation != self.generation or not self.available or candidate is None
                 or candidate.retry_armed or candidate.second_slot != second_slot
                 or candidate.inflight_slot != second_slot or second_slot not in candidate.attempted_slots

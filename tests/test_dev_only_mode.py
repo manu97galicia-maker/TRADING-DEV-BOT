@@ -267,7 +267,8 @@ class DevOnlyPreflightTests(unittest.TestCase):
         self.assertEqual(report["entry_mode"], "dev_only")
         self.assertFalse(report["dev_batch_gate_enabled"])
         self.assertNotIn("telegram_local", checks)
-        self.assertEqual(checks["gmgn_history_api"]["status"], "warning")
+        self.assertNotIn("gmgn_history_api", checks)
+        self.assertIsNone(report["creator_migration_threshold"])
         self.assertEqual(lookup.call_args_list, [call("aiohttp"), call("websockets"), call("solders")])
         config_path.resolve.assert_not_called()
         for name in ("dependencies", "wallet_identity", "rpc_config", "wss_config"):

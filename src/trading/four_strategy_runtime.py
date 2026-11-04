@@ -42,6 +42,8 @@ from trading.second_block_policy import (
     STRATEGY_ID,
     creator_history_only,
     entry_budget_cap_lamports,
+    fast_second_block,
+    first_block_activity_only,
     position_exit_plan,
     recovery_allocations,
     second_produced_block,
@@ -201,7 +203,7 @@ class SharedBuyer:
             if not policy.get("enabled"):
                 return TradeResult(success=False, error_message="Second-block strategy is disabled")
             validate_second_policy(policy)
-            history_only = creator_history_only(policy)
+            history_only = fast_second_block(policy)
             try:
                 priority_cap = priority_fee_cap_lamports(runtime.sol_usd,
                     quote_age_seconds=runtime.reference_age(), cap_usd=policy["buy_priority_fee_cap_usd"])
@@ -576,16 +578,19 @@ class FourStrategyTrader(legacy.UniversalTrader):
         cap_text = f" · tope ${usd_cap:.2f} por entrada incluidos gastos estimados" if usd_cap is not None else ""
         migration_op = ">" if getattr(self, "second_policy", {}).get("creator_migration_strictly_above", False) else ">="
         if getattr(self, "only_dev", False):
-            if creator_history_only(self.second_policy):
-                selection = f"dev {migration_op}1% migraciones verificadas"
+            if fast_second_block(self.second_policy):
+                selection = ("actividad del primer bloque" if first_block_activity_only(self.second_policy)
+                             else f"dev {migration_op}1% migraciones verificadas")
                 if self.second_policy.get("require_first_block_activity", False):
                     selection += (f" · primer bloque: >={self.second_policy['min_distinct_first_block_buyers']} compradores "
                                   f"y >=${self.second_policy['min_first_block_volume_usd']:.0f} volumen total")
                 timing = ("solo segundo bloque producido, dev compra primero en la creacion"
                           if second_produced_block(self.second_policy) else "sin bloque fijo de entrada")
+                trial = (f" · prueba maximo {self.second_policy['max_trial_buys']} compras confirmadas"
+                         if first_block_activity_only(self.second_policy) else "")
                 return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
                         f"incluidos gastos{cap_text} · {selection} · "
-                        f"sin MC maximo · {timing} · {position_limit} plazas compartidas{batch_text} · "
+                        f"sin MC maximo · {timing} · {position_limit} plazas compartidas{batch_text}{trial} · "
                         "prioridad compra $0.07 / salidas $0.03")
             return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
                     f"incluidos gastos · dev {migration_op}1% migraciones verificadas · MC <4200 · "
@@ -596,7 +601,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
             "presion 8K / Telegram / primer bloque / cruce 21K"
         )
         if getattr(self, "second_policy", {}).get("enabled"):
-            label = "dev/historial" if creator_history_only(self.second_policy) else "dev/segundo bloque"
+            label = ("primer bloque 3 compradores/$350" if first_block_activity_only(self.second_policy)
+                     else "dev/historial" if creator_history_only(self.second_policy) else "dev/segundo bloque")
             message += f" · QUINTA: {label}, presupuesto propio {self.second_policy['balance_fraction']:.0%}{cap_text}"
         return message
 
@@ -694,26 +700,29 @@ class FourStrategyTrader(legacy.UniversalTrader):
             # History observation must not open SQLite for every candidate/slot.
             # Actual entries still check book.can_admit in _handle_token, then
             # recheck pause/ROI atomically inside Book.reserve before submission.
-            allowed = (lambda: True) if creator_history_only(self.second_policy) else (
+            allowed = (lambda: True) if fast_second_block(self.second_policy) else (
                 lambda: not self.book.paused(STRATEGY_ID))
             self.second_source = SecondBlockSource(self.second_policy, self.rpc,
                 self.platform_implementations, self.solana_client, lambda: self.sol_usd,
                 self.reference_age, allowed, self._on_dexpaid_token)
-            if creator_history_only(self.second_policy):
+            if fast_second_block(self.second_policy):
                 migration_op = ">" if self.second_policy.get("creator_migration_strictly_above", False) else ">="
-                logger.info("DEV HISTORY ONLY enabled: %s1%% verified migrations, %.0f%% SOL budget; buy priority $0.07 / all exits $0.03",
-                            migration_op,
-                            self.second_policy["balance_fraction"]*100)
+                if first_block_activity_only(self.second_policy):
+                    logger.info("FIRST BLOCK ACTIVITY ONLY: >=3 buyers, >=$350 volume, no dev-history request, maximum five trial buys")
+                else:
+                    logger.info("DEV HISTORY ONLY enabled: %s1%% verified migrations, %.0f%% SOL budget; buy priority $0.07 / all exits $0.03",
+                                migration_op, self.second_policy["balance_fraction"]*100)
                 logger.info("DEV inclusive entry budget cap USD (including slippage and fee headroom): %s",
                             self.second_policy.get("max_entry_budget_usd", "none"))
                 logger.info("DEV fee identity: original recipient or this mint's official Pump Fees sharing config; developer remains creation signer")
                 logger.info("DEV entry reads: fresh verified mint-owner proof and task-local holdings/balance handoff; full slot/context checks retained")
                 if second_produced_block(self.second_policy):
                     logger.info("DEV strict timing: initial developer buy in creation transaction; only next produced block; no later retry; inclusion not guaranteed")
-                logger.info("DEV history providers: %s; fallback=%s, primary deadline=%ss",
-                            self.second_policy.get("history_provider"),
-                            self.second_policy.get("history_fallback_provider", "none"),
-                            self.second_policy.get("history_primary_timeout_seconds", "default"))
+                if creator_history_only(self.second_policy):
+                    logger.info("DEV history providers: %s; fallback=%s, primary deadline=%ss",
+                                self.second_policy.get("history_provider"),
+                                self.second_policy.get("history_fallback_provider", "none"),
+                                self.second_policy.get("history_primary_timeout_seconds", "default"))
                 if self.second_policy.get("require_first_block_activity", False):
                     logger.info("DEV first-block activity: >=%d distinct buyers, >=%.0f USD total volume",
                                 self.second_policy["min_distinct_first_block_buyers"],
@@ -729,7 +738,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
             lambda mint: mint in self.bought_mints,
             lambda: True,
             event_observer=self.second_source,
-            observer_only=getattr(self, "only_dev", False) and creator_history_only(self.second_policy),
+            observer_only=getattr(self, "only_dev", False) and fast_second_block(self.second_policy),
             tracked_mints=lambda: getattr(self, "_four_monitored", set()),
         )
 

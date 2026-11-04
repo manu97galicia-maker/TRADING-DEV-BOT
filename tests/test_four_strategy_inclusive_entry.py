@@ -28,6 +28,15 @@ SOL = 1_000_000_000
 SECOND_POLICY = yaml.safe_load(
     (ROOT / "configs/second-block-dev.yaml").read_text(encoding="utf-8")
 )
+# Historical entry fixtures exercise the retired migration selector explicitly.
+SECOND_POLICY.update(entry_rule="creator_migration_only", require_first_block_activity=False,
+                     min_creator_migration_fraction=.01, creator_migration_strictly_above=True,
+                     min_distinct_first_block_buyers=2, min_first_block_volume_usd=250,
+                     developer_identity="creation_signer", history_provider="helius_transactions",
+                     creator_cache_seconds=600, history_timeout_seconds=12,
+                     history_fallback_provider="gmgn", history_primary_timeout_seconds=4,
+                     history_max_pages=64, history_page_size=100,
+                     history_max_accounts=10000, history_max_transactions=10000)
 
 
 class InheritedInclusiveEntryTests(unittest.IsolatedAsyncioTestCase):

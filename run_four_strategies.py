@@ -166,6 +166,8 @@ def main() -> None:
                         "require_first_block_activity": second.get("require_first_block_activity", False),
                         "min_distinct_first_block_buyers": second.get("min_distinct_first_block_buyers"),
                         "min_first_block_volume_usd": second.get("min_first_block_volume_usd"),
+                        "trial_id": second.get("trial_id"),
+                        "max_trial_buys": second.get("max_trial_buys"),
                         "buy_priority_fee_cap_usd": second.get("buy_priority_fee_cap_usd"),
                         "sell_priority_fee_cap_usd": second.get("sell_priority_fee_cap_usd"),
                         "entry_fraction_inclusive": second.get("balance_fraction"),

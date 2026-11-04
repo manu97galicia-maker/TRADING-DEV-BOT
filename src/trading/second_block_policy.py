@@ -1,7 +1,7 @@
 """Explicit fifth-strategy contract and offline exit calculations."""
 
 # Literal values are the user's separate strategy, not global trading defaults.
-# ruff: noqa: PLR2004, TRY003
+# ruff: noqa: PLR2004, TRY003, C901, PLR0912
 
 from __future__ import annotations
 
@@ -20,8 +20,16 @@ def creator_history_only(settings: dict) -> bool:
     return settings.get("entry_rule", "second_block") == "creator_migration_only"
 
 
+def first_block_activity_only(settings: dict) -> bool:
+    return settings.get("entry_rule") == "first_block_activity_only"
+
+
+def fast_second_block(settings: dict) -> bool:
+    return creator_history_only(settings) or first_block_activity_only(settings)
+
+
 def second_produced_block(settings: dict) -> bool:
-    return creator_history_only(settings) and settings.get("entry_timing") == "second_produced_block"
+    return fast_second_block(settings) and settings.get("entry_timing") == "second_produced_block"
 
 
 def creator_migration_allowed(history: dict | None, settings: dict) -> bool:
@@ -54,35 +62,46 @@ def validate_second_policy(settings: dict) -> None:
         raise ValueError("Second-block strategy needs explicit enable, threshold and batch-gate booleans")
     if not settings["enabled"]:
         return
-    expected = {
-        "strategy_id": STRATEGY_ID,
-        "min_creator_migration_fraction": .01, "developer_identity": "creation_signer",
-        "history_provider": "helius_transactions",
-    }
-    expected.update(
-        {"balance_fraction": .80, "buy_priority_fee_cap_usd": .07, "sell_priority_fee_cap_usd": .03}
-        if creator_history_only(settings) else
-        {"balance_fraction": .90, "max_entry_mc_usd": 4200, "min_first_block_volume_usd": 275,
-         "min_distinct_first_block_buyers": 2, "buy_priority_fee_cap_usd": .06})
-    expected.update({"min_first_block_volume_usd": 250, "min_distinct_first_block_buyers": 2}
-                    if creator_history_only(settings) and settings.get("require_first_block_activity", False) else {})
+    expected = {"strategy_id": STRATEGY_ID}
+    if first_block_activity_only(settings):
+        expected.update({"balance_fraction": .80, "buy_priority_fee_cap_usd": .07,
+                         "sell_priority_fee_cap_usd": .03, "require_first_block_activity": True,
+                         "min_first_block_volume_usd": 350, "min_distinct_first_block_buyers": 3})
+    elif creator_history_only(settings):
+        expected.update({"min_creator_migration_fraction": .01, "developer_identity": "creation_signer",
+                         "history_provider": "helius_transactions", "balance_fraction": .80,
+                         "buy_priority_fee_cap_usd": .07, "sell_priority_fee_cap_usd": .03})
+        if settings.get("require_first_block_activity", False):
+            expected.update({"min_first_block_volume_usd": 250, "min_distinct_first_block_buyers": 2})
+    else:
+        expected.update({"min_creator_migration_fraction": .01, "developer_identity": "creation_signer",
+                         "history_provider": "helius_transactions", "balance_fraction": .90,
+                         "max_entry_mc_usd": 4200, "min_first_block_volume_usd": 275,
+                         "min_distinct_first_block_buyers": 2, "buy_priority_fee_cap_usd": .06})
     if (any(settings.get(k) != v for k, v in expected.items())
-            or settings.get("entry_rule", "second_block") not in {"second_block", "creator_migration_only"}
+            or settings.get("entry_rule", "second_block") not in {"second_block", "creator_migration_only", "first_block_activity_only"}
             or type(settings.get("third_block_retry_on_sharp_rise", False)) is not bool
             or type(settings.get("require_first_block_activity", False)) is not bool
             or type(settings.get("reject_sharp_price_rise", True)) is not bool):
         raise ValueError("Second-block settings differ from the requested entry policy")
     validate_entry_timing(settings)
+    if first_block_activity_only(settings):
+        if (type(settings.get("max_trial_buys")) is not int or settings["max_trial_buys"] != 5
+                or not isinstance(settings.get("trial_id"), str) or not settings["trial_id"]):
+            raise ValueError("The activity-only trial must have a durable five-buy limit")
     entry_budget_cap_lamports(settings, 1, quote_age_seconds=0)
-    for key in ["max_slot_age_seconds", "creator_cache_seconds", "history_timeout_seconds"]:
+    limits = (["max_slot_age_seconds"] if first_block_activity_only(settings) else
+              ["max_slot_age_seconds", "creator_cache_seconds", "history_timeout_seconds"])
+    for key in limits:
         if not isinstance(settings.get(key), (int, float)) or not math.isfinite(settings[key]) or settings[key] <= 0:
             raise ValueError("Second-block observation limits must be finite and positive")
-    validate_history_fallback(settings)
-    for key in ["history_max_pages", "history_page_size", "history_max_accounts", "history_max_transactions"]:
-        if type(settings.get(key)) is not int or not 1 <= settings[key] <= 10000:
-            raise ValueError("History page limits are invalid")
-    if settings["history_page_size"] > 1000:
-        raise ValueError("Helius transaction pages are limited to 1000 records")
+    if not first_block_activity_only(settings):
+        validate_history_fallback(settings)
+        for key in ["history_max_pages", "history_page_size", "history_max_accounts", "history_max_transactions"]:
+            if type(settings.get(key)) is not int or not 1 <= settings[key] <= 10000:
+                raise ValueError("History page limits are invalid")
+        if settings["history_page_size"] > 1000:
+            raise ValueError("Helius transaction pages are limited to 1000 records")
     exit_policy = settings["exit"]
     if (exit_policy.get("initial_gain") != .35 or exit_policy.get("later_step_gain") != .40
             or exit_policy.get("later_sales") != 3):
