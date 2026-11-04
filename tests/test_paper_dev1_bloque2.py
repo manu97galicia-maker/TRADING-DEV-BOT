@@ -22,8 +22,12 @@ SOL_USD_REFERENCIA = 105.0
 
 
 def test_nace_en_papel_y_no_se_cuela_en_todas() -> None:
-    # No se dijo papel ni real: nace en papel. Pasarla a real es pedirlo.
-    assert CFG["filters"]["paper_trade"] is True
+    # Nacio en papel el 3-nov y paso a real el 4-nov, pidiendolo ("como
+    # poner en real"). Que no vuelva a papel por accidente.
+    assert CFG["filters"]["paper_trade"] is False, (
+        "volvio a papel: se puso en real el 4-nov por orden expresa de Manu"
+    )
+    assert "ya no lo esta" in FICHERO.read_text(encoding="utf-8").lower()
     # enabled solo lo mira el arranque de "todas"; en false no arranca junto
     # a las demas estrategias sobre la misma wallet.
     assert CFG["enabled"] is False

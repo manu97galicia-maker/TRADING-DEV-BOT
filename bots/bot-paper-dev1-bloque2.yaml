@@ -12,15 +12,17 @@
 # Lo que cambio: 20 $ -> 30 $, tope de entrada 4,1k (nuevo), stop 8% -> 25%,
 # y la salida entera (ya no es la de la hermana).
 #
-# NACE EN PAPEL, como todas las estrategias nuevas: no se dijo papel ni real.
-# Pasarla a real es una linea (`paper_trade: false`) y se hace cuando se pida.
+# NACIO EN PAPEL Y YA NO LO ESTA: desde el 4-nov opera con DINERO REAL
+# (ver el bloque de `paper_trade`, mas abajo). El nombre del fichero sigue
+# diciendo `bot-paper-...` porque decide el sufijo del estado; renombrarlo
+# dejaria huerfanas las posiciones vivas.
 #
 # LO QUE NO SE PIDIO Y SE HA TENIDO QUE ELEGIR, para poder cambiarlo luego:
 #   - 5 plazas y 0,03 SOL de reserva: el nodo (max_rps 12) vigila 6, y sin
 #     reserva no queda SOL para pagar la comision de vender. Son los dos
 #     puntos que en la hermana hubo que aceptar a sabiendas; aqui no se
 #     repiten porque nadie los pidio.
-name: "PAPER DEV 1% + PRIMER BLOQUE 2 COMPRAS 375$ + BLOQUE 2 BAJO 4,1K"
+name: "REAL DEV 1% + PRIMER BLOQUE 2 COMPRAS 375$ + BLOQUE 2 BAJO 4,1K"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -118,7 +120,13 @@ retries:
 
 filters:
   listener_type: "logs"
-  paper_trade: true
+  # REAL DESDE EL 4-nov, pedido: "como poner en real". Venia de true.
+  # Ningun otro numero se mueve. Con 30 $ y 5 plazas, como mucho 150 $
+  # dentro a la vez, mas 6 centimos de comision por compra.
+  # No compra mientras el precio de SOL siga en el valor por defecto del
+  # codigo (universal_trader.py: "Mientras el precio no se haya confirmado
+  # NO SE COMPRA"), asi que los 30 $ nunca se calculan con el SOL a 91,24.
+  paper_trade: false
   paper_watch_secs: 600
   max_token_age: 0
   # POR DEBAJO DE 4,1K. OJO, ESTE NUMERO NO SON DOLARES DE HOY. El bot lo lee
