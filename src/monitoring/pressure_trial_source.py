@@ -86,12 +86,16 @@ class PressureTrialSource:
         is_consumed: Callable[[str], bool],
         is_allowed: Callable[[], bool],
         *, event_observer: object | None = None,
+        observer_only: bool = False,
+        tracked_mints: Callable[[], set[str]] | None = None,
     ) -> None:
         self.wss, self.implementations, self.client = wss, implementations, client
         self.signal_reader = signal_reader
         self.is_consumed = is_consumed
         self.is_allowed = is_allowed
         self.event_observer = event_observer
+        self.observer_only = observer_only
+        self.tracked_mints = tracked_mints
         self.tasks = set()
         self.in_flight = set()
         self.completed = set()
@@ -222,6 +226,15 @@ class PressureTrialSource:
                         self.notifications[identity] = None
                         if len(self.notifications) > MAX_NOTIFICATIONS:
                             self.notifications.pop(next(iter(self.notifications)))
+                        if self.observer_only:
+                            # Dev proof/slot handling goes first. Only held mints
+                            # need the general price/flow cache for their exits.
+                            if self.event_observer is not None and slot_subscription:
+                                slot_subscription = self.notify_observer("on_logs", value.get("logs", []), slot, value.get("signature"))
+                            tracked = self.tracked_mints() if self.tracked_mints is not None else set()
+                            if tracked:
+                                volumen.registrar_logs(value.get("logs", []), slot=slot, allowed_mints=tracked)
+                            continue
                         mints = volumen.registrar_logs(value.get("logs", []), slot=slot)
                         if self.event_observer is not None and slot_subscription:
                             slot_subscription = self.notify_observer("on_logs", value.get("logs", []), slot, value.get("signature"))

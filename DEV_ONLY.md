@@ -6,6 +6,11 @@ Telegram no abren posiciones en este modo. El colector de Solana permanece
 conectado para observar creación, primer bloque, historial del dev y segundo
 bloque; no se abre la sesión de señales de Telegram.
 
+En el perfil actual de historial el colector entrega primero los eventos al observador del dev.
+No calcula señales de presión ni guarda estadísticas de monedas ajenas a las
+posiciones vigiladas. Conserva precios y actividad para sus salidas, y sigue
+observando todas las creaciones para verificar el historial del dev.
+
 Solo admite nuevas compras de tokens normales de Pump.fun. Mayhem queda
 excluido en todos los perfiles del coordinador, incluido el filtro de historial
 del dev. Se comprueba la bandera preparada y se vuelve a comprobar con la

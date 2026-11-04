@@ -724,6 +724,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
             lambda mint: mint in self.bought_mints,
             lambda: True,
             event_observer=self.second_source,
+            observer_only=getattr(self, "only_dev", False) and creator_history_only(self.second_policy),
+            tracked_mints=lambda: getattr(self, "_four_monitored", set()),
         )
 
         # Source logs use these fields without imposing its historical policy.
