@@ -19,6 +19,9 @@ caduca, no se reserva saldo ni se firma. Cada cierre verificado conserva este
 historial y el informe compara ganadoras y no ganadoras por separado para las
 cuatro estrategias. El aprendizaje es descriptivo: con menos de 30 cierres por
 estrategia solo recopila datos y nunca cambia parámetros automáticamente.
+Temporalmente, `active_strategies` deja activa únicamente la estrategia 3 del
+primer bloque; presión 8K, cruce 21K y Telegram permanecen configuradas pero no
+pueden llegar a la compra.
 
 Las reglas, TP escalonados y preparación del publicador @AImemebot están en
 [la guía del paquete](estudios/four_strategies/README.md). Validar la configuración

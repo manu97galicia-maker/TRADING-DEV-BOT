@@ -18,7 +18,11 @@ from monitoring.four_strategy_signals import choose_signal
 from trading.base import TradeResult
 from trading.four_strategy_book import FourStrategyBook
 from trading.four_strategy_entry_guard import EntryRiskRejected
-from trading.four_strategy_runtime import FourStrategyTrader, SharedBuyer
+from trading.four_strategy_runtime import (
+    FourStrategyTrader,
+    SharedBuyer,
+    validate_active_strategies,
+)
 from trading.transaction_observer import OBSERVER, PRIORITY_CAP, SUBMISSIONS, observe
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -79,6 +83,13 @@ class SignalTests(unittest.TestCase):
     def test_missing_fresh_price_or_invalid_data_cannot_create_a_signal(self):
         for price in (None, 0, float("nan"), float("inf")):
             self.assertIsNone(choose_signal({}, [], None, price, 100, 100, POLICIES))
+
+    def test_active_strategy_selection_rejects_unknown_or_empty_routes(self):
+        self.assertEqual(validate_active_strategies(["first-block-four-buyers"]),
+                         {"first-block-four-buyers"})
+        for invalid in ([], ["typo"], "first-block-four-buyers"):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                validate_active_strategies(invalid)
 
 
 class BookTests(unittest.TestCase):
@@ -245,6 +256,17 @@ class BuyerTests(unittest.IsolatedAsyncioTestCase):
                 self.assertFalse(result.success)
                 broker.execute.assert_not_awaited()
                 self.assertFalse(self.book.positions())
+
+    async def test_disabled_strategy_cannot_reach_balance_or_broker(self):
+        self.runtime.active_strategies = {"first-block-four-buyers"}
+        self.runtime.current_signal = lambda token: {
+            "strategy": "strong-pressure-8k", "sol_usd": 100,
+        }
+        broker = SimpleNamespace(execute=AsyncMock())
+        result = await SharedBuyer(self.runtime, broker).execute(self.token)
+        self.assertEqual(result.error_message, "Entry strategy is disabled")
+        self.runtime.rpc.assert_not_awaited()
+        broker.execute.assert_not_awaited()
 
     async def test_real_buy_path_is_sized_by_the_shared_book_and_receipt_is_durable(
         self,

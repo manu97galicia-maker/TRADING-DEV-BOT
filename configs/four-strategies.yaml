@@ -86,6 +86,8 @@ callouts:
   enabled: false
 four_strategies:
   enabled: true
+  # Temporary selection: run only strategy 3 while retaining all definitions/history.
+  active_strategies: [first-block-four-buyers]
   expected_wallet: 43w6CJkHjZpAjPU3LswTGwur5RvngKoTKakhfLBkpZHV
   database: estudios/four_strategies/runtime.sqlite3
   callout_outbox: trades/four_strategy_callouts.jsonl

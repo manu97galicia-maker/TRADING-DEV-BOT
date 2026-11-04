@@ -68,6 +68,9 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 _PROCEEDS: ContextVar[float] = ContextVar("four_strategy_sale_proceeds", default=0)
 _DEV_EXIT_CAP: ContextVar[int | None] = ContextVar("dev_exit_priority_cap", default=None)
+_FOUR_ENTRY_STRATEGIES = {
+    "strong-pressure-8k", "strength-21k", "first-block-four-buyers", "telegram-immediate",
+}
 
 
 def validate_creator_migration_gate(policy: dict | None) -> dict:
@@ -89,6 +92,19 @@ def validate_creator_migration_gate(policy: dict | None) -> dict:
             or not math.isfinite(timeout) or timeout <= 0):
         raise ValueError("Creator migration history timeout must be positive")
     return policy
+
+
+def validate_active_strategies(values: object) -> set[str]:
+    """Return the explicitly selected entry routes, rejecting silent typos."""
+    if not isinstance(values, list) or not values:
+        raise ValueError("At least one four-strategy entry route must be active")
+    if any(not isinstance(value, str) for value in values):
+        raise ValueError("Active strategy identifiers must be strings")
+    active = set(values)
+    unknown = active - _FOUR_ENTRY_STRATEGIES
+    if unknown:
+        raise ValueError(f"Unknown active strategies: {sorted(unknown)}")
+    return active
 
 
 def _nominal_entry_cap(runtime: object, cap_sol: float = 0) -> float:
@@ -168,6 +184,10 @@ class SharedBuyer:
             return TradeResult(
                 success=False, error_message="Four-strategy signal expired"
             )
+        active = getattr(runtime, "active_strategies", None)
+        if (active is not None and signal["strategy"] in _FOUR_ENTRY_STRATEGIES
+                and signal["strategy"] not in active):
+            return TradeResult(success=False, error_message="Entry strategy is disabled")
         migration_policy = validate_creator_migration_gate(
             getattr(runtime, "four", {}).get("creator_migration_gate")
         )
@@ -492,6 +512,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
         self._purchase_notices: set[str] = set()
         validate_policy(settings["entry_protection"])
         validate_creator_migration_gate(settings.get("creator_migration_gate"))
+        self.active_strategies = validate_active_strategies(settings.get("active_strategies"))
         if str(self.wallet.pubkey) != settings["expected_wallet"]:
             raise ValueError(
                 "Configured private key does not match the requested public wallet"
@@ -730,7 +751,12 @@ class FourStrategyTrader(legacy.UniversalTrader):
             time.time(),
             self.four["strategies"],
         )
-        return {**signal, "sol_usd": self.sol_usd} if signal else None
+        active = getattr(self, "active_strategies", _FOUR_ENTRY_STRATEGIES)
+        return (
+            {**signal, "sol_usd": self.sol_usd}
+            if signal and signal["strategy"] in active
+            else None
+        )
 
     def current_signal(self, token: object) -> dict | None:
         data = token.additional_data or {}
@@ -746,6 +772,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
         if getattr(self, "only_dev", False):
             return None
         if data.get("acquisition_kind") == "telegram":
+            if "telegram-immediate" not in getattr(self, "active_strategies", _FOUR_ENTRY_STRATEGIES):
+                return None
             received = float(data.get("signal_received_at", 0))
             if not 0 <= time.time() - received <= 30:
                 return None
@@ -842,7 +870,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
                 )
 
         tasks = [source.run(self._on_dexpaid_token), self.audit_loop()]
-        if not getattr(self, "only_dev", False):
+        if (not getattr(self, "only_dev", False)
+                and "telegram-immediate" in getattr(self, "active_strategies", _FOUR_ENTRY_STRATEGIES)):
             from monitoring.telegram_source import TelegramSource
 
             telegram = TelegramSource(self.telegram_calls, self.platform_implementations,
