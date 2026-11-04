@@ -76,10 +76,11 @@ class Candidate:
 class SecondBlockSource:
     def __init__(self, policy: dict, rpc: object, implementations: object,  # noqa: PLR0913, PLR0917 -- I/O and policy callbacks
                  client: object, sol_reference: object, reference_age: object,
-                 allowed: object, callback: object) -> None:
+                 allowed: object, callback: object, *, own_wallet: str | None = None) -> None:
         self.policy, self.implementations, self.client = policy, implementations, client
         self.sol_reference, self.reference_age = sol_reference, reference_age
         self.allowed, self.callback = allowed, callback
+        self.own_wallet = own_wallet
         self.history = CreatorHistoryCache(rpc, policy)
         self.candidates: dict[str, Candidate] = {}
         self.tasks: set[asyncio.Task] = set()
@@ -432,11 +433,15 @@ class SecondBlockSource:
         activity_required = self.policy.get("require_first_block_activity", False)
         if not self.history_activity_ready(candidate, sol_usd):
             return None
+        own_wallet_absent = (self.own_wallet is not None and self.own_wallet not in candidate.buyers)
+        if first_block_activity_only(self.policy) and not own_wallet_absent:
+            return None
         return {"strategy": STRATEGY_ID, "entry_rule": self.policy["entry_rule"],
             "entry_timing": "second_produced_block" if strict else None,
             "first_block_activity_required": activity_required,
             "dev_initial_buy_required": strict and self.policy.get("require_dev_initial_buy", False),
             "dev_initial_buy_verified": candidate.dev_initial_buy_verified,
+            "own_wallet_absent_first_block": own_wallet_absent,
             "dev_initial_buy_signature": candidate.creation_signature if candidate.dev_initial_buy_verified else None,
             "sol_usd": sol_usd, "creator": candidate.creator, "developer": candidate.developer,
             "creation_fee_creator": candidate.creator, "prepared_fee_creator": str(candidate.token.creator),

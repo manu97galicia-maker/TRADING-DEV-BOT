@@ -7,12 +7,17 @@ import asyncio
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock
 
+import test_dev_second_window_runtime as strict_runtime
 import test_second_block_source as stream
 import yaml
+from solders.pubkey import Pubkey
 
+from trading.base import TradeResult
 from trading.four_strategy_book import FourStrategyBook
+from trading.four_strategy_runtime import SharedBuyer
 from trading.second_block_policy import STRATEGY_ID, validate_second_policy
 
 
@@ -25,6 +30,7 @@ class ActivitySourceTests(unittest.IsolatedAsyncioTestCase):
                            min_distinct_first_block_buyers=3,
                            min_first_block_volume_usd=350,
                            require_first_block_activity=True)
+        self.source.own_wallet = str(Pubkey.new_unique())
         self.source.history.observe = Mock(side_effect=AssertionError("history observation"))
         self.source.history.warm = Mock(side_effect=AssertionError("history request"))
         self.source.history.evidence = Mock(side_effect=AssertionError("history evidence"))
@@ -49,6 +55,7 @@ class ActivitySourceTests(unittest.IsolatedAsyncioTestCase):
         self.assertAlmostEqual(signal["volume_usd"], 350)
         self.assertIsNone(signal["creator_history"])
         self.assertTrue(signal["dev_initial_buy_verified"])
+        self.assertTrue(signal["own_wallet_absent_first_block"])
         self.assertEqual(signal["trial_id"], self.policy["trial_id"])
         self.assertEqual(signal["max_trial_buys"], 5)
         for _ in range(4):
@@ -65,6 +72,17 @@ class ActivitySourceTests(unittest.IsolatedAsyncioTestCase):
         self.source.on_logs(stream.logs(stream.create(self.mint, self.creator, user=self.a),
                                         stream.trade(self.mint, self.a, sol=1.5),
                                         stream.trade(self.mint, self.b, sol=2.0)), 100, "create")
+        self.source.on_slot({"slot": 101, "parent": 100})
+        self.assertIsNone(self.source.signal(str(self.mint)))
+        self.callback.assert_not_awaited()
+
+    async def test_own_wallet_buy_in_creation_block_blocks_entry(self):
+        self.source.own_wallet = str(self.b)
+        self.source.on_slot({"slot": 100, "parent": 99})
+        self.source.on_logs(stream.logs(stream.create(self.mint, self.creator, user=self.a),
+                                        stream.trade(self.mint, self.a, sol=1.2),
+                                        stream.trade(self.mint, self.b, sol=1.2),
+                                        stream.trade(self.mint, self.creator, sol=1.2)), 100, "create")
         self.source.on_slot({"slot": 101, "parent": 100})
         self.assertIsNone(self.source.signal(str(self.mint)))
         self.callback.assert_not_awaited()
@@ -114,6 +132,38 @@ class DurableTrialTests(unittest.TestCase):
             self.assertEqual(restarted.trial_count("trial-1"), 5)
             self.assertIsNone(restarted.reserve("mint-extra", STRATEGY_ID, 10_000_000_000,
                                                 1, 0, 0, 0, features, fraction=.01))
+
+
+class LaggingRpcEntryTests(unittest.IsolatedAsyncioTestCase):
+    async def rpc_response(self, method: str, params: list):
+        return await strict_runtime.StrictSecondWindowRuntimeTests.rpc_response(self, method, params)
+
+    async def asyncSetUp(self):
+        await strict_runtime.StrictSecondWindowRuntimeTests.asyncSetUp(self)
+        policy = yaml.safe_load((Path(__file__).resolve().parents[1] / "configs/second-block-dev.yaml").read_text())
+        self.runtime.second_policy = {**policy, "enabled": True}
+        self.signal.update(own_wallet_absent_first_block=True,
+                           trial_id=policy["trial_id"], max_trial_buys=5)
+        self.runtime.raw_holdings.return_value = (0, 99)
+        self.rpc_slot = 100
+
+    async def test_previous_slot_rpc_read_can_reach_unsigned_broker(self):
+        broker = SimpleNamespace(execute=AsyncMock(return_value=TradeResult(success=False, error_message="fake unsigned")))
+        result = await SharedBuyer(self.runtime, broker).execute(self.token)
+        self.assertFalse(result.success)
+        broker.execute.assert_awaited_once()
+
+    async def test_older_holdings_or_missing_own_wallet_proof_are_rejected(self):
+        broker = SimpleNamespace(execute=AsyncMock())
+        self.runtime.raw_holdings.return_value = (0, 98)
+        result = await SharedBuyer(self.runtime, broker).execute(self.token)
+        self.assertFalse(result.success)
+        broker.execute.assert_not_awaited()
+        self.signal["own_wallet_absent_first_block"] = False
+        self.runtime.raw_holdings.return_value = (0, 99)
+        result = await SharedBuyer(self.runtime, broker).execute(self.token)
+        self.assertFalse(result.success)
+        broker.execute.assert_not_awaited()
 
 
 if __name__ == "__main__":

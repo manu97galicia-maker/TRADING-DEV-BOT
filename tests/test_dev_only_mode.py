@@ -132,6 +132,7 @@ class DevOnlyFeedAndRecoveryTests(unittest.IsolatedAsyncioTestCase):
         trader.rpc = AsyncMock()
         trader.platform_implementations = object()
         trader.solana_client = object()
+        trader.wallet = SimpleNamespace(pubkey="fake-wallet")
         trader.sol_usd = 100
         trader.sol_quote_at = time.time()
         trader.book = SimpleNamespace(paused=Mock(return_value=False))
@@ -147,10 +148,11 @@ class DevOnlyFeedAndRecoveryTests(unittest.IsolatedAsyncioTestCase):
         with (
             patch.object(runtime_module, "PressureTrialSource", return_value=collector) as source,
             patch("monitoring.telegram_source.TelegramSource") as telegram,
-            patch("monitoring.second_block_source.SecondBlockSource", return_value=observer),
+            patch("monitoring.second_block_source.SecondBlockSource", return_value=observer) as dev_source,
         ):
             await trader._run_curva96_mode()
         self.assertIs(source.call_args.kwargs["event_observer"], observer)
+        self.assertEqual(dev_source.call_args.kwargs["own_wallet"], "fake-wallet")
         collector.run.assert_awaited_once_with(trader._on_dexpaid_token)
         trader.audit_loop.assert_awaited_once()
         telegram.assert_not_called()

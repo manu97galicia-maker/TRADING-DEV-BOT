@@ -158,9 +158,12 @@ class SharedBuyer:
                 error_message="This bundle accepts unmigrated Pump.fun entries",
             )
         strict = signal["strategy"] == STRATEGY_ID and second_produced_block(getattr(runtime, "second_policy", {}))
+        activity_only = strict and first_block_activity_only(getattr(runtime, "second_policy", {}))
         strict_target = signal.get("target_slot")
         if strict and not _strict_dev_window(token_info, signal, strict_target):
             return TradeResult(success=False, error_message="Second-block creation-buy proof or target unavailable")
+        if activity_only and signal.get("own_wallet_absent_first_block") is not True:
+            return TradeResult(success=False, error_message="Own-wallet first-block exclusion unavailable")
         if strict:
             prepared_reads = consume_dev_read_view(token_info, signal, str(runtime.wallet.pubkey))
             if prepared_reads is None:
@@ -173,8 +176,9 @@ class SharedBuyer:
                 logger.info("DEV fresh entry reads reused for %s; target slot %s; age %.0f ms",
                             token_info.mint, strict_target, (time.monotonic()-prepared_reads.created_at)*1000)
             creation_slot = signal.get("creation_slot")
+            earliest_holdings_slot = creation_slot-1 if activity_only and type(creation_slot) is int else creation_slot
             if (type(holdings_slot) is not int or type(creation_slot) is not int
-                    or not creation_slot <= holdings_slot <= strict_target):
+                    or not earliest_holdings_slot <= holdings_slot <= strict_target):
                 logger.info("DEV entry context mismatch: creation=%s holdings=%s target=%s balance=%s",
                             creation_slot, holdings_slot, strict_target,
                             balance.get("context", {}).get("slot"))
@@ -255,7 +259,8 @@ class SharedBuyer:
             if strict:
                 state, chain_slot = await asyncio.gather(
                     curve_read, runtime.rpc("getSlot", [{"commitment": "processed"}]))
-                if type(chain_slot) is not int or chain_slot != strict_target:
+                earliest_chain_slot = signal["creation_slot"] if activity_only else strict_target
+                if type(chain_slot) is not int or not earliest_chain_slot <= chain_slot <= strict_target:
                     logger.info("DEV entry target missed: chain=%s target=%s", chain_slot, strict_target)
                     runtime.book.cancel_unsubmitted(nonce)
                     return TradeResult(success=False, error_message="Second produced block is no longer current")
@@ -708,7 +713,8 @@ class FourStrategyTrader(legacy.UniversalTrader):
                 lambda: not self.book.paused(STRATEGY_ID))
             self.second_source = SecondBlockSource(self.second_policy, self.rpc,
                 self.platform_implementations, self.solana_client, lambda: self.sol_usd,
-                self.reference_age, allowed, self._on_dexpaid_token)
+                self.reference_age, allowed, self._on_dexpaid_token,
+                own_wallet=str(self.wallet.pubkey))
             if fast_second_block(self.second_policy):
                 migration_op = ">" if self.second_policy.get("creator_migration_strictly_above", False) else ">="
                 if first_block_activity_only(self.second_policy):
