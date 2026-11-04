@@ -4,7 +4,19 @@ env_file: "../.env.four-strategies"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
-enabled: false
+# ENCENDIDA EL 4-nov, pedido: "Puedes ponerme esto en modo real". Venia de
+# false. Ningun otro numero se mueve. Sigue sin arrancar sola: hace falta
+# `python run_four_strategies.py --run`, pasar la revision previa en linea, y
+# se apaga sola a la hora (MAX_RUN_SECONDS en run_four_strategies.py).
+#
+# LO QUE ARRIESGA CADA COMPRA, para que se lea antes de arrancar:
+# `fraccion_saldo: 0.90` (01f4dcc, 3-nov: "El presupuesto de cada nueva
+# operacion es el 90% del SOL liquido confirmado"). Con 1 SOL libre:
+#     1a compra: 0,90 x (1 - 0,03 de reserva) = 0,873 SOL
+#     2a compra: 0,90 x lo que queda           = ~0,087 SOL
+# Un stop del 22% en la primera = perder ~0,19 SOL, casi el 20% de la wallet,
+# en una sola operacion. Sin tope en dolares fuera del modo --only-dev.
+enabled: true
 second_block_dev_config: second-block-dev.yaml
 five_trade_evaluation:
   enabled: true
