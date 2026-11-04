@@ -74,6 +74,7 @@ def inspect_local(plan: dict, config_path: Path, *, only_dev: bool = False) -> d
         "live_started": False,
         "enabled": bool(plan.get("enabled")),
         "entry_mode": "dev_only" if only_dev else "all",
+        "entry_asset_policy": "normal_only",
         "checks": [],
     }
     from trading.second_block_policy import load_second_policy

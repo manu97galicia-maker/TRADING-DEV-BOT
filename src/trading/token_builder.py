@@ -21,7 +21,9 @@ from time import monotonic
 
 from solders.pubkey import Pubkey
 
+from core.pubkeys import TOKEN_2022_PROGRAM, TOKEN_PROGRAM
 from interfaces.core import Platform, TokenInfo
+from trading.dev_entry_reads import remember_mint_program
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -88,6 +90,7 @@ async def build_pumpfun_token_info(  # noqa: C901, PLR0911, PLR0913 -- independe
     # Leer ambas cuentas con `processed`, como el resto del camino de compra.
     # El cliente puede usar `finalized` por defecto: un mint recien creado
     # puede faltar ahi aunque su curva ya sea visible con `processed`.
+    mint_read_started = monotonic()
     try:
         state, mint_acct = await asyncio.gather(
             curve_manager.get_pool_state(
@@ -134,6 +137,8 @@ async def build_pumpfun_token_info(  # noqa: C901, PLR0911, PLR0913 -- independe
             "Could not read token program for %s; skipping (won't guess)", mint_str
         )
         return None
+    if str(token_program_id) in {str(TOKEN_PROGRAM), str(TOKEN_2022_PROGRAM)}:
+        remember_mint_program(mint, token_program_id, now=mint_read_started)
 
     token_info = TokenInfo(
         name=name or symbol or str(mint),

@@ -504,6 +504,9 @@ class SecondBlockSource:
                     or self.candidates.get(candidate.mint) is not candidate
                     or not fee_creator_allowed(candidate.mint, candidate.creator, token.creator)):
                 return
+            if getattr(token, "is_mayhem_mode", False):
+                logger.info("DEV candidate excluded for %s: mayhem_mode (normal tokens only)", candidate.mint)
+                return
             if str(token.creator) != candidate.creator:
                 logger.info("DEV official fee-sharing recipient prepared for %s", candidate.mint)
             token.additional_data = {**(token.additional_data or {}),

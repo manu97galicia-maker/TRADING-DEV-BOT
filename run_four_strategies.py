@@ -123,6 +123,7 @@ def main() -> None:
                         *(["dev-second-block"] if second["enabled"] else []),
                     ]),
                     "entry_mode": "dev_only" if args.only_dev else "all",
+                    "entry_asset_policy": "normal_only",
                     "max_shared_positions": plan["trade"]["max_posiciones"],
                     "entry_fraction_inclusive": entry_balance_fraction(args.config, plan, only_dev=args.only_dev),
                     "entry_budget_cap_usd": second.get("max_entry_budget_usd") if args.only_dev else None,

@@ -23,6 +23,12 @@ from monitoring.four_strategy_signals import choose_signal
 from monitoring.pressure_trial_source import PressureTrialSource
 from trading.base import TradeResult
 from trading.buy_budget import inclusive_balance_entry
+from trading.dev_entry_reads import (
+    DEV_ENTRY_READ_VIEW,
+    DevEntryReadView,
+    cached_mint_program,
+    consume_dev_read_view,
+)
 from trading.four_strategy_book import FourStrategyBook
 from trading.four_strategy_entry_guard import (
     EntryRiskRejected,
@@ -80,13 +86,11 @@ def _entry_budget_cap_lamports(runtime: object, strategy: str) -> int | None:
                                      quote_age_seconds=runtime.reference_age())
 
 
-def _configure_history_only_assets(runtime: object) -> None:
-    """The dev-only history rule does not screen the supported Mayhem subtype."""
-    if not (getattr(runtime, "only_dev", False) and creator_history_only(runtime.second_policy)):
-        return
-    runtime.allow_mayhem, runtime.require_mayhem = True, False
+def _configure_normal_only_assets(runtime: object) -> None:
+    """All entry sources in this bundle exclude Mayhem; existing exits remain enabled."""
+    runtime.allow_mayhem, runtime.require_mayhem = False, False
     if hasattr(runtime.buyer, "allow_mayhem"):
-        runtime.buyer.allow_mayhem = True
+        runtime.buyer.allow_mayhem = False
     if hasattr(runtime.buyer, "require_mayhem"):
         runtime.buyer.require_mayhem = False
 
@@ -131,6 +135,8 @@ class SharedBuyer:
     ) -> TradeResult:
         runtime = self.runtime
         del amount_sol  # Untrusted signal amounts cannot override shared sizing.
+        if getattr(token_info, "is_mayhem_mode", False):
+            return TradeResult(success=False, error_message="mayhem_mode")
         signal = runtime.current_signal(token_info)
         if signal and getattr(runtime, "only_dev", False) and signal["strategy"] != STRATEGY_ID:
             return TradeResult(success=False, error_message="Only-dev mode excludes this entry source")
@@ -154,10 +160,16 @@ class SharedBuyer:
         if strict and not _strict_dev_window(token_info, signal, strict_target):
             return TradeResult(success=False, error_message="Second-block creation-buy proof or target unavailable")
         if strict:
-            (existing_raw, holdings_slot), balance = await asyncio.gather(
-                runtime.raw_holdings(str(token_info.mint), commitment="processed"),
-                runtime.rpc("getBalance", [str(runtime.wallet.pubkey), {"commitment": "finalized"}]),
-            )
+            prepared_reads = consume_dev_read_view(token_info, signal, str(runtime.wallet.pubkey))
+            if prepared_reads is None:
+                (existing_raw, holdings_slot), balance = await asyncio.gather(
+                    runtime.raw_holdings(str(token_info.mint), commitment="processed"),
+                    runtime.rpc("getBalance", [str(runtime.wallet.pubkey), {"commitment": "finalized"}]),
+                )
+            else:
+                (existing_raw, holdings_slot), balance = prepared_reads.holdings, prepared_reads.balance
+                logger.info("DEV fresh entry reads reused for %s; target slot %s; age %.0f ms",
+                            token_info.mint, strict_target, (time.monotonic()-prepared_reads.created_at)*1000)
             creation_slot = signal.get("creation_slot")
             if (type(holdings_slot) is not int or type(creation_slot) is not int
                     or not creation_slot <= holdings_slot <= strict_target):
@@ -243,6 +255,10 @@ class SharedBuyer:
                     return TradeResult(success=False, error_message="Second produced block is no longer current")
             else:
                 state = await curve_read
+            if state.get("is_mayhem_mode", False):
+                runtime.book.cancel_unsubmitted(nonce)
+                logger.info("Entry rejected for %s: mayhem_mode (normal tokens only)", token_info.mint)
+                return TradeResult(success=False, error_message="mayhem_mode")
             if runtime.four.get("entry_protection", {}).get("enabled") and not history_only:
                 state, evidence = await runtime.check_entry_risk(token_info, state)
                 token_info.additional_data["entry_protection"] = evidence
@@ -258,6 +274,7 @@ class SharedBuyer:
             )
             if (
                 state.get("complete")
+                or state.get("is_mayhem_mode", False)
                 or not math.isfinite(chain_mc)
                 or not bounds_ok
                 or runtime.reference_age() > 30
@@ -328,6 +345,7 @@ class SharedBuyer:
                         return False
                     return bool(latest and (_strict_dev_window(token_info, latest, strict_target) if strict
                                 else history_only or latest.get("target_slot") == target_slot)
+                                and not getattr(token_info, "is_mayhem_mode", False)
                                 and _same_dev_fee_origin(latest, fee_origin, required=has_fee_origin)
                                 and (not has_fee_origin or (
                                     (token_info.additional_data or {}).get("dev_creation_fee_creator") == fee_origin
@@ -430,7 +448,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
             max_positions=self.max_posiciones,
             evaluation_policy=evaluation_policy,
         )
-        _configure_history_only_assets(self)
+        _configure_normal_only_assets(self)
         self.buyer = SharedBuyer(self, self.buyer)
         self.sol_usd, self.sol_quote_at = 0.0, 0.0
         self._four_tasks: set[asyncio.Task] = set()
@@ -453,6 +471,36 @@ class FourStrategyTrader(legacy.UniversalTrader):
 
     def reference_age(self) -> float:
         return time.time() - self.sol_quote_at
+
+    def _prepared_entry_token_program(self, token: object) -> object | None:
+        signal = self.current_signal(token)
+        if (not signal or signal["strategy"] != STRATEGY_ID
+                or not second_produced_block(self.second_policy)):
+            return None
+        return cached_mint_program(token.mint, token.token_program_id)
+
+    async def _entry_wallet_balance(self, token: object) -> int:
+        """Read once inside the inherited spend lock and hand the full view forward."""
+        DEV_ENTRY_READ_VIEW.set(None)
+        signal = self.current_signal(token)
+        if (not signal or signal["strategy"] != STRATEGY_ID
+                or not second_produced_block(self.second_policy)
+                or type(signal.get("target_slot")) is not int
+                or type(signal.get("source_generation")) is not int):
+            return await self.solana_client.get_sol_balance(self.wallet.pubkey)
+        # Snapshot identity and start time before awaiting either public read.
+        mint, owner = str(token.mint), str(self.wallet.pubkey)
+        target, generation = signal["target_slot"], signal["source_generation"]
+        fee_origin, started = signal.get("creation_fee_creator"), time.monotonic()
+        holdings, balance = await asyncio.gather(
+            self.raw_holdings(mint, commitment="processed"),
+            self.rpc("getBalance", [owner, {"commitment": "finalized"}]),
+        )
+        balance_view = {"value": balance["value"], "context": {"slot": balance["context"]["slot"]}}
+        DEV_ENTRY_READ_VIEW.set(DevEntryReadView(
+            mint=mint, wallet=owner, target_slot=target, source_generation=generation,
+            creation_fee_creator=fee_origin, created_at=started, holdings=holdings, balance=balance_view))
+        return int(balance["value"])
 
     def _inclusive_entry_budget(self, token: object, balance_lamports: int,
                                 *, cap_sol: float = 0) -> tuple[float, int]:
@@ -636,6 +684,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
         )
 
     async def _run_curva96_mode(self) -> None:  # noqa: C901 -- log the selected acquisition contract before starting sources
+        logger.info("ENTRY ASSETS: normal Pump.fun tokens only; Mayhem excluded; existing exits preserved")
         if self.second_policy.get("enabled"):
             from monitoring.second_block_source import SecondBlockSource
 
@@ -653,6 +702,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
                 logger.info("DEV inclusive entry budget cap USD (including slippage and fee headroom): %s",
                             self.second_policy.get("max_entry_budget_usd", "none"))
                 logger.info("DEV fee identity: original recipient or this mint's official Pump Fees sharing config; developer remains creation signer")
+                logger.info("DEV entry reads: fresh verified mint-owner proof and task-local holdings/balance handoff; full slot/context checks retained")
                 if second_produced_block(self.second_policy):
                     logger.info("DEV strict timing: initial developer buy in creation transaction; only next produced block; no later retry; inclusion not guaranteed")
                 logger.info("DEV history providers: %s; fallback=%s, primary deadline=%ss",
@@ -717,18 +767,22 @@ class FourStrategyTrader(legacy.UniversalTrader):
         return task
 
     async def _handle_token(self, token_info: object) -> None:
-        signal = self.current_signal(token_info)
-        if signal and getattr(self, "only_dev", False) and signal["strategy"] != STRATEGY_ID:
-            return
-        if not signal or not self.book.can_admit(signal["strategy"]):
-            return
-        if (token_info.additional_data or {}).get("migrated"):
-            return
-        token_info.additional_data = {
-            **(token_info.additional_data or {}),
-            "four_strategy_id": signal["strategy"],
-        }
-        await super()._handle_token(token_info)
+        reads_token = DEV_ENTRY_READ_VIEW.set(None)
+        try:
+            signal = self.current_signal(token_info)
+            if signal and getattr(self, "only_dev", False) and signal["strategy"] != STRATEGY_ID:
+                return
+            if not signal or not self.book.can_admit(signal["strategy"]):
+                return
+            if (token_info.additional_data or {}).get("migrated"):
+                return
+            token_info.additional_data = {
+                **(token_info.additional_data or {}),
+                "four_strategy_id": signal["strategy"],
+            }
+            await super()._handle_token(token_info)
+        finally:
+            DEV_ENTRY_READ_VIEW.reset(reads_token)
 
     async def _precio_sol_loop(self) -> None:
         url = "https://api.dexscreener.com/latest/dex/tokens/So11111111111111111111111111111111111111112"

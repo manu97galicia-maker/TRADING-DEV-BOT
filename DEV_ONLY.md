@@ -6,6 +6,13 @@ Telegram no abren posiciones en este modo. El colector de Solana permanece
 conectado para observar creación, primer bloque, historial del dev y segundo
 bloque; no se abre la sesión de señales de Telegram.
 
+Solo admite nuevas compras de tokens normales de Pump.fun. Mayhem queda
+excluido en todos los perfiles del coordinador, incluido el filtro de historial
+del dev. Se comprueba la bandera preparada y se vuelve a comprobar con la
+lectura real de la curva antes de enviar, sin añadir llamadas RPC. El historial
+del dev sigue contando todos sus lanzamientos; no se elimina Mayhem del
+denominador. Las ventas y los monitores de posiciones ya abiertas se conservan.
+
 Se conservan el mismo libro, bloqueo de proceso, posiciones, tandas y pausas.
 Las posiciones antiguas de cualquier estrategia mantienen sus monitores de
 salida y auditoría. La selección no borra pérdidas ni reinicia la evaluación.
@@ -71,6 +78,22 @@ La preparación consulta tanto la curva como la cuenta del token con
 creación recién observada. El colector del perfil de historial no consulta
 SQLite por cada candidato y evento: las pausas y el ROI se verifican al entrar
 en el manejador y de nuevo en la reserva atómica antes de enviar.
+
+La ruta dev evita las lecturas duplicadas del manejador general. Reutiliza el
+programa real del mint leído por el constructor mediante una prueba en memoria
+del proceso, limitada a un segundo y 256 mints; no acepta ese dato desde JSON
+de señales. Bajo el cerrojo de gasto existente consulta tenencias `processed`
+y saldo `finalized` en paralelo, y entrega el resultado completo, incluido el
+slot del saldo, al comprador compartido. Esa vista se consume una sola vez,
+solo en la misma tarea, wallet, mint, generación, bloque objetivo y origen de
+comisiones, y caduca a los 0,6 segundos desde el comienzo de las lecturas.
+
+La comprobación de curva y slot actual permanece antes de enviar, junto con
+la reserva atómica, el tope de 30 USD, el 80% y las guardas de tenencias y
+saldo. Una prueba ausente o caducada obliga a volver a consultar. Con una
+vista válida se pasa de seis llamadas RPC en cuatro rondas a cuatro llamadas
+en dos rondas tras entregar la señal. El registro `DEV fresh entry reads reused`
+identifica la reutilización; no garantiza llegar siempre al segundo bloque.
 La verificación del historial del dev, una conexión operativa y la inclusión
 por la red siguen siendo necesarias; no se garantiza una latencia fija ni
 ejecución instantánea. Instalar esta mejora requiere un reinicio manual para

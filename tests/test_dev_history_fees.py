@@ -47,19 +47,19 @@ def rounded_priority_fee(price, units):
 
 
 class HistoryAssetSelectionTests(unittest.TestCase):
-    def test_mayhem_flags_open_only_for_the_dev_only_creator_history_rule(self):
+    def test_all_entry_profiles_keep_mayhem_disabled_in_runtime_and_broker(self):
         for only_dev, legacy_rule in ((True, False), (True, True), (False, False)):
             with self.subTest(only_dev=only_dev, legacy_rule=legacy_rule):
                 policy = enabled_history_policy()
                 if legacy_rule:
                     policy["entry_rule"] = "second_block"
-                broker = SimpleNamespace(allow_mayhem=False, require_mayhem=True)
+                broker = SimpleNamespace(allow_mayhem=True, require_mayhem=True)
                 trader = SimpleNamespace(
                     only_dev=only_dev, second_policy=policy, buyer=broker,
-                    allow_mayhem=False, require_mayhem=True,
+                    allow_mayhem=True, require_mayhem=True,
                 )
-                runtime_module._configure_history_only_assets(trader)
-                expected = (True, False) if only_dev and not legacy_rule else (False, True)
+                runtime_module._configure_normal_only_assets(trader)
+                expected = (False, False)
                 self.assertEqual((trader.allow_mayhem, trader.require_mayhem), expected)
                 self.assertEqual((broker.allow_mayhem, broker.require_mayhem), expected)
 

@@ -5035,10 +5035,13 @@ class UniversalTrader:
                 # owner is authoritative. A wrong program derives the wrong ATA
                 # and produces a guaranteed failed transaction.
                 try:
-                    mint_account = await self.solana_client.get_account_info(
-                        token_info.mint, commitment="processed"
-                    )
-                    actual_program = getattr(mint_account, "owner", None)
+                    prepared_program = getattr(self, "_prepared_entry_token_program", None)
+                    actual_program = prepared_program(token_info) if callable(prepared_program) else None
+                    if actual_program is None:
+                        mint_account = await self.solana_client.get_account_info(
+                            token_info.mint, commitment="processed"
+                        )
+                        actual_program = getattr(mint_account, "owner", None)
                 except Exception:  # noqa: BLE001
                     logger.warning(
                         "Compra de %s omitida: no pude verificar el programa del mint",
@@ -5206,7 +5209,9 @@ class UniversalTrader:
                             token_info.symbol,
                         )
                         return
-                    bal = await self.solana_client.get_sol_balance(self.wallet.pubkey)
+                    entry_wallet_balance = getattr(self, "_entry_wallet_balance", None)
+                    bal = (await entry_wallet_balance(token_info) if callable(entry_wallet_balance)
+                           else await self.solana_client.get_sol_balance(self.wallet.pubkey))
                     # Nunca gastar por debajo de la reserva mínima (min_reserve).
                     free = bal - self._reserved_lamports - self.min_reserve_lamports
                     # Una fuente puede pedir su propia fracción del saldo. Es
