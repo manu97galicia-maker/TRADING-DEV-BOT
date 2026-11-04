@@ -90,6 +90,19 @@ four_strategies:
   database: estudios/four_strategies/runtime.sqlite3
   callout_outbox: trades/four_strategy_callouts.jsonl
   callout_account: AImemebot
+  # Shared by all four sources. A token is eligible only when its creator has
+  # at least one migrated launch and >=1% of verified launches migrated.
+  creator_migration_gate:
+    enabled: true
+    min_rate: 0.01
+    min_migrations: 1
+    timeout_seconds: 3.0
+  learning:
+    enabled: true
+    group_by_strategy: true
+    compare_winners_and_non_winners: true
+    min_verified_outcomes_per_strategy: 30
+    auto_apply_parameter_changes: false
   entry_protection:
     enabled: true
     price_window_seconds: 2.0

@@ -223,6 +223,9 @@ class BuyerTests(unittest.IsolatedAsyncioTestCase):
                 )
             ),
         )
+        # Other buyer tests isolate unrelated admission behavior. The two
+        # dedicated tests below cover the production creator-history gate.
+        self.runtime.four["creator_migration_gate"] = {"enabled": False}
         self.runtime.receipt_writer = lambda nonce, kind: (
             FourStrategyTrader.receipt_writer(self.runtime, nonce, kind)
         )
@@ -265,6 +268,40 @@ class BuyerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             self.book.signatures(position["nonce"]), [("actual-signature", "buy")]
         )
+
+    async def test_creator_migration_gate_rejects_below_one_percent_before_reserving(self):
+        self.runtime.four["creator_migration_gate"] = {
+            "enabled": True, "min_rate": .01, "min_migrations": 1, "timeout_seconds": 1,
+        }
+        self.token.creator = "creator"
+        broker = SimpleNamespace(execute=AsyncMock())
+        with patch(
+            "trading.four_strategy_runtime.creator_migration_stats",
+            AsyncMock(return_value=(200, 1, .005)),
+        ):
+            result = await SharedBuyer(self.runtime, broker).execute(self.token)
+        self.assertFalse(result.success)
+        self.assertIn("below minimum", result.error_message)
+        broker.execute.assert_not_awaited()
+        self.assertFalse(self.book.positions())
+
+    async def test_creator_migration_evidence_is_persisted_for_learning(self):
+        self.runtime.four["creator_migration_gate"] = {
+            "enabled": True, "min_rate": .01, "min_migrations": 1, "timeout_seconds": 1,
+        }
+        self.token.creator = "creator"
+        broker = SimpleNamespace(execute=AsyncMock(return_value=TradeResult(
+            True, tx_signature="migration-pass", amount=1_000_000, price=1e-7,
+        )))
+        with patch(
+            "trading.four_strategy_runtime.creator_migration_stats",
+            AsyncMock(return_value=(50, 2, .04)),
+        ):
+            result = await SharedBuyer(self.runtime, broker).execute(self.token)
+        self.assertTrue(result.success)
+        features = json.loads(self.book.positions()[0]["details"])["features"]
+        self.assertEqual(features["dev_migrations"], 2)
+        self.assertEqual(features["dev_migration_rate"], .04)
 
     async def test_lost_acknowledgement_retains_signed_identity_and_blocks_other_entries(
         self,

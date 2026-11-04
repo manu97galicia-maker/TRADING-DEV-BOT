@@ -394,6 +394,9 @@ class FourStrategyBook:
                     "volume_usd",
                     "buyers",
                     "pressure",
+                    "dev_launches",
+                    "dev_migrations",
+                    "dev_migration_rate",
                 ):
                     samples = [r.get("features", {}).get(feature) for r in subset]
                     samples = [x for x in samples if isinstance(x, (int, float))]
@@ -403,6 +406,11 @@ class FourStrategyBook:
                 "insufficient_sample"
                 if group["closed"] < 30
                 else "descriptive_only_needs_forward_validation"
+            )
+            group["optimization_action"] = (
+                "collect_more_verified_outcomes"
+                if group["closed"] < 30
+                else "review_winner_differences_out_of_sample_before_any_change"
             )
         return {
             "strategies": groups,

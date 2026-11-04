@@ -20,6 +20,7 @@ import aiohttp
 import trading.universal_trader as legacy
 from monitoring import volumen
 from monitoring.four_strategy_signals import choose_signal
+from monitoring.pumpfun_dev import creator_migration_stats
 from monitoring.pressure_trial_source import PressureTrialSource
 from trading.base import TradeResult
 from trading.buy_budget import inclusive_balance_entry
@@ -67,6 +68,27 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 _PROCEEDS: ContextVar[float] = ContextVar("four_strategy_sale_proceeds", default=0)
 _DEV_EXIT_CAP: ContextVar[int | None] = ContextVar("dev_exit_priority_cap", default=None)
+
+
+def validate_creator_migration_gate(policy: dict | None) -> dict:
+    """Validate the shared, fail-closed creator-history admission gate."""
+    policy = policy or {"enabled": False}
+    if type(policy.get("enabled")) is not bool:
+        raise ValueError("Creator migration gate enabled must be boolean")
+    if not policy["enabled"]:
+        return policy
+    rate = policy.get("min_rate")
+    migrations = policy.get("min_migrations")
+    timeout = policy.get("timeout_seconds")
+    if (not isinstance(rate, (int, float)) or isinstance(rate, bool)
+            or not math.isfinite(rate) or not 0 < rate <= 1):
+        raise ValueError("Creator migration minimum rate must be in (0, 1]")
+    if type(migrations) is not int or migrations < 1:
+        raise ValueError("Creator migration minimum count must be at least one")
+    if (not isinstance(timeout, (int, float)) or isinstance(timeout, bool)
+            or not math.isfinite(timeout) or timeout <= 0):
+        raise ValueError("Creator migration history timeout must be positive")
+    return policy
 
 
 def _nominal_entry_cap(runtime: object, cap_sol: float = 0) -> float:
@@ -146,6 +168,44 @@ class SharedBuyer:
             return TradeResult(
                 success=False, error_message="Four-strategy signal expired"
             )
+        migration_policy = validate_creator_migration_gate(
+            getattr(runtime, "four", {}).get("creator_migration_gate")
+        )
+        migration_evidence: dict = {}
+        if migration_policy.get("enabled"):
+            creator = str(getattr(token_info, "creator", "") or signal.get("creator") or "")
+            if not creator:
+                return TradeResult(success=False, error_message="Creator migration history unavailable")
+            try:
+                launches, migrations, migration_rate = await asyncio.wait_for(
+                    creator_migration_stats(creator),
+                    timeout=float(migration_policy["timeout_seconds"]),
+                )
+            except (TimeoutError, aiohttp.ClientError, ValueError, TypeError):
+                logger.info("Entry rejected for %s: creator migration history unavailable", token_info.mint)
+                return TradeResult(success=False, error_message="Creator migration history unavailable")
+            # The history read is asynchronous: never attach it to a signal that expired meanwhile.
+            current = runtime.current_signal(token_info)
+            if (not current or runtime.reference_age() > 30
+                    or current.get("strategy") != signal.get("strategy")):
+                return TradeResult(success=False, error_message="Entry expired while reading creator history")
+            if (migrations < migration_policy["min_migrations"]
+                    or migration_rate < migration_policy["min_rate"]):
+                logger.info(
+                    "Entry rejected for %s: creator %s migrated %d/%d (%.2f%%)",
+                    token_info.mint, creator, migrations, launches, migration_rate * 100,
+                )
+                return TradeResult(success=False, error_message="Creator migration history below minimum")
+            migration_evidence = {
+                "dev_launches": launches,
+                "dev_migrations": migrations,
+                "dev_migration_rate": migration_rate,
+            }
+            signal = {**current, **migration_evidence}
+            logger.info(
+                "Creator migration gate passed for %s: %d/%d (%.2f%%)",
+                token_info.mint, migrations, launches, migration_rate * 100,
+            )
         initial_dev = signal["strategy"] == STRATEGY_ID
         has_fee_origin = initial_dev and "creation_fee_creator" in signal
         fee_origin = signal.get("creation_fee_creator") if has_fee_origin else None
@@ -201,6 +261,7 @@ class SharedBuyer:
             return TradeResult(
                 success=False, error_message="Entry expired while reading balance"
             )
+        signal = {**signal, **migration_evidence}
         second = signal["strategy"] == STRATEGY_ID
         history_only = False
         priority_cap = None
@@ -430,6 +491,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
         self._inactive_exit_checked: dict[str, float] = {}
         self._purchase_notices: set[str] = set()
         validate_policy(settings["entry_protection"])
+        validate_creator_migration_gate(settings.get("creator_migration_gate"))
         if str(self.wallet.pubkey) != settings["expected_wallet"]:
             raise ValueError(
                 "Configured private key does not match the requested public wallet"

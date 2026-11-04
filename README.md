@@ -12,6 +12,13 @@ siguen registradas y las otras estrategias conservan su evaluación.
 La presión usa 12 compradores y 1.300 USD/8s; la salida por volumen vendedor
 está desactivada. Este paquete está **deshabilitado** (`enabled: false`).
 
+La admisión compartida exige historial verificable del creador: al menos una
+migración y una tasa de migraciones del 1% o superior. Si la consulta falla o
+caduca, no se reserva saldo ni se firma. Cada cierre verificado conserva este
+historial y el informe compara ganadoras y no ganadoras por separado para las
+cuatro estrategias. El aprendizaje es descriptivo: con menos de 30 cierres por
+estrategia solo recopila datos y nunca cambia parámetros automáticamente.
+
 Las reglas, TP escalonados y preparación del publicador @AImemebot están en
 [la guía del paquete](estudios/four_strategies/README.md). Validar la configuración
 con `python run_four_strategies.py` no carga la wallet ni inicia operaciones.
