@@ -19,7 +19,7 @@ trade:
   buy_amount_usd: 20
   fraccion_saldo: 0
   min_reserve_sol: 0
-  max_posiciones: 20
+  max_posiciones: 8
   max_real_buys: 0
   reiniciar_tanda: true
   buy_slippage: 0.15

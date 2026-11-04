@@ -35,6 +35,7 @@ def test_strategy_is_irreversibly_paper_only():
     ).lower()
     assert "ya no es de papel" in texto
     assert CFG["trade"]["buy_amount_usd"] == 20
+    assert CFG["trade"]["max_posiciones"] == 8
     assert CFG["trade"]["stop_loss_percentage"] == 0.08
 
 
