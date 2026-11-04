@@ -66,11 +66,12 @@ filters:
   # LOS CUATRO PUNTOS QUE SE AVISARON ANTES, ACEPTADOS COMO ESTAN. Se leyeron
   # del codigo el 3-nov y se le dijeron a Manu; no se arreglan porque no se
   # ha pedido. Si algun dia se arregla un numero, su linea sobra.
-  #   ACEPTADO: 20 PLAZAS CON UN NODO QUE VIGILA 6. node.max_rps 12 x
+  #   ACEPTADO: 8 PLAZAS CON UN NODO QUE VIGILA 6. node.max_rps 12 x
   #     price_check_interval 1 / 2 = 6 (universal_trader.py:2206). Con el
-  #     stop al 8%, en las otras 14 el stop puede llegar tarde.
+  #     stop al 8%, en las otras 2 el stop puede llegar tarde. (Eran 20
+  #     plazas; Codex las bajo a 8 el 4-nov, fb157f3.)
   #   ACEPTADO: SIN RESERVA PARA COMISIONES. min_reserve_sol: 0. Con menos de
-  #     20 x 20 $ = 400 $ en la wallet, las compras acaban dejandola sin SOL
+  #     8 x 20 $ = 160 $ en la wallet, las compras acaban dejandola sin SOL
   #     para pagar la comision de VENDER.
   #   ACEPTADO: SIN PRIORITY FEE. Con dinamico y fijo apagados, el gestor no
   #     pone ninguno (priority_fee/manager.py: "No priority fee if both are
