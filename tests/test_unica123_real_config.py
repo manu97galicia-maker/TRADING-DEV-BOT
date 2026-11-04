@@ -18,7 +18,9 @@ def test_unica123_real_dispara_al_93_por_ciento() -> None:
     config = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
     curva = config["filters"]["curva_96"]
 
-    assert config["enabled"] is True
+    # Apagada el 4-nov ("Solo quiero la de comprar bloque 2 con dev migrado
+    # 1%"). Sigue configurada en real para cuando se vuelva a encender.
+    assert config["enabled"] is False
     assert config["filters"]["paper_trade"] is False
     assert curva["enabled"] is True
     assert curva["umbral"] == 0.93

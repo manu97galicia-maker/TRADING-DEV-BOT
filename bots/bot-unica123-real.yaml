@@ -45,7 +45,11 @@ private_key: "${SOLANA_PRIVATE_KEY}"
 # que venia corriendo. Solo puede haber UNO encendido: los dos comparten la
 # misma wallet y se reparten las mismas plazas, asi que con los dos a la vez
 # ningun resultado del dia se podria atribuir a ninguno.
-enabled: true
+# APAGADA EL 4-nov, pedido: "Solo quiero la de comprar bloque 2 con dev
+# migrado 1%". Venia de true. `paper_trade` se deja como estaba (en real):
+# volver a encenderla es solo poner esto en true. Con enabled en false el
+# arranque de "todas" (`python -m bot_runner`, arranca.sh, pump-bot) la salta.
+enabled: false
 separate_process: false
 platform: "pump_fun"
 

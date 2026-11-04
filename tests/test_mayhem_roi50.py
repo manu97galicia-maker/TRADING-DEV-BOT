@@ -302,7 +302,9 @@ class MayhemRoi50Tests(unittest.TestCase):
     def test_el_c123_no_se_toco(self) -> None:
         """Esta estrategia es un bot aparte. El bot real de Manu no cambia."""
         c123 = yaml.safe_load(RUTA_C123.read_text(encoding="utf-8"))
-        self.assertTrue(c123["enabled"])
+        # Apagado el 4-nov por orden expresa ("Solo quiero la de comprar
+        # bloque 2 con dev migrado 1%"); el resto de su configuracion, intacto.
+        self.assertFalse(c123["enabled"])
         self.assertFalse(c123["filters"]["paper_trade"])
         self.assertTrue(c123["filters"]["ignorar_listas_de_devs"])
         # 0.88 desde el 19-oct ("desde el 88").

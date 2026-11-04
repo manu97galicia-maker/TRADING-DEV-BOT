@@ -143,3 +143,27 @@ def test_sin_mayhem() -> None:
     # "no mayhem" (4-nov).
     assert CFG["filters"]["allow_mayhem"] is False
     assert CFG["filters"]["require_mayhem"] is False
+
+
+def test_ninguna_otra_estrategia_real_arranca_sola() -> None:
+    """Solo opera esta (4-nov: "Solo quiero la de comprar bloque 2 con dev
+    migrado 1%").
+
+    El arranque de "todas" levanta cada YAML con enabled: true. Si alguno de
+    esos esta en real, compraria junto a esta sobre la misma wallet. Esta se
+    arranca con su propio comando y tambien lleva enabled: false, asi que el
+    arranque de "todas" no debe levantar NINGUNA estrategia en real. Las de
+    BSC no cuentan: son otro bot, con sus propias tres puertas.
+    """
+    encendidas_en_real = []
+    for f in sorted((ROOT / "bots").glob("*.yaml")):
+        if "bsc" in f.name:
+            continue
+        c = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+        if c.get("enabled", True) and (c.get("filters") or {}).get(
+            "paper_trade"
+        ) is False:
+            encendidas_en_real.append(f.name)
+    assert encendidas_en_real == [], (
+        f"arrancarian en real junto a dev1-bloque2: {encendidas_en_real}"
+    )

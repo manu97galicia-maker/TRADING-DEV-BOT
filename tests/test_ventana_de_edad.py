@@ -154,7 +154,18 @@ def _bot_encendido() -> tuple[str, dict]:
         cfg = yaml.safe_load(fichero.read_text(encoding="utf-8")) or {}
         if cfg.get("enabled", True):
             return fichero.name, cfg
-    raise AssertionError("no hay ningun bot encendido en bots/")
+    # NINGUNO SE ARRANCA CON "TODAS" (4-nov: "Solo quiero la de comprar
+    # bloque 2 con dev migrado 1%"). El que opera con dinero es el que lanza
+    # su propio arranque, deploy/arranca-dev1-real.sh, aunque su nombre diga
+    # `paper` y lleve enabled: false. Estos guardianes existen para proteger
+    # el dinero, asi que vigilan a ese.
+    arranque = (RAIZ / "deploy" / "arranca-dev1-real.sh").read_text(encoding="utf-8")
+    linea = next(x for x in arranque.splitlines() if x.startswith("YAML="))
+    fichero = RAIZ / linea.split("=", 1)[1].strip()
+    cfg = yaml.safe_load(fichero.read_text(encoding="utf-8")) or {}
+    if (cfg.get("filters") or {}).get("paper_trade") is False:
+        return fichero.name, cfg
+    raise AssertionError("no hay ningun bot en real en bots/")
 
 
 def test_los_frenos_de_calidad_son_una_decision_y_se_ven_de_un_vistazo() -> None:

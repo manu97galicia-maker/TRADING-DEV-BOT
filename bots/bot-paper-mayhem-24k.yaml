@@ -6,7 +6,11 @@ env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
 private_key: "${SOLANA_PRIVATE_KEY}"
-enabled: true
+# APAGADA EL 4-nov, pedido: "Solo quiero la de comprar bloque 2 con dev
+# migrado 1%". Venia de true. `paper_trade` se deja como estaba (en real):
+# volver a encenderla es solo poner esto en true. Con enabled en false el
+# arranque de "todas" (`python -m bot_runner`, arranca.sh, pump-bot) la salta.
+enabled: false
 separate_process: false
 platform: "pump_fun"
 
