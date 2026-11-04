@@ -16,6 +16,12 @@
 set -u
 RAIZ=/root/ai-bot
 RAMA=claude/private-key-env-access-cc1er2
+# DE DONDE SE BAJA EL CODIGO. Por defecto `origin`, que en el droplet es SSH
+# (git@github.com) y necesita llave aunque el repo sea publico. El 4-nov el
+# droplet perdio la llave ("Permission denied (publickey)"); con el repo
+# publico un momento, se puede pasar la direccion HTTPS:
+#   ORIGEN=https://github.com/manu97galicia-maker/Definitivo_bot.git bash /root/arranca-dev1.sh
+ORIGEN="${ORIGEN:-origin}"
 YAML=bots/bot-paper-dev1-bloque2.yaml
 HORAS="${1:-9}"
 
@@ -47,7 +53,7 @@ if [ -n "$(git status --porcelain)" ]; then
 fi
 
 git checkout "$RAMA" || { echo "NO ARRANCA: fallo el checkout"; exit 1; }
-git pull --no-rebase --no-edit origin "$RAMA" \
+git pull --no-rebase --no-edit "$ORIGEN" "$RAMA" \
   || { echo "NO ARRANCA: fallo el pull. Si pone CONFLICT, mandame la pantalla"; exit 1; }
 
 # LA PUERTA: solo arranca si el fichero esta en real y con las 7 plazas.

@@ -37,3 +37,9 @@ def test_nunca_stash_a() -> None:
     # stash -a se llevaria lo ignorado: .env y marcadores de posiciones.
     assert "stash -a" not in TEXTO and "--all" not in TEXTO
     assert "git stash push -u" in TEXTO
+
+
+def test_se_puede_bajar_por_https() -> None:
+    # Sin llave SSH en el droplet (4-nov), con el repo publico se pasa ORIGEN.
+    assert 'ORIGEN="${ORIGEN:-origin}"' in TEXTO
+    assert 'git pull --no-rebase --no-edit "$ORIGEN" "$RAMA"' in TEXTO
