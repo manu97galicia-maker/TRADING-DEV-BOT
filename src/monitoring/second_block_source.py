@@ -253,11 +253,16 @@ class SecondBlockSource:
         if second_produced_block(self.policy) and (
                 self.candidates.get(candidate.mint) is not candidate or self.second_window_expired(candidate)):
             return
-        if (fast_second_block(self.policy) and
-                (not self.history_activity_ready(candidate) or candidate.mint in self.attempted_mints)):
+        if fast_second_block(self.policy) and candidate.mint in self.attempted_mints:
             return
         if first_block_activity_only(self.policy):
+            # Build after the verified creation buy, while other first-block
+            # buyers are arriving. Admission still waits for all 3/$350.
+            if candidate.dev_initial_buy_verified is not True:
+                return
             self.prepare_if_ready(candidate)
+            return
+        if creator_history_only(self.policy) and not self.history_activity_ready(candidate):
             return
         self.history.warm(candidate.developer)
         pending = getattr(self.history, "pending", {}).get(candidate.developer)

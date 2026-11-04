@@ -34,7 +34,9 @@ class ActivitySourceTests(unittest.IsolatedAsyncioTestCase):
         self.source.on_logs(stream.logs(stream.create(self.mint, self.creator, user=self.a),
                                         stream.trade(self.mint, self.a, sol=1),
                                         stream.trade(self.mint, self.b, sol=1.2)), 100, "create")
-        await asyncio.sleep(0)
+        for _ in range(4):
+            await asyncio.sleep(0)
+        self.assertIsNotNone(self.source.candidates[str(self.mint)].token)
         self.callback.assert_not_awaited()
         self.source.on_logs(stream.logs(stream.trade(self.mint, self.creator, sol=1.3)), 100, "third")
         for _ in range(4):
