@@ -5,17 +5,22 @@
 # Pagamos 6 centimos de fees, de priority fees, para entrar de primeros en el
 # segundo bloque."
 #
+# CAMBIADA EL 4-nov, pedido: "que se compren por debajo de 4.1k, 1% de
+# proyectos minimos del dev migrado, y comprar en el segundo bloque 30$ de
+# solana pagando 0.06$ buy fee priority. TP 38% recuperas iniciales +10% y lo
+# que sobre lo vendes en tres tramos hasta los 14k. SL 25%."
+# Lo que cambio: 20 $ -> 30 $, tope de entrada 4,1k (nuevo), stop 8% -> 25%,
+# y la salida entera (ya no es la de la hermana).
+#
 # NACE EN PAPEL, como todas las estrategias nuevas: no se dijo papel ni real.
 # Pasarla a real es una linea (`paper_trade: false`) y se hace cuando se pida.
 #
 # LO QUE NO SE PIDIO Y SE HA TENIDO QUE ELEGIR, para poder cambiarlo luego:
-#   - importe 20 $ fijos y la salida entera: copiados de su hermana,
-#     bot-paper-bloque4-segundo-bloque, tal como Manu la dejo el 3-nov.
 #   - 5 plazas y 0,03 SOL de reserva: el nodo (max_rps 12) vigila 6, y sin
 #     reserva no queda SOL para pagar la comision de vender. Son los dos
 #     puntos que en la hermana hubo que aceptar a sabiendas; aqui no se
 #     repiten porque nadie los pidio.
-name: "PAPER DEV 1% + PRIMER BLOQUE 2 COMPRAS 375$ + ENTRA EN BLOQUE 2"
+name: "PAPER DEV 1% + PRIMER BLOQUE 2 COMPRAS 375$ + BLOQUE 2 BAJO 4,1K"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -30,24 +35,44 @@ platform: "pump_fun"
 trade:
   nombre_estrategia: "paper-dev1-bloque2"
   buy_amount: 0
-  buy_amount_usd: 20
+  buy_amount_usd: 30
   fraccion_saldo: 0
   min_reserve_sol: 0.03
-  # 5 plazas x 20 $ = 100 $ como maximo dentro a la vez.
+  # 5 plazas x 30 $ = 150 $ como maximo dentro a la vez.
   max_posiciones: 5
   max_real_buys: 0
   reiniciar_tanda: true
   buy_slippage: 0.15
   sell_slippage: 0.25
   exit_strategy: "tp_sl"
-  # SALIDA: la misma que la hermana. Stop -8%. TP1 +15% vende el 93,913%
-  # (recupera lo invertido +8% bruto); al x2 vende el 75% de lo que quedo;
-  # el 1,52% restante corre. Tras TP1 el suelo sube a entrada +3%.
-  stop_loss_percentage: 0.08
-  take_profit_percentage: 0.15
-  take_profit_sell_percentage: 0.9391304348
-  tp2_gain: 1.00
-  tp2_sell: 0.0456521739
+  # SALIDA (4-nov). Stop -25%.
+  #
+  # TP1 a +38%: vende lo justo para recuperar lo invertido +10%.
+  #     1,10 / 1,38 = 0,7971014493  -> vende el 79,71% de la posicion.
+  #     Con 30 $: vende 30 x 1,38 x 0,7971 = 33,00 $ (los 30 + 3 de ganancia).
+  #     Queda el 20,29% de la posicion, ya pagado.
+  #
+  # ESE 20,29% SALE EN TRES TRAMOS POR MARKET CAP, hasta los 14k:
+  #     8.000 $ -> 6,763%   11.000 $ -> 6,763%   14.000 $ -> 6,763%
+  # Los porcentajes son DE LA POSICION ORIGINAL (universal_trader.py: "Sell
+  # fractions are relative to the original buy"), y los tramos solo se arman
+  # cuando ya ha saltado el TP1. Los niveles 8k y 11k no se pidieron: son el
+  # reparto a partes iguales entre el TP1 (~5k) y los 14k.
+  # Los 14k SI son dolares de verdad: este market cap se calcula con el
+  # precio de SOL del momento, no con el de 91,24 del tope de entrada.
+  stop_loss_percentage: 0.25
+  take_profit_percentage: 0.38
+  take_profit_sell_percentage: 0.7971014493
+  mc_take_profit_tiers:
+    - target_mc: 8000
+      sell: 0.0676328502
+    - target_mc: 11000
+      sell: 0.0676328502
+    # El ultimo redondea hacia arriba para que no quede polvo sin vender.
+    - target_mc: 14000
+      sell: 0.0676328503
+  # Tras el TP1 el stop del resto sube a entrada +3%. No se pidio nada para
+  # este caso; es lo que ya tenia.
   stop_a_entrada_tras_tp: true
   margen_stop_tras_tp: 0.03
   stop_al_tp_tras_tp: false
@@ -96,6 +121,17 @@ filters:
   paper_trade: true
   paper_watch_secs: 600
   max_token_age: 0
+  # POR DEBAJO DE 4,1K. OJO, ESTE NUMERO NO SON DOLARES DE HOY. El bot lo lee
+  # como dolares con el SOL a 91,24 $ (el valor escrito a mano en el codigo,
+  # _SOL_USD) y, en cuanto lee el precio real, lo reescala en la misma
+  # proporcion (universal_trader.py, _precio_sol_loop: "El techo de entrada
+  # pasa de X a Y $ para que el filtro no se mueva"). Para que sean 4.100 $
+  # con el SOL a 105 $:
+  #     4.100 x 91,24 / 105 = 3.563
+  # Lo que queda fijo es el PUNTO DE LA CURVA: unos 5,46 SOL dentro. En
+  # dolares se mueve con el SOL: 3.515 $ a 90, 4.100 $ a 105, 4.686 $ a 120.
+  # Leer la curva para comprobarlo es una consulta al nodo antes de comprar.
+  max_entry_mc: 3563
   # Ventana para esperar a que cierre el primer bloque. Sin ella (0) los
   # filtros del primer bloque no se comprueban nunca.
   max_buy_age: 45

@@ -91,13 +91,41 @@ def test_plazas_que_el_nodo_vigila_y_reserva_para_vender() -> None:
     assert float(t["min_reserve_sol"]) > 0
 
 
-def test_salida_igual_que_la_hermana() -> None:
+def test_salida_del_4_nov() -> None:
+    """TP 38% recupera iniciales +10%; el resto en tres tramos hasta 14k."""
     t = CFG["trade"]
-    assert t["buy_amount_usd"] == 20
-    assert t["stop_loss_percentage"] == 0.08
-    assert t["take_profit_percentage"] == 0.15
-    assert t["take_profit_sell_percentage"] == 0.9391304348
-    assert t["tp2_gain"] == 1.00
-    assert t["tp2_sell"] == 0.0456521739
-    assert t["stop_a_entrada_tras_tp"] is True
-    assert t["margen_stop_tras_tp"] == 0.03
+    assert t["buy_amount_usd"] == 30
+    assert t["stop_loss_percentage"] == 0.25
+    assert t["take_profit_percentage"] == 0.38
+    # Lo vendido en el TP1 vale lo invertido +10%: 1,38 x fraccion = 1,10.
+    assert abs(1.38 * t["take_profit_sell_percentage"] - 1.10) < 1e-9
+    # Ningun otro peldano de porcentaje: los tramos de MC solo se arman
+    # cuando TODOS los de porcentaje han saltado, y un tp2 lo retrasaria.
+    for n in range(2, 7):
+        assert f"tp{n}_gain" not in t and f"tp{n}_sell" not in t
+    assert "tp_extra" not in t
+    tramos = t["mc_take_profit_tiers"]
+    assert [x["target_mc"] for x in tramos] == [8000, 11000, 14000]
+    resto = 1 - t["take_profit_sell_percentage"]
+    for x in tramos:
+        assert abs(x["sell"] - resto / 3) < 1e-9
+    # Entre el TP1 y los tres tramos se vende el 100%: no queda polvo.
+    assert t["take_profit_sell_percentage"] + sum(x["sell"] for x in tramos) >= 1.0
+
+
+def test_tope_de_entrada_4100_dolares_con_el_sol_a_105() -> None:
+    """El tope se escribe en dolares con el SOL al valor del codigo.
+
+    universal_trader.py lo reescala por precio_real / _SOL_USD al leer el
+    precio de SOL. Si alguien cambia esa constante, este numero deja de
+    significar 4.100 $ y esto lo dice.
+    """
+    linea = next(
+        x for x in TRADER.splitlines() if x.startswith("_SOL_USD = ")
+    )
+    sol_codigo = float(linea.split("=")[1].split("#")[0])
+    tope = float(CFG["filters"]["max_entry_mc"])
+    dolares = tope * SOL_USD_REFERENCIA / sol_codigo
+    assert abs(dolares - 4100) < 5, f"el tope equivale a {dolares:,.0f} $"
+    # Y se reescala de verdad: si se quitara, el tope serian 3.563 $.
+    assert "self.max_entry_mc = antes * razon" in TRADER
