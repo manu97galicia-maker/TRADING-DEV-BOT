@@ -47,6 +47,12 @@ trade:
   reiniciar_tanda: true
   buy_slippage: 0.15
   sell_slippage: 0.25
+  # SUELO ANCHO SOLO PARA EL STOP (4-nov, "Si"; igual que bot-unica123-real).
+  # En un desplome el precio se mueve mas del 25% entre que se decide vender
+  # y la venta aterriza: con el suelo normal la venta se cae y te quedas
+  # dentro. El stop acepta vender hasta un 50% por debajo para salir seguro.
+  # Los TP siguen con el 25%.
+  sell_slippage_proteccion: 0.50
   exit_strategy: "tp_sl"
   # SALIDA (4-nov). Stop -25%.
   #
@@ -102,17 +108,28 @@ trade:
 #                          unos 3,6 centimos cada una (TP1, TP2 o stop).
 # Asi, si algun dia se cambia la comision de las ventas, la de entrada no se
 # mueve con ella.
-# No lleva `fixed_amount_venta_proteccion` (la comision rapida para stops que
-# si tiene bot-unica123-real): no se pidio.
+#   fixed_amount_venta_proteccion -> SOLO las ventas que protegen (stop,
+#                          anti-rug). Pedida el 4-nov ("Si"): las mismas reglas
+#                          del stop que bot-unica123-real. Mismo precio por
+#                          unidad que alli: 42.424.243 x 60.000 unidades =
+#                          2.545.455 lamports = 0,00255 SOL, unos 27 centimos
+#                          por stop con el SOL a 105 $. Los TP siguen pagando
+#                          ~3,6 centimos. Sin ella el stop va en la misma cola
+#                          que todo lo demas justo cuando la moneda se desploma.
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
   fixed_amount_compra: 5714286
   fixed_amount: 5714286
+  fixed_amount_venta_proteccion: 42_424_243
   extra_percentage: 0.0
-  # El tope igual a la compra: nunca paga mas de esos 6 centimos por entrar.
-  # El codigo recorta tambien `fixed_amount_compra` a este tope.
-  hard_cap: 5714286
+  # EL TOPE TIENE QUE DEJAR PASAR LA DEL STOP. El codigo recorta TODAS las
+  # comisiones a este numero, la protectora incluida: con el tope en
+  # 5.714.286 (lo que tenia) la del stop quedaba recortada a la de una venta
+  # normal y no servia de nada. La compra sigue pagando sus 6 centimos
+  # exactos, porque `fixed_amount_compra` es fijo; el tope solo es el techo
+  # contra una errata.
+  hard_cap: 42_424_243
 
 retries:
   max_attempts: 1

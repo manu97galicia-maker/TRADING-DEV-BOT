@@ -167,3 +167,13 @@ def test_ninguna_otra_estrategia_real_arranca_sola() -> None:
     assert encendidas_en_real == [], (
         f"arrancarian en real junto a dev1-bloque2: {encendidas_en_real}"
     )
+
+
+def test_el_stop_sale_rapido_como_en_el_bot_real_anterior() -> None:
+    """4-nov, "Si": las reglas del stop de bot-unica123-real."""
+    fees, t = CFG["priority_fees"], CFG["trade"]
+    assert int(fees["fixed_amount_venta_proteccion"]) == 42_424_243
+    # Si el tope fuera menor, recortaria la del stop y no serviria de nada.
+    assert int(fees["hard_cap"]) >= int(fees["fixed_amount_venta_proteccion"])
+    assert t["sell_slippage_proteccion"] == 0.50
+    assert t["sell_slippage"] == 0.25
