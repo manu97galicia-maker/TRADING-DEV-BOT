@@ -25,8 +25,8 @@ USD_LIMIT = Decimal("20")
 
 
 class InclusiveUsdBudgetTests(unittest.TestCase):
-    def test_shipped_dev_configuration_has_twenty_usd_cap_and_eighty_percent(self) -> None:
-        self.assertEqual(inherited.SECOND_POLICY["max_entry_budget_usd"], 20.0)
+    def test_shipped_dev_configuration_has_thirty_usd_cap_and_eighty_percent(self) -> None:
+        self.assertEqual(inherited.SECOND_POLICY["max_entry_budget_usd"], 30.0)
         self.assertEqual(inherited.SECOND_POLICY["balance_fraction"], .80)
 
     def test_cap_includes_slippage_and_fee_headroom_with_floor_rounding(self) -> None:

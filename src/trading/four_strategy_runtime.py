@@ -410,7 +410,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
                 "The opt-in runtime requires one wallet; use fake brokers in tests"
             )
         if (
-            self.max_posiciones != 4
+            type(self.max_posiciones) is not int or not 1 <= self.max_posiciones <= 9
             or self.fraccion_saldo != 0.90
             or self.stop_loss_percentage != 0.22
         ):
@@ -521,6 +521,7 @@ class FourStrategyTrader(legacy.UniversalTrader):
             raise EntryRiskRejected("unreadable_entry_risk_evidence") from error
 
     def _cartel_de_configuracion(self) -> str:
+        position_limit = getattr(self, "max_posiciones", 9)
         usd_cap = getattr(self, "second_policy", {}).get("max_entry_budget_usd")
         cap_text = f" · tope ${usd_cap:.2f} por entrada incluidos gastos estimados" if usd_cap is not None else ""
         if getattr(self, "only_dev", False):
@@ -533,14 +534,14 @@ class FourStrategyTrader(legacy.UniversalTrader):
                           if second_produced_block(self.second_policy) else "sin bloque fijo de entrada")
                 return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
                         f"incluidos gastos{cap_text} · {selection} · "
-                        f"sin MC maximo · {timing} · 4 plazas compartidas · "
+                        f"sin MC maximo · {timing} · {position_limit} plazas compartidas · "
                         "prioridad compra $0.07 / salidas $0.03")
             return (f"CONFIG ACTIVA · SOLO DEV · {self.second_policy['balance_fraction']:.0%} del SOL liquido "
                     "incluidos gastos · dev >=1% migraciones verificadas · MC <4200 · "
-                    f"2 compradores / 275 USD primer bloque · 4 plazas compartidas{cap_text}")
+                    f"2 compradores / 275 USD primer bloque · {position_limit} plazas compartidas{cap_text}")
         message = (
             f"CONFIG ACTIVA · FOUR STRATEGIES · {self.fraccion_saldo:.0%} del SOL liquido confirmado "
-            "por presupuesto, incluidos gastos · 4 plazas compartidas · "
+            f"por presupuesto, incluidos gastos · {position_limit} plazas compartidas · "
             "presion 8K / Telegram / primer bloque / cruce 21K"
         )
         if getattr(self, "second_policy", {}).get("enabled"):

@@ -89,7 +89,8 @@ class InheritedInclusiveEntryTests(unittest.IsolatedAsyncioTestCase):
         trader.book = self.book
         trader.four = {"entry_protection": {"enabled": False}}
         trader.second_policy = {**copy.deepcopy(SECOND_POLICY), "enabled": True,
-                                "entry_timing": "any_verified_time", "require_dev_initial_buy": False}
+                                "entry_timing": "any_verified_time", "require_dev_initial_buy": False,
+                                "max_entry_budget_usd": 20.0}  # Preserve this historical budget fixture.
         trader.current_signal = Mock(return_value={
             "strategy": strategy, "creator": "fake-creator", "developer": "fake-dev",
             "target_slot": 101, "sol_usd": 100,

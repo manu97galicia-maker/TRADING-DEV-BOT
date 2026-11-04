@@ -38,6 +38,7 @@ def enabled_history_policy():
     policy["enabled"] = True  # Fixture only; no runner or wallet is constructed.
     policy["entry_timing"] = "any_verified_time"
     policy["require_dev_initial_buy"] = False
+    policy["max_entry_budget_usd"] = 20.0  # Historical fee/budget fixture; shipped cap has its own tests.
     return policy
 
 

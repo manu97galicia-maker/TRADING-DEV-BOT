@@ -21,8 +21,8 @@ El funcionamiento actual se detalla en `DEV_ONLY.md`. Las secciones siguientes
 documentan el perfil clásico disponible con `entry_rule: second_block`.
 
 El presupuesto activo de nuevas operaciones del dev es el menor entre el 80%
-inclusivo del SOL líquido y **20 USD**, incluyendo margen y gastos estimados,
-manteniendo 0,03 SOL de reserva. El tope `max_entry_budget_usd: 20.0` se
+inclusivo del SOL líquido y **30 USD**, incluyendo margen y gastos estimados,
+manteniendo 0,03 SOL de reserva. El tope `max_entry_budget_usd: 30.0` se
 convierte a SOL con referencia reciente y se revisa antes de enviar; sin una
 referencia válida, no se compra. Las cuatro estrategias originales y
 el perfil clásico conservan su configuración histórica del 90%.
@@ -86,7 +86,7 @@ slippage y gastos. La prioridad tiene tope de **0,06 USD por intento** con
 cotización SOL/USD reciente; renta, comisión base y comisiones de protocolo
 son conceptos distintos. Las otras cuatro estrategias también usan el 90% por
 nueva operación, siempre respetando la reserva de 0,03 SOL y los gastos pendientes.
-Las cinco comparten cuatro plazas y se evalúan por la suma neta de cada tanda
+Las cinco comparten nueve plazas y se evalúan por la suma neta de cada tanda
 de cinco cierres, sin pausa por el número de pérdidas. Permanecen los filtros
 de precio y concentración, el stop y la salida por inactividad configurada;
 la salida por ventas de 1 SOL continúa desactivada. Además, cada estrategia usa

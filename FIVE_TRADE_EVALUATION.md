@@ -1,15 +1,19 @@
-# Tandas de cinco por estrategia y cuatro posiciones compartidas
+# Tandas de cinco por estrategia y nueve posiciones compartidas
 
 La configuración `five_trade_evaluation`, fuera de `four_strategies`, prepara
 tandas independientes de **cinco operaciones auditadas por estrategia**. El
-límite global pasa a **cuatro posiciones**, incluidas compras pendientes,
+límite global es de **nueve posiciones**, incluidas compras pendientes,
 envíos inciertos y remanentes. El presupuesto de cada nueva operación es el
 **90% del SOL líquido confirmado para las cuatro originales**. La estrategia
-dev usa el menor entre el **80% y 20 USD**, incluidos márgenes y gastos.
+dev usa el menor entre el **80% y 30 USD**, incluidos márgenes y gastos.
 El límite de plazas no permite exceder el saldo ni la reserva de
 0,03 SOL. Cada entrada se recalcula sobre el saldo restante; si el presupuesto
 no deja esa reserva o coincide con otros gastos pendientes, se rechaza la compra.
 Las posiciones previas conservan sus presupuestos registrados.
+
+Cada estrategia sigue admitiendo hasta cinco entradas por tanda antes de
+esperar sus cierres. Con solo dev habilitada, esa regla puede dejar el número
+efectivo de posiciones por debajo del techo global de nueve.
 
 El SL activo solicitado es **22%** para las cinco estrategias. Para las cuatro
 originales se toma de `trade.stop_loss_percentage`; para la quinta también se

@@ -320,7 +320,7 @@ class DevOnlyStartupTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(construct.call_args.kwargs["fraccion_saldo"], .90)
         self.assertEqual(construct.call_args.kwargs["stop_loss_percentage"], .22)
-        self.assertEqual(construct.call_args.kwargs["max_posiciones"], 4)
+        self.assertEqual(construct.call_args.kwargs["max_posiciones"], 9)
         trader.start.assert_awaited_once()
         scale.assert_not_awaited()
 
@@ -346,7 +346,7 @@ class DevOnlyCliTests(unittest.TestCase):
         self.assertEqual(report["strategies"], [STRATEGY_ID])
         self.assertEqual(report["entry_fraction_inclusive"], .80)
         self.assertEqual(report["initial_stop"], .22)
-        self.assertEqual(report["max_shared_positions"], 4)
+        self.assertEqual(report["max_shared_positions"], 9)
         self.assertEqual(report["five_trade_evaluation"]["legacy_loss_guard"], "batch_roi_only")
         validate.assert_called_once_with(Path("unused.yaml"), only_dev=True)
 

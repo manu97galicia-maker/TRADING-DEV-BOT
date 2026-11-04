@@ -21,7 +21,7 @@ trade:
   fraccion_saldo: 0.90
   fraccion_base: libre
   min_reserve_sol: 0.03
-  max_posiciones: 4
+  max_posiciones: 9
   buy_slippage: 0.15
   sell_slippage: 0.25
   sell_slippage_proteccion: 0.50

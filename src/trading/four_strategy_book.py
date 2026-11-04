@@ -23,7 +23,7 @@ class FourStrategyBook:
 
     def __init__(self, path: Path, owner: str, policy_id: str, *, max_positions: int = 3,
                  evaluation_policy: dict | None = None) -> None:
-        if type(max_positions) is not int or not 1 <= max_positions <= 4:
+        if type(max_positions) is not int or not 1 <= max_positions <= 9:
             raise ValueError("Invalid shared position limit")
         self.max_positions = max_positions
         self.path = Path(path)

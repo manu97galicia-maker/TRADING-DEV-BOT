@@ -92,17 +92,24 @@ garantizan inclusión inmediata; el selector de segundo bloque descarta las
 preparaciones tardías.
 
 El presupuesto de nuevas entradas del dev es el menor entre el 80% del SOL
-líquido confirmado y **20 USD**, incluidos margen y gastos estimados.
-`max_entry_budget_usd: 20.0` se convierte a SOL con una referencia reciente;
-si falta esa referencia, no se admite la compra. Mantiene la reserva de 0,03 SOL, cuatro
+líquido confirmado y **30 USD**, incluidos margen y gastos estimados.
+`max_entry_budget_usd: 30.0` se convierte a SOL con una referencia reciente;
+si falta esa referencia, no se admite la compra. Mantiene la reserva de 0,03 SOL, nueve
 plazas, deduplicación y tandas de cinco por ROI neto. El SL sigue al 22%; al
 +35% recupera el equivalente nominal a la inversión más 12% y reparte el resto
 en tres ventas, con objetivos +89%, +164,6% y +270,44% desde la entrada.
 
 La validación de arranque `--only-dev` usa también el 80% y el tope inclusivo
-de 20 USD. El tope se vuelve a comprobar antes de enviar: si la referencia
+de 30 USD. El tope se vuelve a comprobar antes de enviar: si la referencia
 SOL/USD aumenta y el presupuesto ya lo supera, se descarta ese intento.
 Las posiciones ya abiertas conservan sus importes registrados.
+
+Las nueve plazas son el techo compartido, incluidas reservas, envíos inciertos
+y remanentes. La evaluación independiente sigue siendo de cinco operaciones:
+en modo solo dev, una tanda admite hasta cinco y espera sus cierres antes de
+continuar. El techo de nueve no elimina esa regla ni garantiza ocupar nueve
+plazas con una sola estrategia. Una tanda con ROI neto no positivo conserva
+su pausa; subir estos límites no la reinicia.
 
 La prioridad de compra tiene un tope de **0,07 USD por intento** y todas las
 salidas del dev, incluidos TP, SL y ruta Jupiter, **0,03 USD por intento**. Son

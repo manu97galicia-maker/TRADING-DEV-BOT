@@ -34,8 +34,9 @@ def check_plan(path: Path, *, only_dev: bool = False) -> dict:
     settings = plan["four_strategies"]
     validate_evaluation_policy(plan.get("five_trade_evaluation"))
     validate_policy(settings["entry_protection"])
-    if trade["max_posiciones"] != 4 or trade["fraccion_saldo"] != 0.90:
-        raise ValueError("Bundle requires four positions and a 90% fraction")
+    if (type(trade["max_posiciones"]) is not int or not 1 <= trade["max_posiciones"] <= 9
+            or trade["fraccion_saldo"] != 0.90):
+        raise ValueError("Bundle requires one to nine shared positions and a 90% fraction")
     if (
         trade["stop_loss_percentage"] != 0.22
         or settings["exit"]["stop_loss_fraction"] != 0.25
