@@ -17,6 +17,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
+MAX_RUN_SECONDS = 3600
 
 
 def check_plan(path: Path, *, only_dev: bool = False) -> dict:
@@ -61,6 +62,27 @@ def check_plan(path: Path, *, only_dev: bool = False) -> dict:
     if only_dev and (not settings.get("enabled") or not second.get("enabled")):
         raise ValueError("Only-dev mode requires an enabled dev strategy and shared coordinator")
     return plan
+
+
+async def run_with_helius_limit(config_path: Path, *, only_dev: bool = False) -> None:
+    """End the whole live session after one hour, including entry and exit reads."""
+    import bot_runner
+
+    trader = asyncio.create_task(bot_runner.start_bot(str(config_path), only_dev=only_dev))
+    try:
+        done, _ = await asyncio.wait({trader}, timeout=MAX_RUN_SECONDS)
+        if done:
+            await trader
+            return
+        trader.cancel()
+        try:
+            await trader
+        except asyncio.CancelledError:
+            pass
+        print("LIMITE HELIUS: una hora cumplida; bot y vigilancia detenidos", flush=True)
+    finally:
+        if not trader.done():
+            trader.cancel()
 
 
 def main() -> None:
@@ -124,6 +146,7 @@ def main() -> None:
                     ]),
                     "entry_mode": "dev_only" if args.only_dev else "all",
                     "entry_asset_policy": "normal_only",
+                    "max_live_runtime_seconds": MAX_RUN_SECONDS,
                     "max_shared_positions": plan["trade"]["max_posiciones"],
                     "entry_fraction_inclusive": entry_balance_fraction(args.config, plan, only_dev=args.only_dev),
                     "entry_budget_cap_usd": second.get("max_entry_budget_usd") if args.only_dev else None,
@@ -165,8 +188,6 @@ def main() -> None:
     if not readiness["ready_for_manual_start"]:
         print(json.dumps(readiness, indent=2, ensure_ascii=False))
         parser.error("Read-only preflight found blockers; no trader was started")
-    import bot_runner
-
     # A process lock prevents duplicated websocket collectors on this ledger.
     lock_path = Path(plan["four_strategies"]["database"]).with_suffix(".process.lock")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -183,7 +204,7 @@ def main() -> None:
             import fcntl
 
             fcntl.flock(process_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        asyncio.run(bot_runner.start_bot(str(args.config), only_dev=args.only_dev))
+        asyncio.run(run_with_helius_limit(args.config, only_dev=args.only_dev))
 
 
 if __name__ == "__main__":

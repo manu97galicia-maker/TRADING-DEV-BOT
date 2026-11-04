@@ -201,6 +201,11 @@ termina antes de detener los monitores existentes. Si pasa, conserva la
 conciliación de ventas manuales y espera a que termine la instancia anterior
 antes de solicitar el nuevo proceso. El comando no crea otra instancia paralela.
 La solicitud de arranque requiere comprobar después el proceso y los registros.
+Cada arranque real tiene un límite predeterminado de 60 minutos de Helius.
+Al cumplirse se detiene todo el proceso, incluidas las salidas automáticas de
+posiciones que aún estén abiertas. Tanto el comando directo `--run` como este
+lanzador aplican el límite; el lanzador añade un corte externo si Python no
+termina al cancelar sus tareas.
 
 La estrategia dev debe tener `enabled: true` en
 `configs/second-block-dev.yaml`. La configuración del repositorio permanece

@@ -58,5 +58,9 @@ if [[ -n "$PIDS" ]]; then
   fi
 fi
 .venv/bin/python reconcile_four_manual_sales.py --apply > logs/manual-sale-applied.json
-nohup .venv/bin/python -u run_four_strategies.py "${RUN_ARGS[@]}" >> logs/four-strategies.log 2>&1 9>&- &
-printf 'Arranque solicitado, PID %s. Comprueba logs/four-strategies.log\n' "$!"
+# Hard deadline also covers a blocked cancellation or a direct crash in cleanup.
+# `timeout` is the parent of the Python trader and exits when the trader exits.
+nohup timeout --signal=TERM --kill-after=5s 3600s \
+  .venv/bin/python -u run_four_strategies.py "${RUN_ARGS[@]}" \
+  >> logs/four-strategies.log 2>&1 9>&- &
+printf 'Arranque solicitado, PID %s. Limite Helius: 60 min. Comprueba logs/four-strategies.log\n' "$!"
