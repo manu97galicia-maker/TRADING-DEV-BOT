@@ -3,7 +3,8 @@
 ## Paquete de cuatro estrategias y callouts
 
 La configuración [configs/four-strategies.yaml](configs/four-strategies.yaml)
-reúne presión desde 8K MC, cruce de 21K, primer bloque y señales de Telegram.
+reúne presión desde 8K MC, cruce de 21K, primer bloque con al menos dos
+compradores y señales de Telegram.
 Comparte hasta nueve posiciones y un SL del 22%. Las cuatro estrategias
 originales usan el 90% del SOL líquido por entrada; el modo
 [solo dev](DEV_ONLY.md) usa el menor entre el 80% y 30 USD, incluidos gastos

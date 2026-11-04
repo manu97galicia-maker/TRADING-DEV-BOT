@@ -143,7 +143,8 @@ four_strategies:
       min_buy_sol: 3.0
       min_volume_usd: 1800
     first-block-four-buyers:
-      min_buyers: 4
+      # Historical strategy id retained so the existing ledger remains comparable.
+      min_buyers: 2
       min_volume_usd: 450
       max_age_seconds: 8
 node:

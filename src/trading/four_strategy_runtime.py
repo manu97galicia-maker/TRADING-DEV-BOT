@@ -823,8 +823,10 @@ class FourStrategyTrader(legacy.UniversalTrader):
 
         source.signal_reader = read
         pressure = self.four["strategies"]["strong-pressure-8k"]
+        first_block = self.four["strategies"]["first-block-four-buyers"]
         source.description = (
-            "FOUR STRATEGIES: one on-chain collector; first-block 4 buyers/450 USD, "
+            f"FOUR STRATEGIES: one on-chain collector; first-block {first_block['min_buyers']} "
+            f"buyers/{first_block['min_volume_usd']} USD, "
             f"pressure {pressure['min_buyers']} buyers/{pressure['min_mc']} USD MC+, "
             "upward crossing 21K; recent flow window 8s"
         )

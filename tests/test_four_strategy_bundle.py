@@ -59,21 +59,21 @@ class SignalTests(unittest.TestCase):
         self.assertIsNone(self.signal(mc=21500, history_mc=22000))
         self.assertIsNone(self.signal(mc=21500, history_mc=20500, buyers=12))
 
-    def test_four_buyers_need_the_real_creation_slot_and_450_usd(self):
-        block = {"creation_seen": True, "age_seconds": 3, "buyers": 4, "buy_sol": 4.5}
+    def test_two_buyers_need_the_real_creation_slot_and_450_usd(self):
+        block = {"creation_seen": True, "age_seconds": 3, "buyers": 2, "buy_sol": 4.5}
         self.assertEqual(
-            self.signal(buyers=4, buy=5, sell=0, block=block)["strategy"],
+            self.signal(buyers=2, buy=5, sell=0, block=block)["strategy"],
             "first-block-four-buyers",
         )
         for change in (
-            {"buyers": 3},
+            {"buyers": 1},
             {"buy_sol": 4.49},
             {"creation_seen": False},
             {"age_seconds": 9},
             {"age_seconds": None},
         ):
             self.assertIsNone(
-                self.signal(buyers=4, buy=5, sell=0, block={**block, **change})
+                self.signal(buyers=2, buy=5, sell=0, block={**block, **change})
             )
 
     def test_missing_fresh_price_or_invalid_data_cannot_create_a_signal(self):
