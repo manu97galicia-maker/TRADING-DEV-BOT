@@ -46,11 +46,12 @@ def test_dev_con_minimo_un_uno_por_ciento_de_migradas() -> None:
     assert CFG["filters"]["ignorar_listas_de_devs"] is False
 
 
-def test_primer_bloque_dos_compras_y_375_dolares() -> None:
+def test_primer_bloque_dos_compras_sin_minimo_de_dolares() -> None:
     f = CFG["filters"]
     assert f["min_first_block_buys"] == 2
     assert f["max_first_block_buys"] == 0
-    assert f["min_first_block_usd"] == 375
+    # 4-nov: "quita lo de 375".
+    assert f["min_first_block_usd"] == 0
     assert f["max_first_block_usd"] == 0
     # Sin ventana de espera los filtros del primer bloque no se comprueban.
     assert f["max_buy_age"] > 0
@@ -102,7 +103,10 @@ def test_plazas_que_el_nodo_vigila_y_reserva_para_vender() -> None:
 def test_salida_del_4_nov() -> None:
     """TP 38% recupera iniciales +10%; el resto en tres tramos hasta 14k."""
     t = CFG["trade"]
-    assert t["buy_amount_usd"] == 30
+    # 4-nov: "Pon 0.2 sol". En SOL fijos no depende del precio de SOL.
+    assert t["buy_amount"] == 0.2
+    assert t["buy_amount_usd"] == 0
+    assert t.get("fraccion_saldo", 0) == 0
     assert t["stop_loss_percentage"] == 0.25
     assert t["take_profit_percentage"] == 0.38
     # Lo vendido en el TP1 vale lo invertido +10%: 1,38 x fraccion = 1,10.

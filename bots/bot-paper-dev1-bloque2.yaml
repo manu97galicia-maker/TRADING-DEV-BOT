@@ -11,6 +11,8 @@
 # que sobre lo vendes en tres tramos hasta los 14k. SL 25%."
 # Lo que cambio: 20 $ -> 30 $, tope de entrada 4,1k (nuevo), stop 8% -> 25%,
 # y la salida entera (ya no es la de la hermana).
+# Y EL 4-nov POR LA TARDE: "Pon 0.2 sol para solventar el problema y quita lo
+# de 375". 30 $ -> 0,2 SOL fijos, y el primer bloque sin minimo de dolares.
 #
 # NACIO EN PAPEL Y YA NO LO ESTA: desde el 4-nov opera con DINERO REAL
 # (ver el bloque de `paper_trade`, mas abajo). El nombre del fichero sigue
@@ -20,7 +22,7 @@
 # LO QUE NO SE PIDIO Y SE HA TENIDO QUE ELEGIR, para poder cambiarlo luego:
 #   - 0,03 SOL de reserva: sin ella no queda SOL para pagar la comision de
 #     vender.
-name: "REAL DEV 1% + PRIMER BLOQUE 2 COMPRAS 375$ + BLOQUE 2 BAJO 4,1K"
+name: "REAL DEV 1% + PRIMER BLOQUE 2 COMPRAS + BLOQUE 2 BAJO 4,1K"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -34,12 +36,18 @@ platform: "pump_fun"
 
 trade:
   nombre_estrategia: "paper-dev1-bloque2"
-  buy_amount: 0
-  buy_amount_usd: 30
+  # 0,2 SOL FIJOS, pedido el 4-nov: "Pon 0.2 sol para solventar el problema".
+  # Venia de buy_amount_usd: 30. EN DOLARES EL BOT NO COMPRA hasta haber leido
+  # el precio de SOL (universal_trader.py: "Mientras el precio no se haya
+  # confirmado NO SE COMPRA"), y si el droplet no llega a la web de precios,
+  # no compra nunca. En SOL fijos el importe sale de `buy_amount` y no
+  # depende de ningun precio. 0,2 SOL son unos 21 $ con el SOL a 105 $.
+  buy_amount: 0.2
+  buy_amount_usd: 0
   fraccion_saldo: 0
   min_reserve_sol: 0.03
   # 7 PLAZAS, pedido el 4-nov: "maximo 7 operaciones simultaneas". Venia
-  # de 5. 7 x 30 $ = 210 $ como maximo dentro a la vez.
+  # de 5. 7 x 0,2 SOL = 1,4 SOL como maximo dentro a la vez.
   # Para que el nodo las vigile todas hubo que subir node.max_rps de 12 a 14
   # (ver abajo).
   max_posiciones: 7
@@ -58,7 +66,7 @@ trade:
   #
   # TP1 a +38%: vende lo justo para recuperar lo invertido +10%.
   #     1,10 / 1,38 = 0,7971014493  -> vende el 79,71% de la posicion.
-  #     Con 30 $: vende 30 x 1,38 x 0,7971 = 33,00 $ (los 30 + 3 de ganancia).
+  #     Con 0,2 SOL: vende 0,2 x 1,38 x 0,7971 = 0,22 SOL (lo puesto + 0,02).
   #     Queda el 20,29% de la posicion, ya pagado.
   #
   # ESE 20,29% SALE EN TRES TRAMOS POR MARKET CAP, hasta los 14k:
@@ -139,11 +147,9 @@ retries:
 filters:
   listener_type: "logs"
   # REAL DESDE EL 4-nov, pedido: "como poner en real". Venia de true.
-  # Ningun otro numero se mueve. Con 30 $ y 5 plazas, como mucho 150 $
-  # dentro a la vez, mas 6 centimos de comision por compra.
-  # No compra mientras el precio de SOL siga en el valor por defecto del
-  # codigo (universal_trader.py: "Mientras el precio no se haya confirmado
-  # NO SE COMPRA"), asi que los 30 $ nunca se calculan con el SOL a 91,24.
+  # Ningun otro numero se mueve. Hoy (desde el 4-nov): 0,2 SOL por compra y
+  # 7 plazas, como mucho 1,4 SOL dentro a la vez, mas 6 centimos de comision
+  # por compra. En SOL fijos el bot no necesita el precio de SOL para comprar.
   paper_trade: false
   paper_watch_secs: 600
   max_token_age: 0
@@ -169,12 +175,15 @@ filters:
   # no las sustituye.
   ignorar_listas_de_devs: false
 
-  # PRIMER BLOQUE: minimo 2 compras y minimo 375 $ entre todas. Cuenta TODAS
-  # las compras del bloque en que nace la moneda, la del propio dev incluida
+  # PRIMER BLOQUE: minimo 2 compras. Cuenta TODAS las compras del bloque en
+  # que nace la moneda, la del propio dev incluida
   # (monitoring/volumen.py, _anotar_primer_bloque). Sin maximo (0).
   min_first_block_buys: 2
   max_first_block_buys: 0
-  min_first_block_usd: 375
+  # SIN MINIMO DE DOLARES, pedido el 4-nov: "quita lo de 375". Venia de 375.
+  # Ojo: ese minimo tambien dependia del precio de SOL (SOL comprado x
+  # precio); quitarlo deja el primer bloque sin nada que dependa del precio.
+  min_first_block_usd: 0
   max_first_block_usd: 0
   # Espera a que el primer bloque se cierre (ve una operacion de un bloque
   # posterior) y entonces compra, sin mirar nada mas del segundo bloque.
