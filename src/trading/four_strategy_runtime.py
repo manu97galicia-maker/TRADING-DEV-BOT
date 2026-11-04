@@ -175,6 +175,9 @@ class SharedBuyer:
             creation_slot = signal.get("creation_slot")
             if (type(holdings_slot) is not int or type(creation_slot) is not int
                     or not creation_slot <= holdings_slot <= strict_target):
+                logger.info("DEV entry context mismatch: creation=%s holdings=%s target=%s balance=%s",
+                            creation_slot, holdings_slot, strict_target,
+                            balance.get("context", {}).get("slot"))
                 return TradeResult(success=False, error_message="Second-block holdings context is stale")
         else:
             existing_raw, _ = await runtime.raw_holdings(str(token_info.mint))
@@ -253,6 +256,7 @@ class SharedBuyer:
                 state, chain_slot = await asyncio.gather(
                     curve_read, runtime.rpc("getSlot", [{"commitment": "processed"}]))
                 if type(chain_slot) is not int or chain_slot != strict_target:
+                    logger.info("DEV entry target missed: chain=%s target=%s", chain_slot, strict_target)
                     runtime.book.cancel_unsubmitted(nonce)
                     return TradeResult(success=False, error_message="Second produced block is no longer current")
             else:
