@@ -17,7 +17,8 @@ min_first_block_volume_usd: 350
 min_distinct_first_block_buyers: 3
 buy_priority_fee_cap_usd: 0.07
 sell_priority_fee_cap_usd: 0.03
-max_slot_age_seconds: 0.6
+# Leave time for relay before the next slot; inclusion is audited after confirmation.
+max_slot_age_seconds: 0.20
 third_block_retry_on_sharp_rise: false
 reject_sharp_price_rise: false
 exit:

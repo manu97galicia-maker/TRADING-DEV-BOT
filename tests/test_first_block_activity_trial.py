@@ -105,6 +105,7 @@ class DurableTrialTests(unittest.TestCase):
         validate_second_policy(policy)
         for key, value in (("min_distinct_first_block_buyers", 2),
                            ("min_first_block_volume_usd", 349),
+                           ("max_slot_age_seconds", .6),
                            ("max_trial_buys", 6)):
             with self.subTest(key=key):
                 changed = {**policy, key: value}

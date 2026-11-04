@@ -66,7 +66,8 @@ def validate_second_policy(settings: dict) -> None:
     if first_block_activity_only(settings):
         expected.update({"balance_fraction": .80, "buy_priority_fee_cap_usd": .07,
                          "sell_priority_fee_cap_usd": .03, "require_first_block_activity": True,
-                         "min_first_block_volume_usd": 350, "min_distinct_first_block_buyers": 3})
+                         "min_first_block_volume_usd": 350, "min_distinct_first_block_buyers": 3,
+                         "max_slot_age_seconds": .20})
     elif creator_history_only(settings):
         expected.update({"min_creator_migration_fraction": .01, "developer_identity": "creation_signer",
                          "history_provider": "helius_transactions", "balance_fraction": .80,
