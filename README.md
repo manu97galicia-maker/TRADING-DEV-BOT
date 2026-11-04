@@ -1,5 +1,23 @@
 # Definitivo Bot — señales tempranas de pump.fun en Solana
 
+## Paquete de cuatro estrategias y callouts
+
+La configuración [configs/four-strategies.yaml](configs/four-strategies.yaml)
+reúne presión desde 8K MC, cruce de 21K, primer bloque y señales de Telegram.
+Comparte hasta nueve posiciones y un SL del 22%. Las cuatro estrategias
+originales usan el 90% del SOL líquido por entrada; el modo
+[solo dev](DEV_ONLY.md) usa el menor entre el 80% y 30 USD, incluidos gastos
+estimados. La estrategia dev entra sin esperar tandas de cinco; las tandas históricas
+siguen registradas y las otras estrategias conservan su evaluación.
+La presión usa 12 compradores y 1.300 USD/8s; la salida por volumen vendedor
+está desactivada. Este paquete está **deshabilitado** (`enabled: false`).
+
+Las reglas, TP escalonados y preparación del publicador @AImemebot están en
+[la guía del paquete](estudios/four_strategies/README.md). Validar la configuración
+con `python run_four_strategies.py` no carga la wallet ni inicia operaciones.
+
+Los apartados siguientes describen las configuraciones anteriores del repositorio.
+
 Sistema de detección y gestión automática de oportunidades de **pump.fun**. La
 estrategia principal de señales combina eventos recientes de DexScreener con
 canales seleccionados de Telegram (MoonTok, DEXTools y Legends Alpha), registra

@@ -1,0 +1,18 @@
+{
+  "status": "available",
+  "read_only": true,
+  "source": "helius_creation_signers_and_canonical_pumpswap_pools",
+  "developer": "9qGSkpuGWGp7uqxuPw27ZJ2x1zSV8Svm8rmDWMmuG1W6",
+  "launches": 1,
+  "canonical_pumpswap_migrations": 1,
+  "migration_fraction_lower_bound": 1.0,
+  "all_migration_accounts_checked": true,
+  "anchor_slot": 464874793,
+  "history_transactions": 287,
+  "read_methods": {
+    "getSlot": 1,
+    "getTransactionsForAddress": 4,
+    "getMultipleAccounts": 1
+  },
+  "latency_ms": 394
+}

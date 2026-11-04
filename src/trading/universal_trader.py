@@ -1408,7 +1408,8 @@ class UniversalTrader:
         # trailing tiene que ser corto para no devolver media ganancia desde
         # el techo. Si no se configura, se comporta como antes.
         self.trailing_stop_percentage = float(
-            trailing_stop_percentage or stop_loss_percentage or 0
+            (stop_loss_percentage or 0)
+            if trailing_stop_percentage is None else trailing_stop_percentage
         )
         self.vender_todo_en_stop = bool(vender_todo_en_stop)
         self.second_wave = dict(second_wave or {})
@@ -5034,10 +5035,13 @@ class UniversalTrader:
                 # owner is authoritative. A wrong program derives the wrong ATA
                 # and produces a guaranteed failed transaction.
                 try:
-                    mint_account = await self.solana_client.get_account_info(
-                        token_info.mint, commitment="processed"
-                    )
-                    actual_program = getattr(mint_account, "owner", None)
+                    prepared_program = getattr(self, "_prepared_entry_token_program", None)
+                    actual_program = prepared_program(token_info) if callable(prepared_program) else None
+                    if actual_program is None:
+                        mint_account = await self.solana_client.get_account_info(
+                            token_info.mint, commitment="processed"
+                        )
+                        actual_program = getattr(mint_account, "owner", None)
                 except Exception:  # noqa: BLE001
                     logger.warning(
                         "Compra de %s omitida: no pude verificar el programa del mint",
@@ -5205,7 +5209,9 @@ class UniversalTrader:
                             token_info.symbol,
                         )
                         return
-                    bal = await self.solana_client.get_sol_balance(self.wallet.pubkey)
+                    entry_wallet_balance = getattr(self, "_entry_wallet_balance", None)
+                    bal = (await entry_wallet_balance(token_info) if callable(entry_wallet_balance)
+                           else await self.solana_client.get_sol_balance(self.wallet.pubkey))
                     # Nunca gastar por debajo de la reserva mínima (min_reserve).
                     free = bal - self._reserved_lamports - self.min_reserve_lamports
                     # Una fuente puede pedir su propia fracción del saldo. Es
@@ -5224,7 +5230,25 @@ class UniversalTrader:
                     # saldo recien leido y bajo el mismo cerrojo que lo reserva:
                     # calculado fuera, dos compras a la vez pedirian cada una el
                     # 70% del mismo saldo y sumarian el 140%.
-                    if self.buy_amount_usd > 0:
+                    _inclusive_sizer = getattr(self, "_inclusive_entry_budget", None)
+                    _inclusive_budget = (
+                        _inclusive_sizer(token_info, bal, cap_sol=_tope)
+                        if callable(_inclusive_sizer) else None
+                    )
+                    if _inclusive_budget is not None:
+                        # Shared runtimes provide a total budget that already
+                        # includes slippage and fees. Do not size nominal SOL
+                        # from the fraction again before their durable buyer.
+                        _importe, need = _inclusive_budget
+                        if _importe <= 0:
+                            logger.info("Shared inclusive budget unavailable for %s", token_info.symbol)
+                            _suelta_moneda(_mint_str)
+                            return
+                        logger.info(
+                            "INCLUSIVE SHARED: %.6f SOL nominal, %.6f total; %.6f free",
+                            _importe, need / LAMPORTS_PER_SOL, free / LAMPORTS_PER_SOL,
+                        )
+                    elif self.buy_amount_usd > 0:
                         # IMPORTE EN DOLARES (23-sep, pedido: "10 $ por
                         # operacion en SOL"). Los SOL salen de dividir por el
                         # precio de SOL EN VIVO, no por un numero escrito a
@@ -5647,79 +5671,80 @@ class UniversalTrader:
         if token_info.token_program_id:
             self.traded_token_programs[mint_str] = token_info.token_program_id
 
-        # AVISO DE COMPRA con el porque. Hasta ahora la compra solo se apuntaba
-        # en el log: desde Telegram se veia que habia entrado pero no que la
-        # habia hecho entrar, asi que era imposible juzgar la señal despues.
-        try:
-            from monitoring.notifier import build_purchase_notification, notify
-            from monitoring.senales import tiene_senal
-            from monitoring.volumen import operaciones, volumen_sol
+        if not (token_info.additional_data or {}).get("four_purchase_notice"):
+            # AVISO DE COMPRA con el porque. Hasta ahora la compra solo se apuntaba
+            # en el log: desde Telegram se veia que habia entrado pero no que la
+            # habia hecho entrar, asi que era imposible juzgar la señal despues.
+            try:
+                from monitoring.notifier import build_purchase_notification, notify
+                from monitoring.senales import tiene_senal
+                from monitoring.volumen import operaciones, volumen_sol
 
-            _lineas = []
+                _lineas = []
 
-            _t = tiene_senal(mint_str, self.senal_gmgn) if self.senal_gmgn else None
-            if _t:
-                _lineas.append(f"📡 Señal GMGN <b>tipo {_t}</b>")
+                _t = tiene_senal(mint_str, self.senal_gmgn) if self.senal_gmgn else None
+                if _t:
+                    _lineas.append(f"📡 Señal GMGN <b>tipo {_t}</b>")
 
-            _dev = str(
-                getattr(token_info, "creator", "")
-                or getattr(token_info, "user", "")
-                or ""
-            ).strip()
-            if _dev:
-                # AQUI HABIA UN `await creator_migration_stats(_dev)`, y era
-                # doce segundos de ceguera en el peor momento posible.
-                #
-                # QUE HACIA: una llamada HTTP a la API de pump.fun, con
-                # `ClientTimeout(total=12)`, para preguntar cuantas monedas ha
-                # migrado el creador. UNICO uso: la linea "👤 Dev migró X%" de
-                # este mensaje de Telegram.
-                #
-                # DONDE ESTABA: en el camino critico, entre que la compra
-                # confirma y que arranca el monitor de la posicion. Durante esos
-                # segundos la moneda recien comprada NO la mira nadie: ni take
-                # profit, ni stop loss. En una moneda que hace x3,75 en un
-                # minuto, doce segundos es media subida.
-                #
-                # Y ADEMAS ES MEDIR UN DEV, que Manu pidio quitar el 19-sep.
-                # Las dos razones apuntan al mismo sitio, asi que fuera. La
-                # mediana de abajo se queda: sale de un diccionario en memoria
-                # y no cuesta ni una llamada.
-                _med = (self._creator_medians or {}).get(_dev)
-                if _med:
-                    _lineas.append(f"📈 Mediana del dev: <b>${int(_med):,}</b>")
+                _dev = str(
+                    getattr(token_info, "creator", "")
+                    or getattr(token_info, "user", "")
+                    or ""
+                ).strip()
+                if _dev:
+                    # AQUI HABIA UN `await creator_migration_stats(_dev)`, y era
+                    # doce segundos de ceguera en el peor momento posible.
+                    #
+                    # QUE HACIA: una llamada HTTP a la API de pump.fun, con
+                    # `ClientTimeout(total=12)`, para preguntar cuantas monedas ha
+                    # migrado el creador. UNICO uso: la linea "👤 Dev migró X%" de
+                    # este mensaje de Telegram.
+                    #
+                    # DONDE ESTABA: en el camino critico, entre que la compra
+                    # confirma y que arranca el monitor de la posicion. Durante esos
+                    # segundos la moneda recien comprada NO la mira nadie: ni take
+                    # profit, ni stop loss. En una moneda que hace x3,75 en un
+                    # minuto, doce segundos es media subida.
+                    #
+                    # Y ADEMAS ES MEDIR UN DEV, que Manu pidio quitar el 19-sep.
+                    # Las dos razones apuntan al mismo sitio, asi que fuera. La
+                    # mediana de abajo se queda: sale de un diccionario en memoria
+                    # y no cuesta ni una llamada.
+                    _med = (self._creator_medians or {}).get(_dev)
+                    if _med:
+                        _lineas.append(f"📈 Mediana del dev: <b>${int(_med):,}</b>")
 
-            _v = volumen_sol(mint_str)
-            if _v:
-                _lineas.append(
-                    f"💧 {_v:.1f} SOL negociados en {operaciones(mint_str)} ops"
+                _v = volumen_sol(mint_str)
+                if _v:
+                    _lineas.append(
+                        f"💧 {_v:.1f} SOL negociados en {operaciones(mint_str)} ops"
+                    )
+
+                _mc = (buy_result.price or 0) * _PUMP_TOTAL_SUPPLY * _SOL_USD
+                _tr = " · ".join(
+                    f"+{t.gain * 100:.0f}%/{t.sell * 100:.0f}%" for t in self.tp_tiers
                 )
-
-            _mc = (buy_result.price or 0) * _PUMP_TOTAL_SUPPLY * _SOL_USD
-            _tr = " · ".join(
-                f"+{t.gain * 100:.0f}%/{t.sell * 100:.0f}%" for t in self.tp_tiers
-            )
-            _signal_data = token_info.additional_data or {}
-            _amount = float(_signal_data.get("signal_buy_amount") or self.buy_amount)
-            notify(
-                build_purchase_notification(
-                    symbol=token_info.symbol,
-                    mint=mint_str,
-                    amount_sol=_amount,
-                    source_data=_signal_data,
-                    market_cap_usd=_mc,
-                    strategy=_tr,
-                    stop_loss_pct=self.stop_loss_percentage * 100,
-                    extra_lines=_lineas,
-                    entry_price_sol=buy_result.price or 0.0,
-                    take_profit_tiers=[
-                        (tier.gain, tier.sell) for tier in self.tp_tiers
-                    ],
-                ),
-                tipo="compra",
-            )
-        except Exception:  # noqa: BLE001
-            pass
+                _signal_data = token_info.additional_data or {}
+                _amount = float(_signal_data.get("signal_buy_amount") or self.buy_amount)
+                notify(
+                    build_purchase_notification(
+                        symbol=token_info.symbol,
+                        mint=mint_str,
+                        amount_sol=_amount,
+                        source_data=_signal_data,
+                        market_cap_usd=_mc,
+                        strategy=_tr,
+                        stop_loss_pct=self.stop_loss_percentage * 100,
+                        extra_lines=_lineas,
+                        entry_price_sol=buy_result.price or 0.0,
+                        take_profit_tiers=[
+                            (tier.gain, tier.sell) for tier in self.tp_tiers
+                        ],
+                    ),
+                    tipo="compra",
+                )
+            except Exception:  # noqa: BLE001
+                pass
 
         # Choose exit strategy
         if not self.marry_mode:
@@ -5965,6 +5990,8 @@ class UniversalTrader:
         amount: float,
         ref_price: float,
         reason: str,
+        *,
+        full_exit: bool = False,
     ) -> bool:
         """Sell a specific token amount and log it. Returns success.
 
@@ -6006,6 +6033,8 @@ class UniversalTrader:
         # rellena, y asi ningun fallo puede dejar el valor de la venta anterior.
         self._ultimo_cobro = 0.0
 
+        from trading.sell_precision import align_full_sell
+
         real = await self._saldo_real_tokens(token_info)
         if real is not None:
             if real <= 0:
@@ -6024,6 +6053,8 @@ class UniversalTrader:
                     f"{real:.6f}; ajusto al saldo real"
                 )
                 amount = real
+
+            amount, _ = align_full_sell(amount, real, TOKEN_DECIMALS, full_exit=full_exit)
 
         _seller = self._vendedor_para(reason)
         sell_result = await _seller.execute(
@@ -8130,6 +8161,8 @@ class UniversalTrader:
             mint_str = str(token_info.mint)
             if action == "buy" and (price or 0) > 0:
                 self._precio_entrada[mint_str] = float(price)
+            if action == "buy" and (token_info.additional_data or {}).get("four_purchase_notice"):
+                return
             alert_trade(
                 action,
                 token_info.symbol,

@@ -194,8 +194,8 @@ def test_a_una_migrada_no_se_le_pide_precio() -> None:
             curve_manager = curva
 
         class _Cliente:
-            async def get_account_info(self, _m: object) -> None:
-                return None
+            async def get_account_info(self, _m: object, commitment: str | None = None) -> None:
+                assert commitment == "processed"
 
         await build_pumpfun_token_info(
             "DBDqhnAi5MjaHsk1JyUonAtUUrmRBJPjJi3GdiBLpump",

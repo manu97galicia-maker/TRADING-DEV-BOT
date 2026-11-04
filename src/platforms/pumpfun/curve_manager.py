@@ -5,6 +5,10 @@ This module handles pump.fun-specific bonding curve operations
 by implementing the CurveManager interface using IDL-based decoding.
 """
 
+# Preserve the existing explicit IDL diagnostics and RPC recovery boundaries.
+# ruff: noqa: TRY003, TRY300
+
+import hashlib
 from typing import Any
 
 from solders.pubkey import Pubkey
@@ -12,16 +16,29 @@ from solders.pubkey import Pubkey
 from core.client import SolanaClient
 from core.pubkeys import LAMPORTS_PER_SOL, TOKEN_DECIMALS
 from interfaces.core import CurveManager, Platform
+from platforms.pumpfun.address_provider import PumpFunAddresses
 from utils.idl_parser import IDLParser
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
+_CURVE_DISCRIMINATOR = hashlib.sha256(b"account:BondingCurve").digest()[:8]
+
+
+def _authenticated_curve_data(account: object) -> bytes | bytearray:
+    if (str(getattr(account, "owner", None)) != str(PumpFunAddresses.PROGRAM)
+            or getattr(account, "executable", False) is not False):
+        raise ValueError("Unexpected bonding curve owner or executable account")
+    data = getattr(account, "data", None)
+    if (not isinstance(data, (bytes, bytearray))
+            or data[:8] != _CURVE_DISCRIMINATOR):
+        raise ValueError("Unexpected bonding curve account discriminator")
+    return data
 
 
 class PumpFunCurveManager(CurveManager):
     """Pump.Fun implementation of CurveManager interface using IDL-based decoding."""
 
-    def __init__(self, client: SolanaClient, idl_parser: IDLParser):
+    def __init__(self, client: SolanaClient, idl_parser: IDLParser) -> None:
         """Initialize pump.fun curve manager with injected IDL parser.
 
         Args:
@@ -66,19 +83,18 @@ class PumpFunCurveManager(CurveManager):
             account = await self.client.get_account_info(
                 pool_address, commitment=commitment
             )
-            if not account.data:
-                raise ValueError(f"No data in bonding curve account {pool_address}")
+            data = _authenticated_curve_data(account)
 
             # Decode bonding curve state using injected IDL parser
             curve_state_data = self._decode_curve_state_with_idl(
-                account.data, exigir_precio=exigir_precio
+                data, exigir_precio=exigir_precio
             )
 
             return curve_state_data
 
         except Exception as e:
             logger.exception("Failed to get curve state")
-            raise ValueError(f"Invalid bonding curve state: {e!s}")
+            raise ValueError(f"Invalid bonding curve state: {e!s}") from e
 
     async def calculate_price(self, pool_address: Pubkey) -> float:
         """Calculate current token price from bonding curve state.
@@ -103,7 +119,7 @@ class PumpFunCurveManager(CurveManager):
         if virtual_token_reserves <= 0:
             return 0.0
 
-        # Price = sol_reserves / token_reserves
+        # Divide the SOL reserves by the token reserves to obtain the price.
         price_lamports = virtual_sol_reserves / virtual_token_reserves
         return price_lamports * (10**TOKEN_DECIMALS) / LAMPORTS_PER_SOL
 
@@ -127,7 +143,7 @@ class PumpFunCurveManager(CurveManager):
         virtual_sol_reserves = pool_state["virtual_sol_reserves"]
 
         # Use virtual reserves for bonding curve calculation
-        # Formula: tokens_out = (amount_in * virtual_token_reserves) / (virtual_sol_reserves + amount_in)
+        # Multiply the input by token reserves and divide by the resulting SOL reserves.
         numerator = amount_in * virtual_token_reserves
         denominator = virtual_sol_reserves + amount_in
 
@@ -157,7 +173,7 @@ class PumpFunCurveManager(CurveManager):
         virtual_sol_reserves = pool_state["virtual_sol_reserves"]
 
         # Use virtual reserves for bonding curve calculation
-        # Formula: sol_out = (amount_in * virtual_sol_reserves) / (virtual_token_reserves + amount_in)
+        # Multiply the input by SOL reserves and divide by the resulting token reserves.
         numerator = amount_in * virtual_sol_reserves
         denominator = virtual_token_reserves + amount_in
 

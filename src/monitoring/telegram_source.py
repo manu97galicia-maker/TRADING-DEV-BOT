@@ -19,6 +19,7 @@ import re
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from pathlib import Path
+import time
 
 from interfaces.core import Platform, TokenInfo
 from monitoring.telegram_watcher import TelegramWatcher
@@ -107,9 +108,18 @@ class TelegramSource:
             session_name=self._config.get("session_name", "tg_watcher"),
             suffixes=suffixes,
             channels=self._config.get("channels"),
+            non_interactive=bool(self._config.get("non_interactive", False)),
         )
 
         async def on_call(call: dict) -> None:
+            max_age = float(self._config.get("max_message_age_seconds", 0))
+            message_date = call.get("message_date")
+            if max_age > 0 and (
+                message_date is None
+                or not -5 <= time.time() - message_date.timestamp() <= max_age
+            ):
+                return
+            received_at = time.time()
             # Only buy calls that match THIS bot's platform; others alert only.
             buyable = call.get("platform") == self._platform.value
             token_info = None
@@ -133,6 +143,7 @@ class TelegramSource:
                     "dextools_nitro_score": nitro_score,
                     "signal_buy_amount": signal_amount,
                     "balance_fraction": balance_fraction,
+                    "signal_received_at": received_at,
                 }
             _log_call(call, bought=token_info is not None)
             if token_info is not None:

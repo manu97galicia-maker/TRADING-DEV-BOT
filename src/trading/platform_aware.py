@@ -15,6 +15,9 @@ from core.wallet import Wallet
 from interfaces.core import AddressProvider, Platform, TokenInfo
 from platforms import get_platform_implementations
 from trading.base import Trader, TradeResult
+from trading.pump_fee_identity import refresh_bound_dev_fee_creator
+from trading.sell_precision import raw_sell_amount
+from trading.transaction_observer import capped_buy_cost_lamports
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -234,6 +237,11 @@ class PlatformAwareBuyer(Trader):
                 )
                 token_amount = amount / token_price_sol
 
+            # A dev entry retains its original launch identity while Pump Fees
+            # may migrate the fee recipient to this mint's sharing config.
+            # Check both cached and reread states before building instructions.
+            refresh_bound_dev_fee_creator(token_info, pool_state or {})
+
             # Avoid pump.fun "mayhem mode" tokens unless this strategy allows them.
             if not self.allow_mayhem and getattr(token_info, "is_mayhem_mode", False):
                 logger.info(
@@ -278,6 +286,10 @@ class PlatformAwareBuyer(Trader):
 
             # Calculate maximum SOL to spend with slippage
             max_amount_lamports = int(amount_lamports * (1 + self.slippage))
+            if token_info.platform == Platform.PUMP_FUN:
+                max_amount_lamports = capped_buy_cost_lamports(
+                    max_amount_lamports, minimum_token_amount_raw
+                )
 
             # Build buy instructions using platform-specific builder
             instructions = await instruction_builder.build_buy_instruction(
@@ -329,7 +341,7 @@ class PlatformAwareBuyer(Trader):
                 max_retries=self.max_retries,
                 priority_fee=(
                     priority_fee_override
-                    if priority_fee_override
+                    if priority_fee_override is not None
                     else await self.priority_fee_manager.calculate_priority_fee(
                         priority_accounts
                     )
@@ -581,7 +593,7 @@ class PlatformAwareSeller(Trader):
 
             # Use pre-known amount and price (no RPC delay)
             token_balance_decimal = token_amount
-            token_balance = int(token_amount * 10**TOKEN_DECIMALS)
+            token_balance = raw_sell_amount(token_amount, TOKEN_DECIMALS)
             token_price_sol = token_price
 
             logger.info(f"Token balance: {token_balance_decimal:.6f}")
@@ -648,7 +660,7 @@ class PlatformAwareSeller(Trader):
                 max_retries=self.max_retries,
                 priority_fee=(
                     priority_fee_override
-                    if priority_fee_override
+                    if priority_fee_override is not None
                     else await self.priority_fee_manager.calculate_priority_fee(
                         priority_accounts
                     )

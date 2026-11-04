@@ -60,9 +60,11 @@ class _Cliente:
     def __init__(self, orden: list[str]) -> None:
         self.orden = orden
         self.lecturas = 0
+        self.commitments: list[str | None] = []
 
-    async def get_account_info(self, _mint):
+    async def get_account_info(self, _mint, commitment=None):
         self.lecturas += 1
+        self.commitments.append(commitment)
         self.orden.append("mint:empieza")
         await asyncio.sleep(0)
         self.orden.append("mint:acaba")
@@ -109,6 +111,7 @@ def test_la_curva_y_el_mint_se_piden_a_la_vez() -> None:
     """
     curva, cliente = _construye()
     assert cliente.lecturas == 1
+    assert cliente.commitments == ["processed"]
     empiezan = curva.orden[:2]
     assert set(empiezan) == {"curva:empieza", "mint:empieza"}, (
         f"van en serie, no a la vez: {curva.orden}"

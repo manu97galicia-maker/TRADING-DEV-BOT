@@ -1,0 +1,46 @@
+# Fifth strategy. Helius signer history verified; execution remains manually disabled.
+enabled: false
+strategy_id: dev-second-block
+entry_rule: creator_migration_only
+entry_timing: second_produced_block
+require_dev_initial_buy: true
+balance_fraction: 0.80
+# Inclusive entry budget: lower of this USD cap and the balance fraction.
+max_entry_budget_usd: 30.0
+# MC threshold is retained for the classic profile, unused in history-only mode.
+max_entry_mc_usd: 4200
+min_creator_migration_fraction: 0.01
+creator_migration_strictly_above: true
+# Admit dev entries without waiting for five closures or pausing on batch ROI.
+# Historical batch records and the still-open position remain intact.
+batch_gate_enabled: false
+require_first_block_activity: false
+# Retained for the optional activity profile; inactive with the selector above.
+min_first_block_volume_usd: 250
+min_distinct_first_block_buyers: 2
+buy_priority_fee_cap_usd: 0.07
+sell_priority_fee_cap_usd: 0.03
+max_slot_age_seconds: 0.6
+third_block_retry_on_sharp_rise: false
+reject_sharp_price_rise: false
+creator_cache_seconds: 600
+history_timeout_seconds: 12
+history_provider: helius_transactions
+history_fallback_provider: gmgn
+history_primary_timeout_seconds: 4
+history_max_pages: 64
+history_page_size: 100
+history_max_accounts: 10000
+history_max_transactions: 10000
+developer_identity: creation_signer
+exit:
+  kind: second-block-capital-recovery
+  initial_gain: 0.35
+  later_step_gain: 0.40
+  later_sales: 3
+  # At +35%, target the initial investment plus 12% nominal profit.
+  first_sale_mode: recover_capital_plus_profit
+  recovery_profit_fraction: 0.12
+  first_sale_original_fraction: null
+  # Requested 22% stop; "12" refers to recovered profit.
+  stop_loss_fraction: 0.22

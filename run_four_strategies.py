@@ -1,0 +1,211 @@
+"""Validate the opt-in bundle by default. No imports of wallets in check mode."""
+
+# Lazy platform/runtime imports are required so validation never loads wallets.
+# Literal risk thresholds below intentionally validate the fixed user contract.
+# ruff: noqa: PLC0415, PLR2004, TRY003
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import json
+import math
+import sys
+from pathlib import Path
+
+import yaml
+
+ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "src"))
+MAX_RUN_SECONDS = 3600
+
+
+def check_plan(path: Path, *, only_dev: bool = False) -> dict:
+    """Validate explicit shared risk settings without loading credentials."""
+    from trading.five_trade_evaluation import validate_evaluation_policy
+    from trading.four_strategy_entry_guard import validate_policy
+    from trading.review_exit_ladder import build_review_ladder
+    from trading.second_block_policy import load_second_policy
+
+    plan = yaml.safe_load(path.read_text(encoding="utf-8"))
+    trade = plan["trade"]
+    inactivity = float(trade.get("sin_volumen_bajo_entrada_seg", 0))
+    if not math.isfinite(inactivity) or inactivity < 0:
+        raise ValueError("Inactivity duration must be finite and nonnegative")
+    settings = plan["four_strategies"]
+    validate_evaluation_policy(plan.get("five_trade_evaluation"))
+    validate_policy(settings["entry_protection"])
+    if (type(trade["max_posiciones"]) is not int or not 1 <= trade["max_posiciones"] <= 9
+            or trade["fraccion_saldo"] != 0.90):
+        raise ValueError("Bundle requires one to nine shared positions and a 90% fraction")
+    if (
+        trade["stop_loss_percentage"] != 0.22
+        or settings["exit"]["stop_loss_fraction"] != 0.25
+    ):
+        raise ValueError("Bundle requires a 22% initial stop and the unchanged ledger baseline")
+    required = {"strong-pressure-8k", "strength-21k", "first-block-four-buyers"}
+    if set(settings["strategies"]) != required:
+        raise ValueError(
+            "Exactly three on-chain policies and the Telegram source are required"
+        )
+    if not only_dev and not plan["filters"]["telegram_calls"].get("channels"):
+        raise ValueError("Telegram channels must be explicitly restricted")
+    if not only_dev and plan["filters"]["telegram_calls"].get("migrated_channels"):
+        raise ValueError("Migrated purchases are outside this bundle")
+    for key in required:
+        policy = settings["strategies"][key]
+        if policy["min_buyers"] <= 0 or policy["min_volume_usd"] <= 0:
+            raise ValueError("Positive demand thresholds are required")
+    build_review_ladder(8000, settings["exit"])
+    build_review_ladder(21000, settings["exit"])
+    second = load_second_policy(path, plan)
+    if only_dev and (not settings.get("enabled") or not second.get("enabled")):
+        raise ValueError("Only-dev mode requires an enabled dev strategy and shared coordinator")
+    return plan
+
+
+async def run_with_helius_limit(config_path: Path, *, only_dev: bool = False) -> None:
+    """End the whole live session after one hour, including entry and exit reads."""
+    import bot_runner
+
+    trader = asyncio.create_task(bot_runner.start_bot(str(config_path), only_dev=only_dev))
+    try:
+        done, _ = await asyncio.wait({trader}, timeout=MAX_RUN_SECONDS)
+        if done:
+            await trader
+            return
+        trader.cancel()
+        try:
+            await trader
+        except asyncio.CancelledError:
+            pass
+        print("LIMITE HELIUS: una hora cumplida; bot y vigilancia detenidos", flush=True)
+    finally:
+        if not trader.done():
+            trader.cancel()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--config", type=Path, default=ROOT / "configs/four-strategies.yaml"
+    )
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument(
+        "--run",
+        action="store_true",
+        help="Explicit execution; configuration must also have enabled: true",
+    )
+    modes.add_argument(
+        "--preflight", action="store_true", help="Read-only local readiness checks"
+    )
+    parser.add_argument(
+        "--online",
+        action="store_true",
+        help="Check configured services using read methods only",
+    )
+    parser.add_argument(
+        "--report", type=Path, help="Save the sanitized preflight report"
+    )
+    parser.add_argument("--only-dev", action="store_true", help="Accept dev-second-block entries only; preserve existing exits")
+    args = parser.parse_args()
+    plan = check_plan(args.config, only_dev=args.only_dev)
+    if (args.online or args.report) and not args.preflight:
+        parser.error("--online and --report require --preflight")
+    if args.preflight:
+        from trading.four_strategy_preflight import inspect_local, inspect_online
+
+        report = (
+            asyncio.run(inspect_online(plan, args.config, only_dev=args.only_dev))
+            if args.online
+            else inspect_local(plan, args.config, only_dev=args.only_dev)
+        )
+        rendered = json.dumps(report, indent=2, ensure_ascii=False)
+        if args.report:
+            args.report.parent.mkdir(parents=True, exist_ok=True)
+            args.report.write_text(rendered, encoding="utf-8")
+        print(rendered)
+        if report["status"] == "blocked":
+            raise SystemExit(2)
+        return
+    if not args.run:
+        from trading.second_block_policy import (
+            entry_balance_fraction,
+            load_second_policy,
+        )
+
+        second = load_second_policy(args.config, plan)
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "mode": "validation_only",
+                    "strategies": (["dev-second-block"] if args.only_dev else [
+                        *plan["four_strategies"]["strategies"], "telegram-immediate",
+                        *(["dev-second-block"] if second["enabled"] else []),
+                    ]),
+                    "entry_mode": "dev_only" if args.only_dev else "all",
+                    "entry_asset_policy": "normal_only",
+                    "max_live_runtime_seconds": MAX_RUN_SECONDS,
+                    "max_shared_positions": plan["trade"]["max_posiciones"],
+                    "entry_fraction_inclusive": entry_balance_fraction(args.config, plan, only_dev=args.only_dev),
+                    "entry_budget_cap_usd": second.get("max_entry_budget_usd") if args.only_dev else None,
+                    "initial_stop": plan["trade"]["stop_loss_percentage"],
+                    "enabled": plan["enabled"],
+                    "five_trade_evaluation": plan.get("five_trade_evaluation"),
+                    "second_block_dev": {"enabled": second["enabled"],
+                        "entry_rule": second.get("entry_rule", "second_block"),
+                        "entry_timing": second.get("entry_timing", "any_verified_time"),
+                        "require_dev_initial_buy": second.get("require_dev_initial_buy", False),
+                        "min_creator_migration_fraction": second.get("min_creator_migration_fraction"),
+                        "creator_migration_strictly_above": second.get("creator_migration_strictly_above", False),
+                        "batch_gate_enabled": second.get("batch_gate_enabled", True),
+                        "fee_identity_policy": "original_or_mint_sharing_config",
+                        "history_provider": second.get("history_provider"),
+                        "history_fallback_provider": second.get("history_fallback_provider"),
+                        "require_first_block_activity": second.get("require_first_block_activity", False),
+                        "min_distinct_first_block_buyers": second.get("min_distinct_first_block_buyers"),
+                        "min_first_block_volume_usd": second.get("min_first_block_volume_usd"),
+                        "buy_priority_fee_cap_usd": second.get("buy_priority_fee_cap_usd"),
+                        "sell_priority_fee_cap_usd": second.get("sell_priority_fee_cap_usd"),
+                        "entry_fraction_inclusive": second.get("balance_fraction"),
+                        "max_entry_budget_usd": second.get("max_entry_budget_usd"),
+                        "exit_definition": (second.get("exit") or {}).get("first_sale_mode", "absent")},
+                },
+                indent=2,
+            )
+        )
+        return
+    if not plan.get("enabled"):
+        parser.error("The configuration is disabled. Validation does not activate it.")
+    if Path.cwd().resolve() != ROOT:
+        parser.error(
+            "Run from the repository root so state and Telegram session paths agree"
+        )
+    from trading.four_strategy_preflight import inspect_online
+
+    readiness = asyncio.run(inspect_online(plan, args.config, only_dev=args.only_dev))
+    if not readiness["ready_for_manual_start"]:
+        print(json.dumps(readiness, indent=2, ensure_ascii=False))
+        parser.error("Read-only preflight found blockers; no trader was started")
+    # A process lock prevents duplicated websocket collectors on this ledger.
+    lock_path = Path(plan["four_strategies"]["database"]).with_suffix(".process.lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a+b") as process_lock:
+        if sys.platform == "win32":
+            import msvcrt
+
+            process_lock.seek(0)
+            process_lock.write(b"0")
+            process_lock.flush()
+            process_lock.seek(0)
+            msvcrt.locking(process_lock.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(process_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        asyncio.run(run_with_helius_limit(args.config, only_dev=args.only_dev))
+
+
+if __name__ == "__main__":
+    main()

@@ -129,12 +129,14 @@ class TelegramWatcher:
         session_name: str = "tg_watcher",
         suffixes: tuple[str, ...] = DEFAULT_SUFFIXES,
         channels: list[str | int] | None = None,
+        non_interactive: bool = False,
     ) -> None:
         self.api_id = api_id
         self.api_hash = api_hash
         self.session_name = session_name
         self.suffixes = tuple(suffixes)
         self.channels = channels
+        self.non_interactive = non_interactive
         self._seen: set[str] = set()
 
     async def run(self, on_call: Callable[[dict], Awaitable[None]]) -> None:
@@ -169,6 +171,9 @@ class TelegramWatcher:
                         "chat": chat,
                         "chat_username": chat_username,
                         "text": text[:280],
+                        "message_date": getattr(
+                            getattr(event, "message", None), "date", None
+                        ),
                     }
                 )
 
@@ -178,7 +183,14 @@ class TelegramWatcher:
             self.channels or "all",
         )
         try:
-            await client.start()
+            if self.non_interactive:
+                await client.connect()
+                if not await client.is_user_authorized():
+                    logger.warning("Telegram session is not authorized; keeping other sources active")
+                    await client.disconnect()
+                    return
+            else:
+                await client.start()
         except EOFError:
             logger.warning(
                 "Telegram session is not authorized and no interactive input is "

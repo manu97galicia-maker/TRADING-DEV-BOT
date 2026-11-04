@@ -1,0 +1,2 @@
+# Optional browser publisher, independent of the trading dependency lock.
+playwright>=1.56,<2

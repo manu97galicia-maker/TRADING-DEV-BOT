@@ -332,7 +332,7 @@ def configurar_avisos(solo: list[str] | bool | None) -> None:  # noqa: FBT001
 
     Tres formas de llamarla, y la de en medio es nueva:
 
-    * ``None`` (la clave no esta en el yaml) -> se manda TODO, como siempre.
+    * ``None`` o ``True`` -> se manda TODO.
     * ``False`` -> NO se manda NADA. Silencio total, avisos de caida incluidos.
     * una lista de tipos -> solo esos.
 
@@ -347,6 +347,8 @@ def configurar_avisos(solo: list[str] | bool | None) -> None:  # noqa: FBT001
         _TIPOS_PERMITIDOS = set()
         logger.info("Telegram: SILENCIADO (avisos_telegram: false)")
         return
+    if solo is True:
+        solo = None
     _TIPOS_PERMITIDOS = set(solo or [])
     if _TIPOS_PERMITIDOS:
         logger.info("Telegram: solo se avisara de %s", sorted(_TIPOS_PERMITIDOS))
@@ -427,6 +429,8 @@ def _reason_label(reason: str | None) -> str:  # noqa: PLR0911
     """Etiqueta legible del motivo de una venta (TP/SL/max-hold/manual/panic)."""
     if not reason:
         return ""
+    if reason == "muerta_sin_volumen":
+        return " · ⏱️ Sin actividad 5 min y bajo la entrada"
     r = reason.lower()
     if r.startswith("tp_tier"):
         gain = reason.split("_")[-1]  # p.ej. "+50%"

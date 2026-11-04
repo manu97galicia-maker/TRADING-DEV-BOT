@@ -211,3 +211,13 @@ wallets_generadas.json
 
 # Estado de ejecucion del bot (ficheros de claim por token)
 reservas/
+
+# Local four-strategy state and readiness reports (wallet/account metadata).
+estudios/four_strategies/runtime.sqlite3*
+estudios/four_strategies/*.process.lock
+estudios/four_strategies/readiness-*.json
+estudios/four_strategies/events.jsonl
+estudios/four_strategies/report.json
+trades/four_strategy_callouts.jsonl*
+.pumpfun-callout-profile/
+estudios/four_strategies/callout-publications.sqlite3*

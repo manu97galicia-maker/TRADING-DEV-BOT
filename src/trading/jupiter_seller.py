@@ -35,14 +35,16 @@ import os
 
 import aiohttp
 
+from trading.sell_precision import raw_sell_amount
+from trading.jupiter_access import API_BASE, jupiter_headers, wait_jupiter_slot
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 WSOL = "So11111111111111111111111111111111111111112"
-# Jupiter's current free ("lite") endpoints (v6 quote-api is deprecated).
-QUOTE_URL = "https://lite-api.jup.ag/swap/v1/quote"
-SWAP_URL = "https://lite-api.jup.ag/swap/v1/swap"
+# Official unified endpoint; optional API key and keyless spacing are shared.
+QUOTE_URL = f"{API_BASE}/swap/v1/quote"
+SWAP_URL = f"{API_BASE}/swap/v1/swap"
 
 #: Hard protocol limit for a serialised Solana transaction.
 MAX_TX_BYTES = 1232
@@ -64,7 +66,8 @@ async def _cotizar(
         # Sin esto Jupiter encadena 3 saltos y la tx no cabe en 1232 bytes.
         "restrictIntermediateTokens": "true",
     }
-    async with s.get(QUOTE_URL, params=params) as r:
+    await wait_jupiter_slot()
+    async with s.get(QUOTE_URL, params=params, headers=jupiter_headers()) as r:
         if r.status != 200:
             return None
         quote = await r.json()
@@ -82,7 +85,8 @@ async def _cotizar_compra(
         "slippageBps": str(slippage_bps),
         "restrictIntermediateTokens": "true",
     }
-    async with s.get(QUOTE_URL, params=params) as r:
+    await wait_jupiter_slot()
+    async with s.get(QUOTE_URL, params=params, headers=jupiter_headers()) as r:
         if r.status != 200:
             return None
         quote = await r.json()
@@ -99,7 +103,13 @@ async def _construir(
         "wrapAndUnwrapSol": True,
         "dynamicComputeUnitLimit": True,
     }
-    async with s.post(SWAP_URL, json=body) as r:
+    from trading.transaction_observer import PRIORITY_CAP
+
+    cap = PRIORITY_CAP.get()
+    if cap is not None:
+        body["prioritizationFeeLamports"] = cap
+    await wait_jupiter_slot()
+    async with s.post(SWAP_URL, json=body, headers=jupiter_headers()) as r:
         swap = await r.json()
     tx_b64 = swap.get("swapTransaction")
     if not tx_b64:
@@ -108,6 +118,19 @@ async def _construir(
     from solders.transaction import VersionedTransaction
 
     unsigned = VersionedTransaction.from_bytes(base64.b64decode(tx_b64))
+    if cap is not None:
+        units, rate = None, 0
+        for instruction in unsigned.message.instructions:
+            program = str(unsigned.message.account_keys[instruction.program_id_index])
+            data = bytes(instruction.data)
+            if program != "ComputeBudget111111111111111111111111111111":
+                continue
+            if len(data) == 5 and data[0] == 2:
+                units = int.from_bytes(data[1:], "little")
+            elif len(data) == 9 and data[0] == 3:
+                rate = int.from_bytes(data[1:], "little")
+        if rate and (units is None or (units * rate + 999999) // 1000000 > cap):
+            return None
     signed = VersionedTransaction(unsigned.message, [keypair])
     raw = bytes(signed)
     return raw, len(raw)
@@ -191,9 +214,13 @@ async def jupiter_sell(
         possible, since a fallback slice sells less than requested.
     """
     rpc = rpc or os.getenv("SOLANA_NODE_RPC_ENDPOINT")
+    from trading.transaction_observer import OBSERVER, SUBMISSIONS, observe
+
+    if OBSERVER.get() is not None and SUBMISSIONS.get():
+        return False, None, "A curve submission is unresolved; no duplicate routed exit", 0.0
     if not rpc:
         return False, None, "RPC no configurado", 0.0
-    total = int(ui_amount * (10**decimals))
+    total = raw_sell_amount(ui_amount, decimals)
     if total <= 0:
         return False, None, "cantidad cero", 0.0
 
@@ -226,6 +253,10 @@ async def jupiter_sell(
                     motivos.append(f"{etiqueta}: simulacion {err[:60]}")
                     continue
 
+                from solders.transaction import VersionedTransaction
+
+                observed_signature = str(VersionedTransaction.from_bytes(raw).signatures[0])
+                observe("signed", observed_signature)
                 res = await _rpc(
                     s,
                     rpc,
@@ -236,6 +267,11 @@ async def jupiter_sell(
                     ],
                 )
                 if "error" in res:
+                    error = res["error"]
+                    if isinstance(error, dict) and error.get("code") == -32002 and (error.get("data") or {}).get("err") is not None:
+                        observe("preflight_rejected", observed_signature)
+                    elif OBSERVER.get() is not None:
+                        return False, observed_signature, "Routed exit submission unresolved", 0.0
                     motivos.append(f"{etiqueta}: envio {json.dumps(res['error'])[:60]}")
                     continue
 

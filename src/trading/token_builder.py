@@ -21,13 +21,15 @@ from time import monotonic
 
 from solders.pubkey import Pubkey
 
+from core.pubkeys import TOKEN_2022_PROGRAM, TOKEN_PROGRAM
 from interfaces.core import Platform, TokenInfo
+from trading.dev_entry_reads import remember_mint_program
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-async def build_pumpfun_token_info(  # noqa: PLR0913
+async def build_pumpfun_token_info(  # noqa: C901, PLR0911, PLR0913 -- independent account rejection paths
     mint_str: str,
     platform_impls: object,
     client: object,
@@ -85,15 +87,16 @@ async def build_pumpfun_token_info(  # noqa: PLR0913
     # nada; lo unico que cambia es que un estado ilegible se detecta abajo, a
     # mano, en vez de por excepcion.
     #
-    # `commitment="processed"` porque es el que usa el resto del camino de
-    # compra: el "confirmed" por defecto va 1-2 slots por detras, y en una
-    # moneda que se mueve eso es leer un precio que ya no existe.
+    # Leer ambas cuentas con `processed`, como el resto del camino de compra.
+    # El cliente puede usar `finalized` por defecto: un mint recien creado
+    # puede faltar ahi aunque su curva ya sea visible con `processed`.
+    mint_read_started = monotonic()
     try:
         state, mint_acct = await asyncio.gather(
             curve_manager.get_pool_state(
                 bonding_curve, commitment="processed", exigir_precio=False
             ),
-            client.get_account_info(mint),
+            client.get_account_info(mint, commitment="processed"),
         )
     except Exception:  # noqa: BLE001 -- unreadable curve => can't safely buy
         logger.warning("Could not read curve state for %s; skipping", mint_str)
@@ -134,6 +137,8 @@ async def build_pumpfun_token_info(  # noqa: PLR0913
             "Could not read token program for %s; skipping (won't guess)", mint_str
         )
         return None
+    if str(token_program_id) in {str(TOKEN_PROGRAM), str(TOKEN_2022_PROGRAM)}:
+        remember_mint_program(mint, token_program_id, now=mint_read_started)
 
     token_info = TokenInfo(
         name=name or symbol or str(mint),

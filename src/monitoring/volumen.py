@@ -349,12 +349,14 @@ def registrar_bloque_inicial(mint: str, slot: int | None) -> None:
         _first_slot_sol[mint] = 0.0
 
 
-def registrar_logs(logs: list[str], slot: int | None = None) -> list[str]:
+def registrar_logs(logs: list[str], slot: int | None = None, *, allowed_mints: set[str] | None = None) -> list[str]:
     """Apunta las operaciones que aparezcan en estos logs. No lanza nunca.
 
     Se llama para CADA notificacion del websocket, incluidas las que no son
     creaciones, asi que tiene que ser barata y silenciosa: un fallo aqui no
     puede tumbar la deteccion de monedas nuevas.
+    ``allowed_mints`` limita la agregacion a posiciones vigiladas; ``None``
+    conserva el registro de todos los mints para las fuentes generales.
 
     Returns:
         Las monedas que han operado en estos logs, en orden y sin repetir. Asi
@@ -375,6 +377,8 @@ def registrar_logs(logs: list[str], slot: int | None = None) -> list[str]:
         try:
             cuerpo = crudo[8:]
             mint = _b58(cuerpo[:32])
+            if allowed_mints is not None and mint not in allowed_mints:
+                continue
             sol_lamports = struct.unpack_from("<Q", cuerpo, 32)[0]
             # Layout de TradeEvent:
             #   mint(32) sol_amount(8) token_amount(8) is_buy(1) user(32) ...
