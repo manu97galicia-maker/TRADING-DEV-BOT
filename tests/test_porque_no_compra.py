@@ -68,3 +68,16 @@ def test_un_dev_sin_monedas_previas_no_es_una_averia(tmp_path: Path) -> None:
     assert "el respaldo por Helius esta funcionando" in salida
     assert "devs SIN ninguna moneda antes: 5" in salida
     assert "falla" not in salida
+
+
+def test_una_moneda_creada_por_un_programa_no_es_una_averia(tmp_path: Path) -> None:
+    linea = ("WARNING:p:Historial del dev Abc12345 por la cadena no disponible "
+             "(HistoryUnavailableError: Developer must be a creation signer wallet)\n")
+    otra = ("WARNING:p:Historial del dev Zzz12345 por la cadena no disponible "
+            "(HistoryUnavailableError: Unverifiable historical creation evidence)\n")
+    log = ("WARNING:p:pump.fun contesta 403 al pedir el historial del dev; se usa la cadena (Helius)\n"
+           + linea * 11 + otra)
+    salida = _correr(tmp_path, log)
+    assert "creadas por un PROGRAMA, no por una persona: 11" in salida
+    # La rara si cuenta como averia, y solo ella.
+    assert "el respaldo por Helius falla (1 veces)" in salida

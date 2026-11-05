@@ -57,18 +57,27 @@ cadena_mal=$(n "por la cadena no disponible")
 # "No verified creation history" = el dev no ha creado ninguna moneda antes.
 # No es una averia: es lo normal en pump.fun, y descartarlo es lo correcto.
 nuevos=$(n "No verified creation history")
-averias=$(( cadena_mal - nuevos ))
+# "Developer must be a creation signer wallet" = la moneda la creo un
+# PROGRAMA (plataforma de lanzamientos, contrato de un bot), no una persona:
+# no hay historial de dev que mirar. Tampoco es averia, y no gasta Helius
+# (se descarta antes de consultar nada).
+programas=$(n "Developer must be a creation signer wallet")
+averias=$(( cadena_mal - nuevos - programas ))
 if [ "$respaldo" -eq 0 ] && [ "$cod" != "200" ]; then
   mal "el bot NO esta usando el respaldo por Helius: arranco con codigo viejo (reinicialo)"
 elif [ "$averias" -gt 0 ]; then
   mal "el respaldo por Helius falla ($averias veces). Motivos:"
-  grep -h "por la cadena no disponible" "$LOG" | grep -v "No verified creation history" \
+  grep -h "por la cadena no disponible" "$LOG" \
+    | grep -v -e "No verified creation history" -e "Developer must be a creation signer wallet" \
     | sed -E 's/.*\((.*)\)$/\1/' | sort | uniq -c | sort -rn | head -4
 else
   ok "el respaldo por Helius esta funcionando"
 fi
 if [ "$nuevos" -gt 0 ]; then
   echo "  ..    devs SIN ninguna moneda antes: $nuevos (lo normal; se descartan bien)"
+fi
+if [ "$programas" -gt 0 ]; then
+  echo "  ..    monedas creadas por un PROGRAMA, no por una persona: $programas (sin historial que mirar; se descartan bien)"
 fi
 if [ "$devno" -gt 0 ] && [ "$cero" -eq "$devno" ] && [ "$devok" -eq 0 ]; then
   mal "TODOS los rechazados salen con 0 lanzadas: el dato del dev no esta llegando"
