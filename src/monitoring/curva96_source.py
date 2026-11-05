@@ -323,13 +323,14 @@ class Curva96Source:
             return True
 
         if self.max_edad_seg > 0 and edad > self.max_edad_seg:
+            # En SEGUNDOS (5-nov): con max_edad_seg 2 el texto viejo ("0 min
+            # de vida (máx 0 min), lleva horas sin migrar") mentia.
             logger.info(
-                "Evitado %s (%s): %.0f min de vida pegada a la curva "
-                "(máx %.0f min) — lleva horas sin migrar, está atascada",
+                "Evitado %s (%s): %.1f s de vida (máx %.0f s), ya no es nueva",
                 symbol,
                 mint,
-                edad / 60,
-                self.max_edad_seg / 60,
+                edad,
+                self.max_edad_seg,
             )
             self._cuenta("demasiado_vieja")
             return True

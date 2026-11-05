@@ -184,3 +184,23 @@ def test_el_stop_sale_rapido_como_en_el_bot_real_anterior() -> None:
     assert int(fees["hard_cap"]) >= int(fees["fixed_amount_venta_proteccion"])
     assert t["sell_slippage_proteccion"] == 0.50
     assert t["sell_slippage"] == 0.25
+
+
+def test_solo_monedas_nuevas_de_hasta_2_segundos() -> None:
+    """5-nov: "Tienen que ser proyectos nuevos" -> "Edad maxima 2 seg"."""
+    c96 = CFG["filters"]["curva_96"]
+    assert c96["max_edad_seg"] == 2
+    assert c96.get("min_edad_seg", 0) == 0
+
+
+def test_la_ventana_de_2_segundos_funciona_de_verdad() -> None:
+    """1,5 s pasa; 2,5 s no; sin haberla visto nacer, tampoco."""
+    from test_ventana_de_edad import _con_edad, _fuente
+
+    c96 = CFG["filters"]["curva_96"]
+    f = _fuente(min_edad_seg=c96.get("min_edad_seg", 0), max_edad_seg=c96["max_edad_seg"])
+    _con_edad("nueva", 1.5)
+    assert f._fuera_de_edad("nueva", "NUEVA") is False
+    _con_edad("pasada", 2.5)
+    assert f._fuera_de_edad("pasada", "PASADA") is True
+    assert f._fuera_de_edad("nunca-vista-nacer", "TARDE") is True

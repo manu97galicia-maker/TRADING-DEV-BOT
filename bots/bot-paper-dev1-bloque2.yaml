@@ -225,6 +225,14 @@ filters:
     max_bundle_pct: 0
     max_bundle_pct_sin_historia: 0
     heartbeat_interval: 300
+    # EDAD MAXIMA 2 SEGUNDOS, pedido el 5-nov: "Tienen que ser proyectos
+    # nuevos" -> "Edad maxima 2 seg". La edad solo se sabe de las monedas que
+    # el bot VIO NACER (monitoring/volumen.py, `edad`); las vistas tarde tienen
+    # edad desconocida y se descartan (curva96_source.py, `_fuera_de_edad`).
+    # Se mira al detectar la moneda, en memoria y sin llamar al nodo. La
+    # compra va despues: el dato del dev puede tardar hasta 9 s (timeout_seg).
+    min_edad_seg: 0
+    max_edad_seg: 2
 
   # DEV: minimo 1% de sus monedas migradas, y por tanto al menos una.
   # tasa = migradas / lanzadas, de sus ultimas 200 monedas en la API de
