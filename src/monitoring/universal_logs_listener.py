@@ -234,7 +234,9 @@ class UniversalLogsListener(BaseTokenListener):
                         # Y su historial empieza a leerse YA, a la vez que se
                         # monta la ficha (ver `precalentar`, 5-nov).
                         if _dev:
-                            from monitoring.pumpfun_dev import precalentar  # noqa: PLC0415
+                            from monitoring.pumpfun_dev import (  # noqa: PLC0415
+                                precalentar,
+                            )
 
                             precalentar(str(_dev))
                     except Exception:  # noqa: BLE001, S110
