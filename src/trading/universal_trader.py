@@ -1144,6 +1144,13 @@ class UniversalTrader:
 
         # Pump.fun creator-migration filter config (off unless enabled).
         self.pumpfun_dev = pumpfun_dev or {}
+        # Si pump.fun no contesta (al droplet le da 403, 5-nov), el historial
+        # del dev se lee de la cadena por este mismo nodo. Ver
+        # `usar_rpc_de_respaldo` en monitoring/pumpfun_dev.py.
+        if self.pumpfun_dev.get("enabled"):
+            from monitoring.pumpfun_dev import usar_rpc_de_respaldo  # noqa: PLC0415
+
+            usar_rpc_de_respaldo(self.solana_client.post_rpc)
         # Copy-trading config (off unless enabled).
         self.copy_wallets = copy_wallets or {}
         # Allow mayhem-mode tokens for this strategy (default: avoid).
