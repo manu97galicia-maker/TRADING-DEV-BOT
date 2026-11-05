@@ -4094,8 +4094,9 @@ class UniversalTrader:
                 if _dev0:
                     from monitoring.pumpfun_dev import creator_migration_stats
 
-                    if self.pumpfun_dev.get("compra_inmediata") and not (
-                        self._es_marcado(token_info)
+                    if self.pumpfun_dev.get("compra_inmediata") and (
+                        self.pumpfun_dev.get("strict_only", False)
+                        or not self._es_marcado(token_info)
                     ):
                         _tope_api = float(
                             self.pumpfun_dev.get("timeout_seg", 2.0) or 2.0
@@ -4128,7 +4129,7 @@ class UniversalTrader:
                             _min_med = float(
                                 self.dev_mediana.get("min_mediana_mc") or 0
                             )
-                            if _min_med > 0:
+                            if _min_med > 0 and not self.pumpfun_dev.get("strict_only", False):
                                 from monitoring.pumpfun_dev import mediana_pico
 
                                 _med = mediana_pico(
@@ -4898,8 +4899,9 @@ class UniversalTrader:
                 # Pump.fun creator-migration filter (dev's track record via the
                 # pump.fun API — the data RugCheck lacks). Buy only if the dev
                 # has migrated >= min_migrations tokens AND rate >= min_rate.
-                if self.pumpfun_dev.get("enabled") and not self._es_marcado(
-                    token_info
+                if self.pumpfun_dev.get("enabled") and (
+                    self.pumpfun_dev.get("strict_only", False)
+                    or not self._es_marcado(token_info)
                 ):
                     creator = identidad_del_dev(token_info)
                     if not creator:

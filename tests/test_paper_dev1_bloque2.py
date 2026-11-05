@@ -39,13 +39,11 @@ def test_dev_con_minimo_un_uno_por_ciento_de_migradas() -> None:
     assert dev["min_rate"] == 0.01
     # "1% de migradas" exige al menos una: con 0 migradas la tasa es 0.
     assert dev["min_migrations"] == 1
-    # 5-nov: el 1% es la unica condicion; se compra en cuanto pasa (y despues
-    # del dato del dev se vuelve a mirar la edad).
+    # 5-nov: el 1% es la unica condicion y no admite rutas alternativas.
     assert dev["compra_inmediata"] is True
     assert dev["timeout_seg"] >= 9
-    # Las listas de Manu (blacklist manual y auto-baneo por rugs) siguen
-    # mandando: el 1% se suma a ellas, no las sustituye.
-    assert CFG["filters"]["ignorar_listas_de_devs"] is False
+    assert dev["strict_only"] is True
+    assert CFG["filters"]["ignorar_listas_de_devs"] is True
 
 
 def test_el_dev_es_la_unica_condicion_de_entrada() -> None:
@@ -58,12 +56,16 @@ def test_el_dev_es_la_unica_condicion_de_entrada() -> None:
     assert f["max_first_block_usd"] == 0
     assert f["buy_from_second_block"] is False
     assert f["second_block_confirmation"]["enabled"] is False
-    # Lo que NO se pidio quitar sigue: sin mayhem, listas de devs.
-    # El tope de market cap se quito el 5-nov ("Elimina lo del mcap").
+    # No quedan filtros de MC, edad, Mayhem, listas ni bloques.
     assert f["max_entry_mc"] == 0
     assert f.get("min_entry_mc", 0) == 0
-    assert f["allow_mayhem"] is False
-    assert f["ignorar_listas_de_devs"] is False
+    assert f["max_buy_age"] == 0
+    assert f["allow_mayhem"] is True
+    assert f["require_mayhem"] is False
+    assert f["ignorar_listas_de_devs"] is True
+    assert f["curva_96"]["min_edad_seg"] == 0
+    assert f["curva_96"]["max_edad_seg"] == 0
+    assert f["curva_96"]["tope"] == 1.0
 
 
 def test_la_compra_paga_doce_centimos_de_priority_fee() -> None:
@@ -89,7 +91,7 @@ def test_los_filtros_corren_antes_del_corte_de_papel() -> None:
     """Si el corte de papel fuera antes, la prueba en papel no mediria nada."""
     corte = TRADER.index("            if self.paper_trade:")
     assert TRADER.index('if self.pumpfun_dev.get("compra_inmediata")') < corte
-    assert TRADER.index('if self.pumpfun_dev.get("enabled") and not self._es_marcado(') < corte
+    assert TRADER.index('if self.pumpfun_dev.get("enabled"):') < corte
 
 
 def test_plazas_que_el_nodo_vigila_y_reserva_para_vender() -> None:
@@ -134,9 +136,8 @@ def test_sin_tope_de_market_cap() -> None:
     """5-nov: "Elimina lo del mcap". Sin tope no se lee la curva para eso."""
     assert CFG["filters"]["max_entry_mc"] == 0
 
-def test_sin_mayhem() -> None:
-    # "no mayhem" (4-nov).
-    assert CFG["filters"]["allow_mayhem"] is False
+def test_mayhem_no_es_un_filtro_adicional() -> None:
+    assert CFG["filters"]["allow_mayhem"] is True
     assert CFG["filters"]["require_mayhem"] is False
 
 
@@ -174,15 +175,13 @@ def test_el_stop_sale_rapido_como_en_el_bot_real_anterior() -> None:
     assert t["sell_slippage"] == 0.25
 
 
-def test_solo_monedas_nuevas_de_hasta_3_segundos() -> None:
-    """5-nov: "Edad maxima 2 seg" -> "Pon 3 segundos de vida maxima"."""
+def test_sin_filtro_de_edad() -> None:
     c96 = CFG["filters"]["curva_96"]
-    assert c96["max_edad_seg"] == 3
+    assert c96["max_edad_seg"] == 0
     assert c96.get("min_edad_seg", 0) == 0
 
 
-def test_la_ventana_de_2_segundos_funciona_de_verdad() -> None:
-    """2,5 s pasa; 3,5 s no; sin haberla visto nacer, tampoco."""
+def test_edad_desactivada_acepta_cualquier_edad() -> None:
     from test_ventana_de_edad import _con_edad, _fuente
 
     c96 = CFG["filters"]["curva_96"]
@@ -190,16 +189,11 @@ def test_la_ventana_de_2_segundos_funciona_de_verdad() -> None:
     _con_edad("nueva", 2.5)
     assert f._fuera_de_edad("nueva", "NUEVA") is False
     _con_edad("pasada", 3.5)
-    assert f._fuera_de_edad("pasada", "PASADA") is True
-    assert f._fuera_de_edad("nunca-vista-nacer", "TARDE") is True
+    assert f._fuera_de_edad("pasada", "PASADA") is False
+    assert f._fuera_de_edad("nunca-vista-nacer", "TARDE") is False
 
 
-def test_la_edad_se_vuelve_a_mirar_justo_antes_de_comprar() -> None:
-    """5-nov: "que hace comprando esta? Tiene que tener menos de 2 segundos".
-
-    La ventana de curva96 se mira al DETECTAR; la lectura del dev puede tardar
-    segundos. Aqui se mira otra vez justo antes de comprar.
-    """
+def test_sin_edad_no_hay_rechazo_antes_de_comprar() -> None:
     from types import SimpleNamespace
 
     from test_ventana_de_edad import _con_edad
@@ -216,13 +210,12 @@ def test_la_edad_se_vuelve_a_mirar_justo_antes_de_comprar() -> None:
     _con_edad("rapida", 2.4)
     assert comprobar(yo, SimpleNamespace(mint="rapida", symbol="R")) is False
     _con_edad("lenta", 3.6)
-    assert comprobar(yo, SimpleNamespace(mint="lenta", symbol="L")) is True
-    assert "ya tiene 3.6 s al ir a comprar (máx 3 s)" in motivos[-1]
-    assert comprobar(yo, SimpleNamespace(mint="nunca-vista", symbol="N")) is True
-    assert "edad desconocida" in motivos[-1]
+    assert comprobar(yo, SimpleNamespace(mint="lenta", symbol="L")) is False
+    assert comprobar(yo, SimpleNamespace(mint="nunca-vista", symbol="N")) is False
+    assert motivos == []
 
 
-def test_la_segunda_mirada_va_despues_del_dev_y_del_tope_y_antes_de_comprar() -> None:
-    segunda = TRADER.index("if self._demasiado_vieja_para_comprar(token_info):")
-    assert TRADER.index('if self.pumpfun_dev.get("enabled") and not self._es_marcado(') < segunda
-    assert segunda < TRADER.index("            if self.paper_trade:")
+def test_ni_marcados_ni_mediana_pueden_saltarse_el_uno_por_ciento() -> None:
+    assert TRADER.count('self.pumpfun_dev.get("strict_only", False)') >= 3
+    assert 'or not self._es_marcado(token_info)' in TRADER
+    assert 'not self.pumpfun_dev.get("strict_only", False)' in TRADER
