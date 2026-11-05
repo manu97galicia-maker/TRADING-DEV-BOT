@@ -186,3 +186,109 @@ def test_un_dev_sin_monedas_previas_queda_dicho_en_el_log(caplog):
     with _pumpfun(403):
         assert asyncio.run(pumpfun_dev.creator_migration_stats(str(dev))) == (0, 0, 0.0)
     assert "No verified creation history" in caplog.text
+
+
+# --- Tolerancia (5-nov): 42 de 67 fallos eran logs cortados en UNA tx ---------
+
+import base58 as _b58  # noqa: E402
+
+_CREAR_V2 = bytes.fromhex("d6904cec5f8b31b4")
+_COMPRAR = bytes.fromhex("66063d1201daebea")
+
+
+def _cortada(dev, *, instruccion, firma="sig-cortada", slot=70):
+    """Una tx del dev con los logs cortados por Solana."""
+    t = tx(dev, Pubkey.new_unique(), slot=slot)
+    t["transaction"]["signatures"] = [firma]
+    t["meta"]["logMessages"] = ["Program 6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P invoke [1]",
+                                "Log truncated"]
+    t["transaction"]["message"]["instructions"] = [
+        {"programIdIndex": 1, "accounts": [], "data": _b58.b58encode(instruccion + b"x" * 8).decode()}
+    ]
+    return t
+
+
+def _nodo(dev, paginas, cuentas=None, fallos_primero=0):
+    estado = {"fallos": fallos_primero}
+
+    async def post_rpc(body):
+        metodo, params = body["method"], body["params"]
+        if metodo == "getSlot":
+            return {"result": 100}
+        if metodo == "getTransactionsForAddress":
+            if estado["fallos"]:
+                estado["fallos"] -= 1
+                return {"error": {"code": -32000, "message": "temporal"}}
+            return {"result": paginas.pop(0)}
+        return {"result": {"context": {"slot": 100},
+                           "value": [(cuentas or {}).get(a) for a in params[0]]}}
+
+    return post_rpc
+
+
+def _con_migrada(dev):
+    buena = Pubkey.new_unique()
+    curva, pool = migration_accounts(dev, buena)
+    return tx(dev, buena), {curve_address(str(buena)): curva, pool_address(str(buena))[0]: pool}
+
+
+def test_una_creacion_ilegible_cuenta_como_lanzada_no_migrada():
+    dev = Keypair().pubkey()
+    buena, cuentas = _con_migrada(dev)
+    paginas = [{"data": [buena, _cortada(dev, instruccion=_CREAR_V2)], "paginationToken": None}]
+    pumpfun_dev.usar_rpc_de_respaldo(_nodo(dev, paginas, cuentas))
+    with _pumpfun(403):
+        res = asyncio.run(pumpfun_dev.creator_migration_stats(str(dev)))
+    # Antes: TODO el historial invalido -> (0, 0, 0). Ahora: 2 lanzadas, 1 migrada.
+    assert res == (2, 1, 0.5)
+
+
+def test_una_compra_ilegible_se_ignora():
+    dev = Keypair().pubkey()
+    buena, cuentas = _con_migrada(dev)
+    paginas = [{"data": [buena, _cortada(dev, instruccion=_COMPRAR)], "paginationToken": None}]
+    pumpfun_dev.usar_rpc_de_respaldo(_nodo(dev, paginas, cuentas))
+    with _pumpfun(403):
+        assert asyncio.run(pumpfun_dev.creator_migration_stats(str(dev))) == (1, 1, 1.0)
+
+
+def test_lo_ilegible_nunca_sube_el_porcentaje():
+    """La propiedad que protege el dinero: con dudas, el % solo baja."""
+    dev = Keypair().pubkey()
+    buena, cuentas = _con_migrada(dev)
+    cortadas = [_cortada(dev, instruccion=_CREAR_V2, firma=f"s{i}", slot=60 - i) for i in range(9)]
+    paginas = [{"data": [buena, *cortadas], "paginationToken": None}]
+    pumpfun_dev.usar_rpc_de_respaldo(_nodo(dev, paginas, cuentas))
+    with _pumpfun(403):
+        lanzadas, migradas, tasa = asyncio.run(pumpfun_dev.creator_migration_stats(str(dev)))
+    assert (lanzadas, migradas) == (10, 1)
+    assert tasa == 0.1  # 1 de 10, aunque las 9 dudosas pudieran haber migrado
+
+
+def test_un_fallo_puntual_de_helius_se_reintenta():
+    dev = Keypair().pubkey()
+    buena, cuentas = _con_migrada(dev)
+    paginas = [{"data": [buena], "paginationToken": None}]
+    pumpfun_dev.usar_rpc_de_respaldo(_nodo(dev, paginas, cuentas, fallos_primero=1))
+    with _pumpfun(403):
+        assert asyncio.run(pumpfun_dev.creator_migration_stats(str(dev))) == (1, 1, 1.0)
+
+
+def test_dos_fallos_seguidos_dan_sin_dato_y_dicen_el_motivo(caplog):
+    import logging
+
+    dev = Keypair().pubkey()
+    pumpfun_dev.usar_rpc_de_respaldo(_nodo(dev, [], fallos_primero=2))
+    caplog.set_level(logging.WARNING)
+    with _pumpfun(403):
+        assert asyncio.run(pumpfun_dev.creator_migration_stats(str(dev))) == (0, 0, 0.0)
+    assert "getTransactionsForAddress: temporal" in caplog.text
+
+
+def test_pagina_sin_marca_de_siguiente_es_el_final():
+    dev = Keypair().pubkey()
+    buena, cuentas = _con_migrada(dev)
+    paginas = [{"data": [buena]}]  # sin "paginationToken"
+    pumpfun_dev.usar_rpc_de_respaldo(_nodo(dev, paginas, cuentas))
+    with _pumpfun(403):
+        assert asyncio.run(pumpfun_dev.creator_migration_stats(str(dev))) == (1, 1, 1.0)

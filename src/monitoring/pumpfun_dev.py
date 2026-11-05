@@ -16,6 +16,8 @@ import asyncio
 import time
 
 import aiohttp
+import base58
+from solders.pubkey import Pubkey
 
 from utils.logger import get_logger
 
@@ -85,26 +87,151 @@ def usar_rpc_de_respaldo(post_rpc: object) -> None:
 
 
 async def _rpc(method: str, params: list) -> object:
-    data = await _rpc_respaldo(
-        {"jsonrpc": "2.0", "id": 1, "method": method, "params": params}
+    """Una llamada al nodo, con UN reintento (5-nov: 22 de 67 fallos eran
+    "sin respuesta del nodo para getTransactionsForAddress")."""
+    motivo = ""
+    for intento in range(2):
+        if intento:
+            await asyncio.sleep(0.5)
+        data = await _rpc_respaldo(
+            {"jsonrpc": "2.0", "id": 1, "method": method, "params": params}
+        )
+        if data and not data.get("error") and data.get("result") is not None:
+            return data["result"]
+        # El mensaje de error de Helius (p. ej. "method not available"), corto.
+        # No lleva la clave: la clave va en la URL, no en la respuesta.
+        error = (data or {}).get("error") or {}
+        motivo = str(error.get("message", ""))[:80] if isinstance(error, dict) else ""
+    raise RuntimeError(
+        f"sin respuesta del nodo para {method}" + (f": {motivo}" if motivo else "")
     )
-    if not data or data.get("error") or data.get("result") is None:
-        raise RuntimeError(f"sin respuesta del nodo para {method}")  # noqa: TRY003
-    return data["result"]
+
+
+#: Las dos instrucciones de pump.fun que crean una moneda (comprobado contra
+#: idl/pump_fun_idl.json: create = 181ec828051c0777, create_v2 = d6904cec5f8b31b4).
+_CREAR = {
+    bytes.fromhex("181ec828051c0777"),
+    bytes.fromhex("d6904cec5f8b31b4"),
+}
+_PUMP = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
+
+
+def _creacion_firmada_sin_logs(tx: dict, developer: str) -> bool:
+    """¿Esta transaccion crea una moneda de pump.fun firmada por `developer`?
+
+    Se mira la INSTRUCCION, no los logs: es lo que se usa cuando los logs no
+    se pueden leer (Solana los corta en las transacciones largas).
+    """
+    try:
+        message = tx["transaction"]["message"]
+        meta = tx.get("meta") or {}
+        keys = list(message["accountKeys"])
+        firmantes = keys[: int(message["header"]["numRequiredSignatures"])]
+        if developer not in firmantes:
+            return False
+        cargadas = meta.get("loadedAddresses") or {}
+        todas = [*keys, *cargadas.get("writable", []), *cargadas.get("readonly", [])]
+        instrucciones = list(message.get("instructions") or [])
+        for interna in meta.get("innerInstructions") or []:
+            instrucciones.extend(interna.get("instructions") or [])
+        for ix in instrucciones:
+            i = ix.get("programIdIndex")
+            if not isinstance(i, int) or not 0 <= i < len(todas) or todas[i] != _PUMP:
+                continue
+            if base58.b58decode(ix.get("data") or "")[:8] in _CREAR:
+                return True
+    except Exception:  # noqa: BLE001
+        # Ni siquiera se sabe si es una creacion: se cuenta como si lo fuera.
+        # Asi el porcentaje solo puede salir MAS BAJO, nunca mas alto.
+        return True
+    return False
+
+
+async def _historial_tolerante(developer: str) -> tuple[int, int]:  # noqa: C901, PLR0912 -- cada tx ilegible tiene que decidirse aparte
+    """(lanzadas, migradas) leidas de la cadena, tolerando transacciones ilegibles.
+
+    5-nov: el lector de Codex da por invalido TODO el historial si una sola
+    transaccion trae los logs cortados ("log truncated"): 42 de 67 fallos en
+    el droplet eran eso ("Unverifiable historical creation evidence"). Aqui:
+
+      - lo que se puede leer, se lee con las piezas de Codex
+        (`creation_mints`, `verify_migrations`);
+      - una transaccion ilegible que SI crea una moneda firmada por el dev
+        cuenta como LANZADA Y NO MIGRADA: la peor suposicion. El porcentaje
+        solo puede salir mas bajo que el real, nunca mas alto, asi que nunca
+        se compra por error a un dev que no llega al 1%;
+      - una ilegible que no crea nada (una compra o una venta) se ignora.
+    """
+    from monitoring.creator_history_index import (  # noqa: PLC0415
+        HistoryUnavailableError,
+    )
+    from monitoring.creator_transaction_history import (  # noqa: PLC0415
+        creation_mints,
+        verify_migrations,
+    )
+
+    pol = _POLITICA_HELIUS
+    if not Pubkey.from_string(developer).is_on_curve():
+        raise HistoryUnavailableError("Developer must be a creation signer wallet")  # noqa: TRY003
+    anchor = await _rpc("getSlot", [{"commitment": "finalized"}])
+    if type(anchor) is not int or anchor <= 0:
+        raise HistoryUnavailableError("Finalized history anchor unavailable")  # noqa: TRY003
+    cursor, vistas, mints, dudosas = None, set(), set(), 0
+    for _ in range(pol["history_max_pages"]):
+        config = {
+            "transactionDetails": "full", "limit": pol["history_page_size"],
+            "sortOrder": "desc", "encoding": "json",
+            "maxSupportedTransactionVersion": 1, "commitment": "finalized",
+            "minContextSlot": anchor,
+            "filters": {"status": "succeeded", "tokenAccounts": "none",
+                        "slot": {"lte": anchor}},
+        }
+        if cursor:
+            config["paginationToken"] = cursor
+        page = await _rpc("getTransactionsForAddress", [developer, config])
+        datos = page.get("data") if isinstance(page, dict) else None
+        if not isinstance(datos, list):
+            raise HistoryUnavailableError("Incomplete historical page")  # noqa: TRY003
+        for tx in datos:
+            try:
+                firma = tx["transaction"]["signatures"][0]
+            except (KeyError, IndexError, TypeError):
+                firma = None
+            if firma is not None and firma in vistas:
+                continue
+            vistas.add(firma)
+            if len(vistas) > pol["history_max_transactions"]:
+                raise HistoryUnavailableError("Historical transaction bound reached")  # noqa: TRY003
+            try:
+                mints |= creation_mints(tx, developer)
+            except Exception:  # noqa: BLE001
+                if _creacion_firmada_sin_logs(tx, developer):
+                    dudosas += 1
+        cursor = page.get("paginationToken")
+        if not cursor:
+            break
+    else:
+        raise HistoryUnavailableError("Historical pagination bound reached")  # noqa: TRY003
+    if not mints and not dudosas:
+        raise HistoryUnavailableError("No verified creation history")  # noqa: TRY003
+    migradas = set()
+    if mints:
+        migradas, _ = await verify_migrations(mints, _rpc, pol, anchor)
+    if dudosas:
+        logger.info(
+            "Historial del dev %s: %d creaciones ilegibles contadas como no "
+            "migradas (lo prudente)", developer[:8], dudosas,
+        )
+    return len(mints) + dudosas, len(migradas)
 
 
 async def _por_la_cadena(creator: str) -> tuple[int, int] | None:
     """(lanzadas, migradas) leidas de la cadena, o None si no se pudo."""
     if _rpc_respaldo is None:
         return None
-    from monitoring.creator_transaction_history import (  # noqa: PLC0415
-        read_transaction_history,
-    )
-
     try:
-        foto = await asyncio.wait_for(
-            read_transaction_history(creator, _rpc, _POLITICA_HELIUS),
-            timeout=_ESPERA_HELIUS,
+        leido = await asyncio.wait_for(
+            _historial_tolerante(creator), timeout=_ESPERA_HELIUS
         )
     except Exception as error:  # noqa: BLE001
         # EL MOTIVO, NO SOLO EL TIPO (5-nov): con solo "HistoryUnavailableError"
@@ -123,7 +250,7 @@ async def _por_la_cadena(creator: str) -> tuple[int, int] | None:
             f"{type(error).__name__}: {error}" if fijo else type(error).__name__,
         )
         return None
-    return len(foto.curves), len(foto.migrated_curves)
+    return leido
 
 
 async def creator_migration_stats(creator: str) -> tuple[int, int, float]:
