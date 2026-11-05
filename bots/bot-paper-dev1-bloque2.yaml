@@ -148,7 +148,7 @@ retries:
 filters:
   listener_type: "logs"
   # PAPER: registra entradas y salidas simuladas, nunca firma ni mueve SOL.
-  paper_trade: true
+  paper_trade: false
   paper_watch_secs: 600
   max_token_age: 0
   # SIN TOPE DE MARKET CAP, pedido el 5-nov: "Elimina lo del mcap". Venia de
