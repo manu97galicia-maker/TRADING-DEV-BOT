@@ -64,7 +64,7 @@ def test_el_dev_es_la_unica_condicion_de_entrada() -> None:
     assert f["ignorar_listas_de_devs"] is False
 
 
-def test_la_compra_paga_seis_centimos_de_priority_fee() -> None:
+def test_la_compra_paga_doce_centimos_de_priority_fee() -> None:
     fees = CFG["priority_fees"]
     assert fees["enable_fixed"] is True
     assert fees["enable_dynamic"] is False
@@ -75,7 +75,10 @@ def test_la_compra_paga_seis_centimos_de_priority_fee() -> None:
     unidades = builder.get_buy_compute_unit_limit()
     microlamports = int(fees["fixed_amount_compra"])
     dolares = microlamports * unidades / 1e6 / 1e9 * SOL_USD_REFERENCIA
-    assert abs(dolares - 0.06) < 0.0005, f"la compra paga {dolares:.4f} $"
+    # 5-nov: "Sube a 12 centimos" (venia de 6).
+    assert abs(dolares - 0.12) < 0.0005, f"la compra paga {dolares:.4f} $"
+    # Las ventas normales no se pidio subirlas: siguen como estaban.
+    assert int(fees["fixed_amount"]) == 5714286
     # El tope no puede recortar la comision de entrada por debajo de lo pedido.
     assert int(fees["hard_cap"]) >= microlamports
 

@@ -98,22 +98,24 @@ trade:
   max_hold_time: 0
   price_check_interval: 1
 
-# 6 CENTIMOS DE PRIORITY FEE EN LA COMPRA. El bot no cobra en dolares: cobra
-# microlamports por unidad de computo, y la compra reserva 100.000 unidades
+# 12 CENTIMOS DE PRIORITY FEE EN LA COMPRA, pedido el 5-nov: "Sube a 12
+# centimos". Venia de 6 (pedido el 3-nov). Es lo que pagaba bot-unica123-real
+# en real. El bot no cobra en dolares: cobra microlamports por unidad de
+# computo, y la compra reserva 100.000 unidades
 # (pumpfun/instruction_builder.py, get_buy_compute_unit_limit). Con el SOL a
 # 105 $:
-#     0,06 $ / 105 $ = 0,000571429 SOL = 571.429 lamports
-#     571.429 lamports / 100.000 unidades = 5,714286 lamports por unidad
-#                                         = 5.714.286 microlamports
-# OJO, son 6 centimos SOLO con el SOL a 105 $: el numero va fijo en SOL. A
-# 90 $ salen 5,1 centimos y a 120 $ salen 6,9.
+#     0,12 $ / 105 $ = 0,001142857 SOL = 1.142.857 lamports
+#     1.142.857 lamports / 100.000 unidades = 11,428571 lamports por unidad
+#                                           = 11.428.571 microlamports
+# OJO, son 12 centimos SOLO con el SOL a 105 $: el numero va fijo en SOL. A
+# 90 $ salen 10,3 centimos y a 120 $ salen 13,7.
 #
 # DOS NUMEROS, A PROPOSITO:
 #   fixed_amount_compra -> SOLO la compra (universal_trader.py, `fee_compra`,
-#                          va como priority_fee_override). Son los 6 centimos.
-#   fixed_amount        -> las ventas. Se deja al mismo precio por unidad,
-#                          pero una venta usa 60.000 unidades y no 100.000:
-#                          unos 3,6 centimos cada una (TP1, TP2 o stop).
+#                          va como priority_fee_override). Son los 12 centimos.
+#   fixed_amount        -> las ventas normales. Sigue en 5.714.286 (no se
+#                          pidio subirla): una venta usa 60.000 unidades, unos
+#                          3,6 centimos cada una (TP1 y tramos).
 # Asi, si algun dia se cambia la comision de las ventas, la de entrada no se
 # mueve con ella.
 #   fixed_amount_venta_proteccion -> SOLO las ventas que protegen (stop,
@@ -127,16 +129,16 @@ trade:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  fixed_amount_compra: 5714286
+  fixed_amount_compra: 11428571
   fixed_amount: 5714286
   fixed_amount_venta_proteccion: 42_424_243
   extra_percentage: 0.0
   # EL TOPE TIENE QUE DEJAR PASAR LA DEL STOP. El codigo recorta TODAS las
   # comisiones a este numero, la protectora incluida: con el tope en
   # 5.714.286 (lo que tenia) la del stop quedaba recortada a la de una venta
-  # normal y no servia de nada. La compra sigue pagando sus 6 centimos
-  # exactos, porque `fixed_amount_compra` es fijo; el tope solo es el techo
-  # contra una errata.
+  # normal y no servia de nada. La compra paga sus 12 centimos exactos,
+  # porque `fixed_amount_compra` es fijo y queda por debajo de este tope; el
+  # tope solo es el techo contra una errata.
   hard_cap: 42_424_243
 
 retries:
@@ -148,7 +150,7 @@ filters:
   listener_type: "logs"
   # REAL DESDE EL 4-nov, pedido: "como poner en real". Venia de true.
   # Ningun otro numero se mueve. Hoy (desde el 4-nov): 0,2 SOL por compra y
-  # 7 plazas, como mucho 1,4 SOL dentro a la vez, mas 6 centimos de comision
+  # 7 plazas, como mucho 1,4 SOL dentro a la vez, mas 12 centimos de comision
   # por compra. En SOL fijos el bot no necesita el precio de SOL para comprar.
   paper_trade: false
   paper_watch_secs: 600
