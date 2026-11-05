@@ -62,7 +62,7 @@ def _pumpfun(status, data=None):
 @pytest.fixture(autouse=True)
 def _limpio():
     pumpfun_dev._cache.clear()
-    pumpfun_dev._lanzadas_desde.clear()
+    pumpfun_dev._vistas.clear()
     pumpfun_dev._en_vuelo.clear()
     pumpfun_dev._pumpfun_bloqueado_hasta = 0.0
     pumpfun_dev._rpc_respaldo = None
@@ -343,7 +343,7 @@ def test_el_escuchador_precalienta_al_ver_la_creacion():
 
     src = (Path(pumpfun_dev.__file__).parent / "universal_logs_listener.py").read_text(encoding="utf-8")
     i_registro = src.index("registrar_bloque_inicial(\n")
-    assert "precalentar(str(_dev))" in src[i_registro:i_registro + 900]
+    assert "precalentar(str(_dev), str(token_info.mint))" in src[i_registro:i_registro + 900]
 
 
 
@@ -362,18 +362,50 @@ def test_guardado_y_sin_lanzar_mas_se_usa_tal_cual_sin_llamar_a_nadie():
 
 
 def test_cada_lanzamiento_nuevo_baja_el_porcentaje_guardado():
-    """EL QUE IMPORTA: 1 de 100 justo en el 1%, lanza otra -> 1 de 101, NO pasa."""
+    """1 de 100 guardado (1%). Lanza OTRA moneda antes de la que se valora:
+    esa otra si cuenta -> 1 de 101, NO pasa."""
     dev = str(Keypair().pubkey())
     pumpfun_dev._guardar(dev, __import__("time").time(), 100, 1, 0.01)
-    pumpfun_dev.precalentar(dev)  # el escuchador ve nacer otra moneda suya
-    lanzadas, migradas, tasa = asyncio.run(pumpfun_dev.creator_migration_stats(dev))
+    pumpfun_dev.precalentar(dev, "OTRA")
+    pumpfun_dev.precalentar(dev, "LA_QUE_SE_VALORA")
+    lanzadas, migradas, tasa = asyncio.run(
+        pumpfun_dev.creator_migration_stats(dev, actual="LA_QUE_SE_VALORA")
+    )
     assert (lanzadas, migradas) == (101, 1)
     assert tasa < 0.01
 
 
-def test_una_lectura_nueva_pone_el_contador_a_cero():
+def test_opcion_a_la_moneda_que_se_valora_no_cuenta():
+    """5-nov, opcion A: se juzga al dev por lo que ya ha hecho."""
     dev = str(Keypair().pubkey())
     pumpfun_dev._guardar(dev, __import__("time").time(), 100, 1, 0.01)
-    pumpfun_dev.precalentar(dev)
-    pumpfun_dev._guardar(dev, __import__("time").time(), 101, 2, 2 / 101)
-    assert asyncio.run(pumpfun_dev.creator_migration_stats(dev))[:2] == (101, 2)
+    pumpfun_dev.precalentar(dev, "NUEVA")
+    assert asyncio.run(
+        pumpfun_dev.creator_migration_stats(dev, actual="NUEVA")
+    ) == (100, 1, 0.01)
+
+
+def test_opcion_a_tambien_recien_leido_de_la_cadena():
+    """La primera vez (sin guardar) se cuenta igual que las siguientes."""
+    dev = Keypair().pubkey()
+    post_rpc, _ = _cadena(dev, Pubkey.new_unique(), Pubkey.new_unique())  # 2 lanzadas, 1 migrada
+    pumpfun_dev.usar_rpc_de_respaldo(post_rpc)
+
+    async def escena():
+        pumpfun_dev.precalentar(str(dev), "OTRA_RECIEN_LANZADA")  # aun sin confirmar
+        pumpfun_dev.precalentar(str(dev), "NUEVA")
+        return await pumpfun_dev.creator_migration_stats(str(dev), actual="NUEVA")
+
+    with _pumpfun(403):
+        # 2 de la cadena + OTRA_RECIEN_LANZADA; NUEVA no cuenta.
+        assert asyncio.run(escena()) == (3, 1, 1 / 3)
+
+
+def test_lo_lanzado_mucho_antes_de_la_foto_no_se_suma():
+    import time as _t
+
+    dev = str(Keypair().pubkey())
+    ahora = _t.time()
+    pumpfun_dev._vistas[dev] = {"VIEJA": ahora - 600}   # ya estaba en la foto
+    pumpfun_dev._guardar(dev, ahora, 100, 1, 0.01)
+    assert asyncio.run(pumpfun_dev.creator_migration_stats(dev, actual="X"))[:2] == (100, 1)

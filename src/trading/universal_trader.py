@@ -4102,7 +4102,10 @@ class UniversalTrader:
                         )
                         try:
                             _l, _m, _r = await asyncio.wait_for(
-                                creator_migration_stats(str(_dev0)), timeout=_tope_api
+                                creator_migration_stats(
+                                    str(_dev0), actual=str(token_info.mint)
+                                ),
+                                timeout=_tope_api,
                             )
                         except (TimeoutError, asyncio.TimeoutError):
                             # Sin el dato NO se compra. Comprar a ciegas aqui
@@ -4194,7 +4197,9 @@ class UniversalTrader:
                         # Sin compra inmediata basta con dejarla pedida: la
                         # comprobacion de mas abajo se engancha a esta misma
                         # llamada y no vuelve a pagar la latencia.
-                        asyncio.ensure_future(creator_migration_stats(str(_dev0)))
+                        asyncio.ensure_future(
+                            creator_migration_stats(str(_dev0), actual=str(token_info.mint))
+                        )
 
             if self.max_buy_age > 0 and (
                 self.min_volumen_sol > 0
@@ -4915,7 +4920,7 @@ class UniversalTrader:
                         migs, launches, rate = _dev_ya
                     else:
                         launches, migs, rate = await creator_migration_stats(
-                            str(creator)
+                            str(creator), actual=str(token_info.mint)
                         )
                     min_migs = int(self.pumpfun_dev.get("min_migrations", 2))
                     min_rate = float(self.pumpfun_dev.get("min_rate", 0.24))

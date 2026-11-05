@@ -238,7 +238,7 @@ class UniversalLogsListener(BaseTokenListener):
                                 precalentar,
                             )
 
-                            precalentar(str(_dev))
+                            precalentar(str(_dev), str(token_info.mint))
                     except Exception:  # noqa: BLE001, S110
                         pass
                     return token_info

@@ -32,19 +32,45 @@ _HEADERS = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
 #:
 #: Y SIN QUE EL DATO GUARDADO MIENTA A FAVOR: si el dev lanza mas monedas
 #: mientras esta guardado, su porcentaje real BAJA (mas lanzadas, las mismas
-#: migradas). Por eso cada lanzamiento suyo que se ve nacer se suma a sus
-#: lanzadas (`_lanzadas_desde`): el porcentaje guardado solo puede quedarse
-#: igual o bajar, nunca subir. Si una moneda suya migra mientras tanto, no
-#: se cuenta hasta la siguiente lectura: eso se equivoca hacia lo prudente.
+#: migradas). Por eso se apuntan sus lanzamientos vistos nacer (`_vistas`) y
+#: se suman a lo guardado (`_lanzadas_desde_la_foto`). Si una moneda suya
+#: migra mientras tanto, no se cuenta hasta la siguiente lectura: eso se
+#: equivoca hacia lo prudente.
+#:
+#: LA MONEDA QUE SE ESTA VALORANDO NO CUENTA (5-nov, opcion A: "se juzga al
+#: dev por lo que ya ha hecho"). Por eso no basta un contador: se apunta QUE
+#: monedas lanzo, para sumar las demas y dejar fuera justo esa. Es lo mismo
+#: que pasa la primera vez: la cadena aun no tiene confirmada la recien
+#: nacida cuando se lee el historial.
 _TTL = 3 * 3600.0
 _cache: dict[str, tuple[float, int, int, float]] = {}  # creator -> (ts, launches, migrations, rate)
-#: Lanzamientos del dev vistos nacer DESPUES de guardar su historial.
-_lanzadas_desde: dict[str, int] = {}
+#: Monedas que cada dev lanzo y el bot vio nacer: dev -> {mint: hora}.
+_vistas: dict[str, dict[str, float]] = {}
+#: Lo lanzado hasta este rato ANTES de guardar el historial puede no estar en
+#: el (la cadena tarda en confirmar): se suma. Si si estaba, cuenta dos veces,
+#: y eso solo baja el porcentaje: hacia lo prudente.
+_MARGEN_FOTO = 60.0
+_MAX_DEVS_VISTOS = 50_000
 
 
 def _guardar(creator: str, now: float, launches: int, migrations: int, rate: float) -> None:
     _cache[creator] = (now, launches, migrations, rate)
-    _lanzadas_desde.pop(creator, None)
+
+
+def _apuntar_lanzamiento(creator: str, mint: str, now: float) -> None:
+    vistas = _vistas.setdefault(creator, {})
+    vistas[mint] = now
+    viejo = now - _TTL - _MARGEN_FOTO
+    for m in [m for m, t in vistas.items() if t < viejo]:
+        del vistas[m]
+    while len(_vistas) > _MAX_DEVS_VISTOS:
+        _vistas.pop(next(iter(_vistas)))
+
+
+def _lanzadas_desde_la_foto(creator: str, foto: float, actual: str | None) -> int:
+    """Lanzamientos vistos desde (casi) la foto guardada, sin contar `actual`."""
+    vistas = _vistas.get(creator) or {}
+    return sum(1 for m, t in vistas.items() if t >= foto - _MARGEN_FOTO and m != actual)
 
 #: Picos de las monedas del creador que SI migraron, por creador.
 #:
@@ -271,7 +297,7 @@ async def _por_la_cadena(creator: str) -> tuple[int, int] | None:
     return leido
 
 
-def precalentar(creator: str) -> None:
+def precalentar(creator: str, mint: str | None = None) -> None:
     """Empieza a leer el historial del dev YA, sin esperar el resultado.
 
     5-nov, "Y si puede ser todavia mas rapido mejor": el bot sabe quien es el
@@ -287,9 +313,9 @@ def precalentar(creator: str) -> None:
     """
     if not creator:
         return
-    # Un lanzamiento mas de un dev ya guardado: se suma (ver `_TTL`).
-    if creator in _cache:
-        _lanzadas_desde[creator] = _lanzadas_desde.get(creator, 0) + 1
+    # Se apunta SIEMPRE que se ve nacer una moneda suya (ver `_TTL`).
+    if mint:
+        _apuntar_lanzamiento(creator, str(mint), time.time())
     if _rpc_respaldo is None:
         return
     hit = _cache.get(creator)
@@ -316,29 +342,45 @@ def precalentar(creator: str) -> None:
     tarea.add_done_callback(_al_acabar)
 
 
-async def creator_migration_stats(creator: str) -> tuple[int, int, float]:
+async def creator_migration_stats(
+    creator: str, actual: str | None = None
+) -> tuple[int, int, float]:
     """Return ``(launches, migrations, rate)`` for a pump.fun creator.
 
     ``migrations`` counts the creator's coins with ``complete == True``.
     Returns ``(0, 0, 0.0)`` on any error (fail-closed for a reputation filter).
+
+    `actual` es la moneda que se esta valorando: no cuenta en sus lanzadas
+    (5-nov, opcion A). Sin ella, se cuentan todas las vistas.
     """
-    now = time.time()
-    hit = _cache.get(creator)
-    if hit and now - hit[0] < _TTL:
-        lanzadas = hit[1] + _lanzadas_desde.get(creator, 0)
-        migradas = hit[2]
-        return lanzadas, migradas, (migradas / lanzadas if lanzadas else 0.0)
+    guardado = _con_lo_visto(creator, actual)
+    if guardado is not None:
+        return guardado
 
     tarea = _en_vuelo.get(creator)
-    if tarea is not None and not tarea.done():
-        return await asyncio.shield(tarea)
-    tarea = asyncio.ensure_future(_consultar(creator))
-    _en_vuelo[creator] = tarea
+    if tarea is None or tarea.done():
+        tarea = asyncio.ensure_future(_consultar(creator))
+        _en_vuelo[creator] = tarea
     try:
-        return await asyncio.shield(tarea)
+        resultado = await asyncio.shield(tarea)
     finally:
         if _en_vuelo.get(creator) is tarea and tarea.done():
             _en_vuelo.pop(creator, None)
+    # IGUAL QUE SI VINIERA DE LO GUARDADO: recien leido, tambien se suman los
+    # lanzamientos vistos que la lectura aun no incluye, y se deja fuera la
+    # moneda que se esta valorando. Si la lectura fallo, no se guardo nada y
+    # se devuelve tal cual (sin dato, no se compra).
+    return _con_lo_visto(creator, actual) or resultado
+
+
+def _con_lo_visto(creator: str, actual: str | None) -> tuple[int, int, float] | None:
+    """Lo guardado del dev mas lo lanzado despues, sin `actual`. None si no hay."""
+    hit = _cache.get(creator)
+    if not hit or time.time() - hit[0] >= _TTL:
+        return None
+    lanzadas = hit[1] + _lanzadas_desde_la_foto(creator, hit[0], actual)
+    migradas = hit[2]
+    return lanzadas, migradas, (migradas / lanzadas if lanzadas else 0.0)
 
 
 async def _consultar_por_la_cadena(
