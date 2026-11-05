@@ -39,29 +39,29 @@ def test_dev_con_minimo_un_uno_por_ciento_de_migradas() -> None:
     assert dev["min_rate"] == 0.01
     # "1% de migradas" exige al menos una: con 0 migradas la tasa es 0.
     assert dev["min_migrations"] == 1
-    # Sin compra inmediata: se espera al primer bloque antes de comprar.
-    assert dev["compra_inmediata"] is False
+    # 5-nov: el 1% es la unica condicion; se compra en cuanto pasa. Y en ese
+    # orden el tope de 4.100 $ se mira DESPUES de tener el dato del dev.
+    assert dev["compra_inmediata"] is True
+    assert dev["timeout_seg"] >= 9
     # Las listas de Manu (blacklist manual y auto-baneo por rugs) siguen
     # mandando: el 1% se suma a ellas, no las sustituye.
     assert CFG["filters"]["ignorar_listas_de_devs"] is False
 
 
-def test_primer_bloque_dos_compras_sin_minimo_de_dolares() -> None:
+def test_el_dev_es_la_unica_condicion_de_entrada() -> None:
+    """5-nov: "Solo activa la estrategia de comprar cuando el 1%... " ->
+    "Claro que compre muchas mas". Fuera el primer bloque y el segundo bloque."""
     f = CFG["filters"]
-    assert f["min_first_block_buys"] == 2
+    assert f["min_first_block_buys"] == 0
     assert f["max_first_block_buys"] == 0
-    # 4-nov: "quita lo de 375".
     assert f["min_first_block_usd"] == 0
     assert f["max_first_block_usd"] == 0
-    # Sin ventana de espera los filtros del primer bloque no se comprueban.
-    assert f["max_buy_age"] > 0
-
-
-def test_entra_en_el_segundo_bloque_sin_esperar_a_verlo_entero() -> None:
-    f = CFG["filters"]
-    assert f["buy_from_second_block"] is True
-    # Encendida obligaria a ver el segundo bloque entero: entrar en el tercero.
+    assert f["buy_from_second_block"] is False
     assert f["second_block_confirmation"]["enabled"] is False
+    # Lo que NO se pidio quitar sigue: tope, sin mayhem, listas de devs.
+    assert f["max_entry_mc"] == 3563
+    assert f["allow_mayhem"] is False
+    assert f["ignorar_listas_de_devs"] is False
 
 
 def test_la_compra_paga_seis_centimos_de_priority_fee() -> None:
@@ -83,7 +83,10 @@ def test_la_compra_paga_seis_centimos_de_priority_fee() -> None:
 def test_los_filtros_corren_antes_del_corte_de_papel() -> None:
     """Si el corte de papel fuera antes, la prueba en papel no mediria nada."""
     corte = TRADER.index("            if self.paper_trade:")
-    assert TRADER.index("if self.buy_from_second_block and not _en_bloque_dos") < corte
+    assert TRADER.index('if self.pumpfun_dev.get("compra_inmediata")') < corte
+    # Y el tope se lee DESPUES del dato del dev (compra inmediata).
+    assert (TRADER.index('if self.pumpfun_dev.get("compra_inmediata")')
+            < TRADER.index("if self.max_entry_mc > 0 and entry_price > 0:"))
     assert TRADER.index('if self.pumpfun_dev.get("enabled") and not self._es_marcado(') < corte
 
 

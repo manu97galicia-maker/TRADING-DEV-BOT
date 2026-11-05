@@ -22,7 +22,7 @@
 # LO QUE NO SE PIDIO Y SE HA TENIDO QUE ELEGIR, para poder cambiarlo luego:
 #   - 0,03 SOL de reserva: sin ella no queda SOL para pagar la comision de
 #     vender.
-name: "REAL DEV 1% + PRIMER BLOQUE 2 COMPRAS + BLOQUE 2 BAJO 4,1K"
+name: "REAL DEV 1% (UNICA CONDICION) BAJO 4,1K"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -175,19 +175,25 @@ filters:
   # no las sustituye.
   ignorar_listas_de_devs: false
 
-  # PRIMER BLOQUE: minimo 2 compras. Cuenta TODAS las compras del bloque en
-  # que nace la moneda, la del propio dev incluida
-  # (monitoring/volumen.py, _anotar_primer_bloque). Sin maximo (0).
-  min_first_block_buys: 2
+  # EL 1% DEL DEV ES LA UNICA CONDICION DE ENTRADA, pedido el 5-nov: "Solo
+  # activa la estrategia de comprar cuando el 1% de todos los lanzamientos
+  # minimo del developer ha hecho bonding" -> "Claro que compre muchas mas".
+  # Venia de 2 compras minimas en el primer bloque y espera al segundo
+  # bloque. Al quitarlo tambien entran las monedas que el bot ve TARDE (sin
+  # su nacimiento): se descartaban solo porque no podia mirar su primer
+  # bloque (244 de 741 en el droplet ese dia).
+  # Se MANTIENEN, porque no se pidio quitarlos: el tope de ~4.100 $, sin
+  # mayhem, la blacklist manual y el auto-baneo por rugs.
+  min_first_block_buys: 0
   max_first_block_buys: 0
   # SIN MINIMO DE DOLARES, pedido el 4-nov: "quita lo de 375". Venia de 375.
   # Ojo: ese minimo tambien dependia del precio de SOL (SOL comprado x
   # precio); quitarlo deja el primer bloque sin nada que dependa del precio.
   min_first_block_usd: 0
   max_first_block_usd: 0
-  # Espera a que el primer bloque se cierre (ve una operacion de un bloque
-  # posterior) y entonces compra, sin mirar nada mas del segundo bloque.
-  buy_from_second_block: true
+  # Ya no se espera al segundo bloque (5-nov): se compra en cuanto el dev
+  # pasa el filtro y la moneda esta bajo el tope.
+  buy_from_second_block: false
 
   # APAGADA A PROPOSITO. En la hermana esta encendida y obliga a ver el
   # segundo bloque entero antes de comprar, o sea, a entrar en el tercero.
@@ -227,11 +233,19 @@ filters:
   # no contesta, tampoco: sin el dato no se compra.
   # La consulta se lanza al detectar la moneda y se espera al cerrar el
   # primer bloque, asi que no anade tiempo a la compra.
+  # COMPRA INMEDIATA (5-nov): el historial del dev se pide al detectar la
+  # moneda y, si pasa, se compra sin esperar a nada mas. Importa el ORDEN:
+  # asi el tope de ~4.100 $ se comprueba DESPUES de tener el dato del dev
+  # (universal_trader.py, la curva se lee justo antes de comprar), y no se
+  # compra por encima del tope por haber estado esperando a Helius.
+  # timeout_seg 9: el respaldo por la cadena espera como mucho 8 s; si no hay
+  # dato en 9, no se compra (con dinero real, no saber no es que si).
   pumpfun_dev:
     enabled: true
     min_migrations: 1
     min_rate: 0.01
-    compra_inmediata: false
+    compra_inmediata: true
+    timeout_seg: 9
 
 cleanup:
   mode: "post_session"
