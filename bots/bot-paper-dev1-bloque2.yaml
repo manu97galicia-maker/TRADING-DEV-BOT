@@ -158,7 +158,7 @@ filters:
   # No espera bloques ni volumen; decide tras comprobar dev y edad.
   max_buy_age: 0
   # El 1% del dev es la única condición de mercado, también para Mayhem.
-  allow_mayhem: true
+  allow_mayhem: false
   require_mayhem: false
   # No se suman blacklist ni auto-baneo: decide exclusivamente la tasa del dev.
   ignorar_listas_de_devs: true
