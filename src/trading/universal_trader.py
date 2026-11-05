@@ -3716,6 +3716,35 @@ class UniversalTrader:
             except Exception:  # noqa: BLE001
                 logger.debug("parte de descartes", exc_info=True)
 
+    def _demasiado_vieja_para_comprar(self, token_info: TokenInfo) -> bool:
+        """True si la moneda ya pasa de `curva_96.max_edad_seg` al ir a comprar.
+
+        La edad sale de la marca de tiempo de la CADENA de su creacion
+        (monitoring/volumen.py, `edad`), no de cuando se entero el bot. Sin
+        edad conocida (no se vio nacer) tampoco se compra: no se puede afirmar
+        que sea nueva. Con `max_edad_seg` a 0 no hace nada. Deja escrita la
+        edad con la que se compra, para poder comprobarlo en el log.
+        """
+        maximo = float((getattr(self, "curva_96", None) or {}).get("max_edad_seg") or 0)
+        if maximo <= 0:
+            return False
+        from monitoring.volumen import edad  # noqa: PLC0415
+
+        vida = edad(str(token_info.mint))
+        if vida is None:
+            self._descarta(token_info, "edad desconocida al ir a comprar (no se vio nacer)")
+            return True
+        if vida > maximo:
+            self._descarta(
+                token_info,
+                f"ya tiene {vida:.1f} s al ir a comprar (máx {maximo:.0f} s)",
+            )
+            return True
+        logger.info(
+            "EDAD AL COMPRAR %s: %.1f s (máx %.0f s)", token_info.symbol, vida, maximo
+        )
+        return False
+
     def _descarta(self, token_info: TokenInfo, motivo: str) -> None:
         """Apunta POR QUE no se compro esta moneda, y lo cuenta.
 
@@ -4957,6 +4986,14 @@ class UniversalTrader:
                     )
                 except Exception:  # noqa: BLE001
                     pass
+
+            # LA EDAD OTRA VEZ, JUSTO ANTES DE COMPRAR (5-nov). La ventana de
+            # edad de curva96 (`max_edad_seg`) se mira al DETECTAR la moneda;
+            # entre eso y aqui va la lectura del historial del dev, que puede
+            # tardar varios segundos. Pedido: "que hace comprando esta? Tiene
+            # que tener menos de 2 segundos segun sale a pump.fun".
+            if self._demasiado_vieja_para_comprar(token_info):
+                return
 
             # Paper-trade: record the candidate, follow its price, never buy.
             if self.paper_trade:

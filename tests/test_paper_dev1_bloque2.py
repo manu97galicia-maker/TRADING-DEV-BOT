@@ -207,3 +207,38 @@ def test_la_ventana_de_2_segundos_funciona_de_verdad() -> None:
     _con_edad("pasada", 2.5)
     assert f._fuera_de_edad("pasada", "PASADA") is True
     assert f._fuera_de_edad("nunca-vista-nacer", "TARDE") is True
+
+
+def test_la_edad_se_vuelve_a_mirar_justo_antes_de_comprar() -> None:
+    """5-nov: "que hace comprando esta? Tiene que tener menos de 2 segundos".
+
+    La ventana de curva96 se mira al DETECTAR; la lectura del dev puede tardar
+    segundos. Aqui se mira otra vez justo antes de comprar.
+    """
+    from types import SimpleNamespace
+
+    from test_ventana_de_edad import _con_edad
+
+    from trading.universal_trader import UniversalTrader
+
+    motivos: list[str] = []
+    yo = SimpleNamespace(
+        curva_96=CFG["filters"]["curva_96"],
+        _descarta=lambda _t, m: motivos.append(m),
+    )
+    comprobar = UniversalTrader._demasiado_vieja_para_comprar
+
+    _con_edad("rapida", 1.4)
+    assert comprobar(yo, SimpleNamespace(mint="rapida", symbol="R")) is False
+    _con_edad("lenta", 3.2)
+    assert comprobar(yo, SimpleNamespace(mint="lenta", symbol="L")) is True
+    assert "ya tiene 3.2 s al ir a comprar (máx 2 s)" in motivos[-1]
+    assert comprobar(yo, SimpleNamespace(mint="nunca-vista", symbol="N")) is True
+    assert "edad desconocida" in motivos[-1]
+
+
+def test_la_segunda_mirada_va_despues_del_dev_y_del_tope_y_antes_de_comprar() -> None:
+    segunda = TRADER.index("if self._demasiado_vieja_para_comprar(token_info):")
+    assert TRADER.index('if self.pumpfun_dev.get("enabled") and not self._es_marcado(') < segunda
+    assert TRADER.index("if self.max_entry_mc > 0 and entry_price > 0:") < segunda
+    assert segunda < TRADER.index("            if self.paper_trade:")
