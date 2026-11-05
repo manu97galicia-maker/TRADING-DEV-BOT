@@ -29,7 +29,7 @@ private_key: "${SOLANA_PRIVATE_KEY}"
 # En false a proposito: `enabled` solo lo mira el arranque de "todas"
 # (bot_runner.py). Esta se lanza sola con run_bot_process, y asi no se cuela
 # junto a las otras estrategias sobre la misma wallet.
-enabled: false
+enabled: TRUE
 separate_process: false
 platform: "pump_fun"
 
