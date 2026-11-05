@@ -51,7 +51,7 @@ trade:
   # (ver abajo).
   max_posiciones: 7
   max_real_buys: 0
-  reiniciar_tanda: true
+  reiniciar_tanda: FALSE
   buy_slippage: 0.15
   sell_slippage: 0.25
   # SUELO ANCHO SOLO PARA EL STOP (4-nov, "Si"; igual que bot-unica123-real).
@@ -148,7 +148,7 @@ retries:
 filters:
   listener_type: "logs"
   # PAPER: registra entradas y salidas simuladas, nunca firma ni mueve SOL.
-  paper_trade: true
+  paper_trade: false
   paper_watch_secs: 600
   max_token_age: 0
   # SIN TOPE DE MARKET CAP, pedido el 5-nov: "Elimina lo del mcap". Venia de
