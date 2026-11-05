@@ -50,7 +50,7 @@ trade:
   # Para que el nodo las vigile todas hubo que subir node.max_rps de 12 a 14
   # (ver abajo).
   max_posiciones: 7
-  max_real_buys: 0
+  max_real_buys: 1000
   reiniciar_tanda: FALSE
   buy_slippage: 0.15
   sell_slippage: 0.25
@@ -146,11 +146,11 @@ retries:
   wait_after_buy: 0
 
 filters:
-  listener_type: "logs"
+  listener_type: "pumpportal"
   # PAPER: registra entradas y salidas simuladas, nunca firma ni mueve SOL.
   paper_trade: false
   paper_watch_secs: 600
-  max_token_age: 0
+  max_token_age: 5
   # SIN TOPE DE MARKET CAP, pedido el 5-nov: "Elimina lo del mcap". Venia de
   # 3563 (~4.100 $ con el SOL a 105, pedido el 4-nov). Sin tope, el bot ya no
   # lee la curva para comprobarlo: una consulta menos al nodo antes de comprar.
@@ -192,7 +192,7 @@ filters:
     max_sells: 0
 
   curva_96:
-    enabled: true
+    enabled: false
     umbral: 0
     tope: 1.0
     buy_amount: 0
