@@ -292,3 +292,54 @@ def test_pagina_sin_marca_de_siguiente_es_el_final():
     pumpfun_dev.usar_rpc_de_respaldo(_nodo(dev, paginas, cuentas))
     with _pumpfun(403):
         assert asyncio.run(pumpfun_dev.creator_migration_stats(str(dev))) == (1, 1, 1.0)
+
+
+# --- Mas rapido (5-nov): el historial empieza a leerse al ver la creacion -----
+
+def test_precalentar_empieza_ya_y_el_trader_se_engancha():
+    dev = Keypair().pubkey()
+    post_rpc, llamadas = _cadena(dev, Pubkey.new_unique(), Pubkey.new_unique())
+    pumpfun_dev.usar_rpc_de_respaldo(post_rpc)
+
+    async def escena():
+        pumpfun_dev.precalentar(str(dev))      # el escuchador, al ver nacer
+        assert str(dev) in pumpfun_dev._en_vuelo  # ya esta corriendo
+        return await pumpfun_dev.creator_migration_stats(str(dev))  # el trader
+
+    with _pumpfun(403):
+        assert asyncio.run(escena()) == (2, 1, 0.5)
+    # Una sola lectura de la cadena, no dos.
+    assert llamadas.count("getTransactionsForAddress") == 1
+
+
+def test_precalentar_no_gasta_nada_sin_estrategia_con_filtro_de_dev():
+    async def escena():
+        pumpfun_dev.precalentar(str(Keypair().pubkey()))
+        return dict(pumpfun_dev._en_vuelo)
+
+    assert asyncio.run(escena()) == {}
+
+
+def test_precalentar_no_repite_un_dev_ya_guardado():
+    dev = Keypair().pubkey()
+    post_rpc, llamadas = _cadena(dev, Pubkey.new_unique(), Pubkey.new_unique())
+    pumpfun_dev.usar_rpc_de_respaldo(post_rpc)
+
+    async def escena():
+        await pumpfun_dev.creator_migration_stats(str(dev))
+        antes = len(llamadas)
+        pumpfun_dev.precalentar(str(dev))
+        await asyncio.sleep(0)
+        return antes, len(llamadas)
+
+    with _pumpfun(403):
+        antes, despues = asyncio.run(escena())
+    assert antes == despues
+
+
+def test_el_escuchador_precalienta_al_ver_la_creacion():
+    from pathlib import Path
+
+    src = (Path(pumpfun_dev.__file__).parent / "universal_logs_listener.py").read_text(encoding="utf-8")
+    i_registro = src.index("registrar_bloque_inicial(\n")
+    assert "precalentar(str(_dev))" in src[i_registro:i_registro + 900]

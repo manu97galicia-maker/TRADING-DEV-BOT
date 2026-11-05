@@ -231,6 +231,12 @@ class UniversalLogsListener(BaseTokenListener):
                         registrar_bloque_inicial(
                             str(token_info.mint), slot, dev=str(_dev) if _dev else None
                         )
+                        # Y su historial empieza a leerse YA, a la vez que se
+                        # monta la ficha (ver `precalentar`, 5-nov).
+                        if _dev:
+                            from monitoring.pumpfun_dev import precalentar  # noqa: PLC0415
+
+                            precalentar(str(_dev))
                     except Exception:  # noqa: BLE001, S110
                         pass
                     return token_info

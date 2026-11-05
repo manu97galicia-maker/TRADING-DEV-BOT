@@ -253,6 +253,46 @@ async def _por_la_cadena(creator: str) -> tuple[int, int] | None:
     return leido
 
 
+def precalentar(creator: str) -> None:
+    """Empieza a leer el historial del dev YA, sin esperar el resultado.
+
+    5-nov, "Y si puede ser todavia mas rapido mejor": el bot sabe quien es el
+    dev en el instante en que ve la creacion, pero el trader no preguntaba
+    hasta despues de montar la ficha de la moneda (varias llamadas al nodo).
+    Llamado desde el escuchador al ver la creacion, la consulta corre A LA VEZ
+    que se monta la ficha; cuando el trader pregunta, se engancha a esta
+    misma consulta (`_en_vuelo`) o la encuentra ya guardada. No cambia lo que
+    se compra, solo cuando se sabe.
+
+    Solo actua si hay una estrategia con el filtro del dev encendido (es la
+    que registra el nodo con `usar_rpc_de_respaldo`): sin ella no gasta nada.
+    """
+    if _rpc_respaldo is None or not creator:
+        return
+    hit = _cache.get(creator)
+    if hit and time.time() - hit[0] < _TTL:
+        return
+    tarea = _en_vuelo.get(creator)
+    if tarea is not None and not tarea.done():
+        return
+    try:
+        tarea = asyncio.ensure_future(_consultar(creator))
+    except RuntimeError:
+        # Sin bucle de eventos en marcha (no deberia pasar en el bot).
+        return
+    # SE APUNTA YA, no en la siguiente vuelta del bucle: si el trader pregunta
+    # en este mismo instante, tiene que engancharse a esta, no lanzar otra.
+    _en_vuelo[creator] = tarea
+
+    def _al_acabar(t: asyncio.Task, c: str = creator) -> None:
+        if not t.cancelled():
+            t.exception()  # que no quede un "exception was never retrieved"
+        if _en_vuelo.get(c) is t:
+            _en_vuelo.pop(c, None)
+
+    tarea.add_done_callback(_al_acabar)
+
+
 async def creator_migration_stats(creator: str) -> tuple[int, int, float]:
     """Return ``(launches, migrations, rate)`` for a pump.fun creator.
 
