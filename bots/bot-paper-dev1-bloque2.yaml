@@ -11,6 +11,7 @@
 # que sobre lo vendes en tres tramos hasta los 14k. SL 25%."
 # Lo que cambio: 20 $ -> 30 $, tope de entrada 4,1k (nuevo), stop 8% -> 25%,
 # y la salida entera (ya no es la de la hermana).
+# (El tope de entrada se quito el 5-nov: "Elimina lo del mcap".)
 # Y EL 4-nov POR LA TARDE: "Pon 0.2 sol para solventar el problema y quita lo
 # de 375". 30 $ -> 0,2 SOL fijos, y el primer bloque sin minimo de dolares.
 #
@@ -22,7 +23,7 @@
 # LO QUE NO SE PIDIO Y SE HA TENIDO QUE ELEGIR, para poder cambiarlo luego:
 #   - 0,03 SOL de reserva: sin ella no queda SOL para pagar la comision de
 #     vender.
-name: "REAL DEV 1% (UNICA CONDICION) BAJO 4,1K"
+name: "REAL DEV 1% (UNICA CONDICION) MONEDAS DE 3 S"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -155,17 +156,10 @@ filters:
   paper_trade: false
   paper_watch_secs: 600
   max_token_age: 0
-  # POR DEBAJO DE 4,1K. OJO, ESTE NUMERO NO SON DOLARES DE HOY. El bot lo lee
-  # como dolares con el SOL a 91,24 $ (el valor escrito a mano en el codigo,
-  # _SOL_USD) y, en cuanto lee el precio real, lo reescala en la misma
-  # proporcion (universal_trader.py, _precio_sol_loop: "El techo de entrada
-  # pasa de X a Y $ para que el filtro no se mueva"). Para que sean 4.100 $
-  # con el SOL a 105 $:
-  #     4.100 x 91,24 / 105 = 3.563
-  # Lo que queda fijo es el PUNTO DE LA CURVA: unos 5,46 SOL dentro. En
-  # dolares se mueve con el SOL: 3.515 $ a 90, 4.100 $ a 105, 4.686 $ a 120.
-  # Leer la curva para comprobarlo es una consulta al nodo antes de comprar.
-  max_entry_mc: 3563
+  # SIN TOPE DE MARKET CAP, pedido el 5-nov: "Elimina lo del mcap". Venia de
+  # 3563 (~4.100 $ con el SOL a 105, pedido el 4-nov). Sin tope, el bot ya no
+  # lee la curva para comprobarlo: una consulta menos al nodo antes de comprar.
+  max_entry_mc: 0
   # Ventana para esperar a que cierre el primer bloque. Sin ella (0) los
   # filtros del primer bloque no se comprueban nunca.
   max_buy_age: 45
@@ -184,8 +178,8 @@ filters:
   # bloque. Al quitarlo tambien entran las monedas que el bot ve TARDE (sin
   # su nacimiento): se descartaban solo porque no podia mirar su primer
   # bloque (244 de 741 en el droplet ese dia).
-  # Se MANTIENEN, porque no se pidio quitarlos: el tope de ~4.100 $, sin
-  # mayhem, la blacklist manual y el auto-baneo por rugs.
+  # Se MANTIENEN, porque no se pidio quitarlos: sin mayhem, la blacklist
+  # manual y el auto-baneo por rugs. (El tope de ~4.100 $ se quito el 5-nov.)
   min_first_block_buys: 0
   max_first_block_buys: 0
   # SIN MINIMO DE DOLARES, pedido el 4-nov: "quita lo de 375". Venia de 375.
@@ -194,7 +188,7 @@ filters:
   min_first_block_usd: 0
   max_first_block_usd: 0
   # Ya no se espera al segundo bloque (5-nov): se compra en cuanto el dev
-  # pasa el filtro y la moneda esta bajo el tope.
+  # pasa el filtro (y la moneda tiene 3 s o menos).
   buy_from_second_block: false
 
   # APAGADA A PROPOSITO. En la hermana esta encendida y obliga a ver el
@@ -253,10 +247,10 @@ filters:
   # La consulta se lanza al detectar la moneda y se espera al cerrar el
   # primer bloque, asi que no anade tiempo a la compra.
   # COMPRA INMEDIATA (5-nov): el historial del dev se pide al detectar la
-  # moneda y, si pasa, se compra sin esperar a nada mas. Importa el ORDEN:
-  # asi el tope de ~4.100 $ se comprueba DESPUES de tener el dato del dev
-  # (universal_trader.py, la curva se lee justo antes de comprar), y no se
-  # compra por encima del tope por haber estado esperando a Helius.
+  # moneda y, si pasa, se compra sin esperar a nada mas. Despues del dato del
+  # dev se vuelve a mirar la edad (universal_trader.py,
+  # `_demasiado_vieja_para_comprar`): esperar a Helius no puede hacer comprar
+  # una moneda de mas de 3 s.
   # timeout_seg 9: el respaldo por la cadena espera como mucho 8 s; si no hay
   # dato en 9, no se compra (con dinero real, no saber no es que si).
   pumpfun_dev:

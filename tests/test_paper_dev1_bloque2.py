@@ -39,8 +39,8 @@ def test_dev_con_minimo_un_uno_por_ciento_de_migradas() -> None:
     assert dev["min_rate"] == 0.01
     # "1% de migradas" exige al menos una: con 0 migradas la tasa es 0.
     assert dev["min_migrations"] == 1
-    # 5-nov: el 1% es la unica condicion; se compra en cuanto pasa. Y en ese
-    # orden el tope de 4.100 $ se mira DESPUES de tener el dato del dev.
+    # 5-nov: el 1% es la unica condicion; se compra en cuanto pasa (y despues
+    # del dato del dev se vuelve a mirar la edad).
     assert dev["compra_inmediata"] is True
     assert dev["timeout_seg"] >= 9
     # Las listas de Manu (blacklist manual y auto-baneo por rugs) siguen
@@ -58,8 +58,10 @@ def test_el_dev_es_la_unica_condicion_de_entrada() -> None:
     assert f["max_first_block_usd"] == 0
     assert f["buy_from_second_block"] is False
     assert f["second_block_confirmation"]["enabled"] is False
-    # Lo que NO se pidio quitar sigue: tope, sin mayhem, listas de devs.
-    assert f["max_entry_mc"] == 3563
+    # Lo que NO se pidio quitar sigue: sin mayhem, listas de devs.
+    # El tope de market cap se quito el 5-nov ("Elimina lo del mcap").
+    assert f["max_entry_mc"] == 0
+    assert f.get("min_entry_mc", 0) == 0
     assert f["allow_mayhem"] is False
     assert f["ignorar_listas_de_devs"] is False
 
@@ -87,9 +89,6 @@ def test_los_filtros_corren_antes_del_corte_de_papel() -> None:
     """Si el corte de papel fuera antes, la prueba en papel no mediria nada."""
     corte = TRADER.index("            if self.paper_trade:")
     assert TRADER.index('if self.pumpfun_dev.get("compra_inmediata")') < corte
-    # Y el tope se lee DESPUES del dato del dev (compra inmediata).
-    assert (TRADER.index('if self.pumpfun_dev.get("compra_inmediata")')
-            < TRADER.index("if self.max_entry_mc > 0 and entry_price > 0:"))
     assert TRADER.index('if self.pumpfun_dev.get("enabled") and not self._es_marcado(') < corte
 
 
@@ -131,23 +130,9 @@ def test_salida_del_4_nov() -> None:
     assert t["take_profit_sell_percentage"] + sum(x["sell"] for x in tramos) >= 1.0
 
 
-def test_tope_de_entrada_4100_dolares_con_el_sol_a_105() -> None:
-    """El tope se escribe en dolares con el SOL al valor del codigo.
-
-    universal_trader.py lo reescala por precio_real / _SOL_USD al leer el
-    precio de SOL. Si alguien cambia esa constante, este numero deja de
-    significar 4.100 $ y esto lo dice.
-    """
-    linea = next(
-        x for x in TRADER.splitlines() if x.startswith("_SOL_USD = ")
-    )
-    sol_codigo = float(linea.split("=")[1].split("#")[0])
-    tope = float(CFG["filters"]["max_entry_mc"])
-    dolares = tope * SOL_USD_REFERENCIA / sol_codigo
-    assert abs(dolares - 4100) < 5, f"el tope equivale a {dolares:,.0f} $"
-    # Y se reescala de verdad: si se quitara, el tope serian 3.563 $.
-    assert "self.max_entry_mc = antes * razon" in TRADER
-
+def test_sin_tope_de_market_cap() -> None:
+    """5-nov: "Elimina lo del mcap". Sin tope no se lee la curva para eso."""
+    assert CFG["filters"]["max_entry_mc"] == 0
 
 def test_sin_mayhem() -> None:
     # "no mayhem" (4-nov).
@@ -240,5 +225,4 @@ def test_la_edad_se_vuelve_a_mirar_justo_antes_de_comprar() -> None:
 def test_la_segunda_mirada_va_despues_del_dev_y_del_tope_y_antes_de_comprar() -> None:
     segunda = TRADER.index("if self._demasiado_vieja_para_comprar(token_info):")
     assert TRADER.index('if self.pumpfun_dev.get("enabled") and not self._es_marcado(') < segunda
-    assert TRADER.index("if self.max_entry_mc > 0 and entry_price > 0:") < segunda
     assert segunda < TRADER.index("            if self.paper_trade:")
