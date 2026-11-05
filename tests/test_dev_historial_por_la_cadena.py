@@ -62,6 +62,7 @@ def _pumpfun(status, data=None):
 @pytest.fixture(autouse=True)
 def _limpio():
     pumpfun_dev._cache.clear()
+    pumpfun_dev._lanzadas_desde.clear()
     pumpfun_dev._en_vuelo.clear()
     pumpfun_dev._pumpfun_bloqueado_hasta = 0.0
     pumpfun_dev._rpc_respaldo = None
@@ -343,3 +344,36 @@ def test_el_escuchador_precalienta_al_ver_la_creacion():
     src = (Path(pumpfun_dev.__file__).parent / "universal_logs_listener.py").read_text(encoding="utf-8")
     i_registro = src.index("registrar_bloque_inicial(\n")
     assert "precalentar(str(_dev))" in src[i_registro:i_registro + 900]
+
+
+
+# --- Guardar 3 h sin que el dato mienta a favor (5-nov) ---------------------
+
+def test_se_guarda_tres_horas():
+    assert pumpfun_dev._TTL == 3 * 3600
+
+
+def test_guardado_y_sin_lanzar_mas_se_usa_tal_cual_sin_llamar_a_nadie():
+    dev = str(Keypair().pubkey())
+    pumpfun_dev._guardar(dev, __import__("time").time(), 100, 1, 0.01)
+    with _pumpfun(403):
+        assert asyncio.run(pumpfun_dev.creator_migration_stats(dev)) == (100, 1, 0.01)
+        assert _Sesion.llamadas == 0
+
+
+def test_cada_lanzamiento_nuevo_baja_el_porcentaje_guardado():
+    """EL QUE IMPORTA: 1 de 100 justo en el 1%, lanza otra -> 1 de 101, NO pasa."""
+    dev = str(Keypair().pubkey())
+    pumpfun_dev._guardar(dev, __import__("time").time(), 100, 1, 0.01)
+    pumpfun_dev.precalentar(dev)  # el escuchador ve nacer otra moneda suya
+    lanzadas, migradas, tasa = asyncio.run(pumpfun_dev.creator_migration_stats(dev))
+    assert (lanzadas, migradas) == (101, 1)
+    assert tasa < 0.01
+
+
+def test_una_lectura_nueva_pone_el_contador_a_cero():
+    dev = str(Keypair().pubkey())
+    pumpfun_dev._guardar(dev, __import__("time").time(), 100, 1, 0.01)
+    pumpfun_dev.precalentar(dev)
+    pumpfun_dev._guardar(dev, __import__("time").time(), 101, 2, 2 / 101)
+    assert asyncio.run(pumpfun_dev.creator_migration_stats(dev))[:2] == (101, 2)

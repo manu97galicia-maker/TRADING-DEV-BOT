@@ -25,8 +25,26 @@ logger = get_logger(__name__)
 
 _API = "https://frontend-api-v3.pump.fun/coins"
 _HEADERS = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
-_TTL = 600.0  # cache a creator's stats for 10 min
+#: CUANTO SE GUARDA EL HISTORIAL DE UN DEV: 3 horas (5-nov, "Y si puede ser
+#: todavia mas rapido mejor" -> "Si"). Muchos devs lanzan varias monedas
+#: seguidas: con esto la segunda y siguientes se deciden al instante, sin
+#: volver a leer su historial. Venia de 10 min.
+#:
+#: Y SIN QUE EL DATO GUARDADO MIENTA A FAVOR: si el dev lanza mas monedas
+#: mientras esta guardado, su porcentaje real BAJA (mas lanzadas, las mismas
+#: migradas). Por eso cada lanzamiento suyo que se ve nacer se suma a sus
+#: lanzadas (`_lanzadas_desde`): el porcentaje guardado solo puede quedarse
+#: igual o bajar, nunca subir. Si una moneda suya migra mientras tanto, no
+#: se cuenta hasta la siguiente lectura: eso se equivoca hacia lo prudente.
+_TTL = 3 * 3600.0
 _cache: dict[str, tuple[float, int, int, float]] = {}  # creator -> (ts, launches, migrations, rate)
+#: Lanzamientos del dev vistos nacer DESPUES de guardar su historial.
+_lanzadas_desde: dict[str, int] = {}
+
+
+def _guardar(creator: str, now: float, launches: int, migrations: int, rate: float) -> None:
+    _cache[creator] = (now, launches, migrations, rate)
+    _lanzadas_desde.pop(creator, None)
 
 #: Picos de las monedas del creador que SI migraron, por creador.
 #:
@@ -267,7 +285,12 @@ def precalentar(creator: str) -> None:
     Solo actua si hay una estrategia con el filtro del dev encendido (es la
     que registra el nodo con `usar_rpc_de_respaldo`): sin ella no gasta nada.
     """
-    if _rpc_respaldo is None or not creator:
+    if not creator:
+        return
+    # Un lanzamiento mas de un dev ya guardado: se suma (ver `_TTL`).
+    if creator in _cache:
+        _lanzadas_desde[creator] = _lanzadas_desde.get(creator, 0) + 1
+    if _rpc_respaldo is None:
         return
     hit = _cache.get(creator)
     if hit and time.time() - hit[0] < _TTL:
@@ -302,7 +325,9 @@ async def creator_migration_stats(creator: str) -> tuple[int, int, float]:
     now = time.time()
     hit = _cache.get(creator)
     if hit and now - hit[0] < _TTL:
-        return hit[1], hit[2], hit[3]
+        lanzadas = hit[1] + _lanzadas_desde.get(creator, 0)
+        migradas = hit[2]
+        return lanzadas, migradas, (migradas / lanzadas if lanzadas else 0.0)
 
     tarea = _en_vuelo.get(creator)
     if tarea is not None and not tarea.done():
@@ -325,7 +350,7 @@ async def _consultar_por_la_cadena(
         return 0, 0, 0.0
     launches, migrations = leido
     rate = migrations / launches if launches else 0.0
-    _cache[creator] = (now, launches, migrations, rate)
+    _guardar(creator, now, launches, migrations, rate)
     return launches, migrations, rate
 
 
@@ -367,7 +392,7 @@ async def _consultar(creator: str) -> tuple[int, int, float]:
                 picos.append(float(v))
                 break
     _picos[creator] = sorted(picos, reverse=True)
-    _cache[creator] = (now, launches, migrations, rate)
+    _guardar(creator, now, launches, migrations, rate)
     return launches, migrations, rate
 
 
