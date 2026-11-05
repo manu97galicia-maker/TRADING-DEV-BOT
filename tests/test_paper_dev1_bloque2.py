@@ -21,13 +21,9 @@ TRADER = (ROOT / "src" / "trading" / "universal_trader.py").read_text(
 SOL_USD_REFERENCIA = 105.0
 
 
-def test_nace_en_papel_y_no_se_cuela_en_todas() -> None:
-    # Nacio en papel el 3-nov y paso a real el 4-nov, pidiendolo ("como
-    # poner en real"). Que no vuelva a papel por accidente.
-    assert CFG["filters"]["paper_trade"] is False, (
-        "volvio a papel: se puso en real el 4-nov por orden expresa de Manu"
-    )
-    assert "ya no lo esta" in FICHERO.read_text(encoding="utf-8").lower()
+def test_esta_en_papel_y_no_se_cuela_en_todas() -> None:
+    assert CFG["filters"]["paper_trade"] is True
+    assert "nunca firma ni mueve sol" in FICHERO.read_text(encoding="utf-8").lower()
     # enabled solo lo mira el arranque de "todas"; en false no arranca junto
     # a las demas estrategias sobre la misma wallet.
     assert CFG["enabled"] is False
@@ -56,15 +52,15 @@ def test_el_dev_es_la_unica_condicion_de_entrada() -> None:
     assert f["max_first_block_usd"] == 0
     assert f["buy_from_second_block"] is False
     assert f["second_block_confirmation"]["enabled"] is False
-    # No quedan filtros de MC, edad, Mayhem, listas ni bloques.
+    # Solo quedan dev 1% y edad 1-2 s; no MC, presión, Mayhem, listas ni bloques.
     assert f["max_entry_mc"] == 0
     assert f.get("min_entry_mc", 0) == 0
     assert f["max_buy_age"] == 0
     assert f["allow_mayhem"] is True
     assert f["require_mayhem"] is False
     assert f["ignorar_listas_de_devs"] is True
-    assert f["curva_96"]["min_edad_seg"] == 0
-    assert f["curva_96"]["max_edad_seg"] == 0
+    assert f["curva_96"]["min_edad_seg"] == 1
+    assert f["curva_96"]["max_edad_seg"] == 2
     assert f["curva_96"]["tope"] == 1.0
 
 
@@ -175,25 +171,27 @@ def test_el_stop_sale_rapido_como_en_el_bot_real_anterior() -> None:
     assert t["sell_slippage"] == 0.25
 
 
-def test_sin_filtro_de_edad() -> None:
+def test_ventana_de_edad_exacta_de_uno_a_dos_segundos() -> None:
     c96 = CFG["filters"]["curva_96"]
-    assert c96["max_edad_seg"] == 0
-    assert c96.get("min_edad_seg", 0) == 0
+    assert c96["max_edad_seg"] == 2
+    assert c96.get("min_edad_seg", 0) == 1
 
 
-def test_edad_desactivada_acepta_cualquier_edad() -> None:
+def test_ventana_de_edad_rechaza_fuera_de_uno_a_dos_segundos() -> None:
     from test_ventana_de_edad import _con_edad, _fuente
 
     c96 = CFG["filters"]["curva_96"]
     f = _fuente(min_edad_seg=c96.get("min_edad_seg", 0), max_edad_seg=c96["max_edad_seg"])
-    _con_edad("nueva", 2.5)
+    _con_edad("nueva", 1.5)
     assert f._fuera_de_edad("nueva", "NUEVA") is False
-    _con_edad("pasada", 3.5)
-    assert f._fuera_de_edad("pasada", "PASADA") is False
-    assert f._fuera_de_edad("nunca-vista-nacer", "TARDE") is False
+    _con_edad("temprana", 0.5)
+    assert f._fuera_de_edad("temprana", "TEMPRANA") is True
+    _con_edad("pasada", 2.5)
+    assert f._fuera_de_edad("pasada", "PASADA") is True
+    assert f._fuera_de_edad("nunca-vista-nacer", "TARDE") is True
 
 
-def test_sin_edad_no_hay_rechazo_antes_de_comprar() -> None:
+def test_la_edad_se_revalida_justo_antes_de_comprar() -> None:
     from types import SimpleNamespace
 
     from test_ventana_de_edad import _con_edad
@@ -207,12 +205,13 @@ def test_sin_edad_no_hay_rechazo_antes_de_comprar() -> None:
     )
     comprobar = UniversalTrader._demasiado_vieja_para_comprar
 
-    _con_edad("rapida", 2.4)
+    _con_edad("rapida", 1.4)
     assert comprobar(yo, SimpleNamespace(mint="rapida", symbol="R")) is False
-    _con_edad("lenta", 3.6)
-    assert comprobar(yo, SimpleNamespace(mint="lenta", symbol="L")) is False
-    assert comprobar(yo, SimpleNamespace(mint="nunca-vista", symbol="N")) is False
-    assert motivos == []
+    _con_edad("lenta", 2.6)
+    assert comprobar(yo, SimpleNamespace(mint="lenta", symbol="L")) is True
+    assert "ya tiene 2.6 s al ir a comprar (máx 2 s)" in motivos[-1]
+    assert comprobar(yo, SimpleNamespace(mint="nunca-vista", symbol="N")) is True
+    assert "edad desconocida" in motivos[-1]
 
 
 def test_ni_marcados_ni_mediana_pueden_saltarse_el_uno_por_ciento() -> None:

@@ -15,15 +15,13 @@
 # Y EL 4-nov POR LA TARDE: "Pon 0.2 sol para solventar el problema y quita lo
 # de 375". 30 $ -> 0,2 SOL fijos, y el primer bloque sin minimo de dolares.
 #
-# NACIO EN PAPEL Y YA NO LO ESTA: desde el 4-nov opera con DINERO REAL
-# (ver el bloque de `paper_trade`, mas abajo). El nombre del fichero sigue
-# diciendo `bot-paper-...` porque decide el sufijo del estado; renombrarlo
-# dejaria huerfanas las posiciones vivas.
+# VUELVE A PAPER EL 5-nov para validar la ventana exacta de 1-2 segundos sin
+# mover SOL. El nombre del fichero conserva el mismo estado historico.
 #
 # LO QUE NO SE PIDIO Y SE HA TENIDO QUE ELEGIR, para poder cambiarlo luego:
 #   - 0,03 SOL de reserva: sin ella no queda SOL para pagar la comision de
 #     vender.
-name: "REAL DEV 1% (UNICA CONDICION)"
+name: "PAPER DEV 1% + EDAD 1-2 S"
 env_file: ".env"
 rpc_endpoint: "${SOLANA_NODE_RPC_ENDPOINT}"
 wss_endpoint: "${SOLANA_NODE_WSS_ENDPOINT}"
@@ -149,18 +147,15 @@ retries:
 
 filters:
   listener_type: "logs"
-  # REAL DESDE EL 4-nov, pedido: "como poner en real". Venia de true.
-  # Ningun otro numero se mueve. Hoy (desde el 4-nov): 0,2 SOL por compra y
-  # 7 plazas, como mucho 1,4 SOL dentro a la vez, mas 12 centimos de comision
-  # por compra. En SOL fijos el bot no necesita el precio de SOL para comprar.
-  paper_trade: false
+  # PAPER: registra entradas y salidas simuladas, nunca firma ni mueve SOL.
+  paper_trade: true
   paper_watch_secs: 600
   max_token_age: 0
   # SIN TOPE DE MARKET CAP, pedido el 5-nov: "Elimina lo del mcap". Venia de
   # 3563 (~4.100 $ con el SOL a 105, pedido el 4-nov). Sin tope, el bot ya no
   # lee la curva para comprobarlo: una consulta menos al nodo antes de comprar.
   max_entry_mc: 0
-  # No hay ventana ni condición de edad/primer bloque: decide al conocer el dev.
+  # No espera bloques ni volumen; decide tras comprobar dev y edad.
   max_buy_age: 0
   # El 1% del dev es la única condición de mercado, también para Mayhem.
   allow_mayhem: true
@@ -175,7 +170,7 @@ filters:
   # bloque. Al quitarlo tambien entran las monedas que el bot ve TARDE (sin
   # su nacimiento): se descartaban solo porque no podia mirar su primer
   # bloque (244 de 741 en el droplet ese dia).
-  # No quedan filtros de primer/segundo bloque, MC, edad, Mayhem ni listas.
+  # No quedan filtros de bloques, MC, presión, Mayhem ni listas.
   min_first_block_buys: 0
   max_first_block_buys: 0
   # SIN MINIMO DE DOLARES, pedido el 4-nov: "quita lo de 375". Venia de 375.
@@ -216,9 +211,10 @@ filters:
     max_bundle_pct: 0
     max_bundle_pct_sin_historia: 0
     heartbeat_interval: 300
-    # Sin filtro de edad: 0 desactiva tanto el mínimo como el máximo.
-    min_edad_seg: 0
-    max_edad_seg: 0
+    # Solo nacimientos de Pump.fun entre 1 y 2 segundos. Se comprueba al
+    # detectar y otra vez tras obtener el historial del dev, antes del paper fill.
+    min_edad_seg: 1
+    max_edad_seg: 2
 
   # DEV: minimo 1% de sus monedas migradas, y por tanto al menos una.
   # tasa = migradas / lanzadas, de sus ultimas 200 monedas en la API de

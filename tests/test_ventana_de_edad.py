@@ -32,6 +32,7 @@ import time
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 import yaml
 
 from monitoring import volumen
@@ -165,7 +166,7 @@ def _bot_encendido() -> tuple[str, dict]:
     cfg = yaml.safe_load(fichero.read_text(encoding="utf-8")) or {}
     if (cfg.get("filters") or {}).get("paper_trade") is False:
         return fichero.name, cfg
-    raise AssertionError("no hay ningun bot en real en bots/")
+    pytest.skip("no hay ningún bot real activo; los guardianes reales no aplican")
 
 
 def test_los_frenos_de_calidad_son_una_decision_y_se_ven_de_un_vistazo() -> None:
