@@ -18,6 +18,9 @@ CFG = yaml.safe_load(FICHERO.read_text(encoding="utf-8"))
 TRADER = (ROOT / "src" / "trading" / "universal_trader.py").read_text(
     encoding="utf-8"
 )
+PAPER_LAUNCHER = (ROOT / "deploy" / "arranca-dev1-paper.sh").read_text(
+    encoding="utf-8"
+)
 SOL_USD_REFERENCIA = 105.0
 
 
@@ -27,6 +30,19 @@ def test_esta_en_papel_y_no_se_cuela_en_todas() -> None:
     # enabled solo lo mira el arranque de "todas"; en false no arranca junto
     # a las demas estrategias sobre la misma wallet.
     assert CFG["enabled"] is False
+
+
+def test_el_lanzador_solo_acepta_paper_y_la_regla_completa() -> None:
+    for required in (
+        "paper_trade: true",
+        "min_edad_seg: 1",
+        "max_edad_seg: 2",
+        "min_migrations: 1",
+        "min_rate: 0.01",
+        "strict_only: true",
+    ):
+        assert required in PAPER_LAUNCHER
+    assert "paper_trade: false" not in PAPER_LAUNCHER
 
 
 def test_dev_con_minimo_un_uno_por_ciento_de_migradas() -> None:
