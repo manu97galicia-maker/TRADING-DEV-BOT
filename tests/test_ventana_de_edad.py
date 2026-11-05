@@ -52,12 +52,15 @@ def _fuente(**extra) -> Curva96Source:
 
 
 def _con_edad(mint: str, segundos: float) -> None:
-    """Deja la moneda con esa edad y marcada como vista nacer."""
+    """Deja la moneda con esa edad, marcada como vista nacer y con su
+    creacion vista (la transaccion que crea el mint)."""
     volumen._nacimiento[mint] = (time.time() - segundos, True)
+    volumen._creacion[mint] = time.time() - segundos
 
 
 def _sin_haber_visto_nacer(mint: str) -> None:
     volumen._nacimiento.pop(mint, None)
+    volumen._creacion.pop(mint, None)
 
 
 def test_una_moneda_de_tres_segundos_se_descarta() -> None:

@@ -35,6 +35,8 @@ logger = get_logger(__name__)
 #: Discriminador de TradeEvent = primeros 8 bytes de sha256("event:TradeEvent").
 #: Anchor lo antepone a los datos del evento dentro del "Program data:" del log.
 DISC_TRADE = hashlib.sha256(b"event:TradeEvent").digest()[:8]
+#: El evento que emite pump.fun al CREAR una moneda (create y create_v2).
+DISC_CREATE = hashlib.sha256(b"event:CreateEvent").digest()[:8]
 
 #: mint -> [(momento, sol_negociado, es_compra, wallet), ...]. Se guarda con
 #: marca de tiempo para poder preguntar "cuanto se movio en los ultimos N
@@ -353,6 +355,43 @@ def dev_de_la_creacion(mint: str) -> str | None:
     return _dev_creacion.get(str(mint))
 
 
+def _apuntar_creacion(mint: str, ahora: float) -> None:
+    """Apunta la hora (de este reloj) a la que llego la creacion del mint.
+
+    Solo la primera vez: la creacion ocurre una vez y la ven dos escuchas.
+    """
+    if mint not in _creacion:
+        _creacion[mint] = ahora
+        while len(_creacion) > _MAX_DEV_CREACION:
+            _creacion.pop(next(iter(_creacion)))
+
+
+def _mint_de_la_creacion(cuerpo: bytes) -> str | None:
+    """Mint de un CreateEvent (sin discriminador). None si no se puede leer.
+
+    Layout: name, symbol, uri (u32 de largo + bytes cada una) y luego mint.
+    """
+    pos = 0
+    for _ in range(3):
+        if pos + 4 > len(cuerpo):
+            return None
+        largo = struct.unpack_from("<I", cuerpo, pos)[0]
+        pos += 4 + largo
+    if pos + 32 > len(cuerpo):
+        return None
+    return _b58(cuerpo[pos : pos + 32])
+
+
+def _creacion_del_evento(cuerpo: bytes, ahora: float) -> None:
+    """Apunta la creacion leida de un CreateEvent. No lanza nunca."""
+    try:
+        mint = _mint_de_la_creacion(cuerpo)
+    except Exception:  # noqa: BLE001
+        return
+    if mint:
+        _apuntar_creacion(mint, ahora)
+
+
 def registrar_bloque_inicial(
     mint: str, slot: int | None, dev: str | None = None
 ) -> None:
@@ -369,6 +408,8 @@ def registrar_bloque_inicial(
         _dev_creacion[str(mint)] = str(dev)
         while len(_dev_creacion) > _MAX_DEV_CREACION:
             _dev_creacion.pop(next(iter(_dev_creacion)))
+    # LA CREACION DE VERDAD, con la hora de este reloj (ver `edad_real`).
+    _apuntar_creacion(str(mint), time.time())
     if slot is None:
         return
     bloque = int(slot)
@@ -403,6 +444,13 @@ def registrar_logs(logs: list[str], slot: int | None = None, *, allowed_mints: s
         try:
             crudo = base64.b64decode(linea.split("Program data:", 1)[1].strip())
         except Exception:  # noqa: BLE001
+            continue
+        if crudo[:8] == DISC_CREATE:
+            # LA CREACION, vista aqui mismo (5-nov, "maximo 3 segundos del
+            # mint"). Las dos escuchas pasan por esta funcion, asi que la
+            # creacion queda apuntada ANTES de mirar la primera compra, sin
+            # depender de cual de las dos llegue primero.
+            _creacion_del_evento(crudo[8:], ahora)
             continue
         if len(crudo) < 8 + 32 + 8 + 8 + 1 or crudo[:8] != DISC_TRADE:
             continue
@@ -731,39 +779,58 @@ def edad(mint: str) -> float | None:
 
 #: Hora de ESTE reloj a la que llego la primera operacion de cada moneda.
 _llegada: dict[str, float] = {}
+#: Hora de ESTE reloj a la que llego la CREACION de cada moneda: la
+#: transaccion que crea el mint (su CreateEvent, en `registrar_logs`, o el
+#: escuchador de creaciones, `registrar_bloque_inicial`). Es lo unico que
+#: prueba que se la vio nacer.
+_creacion: dict[str, float] = {}
 #: Con menos muestras de retraso no se fia de la mediana.
 _MIN_MUESTRAS_RETRASO = 20
 
 
 def edad_real(mint: str) -> float | None:
-    """Segundos desde el nacimiento REAL, con mas precision que `edad`.
+    """Segundos desde la CREACION DEL MINT. None si no se vio crear.
 
-    5-nov, "Pon 3 segundos de vida maxima" -> "Desde su nacimiento real". La
-    cadena apunta la hora de creacion en SEGUNDOS ENTEROS, asi que `edad`
-    (ahora - hora de la cadena) ve cada moneda hasta casi 1 s mas vieja: la
-    edad real esta entre `edad - 1` y `edad`, y no se sabe donde.
+    5-nov, "Pon 3 segundos de vida maxima" -> "Desde su nacimiento real" ->
+    "Ha comprado una de hace 9 dias. Repito: maximo 3 segundos del mint".
 
-    Aqui se afina con el reloj de este bot, que va al milisegundo:
-        edad real ~ (ahora - cuando LLEGO su creacion) + lo que tarda el aviso
+    POR QUE NO VALE `edad` / `vio_la_creacion`. Dan por "vista nacer" una
+    moneda en cuanto se le ven las reservas de la curva llenas, y apuntan como
+    nacimiento la PRIMERA OPERACION que el bot ve. Una moneda vieja y muerta,
+    en la que todos vendieron, vuelve a tener la curva llena: si alguien la
+    compra hoy, parecia recien nacida. Asi se compro una de 9 dias.
+
+    AQUI SOLO CUENTA LA CREACION DE VERDAD: la transaccion que crea el mint,
+    que el escuchador ve y apunta (`_creacion`). Sin ella, None: edad
+    desconocida, no se compra.
+
+    La edad se mide con el reloj de este bot (al milisegundo):
+        (ahora - cuando llego la creacion) + lo que tarda el aviso
     Lo que tarda el aviso sale de la mediana de `retraso()`, que se mide
-    contra la hora de la cadena y por eso lleva de media +0,5 s del redondeo;
-    se le restan.
+    contra la hora de la cadena y lleva de media +0,5 s del redondeo.
 
-    Y PARA NO EQUIVOCARSE NUNCA MAS DE LO QUE PERMITE LA CADENA, el resultado
-    se mantiene dentro de [edad - 1, edad]: un aviso que llegue anormalmente
-    tarde no puede hacer pasar por nueva una moneda que la cadena sabe vieja.
-    Sin hora de llegada (o sin haberla visto nacer), devuelve `edad`.
+    Y se acota con la cadena, que apunta su hora en segundos enteros:
+      - nunca MAS JOVEN que `edad - 1` (la creacion fue antes de cualquier
+        operacion vista);
+      - nunca MAS VIEJA que `edad`, pero solo si esa hora salio de la misma
+        transaccion de creacion (la compra del dev al crear), que es cuando
+        `edad` cuenta desde el mint.
     """
-    techo = edad(mint)
-    if techo is None:
+    creada = _creacion.get(mint)
+    if creada is None:
         return None
-    llegada = _llegada.get(mint)
-    if llegada is None:
-        return techo
+    ahora = time.time()
     p50, _p95, muestras = retraso()
     aviso = max(0.0, p50 - 0.5) if muestras >= _MIN_MUESTRAS_RETRASO else 0.0
-    estimada = (time.time() - llegada) + aviso
-    return min(techo, max(techo - 1.0, estimada, 0.0))
+    estimada = max(0.0, (ahora - creada) + aviso)
+    cadena = edad(mint) if vio_la_creacion(mint) else None
+    if cadena is None:
+        return estimada
+    estimada = max(estimada, cadena - 1.0)
+    llegada = _llegada.get(mint)
+    if llegada is not None and abs(llegada - creada) < 1.0:
+        estimada = min(estimada, cadena)
+    return estimada
 
 
 def retraso() -> tuple[float, float, int]:
