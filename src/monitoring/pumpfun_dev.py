@@ -107,9 +107,20 @@ async def _por_la_cadena(creator: str) -> tuple[int, int] | None:
             timeout=_ESPERA_HELIUS,
         )
     except Exception as error:  # noqa: BLE001
+        # EL MOTIVO, NO SOLO EL TIPO (5-nov): con solo "HistoryUnavailableError"
+        # no se distinguia un dev sin monedas previas (lo normal) de una
+        # averia. Se escribe el texto SOLO de los errores cuyo texto es fijo
+        # (las etiquetas de Codex y el RuntimeError de `_rpc`): un error de
+        # red podria llevar la URL del nodo, y en ella la clave de Helius.
+        from monitoring.creator_history_index import (  # noqa: PLC0415
+            HistoryUnavailableError,
+        )
+
+        fijo = isinstance(error, HistoryUnavailableError | RuntimeError)
         logger.warning(
             "Historial del dev %s por la cadena no disponible (%s)",
-            creator[:8], type(error).__name__,
+            creator[:8],
+            f"{type(error).__name__}: {error}" if fijo else type(error).__name__,
         )
         return None
     return len(foto.curves), len(foto.migrated_curves)

@@ -151,3 +151,38 @@ def test_el_trader_registra_el_nodo_si_el_filtro_esta_encendido():
     with open(texto, encoding="utf-8") as f:
         src = f.read()
     assert "usar_rpc_de_respaldo(self.solana_client.post_rpc)" in src
+
+
+def test_el_log_da_el_motivo_pero_nunca_la_clave(caplog):
+    import logging
+
+    dev = Keypair().pubkey()
+
+    async def nodo_que_revienta(body):
+        raise OSError("fallo en https://mainnet.helius-rpc.com/?api-key=SECRETO999")
+
+    pumpfun_dev.usar_rpc_de_respaldo(nodo_que_revienta)
+    caplog.set_level(logging.WARNING)
+    for nombre in ("monitoring.pumpfun_dev", "pumpfun_dev"):
+        logging.getLogger(nombre).propagate = True
+    with _pumpfun(403):
+        asyncio.run(pumpfun_dev.creator_migration_stats(str(dev)))
+    texto = caplog.text
+    assert "SECRETO999" not in texto
+
+
+def test_un_dev_sin_monedas_previas_queda_dicho_en_el_log(caplog):
+    import logging
+
+    dev = Keypair().pubkey()
+
+    async def nodo_vacio(body):
+        if body["method"] == "getSlot":
+            return {"result": 100}
+        return {"result": {"data": [], "paginationToken": None}}
+
+    pumpfun_dev.usar_rpc_de_respaldo(nodo_vacio)
+    caplog.set_level(logging.WARNING)
+    with _pumpfun(403):
+        assert asyncio.run(pumpfun_dev.creator_migration_stats(str(dev))) == (0, 0, 0.0)
+    assert "No verified creation history" in caplog.text

@@ -58,3 +58,13 @@ def test_dice_si_el_respaldo_por_helius_falla(tmp_path: Path) -> None:
     salida = _correr(tmp_path, log)
     assert "el respaldo por Helius falla (1 veces)" in salida
     assert "RuntimeError" in salida
+
+
+def test_un_dev_sin_monedas_previas_no_es_una_averia(tmp_path: Path) -> None:
+    linea = ("WARNING:p:Historial del dev Abc12345 por la cadena no disponible "
+             "(HistoryUnavailableError: No verified creation history)\n")
+    log = "WARNING:p:pump.fun contesta 403 al pedir el historial del dev; se usa la cadena (Helius)\n" + linea * 5
+    salida = _correr(tmp_path, log)
+    assert "el respaldo por Helius esta funcionando" in salida
+    assert "devs SIN ninguna moneda antes: 5" in salida
+    assert "falla" not in salida

@@ -54,13 +54,21 @@ echo "  ..    devs que pasan: $devok | no llegan al 1%: $devno (de ellos con 0 l
 # El respaldo por la cadena (4ed81dd, 5-nov): si pump.fun da 403, Helius.
 respaldo=$(n "se usa la cadena")
 cadena_mal=$(n "por la cadena no disponible")
+# "No verified creation history" = el dev no ha creado ninguna moneda antes.
+# No es una averia: es lo normal en pump.fun, y descartarlo es lo correcto.
+nuevos=$(n "No verified creation history")
+averias=$(( cadena_mal - nuevos ))
 if [ "$respaldo" -eq 0 ] && [ "$cod" != "200" ]; then
   mal "el bot NO esta usando el respaldo por Helius: arranco con codigo viejo (reinicialo)"
-elif [ "$cadena_mal" -gt 0 ]; then
-  mal "el respaldo por Helius falla ($cadena_mal veces). Motivos:"
-  grep -h "por la cadena no disponible" "$LOG" | sed -E 's/.*\((.*)\)$/\1/' | sort | uniq -c | head -3
-elif [ "$respaldo" -gt 0 ]; then
+elif [ "$averias" -gt 0 ]; then
+  mal "el respaldo por Helius falla ($averias veces). Motivos:"
+  grep -h "por la cadena no disponible" "$LOG" | grep -v "No verified creation history" \
+    | sed -E 's/.*\((.*)\)$/\1/' | sort | uniq -c | sort -rn | head -4
+else
   ok "el respaldo por Helius esta funcionando"
+fi
+if [ "$nuevos" -gt 0 ]; then
+  echo "  ..    devs SIN ninguna moneda antes: $nuevos (lo normal; se descartan bien)"
 fi
 if [ "$devno" -gt 0 ] && [ "$cero" -eq "$devno" ] && [ "$devok" -eq 0 ]; then
   mal "TODOS los rechazados salen con 0 lanzadas: el dato del dev no esta llegando"
