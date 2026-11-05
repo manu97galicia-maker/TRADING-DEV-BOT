@@ -3728,9 +3728,10 @@ class UniversalTrader:
         maximo = float((getattr(self, "curva_96", None) or {}).get("max_edad_seg") or 0)
         if maximo <= 0:
             return False
-        from monitoring.volumen import edad  # noqa: PLC0415
+        # Desde el nacimiento REAL (5-nov): ver `volumen.edad_real`.
+        from monitoring.volumen import edad_real  # noqa: PLC0415
 
-        vida = edad(str(token_info.mint))
+        vida = edad_real(str(token_info.mint))
         if vida is None:
             self._descarta(token_info, "edad desconocida al ir a comprar (no se vio nacer)")
             return True

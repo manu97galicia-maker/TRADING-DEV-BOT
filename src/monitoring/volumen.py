@@ -419,7 +419,7 @@ def registrar_logs(logs: list[str], slot: int | None = None, *, allowed_mints: s
             sol = sol_lamports / 1e9
             _ops[mint].append((ahora, sol, es_compra, wallet))
             _recortar(mint)
-            _anotar_nacimiento(mint, _marca_de_la_cadena(cuerpo, ahora))
+            _anotar_nacimiento(mint, _marca_de_la_cadena(cuerpo, ahora), llegada=ahora)
             if mint not in tocadas:
                 tocadas.append(mint)
             if len(cuerpo) >= _LARGO_RESERVAS:
@@ -538,8 +538,12 @@ def _marca_de_la_cadena(cuerpo: bytes, ahora: float) -> float:
     return ts_cadena
 
 
-def _anotar_nacimiento(mint: str, nacio: float) -> None:
-    """Primera vez que se ve la moneda. No se borra con el resto."""
+def _anotar_nacimiento(mint: str, nacio: float, llegada: float | None = None) -> None:
+    """Primera vez que se ve la moneda. No se borra con el resto.
+
+    `llegada` es la hora de ESTE reloj (al milisegundo) a la que llego su
+    primera operacion; la usa `edad_real`.
+    """
     if mint in _nacimiento:
         return
     if len(_nacimiento) >= _MAX_NACIMIENTOS:
@@ -549,7 +553,10 @@ def _anotar_nacimiento(mint: str, nacio: float) -> None:
             : _MAX_NACIMIENTOS // 2
         ]:
             del _nacimiento[viejo]
+            _llegada.pop(viejo, None)
     _nacimiento[mint] = (nacio, False)
+    if llegada is not None:
+        _llegada[mint] = llegada
 
 
 def _recortar(mint: str) -> None:
@@ -720,6 +727,43 @@ def edad(mint: str) -> float | None:
     if not ops:
         return 0.0
     return max(0.0, time.time() - ops[0][0])
+
+
+#: Hora de ESTE reloj a la que llego la primera operacion de cada moneda.
+_llegada: dict[str, float] = {}
+#: Con menos muestras de retraso no se fia de la mediana.
+_MIN_MUESTRAS_RETRASO = 20
+
+
+def edad_real(mint: str) -> float | None:
+    """Segundos desde el nacimiento REAL, con mas precision que `edad`.
+
+    5-nov, "Pon 3 segundos de vida maxima" -> "Desde su nacimiento real". La
+    cadena apunta la hora de creacion en SEGUNDOS ENTEROS, asi que `edad`
+    (ahora - hora de la cadena) ve cada moneda hasta casi 1 s mas vieja: la
+    edad real esta entre `edad - 1` y `edad`, y no se sabe donde.
+
+    Aqui se afina con el reloj de este bot, que va al milisegundo:
+        edad real ~ (ahora - cuando LLEGO su creacion) + lo que tarda el aviso
+    Lo que tarda el aviso sale de la mediana de `retraso()`, que se mide
+    contra la hora de la cadena y por eso lleva de media +0,5 s del redondeo;
+    se le restan.
+
+    Y PARA NO EQUIVOCARSE NUNCA MAS DE LO QUE PERMITE LA CADENA, el resultado
+    se mantiene dentro de [edad - 1, edad]: un aviso que llegue anormalmente
+    tarde no puede hacer pasar por nueva una moneda que la cadena sabe vieja.
+    Sin hora de llegada (o sin haberla visto nacer), devuelve `edad`.
+    """
+    techo = edad(mint)
+    if techo is None:
+        return None
+    llegada = _llegada.get(mint)
+    if llegada is None:
+        return techo
+    p50, _p95, muestras = retraso()
+    aviso = max(0.0, p50 - 0.5) if muestras >= _MIN_MUESTRAS_RETRASO else 0.0
+    estimada = (time.time() - llegada) + aviso
+    return min(techo, max(techo - 1.0, estimada, 0.0))
 
 
 def retraso() -> tuple[float, float, int]:

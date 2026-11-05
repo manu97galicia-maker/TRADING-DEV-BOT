@@ -235,9 +235,11 @@ filters:
     # compra va despues: el dato del dev puede tardar hasta 9 s (timeout_seg).
     #
     # 3 SEGUNDOS, pedido el 5-nov: "Pon 3 segundos de vida maxima". Venia de 2.
-    # La cadena apunta la hora de creacion en SEGUNDOS ENTEROS (volumen.py,
-    # `_marca_de_la_cadena`), asi que el bot ve cada moneda hasta casi 1 s mas
-    # vieja de lo que es: con 3 aqui, en la practica son entre 2 y 3 s reales.
+    # DESDE EL NACIMIENTO REAL (5-nov, "Desde su nacimiento real"). La cadena
+    # apunta la hora de creacion en SEGUNDOS ENTEROS y veia cada moneda hasta
+    # casi 1 s mas vieja; ahora la edad se afina con el reloj del bot y su
+    # retraso medido (volumen.py, `edad_real`), sin salirse nunca de lo que
+    # la cadena permite. Estos 3 s son 3 s reales.
     # Se mira al detectar Y otra vez justo antes de comprar
     # (universal_trader.py, `_demasiado_vieja_para_comprar`).
     min_edad_seg: 0

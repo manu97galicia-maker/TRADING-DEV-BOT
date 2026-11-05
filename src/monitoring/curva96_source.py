@@ -294,7 +294,8 @@ class Curva96Source:
         if self.min_edad_seg <= 0 and self.max_edad_seg <= 0:
             return False
 
-        edad = volumen.edad(mint)
+        # Desde el nacimiento REAL (5-nov): ver `volumen.edad_real`.
+        edad = volumen.edad_real(mint)
         if edad is None:
             if self.max_edad_seg > 0:
                 ventana = f"entre {self.min_edad_seg:.0f}s y {self.max_edad_seg:.0f}s"
