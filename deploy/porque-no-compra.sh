@@ -51,8 +51,19 @@ if [ "$cod" = "200" ]; then ok "pump.fun contesta al droplet (codigo 200)"
 else mal "pump.fun NO contesta bien al droplet (codigo $cod): el filtro del 1% no puede funcionar"; fi
 devok=$(n "DEV OK"); devno=$(n "DEV filtro BLOCK"); cero=$(n "migr / 0 lanz"); desc=$(n "dev desconocido")
 echo "  ..    devs que pasan: $devok | no llegan al 1%: $devno (de ellos con 0 lanzadas: $cero) | desconocidos: $desc"
-if [ "$devno" -gt 0 ] && [ "$cero" -eq "$devno" ]; then
-  mal "TODOS los rechazados salen con 0 lanzadas: pump.fun no esta dando el dato"
+# El respaldo por la cadena (4ed81dd, 5-nov): si pump.fun da 403, Helius.
+respaldo=$(n "se usa la cadena")
+cadena_mal=$(n "por la cadena no disponible")
+if [ "$respaldo" -eq 0 ] && [ "$cod" != "200" ]; then
+  mal "el bot NO esta usando el respaldo por Helius: arranco con codigo viejo (reinicialo)"
+elif [ "$cadena_mal" -gt 0 ]; then
+  mal "el respaldo por Helius falla ($cadena_mal veces). Motivos:"
+  grep -h "por la cadena no disponible" "$LOG" | sed -E 's/.*\((.*)\)$/\1/' | sort | uniq -c | head -3
+elif [ "$respaldo" -gt 0 ]; then
+  ok "el respaldo por Helius esta funcionando"
+fi
+if [ "$devno" -gt 0 ] && [ "$cero" -eq "$devno" ] && [ "$devok" -eq 0 ]; then
+  mal "TODOS los rechazados salen con 0 lanzadas: el dato del dev no esta llegando"
 fi
 
 echo "=== 4. EL EMBUDO: por que se descartan ==="

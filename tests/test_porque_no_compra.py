@@ -48,3 +48,13 @@ def test_detecta_que_pump_fun_no_da_el_dato(tmp_path: Path) -> None:
     log = "INFO:t:DEV filtro BLOCK A: 0 migr / 0 lanz (0%) < 1 y 1%\n" * 3
     salida = _correr(tmp_path, log)
     assert "TODOS los rechazados salen con 0 lanzadas" in salida
+    # Y como no hay rastro del respaldo, dice que el codigo es viejo.
+    assert "codigo viejo" in salida or "200" in salida
+
+
+def test_dice_si_el_respaldo_por_helius_falla(tmp_path: Path) -> None:
+    log = ("WARNING:p:pump.fun contesta 403 al pedir el historial del dev; se usa la cadena (Helius)\n"
+           "WARNING:p:Historial del dev Abc12345 por la cadena no disponible (RuntimeError)\n")
+    salida = _correr(tmp_path, log)
+    assert "el respaldo por Helius falla (1 veces)" in salida
+    assert "RuntimeError" in salida
