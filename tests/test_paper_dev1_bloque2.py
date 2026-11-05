@@ -189,22 +189,22 @@ def test_el_stop_sale_rapido_como_en_el_bot_real_anterior() -> None:
     assert t["sell_slippage"] == 0.25
 
 
-def test_solo_monedas_nuevas_de_hasta_2_segundos() -> None:
-    """5-nov: "Tienen que ser proyectos nuevos" -> "Edad maxima 2 seg"."""
+def test_solo_monedas_nuevas_de_hasta_3_segundos() -> None:
+    """5-nov: "Edad maxima 2 seg" -> "Pon 3 segundos de vida maxima"."""
     c96 = CFG["filters"]["curva_96"]
-    assert c96["max_edad_seg"] == 2
+    assert c96["max_edad_seg"] == 3
     assert c96.get("min_edad_seg", 0) == 0
 
 
 def test_la_ventana_de_2_segundos_funciona_de_verdad() -> None:
-    """1,5 s pasa; 2,5 s no; sin haberla visto nacer, tampoco."""
+    """2,5 s pasa; 3,5 s no; sin haberla visto nacer, tampoco."""
     from test_ventana_de_edad import _con_edad, _fuente
 
     c96 = CFG["filters"]["curva_96"]
     f = _fuente(min_edad_seg=c96.get("min_edad_seg", 0), max_edad_seg=c96["max_edad_seg"])
-    _con_edad("nueva", 1.5)
+    _con_edad("nueva", 2.5)
     assert f._fuera_de_edad("nueva", "NUEVA") is False
-    _con_edad("pasada", 2.5)
+    _con_edad("pasada", 3.5)
     assert f._fuera_de_edad("pasada", "PASADA") is True
     assert f._fuera_de_edad("nunca-vista-nacer", "TARDE") is True
 
@@ -228,11 +228,11 @@ def test_la_edad_se_vuelve_a_mirar_justo_antes_de_comprar() -> None:
     )
     comprobar = UniversalTrader._demasiado_vieja_para_comprar
 
-    _con_edad("rapida", 1.4)
+    _con_edad("rapida", 2.4)
     assert comprobar(yo, SimpleNamespace(mint="rapida", symbol="R")) is False
-    _con_edad("lenta", 3.2)
+    _con_edad("lenta", 3.6)
     assert comprobar(yo, SimpleNamespace(mint="lenta", symbol="L")) is True
-    assert "ya tiene 3.2 s al ir a comprar (máx 2 s)" in motivos[-1]
+    assert "ya tiene 3.6 s al ir a comprar (máx 3 s)" in motivos[-1]
     assert comprobar(yo, SimpleNamespace(mint="nunca-vista", symbol="N")) is True
     assert "edad desconocida" in motivos[-1]
 
