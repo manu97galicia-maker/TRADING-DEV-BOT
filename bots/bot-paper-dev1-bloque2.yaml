@@ -213,8 +213,8 @@ filters:
     heartbeat_interval: 300
     # Solo nacimientos de Pump.fun entre 1 y 2 segundos. Se comprueba al
     # detectar y otra vez tras obtener el historial del dev, antes del paper fill.
-    min_edad_seg: 1
-    max_edad_seg: 2
+    min_edad_seg: 0
+    max_edad_seg: 5
 
   # DEV: minimo 1% de sus monedas migradas, y por tanto al menos una.
   # tasa = migradas / lanzadas, de sus ultimas 200 monedas en la API de
