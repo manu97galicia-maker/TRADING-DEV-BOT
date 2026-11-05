@@ -309,6 +309,7 @@ def _olvidar(mint: str) -> None:
     """Borra todo rastro de una moneda. Que no se escape ningun diccionario:
     uno olvidado aqui es una fuga de memoria que solo se nota tras dias."""
     _ops.pop(mint, None)
+    _dev_creacion.pop(mint, None)
     _first_slot.pop(mint, None)
     _last_slot.pop(mint, None)
     _first_slot_buys.pop(mint, None)
@@ -330,13 +331,44 @@ def _olvidar(mint: str) -> None:
     # como "sin historia" de por vida. Ver su comentario mas arriba.
 
 
-def registrar_bloque_inicial(mint: str, slot: int | None) -> None:
+#: QUIEN FIRMO LA CREACION de cada moneda: el dev de verdad (5-nov).
+#:
+#: Las monedas que entran por la fuente de curva (curva96) se reconstruyen
+#: leyendo la cuenta BondingCurve, y ahi `creator` es quien COBRA las
+#: comisiones, no quien creo la moneda. Pump.fun puede cambiarlo a la cuenta
+#: de reparto de comisiones (PDA "sharing-config" del programa Pump Fees), y
+#: entonces el filtro de migradas preguntaba a pump.fun por una direccion que
+#: no ha creado nada: "0 migr / 0 lanz" y descarte. Pedido el 5-nov
+#: ("Arreglarlo") tras ver 23 de 23 devs rechazados mientras en pump.fun
+#: salian monedas de devs con migradas. Se guarda aqui al ver la creacion
+#: (CreateEvent.user) y lo recoge el constructor de la ficha.
+_dev_creacion: dict[str, str] = {}
+#: Tope de memoria: las monedas que nacen y nunca operan no pasan por
+#: `_olvidar`. Se sueltan las mas viejas (el dict guarda el orden de entrada).
+_MAX_DEV_CREACION = 20_000
+
+
+def dev_de_la_creacion(mint: str) -> str | None:
+    """El firmante de la creacion de `mint`, si se vio nacer."""
+    return _dev_creacion.get(str(mint))
+
+
+def registrar_bloque_inicial(
+    mint: str, slot: int | None, dev: str | None = None
+) -> None:
     """Fija el slot de creacion para contar solo sus compras.
 
     ``registrar_logs`` se ejecuta antes de que el parser conozca el mint. Si la
     creacion no incluyera una compra, sin esta marca el primer trade posterior
     se confundiria con el primer bloque.
+
+    `dev` es quien firmo la creacion (CreateEvent.user). Se guarda aunque no
+    haya slot: es la identidad del dev, no depende del bloque.
     """
+    if dev:
+        _dev_creacion[str(mint)] = str(dev)
+        while len(_dev_creacion) > _MAX_DEV_CREACION:
+            _dev_creacion.pop(next(iter(_dev_creacion)))
     if slot is None:
         return
     bloque = int(slot)

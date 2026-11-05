@@ -77,6 +77,30 @@ _ctx_wallet: ContextVar[Wallet | None] = ContextVar("_ctx_wallet", default=None)
 _ctx_seller: ContextVar[object | None] = ContextVar("_ctx_seller", default=None)
 
 
+def identidad_del_dev(token_info: object) -> str | None:
+    """A quien se le mira el historial de migradas: QUIEN CREO la moneda.
+
+    5-nov ("Arreglarlo"): el filtro preguntaba por `creator`, que en las
+    monedas reconstruidas desde la curva es quien COBRA las comisiones. Pump.fun
+    puede cambiarlo a la cuenta de reparto (PDA "sharing-config" de Pump Fees),
+    que no ha creado ninguna moneda: pump.fun contestaba 0 lanzadas y el filtro
+    descartaba a todos. Ahora va primero `user` (quien firmo la creacion, ver
+    `_dev_creacion` en monitoring/volumen.py) y nunca la cuenta de reparto.
+    Devuelve None si solo se conoce esa cuenta: dev desconocido, no se compra.
+    """
+    from trading.pump_fee_identity import sharing_config_address  # noqa: PLC0415
+
+    try:
+        reparto = sharing_config_address(token_info.mint)
+    except (ValueError, TypeError, AttributeError):
+        reparto = None
+    for campo in ("user", "creator"):
+        valor = getattr(token_info, campo, None)
+        if valor and str(valor) != reparto:
+            return str(valor)
+    return None
+
+
 def _load_creator_file(path: str) -> set[str]:
     """Load wallet addresses from a ``.json`` or ``.txt`` file.
 
@@ -4029,9 +4053,7 @@ class UniversalTrader:
             # se puede bajar sin renunciar a saber quien lanza.
             _dev_ya = None
             if self.pumpfun_dev.get("enabled"):
-                _dev0 = getattr(token_info, "creator", None) or getattr(
-                    token_info, "user", None
-                )
+                _dev0 = identidad_del_dev(token_info)
                 if _dev0:
                     from monitoring.pumpfun_dev import creator_migration_stats
 
@@ -4837,9 +4859,16 @@ class UniversalTrader:
                 if self.pumpfun_dev.get("enabled") and not self._es_marcado(
                     token_info
                 ):
-                    creator = getattr(token_info, "creator", None)
+                    creator = identidad_del_dev(token_info)
                     if not creator:
-                        logger.info(f"{token_info.symbol}: sin creator; se omite")
+                        # Solo se conoce la cuenta de reparto de comisiones: no
+                        # se vio nacer y la curva no dice quien la creo. Antes
+                        # esto salia como "0 migr / 0 lanz" sin decir por que.
+                        self._descarta(
+                            token_info,
+                            "dev desconocido (la curva apunta a la cuenta de "
+                            "reparto de comisiones y no se vio la creacion)",
+                        )
                         return
                     from monitoring.pumpfun_dev import creator_migration_stats
 

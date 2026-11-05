@@ -186,7 +186,27 @@ async def build_pumpfun_token_info(  # noqa: C901, PLR0911, PLR0913 -- independe
             "Incomplete accounts for %s (creator=%s); skipping", mint_str, creator
         )
         return None
+    poner_dev_de_la_creacion(token_info)
     return token_info
+
+
+def poner_dev_de_la_creacion(token_info: TokenInfo) -> None:
+    """`user` pasa a ser quien firmo la creacion, si se vio nacer (5-nov).
+
+    Solo cambia `user`, que es la IDENTIDAD del dev (filtro de migradas,
+    listas de devs). `creator` y `creator_vault` se quedan como los dejo la
+    curva, porque son a quien la compra le paga la comision: cambiarlos
+    rompería la instruccion. Se hace despues de derivar las cuentas, por eso.
+    """
+    from monitoring.volumen import dev_de_la_creacion  # noqa: PLC0415
+
+    dev = dev_de_la_creacion(str(token_info.mint))
+    if not dev:
+        return
+    try:
+        token_info.user = Pubkey.from_string(dev)
+    except (ValueError, TypeError):
+        return
 
 
 async def build_generic_token_info(

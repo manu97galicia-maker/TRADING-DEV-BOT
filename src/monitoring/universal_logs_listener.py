@@ -225,7 +225,12 @@ class UniversalLogsListener(BaseTokenListener):
                     try:
                         from monitoring.volumen import registrar_bloque_inicial
 
-                        registrar_bloque_inicial(str(token_info.mint), slot)
+                        # CreateEvent.user: el que firmo la creacion, el dev
+                        # de verdad (ver `_dev_creacion` en volumen.py).
+                        _dev = getattr(token_info, "user", None)
+                        registrar_bloque_inicial(
+                            str(token_info.mint), slot, dev=str(_dev) if _dev else None
+                        )
                     except Exception:  # noqa: BLE001, S110
                         pass
                     return token_info
