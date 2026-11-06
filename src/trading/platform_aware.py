@@ -29,6 +29,31 @@ logger = get_logger(__name__)
 _PRECIO_FRESCO_SEG = 2.0
 
 
+def actualizar_creador_de_la_curva(
+    token_info: TokenInfo, pool_state: dict | None, address_provider: object
+) -> bool:
+    """Pone en `token_info` el creador que dice la CURVA y su `creator_vault`.
+
+    Devuelve True si lo ha cambiado. Sin creador en `pool_state` (precio
+    reutilizado, o una plataforma que no lo da) no toca nada.
+    """
+    creador = (pool_state or {}).get("creator")
+    if not creador or not hasattr(address_provider, "derive_creator_vault"):
+        return False
+    nuevo = Pubkey.from_string(creador) if isinstance(creador, str) else creador
+    if str(nuevo) == str(getattr(token_info, "creator", "") or ""):
+        return False
+    logger.info(
+        "%s: el creador de la curva es %s, no %s; se usa el de la curva",
+        token_info.symbol,
+        str(nuevo)[:8],
+        str(getattr(token_info, "creator", "") or "?")[:8],
+    )
+    token_info.creator = nuevo
+    token_info.creator_vault = address_provider.derive_creator_vault(nuevo)
+    return True
+
+
 class PlatformAwareBuyer(Trader):
     """Platform-aware token buyer that works with any supported platform."""
 
@@ -236,6 +261,14 @@ class PlatformAwareBuyer(Trader):
                     "is_cashback_coin", token_info.is_cashback_coin
                 )
                 token_amount = amount / token_price_sol
+
+            # EL CREADOR QUE MANDA ES EL DE LA CURVA, NO EL DEL AVISO (6-nov).
+            # La compra de coolcoin (2mEumt...) fallo en cadena con 2006
+            # ConstraintSeeds en `creator_vault`: el bot saco la cuenta del
+            # creador que trae el aviso de creacion, pero pump.fun ya habia
+            # cambiado el creador de la curva (reparto de comisiones). La venta
+            # ya lo releia de la curva; la compra no. Ahora tambien.
+            actualizar_creador_de_la_curva(token_info, pool_state, address_provider)
 
             # A dev entry retains its original launch identity while Pump Fees
             # may migrate the fee recipient to this mint's sharing config.
