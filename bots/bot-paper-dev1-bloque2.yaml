@@ -103,7 +103,15 @@ trade:
   max_hold_time: 0
   price_check_interval: 1
 
-# 12 CENTIMOS DE PRIORITY FEE EN LA COMPRA, pedido el 5-nov: "Sube a 12
+# +0,003 SOL DE PRIORITY FEE EN LA COMPRA, pedido el 6-nov: "sube 0.003 mas
+# la comision de comprar con prioridad". Venia de 0,001142857 SOL (los 12
+# centimos de abajo); ahora 0,004142857 SOL por compra:
+#     4.142.857 lamports / 100.000 unidades = 41.428.571 microlamports
+# Unos 37 centimos con el SOL a 89,86 $ (43 con el SOL a 105 $). Se paga
+# tambien en las compras que fallan (van sin simulacion previa). Queda por
+# debajo de `hard_cap` (42.424.243), asi que no se recorta.
+#
+# (HISTORIA) 12 CENTIMOS DE PRIORITY FEE EN LA COMPRA, pedido el 5-nov: "Sube a 12
 # centimos". Venia de 6 (pedido el 3-nov). Es lo que pagaba bot-unica123-real
 # en real. El bot no cobra en dolares: cobra microlamports por unidad de
 # computo, y la compra reserva 100.000 unidades
@@ -134,7 +142,7 @@ trade:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  fixed_amount_compra: 11428571
+  fixed_amount_compra: 41428571
   fixed_amount: 5714286
   fixed_amount_venta_proteccion: 42_424_243
   extra_percentage: 0.0

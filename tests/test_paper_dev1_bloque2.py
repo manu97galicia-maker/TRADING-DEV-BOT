@@ -90,9 +90,9 @@ def test_la_compra_paga_doce_centimos_de_priority_fee() -> None:
     builder = object.__new__(PumpFunInstructionBuilder)
     unidades = builder.get_buy_compute_unit_limit()
     microlamports = int(fees["fixed_amount_compra"])
-    dolares = microlamports * unidades / 1e6 / 1e9 * SOL_USD_REFERENCIA
-    # 5-nov: "Sube a 12 centimos" (venia de 6).
-    assert abs(dolares - 0.12) < 0.0005, f"la compra paga {dolares:.4f} $"
+    sol = microlamports * unidades / 1e6 / 1e9
+    # 5-nov: "Sube a 12 centimos" (0,001142857 SOL); 6-nov: "sube 0.003 mas".
+    assert abs(sol - (0.12 / SOL_USD_REFERENCIA + 0.003)) < 1e-6, f"la compra paga {sol:.6f} SOL"
     # Las ventas normales no se pidio subirlas: siguen como estaban.
     assert int(fees["fixed_amount"]) == 5714286
     # El tope no puede recortar la comision de entrada por debajo de lo pedido.
