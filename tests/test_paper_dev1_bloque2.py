@@ -46,12 +46,12 @@ def test_el_lanzador_solo_acepta_paper_y_la_regla_completa() -> None:
 
 
 def test_dev_con_minimo_un_uno_por_ciento_de_migradas() -> None:
-    """6-nov por la tarde: "Pon migracion minima 1% no 1"."""
+    """6-nov por la noche: "minimo dos migraciones y minimo 20% proyectos
+    migrados" (venia de 1 y el 1%)."""
     dev = CFG["filters"]["pumpfun_dev"]
     assert dev["enabled"] is True
-    assert dev["min_rate"] == 0.01
-    # El 1% exige al menos una: con 0 migradas la tasa es 0.
-    assert dev["min_migrations"] == 1
+    assert dev["min_rate"] == 0.20
+    assert dev["min_migrations"] == 2
     # No admite rutas alternativas (marcados o mediana).
     assert dev["compra_inmediata"] is True
     assert dev["timeout_seg"] >= 9
@@ -99,9 +99,9 @@ def test_la_compra_paga_doce_centimos_de_priority_fee() -> None:
     unidades = builder.get_buy_compute_unit_limit()
     microlamports = int(fees["fixed_amount_compra"])
     sol = microlamports * unidades / 1e6 / 1e9
-    # 5-nov: "Sube a 12 centimos" (0,001142857 SOL); 6-nov: "sube 0.003 mas"
-    # y luego "Sube 0.005 sol las prioridades de compra".
-    assert abs(sol - (0.12 / SOL_USD_REFERENCIA + 0.003 + 0.005)) < 1e-6, f"la compra paga {sol:.6f} SOL"
+    # 5-nov: "Sube a 12 centimos" (0,001142857 SOL); 6-nov: "sube 0.003 mas",
+    # "Sube 0.005 sol las prioridades de compra" y "sube 0.005 la prioridad".
+    assert abs(sol - (0.12 / SOL_USD_REFERENCIA + 0.003 + 0.005 + 0.005)) < 1e-6, f"la compra paga {sol:.6f} SOL"
     # Las ventas normales no se pidio subirlas: siguen como estaban.
     assert int(fees["fixed_amount"]) == 5714286
     # El tope no puede recortar la comision de entrada por debajo de lo pedido.
@@ -129,31 +129,30 @@ def test_plazas_que_el_nodo_vigila_y_reserva_para_vender() -> None:
 
 
 def test_salida_del_4_nov() -> None:
-    """TP 38% recupera iniciales +10%; el resto en tramos hasta 19k."""
+    """TP 45% recupera lo invertido; el resto en 4 tramos hasta 20k."""
     t = CFG["trade"]
-    # 6-nov: "0.15 por compra" y luego "0.1 compra" (venia de 0,2, 4-nov). En
-    # SOL fijos no depende del precio de SOL.
-    assert t["buy_amount"] == 0.1
+    # 6-nov: "0.15 por compra", "0.1 compra" y por la noche "compre 0.25 sol".
+    # En SOL fijos no depende del precio de SOL.
+    assert t["buy_amount"] == 0.25
     assert t["buy_amount_usd"] == 0
     assert t.get("fraccion_saldo", 0) == 0
     assert t["stop_loss_percentage"] == 0.25
-    assert t["take_profit_percentage"] == 0.38
-    # Lo vendido en el TP1 vale lo invertido +10%: 1,38 x fraccion = 1,10.
-    assert abs(1.38 * t["take_profit_sell_percentage"] - 1.10) < 1e-9
+    # 6-nov: "el tp recuperamos iniciales al hacer 45%".
+    assert t["take_profit_percentage"] == 0.45
+    # Lo vendido en el TP1 vale justo lo invertido: 1,45 x fraccion = 1.
+    assert abs(1.45 * t["take_profit_sell_percentage"] - 1.0) < 1e-9
     # Ningun otro peldano de porcentaje: los tramos de MC solo se arman
     # cuando TODOS los de porcentaje han saltado, y un tp2 lo retrasaria.
     for n in range(2, 7):
         assert f"tp{n}_gain" not in t and f"tp{n}_sell" not in t
     assert "tp_extra" not in t
-    # 6-nov: "Y los tp progresivo hasta los 19k la mayoria vendes antes de 10".
+    # 6-nov por la noche: "el resto lo vendemos en 44 partes hasta los 20k"
+    # (4 partes iguales).
     tramos = t["mc_take_profit_tiers"]
-    assert [x["target_mc"] for x in tramos] == [7000, 9000, 12000, 15000, 19000]
+    assert [x["target_mc"] for x in tramos] == [8000, 12000, 16000, 20000]
     resto = 1 - t["take_profit_sell_percentage"]
-    reparto = [0.30, 0.30, 0.15, 0.15, 0.10]
-    for x, parte in zip(tramos, reparto, strict=True):
-        assert abs(x["sell"] - resto * parte) < 1e-9
-    antes_de_10k = sum(x["sell"] for x in tramos if x["target_mc"] < 10000)
-    assert antes_de_10k > resto / 2
+    for x in tramos:
+        assert abs(x["sell"] - resto / 4) < 1e-9
     # Entre el TP1 y los tramos se vende el 100%: no queda polvo.
     assert t["take_profit_sell_percentage"] + sum(x["sell"] for x in tramos) >= 1.0
 

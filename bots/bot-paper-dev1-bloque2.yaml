@@ -35,7 +35,11 @@ platform: "pump_fun"
 
 trade:
   nombre_estrategia: "paper-dev1-bloque2"
-  # 0,1 SOL FIJOS, pedido el 6-nov: "0.1 compra". Venia de 0,15 (pedido ese
+  # 0,25 SOL FIJOS, pedido el 6-nov por la noche ("... y compre 0.25 sol").
+  # Venia de 0,1. Cada compra aparta 0,25 x 1,35 + 0,003 = 0,3405 SOL del
+  # saldo mientras se hace.
+  #
+  # (HISTORIA) 0,1 SOL FIJOS, pedido el 6-nov: "0.1 compra". Venia de 0,15 (pedido ese
   # mismo dia con "0.15 por compra y volumen 200"; antes 0,2). Cada compra
   # aparta 0,1 x 1,35 (deslizamiento) + 0,003 = 0,138 SOL del saldo mientras
   # se hace.
@@ -46,13 +50,13 @@ trade:
   # confirmado NO SE COMPRA"), y si el droplet no llega a la web de precios,
   # no compra nunca. En SOL fijos el importe sale de `buy_amount` y no
   # depende de ningun precio. 0,2 SOL son unos 21 $ con el SOL a 105 $.
-  buy_amount: 0.1
+  buy_amount: 0.25
   buy_amount_usd: 0
   fraccion_saldo: 0
   min_reserve_sol: 0.03
   # 7 PLAZAS, pedido el 4-nov: "maximo 7 operaciones simultaneas". Venia
-  # de 5. 7 x 0,1 SOL = 0,7 SOL como maximo dentro a la vez (desde el
-  # 6-nov; con 0,2 eran 1,4).
+  # de 5. 7 x 0,25 SOL = 1,75 SOL como maximo dentro a la vez (desde el
+  # 6-nov por la noche).
   # Para que el nodo las vigile todas hubo que subir node.max_rps de 12 a 14
   # (ver abajo).
   max_posiciones: 7
@@ -75,42 +79,37 @@ trade:
   exit_strategy: "tp_sl"
   # SALIDA (4-nov). Stop -25%.
   #
-  # TP1 a +38%: vende lo justo para recuperar lo invertido +10%.
-  #     1,10 / 1,38 = 0,7971014493  -> vende el 79,71% de la posicion.
-  #     Con 0,1 SOL: vende 0,1 x 1,38 x 0,7971 = 0,11 SOL (lo puesto + 0,01).
-  #     Queda el 20,29% de la posicion, ya pagado.
+  # TP1 A +45%, RECUPERA LO INVERTIDO, pedido el 6-nov por la noche: "el tp
+  # recuperamos iniciales al hacer 45%". Venia de +38% recuperando lo
+  # invertido +10%.
+  #     1 / 1,45 = 0,6896551724  -> vende el 68,97% de la posicion.
+  #     Con 0,25 SOL: vende 0,25 x 1,45 x 0,6897 = 0,25 SOL (lo puesto).
+  #     Queda el 31,03% de la posicion, ya pagado.
   #
-  # ESE 20,29% SALE EN CINCO TRAMOS PROGRESIVOS HASTA LOS 19k, pedido el
-  # 6-nov: "Y los tp progresivo hasta los 19k la mayoria vendes antes de 10".
-  # Venia de tres tramos iguales a 8k / 11k / 14k (4-nov). Reparto del resto:
-  #     7.000 $ -> 30%  (6,087% de la posicion)
-  #     9.000 $ -> 30%  (6,087%)       <- antes de 10k: el 60% del resto
-  #    12.000 $ -> 15%  (3,043%)
-  #    15.000 $ -> 15%  (3,043%)
-  #    19.000 $ -> 10%  (2,029%)
-  # Con el TP1, antes de los 10k sale el 91,9% de la posicion. Los niveles
-  # intermedios y el reparto no se dijeron con numeros: los eligio Claude
-  # para cumplir "progresivo" y "la mayoria antes de 10"; se pueden cambiar.
+  # ESE 31,03% SALE EN CUATRO PARTES IGUALES HASTA LOS 20k, pedido a la vez:
+  # "el resto lo vendemos en 44 partes hasta los 20k" (leido como 4 partes).
+  #     8.000 $ / 12.000 $ / 16.000 $ / 20.000 $ -> un 25% del resto cada uno
+  #     (7,759% de la posicion en cada tramo).
+  # Los niveles intermedios no se dijeron: Claude los repartio por igual
+  # hasta los 20k; se pueden cambiar. Venia de cinco tramos 7k-19k.
   # Los porcentajes son DE LA POSICION ORIGINAL (universal_trader.py: "Sell
   # fractions are relative to the original buy"), y los tramos solo se arman
   # cuando ya ha saltado el TP1.
-  # Los 19k SI son dolares de verdad: este market cap se calcula con el
+  # Los 20k SI son dolares de verdad: este market cap se calcula con el
   # precio de SOL del momento, no con el de 91,24 del tope de entrada.
   stop_loss_percentage: 0.25
-  take_profit_percentage: 0.38
-  take_profit_sell_percentage: 0.7971014493
+  take_profit_percentage: 0.45
+  take_profit_sell_percentage: 0.6896551724
   mc_take_profit_tiers:
-    - target_mc: 7000
-      sell: 0.0608695652
-    - target_mc: 9000
-      sell: 0.0608695652
+    - target_mc: 8000
+      sell: 0.0775862069
     - target_mc: 12000
-      sell: 0.0304347826
-    - target_mc: 15000
-      sell: 0.0304347826
+      sell: 0.0775862069
+    - target_mc: 16000
+      sell: 0.0775862069
     # El ultimo redondea hacia arriba para que no quede polvo sin vender.
-    - target_mc: 19000
-      sell: 0.0202898552
+    - target_mc: 20000
+      sell: 0.0775862070
   # Tras el TP1 el stop del resto sube a entrada +3%. No se pidio nada para
   # este caso; es lo que ya tenia.
   stop_a_entrada_tras_tp: true
@@ -132,7 +131,13 @@ trade:
   venta_muerta_gain: 0.0
   price_check_interval: 1
 
-# +0,005 SOL MAS, pedido el 6-nov por la tarde: "Sube 0.005 sol las
+# +0,005 SOL OTRA VEZ, pedido el 6-nov por la noche ("sube 0.005 la
+# prioridad de compra"). Venia de 0,009142857 SOL; ahora 0,014142857 SOL:
+#     14.142.857 lamports / 100.000 unidades = 141.428.571 microlamports
+# Unos 1,27 $ por compra con el SOL a 89,86 $ (5,7% de una compra de 0,25).
+# `hard_cap` sube con ella a 141.428.571 para que no se recorte.
+#
+# (HISTORIA) +0,005 SOL MAS, pedido el 6-nov por la tarde: "Sube 0.005 sol las
 # prioridades de compra". Venia de 0,004142857 SOL; ahora 0,009142857 SOL
 # por compra:
 #     9.142.857 lamports / 100.000 unidades = 91.428.571 microlamports
@@ -179,7 +184,7 @@ trade:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  fixed_amount_compra: 91428571
+  fixed_amount_compra: 141428571
   fixed_amount: 5714286
   fixed_amount_venta_proteccion: 42_424_243
   extra_percentage: 0.0
@@ -189,10 +194,11 @@ priority_fees:
   # normal y no servia de nada. La compra paga sus 12 centimos exactos,
   # porque `fixed_amount_compra` es fijo y queda por debajo de este tope; el
   # tope solo es el techo contra una errata.
-  # 6-nov: 42.424.243 -> 91.428.571, lo justo para la compra de 0,00914 SOL
+  # 6-nov: 42.424.243 -> 91.428.571 -> 141.428.571, lo justo para la compra
+  # de 0,01414 SOL
   # (si no, el codigo la recortaria a la del stop). Las ventas no cambian:
   # usan sus propios numeros fijos, por debajo de este tope.
-  hard_cap: 91_428_571
+  hard_cap: 141_428_571
 
 retries:
   max_attempts: 1
@@ -298,7 +304,13 @@ filters:
     min_edad_seg: 0
     max_edad_seg: 8
 
-  # DEV: MINIMO EL 1% DE SUS LANZAMIENTOS MIGRADOS, pedido el 6-nov por la
+  # DEV: MINIMO 2 MIGRADAS Y EL 20% DE SUS LANZAMIENTOS, pedido el 6-nov
+  # por la noche: "Pon minimo dos migraciones y minimo 20% proyectos
+  # migrados". Venia de 1 migrada y el 1%. Con 2 de 10 pasa (20%); con 2
+  # de 11 no (18%); con 1 de 3 tampoco (falta la segunda migrada).
+  # Lo que cuesta: muchos menos devs pasan; se compra mucho menos.
+  #
+  # (HISTORIA) DEV: MINIMO EL 1% DE SUS LANZAMIENTOS MIGRADOS, pedido el 6-nov por la
   # tarde: "Pon migracion minima 1% no 1". Venia de min_rate 0 (bastaba 1
   # migrada, pedido esa misma manana). tasa = migradas / lanzadas: 1 de 100
   # pasa (1,00%); 1 de 101 no (0,99%). Y al menos 1 migrada (min_migrations).
@@ -316,11 +328,11 @@ filters:
   # dato en 9, no se compra (con dinero real, no saber no es que si).
   pumpfun_dev:
     enabled: true
-    min_migrations: 1
-    min_rate: 0.01
+    min_migrations: 2
+    min_rate: 0.20
     compra_inmediata: true
     timeout_seg: 9
-    # Prohíbe rutas alternativas (marcados o mediana): todos deben pasar el 1%.
+    # Prohíbe rutas alternativas (marcados o mediana): todos deben pasar la regla.
     strict_only: true
 
 cleanup:
