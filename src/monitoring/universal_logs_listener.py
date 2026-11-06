@@ -229,16 +229,26 @@ class UniversalLogsListener(BaseTokenListener):
                         # de verdad (ver `_dev_creacion` en volumen.py).
                         _dev = getattr(token_info, "user", None)
                         registrar_bloque_inicial(
-                            str(token_info.mint), slot, dev=str(_dev) if _dev else None
+                            str(token_info.mint),
+                            slot,
+                            dev=str(_dev) if _dev else None,
+                            firma=signature,
                         )
                         # Y su historial empieza a leerse YA, a la vez que se
-                        # monta la ficha (ver `precalentar`, 5-nov).
+                        # monta la ficha (ver `precalentar`, 5-nov). Si la creo
+                        # una plataforma (`user` es una cuenta de programa), el
+                        # dev es la cartera que la minteo (6-nov).
                         if _dev:
                             from monitoring.pumpfun_dev import (  # noqa: PLC0415
+                                es_cartera,
                                 precalentar,
+                                precalentar_por_firma,
                             )
 
-                            precalentar(str(_dev), str(token_info.mint))
+                            if es_cartera(str(_dev)):
+                                precalentar(str(_dev), str(token_info.mint))
+                            else:
+                                precalentar_por_firma(str(token_info.mint))
                     except Exception:  # noqa: BLE001, S110
                         pass
                     return token_info

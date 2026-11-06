@@ -191,6 +191,37 @@ def _creacion_firmada_sin_logs(tx: dict, developer: str) -> bool:
     return False
 
 
+def _minteadas_por_plataforma(tx: dict, developer: str) -> set[str]:
+    """Monedas que `developer` MINTEO a traves de una plataforma (6-nov).
+
+    `creation_mints` solo cuenta las creaciones cuyo `user` es el propio dev.
+    Cuando la crea una plataforma, `user` es una cuenta del programa y la
+    cartera que la minteo es otra firmante de la transaccion: esa es el dev
+    ("El dev es el q mint"). Se cuentan aqui. Lanza si no se puede leer; el
+    llamador ya trata lo ilegible como lanzada y no migrada.
+    """
+    from monitoring.creator_transaction_history import (  # noqa: PLC0415
+        CREATE,
+        event_parser,
+        pump_events,
+    )
+
+    message, meta = tx["transaction"]["message"], tx["meta"]
+    firmantes = list(message["accountKeys"])[: int(message["header"]["numRequiredSignatures"])]
+    if developer not in firmantes:
+        return set()
+    mints: set[str] = set()
+    for raw in pump_events(meta.get("logMessages") or [], strict=True):
+        if raw[:8] != CREATE:
+            continue
+        event = event_parser().decode_event_data(raw, "CreateEvent")
+        fields = (event or {}).get("fields") or {}
+        user, mint = fields.get("user"), fields.get("mint")
+        if user and mint and user != developer and not es_cartera(user):
+            mints.add(str(mint))
+    return mints
+
+
 async def _historial_tolerante(developer: str) -> tuple[int, int]:  # noqa: C901, PLR0912 -- cada tx ilegible tiene que decidirse aparte
     """(lanzadas, migradas) leidas de la cadena, tolerando transacciones ilegibles.
 
@@ -248,6 +279,7 @@ async def _historial_tolerante(developer: str) -> tuple[int, int]:  # noqa: C901
                 raise HistoryUnavailableError("Historical transaction bound reached")  # noqa: TRY003
             try:
                 mints |= creation_mints(tx, developer)
+                mints |= _minteadas_por_plataforma(tx, developer)
             except Exception:  # noqa: BLE001
                 if _creacion_firmada_sin_logs(tx, developer):
                     dudosas += 1
@@ -340,6 +372,119 @@ def precalentar(creator: str, mint: str | None = None) -> None:
             _en_vuelo.pop(c, None)
 
     tarea.add_done_callback(_al_acabar)
+
+
+# --- EL DEV ES EL QUE MINTEA (6-nov) ----------------------------------------
+# Pedido: "El dev es el q mint". Cuando una moneda se crea A TRAVES de una
+# plataforma de lanzamientos, pump.fun apunta como `user` una cuenta del
+# programa (no es una cartera: esta fuera de la curva y nadie firma con ella).
+# Antes esas monedas se descartaban ("Developer must be a creation signer
+# wallet"). Ahora el dev es la cartera que PAGO Y FIRMO la transaccion de
+# creacion: la primera cuenta del mensaje. Se le aplica la misma regla.
+
+#: mint -> cartera que la minteo (ya resuelta).
+_dev_por_mint: dict[str, str] = {}
+#: mint -> busqueda en marcha de esa cartera.
+_buscando_dev: dict[str, asyncio.Future] = {}
+#: Intentos de leer la transaccion de creacion. Recien creada puede no estar
+#: aun disponible en el nodo; 8 x 0,4 s = ~3 s como mucho.
+_INTENTOS_FIRMA = 8
+_MAX_DEV_POR_MINT = 20_000
+_PAUSA_FIRMA = 0.4
+
+
+def es_cartera(direccion: str) -> bool:
+    """True si es una cartera (una clave que puede firmar), no una cuenta de
+    programa. Las cuentas de programa estan fuera de la curva."""
+    try:
+        return Pubkey.from_string(str(direccion)).is_on_curve()
+    except (ValueError, TypeError):
+        return False
+
+
+async def _pagador_de_la_creacion(mint: str) -> str | None:
+    """La cartera que pago y firmo la creacion de `mint`, o None."""
+    from monitoring.volumen import firma_de_la_creacion  # noqa: PLC0415
+
+    firma = firma_de_la_creacion(mint)
+    if not firma or _rpc_respaldo is None:
+        return None
+    params = [
+        firma,
+        {
+            "encoding": "json",
+            "maxSupportedTransactionVersion": 0,
+            "commitment": "confirmed",
+        },
+    ]
+    for intento in range(_INTENTOS_FIRMA):
+        if intento:
+            await asyncio.sleep(_PAUSA_FIRMA)
+        try:
+            data = await _rpc_respaldo(
+                {"jsonrpc": "2.0", "id": 1, "method": "getTransaction", "params": params}
+            )
+        except Exception:  # noqa: BLE001, S112 -- un fallo de red: se reintenta
+            continue
+        tx = (data or {}).get("result")
+        if not tx:
+            continue
+        try:
+            pagador = str(tx["transaction"]["message"]["accountKeys"][0])
+        except (KeyError, IndexError, TypeError):
+            return None
+        return pagador if es_cartera(pagador) else None
+    return None
+
+
+def _buscar_dev(mint: str) -> asyncio.Future | None:
+    """Lanza (o devuelve la ya lanzada) busqueda de quien minteo `mint`."""
+    tarea = _buscando_dev.get(mint)
+    if tarea is not None:
+        return tarea
+    try:
+        tarea = asyncio.ensure_future(_pagador_de_la_creacion(mint))
+    except RuntimeError:
+        return None
+    _buscando_dev[mint] = tarea
+
+    def _al_acabar(t: asyncio.Future, m: str = mint) -> None:
+        _buscando_dev.pop(m, None)
+        if t.cancelled() or t.exception() is not None:
+            return
+        dev = t.result()
+        if dev:
+            _dev_por_mint[m] = dev
+            while len(_dev_por_mint) > _MAX_DEV_POR_MINT:
+                _dev_por_mint.pop(next(iter(_dev_por_mint)))
+            # Y su historial empieza a leerse ya, como con cualquier dev.
+            precalentar(dev, m)
+
+    tarea.add_done_callback(_al_acabar)
+    return tarea
+
+
+def precalentar_por_firma(mint: str) -> None:
+    """Al ver nacer una moneda creada por una plataforma: busca YA quien la
+    minteo y, en cuanto lo sabe, empieza a leer su historial."""
+    if _rpc_respaldo is None or str(mint) in _dev_por_mint:
+        return
+    _buscar_dev(str(mint))
+
+
+async def dev_que_mintea(mint: str) -> str | None:
+    """La cartera que minteo `mint` (ver arriba). None si no se puede saber."""
+    mint = str(mint)
+    if mint in _dev_por_mint:
+        return _dev_por_mint[mint]
+    tarea = _buscar_dev(mint)
+    if tarea is None:
+        return None
+    try:
+        dev = await asyncio.shield(tarea)
+    except Exception:  # noqa: BLE001
+        return None
+    return dev or None
 
 
 async def creator_migration_stats(

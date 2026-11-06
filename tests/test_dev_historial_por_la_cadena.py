@@ -343,7 +343,10 @@ def test_el_escuchador_precalienta_al_ver_la_creacion():
 
     src = (Path(pumpfun_dev.__file__).parent / "universal_logs_listener.py").read_text(encoding="utf-8")
     i_registro = src.index("registrar_bloque_inicial(\n")
-    assert "precalentar(str(_dev), str(token_info.mint))" in src[i_registro:i_registro + 900]
+    tramo = src[i_registro:i_registro + 1400]
+    assert "precalentar(str(_dev), str(token_info.mint))" in tramo
+    # 6-nov: si la creo una plataforma, se busca ya la cartera que la minteo.
+    assert "precalentar_por_firma(str(token_info.mint))" in tramo
 
 
 

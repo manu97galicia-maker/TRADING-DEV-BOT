@@ -3729,6 +3729,28 @@ class UniversalTrader:
             except Exception:  # noqa: BLE001
                 logger.debug("parte de descartes", exc_info=True)
 
+    async def _dev_que_mintea(self, token_info: TokenInfo) -> str | None:
+        """El dev al que se le mira el historial: LA CARTERA QUE MINTEO.
+
+        6-nov, "El dev es el q mint". Normalmente es quien firmo la creacion
+        (`identidad_del_dev`). Si la moneda la creo una plataforma, eso es una
+        cuenta de programa, no una cartera; entonces el dev es la cartera que
+        pago y firmo la transaccion de creacion (`pumpfun_dev.dev_que_mintea`).
+        None si no se puede saber: no se compra.
+        """
+        from monitoring.pumpfun_dev import dev_que_mintea, es_cartera  # noqa: PLC0415
+
+        dev = identidad_del_dev(token_info)
+        if dev and es_cartera(dev):
+            return dev
+        minteo = await dev_que_mintea(str(token_info.mint))
+        if minteo:
+            logger.info(
+                "DEV de %s: la creo una plataforma; se mira la cartera que la "
+                "minteo (%s)", token_info.symbol, minteo[:8],
+            )
+        return minteo
+
     def _demasiado_vieja_para_comprar(self, token_info: TokenInfo) -> bool:
         """True si la moneda ya pasa de `curva_96.max_edad_seg` al ir a comprar.
 
@@ -4103,7 +4125,7 @@ class UniversalTrader:
             # se puede bajar sin renunciar a saber quien lanza.
             _dev_ya = None
             if self.pumpfun_dev.get("enabled"):
-                _dev0 = identidad_del_dev(token_info)
+                _dev0 = await self._dev_que_mintea(token_info)
                 if _dev0:
                     from monitoring.pumpfun_dev import creator_migration_stats
 
@@ -4916,15 +4938,15 @@ class UniversalTrader:
                     self.pumpfun_dev.get("strict_only", False)
                     or not self._es_marcado(token_info)
                 ):
-                    creator = identidad_del_dev(token_info)
+                    creator = await self._dev_que_mintea(token_info)
                     if not creator:
                         # Solo se conoce la cuenta de reparto de comisiones: no
                         # se vio nacer y la curva no dice quien la creo. Antes
                         # esto salia como "0 migr / 0 lanz" sin decir por que.
                         self._descarta(
                             token_info,
-                            "dev desconocido (la curva apunta a la cuenta de "
-                            "reparto de comisiones y no se vio la creacion)",
+                            "dev desconocido (no se sabe que cartera la "
+                            "minteo)",
                         )
                         return
                     from monitoring.pumpfun_dev import creator_migration_stats

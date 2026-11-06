@@ -392,8 +392,19 @@ def _creacion_del_evento(cuerpo: bytes, ahora: float) -> None:
         _apuntar_creacion(mint, ahora)
 
 
+#: Firma de la transaccion que creo cada moneda (6-nov). Hace falta para
+#: saber quien la minteo cuando la crea una plataforma (ver
+#: `pumpfun_dev.dev_que_mintea`).
+_firma_creacion: dict[str, str] = {}
+
+
+def firma_de_la_creacion(mint: str) -> str | None:
+    """La firma de la transaccion que creo `mint`, si el bot la vio."""
+    return _firma_creacion.get(str(mint))
+
+
 def registrar_bloque_inicial(
-    mint: str, slot: int | None, dev: str | None = None
+    mint: str, slot: int | None, dev: str | None = None, firma: str | None = None
 ) -> None:
     """Fija el slot de creacion para contar solo sus compras.
 
@@ -408,6 +419,10 @@ def registrar_bloque_inicial(
         _dev_creacion[str(mint)] = str(dev)
         while len(_dev_creacion) > _MAX_DEV_CREACION:
             _dev_creacion.pop(next(iter(_dev_creacion)))
+    if firma and firma != "unknown":
+        _firma_creacion[str(mint)] = str(firma)
+        while len(_firma_creacion) > _MAX_DEV_CREACION:
+            _firma_creacion.pop(next(iter(_firma_creacion)))
     # LA CREACION DE VERDAD, con la hora de este reloj (ver `edad_real`).
     _apuntar_creacion(str(mint), time.time())
     if slot is None:

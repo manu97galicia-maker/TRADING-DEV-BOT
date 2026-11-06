@@ -97,7 +97,10 @@ def test_el_filtro_de_migradas_ya_no_pregunta_por_creator() -> None:
         __import__("pathlib").Path(__file__).resolve().parents[1]
         / "src" / "trading" / "universal_trader.py"
     ).read_text(encoding="utf-8")
-    assert texto.count("identidad_del_dev(token_info)") >= 2
+    # 6-nov: los dos filtros preguntan por la cartera que minteo, que parte
+    # de `identidad_del_dev` (ver `_dev_que_mintea`).
+    assert texto.count("await self._dev_que_mintea(token_info)") >= 2
+    assert "dev = identidad_del_dev(token_info)" in texto
     assert '_dev0 = getattr(token_info, "creator", None)' not in texto
 
 
