@@ -133,9 +133,11 @@ def test_salida_del_4_nov() -> None:
     t = CFG["trade"]
     # 6-nov: "0.15 por compra", "0.1 compra" y por la noche "compre 0.25 sol".
     # En SOL fijos no depende del precio de SOL.
-    assert t["buy_amount"] == 0.25
     assert t["buy_amount_usd"] == 0
-    assert t.get("fraccion_saldo", 0) == 0
+    # 6-nov por la noche: "50% del sol balance" -> manda el porcentaje, sobre
+    # el saldo libre.
+    assert t["fraccion_saldo"] == 0.5
+    assert t["fraccion_base"] == "libre"
     assert t["stop_loss_percentage"] == 0.25
     # 6-nov: "el tp recuperamos iniciales al hacer 45%".
     assert t["take_profit_percentage"] == 0.45

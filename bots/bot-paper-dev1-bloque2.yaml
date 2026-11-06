@@ -50,9 +50,20 @@ trade:
   # confirmado NO SE COMPRA"), y si el droplet no llega a la web de precios,
   # no compra nunca. En SOL fijos el importe sale de `buy_amount` y no
   # depende de ningun precio. 0,2 SOL son unos 21 $ con el SOL a 105 $.
+  # 50% DEL SALDO DE SOL POR COMPRA, pedido el 6-nov por la noche: "50% del
+  # sol balance". Venia de 0,25 SOL fijos. Manda `fraccion_saldo` y
+  # `buy_amount` ya no se usa (se deja escrito por si se vuelve a fijos).
+  # Base "libre": el 50% del SOL GASTABLE de la wallet = saldo - 0,03 de
+  # reserva - lo que este apartado por compras en curso. Por eso cada compra
+  # sale mas pequena que la anterior mientras haya posiciones abiertas. Con
+  # 0,497 SOL: 1a ~0,233, 2a ~0,11, 3a ~0,05... Al vender, el SOL vuelve y
+  # la siguiente compra vuelve a ser grande.
+  # Lo que cuesta: la comision de prioridad (0,0141 SOL) es fija, asi que en
+  # las compras pequenas pesa mucho (en una de 0,05 SOL es un 28%).
   buy_amount: 0.25
   buy_amount_usd: 0
-  fraccion_saldo: 0
+  fraccion_saldo: 0.5
+  fraccion_base: "libre"
   min_reserve_sol: 0.03
   # 7 PLAZAS, pedido el 4-nov: "maximo 7 operaciones simultaneas". Venia
   # de 5. 7 x 0,25 SOL = 1,75 SOL como maximo dentro a la vez (desde el
