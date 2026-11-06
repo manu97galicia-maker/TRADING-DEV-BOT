@@ -211,10 +211,16 @@ filters:
     max_bundle_pct: 0
     max_bundle_pct_sin_historia: 0
     heartbeat_interval: 300
-    # Solo nacimientos de Pump.fun entre 1 y 2 segundos. Se comprueba al
-    # detectar y otra vez tras obtener el historial del dev, antes del paper fill.
+    # EDAD MAXIMA 8 s, pedido el 6-nov: "Maximo 8 segundos". Venia de 5.
+    # Cuenta desde la CREACION DEL MINT (monitoring/volumen.py, `edad_real`)
+    # hasta justo antes de enviar NUESTRA compra, despues de leer el historial
+    # del dev (universal_trader.py, `_demasiado_vieja_para_comprar`). Con
+    # `curva_96.enabled: false` solo se mira ahi, al ir a comprar. Una moneda
+    # cuya creacion no vio el bot no tiene edad y no se compra.
+    # Lo que cuesta: entra en monedas con mas segundos de vida, a precio algo
+    # mas alto, a cambio de no perder devs nuevos cuyo historial tarda en leerse.
     min_edad_seg: 0
-    max_edad_seg: 5
+    max_edad_seg: 8
 
   # DEV: minimo 1% de sus monedas migradas, y por tanto al menos una.
   # tasa = migradas / lanzadas, de sus ultimas 200 monedas en la API de

@@ -75,8 +75,7 @@ def test_el_dev_es_la_unica_condicion_de_entrada() -> None:
     assert f["allow_mayhem"] is True
     assert f["require_mayhem"] is False
     assert f["ignorar_listas_de_devs"] is True
-    assert f["curva_96"]["min_edad_seg"] == 1
-    assert f["curva_96"]["max_edad_seg"] == 2
+    assert f["curva_96"]["max_edad_seg"] == 8
     assert f["curva_96"]["tope"] == 1.0
 
 
@@ -187,22 +186,23 @@ def test_el_stop_sale_rapido_como_en_el_bot_real_anterior() -> None:
     assert t["sell_slippage"] == 0.25
 
 
-def test_ventana_de_edad_exacta_de_uno_a_dos_segundos() -> None:
+def test_edad_maxima_ocho_segundos_desde_el_mint() -> None:
+    """6-nov: "Maximo 8 segundos"."""
     c96 = CFG["filters"]["curva_96"]
-    assert c96["max_edad_seg"] == 2
-    assert c96.get("min_edad_seg", 0) == 1
+    assert c96["max_edad_seg"] == 8
+    assert c96.get("min_edad_seg", 0) == 0
 
 
-def test_ventana_de_edad_rechaza_fuera_de_uno_a_dos_segundos() -> None:
+def test_ventana_de_edad_rechaza_pasados_ocho_segundos() -> None:
     from test_ventana_de_edad import _con_edad, _fuente
 
     c96 = CFG["filters"]["curva_96"]
     f = _fuente(min_edad_seg=c96.get("min_edad_seg", 0), max_edad_seg=c96["max_edad_seg"])
-    _con_edad("nueva", 1.5)
+    _con_edad("nueva", 0.5)
     assert f._fuera_de_edad("nueva", "NUEVA") is False
-    _con_edad("temprana", 0.5)
-    assert f._fuera_de_edad("temprana", "TEMPRANA") is True
-    _con_edad("pasada", 2.5)
+    _con_edad("justa", 7.5)
+    assert f._fuera_de_edad("justa", "JUSTA") is False
+    _con_edad("pasada", 8.5)
     assert f._fuera_de_edad("pasada", "PASADA") is True
     assert f._fuera_de_edad("nunca-vista-nacer", "TARDE") is True
 
@@ -221,11 +221,11 @@ def test_la_edad_se_revalida_justo_antes_de_comprar() -> None:
     )
     comprobar = UniversalTrader._demasiado_vieja_para_comprar
 
-    _con_edad("rapida", 1.4)
+    _con_edad("rapida", 7.4)
     assert comprobar(yo, SimpleNamespace(mint="rapida", symbol="R")) is False
-    _con_edad("lenta", 2.6)
+    _con_edad("lenta", 8.6)
     assert comprobar(yo, SimpleNamespace(mint="lenta", symbol="L")) is True
-    assert "ya tiene 2.6 s al ir a comprar (máx 2 s)" in motivos[-1]
+    assert "ya tiene 8.6 s al ir a comprar (máx 8 s)" in motivos[-1]
     assert comprobar(yo, SimpleNamespace(mint="nunca-vista", symbol="N")) is True
     assert "edad desconocida" in motivos[-1]
 
