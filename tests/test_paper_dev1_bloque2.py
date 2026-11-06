@@ -128,9 +128,9 @@ def test_plazas_que_el_nodo_vigila_y_reserva_para_vender() -> None:
 def test_salida_del_4_nov() -> None:
     """TP 38% recupera iniciales +10%; el resto en tres tramos hasta 14k."""
     t = CFG["trade"]
-    # 6-nov: "0.15 por compra" (venia de 0,2, 4-nov). En SOL fijos no depende
-    # del precio de SOL.
-    assert t["buy_amount"] == 0.15
+    # 6-nov: "0.15 por compra" y luego "0.1 compra" (venia de 0,2, 4-nov). En
+    # SOL fijos no depende del precio de SOL.
+    assert t["buy_amount"] == 0.1
     assert t["buy_amount_usd"] == 0
     assert t.get("fraccion_saldo", 0) == 0
     assert t["stop_loss_percentage"] == 0.25

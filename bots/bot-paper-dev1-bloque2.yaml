@@ -35,9 +35,10 @@ platform: "pump_fun"
 
 trade:
   nombre_estrategia: "paper-dev1-bloque2"
-  # 0,15 SOL FIJOS, pedido el 6-nov: "0.15 por compra y volumen 200". Venia
-  # de 0,2. Cada compra aparta 0,15 x 1,35 (deslizamiento) + 0,003 = 0,2055
-  # SOL del saldo mientras se hace.
+  # 0,1 SOL FIJOS, pedido el 6-nov: "0.1 compra". Venia de 0,15 (pedido ese
+  # mismo dia con "0.15 por compra y volumen 200"; antes 0,2). Cada compra
+  # aparta 0,1 x 1,35 (deslizamiento) + 0,003 = 0,138 SOL del saldo mientras
+  # se hace.
   #
   # (HISTORIA) 0,2 SOL FIJOS, pedido el 4-nov: "Pon 0.2 sol para solventar el problema".
   # Venia de buy_amount_usd: 30. EN DOLARES EL BOT NO COMPRA hasta haber leido
@@ -45,12 +46,12 @@ trade:
   # confirmado NO SE COMPRA"), y si el droplet no llega a la web de precios,
   # no compra nunca. En SOL fijos el importe sale de `buy_amount` y no
   # depende de ningun precio. 0,2 SOL son unos 21 $ con el SOL a 105 $.
-  buy_amount: 0.15
+  buy_amount: 0.1
   buy_amount_usd: 0
   fraccion_saldo: 0
   min_reserve_sol: 0.03
   # 7 PLAZAS, pedido el 4-nov: "maximo 7 operaciones simultaneas". Venia
-  # de 5. 7 x 0,15 SOL = 1,05 SOL como maximo dentro a la vez (desde el
+  # de 5. 7 x 0,1 SOL = 0,7 SOL como maximo dentro a la vez (desde el
   # 6-nov; con 0,2 eran 1,4).
   # Para que el nodo las vigile todas hubo que subir node.max_rps de 12 a 14
   # (ver abajo).
@@ -76,7 +77,7 @@ trade:
   #
   # TP1 a +38%: vende lo justo para recuperar lo invertido +10%.
   #     1,10 / 1,38 = 0,7971014493  -> vende el 79,71% de la posicion.
-  #     Con 0,15 SOL: vende 0,15 x 1,38 x 0,7971 = 0,165 SOL (lo puesto + 0,015).
+  #     Con 0,1 SOL: vende 0,1 x 1,38 x 0,7971 = 0,11 SOL (lo puesto + 0,01).
   #     Queda el 20,29% de la posicion, ya pagado.
   #
   # ESE 20,29% SALE EN TRES TRAMOS POR MARKET CAP, hasta los 14k:
