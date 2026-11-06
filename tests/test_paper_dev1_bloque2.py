@@ -64,9 +64,10 @@ def test_condiciones_de_entrada_del_6_nov() -> None:
     """Lo que se exige para comprar, tal y como lo dejo Manu el 6-nov."""
     f = CFG["filters"]
     # "Pide minimo 3 compradores iniciales y 350 volumen en el bloque que
-    # compra primero" -> "Solo dos no 3 pero mismo volumen".
+    # compra primero" -> "Solo dos no 3 pero mismo volumen" -> "0.15 por
+    # compra y volumen 200".
     assert f["min_first_block_buys"] == 2
-    assert f["min_first_block_usd"] == 350
+    assert f["min_first_block_usd"] == 200
     assert f["max_first_block_buys"] == 0
     assert f["max_first_block_usd"] == 0
     assert f["buy_from_second_block"] is False
@@ -127,8 +128,9 @@ def test_plazas_que_el_nodo_vigila_y_reserva_para_vender() -> None:
 def test_salida_del_4_nov() -> None:
     """TP 38% recupera iniciales +10%; el resto en tres tramos hasta 14k."""
     t = CFG["trade"]
-    # 4-nov: "Pon 0.2 sol". En SOL fijos no depende del precio de SOL.
-    assert t["buy_amount"] == 0.2
+    # 6-nov: "0.15 por compra" (venia de 0,2, 4-nov). En SOL fijos no depende
+    # del precio de SOL.
+    assert t["buy_amount"] == 0.15
     assert t["buy_amount_usd"] == 0
     assert t.get("fraccion_saldo", 0) == 0
     assert t["stop_loss_percentage"] == 0.25

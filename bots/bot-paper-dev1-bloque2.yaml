@@ -35,18 +35,23 @@ platform: "pump_fun"
 
 trade:
   nombre_estrategia: "paper-dev1-bloque2"
-  # 0,2 SOL FIJOS, pedido el 4-nov: "Pon 0.2 sol para solventar el problema".
+  # 0,15 SOL FIJOS, pedido el 6-nov: "0.15 por compra y volumen 200". Venia
+  # de 0,2. Cada compra aparta 0,15 x 1,35 (deslizamiento) + 0,003 = 0,2055
+  # SOL del saldo mientras se hace.
+  #
+  # (HISTORIA) 0,2 SOL FIJOS, pedido el 4-nov: "Pon 0.2 sol para solventar el problema".
   # Venia de buy_amount_usd: 30. EN DOLARES EL BOT NO COMPRA hasta haber leido
   # el precio de SOL (universal_trader.py: "Mientras el precio no se haya
   # confirmado NO SE COMPRA"), y si el droplet no llega a la web de precios,
   # no compra nunca. En SOL fijos el importe sale de `buy_amount` y no
   # depende de ningun precio. 0,2 SOL son unos 21 $ con el SOL a 105 $.
-  buy_amount: 0.2
+  buy_amount: 0.15
   buy_amount_usd: 0
   fraccion_saldo: 0
   min_reserve_sol: 0.03
   # 7 PLAZAS, pedido el 4-nov: "maximo 7 operaciones simultaneas". Venia
-  # de 5. 7 x 0,2 SOL = 1,4 SOL como maximo dentro a la vez.
+  # de 5. 7 x 0,15 SOL = 1,05 SOL como maximo dentro a la vez (desde el
+  # 6-nov; con 0,2 eran 1,4).
   # Para que el nodo las vigile todas hubo que subir node.max_rps de 12 a 14
   # (ver abajo).
   max_posiciones: 7
@@ -71,7 +76,7 @@ trade:
   #
   # TP1 a +38%: vende lo justo para recuperar lo invertido +10%.
   #     1,10 / 1,38 = 0,7971014493  -> vende el 79,71% de la posicion.
-  #     Con 0,2 SOL: vende 0,2 x 1,38 x 0,7971 = 0,22 SOL (lo puesto + 0,02).
+  #     Con 0,15 SOL: vende 0,15 x 1,38 x 0,7971 = 0,165 SOL (lo puesto + 0,015).
   #     Queda el 20,29% de la posicion, ya pagado.
   #
   # ESE 20,29% SALE EN TRES TRAMOS POR MARKET CAP, hasta los 14k:
@@ -199,7 +204,7 @@ filters:
   max_entry_mc: 0
   # VENTANA PARA MIRAR EL PRIMER BLOQUE: 8 s, puesta el 6-nov con "Pide
   # minimo 3 compradores iniciales y 350 volumen en el bloque que compra
-  # primero" (ver min_first_block_* abajo; hoy 2 compras y 350 $). Venia de 0. SIN ELLA LOS FILTROS
+  # primero" (ver min_first_block_* abajo; hoy 2 compras y 200 $). Venia de 0. SIN ELLA LOS FILTROS
   # DEL PRIMER BLOQUE NO SE COMPRUEBAN NUNCA (universal_trader.py: el bucle
   # solo corre con max_buy_age > 0). 8 s, los mismos de la edad maxima.
   max_buy_age: 8
@@ -225,21 +230,22 @@ filters:
   # su nacimiento): se descartaban solo porque no podia mirar su primer
   # bloque (244 de 741 en el droplet ese dia).
   #
-  # PRIMER BLOQUE: MINIMO 2 COMPRAS Y 350 $. Pedido el 6-nov: "Pide minimo 3
+  # PRIMER BLOQUE: MINIMO 2 COMPRAS Y 200 $. Pedido el 6-nov: "Pide minimo 3
   # compradores iniciales y 350 volumen en el bloque que compra primero", y
-  # ese mismo dia "Solo dos no 3 pero mismo volumen" (compras 3 -> 2; los
-  # 350 $ no cambian). Venian de 0 (quitados el 5-nov). Se cuentan las compras del bloque donde
+  # ese mismo dia "Solo dos no 3 pero mismo volumen" (compras 3 -> 2) y
+  # "0.15 por compra y volumen 200" (350 $ -> 200 $). Venian de 0 (quitados
+  # el 5-nov). Se cuentan las compras del bloque donde
   # nace la moneda, LA DEL PROPIO DEV INCLUIDA (la que hace al crearla), y el
   # SOL comprado en ese bloque pasado a dolares con el precio de SOL en vivo.
   # En cuanto cumple las dos, sigue adelante (no espera a que cierre el
   # bloque). Si llega una operacion del bloque siguiente y no ha cumplido, se
   # descarta: "Evitado X: N compras en el primer bloque (min 2)" o "$N
-  # comprados en el primer bloque (min $350)".
+  # comprados en el primer bloque (min $200)".
   # Lo que cuesta: las monedas que el bot ve tarde (sin su bloque de
   # creacion) no cumplen nunca; y se compra menos.
   min_first_block_buys: 2
   max_first_block_buys: 0
-  min_first_block_usd: 350
+  min_first_block_usd: 200
   max_first_block_usd: 0
   # No se espera a que cierre el primer bloque: basta con que cumpla.
   buy_from_second_block: false
