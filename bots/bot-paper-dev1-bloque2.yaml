@@ -162,10 +162,16 @@ filters:
   paper_trade: false
   paper_watch_secs: 600
   max_token_age: 5
-  # SIN TOPE DE MARKET CAP, pedido el 5-nov: "Elimina lo del mcap". Venia de
-  # 3563 (~4.100 $ con el SOL a 105, pedido el 4-nov). Sin tope, el bot ya no
-  # lee la curva para comprobarlo: una consulta menos al nodo antes de comprar.
-  max_entry_mc: 0
+  # TOPE DE MARKET CAP 3.900 $, pedido el 6-nov: "pon Max buy en 3.9k".
+  # Venia de 0 (sin tope, 5-nov: "Elimina lo del mcap").
+  # OJO CON LA UNIDAD: el bot cuenta este numero en dolares con el SOL a
+  # 91,24 $ (`_SOL_USD`) y al arrancar lo reescala al precio real, asi que en
+  # el fondo es un tope EN SOL: 3960 / 91,24 = 43,4 SOL de market cap. Con el
+  # SOL a 89,86 $ (el del 6-nov) son 3.900 $. Si el SOL sube o baja, el tope
+  # en dolares se mueve con el.
+  # Lo que cuesta: para comprobarlo el bot vuelve a leer la curva antes de
+  # comprar (una consulta al nodo, ~0,1-0,3 s, que cuenta en los 8 s).
+  max_entry_mc: 3960
   # No espera bloques ni volumen; decide tras comprobar dev y edad.
   max_buy_age: 0
   # El 1% del dev es la única condición de mercado, también para Mayhem.

@@ -70,7 +70,7 @@ def test_el_dev_es_la_unica_condicion_de_entrada() -> None:
     assert f["buy_from_second_block"] is False
     assert f["second_block_confirmation"]["enabled"] is False
     # Solo quedan dev 1% y edad 1-2 s; no MC, presión, Mayhem, listas ni bloques.
-    assert f["max_entry_mc"] == 0
+    assert f["max_entry_mc"] == 3960
     assert f.get("min_entry_mc", 0) == 0
     assert f["max_buy_age"] == 0
     assert f["allow_mayhem"] is True
@@ -144,9 +144,10 @@ def test_salida_del_4_nov() -> None:
     assert t["take_profit_sell_percentage"] + sum(x["sell"] for x in tramos) >= 1.0
 
 
-def test_sin_tope_de_market_cap() -> None:
-    """5-nov: "Elimina lo del mcap". Sin tope no se lee la curva para eso."""
-    assert CFG["filters"]["max_entry_mc"] == 0
+def test_tope_de_market_cap_3900_dolares() -> None:
+    """6-nov: "pon Max buy en 3.9k". 3960 a 91,24 $ = 3.900 $ a 89,86 $."""
+    assert CFG["filters"]["max_entry_mc"] == 3960
+    assert round(3960 * 89.86 / 91.24) == 3900
 
 def test_mayhem_no_es_un_filtro_adicional() -> None:
     assert CFG["filters"]["allow_mayhem"] is True
