@@ -215,9 +215,11 @@ filters:
   # puesto ese mismo dia con "pon Max buy en 3.9k"). Sin tope, el bot no
   # relee la curva para comprobarlo.
   max_entry_mc: 0
-  # VENTANA PARA MIRAR EL PRIMER BLOQUE: 8 s, puesta el 6-nov con "Pide
-  # minimo 3 compradores iniciales y 350 volumen en el bloque que compra
-  # primero" (ver min_first_block_* abajo; hoy 3 compras y 500 $). Venia de 0. SIN ELLA LOS FILTROS
+  # VENTANA DE 8 s, puesta el 6-nov para mirar el primer bloque ("Pide
+  # minimo 3 compradores iniciales y 350 volumen..."). Desde "Quita holders
+  # y volumen" ya no hay minimos que esperar, asi que no espera nada: solo
+  # sigue descartando lo que tenga mas de 8 s al ir a comprar (lo mismo que
+  # curva_96.max_edad_seg). Venia de 0. SIN ELLA LOS FILTROS
   # DEL PRIMER BLOQUE NO SE COMPRUEBAN NUNCA (universal_trader.py: el bucle
   # solo corre con max_buy_age > 0). 8 s, los mismos de la edad maxima.
   max_buy_age: 8
@@ -243,22 +245,14 @@ filters:
   # su nacimiento): se descartaban solo porque no podia mirar su primer
   # bloque (244 de 741 en el droplet ese dia).
   #
-  # PRIMER BLOQUE: MINIMO 3 COMPRAS Y 500 $. Pedido el 6-nov: "Pon 3
-  # compradores y 500 volumen". Venia de 2 compras y 200 $. Historia de ese
-  # mismo dia: "Pide minimo 3 compradores iniciales y 350 volumen en el
-  # bloque que compra primero" -> "Solo dos no 3 pero mismo volumen" ->
-  # "0.15 por compra y volumen 200" -> esta. Venian de 0 (quitados el 5-nov). Se cuentan las compras del bloque donde
-  # nace la moneda, LA DEL PROPIO DEV INCLUIDA (la que hace al crearla), y el
-  # SOL comprado en ese bloque pasado a dolares con el precio de SOL en vivo.
-  # En cuanto cumple las dos, sigue adelante (no espera a que cierre el
-  # bloque). Si llega una operacion del bloque siguiente y no ha cumplido, se
-  # descarta: "Evitado X: N compras en el primer bloque (min 3)" o "$N
-  # comprados en el primer bloque (min $500)".
-  # Lo que cuesta: las monedas que el bot ve tarde (sin su bloque de
-  # creacion) no cumplen nunca; y se compra menos.
-  min_first_block_buys: 3
+  # SIN MINIMOS EN EL PRIMER BLOQUE, pedido el 6-nov por la noche: "Quita
+  # holders y volumen". Venia de 3 compras y 500 $ (pedidos ese mismo dia:
+  # 3/350 -> 2/350 -> 2/200 -> 3/500). Ya no se mira cuantos compran ni
+  # cuanto en el primer bloque: decide el dev (1%), la edad (8 s), mayhem y
+  # las listas de devs.
+  min_first_block_buys: 0
   max_first_block_buys: 0
-  min_first_block_usd: 500
+  min_first_block_usd: 0
   max_first_block_usd: 0
   # No se espera a que cierre el primer bloque: basta con que cumpla.
   buy_from_second_block: false

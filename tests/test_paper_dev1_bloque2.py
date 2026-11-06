@@ -65,15 +65,18 @@ def test_condiciones_de_entrada_del_6_nov() -> None:
     f = CFG["filters"]
     # "Pide minimo 3 compradores iniciales y 350 volumen en el bloque que
     # compra primero" -> "Solo dos no 3 pero mismo volumen" -> "0.15 por
-    # compra y volumen 200" -> "Pon 3 compradores y 500 volumen".
-    assert f["min_first_block_buys"] == 3
-    assert f["min_first_block_usd"] == 500
+    # compra y volumen 200" -> "Pon 3 compradores y 500 volumen" -> "Quita
+    # holders y volumen".
+    assert f["min_first_block_buys"] == 0
+    assert f["min_first_block_usd"] == 0
+    assert f.get("min_titulares", 0) == 0
     assert f["max_first_block_buys"] == 0
     assert f["max_first_block_usd"] == 0
     assert f["buy_from_second_block"] is False
     assert f["second_block_confirmation"]["enabled"] is False
-    # Sin ventana los filtros del primer bloque no se comprueban nunca.
-    assert f["max_buy_age"] > 0
+    # La ventana se queda en 8 s: sin minimos no espera, solo vuelve a
+    # descartar lo que pase de 8 s al ir a comprar.
+    assert f["max_buy_age"] == 8
     # "Quita el limite de compra" -> "De capitalizacion de mercado".
     assert f["max_entry_mc"] == 0
     assert f.get("min_entry_mc", 0) == 0
