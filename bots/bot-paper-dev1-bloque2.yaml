@@ -175,8 +175,12 @@ filters:
   # puesto ese mismo dia con "pon Max buy en 3.9k"). Sin tope, el bot no
   # relee la curva para comprobarlo.
   max_entry_mc: 0
-  # No espera bloques ni volumen; decide tras comprobar dev y edad.
-  max_buy_age: 0
+  # VENTANA PARA MIRAR EL PRIMER BLOQUE: 8 s, puesta el 6-nov con "Pide
+  # minimo 3 compradores iniciales y 350 volumen en el bloque que compra
+  # primero" (ver min_first_block_* abajo). Venia de 0. SIN ELLA LOS FILTROS
+  # DEL PRIMER BLOQUE NO SE COMPRUEBAN NUNCA (universal_trader.py: el bucle
+  # solo corre con max_buy_age > 0). 8 s, los mismos de la edad maxima.
+  max_buy_age: 8
   # El 1% del dev es la única condición de mercado, también para Mayhem.
   allow_mayhem: false
   require_mayhem: false
@@ -198,15 +202,23 @@ filters:
   # bloque. Al quitarlo tambien entran las monedas que el bot ve TARDE (sin
   # su nacimiento): se descartaban solo porque no podia mirar su primer
   # bloque (244 de 741 en el droplet ese dia).
-  # No quedan filtros de bloques, MC, presión, Mayhem ni listas.
-  min_first_block_buys: 0
+  #
+  # PRIMER BLOQUE: MINIMO 3 COMPRAS Y 350 $, pedido el 6-nov: "Pide minimo 3
+  # compradores iniciales y 350 volumen en el bloque que compra primero".
+  # Venian de 0 (quitados el 5-nov). Se cuentan las compras del bloque donde
+  # nace la moneda, LA DEL PROPIO DEV INCLUIDA (la que hace al crearla), y el
+  # SOL comprado en ese bloque pasado a dolares con el precio de SOL en vivo.
+  # En cuanto cumple las dos, sigue adelante (no espera a que cierre el
+  # bloque). Si llega una operacion del bloque siguiente y no ha cumplido, se
+  # descarta: "Evitado X: N compras en el primer bloque (min 3)" o "$N
+  # comprados en el primer bloque (min $350)".
+  # Lo que cuesta: las monedas que el bot ve tarde (sin su bloque de
+  # creacion) no cumplen nunca; y se compra menos.
+  min_first_block_buys: 3
   max_first_block_buys: 0
-  # SIN MINIMO DE DOLARES, pedido el 4-nov: "quita lo de 375". Venia de 375.
-  # Ojo: ese minimo tambien dependia del precio de SOL (SOL comprado x
-  # precio); quitarlo deja el primer bloque sin nada que dependa del precio.
-  min_first_block_usd: 0
+  min_first_block_usd: 350
   max_first_block_usd: 0
-  # Ya no se espera al segundo bloque: se compra en cuanto el dev pasa el filtro.
+  # No se espera a que cierre el primer bloque: basta con que cumpla.
   buy_from_second_block: false
 
   # APAGADA A PROPOSITO. En la hermana esta encendida y obliga a ver el

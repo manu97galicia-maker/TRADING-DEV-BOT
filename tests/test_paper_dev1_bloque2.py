@@ -60,25 +60,28 @@ def test_dev_con_minimo_un_uno_por_ciento_de_migradas() -> None:
     assert CFG["filters"]["ignorar_listas_de_devs"] is False
 
 
-def test_el_dev_es_la_unica_condicion_de_entrada() -> None:
-    """5-nov: "Solo activa la estrategia de comprar cuando el 1%... " ->
-    "Claro que compre muchas mas". Fuera el primer bloque y el segundo bloque."""
+def test_condiciones_de_entrada_del_6_nov() -> None:
+    """Lo que se exige para comprar, tal y como lo dejo Manu el 6-nov."""
     f = CFG["filters"]
-    assert f["min_first_block_buys"] == 0
+    # "Pide minimo 3 compradores iniciales y 350 volumen en el bloque que
+    # compra primero".
+    assert f["min_first_block_buys"] == 3
+    assert f["min_first_block_usd"] == 350
     assert f["max_first_block_buys"] == 0
-    assert f["min_first_block_usd"] == 0
     assert f["max_first_block_usd"] == 0
     assert f["buy_from_second_block"] is False
     assert f["second_block_confirmation"]["enabled"] is False
-    # Solo quedan dev 1% y edad 1-2 s; no MC, presión, Mayhem, listas ni bloques.
+    # Sin ventana los filtros del primer bloque no se comprueban nunca.
+    assert f["max_buy_age"] > 0
+    # "Quita el limite de compra" -> "De capitalizacion de mercado".
     assert f["max_entry_mc"] == 0
     assert f.get("min_entry_mc", 0) == 0
-    assert f["max_buy_age"] == 0
-    assert f["allow_mayhem"] is True
+    # Sin mayhem, y "bloc dev rugs".
+    assert f["allow_mayhem"] is False
     assert f["require_mayhem"] is False
-    assert f["ignorar_listas_de_devs"] is True
+    assert f["ignorar_listas_de_devs"] is False
+    # "Maximo 8 segundos" desde el mint.
     assert f["curva_96"]["max_edad_seg"] == 8
-    assert f["curva_96"]["tope"] == 1.0
 
 
 def test_la_compra_paga_doce_centimos_de_priority_fee() -> None:
