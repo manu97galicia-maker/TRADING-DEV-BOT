@@ -6,6 +6,7 @@ Cleaned up to remove all platform-specific hardcoding.
 import asyncio
 import copy
 import json
+import re
 import subprocess
 import sys
 from contextvars import ContextVar
@@ -4283,6 +4284,11 @@ class UniversalTrader:
                 #: descarte: sin esto no se sabe si sobro el dinero o la
                 #: direccion del dinero.
                 _visto_presion = "no medida"
+                #: Por que no se pudo leer la curva, si fallo (6-nov). Antes el
+                #: fallo se reintentaba EN SILENCIO hasta agotar la ventana: si
+                #: un dia la lectura fallara por otra cosa, el bot no compraria
+                #: nada y el log no diria por que.
+                _motivo_curva = ""
                 # SIEMPRE 0,15 s. Antes se pasaba a 0,5 con ventanas de mas de
                 # 6 segundos, y eso costaba velocidad justo donde importa: con
                 # la ventana en 18 s se miraba 3 veces menos, asi que entre que
@@ -4560,7 +4566,22 @@ class UniversalTrader:
                             token_info.bonding_curve, commitment="processed"
                         )
                         _p = float(_st.get("price_per_token") or 0)
-                    except Exception:  # noqa: BLE001
+                    except Exception as _e_curva:  # noqa: BLE001
+                        if not _motivo_curva:
+                            # Solo el tipo y el texto corto, sin claves: un
+                            # error de red podria llevar la URL del nodo.
+                            _motivo_curva = re.sub(
+                                r"(api[-_]?key=)[^&\s\"']+",
+                                r"\1***",
+                                f"{type(_e_curva).__name__}: {_e_curva}"[:120],
+                                flags=re.IGNORECASE,
+                            )
+                            logger.info(
+                                "Esperando %s: no se pudo leer su curva (%s); "
+                                "se reintenta hasta agotar la ventana",
+                                token_info.symbol,
+                                _motivo_curva,
+                            )
                         await asyncio.sleep(_paso)
                         continue
                     _mc = _p * _PUMP_TOTAL_SUPPLY * _SOL_USD
@@ -4684,7 +4705,9 @@ class UniversalTrader:
                             f"{_visto_first_buys} en primer bloque, "
                             f"{_visto_ops} tx, "
                             f"{_visto_tit} titulares, "
-                            f"presion: {_visto_presion})"
+                            f"presion: {_visto_presion}"
+                            + (f", curva ilegible: {_motivo_curva}" if _motivo_curva else "")
+                            + ")"
                         )
                         if _tarea_redes is not None:
                             _tarea_redes.cancel()
