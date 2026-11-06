@@ -114,7 +114,15 @@ trade:
   venta_muerta_gain: 0.0
   price_check_interval: 1
 
-# +0,003 SOL DE PRIORITY FEE EN LA COMPRA, pedido el 6-nov: "sube 0.003 mas
+# +0,005 SOL MAS, pedido el 6-nov por la tarde: "Sube 0.005 sol las
+# prioridades de compra". Venia de 0,004142857 SOL; ahora 0,009142857 SOL
+# por compra:
+#     9.142.857 lamports / 100.000 unidades = 91.428.571 microlamports
+# Unos 82 centimos con el SOL a 89,86 $. Se paga tambien en las compras que
+# fallan. Para que no se recorte hubo que subir `hard_cap` (el codigo recorta
+# la de la compra a ese tope): 42.424.243 -> 91.428.571.
+#
+# (HISTORIA) +0,003 SOL DE PRIORITY FEE EN LA COMPRA, pedido el 6-nov: "sube 0.003 mas
 # la comision de comprar con prioridad". Venia de 0,001142857 SOL (los 12
 # centimos de abajo); ahora 0,004142857 SOL por compra:
 #     4.142.857 lamports / 100.000 unidades = 41.428.571 microlamports
@@ -153,7 +161,7 @@ trade:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  fixed_amount_compra: 41428571
+  fixed_amount_compra: 91428571
   fixed_amount: 5714286
   fixed_amount_venta_proteccion: 42_424_243
   extra_percentage: 0.0
@@ -163,7 +171,10 @@ priority_fees:
   # normal y no servia de nada. La compra paga sus 12 centimos exactos,
   # porque `fixed_amount_compra` es fijo y queda por debajo de este tope; el
   # tope solo es el techo contra una errata.
-  hard_cap: 42_424_243
+  # 6-nov: 42.424.243 -> 91.428.571, lo justo para la compra de 0,00914 SOL
+  # (si no, el codigo la recortaria a la del stop). Las ventas no cambian:
+  # usan sus propios numeros fijos, por debajo de este tope.
+  hard_cap: 91_428_571
 
 retries:
   max_attempts: 1
