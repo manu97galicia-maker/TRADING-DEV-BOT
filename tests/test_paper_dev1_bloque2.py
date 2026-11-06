@@ -45,13 +45,13 @@ def test_el_lanzador_solo_acepta_paper_y_la_regla_completa() -> None:
     assert "paper_trade: false" not in PAPER_LAUNCHER
 
 
-def test_dev_con_minimo_un_uno_por_ciento_de_migradas() -> None:
+def test_dev_con_al_menos_un_proyecto_migrado() -> None:
+    """6-nov: "pon solo migro un proyecto como minimo". Sin porcentaje."""
     dev = CFG["filters"]["pumpfun_dev"]
     assert dev["enabled"] is True
-    assert dev["min_rate"] == 0.01
-    # "1% de migradas" exige al menos una: con 0 migradas la tasa es 0.
+    assert dev["min_rate"] == 0
     assert dev["min_migrations"] == 1
-    # 5-nov: el 1% es la unica condicion y no admite rutas alternativas.
+    # No admite rutas alternativas (marcados o mediana).
     assert dev["compra_inmediata"] is True
     assert dev["timeout_seg"] >= 9
     assert dev["strict_only"] is True

@@ -42,4 +42,33 @@ def test_nunca_stash_a() -> None:
 def test_se_puede_bajar_por_https() -> None:
     # Sin llave SSH en el droplet (4-nov), con el repo publico se pasa ORIGEN.
     assert 'ORIGEN="${ORIGEN:-origin}"' in TEXTO
-    assert 'git pull --no-rebase --no-edit "$ORIGEN" "$RAMA"' in TEXTO
+    assert 'git fetch "$ORIGEN" "$RAMA"' in TEXTO
+
+
+def test_baja_main_que_es_donde_manu_cambia_la_config() -> None:
+    # 6-nov: los cambios hechos en GitHub (main) no llegaban al droplet.
+    assert "RAMA=main" in TEXTO
+
+
+def test_deja_el_servidor_igual_que_github_sin_mezclar() -> None:
+    # 6-nov: `git pull` mezclaba y el droplet quedo con 4 ficheros distintos.
+    ordenes = [l.strip() for l in TEXTO.splitlines() if not l.lstrip().startswith("#")]
+    assert not any(l.startswith("git pull") for l in ordenes)
+    assert 'git checkout -B "$RAMA" FETCH_HEAD' in TEXTO
+    assert "git diff --quiet FETCH_HEAD" in TEXTO
+    # Lo que tuviera el droplet de su cosecha queda en una rama de respaldo,
+    # guardada ANTES de cambiar nada.
+    assert TEXTO.index('git branch -f "respaldo-$F" HEAD') < TEXTO.index("git checkout -B")
+
+
+def test_deshace_una_actualizacion_a_medias() -> None:
+    assert "git merge --abort" in TEXTO
+    assert TEXTO.index("git merge --abort") < TEXTO.index("git stash push -u")
+
+
+def test_para_pump_bot_antes_de_mirar_si_ya_corre() -> None:
+    # pump-bot arranca esta estrategia con bot_runner y el pgrep no lo ve:
+    # sin pararlo habria dos bots en real sobre la misma wallet.
+    para = "systemctl stop pump-bot-autoactualiza.timer pump-bot"
+    assert TEXTO.index(para) < TEXTO.index('pgrep -f "run_bot_process.*dev1-bloque2"')
+    assert "git reset --hard" not in TEXTO
