@@ -115,3 +115,38 @@ def test_sus_monedas_por_plataforma_cuentan_como_lanzadas():
     assert pumpfun_dev._minteadas_por_plataforma(tx, str(persona)) == {str(mint)}
     # Quien no firmo no se la lleva.
     assert pumpfun_dev._minteadas_por_plataforma(tx, str(Keypair().pubkey())) == set()
+
+
+# --- Bloqueo de devs con rugs por la cartera que minteo (6-nov) ------------
+
+
+def test_rugs_se_apuntan_a_la_cartera_que_minteo_no_a_la_plataforma(monkeypatch):
+    persona, mint = Keypair().pubkey(), Pubkey.new_unique()
+    monkeypatch.setattr(pumpfun_dev, "_dev_por_mint", {str(mint): str(persona)})
+    ficha = SimpleNamespace(mint=mint, user=PLATAFORMA, creator=PLATAFORMA, symbol="P")
+    yo = object.__new__(UniversalTrader)
+    assert UniversalTrader._identidades_del_dev(yo, ficha) == {str(persona)}
+
+
+def test_un_dev_normal_se_apunta_por_su_cartera():
+    persona, cobra = Keypair().pubkey(), Keypair().pubkey()
+    ficha = SimpleNamespace(mint=Pubkey.new_unique(), user=persona, creator=cobra, symbol="N")
+    yo = object.__new__(UniversalTrader)
+    assert UniversalTrader._identidades_del_dev(yo, ficha) == {str(persona), str(cobra)}
+
+
+def test_un_dev_vetado_que_mintea_por_plataforma_no_se_compra(monkeypatch, tmp_path):
+    import json
+
+    persona, mint = Keypair().pubkey(), Pubkey.new_unique()
+    vetados = tmp_path / "blocked.json"
+    vetados.write_text(json.dumps({str(persona): 2}), encoding="utf-8")
+    yo = object.__new__(UniversalTrader)
+    yo._blocked_devs_path = vetados
+    yo.rugs_para_bloquear = 2
+    monkeypatch.setattr(pumpfun_dev, "_dev_por_mint", {str(mint): str(persona)})
+    ficha = SimpleNamespace(mint=mint, user=PLATAFORMA, creator=PLATAFORMA, symbol="P")
+    assert UniversalTrader._is_dev_blocked(yo, *UniversalTrader._identidades_del_dev(yo, ficha))
+    # La plataforma sola no veta a nadie.
+    otra = SimpleNamespace(mint=Pubkey.new_unique(), user=PLATAFORMA, creator=PLATAFORMA, symbol="O")
+    assert not UniversalTrader._is_dev_blocked(yo, *UniversalTrader._identidades_del_dev(yo, otra))

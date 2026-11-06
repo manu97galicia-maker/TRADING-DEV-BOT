@@ -3960,10 +3960,22 @@ class UniversalTrader:
             # migracion. Con `ignorar_listas_de_devs` se saltan las dos y decide
             # solo el filtro de reputacion en vivo.
             if not self.ignorar_listas_de_devs:
+                # QUIEN ES EL DEV, TAMBIEN AQUI (6-nov): la cartera que minteo,
+                # aunque la moneda la lanzara una plataforma ("El dev es el q
+                # mint"). Sin esto, un dev que rugea a traves de una plataforma
+                # no quedaba apuntado, y la cuenta de la plataforma (comun a
+                # todas sus monedas) acababa vetando a todos los que la usan.
+                _minteo = (
+                    await self._dev_que_mintea(token_info)
+                    if self.pumpfun_dev.get("enabled")
+                    else None
+                )
+                _ids = self._identidades_del_dev(token_info, _minteo)
                 # Blacklist DURA manual: dev vetado a mano -> nunca se compra.
                 if (
                     _dev_user in self._manual_blacklist
                     or _dev_creator in self._manual_blacklist
+                    or bool(_ids & self._manual_blacklist)
                 ):
                     self._descarta(token_info, "dev en BLACKLIST manual")
                     return
@@ -3973,9 +3985,7 @@ class UniversalTrader:
                 # uno, esa decision manda sobre el contador automatico. La
                 # BLACKLIST MANUAL de arriba NO se salta -- esa es una decision
                 # explicita en sentido contrario y tiene que pesar mas.
-                if self._is_dev_blocked(_dev_user, _dev_creator) and not self._es_marcado(
-                    token_info
-                ):
+                if self._is_dev_blocked(*_ids) and not self._es_marcado(token_info):
                     self._descarta(
                         token_info,
                         f"dev bloqueado por {self.rugs_para_bloquear} rug(s)",
@@ -7492,7 +7502,9 @@ class UniversalTrader:
         # Se anota a las DOS identidades. Si solo se apuntara a `user`, un dev
         # que firma con carteras nuevas pero deja el mismo `creator` acumularia
         # un strike suelto en cada una y nunca llegaria a dos.
-        _ident = {str(token_info.user), str(getattr(token_info, "creator", "") or "")}
+        # 6-nov: y a la cartera que la minteo; nunca a una cuenta de programa
+        # (ver `_identidades_del_dev`).
+        _ident = self._identidades_del_dev(token_info)
         for _d in _ident:
             if _d:
                 self._bump_dev_rug(_d, _outcome)
@@ -7712,6 +7724,26 @@ class UniversalTrader:
         except (OSError, json.JSONDecodeError):
             pass
         return {}
+
+    def _identidades_del_dev(
+        self, token_info: TokenInfo, minteo: str | None = None
+    ) -> set[str]:
+        """Las carteras con las que se apunta y se veta a un dev por rugs.
+
+        `user` (quien firma), `creator` (a quien apunta la curva) y, si la
+        lanzo una plataforma, la cartera que la minteo (6-nov). Solo CARTERAS:
+        una cuenta de programa (la de la plataforma, o la de reparto de
+        comisiones) es comun a muchas monedas o no es de nadie, y vetarla
+        vetaria a gente que no ha hecho nada.
+        """
+        from monitoring.pumpfun_dev import dev_minteado, es_cartera  # noqa: PLC0415
+
+        ids = {
+            str(getattr(token_info, "user", "") or ""),
+            str(getattr(token_info, "creator", "") or ""),
+            minteo or dev_minteado(str(token_info.mint)) or "",
+        }
+        return {i for i in ids if i and es_cartera(i)}
 
     def _is_dev_blocked(self, *devs: str) -> bool:
         """True si alguna identidad alcanzo el umbral de rugs configurado.

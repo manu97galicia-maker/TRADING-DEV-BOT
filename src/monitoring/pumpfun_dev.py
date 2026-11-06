@@ -472,6 +472,11 @@ def precalentar_por_firma(mint: str) -> None:
     _buscar_dev(str(mint))
 
 
+def dev_minteado(mint: str) -> str | None:
+    """La cartera que minteo `mint`, si ya se resolvio (sin esperar)."""
+    return _dev_por_mint.get(str(mint))
+
+
 async def dev_que_mintea(mint: str) -> str | None:
     """La cartera que minteo `mint` (ver arriba). None si no se puede saber."""
     mint = str(mint)
