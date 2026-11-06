@@ -101,6 +101,17 @@ trade:
   vender_todo_en_stop: true
   mc_stop_loss: 0
   max_hold_time: 0
+  # VENTA DE LA MONEDA MUERTA AL MINUTO, pedido el 6-nov: "Y vende si al
+  # minuto la moneda esta muerta". Venia apagada (0).
+  # Que es "muerta": a los 60 s de comprar, si su precio esta IGUAL O POR
+  # DEBAJO del de compra (no ha subido nada), se vende entera. Si a los 60 s
+  # va en verde, se la deja correr y ya no se vuelve a mirar: mandan el TP y
+  # el stop. Se mira una sola vez (universal_trader.py, "MONEDA MUERTA").
+  # Lo que cuesta: alguna que arranca tarde (despues del minuto) se vende
+  # antes de tiempo; a cambio no se queda la plaza ocupada con una moneda
+  # parada.
+  venta_muerta_seg: 60
+  venta_muerta_gain: 0.0
   price_check_interval: 1
 
 # +0,003 SOL DE PRIORITY FEE EN LA COMPRA, pedido el 6-nov: "sube 0.003 mas

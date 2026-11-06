@@ -247,3 +247,11 @@ def test_ni_marcados_ni_mediana_pueden_saltarse_el_uno_por_ciento() -> None:
     assert TRADER.count('self.pumpfun_dev.get("strict_only", False)') >= 3
     assert 'or not self._es_marcado(token_info)' in TRADER
     assert 'not self.pumpfun_dev.get("strict_only", False)' in TRADER
+
+
+def test_vende_la_moneda_muerta_al_minuto() -> None:
+    """6-nov: "Y vende si al minuto la moneda esta muerta"."""
+    t = CFG["trade"]
+    assert t["venta_muerta_seg"] == 60
+    # Muerta = a los 60 s no ha subido nada respecto al precio de compra.
+    assert t["venta_muerta_gain"] == 0.0
