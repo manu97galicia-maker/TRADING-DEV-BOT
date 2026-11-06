@@ -230,7 +230,7 @@ filters:
   pumpfun_dev:
     enabled: true
     min_migrations: 1
-    min_rate: 0.01
+    min_rate: 0.00
     compra_inmediata: true
     timeout_seg: 9
     # Prohíbe rutas alternativas (marcados o mediana): todos deben pasar 1%.
