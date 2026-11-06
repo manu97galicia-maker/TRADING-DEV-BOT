@@ -1794,15 +1794,23 @@ class UniversalTrader:
             await self._run_copy_mode()
             return
 
+        await self._fuentes_o_escuchador()
+
+    async def _fuentes_o_escuchador(self) -> None:  # noqa: C901, PLR0912
+        """Arranca las fuentes encendidas o, si no hay ninguna, el escuchador."""
         # LAS FUENTES SALEN DE `FUENTES`, no de una lista escrita aqui. Antes
         # esto eran ocho `if` a mano y la lista vivia repetida en cuatro
         # sitios; al anadir `presion` falto en tres de ellos. Ahora anadir una
         # fuente es una linea en `FUENTES` y su `_run_*_mode`.
-        acquisition_tasks: list[asyncio.Task] = []
+        # EL PARTE DE DESCARTES NO ES UNA FUENTE (6-nov). Iba metido en la
+        # lista de fuentes, asi que con TODAS las fuentes apagadas la lista
+        # nunca estaba vacia: el bot se quedaba esperando al parte y no llegaba
+        # a abrir el escuchador. Vivo, callado y sin ver una sola moneda. Paso
+        # en dev1 al apagar curva_96 ("fuentes: NINGUNA (listener normal)").
+        resumen_task: asyncio.Task | None = None
         if self.resumen_descartes_seg > 0:
-            acquisition_tasks.append(
-                asyncio.create_task(self._vigilar_los_descartes())
-            )
+            resumen_task = asyncio.create_task(self._vigilar_los_descartes())
+        acquisition_tasks: list[asyncio.Task] = []
         for attr, corto in self.FUENTES:
             if not (getattr(self, attr, None) or {}).get("enabled"):
                 continue
@@ -1816,9 +1824,12 @@ class UniversalTrader:
             logger.info("%s acquisition ENABLED", corto)
             acquisition_tasks.append(asyncio.create_task(arranca()))
         if acquisition_tasks:
+            if resumen_task is not None:
+                acquisition_tasks.append(resumen_task)
             await asyncio.gather(*acquisition_tasks)
             return
 
+        logger.info("Sin fuentes: escuchando las creaciones con el listener normal")
         try:
             # Choose operating mode based on yolo_mode
             if not self.yolo_mode:
@@ -1860,6 +1871,8 @@ class UniversalTrader:
             logger.exception("Trading stopped due to error")
 
         finally:
+            if resumen_task is not None:
+                resumen_task.cancel()
             await self._cleanup_resources()
             logger.info("Universal Trader has shut down")
 

@@ -147,6 +147,11 @@ retries:
 
 filters:
   listener_type: "logs"
+  # MODO CONTINUO, 6-nov ("Arranca ahora y asegurate que compras"). Con
+  # curva_96 apagada las monedas llegan por este escuchador, y sin
+  # `yolo_mode: true` el bot mira UNA sola moneda y se apaga ("single token
+  # mode"). No cambia ningun filtro: solo hace que siga escuchando.
+  yolo_mode: true
   # PAPER: registra entradas y salidas simuladas, nunca firma ni mueve SOL.
   paper_trade: false
   paper_watch_secs: 600
