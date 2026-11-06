@@ -126,7 +126,7 @@ def test_plazas_que_el_nodo_vigila_y_reserva_para_vender() -> None:
 
 
 def test_salida_del_4_nov() -> None:
-    """TP 38% recupera iniciales +10%; el resto en tres tramos hasta 14k."""
+    """TP 38% recupera iniciales +10%; el resto en tramos hasta 19k."""
     t = CFG["trade"]
     # 6-nov: "0.15 por compra" y luego "0.1 compra" (venia de 0,2, 4-nov). En
     # SOL fijos no depende del precio de SOL.
@@ -142,12 +142,16 @@ def test_salida_del_4_nov() -> None:
     for n in range(2, 7):
         assert f"tp{n}_gain" not in t and f"tp{n}_sell" not in t
     assert "tp_extra" not in t
+    # 6-nov: "Y los tp progresivo hasta los 19k la mayoria vendes antes de 10".
     tramos = t["mc_take_profit_tiers"]
-    assert [x["target_mc"] for x in tramos] == [8000, 11000, 14000]
+    assert [x["target_mc"] for x in tramos] == [7000, 9000, 12000, 15000, 19000]
     resto = 1 - t["take_profit_sell_percentage"]
-    for x in tramos:
-        assert abs(x["sell"] - resto / 3) < 1e-9
-    # Entre el TP1 y los tres tramos se vende el 100%: no queda polvo.
+    reparto = [0.30, 0.30, 0.15, 0.15, 0.10]
+    for x, parte in zip(tramos, reparto, strict=True):
+        assert abs(x["sell"] - resto * parte) < 1e-9
+    antes_de_10k = sum(x["sell"] for x in tramos if x["target_mc"] < 10000)
+    assert antes_de_10k > resto / 2
+    # Entre el TP1 y los tramos se vende el 100%: no queda polvo.
     assert t["take_profit_sell_percentage"] + sum(x["sell"] for x in tramos) >= 1.0
 
 

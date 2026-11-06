@@ -80,25 +80,37 @@ trade:
   #     Con 0,1 SOL: vende 0,1 x 1,38 x 0,7971 = 0,11 SOL (lo puesto + 0,01).
   #     Queda el 20,29% de la posicion, ya pagado.
   #
-  # ESE 20,29% SALE EN TRES TRAMOS POR MARKET CAP, hasta los 14k:
-  #     8.000 $ -> 6,763%   11.000 $ -> 6,763%   14.000 $ -> 6,763%
+  # ESE 20,29% SALE EN CINCO TRAMOS PROGRESIVOS HASTA LOS 19k, pedido el
+  # 6-nov: "Y los tp progresivo hasta los 19k la mayoria vendes antes de 10".
+  # Venia de tres tramos iguales a 8k / 11k / 14k (4-nov). Reparto del resto:
+  #     7.000 $ -> 30%  (6,087% de la posicion)
+  #     9.000 $ -> 30%  (6,087%)       <- antes de 10k: el 60% del resto
+  #    12.000 $ -> 15%  (3,043%)
+  #    15.000 $ -> 15%  (3,043%)
+  #    19.000 $ -> 10%  (2,029%)
+  # Con el TP1, antes de los 10k sale el 91,9% de la posicion. Los niveles
+  # intermedios y el reparto no se dijeron con numeros: los eligio Claude
+  # para cumplir "progresivo" y "la mayoria antes de 10"; se pueden cambiar.
   # Los porcentajes son DE LA POSICION ORIGINAL (universal_trader.py: "Sell
   # fractions are relative to the original buy"), y los tramos solo se arman
-  # cuando ya ha saltado el TP1. Los niveles 8k y 11k no se pidieron: son el
-  # reparto a partes iguales entre el TP1 (~5k) y los 14k.
-  # Los 14k SI son dolares de verdad: este market cap se calcula con el
+  # cuando ya ha saltado el TP1.
+  # Los 19k SI son dolares de verdad: este market cap se calcula con el
   # precio de SOL del momento, no con el de 91,24 del tope de entrada.
   stop_loss_percentage: 0.25
   take_profit_percentage: 0.38
   take_profit_sell_percentage: 0.7971014493
   mc_take_profit_tiers:
-    - target_mc: 8000
-      sell: 0.0676328502
-    - target_mc: 11000
-      sell: 0.0676328502
+    - target_mc: 7000
+      sell: 0.0608695652
+    - target_mc: 9000
+      sell: 0.0608695652
+    - target_mc: 12000
+      sell: 0.0304347826
+    - target_mc: 15000
+      sell: 0.0304347826
     # El ultimo redondea hacia arriba para que no quede polvo sin vender.
-    - target_mc: 14000
-      sell: 0.0676328503
+    - target_mc: 19000
+      sell: 0.0202898552
   # Tras el TP1 el stop del resto sube a entrada +3%. No se pidio nada para
   # este caso; es lo que ya tenia.
   stop_a_entrada_tras_tp: true
