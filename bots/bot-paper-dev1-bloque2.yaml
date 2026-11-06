@@ -146,7 +146,7 @@ retries:
   wait_after_buy: 0
 
 filters:
-  listener_type: "pumpportal"
+  listener_type: "logs"
   # PAPER: registra entradas y salidas simuladas, nunca firma ni mueve SOL.
   paper_trade: false
   paper_watch_secs: 600
