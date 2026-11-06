@@ -227,11 +227,14 @@ filters:
     min_edad_seg: 0
     max_edad_seg: 8
 
-  # DEV: QUE HAYA MIGRADO AL MENOS UN PROYECTO, pedido el 6-nov: "pon solo
-  # migro un proyecto como minimo". Ya no hay porcentaje: min_rate 0 (lo puso
-  # Manu en GitHub el 6-nov; venia de 0.01, el 1%). Basta 1 migrada, tenga 2
-  # lanzadas o 500. Lo que cuesta: entran devs que lanzan cientos de monedas
-  # y migraron una por suerte; el 1% los dejaba fuera.
+  # DEV: MINIMO EL 1% DE SUS LANZAMIENTOS MIGRADOS, pedido el 6-nov por la
+  # tarde: "Pon migracion minima 1% no 1". Venia de min_rate 0 (bastaba 1
+  # migrada, pedido esa misma manana). tasa = migradas / lanzadas: 1 de 100
+  # pasa (1,00%); 1 de 101 no (0,99%). Y al menos 1 migrada (min_migrations).
+  # Cuentan como suyas las monedas que minteo a traves de una plataforma
+  # (ver `_minteadas_por_plataforma` en monitoring/pumpfun_dev.py).
+  # Lo que cuesta: los devs que lanzan cientos de monedas y migraron una por
+  # suerte se quedan fuera; se compra menos.
   # Un dev en su primera moneda tiene 0 migradas: no pasa. Si el historial no
   # se puede leer, tampoco: sin el dato no se compra.
   # La consulta se lanza al detectar la moneda y se espera al cerrar el
@@ -243,11 +246,10 @@ filters:
   pumpfun_dev:
     enabled: true
     min_migrations: 1
-    min_rate: 0.00
+    min_rate: 0.01
     compra_inmediata: true
     timeout_seg: 9
-    # Prohíbe rutas alternativas (marcados o mediana): todos deben tener al
-    # menos 1 migrada.
+    # Prohíbe rutas alternativas (marcados o mediana): todos deben pasar el 1%.
     strict_only: true
 
 cleanup:
