@@ -46,12 +46,11 @@ def test_el_lanzador_solo_acepta_paper_y_la_regla_completa() -> None:
 
 
 def test_dev_con_minimo_un_uno_por_ciento_de_migradas() -> None:
-    """6-nov por la noche: "minimo dos migraciones y minimo 20% proyectos
-    migrados" (venia de 1 y el 1%)."""
+    """6-nov por la noche: "pon solo un proyecto minimo migrado y 10% min"."""
     dev = CFG["filters"]["pumpfun_dev"]
     assert dev["enabled"] is True
-    assert dev["min_rate"] == 0.20
-    assert dev["min_migrations"] == 2
+    assert dev["min_rate"] == 0.10
+    assert dev["min_migrations"] == 1
     # No admite rutas alternativas (marcados o mediana).
     assert dev["compra_inmediata"] is True
     assert dev["timeout_seg"] >= 9
@@ -134,9 +133,9 @@ def test_salida_del_4_nov() -> None:
     # 6-nov: "0.15 por compra", "0.1 compra" y por la noche "compre 0.25 sol".
     # En SOL fijos no depende del precio de SOL.
     assert t["buy_amount_usd"] == 0
-    # 6-nov por la noche: "50% del sol balance" -> manda el porcentaje, sobre
-    # el saldo libre.
-    assert t["fraccion_saldo"] == 0.5
+    # 6-nov por la noche: "50% del sol balance" -> "35% sol balance". Manda
+    # el porcentaje, sobre el saldo libre.
+    assert t["fraccion_saldo"] == 0.35
     assert t["fraccion_base"] == "libre"
     assert t["stop_loss_percentage"] == 0.25
     # 6-nov: "el tp recuperamos iniciales al hacer 45%".
@@ -261,8 +260,15 @@ def test_ni_marcados_ni_mediana_pueden_saltarse_el_uno_por_ciento() -> None:
 
 
 def test_vende_la_moneda_muerta_al_minuto() -> None:
-    """6-nov: "Y vende si al minuto la moneda esta muerta"."""
+    """6-nov: "vender si a los cinco minutos esta por debajo del precio de
+    compra" (venia de 60 s)."""
     t = CFG["trade"]
-    assert t["venta_muerta_seg"] == 60
-    # Muerta = a los 60 s no ha subido nada respecto al precio de compra.
+    assert t["venta_muerta_seg"] == 300
     assert t["venta_muerta_gain"] == 0.0
+
+
+def test_tras_el_tp1_el_stop_va_al_precio_de_compra() -> None:
+    """6-nov: "si toca el tp1 el sl se mueve al precio de compra"."""
+    t = CFG["trade"]
+    assert t["stop_a_entrada_tras_tp"] is True
+    assert t["margen_stop_tras_tp"] == 0.0

@@ -50,19 +50,20 @@ trade:
   # confirmado NO SE COMPRA"), y si el droplet no llega a la web de precios,
   # no compra nunca. En SOL fijos el importe sale de `buy_amount` y no
   # depende de ningun precio. 0,2 SOL son unos 21 $ con el SOL a 105 $.
-  # 50% DEL SALDO DE SOL POR COMPRA, pedido el 6-nov por la noche: "50% del
-  # sol balance". Venia de 0,25 SOL fijos. Manda `fraccion_saldo` y
+  # 35% DEL SALDO DE SOL POR COMPRA, pedido el 6-nov por la noche ("35% sol
+  # balance"). Venia del 50% (pedido un rato antes con "50% del sol
+  # balance"; antes, 0,25 SOL fijos). Manda `fraccion_saldo` y
   # `buy_amount` ya no se usa (se deja escrito por si se vuelve a fijos).
   # Base "libre": el 50% del SOL GASTABLE de la wallet = saldo - 0,03 de
   # reserva - lo que este apartado por compras en curso. Por eso cada compra
   # sale mas pequena que la anterior mientras haya posiciones abiertas. Con
-  # 0,497 SOL: 1a ~0,233, 2a ~0,11, 3a ~0,05... Al vender, el SOL vuelve y
+  # 0,497 SOL: 1a ~0,163, 2a ~0,10, 3a ~0,06... Al vender, el SOL vuelve y
   # la siguiente compra vuelve a ser grande.
   # Lo que cuesta: la comision de prioridad (0,0141 SOL) es fija, asi que en
-  # las compras pequenas pesa mucho (en una de 0,05 SOL es un 28%).
+  # las compras pequenas pesa mucho.
   buy_amount: 0.25
   buy_amount_usd: 0
-  fraccion_saldo: 0.5
+  fraccion_saldo: 0.35
   fraccion_base: "libre"
   min_reserve_sol: 0.03
   # 7 PLAZAS, pedido el 4-nov: "maximo 7 operaciones simultaneas". Venia
@@ -121,24 +122,24 @@ trade:
     # El ultimo redondea hacia arriba para que no quede polvo sin vender.
     - target_mc: 20000
       sell: 0.0775862070
-  # Tras el TP1 el stop del resto sube a entrada +3%. No se pidio nada para
-  # este caso; es lo que ya tenia.
+  # TRAS EL TP1 EL STOP SE MUEVE AL PRECIO DE COMPRA, pedido el 6-nov por la
+  # noche: "si toca el tp1 el sl se mueve al precio de compra". Venia de
+  # entrada +3%.
   stop_a_entrada_tras_tp: true
-  margen_stop_tras_tp: 0.03
+  margen_stop_tras_tp: 0.0
   stop_al_tp_tras_tp: false
   vender_todo_en_stop: true
   mc_stop_loss: 0
   max_hold_time: 0
-  # VENTA DE LA MONEDA MUERTA AL MINUTO, pedido el 6-nov: "Y vende si al
-  # minuto la moneda esta muerta". Venia apagada (0).
-  # Que es "muerta": a los 60 s de comprar, si su precio esta IGUAL O POR
-  # DEBAJO del de compra (no ha subido nada), se vende entera. Si a los 60 s
-  # va en verde, se la deja correr y ya no se vuelve a mirar: mandan el TP y
-  # el stop. Se mira una sola vez (universal_trader.py, "MONEDA MUERTA").
-  # Lo que cuesta: alguna que arranca tarde (despues del minuto) se vende
-  # antes de tiempo; a cambio no se queda la plaza ocupada con una moneda
-  # parada.
-  venta_muerta_seg: 60
+  # VENTA A LOS 5 MINUTOS SI ESTA POR DEBAJO DEL PRECIO DE COMPRA, pedido el
+  # 6-nov por la noche: "vender si a los cinco minutos esta por debajo del
+  # precio de compra". Venia de 60 s ("Y vende si al minuto la moneda esta
+  # muerta").
+  # A los 300 s de comprar, si el precio esta POR DEBAJO del de compra, se
+  # vende entera. Si esta igual o por encima, se la deja correr y ya no se
+  # vuelve a mirar: mandan el TP y el stop. Se mira una sola vez
+  # (universal_trader.py, "MONEDA MUERTA": vende si sube < venta_muerta_gain).
+  venta_muerta_seg: 300
   venta_muerta_gain: 0.0
   price_check_interval: 1
 
@@ -321,7 +322,12 @@ filters:
     min_edad_seg: 0
     max_edad_seg: 8
 
-  # DEV: MINIMO 2 MIGRADAS Y EL 20% DE SUS LANZAMIENTOS, pedido el 6-nov
+  # DEV: MINIMO 1 MIGRADA Y EL 10% DE SUS LANZAMIENTOS, pedido el 6-nov
+  # por la noche: "pon solo un proyecto minimo migrado y 10% min sin nada
+  # mas". Venia de 2 migradas y el 20%. Con 1 de 10 pasa (10%); con 1 de 11
+  # no (9%).
+  #
+  # (HISTORIA) DEV: MINIMO 2 MIGRADAS Y EL 20% DE SUS LANZAMIENTOS, pedido el 6-nov
   # por la noche: "Pon minimo dos migraciones y minimo 20% proyectos
   # migrados". Venia de 1 migrada y el 1%. Con 2 de 10 pasa (20%); con 2
   # de 11 no (18%); con 1 de 3 tampoco (falta la segunda migrada).
@@ -345,8 +351,8 @@ filters:
   # dato en 9, no se compra (con dinero real, no saber no es que si).
   pumpfun_dev:
     enabled: true
-    min_migrations: 2
-    min_rate: 0.20
+    min_migrations: 1
+    min_rate: 0.10
     compra_inmediata: true
     timeout_seg: 9
     # Prohíbe rutas alternativas (marcados o mediana): todos deben pasar la regla.
