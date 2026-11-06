@@ -184,7 +184,9 @@ def test_el_stop_sale_rapido_como_en_el_bot_real_anterior() -> None:
     # Si el tope fuera menor, recortaria la del stop y no serviria de nada.
     assert int(fees["hard_cap"]) >= int(fees["fixed_amount_venta_proteccion"])
     assert t["sell_slippage_proteccion"] == 0.50
-    assert t["sell_slippage"] == 0.25
+    # 6-nov: "Pon buy slippage y sell 35%".
+    assert t["sell_slippage"] == 0.35
+    assert t["buy_slippage"] == 0.35
 
 
 def test_edad_maxima_ocho_segundos_desde_el_mint() -> None:

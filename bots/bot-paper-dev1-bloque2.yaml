@@ -52,13 +52,19 @@ trade:
   max_posiciones: 7
   max_real_buys: 1000
   reiniciar_tanda: FALSE
-  buy_slippage: 0.15
-  sell_slippage: 0.25
+  # DESLIZAMIENTO 35% AL COMPRAR Y AL VENDER, pedido el 6-nov: "Pon buy
+  # slippage y sell 35%". Venian de 15% (compra) y 25% (venta). Motivo: la
+  # compra de coolcoin (2mEumt...) paso los filtros y fallo al confirmarse.
+  # Lo que cuesta: en una moneda que sube muy rapido se puede pagar hasta un
+  # 35% por encima del precio que vio el bot, y en la venta aceptar hasta un
+  # 35% por debajo.
+  buy_slippage: 0.35
+  sell_slippage: 0.35
   # SUELO ANCHO SOLO PARA EL STOP (4-nov, "Si"; igual que bot-unica123-real).
-  # En un desplome el precio se mueve mas del 25% entre que se decide vender
-  # y la venta aterriza: con el suelo normal la venta se cae y te quedas
-  # dentro. El stop acepta vender hasta un 50% por debajo para salir seguro.
-  # Los TP siguen con el 25%.
+  # En un desplome el precio se mueve mas de lo normal entre que se decide
+  # vender y la venta aterriza: con el suelo normal la venta se cae y te
+  # quedas dentro. El stop acepta vender hasta un 50% por debajo para salir
+  # seguro. Los TP usan el 35% de arriba.
   sell_slippage_proteccion: 0.50
   exit_strategy: "tp_sl"
   # SALIDA (4-nov). Stop -25%.
