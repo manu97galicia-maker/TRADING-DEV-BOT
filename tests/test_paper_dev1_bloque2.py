@@ -64,8 +64,8 @@ def test_condiciones_de_entrada_del_6_nov() -> None:
     """Lo que se exige para comprar, tal y como lo dejo Manu el 6-nov."""
     f = CFG["filters"]
     # "Pide minimo 3 compradores iniciales y 350 volumen en el bloque que
-    # compra primero".
-    assert f["min_first_block_buys"] == 3
+    # compra primero" -> "Solo dos no 3 pero mismo volumen".
+    assert f["min_first_block_buys"] == 2
     assert f["min_first_block_usd"] == 350
     assert f["max_first_block_buys"] == 0
     assert f["max_first_block_usd"] == 0
