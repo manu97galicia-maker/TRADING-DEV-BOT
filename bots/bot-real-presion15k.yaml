@@ -46,8 +46,11 @@ trade:
   max_posiciones: 0
   max_real_buys: 1000
   reiniciar_tanda: false
-  buy_slippage: 0.35
-  sell_slippage: 0.35
+  # 7-nov: "deslizamiento 18%" (antes 35% en compra y venta). El de las
+  # ventas de proteccion (stop, rug) se queda en 50%: si no entra, el
+  # stop no sale.
+  buy_slippage: 0.18
+  sell_slippage: 0.18
   sell_slippage_proteccion: 0.5
   exit_strategy: tp_sl
   stop_loss_percentage: 0.18
@@ -73,7 +76,8 @@ trade:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  fixed_amount_compra: 110000000
+  # 7-nov: "prioridad de compra 0.007" (antes 0,011 SOL = 110000000).
+  fixed_amount_compra: 70000000
   fixed_amount: 5714286
   fixed_amount_venta_proteccion: 42424243
   extra_percentage: 0.0

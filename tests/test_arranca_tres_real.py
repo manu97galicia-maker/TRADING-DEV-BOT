@@ -133,3 +133,12 @@ def test_presion_sin_bundles_de_creacion() -> None:
         # Despues: "mas de 5 carteras ... mas de 9 SOL, no compra".
         assert cv["max_carteras_primer_bloque"] == 5, f
         assert cv["max_sol_primer_bloque"] == 9.0, f
+
+
+def test_presion_prioridad_y_deslizamiento() -> None:
+    """7-nov "prioridad de compra 0.007 y deslizamiento 18%"."""
+    for f in NUEVAS[1:]:
+        c = _cfg(f)
+        assert c["priority_fees"]["fixed_amount_compra"] == 70_000_000, f
+        assert c["trade"]["buy_slippage"] == 0.18, f
+        assert c["trade"]["sell_slippage"] == 0.18, f
