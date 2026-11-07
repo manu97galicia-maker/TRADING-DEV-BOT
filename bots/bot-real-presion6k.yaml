@@ -7,12 +7,15 @@
 #   - ENTRADA (filters.curva_96 + min_entry_mc): cualquier dev; se empieza a
 #     mirar con la curva al 45% (~5k) y se compra cuando el market cap pasa
 #     de 6.000 $ (min_entry_mc, en un plazo de 120 s) CON PRESION:
-#     >= 4 compradores distintos en 5 s, >= 1,5x compras/ventas y >= 0,5 SOL
+#     >= 5 compradores distintos en 5 s, >= 1,7x compras/ventas y >= 0,7 SOL
 #     comprado en esa ventana; >= 8 compradores en total. Sin mecha de 1 s
 #     (> 35%) y sin concentracion de titulares (> 50%).
 #     AFLOJADA el 7-nov (Manu: "afloja un poco", eligio 4 / 1,5x / 0,5 / 8).
 #     Antes: 6 compradores en 5 s, 2x, 1 SOL, 10 en total. Coste: entra en
 #     mas monedas, y con ellas en mas monedas malas.
+#     REAPRETADA un poco el 7-nov (Manu: "anade un poco mas de presion
+#     compradora y volumen", eligio "un poco"): 4 / 1,5x / 0,5 SOL ->
+#     5 / 1,7x / 0,7 SOL. Los 8 compradores en total no cambian.
 #   - SALIDA: la misma que dev1 para los devs normales: TP1 +38% (79,71%) y
 #     el resto a 7k / 9k / 12k / 15k / 19k. OJO: entrando a 6k+, el TP1 salta
 #     por encima de ~8,3k, asi que el tramo de 7k (y a veces el de 9k) se
@@ -123,10 +126,11 @@ filters:
     umbral: 0.45
     # 7-nov "afloja un poco": antes 10 / 6 / 2.0 / 1.0.
     min_compradores: 8
-    min_compradores_ola: 4
+    # 7-nov "un poco mas de presion y volumen": antes 4 / 1.5 / 0.5.
+    min_compradores_ola: 5
     ventana_presion: 5.0
-    min_presion_ratio: 1.5
-    min_compra_sol: 0.5
+    min_presion_ratio: 1.7
+    min_compra_sol: 0.7
   pumpfun_dev:
     enabled: false
   min_entry_mc: 6000
