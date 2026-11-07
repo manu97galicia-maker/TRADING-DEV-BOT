@@ -31,8 +31,10 @@ trade:
   # 7-nov, despues: "pon 30% por operacion" (antes 0.20).
   # 7-nov, despues: "44% por operacion" (antes 0.30).
   # 7-nov, despues: "en normal pon 70% por operacion" (antes 0.44).
-  fraccion_saldo: 0.70
-  fraccion_base: libre
+  # 7-nov, despues: "50% del total balance" (antes 70% del libre). Base
+  # "cartera" = el saldo total de la wallet, no solo lo libre.
+  fraccion_saldo: 0.50
+  fraccion_base: cartera
   min_reserve_sol: 0.03
   # 7-nov: "maximo 4 simultaneas y maximo de posiciones abiertas 4"
   # (antes 3 por estrategia). 4 por estrategia y, ademas, 4 EN TOTAL
@@ -61,18 +63,27 @@ trade:
   exit_strategy: tp_sl
   # 7-nov, despues: "+50%, +85%, +120% y stop -22" (antes -18%). OJO: el
   # trailing copia este valor, asi que tambien pasa a -22% desde el pico.
-  stop_loss_percentage: 0.22
+  # 7-nov, despues: "pon SL en 7.4k" -> stop por market cap (mc_stop_loss)
+  # y SIN stop en %: el -22% saltaria antes y el de 7,4k no contaria nunca.
+  stop_loss_percentage: 0
+  # El trailing copiaba el stop en %; con este a 0 se apagaria en silencio.
+  # Se deja fijo en el 22% de siempre.
+  trailing_stop_percentage: 0.22
   # 7-nov, despues: "pon el primer tp en 50%" (antes 0.38). Sigue vendiendo
   # el 79,71%: a +50% eso cobra lo invertido +20% (a +38% era +10%).
-  take_profit_percentage: 0.50
-  take_profit_sell_percentage: 0.7971014493
+  # 7-nov, despues: "tp hasta conseguir un 140%, recupera iniciales al 40%
+  # y subes sl cuando toque tp1": +40% vende el 71,43% (= lo invertido),
+  # el resto mitad a +90% y mitad a +140%. Tras el TP1 el stop sube a
+  # compra +5% (stop_a_entrada_tras_tp, como antes).
+  take_profit_percentage: 0.40
+  take_profit_sell_percentage: 0.7142857143
   mc_take_profit_tiers: []
   stop_a_entrada_tras_tp: true
   margen_stop_tras_tp: 0.05
   max_perdidas_seguidas: 3
   stop_al_tp_tras_tp: false
   vender_todo_en_stop: true
-  mc_stop_loss: 0
+  mc_stop_loss: 7400
   max_hold_time: 0
   venta_muerta_seg: 300
   venta_muerta_gain: 0.0
@@ -82,8 +93,10 @@ trade:
   # 7-nov, despues: "+50%, +85%, +120%" (antes +55% / +75%).
   # 7-nov, despues: "un 80% en segundos" -> +50% (79,71%) y el resto a +80%
   # (antes +85% / +120%).
-  tp2_gain: 0.80
-  tp2_sell: 0.2028985507
+  tp2_gain: 0.90
+  tp2_sell: 0.1428571429
+  tp3_gain: 1.40
+  tp3_sell: 0.1428571428
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
