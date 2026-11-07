@@ -86,6 +86,13 @@ def build_curva96_heartbeat(
             f"  ↳ pocos compradores: {embudo.get('poca_gente', 0)}",
             f"  ↳ sin presión reciente: {embudo.get('sin_presion', 0)}",
             f"  ↳ vela 1s descartada: {embudo.get('vela_1s', 0)}",
+            # Los filtros del 7-nov (sin esto no se veia cual frenaba).
+            f"  ↳ menos de la edad minima: {embudo.get('demasiado_nueva', 0)}",
+            f"  ↳ market cap bajo el minimo: {embudo.get('bajo_mc_minimo', 0)}",
+            f"  ↳ pocas compras desde que nacio: {embudo.get('pocas_compras', 0)}",
+            f"  ↳ poco volumen desde que nacio: {embudo.get('poco_volumen', 0)}",
+            f"  ↳ ultimas no todas compras: {embudo.get('ultimas_no_compras', 0)}",
+            f"  ↳ mecha larga (30 s): {embudo.get('vela_larga', 0)}",
             f"  ↳ no se pudo construir: {embudo.get('sin_construir', 0)}",
             f"✅ Enviadas a comprar: <b>{embudo.get('comprables', 0)}</b>",
             f"Modo: <b>{modo}</b>",
