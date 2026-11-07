@@ -49,6 +49,11 @@ trade:
   max_real_buys: 5
   reiniciar_tanda: true
   tanda_solo_si_gana: true
+  # 7-nov: "asegurate que en mayhem vendes antes de que se nos bloqueen o
+  # congelen los tokens". El agente de pump.fun opera la moneda 24 h desde
+  # que nace y luego se queman sus tokens. Se vende TODO a las 23 h de vida
+  # (con la prisa y el slippage de un stop), aunque no haya tocado TP.
+  vender_antes_de_edad_seg: 82800
   # 7-nov: "deslizamiento 18%" (antes 35% en compra y venta). El de las
   # ventas de proteccion (stop, rug) se queda en 50%: si no entra, el
   # stop no sale.
@@ -184,7 +189,8 @@ filters:
     # que se creo en la cadena. Una mas joven se vuelve a mirar cuando ya la
     # tenga; una cuyo nacimiento no vio el bot (arranco despues) no se compra.
     min_edad_seg: 600
-    max_edad_seg: 0
+    # Y no se compra una mayhem de mas de 20 h: no daria tiempo a ganar.
+    max_edad_seg: 72000
     vela_seg: 1.0
     max_subida_vela: 0.35
     # Como presion: tampoco si ha subido mas de un 60% en 30 s.

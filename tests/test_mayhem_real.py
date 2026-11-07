@@ -186,3 +186,45 @@ def test_sin_el_modo_las_tandas_siguen_como_antes(tmp_path, monkeypatch):
     assert t.tanda_solo_si_gana is False
     t._compras_de_la_tanda, t._pnl_tanda = 5, -1.0
     assert t._decide_tanda_que_gana() is False
+
+
+def test_mayhem_vende_todo_a_las_23_horas(tmp_path, monkeypatch):
+    """7-nov "asegurate que en mayhem vendes antes de que se nos bloqueen o
+    congelen los tokens": el mayhem dura 24 h; a las 23 h se vende todo."""
+    t, ut = _construir(MAYHEM, tmp_path, monkeypatch)
+    assert t.vender_antes_de_edad_seg == 82800
+    assert _cfg(MAYHEM)["filters"]["curva_96"]["max_edad_seg"] == 72000
+    monkeypatch.setattr(t, "_nacio_ts", lambda _ti: time.time() - 82801)
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.1, 1.2])
+    assert ventas == [("fin_mayhem", 1.0, 1.0)]  # en la primera lectura
+    assert t._es_venta_protectora("fin_mayhem")  # prisa y slippage de stop
+
+
+def test_mayhem_antes_de_23_horas_no_vende_por_edad(tmp_path, monkeypatch):
+    t, ut = _construir(MAYHEM, tmp_path, monkeypatch)
+    monkeypatch.setattr(t, "_nacio_ts", lambda _ti: time.time() - 3600)
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.1, 0.4])
+    assert ventas == [("stop_loss", 1.0, 0.4)]
+
+
+def test_la_ficha_guarda_cuando_nacio(tmp_path, monkeypatch):
+    """Para vender a tiempo tambien despues de un reinicio."""
+    import json
+    from types import SimpleNamespace
+
+    from solders.pubkey import Pubkey
+
+    from interfaces.core import Platform
+
+    t, _ = _construir(MAYHEM, tmp_path, monkeypatch)
+    nacio = time.time() - 5000
+    ficha = SimpleNamespace(
+        mint=Pubkey.new_unique(),
+        symbol="MAY",
+        platform=Platform.PUMP_FUN,
+        token_program_id=None,
+        additional_data={"nacio_ts": nacio},
+    )
+    t._record_open_position(ficha, SimpleNamespace(price=1e-9, amount=1.0))
+    rec = json.loads(t._open_position_path(str(ficha.mint)).read_text())
+    assert rec["nacio_ts"] == pytest.approx(nacio)

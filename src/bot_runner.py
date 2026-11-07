@@ -412,6 +412,7 @@ async def start_bot(config_path: str, *, only_dev: bool = False):
             min_buy_age=cfg.get("filters", {}).get("min_buy_age", 0.0),
             min_reserve_sol=cfg.get("trade", {}).get("min_reserve_sol", 0.03),
             tanda_solo_si_gana=cfg["trade"].get("tanda_solo_si_gana", False),
+            vender_antes_de_edad_seg=cfg["trade"].get("vender_antes_de_edad_seg", 0),
             max_real_buys=cfg.get("trade", {}).get("max_real_buys", 0),
             pumpfun_dev=cfg.get("filters", {}).get("pumpfun_dev"),
             copy_wallets=cfg.get("filters", {}).get("copy_wallets"),

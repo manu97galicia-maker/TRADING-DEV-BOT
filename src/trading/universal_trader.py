@@ -370,6 +370,7 @@ class UniversalTrader:
     MOTIVOS_PROTECTORES = (
         "stop_loss", "trailing_stop", "anti_rug", "panic_sell",
         "bajo_entrada", "suelo_por_mc", "muerta", "max_hold_time", "manual_",
+        "fin_mayhem",
     )
 
     #: Lecturas seguidas sin precio (ni de la curva ni del DEX) antes de
@@ -695,6 +696,12 @@ class UniversalTrader:
         # no queda ninguna abierta y la tanda acabo en GANANCIA; si acabo en
         # perdida la estrategia se queda parada hasta reiniciarla.
         tanda_solo_si_gana: bool = False,
+        # VENDER ANTES DE QUE ACABE EL MAYHEM (7-nov, Manu: "asegurate que en
+        # mayhem vendes antes de que se nos bloqueen o congelen los tokens").
+        # El agente de pump.fun opera una moneda mayhem 24 h desde que nace;
+        # al acabar se queman sus tokens y deja de mover el precio. Con N > 0
+        # se vende TODO cuando la moneda cumple N segundos de vida. 0 = no.
+        vender_antes_de_edad_seg: float = 0.0,
         # FRANJA HORARIA en la que se opera, hora de España. Fuera de ella el
         # bot sigue mirando el flujo pero no compra. {inicio: 18, fin: 2} son
         # las seis de la tarde a las dos de la madrugada -- cruza medianoche, y
@@ -1391,6 +1398,7 @@ class UniversalTrader:
         #: acotadas ("haz N operaciones y para") sin tener que vigilarlas.
         self.reiniciar_tanda = bool(reiniciar_tanda)
         self.tanda_solo_si_gana = bool(tanda_solo_si_gana)
+        self.vender_antes_de_edad_seg = max(0.0, float(vender_antes_de_edad_seg or 0))
         #: Resultado (SOL) de las posiciones cerradas de la tanda en curso.
         self._pnl_tanda = 0.0
         self._bote = Ganancia() if self.escala_por_sol_ganado > 0 else None
@@ -2373,6 +2381,39 @@ class UniversalTrader:
         except OSError:
             return 0
 
+    def _nacio_ts(self, token_info: TokenInfo) -> float | None:
+        """Hora (time.time) en que nacio la moneda, si se sabe."""
+        guardada = (getattr(token_info, "additional_data", None) or {}).get("nacio_ts")
+        if guardada:
+            return float(guardada)
+        try:
+            from monitoring.volumen import edad_real  # noqa: PLC0415
+
+            edad = edad_real(str(token_info.mint))
+        except Exception:  # noqa: BLE001
+            edad = None
+        return (time.time() - edad) if edad is not None else None
+
+    def _toca_fin_mayhem(self, token_info: TokenInfo) -> bool:
+        """True si hay que vender ya: la moneda llega al limite de vida.
+
+        Si no se sabe cuando nacio, no se vende por esto (los demas frenos
+        siguen). La estrategia mayhem solo compra monedas cuya edad conoce.
+        """
+        limite = float(getattr(self, "vender_antes_de_edad_seg", 0) or 0)
+        if limite <= 0:
+            return False
+        nacio = self._nacio_ts(token_info)
+        if nacio is None:
+            return False
+        if time.time() - nacio < limite:
+            return False
+        logger.warning(
+            "FIN MAYHEM %s: %.1f h de vida (limite %.1f h) -> vendo todo",
+            token_info.symbol, (time.time() - nacio) / 3600, limite / 3600,
+        )
+        return True
+
     def _latido_ficha(self, mint: str, ultimo: float = -1e18) -> float:
         """Renueva la hora de la ficha de esta posicion: sigue vigilada.
 
@@ -3226,6 +3267,9 @@ class UniversalTrader:
                     getattr(token_info, "token_program_id", "") or ""
                 ),
                 "ts": time.time(),
+                # Cuando nacio la moneda (7-nov): para vender antes de que
+                # acabe el mayhem tambien despues de un reinicio.
+                "nacio_ts": self._nacio_ts(token_info),
             }
             path = self._open_position_path(str(token_info.mint))
             tmp = path.with_suffix(".json.tmp")
@@ -3429,6 +3473,11 @@ class UniversalTrader:
         if token_info is None:
             logger.warning("No pude reconstruir %s (%s): queda suelta", sym, mint)
             return
+        if rec.get("nacio_ts"):
+            token_info.additional_data = {
+                **(token_info.additional_data or {}),
+                "nacio_ts": float(rec["nacio_ts"]),
+            }
 
         # LA CANTIDAD SALE DE LA CADENA, no del fichero. Si se vendio algo a
         # mano con el bot parado, el fichero miente y el saldo no.
@@ -7035,6 +7084,17 @@ class UniversalTrader:
                             token_info.symbol, _sin_precio,
                         )
                     _sin_precio = 0
+
+                # FIN DEL MAYHEM (7-nov): se vende todo antes de que la moneda
+                # cumpla `vender_antes_de_edad_seg` (ver `_toca_fin_mayhem`).
+                if self._toca_fin_mayhem(token_info):
+                    if await self._sell_amount(
+                        token_info, remaining, price, "fin_mayhem", full_exit=True
+                    ):
+                        realized_sol += self._ultimo_cobro
+                        remaining = 0.0
+                        fully_exited = True
+                        break
 
                 # La ficha sigue viva mientras se vigila (ver `_latido_ficha`).
                 _ultimo_latido = self._latido_ficha(
