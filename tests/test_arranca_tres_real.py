@@ -90,8 +90,9 @@ def test_presion6k() -> None:
     # 7-nov "elimina el filtro de market cap".
     assert fl["min_entry_mc"] == 0
     # 7-nov "sube un poco volumen y presion": 6 en 5 s, 2x, 1 SOL, 8 en total.
-    assert cv["min_compradores_ola"] == 6 and cv["min_presion_ratio"] == 2.0
-    assert cv["min_compra_sol"] == 1.0 and cv["min_compradores"] == 8
+    # Despues, "un poco mas de volumen y presion": 7 / 2,2x / 1,2 SOL.
+    assert cv["min_compradores_ola"] == 7 and cv["min_presion_ratio"] == 2.2
+    assert cv["min_compra_sol"] == 1.2 and cv["min_compradores"] == 8
     assert fl["pumpfun_dev"]["enabled"] is False
     _tres_ventas_hasta_75(c["trade"])
 
@@ -122,8 +123,9 @@ def test_presion15k() -> None:
     assert cv["min_compra_sol"] < p6["min_compra_sol"]
     assert cv["max_bundle_pct"] == 0.5 and cv["max_subida_vela"] == 0.35
     # 7-nov "sube un poco volumen y presion": 5 en 5 s, 1,8x, 0,8 SOL.
-    assert cv["min_compradores_ola"] == 5 and cv["min_presion_ratio"] == 1.8
-    assert cv["min_compra_sol"] == 0.8 and cv["min_compradores"] == 6
+    # Despues, "un poco mas de volumen y presion": 6 / 2x / 1 SOL.
+    assert cv["min_compradores_ola"] == 6 and cv["min_presion_ratio"] == 2.0
+    assert cv["min_compra_sol"] == 1.0 and cv["min_compradores"] == 6
     _tres_ventas_hasta_75(t)
     assert "presion15k_real.log" in TEXTO
 

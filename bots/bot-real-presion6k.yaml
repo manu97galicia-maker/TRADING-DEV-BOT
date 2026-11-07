@@ -164,10 +164,12 @@ filters:
     # 7-nov "un poco mas de presion y volumen": antes 4 / 1.5 / 0.5.
     # 7-nov "un poquito mas": 1.7 / 0.7 -> 1.8 / 0.8.
     # 7-nov "sube un poco": 5 / 1.8 / 0.8 -> 6 / 2.0 / 1.0.
-    min_compradores_ola: 6
+    # 7-nov, despues: "un poco mas de volumen y presion": 6 / 2.0 / 1.0 ->
+    # 7 / 2.2 / 1.2.
+    min_compradores_ola: 7
     ventana_presion: 5.0
-    min_presion_ratio: 2.0
-    min_compra_sol: 1.0
+    min_presion_ratio: 2.2
+    min_compra_sol: 1.2
   pumpfun_dev:
     enabled: false
   # 7-nov "elimina el filtro de market cap" (antes 6000).
