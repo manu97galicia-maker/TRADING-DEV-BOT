@@ -175,7 +175,8 @@ def test_la_estrategia_lo_tiene_en_papel():
         (Path(__file__).resolve().parents[1] / "bots/bot-real-presion.yaml").read_text()
     )["filters"]["dex_presion"]
     # Despues: "de papel no, asegurate que en real va bien".
-    assert c["enabled"] is True and c["en_papel"] is False
+    # Despues: "solo las que llegan al 91%" -> PumpSwap apagado.
+    assert c["enabled"] is False and c["en_papel"] is False
     # Despues: "no compres mas que no sea pumpfun o pumpswap".
     assert c["dex"] == ["pumpswap"] and c["solo_pumpfun"] is True
     assert c["min_lp_bloqueada_pct"] == 90
@@ -190,6 +191,7 @@ def test_dentro_del_bot_real_compra_en_papel_con_su_salida(tmp_path, monkeypatch
 
     t, _ = _construir("bots/bot-real-presion.yaml", tmp_path, monkeypatch)
     t.dex_presion["en_papel"] = True  # esta prueba es la del papel
+    t.dex_presion["enabled"] = True  # en la config esta apagada (91%)
     assert "dex_presion" in t._fuentes_activas() and "curva96" in t._fuentes_activas()
     creadas = []
     original = dp.DexPresionSource.__init__

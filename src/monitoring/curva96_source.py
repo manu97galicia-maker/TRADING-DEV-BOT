@@ -128,6 +128,8 @@ class Curva96Source:
         sol_usd: Callable[[], float] | None = None,
         min_compras_total: int = 0,
         min_volumen_total_sol: float = 0.0,
+        vela2_seg: float = 0.0,
+        max_subida_vela2: float = 0.0,
     ) -> None:
         self.wss_endpoint = wss_endpoint
         self._impls = platform_impls
@@ -182,6 +184,11 @@ class Curva96Source:
         # presion, porque asi el volumen entra despues, aunque haya entrado
         # volumen ya" -> eligio "30 SOL negociados" desde que nacio. 0 = no.
         self.min_volumen_total_sol = max(0.0, float(min_volumen_total_sol or 0))
+        # SEGUNDA VELA, MAS LARGA (7-nov, Manu: "solo las que llegan al 91% de
+        # la bonding, sin pump and dumps ni mechas" -> eligio "mas estricto":
+        # ademas de +35% en 1 s, nada que haya subido +60% en 30 s). 0 = no.
+        self.vela2_seg = max(0.0, float(vela2_seg or 0))
+        self.max_subida_vela2 = max(0.0, float(max_subida_vela2 or 0))
         self._sol_usd = sol_usd
         self._ultimo_log_presion: dict[str, float] = {}
 
@@ -397,6 +404,16 @@ class Curva96Source:
             )
             self._cuenta("vela_1s")
             return False
+        if self.vela2_seg > 0 and self.max_subida_vela2 > 0:
+            subida2 = volumen.subida(mint, self.vela2_seg)
+            if subida2 > self.max_subida_vela2:
+                if self._toca_escribir(mint):
+                    logger.info(
+                        "Evitado %s (%s): +%.0f%% en %.0fs; mecha de pump and dump",
+                        symbol, mint, subida2 * 100, self.vela2_seg,
+                    )
+                self._cuenta("vela_larga")
+                return False
         return True
 
     def _presion_suficiente(self, mint: str, symbol: str) -> bool:

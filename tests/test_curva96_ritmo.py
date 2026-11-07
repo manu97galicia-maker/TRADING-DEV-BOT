@@ -215,3 +215,14 @@ def test_30_sol_negociados_desde_que_nacio(monkeypatch):
     monkeypatch.setattr(cs.volumen, "volumen_sol", lambda _m: 31.0)
     asyncio.run(f._evaluar("M", _construye))
     assert llamadas == [1]
+
+
+def test_mecha_larga_60_en_30_segundos(monkeypatch):
+    """7-nov "sin pump and dumps ni mechas" -> tampoco +60% en 30 s."""
+    f = _fuente(vela_seg=1.0, max_subida_vela=0.35, vela2_seg=30, max_subida_vela2=0.60)
+    subidas = {1.0: 0.10, 30: 0.70}
+    monkeypatch.setattr(cs.volumen, "subida", lambda _m, s: subidas[s])
+    assert f._sin_mecha_vertical("M", "M") is False
+    assert f._embudo["vela_larga"] == 1
+    subidas[30] = 0.50
+    assert f._sin_mecha_vertical("M", "M") is True

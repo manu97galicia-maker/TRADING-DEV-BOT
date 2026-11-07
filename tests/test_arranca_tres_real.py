@@ -30,7 +30,8 @@ def test_arranca_las_tres_con_apagado_y_solo_en_real() -> None:
     lista = next(x for x in TEXTO.splitlines() if x.startswith("ESTRATEGIAS="))
     # Despues: "elimina lo de 6k y 15k ... una unica estrategia".
     # Despues: "hazme una estrategia de mayhem ... arriesgando 4$".
-    assert lista == 'ESTRATEGIAS="bots/bot-real-presion.yaml bots/bot-real-mayhem.yaml"'
+    # Despues: "arranca solo las que llegan al 91%" -> solo presion.
+    assert lista == 'ESTRATEGIAS="bots/bot-real-presion.yaml"'
     assert "mayhem_real.log" in TEXTO
     assert "presion_real.log" in TEXTO
     # Y las que salen de la lista tambien se paran: pkill de todas.
@@ -124,7 +125,9 @@ def _tres_ventas_hasta_75(t: dict) -> None:
 
 def test_presion_unica_mira_cualquier_moneda_sin_inundar() -> None:
     cv = _cfg(NUEVAS[1])["filters"]["curva_96"]
-    assert cv["umbral"] == 0.0 and cv["tope"] == 0.995
+    # Despues: "solo las que llegan al 91% de la bonding".
+    assert cv["umbral"] == 0.91 and cv["tope"] == 0.995
+    assert cv["vela2_seg"] == 30 and cv["max_subida_vela2"] == 0.60
     assert cv["revisar_cada_seg"] == 2.0 and cv["log_presion_cada_seg"] == 30.0
     assert not (RAIZ / "bots/bot-real-presion6k.yaml").exists()
     assert not (RAIZ / "bots/bot-real-presion15k.yaml").exists()

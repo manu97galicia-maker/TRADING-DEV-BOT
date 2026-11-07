@@ -179,7 +179,9 @@ filters:
   #     Numeros propuestos el 7-nov, sin confirmar todavia por Manu.
   #   - Bags lanza en pools de Meteora: entra con el prefijo "meteora".
   dex_presion:
-    enabled: true
+    # 7-nov: "solo las que llegan al 91% de la bonding": la parte de
+    # PumpSwap (monedas ya migradas) se apaga. true la vuelve a encender.
+    enabled: false
     en_papel: false
     # 7-nov, despues: "no compres mas que no sea pumpfun o pumpswap" (antes
     # raydium, pumpswap, meteora). Y solo monedas nacidas en pump.fun.
@@ -212,6 +214,10 @@ filters:
     max_edad_seg: 0
     vela_seg: 1.0
     max_subida_vela: 0.35
+    # 7-nov: "sin pump and dumps ni mechas" -> "mas estricto": tampoco si ha
+    # subido mas de un 60% en los ultimos 30 s.
+    vela2_seg: 30
+    max_subida_vela2: 0.60
     exigir_ver_creacion: false
     # 7-nov, Manu con la captura de LAGER (de ~2,5k a ~27k en el primer
     # segundo y el dev lo vende todo a los 2 min): "no me compres este
@@ -227,7 +233,8 @@ filters:
     max_bundle_pct_sin_historia: 0.35
     heartbeat_interval: 300
     # 7-nov "cualquier moneda": desde que nace (antes 0.45).
-    umbral: 0.0
+    # 7-nov, despues: "solo las que llegan al 91% de la bonding" (antes 0.0).
+    umbral: 0.91
     revisar_cada_seg: 2.0
     # 7-nov: "dos ultimas tx sean compras". Con la presion OK, si en las 2
     # ultimas operaciones hay alguna venta, no se compra (se vuelve a mirar).
