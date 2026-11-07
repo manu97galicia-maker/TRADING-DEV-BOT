@@ -58,7 +58,8 @@ def test_reglas_comunes_a_las_tres() -> None:
         assert t["stop_loss_percentage"] == (0.18 if "presion" in f else 0.25), f
         assert t["max_perdidas_seguidas"] == 3, f
         assert t["venta_muerta_seg"] == 300 and t["venta_muerta_gain"] == 0.0, f
-        assert t["take_profit_percentage"] == 0.38, f
+        # Despues, en la de presion: "pon el primer tp en 50%".
+        assert t["take_profit_percentage"] == (0.50 if "presion" in f else 0.38), f
         assert fl["allow_mayhem"] is False and fl["ignorar_listas_de_devs"] is False, f
         assert fl["paper_trade"] is False, f
         # 7-nov: "pon sin limite de operaciones simultaneas".
@@ -103,7 +104,7 @@ def _tres_ventas_hasta_75(t: dict) -> None:
     """7-nov "haz 3 ventas" y "en total busco un 75% roi"."""
     assert t["mc_take_profit_tiers"] == [] and "tp4_gain" not in t
     assert [t["take_profit_percentage"], t["tp2_gain"], t["tp3_gain"]] == [
-        0.38,
+        0.50,
         0.55,
         0.75,
     ]

@@ -147,11 +147,18 @@ def test_tp1_cobra_y_el_stop_sube_a_compra_mas_5(bot, monkeypatch):
     manda el +5%: a 1,06 aguanta y vende a 1,04. Con -18% (presion, 7-nov)
     manda el trailing: pico 1,4 x 0,82 = 1,148, asi que vende a 1,06."""
     yaml_rel, t, ut = bot
+    if "presion" in yaml_rel:
+        # 7-nov "pon el primer tp en 50%": TP1 a 1,5; trailing 1,5 x 0,82 = 1,23.
+        ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.2, 1.4, 1.5, 1.25, 1.22])
+        assert ventas[0] == ("tp_tier1_+50%", 0.7971, 1.5)
+        assert len(ventas) == 2 and ventas[1][2] == 1.22
+        assert abs(ventas[1][1] - 0.2029) < 1e-3
+        return
     ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.2, 1.4, 1.2, 1.06, 1.06, 1.04])
     assert ventas[0] == ("tp_tier1_+38%", 0.7971, 1.4)
     assert len(ventas) == 2
     motivo, parte, precio = ventas[1]
-    assert precio == (1.06 if "presion" in yaml_rel else 1.04)
+    assert precio == 1.04
     assert abs(parte - 0.2029) < 1e-3
 
 
@@ -191,8 +198,8 @@ def test_presion_tres_ventas_hasta_el_75(yaml_rel, tmp_path, monkeypatch):
     """7-nov "haz 3 ventas" y "busco un 75% de roi": +38% / +55% / +75% y
     no hay mas ventas aunque siga subiendo."""
     t, ut = _construir(yaml_rel, tmp_path, monkeypatch)
-    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.4, 1.56, 1.76, 2.5, 4.0])
-    assert [v[0] for v in ventas] == ["tp_tier1_+38%", "tp_tier2_+55%", "tp_tier3_+75%"]
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.4, 1.51, 1.56, 1.76, 2.5, 4.0])
+    assert [v[0] for v in ventas] == ["tp_tier1_+50%", "tp_tier2_+55%", "tp_tier3_+75%"]
     assert abs(sum(v[1] for v in ventas) - 1.0) < 1e-3
 
 

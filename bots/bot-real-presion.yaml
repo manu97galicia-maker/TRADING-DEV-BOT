@@ -88,7 +88,9 @@ trade:
   sell_slippage_proteccion: 0.5
   exit_strategy: tp_sl
   stop_loss_percentage: 0.18
-  take_profit_percentage: 0.38
+  # 7-nov, despues: "pon el primer tp en 50%" (antes 0.38). Sigue vendiendo
+  # el 79,71%: a +50% eso cobra lo invertido +20% (a +38% era +10%).
+  take_profit_percentage: 0.50
   take_profit_sell_percentage: 0.7971014493
   mc_take_profit_tiers: []
   stop_a_entrada_tras_tp: true
