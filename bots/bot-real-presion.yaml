@@ -255,6 +255,10 @@ filters:
     # (compras + ventas) desde que nacio.
     # Y 10 SOL negociados (antes 30).
     min_volumen_total_sol: 10
+    # 7-nov, despues: "me interesa mas volumen de la meme" -> "volumen del
+    # ultimo minuto": 5 SOL o mas negociados en los ultimos 60 s.
+    min_volumen_reciente_sol: 5
+    ventana_volumen_reciente: 60
     log_presion_cada_seg: 30.0
     # 7-nov "afloja un poco": antes 10 / 6 / 2.0 / 1.0.
     # 7-nov: "mas volumen, quiero que haya muchas transacciones pero cogerlas

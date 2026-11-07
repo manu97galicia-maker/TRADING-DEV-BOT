@@ -2578,6 +2578,8 @@ class UniversalTrader:
             min_volumen_total_sol=float(cfg.get("min_volumen_total_sol", 0) or 0),
             vela2_seg=float(cfg.get("vela2_seg", 0) or 0),
             max_subida_vela2=float(cfg.get("max_subida_vela2", 0) or 0),
+            min_volumen_reciente_sol=float(cfg.get("min_volumen_reciente_sol", 0) or 0),
+            ventana_volumen_reciente=float(cfg.get("ventana_volumen_reciente", 60) or 60),
             # El precio de SOL se actualiza en vivo en este modulo: se lee en
             # cada llamada, no se copia al arrancar.
             sol_usd=lambda: _SOL_USD,

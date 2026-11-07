@@ -226,3 +226,46 @@ def test_mecha_larga_60_en_30_segundos(monkeypatch):
     assert f._embudo["vela_larga"] == 1
     subidas[30] = 0.50
     assert f._sin_mecha_vertical("M", "M") is True
+
+
+def test_5_sol_en_el_ultimo_minuto(monkeypatch):
+    """7-nov "me interesa mas volumen de la meme" -> volumen del ultimo minuto."""
+    import asyncio
+
+    f = _fuente(min_volumen_reciente_sol=5, ventana_volumen_reciente=60)
+    monkeypatch.setattr(cs.volumen, "progreso_curva", lambda _m: (0.5, 40.0))
+    monkeypatch.setattr(f, "_sin_mecha_vertical", lambda *_a: True)
+    monkeypatch.setattr(f, "_presion_suficiente", lambda *_a: True)
+    monkeypatch.setattr(cs.volumen, "ultimas_son_compra", lambda *_a: True)
+    monkeypatch.setattr(cs.volumen, "vio_la_creacion", lambda _m: True)
+    monkeypatch.setattr(f, "_fuera_de_edad", lambda *_a: False)
+    monkeypatch.setattr(f, "_es_bundle", lambda *_a, **_k: False)
+    llamadas, ventanas = [], []
+
+    async def _construye(*_a, **_k):
+        llamadas.append(1)
+
+    def _vol(_m, seg=0.0):
+        ventanas.append(seg)
+        return 4.9
+
+    monkeypatch.setattr(cs, "build_pumpfun_token_info", _construye)
+    monkeypatch.setattr(cs.volumen, "volumen_sol", _vol)
+    f._probadas.add("M")
+    asyncio.run(f._evaluar("M", _construye))
+    assert llamadas == [] and "M" not in f._probadas and ventanas == [60]
+    assert f._embudo["poco_volumen_ahora"] == 1
+    monkeypatch.setattr(cs.volumen, "volumen_sol", lambda _m, seg=0.0: 5.1)
+    asyncio.run(f._evaluar("M", _construye))
+    assert llamadas == [1]
+
+
+def test_la_normal_pide_5_sol_en_un_minuto():
+    from pathlib import Path
+
+    import yaml
+
+    cv = yaml.safe_load(
+        (Path(__file__).resolve().parents[1] / "bots/bot-real-presion.yaml").read_text()
+    )["filters"]["curva_96"]
+    assert cv["min_volumen_reciente_sol"] == 5 and cv["ventana_volumen_reciente"] == 60

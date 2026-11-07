@@ -93,6 +93,7 @@ def build_curva96_heartbeat(
             f"  ↳ poco volumen desde que nacio: {embudo.get('poco_volumen', 0)}",
             f"  ↳ ultimas no todas compras: {embudo.get('ultimas_no_compras', 0)}",
             f"  ↳ mecha larga (30 s): {embudo.get('vela_larga', 0)}",
+            f"  ↳ poco volumen en el ultimo minuto: {embudo.get('poco_volumen_ahora', 0)}",
             f"  ↳ no se pudo construir: {embudo.get('sin_construir', 0)}",
             f"✅ Enviadas a comprar: <b>{embudo.get('comprables', 0)}</b>",
             f"Modo: <b>{modo}</b>",
@@ -137,6 +138,8 @@ class Curva96Source:
         min_volumen_total_sol: float = 0.0,
         vela2_seg: float = 0.0,
         max_subida_vela2: float = 0.0,
+        min_volumen_reciente_sol: float = 0.0,
+        ventana_volumen_reciente: float = 60.0,
     ) -> None:
         self.wss_endpoint = wss_endpoint
         self._impls = platform_impls
@@ -195,6 +198,11 @@ class Curva96Source:
         # la bonding, sin pump and dumps ni mechas" -> eligio "mas estricto":
         # ademas de +35% en 1 s, nada que haya subido +60% en 30 s). 0 = no.
         self.vela2_seg = max(0.0, float(vela2_seg or 0))
+        # VOLUMEN DE AHORA (7-nov, Manu: "me interesa mas volumen de la meme"
+        # -> "volumen del ultimo minuto"): SOL negociados en los ultimos
+        # `ventana_volumen_reciente` segundos. 0 = no se mira.
+        self.min_volumen_reciente_sol = max(0.0, float(min_volumen_reciente_sol or 0))
+        self.ventana_volumen_reciente = max(1.0, float(ventana_volumen_reciente or 60))
         self.max_subida_vela2 = max(0.0, float(max_subida_vela2 or 0))
         self._sol_usd = sol_usd
         self._ultimo_log_presion: dict[str, float] = {}
@@ -462,7 +470,7 @@ class Curva96Source:
         )
         return False
 
-    async def _evaluar(  # noqa: C901, PLR0911, PLR0912
+    async def _evaluar(  # noqa: C901, PLR0911, PLR0912, PLR0915
         self, mint: str, token_callback: Callable[[TokenInfo], Awaitable[None]]
     ) -> None:
         """Comprueba una moneda que acaba de cruzar el umbral y la manda a comprar."""
@@ -525,6 +533,21 @@ class Curva96Source:
                         "Evitado %s (%s): presion OK pero solo %.1f SOL "
                         "negociados desde que nacio (min %.0f)",
                         mint[:6], mint, negociado, self.min_volumen_total_sol,
+                    )
+                self._probadas.discard(mint)
+                return
+
+        # VOLUMEN DEL ULTIMO MINUTO (7-nov). Si no llega, se vuelve a mirar.
+        if self.min_volumen_reciente_sol > 0:
+            reciente = volumen.volumen_sol(mint, self.ventana_volumen_reciente)
+            if reciente < self.min_volumen_reciente_sol:
+                self._cuenta("poco_volumen_ahora")
+                if self._toca_escribir(mint):
+                    logger.info(
+                        "Evitado %s (%s): presion OK pero solo %.1f SOL en los "
+                        "ultimos %.0f s (min %.1f)",
+                        mint[:6], mint, reciente, self.ventana_volumen_reciente,
+                        self.min_volumen_reciente_sol,
                     )
                 self._probadas.discard(mint)
                 return
