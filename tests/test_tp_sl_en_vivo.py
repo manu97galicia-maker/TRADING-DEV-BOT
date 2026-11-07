@@ -119,21 +119,52 @@ def test_un_rug_se_vende_entero_en_el_stop(bot, monkeypatch):
 
 
 def test_por_encima_del_stop_no_vende(bot, monkeypatch):
-    """-20% no toca el stop del -25%: solo vende cuando lo cruza."""
-    _, t, ut = bot
-    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 0.8, 0.8, 0.74])
-    assert ventas == [("stop_loss", 1.0, 0.74)]
+    """Justo por encima del stop aguanta; solo vende cuando lo cruza.
+    Presion: -18% (7-nov); dev1 y curva92: -25%."""
+    yaml_rel, t, ut = bot
+    import yaml
+
+    stop = yaml.safe_load((RAIZ / yaml_rel).read_text())["trade"][
+        "stop_loss_percentage"
+    ]
+    aguanta, cae = round(1 - stop + 0.03, 2), round(1 - stop - 0.01, 2)
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, aguanta, aguanta, cae])
+    assert ventas == [("stop_loss", 1.0, cae)]
+
+
+@pytest.mark.parametrize(
+    "yaml_rel", ["bots/bot-real-presion6k.yaml", "bots/bot-real-presion15k.yaml"]
+)
+def test_presion_stop_al_18(yaml_rel, tmp_path, monkeypatch):
+    """7-nov "stop ponlo al 18%": a -16% aguanta, a -19% vende todo."""
+    t, ut = _construir(yaml_rel, tmp_path, monkeypatch)
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 0.84, 0.84, 0.81])
+    assert ventas == [("stop_loss", 1.0, 0.81)]
 
 
 def test_tp1_cobra_y_el_stop_sube_a_compra_mas_5(bot, monkeypatch):
-    """TP1 +38% vende el 79,71%; despues el resto sale a compra +5%, no antes
-    (a 1,06 aguanta) y no mas abajo."""
-    _, t, ut = bot
+    """TP1 +38% vende el 79,71%; el resto sale en lo que llegue antes: compra
+    +5% o el trailing (pico menos el % del stop). Con stop -25% (dev1, curva92)
+    manda el +5%: a 1,06 aguanta y vende a 1,04. Con -18% (presion, 7-nov)
+    manda el trailing: pico 1,4 x 0,82 = 1,148, asi que vende a 1,06."""
+    yaml_rel, t, ut = bot
     ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.2, 1.4, 1.2, 1.06, 1.06, 1.04])
     assert ventas[0] == ("tp_tier1_+38%", 0.7971, 1.4)
     assert len(ventas) == 2
     motivo, parte, precio = ventas[1]
-    assert precio == 1.04 and abs(parte - 0.2029) < 1e-3
+    assert precio == (1.06 if "presion" in yaml_rel else 1.04)
+    assert abs(parte - 0.2029) < 1e-3
+
+
+@pytest.mark.parametrize(
+    "yaml_rel", ["bots/bot-real-presion6k.yaml", "bots/bot-real-presion15k.yaml"]
+)
+def test_presion_trailing_al_18_antes_del_tp1(yaml_rel, tmp_path, monkeypatch):
+    """Sube a +30% sin tocar el TP1 y cae un 18% desde ahi (1,3 x 0,82 =
+    1,066): vende todo en verde, por trailing, sin esperar al stop."""
+    t, ut = _construir(yaml_rel, tmp_path, monkeypatch)
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.3, 1.07, 1.06])
+    assert ventas == [("trailing_stop", 1.0, 1.06)]
 
 
 def test_la_moneda_muerta_se_vende_a_los_5_minutos(bot, monkeypatch):
@@ -155,10 +186,19 @@ def test_en_verde_a_los_5_minutos_no_se_vende(bot, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "yaml_rel", ["bots/bot-real-curva92.yaml", "bots/bot-real-presion15k.yaml"]
+    "yaml_rel", ["bots/bot-real-presion6k.yaml", "bots/bot-real-presion15k.yaml"]
 )
-def test_tramos_por_porcentaje_venden_todo(yaml_rel, tmp_path, monkeypatch):
+def test_presion_tres_ventas_hasta_el_75(yaml_rel, tmp_path, monkeypatch):
+    """7-nov "haz 3 ventas" y "busco un 75% de roi": +38% / +55% / +75% y
+    no hay mas ventas aunque siga subiendo."""
     t, ut = _construir(yaml_rel, tmp_path, monkeypatch)
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.4, 1.56, 1.76, 2.5, 4.0])
+    assert [v[0] for v in ventas] == ["tp_tier1_+38%", "tp_tier2_+55%", "tp_tier3_+75%"]
+    assert abs(sum(v[1] for v in ventas) - 1.0) < 1e-3
+
+
+def test_tramos_por_porcentaje_venden_todo(tmp_path, monkeypatch):
+    t, ut = _construir("bots/bot-real-curva92.yaml", tmp_path, monkeypatch)
     ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.4, 1.7, 2.1, 2.6])
     assert [v[0] for v in ventas] == [
         "tp_tier1_+38%",
@@ -169,12 +209,9 @@ def test_tramos_por_porcentaje_venden_todo(yaml_rel, tmp_path, monkeypatch):
     assert abs(sum(v[1] for v in ventas) - 1.0) < 1e-3
 
 
-@pytest.mark.parametrize(
-    "yaml_rel", ["bots/bot-paper-dev1-bloque2.yaml", "bots/bot-real-presion6k.yaml"]
-)
-def test_tramos_por_market_cap_venden_todo(yaml_rel, tmp_path, monkeypatch):
-    """Entrada a 4k: TP1 a 5,5k y los tramos a 7k/9k/12k/15k/19k."""
-    t, ut = _construir(yaml_rel, tmp_path, monkeypatch)
+def test_tramos_por_market_cap_venden_todo(tmp_path, monkeypatch):
+    """dev1, entrada a 4k: TP1 a 5,5k y los tramos a 7k/9k/12k/15k/19k."""
+    t, ut = _construir("bots/bot-paper-dev1-bloque2.yaml", tmp_path, monkeypatch)
     ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.4, 1.8, 2.3, 3.1, 3.8, 4.8])
     assert ventas[0][0] == "tp_tier1_+38%"
     assert len(ventas) == 6
