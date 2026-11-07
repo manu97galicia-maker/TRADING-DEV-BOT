@@ -187,3 +187,31 @@ def test_60_compras_desde_que_nacio(monkeypatch):
     )
     asyncio.run(f._evaluar("M", _construye))
     assert llamadas == [1]
+
+
+def test_30_sol_negociados_desde_que_nacio(monkeypatch):
+    """7-nov "mas operaciones pero mayor volumen" -> 30 SOL negociados."""
+    import asyncio
+
+    f = _fuente(min_volumen_total_sol=30)
+    monkeypatch.setattr(cs.volumen, "progreso_curva", lambda _m: (0.5, 40.0))
+    monkeypatch.setattr(f, "_sin_mecha_vertical", lambda *_a: True)
+    monkeypatch.setattr(f, "_presion_suficiente", lambda *_a: True)
+    monkeypatch.setattr(cs.volumen, "ultimas_son_compra", lambda *_a: True)
+    monkeypatch.setattr(cs.volumen, "vio_la_creacion", lambda _m: True)
+    monkeypatch.setattr(f, "_fuera_de_edad", lambda *_a: False)
+    monkeypatch.setattr(f, "_es_bundle", lambda *_a, **_k: False)
+    llamadas = []
+
+    async def _construye(*_a, **_k):
+        llamadas.append(1)
+
+    monkeypatch.setattr(cs, "build_pumpfun_token_info", _construye)
+    monkeypatch.setattr(cs.volumen, "volumen_sol", lambda _m: 29.0)
+    f._probadas.add("M")
+    asyncio.run(f._evaluar("M", _construye))
+    assert llamadas == [] and "M" not in f._probadas
+    assert f._embudo["poco_volumen"] == 1
+    monkeypatch.setattr(cs.volumen, "volumen_sol", lambda _m: 31.0)
+    asyncio.run(f._evaluar("M", _construye))
+    assert llamadas == [1]

@@ -233,6 +233,9 @@ filters:
     # 7-nov: "buen volumen pero que entren muchas txs" -> eligio "60 compras
     # en total" desde que nacio (ademas de los 20 compradores distintos).
     min_compras_total: 60
+    # 7-nov: "mas operaciones pero mayor volumen" -> eligio "30 SOL negociados"
+    # (compras + ventas) desde que nacio.
+    min_volumen_total_sol: 30
     log_presion_cada_seg: 30.0
     # 7-nov "afloja un poco": antes 10 / 6 / 2.0 / 1.0.
     # 7-nov: "mas volumen, quiero que haya muchas transacciones pero cogerlas
@@ -243,10 +246,12 @@ filters:
     # 7-nov "sube un poco": 5 / 1.8 / 0.8 -> 6 / 2.0 / 1.0.
     # 7-nov, despues: "un poco mas de volumen y presion": 6 / 2.0 / 1.0 ->
     # 7 / 2.2 / 1.2.
-    min_compradores_ola: 7
+    # 7-nov, despues: "bajar un poco la presion" -> eligio "un poco":
+    # 7 / 2.2 / 1.2 -> 6 / 2.0 / 1.0.
+    min_compradores_ola: 6
     ventana_presion: 5.0
-    min_presion_ratio: 2.2
-    min_compra_sol: 1.2
+    min_presion_ratio: 2.0
+    min_compra_sol: 1.0
   pumpfun_dev:
     enabled: false
   # 7-nov "elimina el filtro de market cap" (antes 6000).

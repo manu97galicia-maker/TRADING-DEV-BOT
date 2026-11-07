@@ -127,6 +127,7 @@ class Curva96Source:
         min_mc_usd: float = 0.0,
         sol_usd: Callable[[], float] | None = None,
         min_compras_total: int = 0,
+        min_volumen_total_sol: float = 0.0,
     ) -> None:
         self.wss_endpoint = wss_endpoint
         self._impls = platform_impls
@@ -177,6 +178,10 @@ class Curva96Source:
         # 7-nov, Manu: "buen volumen pero que entren muchas txs" -> eligio
         # "60 compras en total" desde que nacio. 0 = no se mira.
         self.min_compras_total = max(0, int(min_compras_total or 0))
+        # 7-nov, Manu: "mas operaciones pero mayor volumen ... bajar un poco la
+        # presion, porque asi el volumen entra despues, aunque haya entrado
+        # volumen ya" -> eligio "30 SOL negociados" desde que nacio. 0 = no.
+        self.min_volumen_total_sol = max(0.0, float(min_volumen_total_sol or 0))
         self._sol_usd = sol_usd
         self._ultimo_log_presion: dict[str, float] = {}
 
@@ -481,6 +486,21 @@ class Curva96Source:
                         "Evitado %s (%s): presion OK pero solo %d compras desde "
                         "que nacio (min %d)",
                         mint[:6], mint, compras, self.min_compras_total,
+                    )
+                self._probadas.discard(mint)
+                return
+
+        # VOLUMEN YA NEGOCIADO (7-nov): SOL de compras y ventas desde que
+        # nacio. Si no llega, se vuelve a mirar en la siguiente operacion.
+        if self.min_volumen_total_sol > 0:
+            negociado = volumen.volumen_sol(mint)
+            if negociado < self.min_volumen_total_sol:
+                self._cuenta("poco_volumen")
+                if self._toca_escribir(mint):
+                    logger.info(
+                        "Evitado %s (%s): presion OK pero solo %.1f SOL "
+                        "negociados desde que nacio (min %.0f)",
+                        mint[:6], mint, negociado, self.min_volumen_total_sol,
                     )
                 self._probadas.discard(mint)
                 return
