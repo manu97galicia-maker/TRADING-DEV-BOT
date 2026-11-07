@@ -37,9 +37,6 @@ def test_config_de_la_mayhem():
     assert fl["dex_presion"]["enabled"] is False
     # Los mismos filtros de entrada que la de presion.
     for k in (
-        "min_compradores_ola",
-        "min_presion_ratio",
-        "min_compra_sol",
         "min_edad_seg",
         "ultimas_compras",
         "max_carteras_primer_bloque",

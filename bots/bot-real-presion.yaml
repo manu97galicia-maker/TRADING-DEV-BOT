@@ -268,10 +268,12 @@ filters:
     # 7 / 2.2 / 1.2.
     # 7-nov, despues: "bajar un poco la presion" -> eligio "un poco":
     # 7 / 2.2 / 1.2 -> 6 / 2.0 / 1.0.
-    min_compradores_ola: 6
+    # 7-nov, despues: "baja presion un poco" (no pillaba nada): 6 / 2.0 /
+    # 1.0 -> 5 / 1.8 / 0.8.
+    min_compradores_ola: 5
     ventana_presion: 5.0
-    min_presion_ratio: 2.0
-    min_compra_sol: 1.0
+    min_presion_ratio: 1.8
+    min_compra_sol: 0.8
   pumpfun_dev:
     enabled: false
   # 7-nov "elimina el filtro de market cap" (antes 6000).
