@@ -10,9 +10,9 @@
 #     entra algo mas arriba, nunca por debajo) y se compra
 #     cuando el market cap pasa de 15.300 $ (min_entry_mc, en un plazo de
 #     120 s) con presion MAS SUAVE que la de 6k: >= 3 compradores distintos
-#     en 5 s (6k pide 6), >= 1,3x compras/ventas (6k: 2x) y >= 0,3 SOL
-#     comprados en esa ventana (6k: 1 SOL); >= 6 compradores en total (6k:
-#     10). Mismos frenos: sin mecha de 1 s (> 35%) y titulares <= 50%.
+#     en 5 s (6k pide 4), >= 1,3x compras/ventas (6k: 1,5x) y >= 0,3 SOL
+#     comprados en esa ventana (6k: 0,5 SOL); >= 6 compradores en total (6k:
+#     8). Mismos frenos: sin mecha de 1 s (> 35%) y titulares <= 50%.
 #   - SALIDA: TP1 +38% (79,71%, recupera lo invertido +10%) y el resto en
 #     +60% / +100% / +150%, como la curva 92%. NO los tramos por market cap
 #     de 7k-19k: entrando a 15,3k, el TP1 salta por encima de ~21k y esos

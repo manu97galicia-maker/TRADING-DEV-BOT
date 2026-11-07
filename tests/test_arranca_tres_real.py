@@ -70,8 +70,9 @@ def test_presion6k() -> None:
     c = _cfg(NUEVAS[1])
     cv, fl = c["filters"]["curva_96"], c["filters"]
     assert fl["min_entry_mc"] == 6000 and fl["max_buy_age"] > 0  # sin ventana no se mira el MC
-    assert cv["min_presion_ratio"] >= 2.0 and cv["min_compra_sol"] >= 1.0
-    assert cv["min_compradores_ola"] >= 6
+    # 7-nov "afloja un poco": 4 compradores en 5 s, 1,5x, 0,5 SOL, 8 en total.
+    assert cv["min_compradores_ola"] == 4 and cv["min_presion_ratio"] == 1.5
+    assert cv["min_compra_sol"] == 0.5 and cv["min_compradores"] == 8
     assert fl["pumpfun_dev"]["enabled"] is False
     assert [x["target_mc"] for x in c["trade"]["mc_take_profit_tiers"]] == [7000, 9000, 12000, 15000, 19000]
 
