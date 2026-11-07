@@ -3,7 +3,9 @@ tx sean compras, nueva estrategia"."""
 
 # ruff: noqa: S101, PLR2004, SLF001, ANN001, ANN201, ANN202
 
+import asyncio
 from pathlib import Path
+from types import SimpleNamespace
 
 import test_tp_sl_en_vivo as tv
 import yaml
@@ -111,3 +113,37 @@ def test_tras_el_tp1_el_stop_sube(tmp_path, monkeypatch):
     # Sale por el trailing (pico 1,41 x 0,78 = 1,10) o por el suelo de compra
     # +5%: nunca por debajo de compra +5%.
     assert ventas[1][2] >= 1.05
+
+
+def test_el_resto_de_menos_de_1_dolar_se_vende(tmp_path, monkeypatch):
+    """7-nov "que no queden saldos menores a un dolar": antes se dejaba en la
+    wallet; ahora se vende (y la posicion cuenta como cerrada)."""
+    c = _cfg(YAML)
+    assert c["trade"]["vender_polvo"] is True
+    assert c["cleanup"]["mode"] == "after_sell"
+    assert c["cleanup"]["force_close_with_burn"] is True
+    monkeypatch.setattr(tv, "MC_ENTRADA", 10000.0)  # por encima del stop 7,4k
+    t, ut = _construir(YAML, tmp_path, monkeypatch)
+    t.valor_minimo_posicion_usd = 10_000.0  # todo cuenta como resto
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.0, 1.0])
+    assert ventas and ventas[0][0] == "polvo" and ventas[0][1] == 1.0
+
+
+def test_solo_se_queman_restos_de_menos_de_1_dolar(tmp_path, monkeypatch):
+    t, ut = _construir(YAML, tmp_path, monkeypatch)
+    ficha = SimpleNamespace(symbol="X")
+    precio = 1.0 / (1e6 * ut._SOL_USD)  # 1.000.000 tokens = 1 $
+    queda = {"n": 500_000.0}
+
+    async def _saldo(_ti):
+        return queda["n"]
+
+    monkeypatch.setattr(t, "_saldo_real_tokens", _saldo)
+    assert asyncio.run(t._puede_quemar(ficha, precio)) is True  # 0,50 $
+    queda["n"] = 3_000_000.0  # 3 $: vale dinero, no se quema
+    assert asyncio.run(t._puede_quemar(ficha, precio)) is False
+    queda["n"] = None  # sin saldo leido, no se quema
+    assert asyncio.run(t._puede_quemar(ficha, precio)) is False
+    queda["n"] = 10.0
+    t.cleanup_force_close_with_burn = False  # sin la opcion, nunca
+    assert asyncio.run(t._puede_quemar(ficha, precio)) is False

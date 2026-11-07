@@ -88,6 +88,10 @@ MOTIVOS = {
         "hasta el moonbag y el 2% se deja corriendo. Hoy esta a 0 (apagado), "
         "asi que si sale esto es que alguien lo encendio."
     ),
+    "polvo": (
+        "RESTO DE MENOS DE 1 $: se vendio para no dejar saldo en la wallet "
+        "(vender_polvo); despues se cierra la cuenta de la moneda."
+    ),
     "fin_mayhem": (
         "FIN DEL MAYHEM: la moneda llego a las 23 h de vida y se vendio todo "
         "(vender_antes_de_edad_seg). El agente de pump.fun deja de operarla "

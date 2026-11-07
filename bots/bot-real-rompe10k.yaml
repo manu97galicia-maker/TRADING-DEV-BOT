@@ -84,6 +84,9 @@ trade:
   stop_al_tp_tras_tp: false
   vender_todo_en_stop: true
   mc_stop_loss: 7400
+  # 7-nov: "que no queden saldos menores a un dolar": lo que quede por debajo
+  # de 1 $ se vende en vez de dejarlo en la wallet.
+  vender_polvo: true
   max_hold_time: 0
   venta_muerta_seg: 300
   venta_muerta_gain: 0.0
@@ -223,8 +226,11 @@ filters:
   # 7-nov "elimina el filtro de market cap" (antes 6000).
   min_entry_mc: 0
 cleanup:
-  mode: post_session
-  force_close_with_burn: false
+  # 7-nov: "que no queden saldos menores a un dolar". Se limpia al cerrar
+  # cada posicion (antes al final de la sesion, que con el apagado por tiempo
+  # puede no llegar) y se queman los restos, solo si valen menos de 1 $.
+  mode: after_sell
+  force_close_with_burn: true
   with_priority_fee: false
 node:
   max_rps: 8

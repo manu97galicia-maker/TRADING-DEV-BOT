@@ -702,6 +702,11 @@ class UniversalTrader:
         # al acabar se queman sus tokens y deja de mover el precio. Con N > 0
         # se vende TODO cuando la moneda cumple N segundos de vida. 0 = no.
         vender_antes_de_edad_seg: float = 0.0,
+        # VENDER EL POLVO (7-nov, Manu: "que no queden saldos menores a un
+        # dolar"). Con True, cuando lo que queda vale menos que
+        # `valor_minimo_posicion_usd` se VENDE (antes se dejaba en la wallet) y
+        # la posicion cuenta como cerrada, asi la limpieza cierra la cuenta.
+        vender_polvo: bool = False,
         # FRANJA HORARIA en la que se opera, hora de España. Fuera de ella el
         # bot sigue mirando el flujo pero no compra. {inicio: 18, fin: 2} son
         # las seis de la tarde a las dos de la madrugada -- cruza medianoche, y
@@ -1399,6 +1404,7 @@ class UniversalTrader:
         self.reiniciar_tanda = bool(reiniciar_tanda)
         self.tanda_solo_si_gana = bool(tanda_solo_si_gana)
         self.vender_antes_de_edad_seg = max(0.0, float(vender_antes_de_edad_seg or 0))
+        self.vender_polvo = bool(vender_polvo)
         #: Resultado (SOL) de las posiciones cerradas de la tanda en curso.
         self._pnl_tanda = 0.0
         self._bote = Ganancia() if self.escala_por_sol_ganado > 0 else None
@@ -2380,6 +2386,32 @@ class UniversalTrader:
             )
         except OSError:
             return 0
+
+    async def _puede_quemar(self, token_info: TokenInfo, precio: float) -> bool:
+        """Si la limpieza puede QUEMAR lo que quede antes de cerrar la cuenta.
+
+        7-nov ("que no queden saldos menores a un dolar"): quemar solo restos.
+        Una venta por Jupiter puede vender solo una parte y aun asi contar
+        como hecha; quemar entonces tiraria tokens que valen dinero. Se quema
+        solo si lo que queda vale menos de 1 $ (y si `force_close_with_burn`
+        esta puesto); si no se puede leer el saldo, no se quema.
+        """
+        if not getattr(self, "cleanup_force_close_with_burn", False):
+            return False
+        try:
+            queda = await self._saldo_real_tokens(token_info)
+        except Exception:  # noqa: BLE001
+            queda = None
+        if queda is None:
+            return False
+        valor = float(queda) * float(precio or 0) * float(_SOL_USD)
+        if valor >= 1.0:
+            logger.warning(
+                "%s: quedan %.0f tokens (%.2f $) tras la venta: NO se queman; "
+                "revisalos a mano.", token_info.symbol, queda, valor,
+            )
+            return False
+        return True
 
     def _nacio_ts(self, token_info: TokenInfo) -> float | None:
         """Hora (time.time) en que nacio la moneda, si se sabe."""
@@ -7137,6 +7169,22 @@ class UniversalTrader:
                         _valor_usd < self.valor_minimo_posicion_usd
                         and _polvo_seguidas >= 2
                     ):
+                        if getattr(self, "vender_polvo", False):
+                            logger.info(
+                                "%s: lo que queda vale $%.2f: se VENDE para no "
+                                "dejar restos en la wallet (vender_polvo).",
+                                token_info.symbol, _valor_usd,
+                            )
+                            if await self._sell_amount(
+                                token_info, remaining, price, "polvo", full_exit=True
+                            ):
+                                realized_sol += self._ultimo_cobro
+                                remaining = 0.0
+                            # Vendido o no, la posicion se da por cerrada: la
+                            # limpieza cierra la cuenta (y solo quema si lo que
+                            # quede vale menos de 1 $, ver _puede_quemar).
+                            fully_exited = True
+                            break
                         logger.info(
                             "%s: lo que queda vale $%.2f (mínimo $%.2f). Se "
                             "suelta la plaza y se deja de vigilar: venderlo "
@@ -7869,7 +7917,7 @@ class UniversalTrader:
                     self.priority_fee_manager,
                     self.cleanup_mode,
                     self.cleanup_with_priority_fee,
-                    self.cleanup_force_close_with_burn,
+                    await self._puede_quemar(token_info, last_price),
                 )
             except Exception:
                 logger.exception("Cleanup after tiered exit failed")
