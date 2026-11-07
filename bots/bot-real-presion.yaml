@@ -203,6 +203,9 @@ filters:
     # 7-nov "cualquier moneda": desde que nace (antes 0.45).
     umbral: 0.0
     revisar_cada_seg: 2.0
+    # 7-nov: "dos ultimas tx sean compras". Con la presion OK, si en las 2
+    # ultimas operaciones hay alguna venta, no se compra (se vuelve a mirar).
+    ultimas_compras: 2
     log_presion_cada_seg: 30.0
     # 7-nov "afloja un poco": antes 10 / 6 / 2.0 / 1.0.
     min_compradores: 8

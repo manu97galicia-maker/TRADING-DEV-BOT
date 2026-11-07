@@ -2475,6 +2475,7 @@ class UniversalTrader:
             paper_mode=self.paper_trade or self.paper_engine.enabled,
             revisar_cada_seg=float(cfg.get("revisar_cada_seg", 0) or 0),
             log_presion_cada_seg=float(cfg.get("log_presion_cada_seg", 0) or 0),
+            ultimas_compras=int(cfg.get("ultimas_compras", 0) or 0),
         )
         try:
             await source.run(self._on_dexpaid_token)

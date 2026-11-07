@@ -1,6 +1,6 @@
 """7-nov: con el umbral a 0 (cualquier moneda) la fuente tiene que ir a ritmo."""
 
-# ruff: noqa: S101, SLF001, ANN001, ANN003, ANN201, ANN202, PLR2004
+# ruff: noqa: S101, SLF001, ANN001, ANN002, ANN003, ANN201, ANN202, ARG005, PLR2004, PLC0415
 
 from monitoring import curva96_source as cs
 
@@ -40,3 +40,44 @@ def test_presion_insuficiente_se_cuenta_siempre_y_se_escribe_cada_30s(monkeypatc
     reloj[0] += 30.0
     f._presion_suficiente("A", "A")
     assert len(lineas) == 2
+
+
+def test_las_dos_ultimas_tienen_que_ser_compras(monkeypatch):
+    """7-nov "dos ultimas tx sean compras": con presion OK y una venta en las
+    dos ultimas, no se manda a comprar y la moneda queda para volver a mirar."""
+    import asyncio
+
+    f = _fuente(ultimas_compras=2)
+    monkeypatch.setattr(cs.volumen, "progreso_curva", lambda _m: (0.5, 40.0))
+    monkeypatch.setattr(f, "_sin_mecha_vertical", lambda *_a: True)
+    monkeypatch.setattr(f, "_presion_suficiente", lambda *_a: True)
+    llamadas = []
+
+    async def _hasta_aqui(*_a, **_k):
+        llamadas.append(1)
+
+    monkeypatch.setattr(cs.volumen, "vio_la_creacion", lambda _m: True)
+    monkeypatch.setattr(f, "_fuera_de_edad", lambda *_a: False)
+    monkeypatch.setattr(f, "_es_bundle", lambda *_a, **_k: False)
+    monkeypatch.setattr(cs, "build_pumpfun_token_info", _hasta_aqui)
+
+    monkeypatch.setattr(cs.volumen, "ultimas_son_compra", lambda _m, n: False)
+    f._probadas.add("M")
+    asyncio.run(f._evaluar("M", _hasta_aqui))
+    assert llamadas == [] and "M" not in f._probadas
+    assert f._embudo["ultimas_no_compras"] == 1
+
+    monkeypatch.setattr(cs.volumen, "ultimas_son_compra", lambda _m, n: n == 2)
+    asyncio.run(f._evaluar("M", _hasta_aqui))
+    assert llamadas == [1]  # pasa y va a construir la moneda
+
+
+def test_la_estrategia_pide_las_dos_ultimas_compras():
+    from pathlib import Path
+
+    import yaml
+
+    cv = yaml.safe_load(
+        (Path(__file__).resolve().parents[1] / "bots/bot-real-presion.yaml").read_text()
+    )["filters"]["curva_96"]
+    assert cv["ultimas_compras"] == 2

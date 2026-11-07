@@ -121,6 +121,7 @@ class Curva96Source:
         paper_mode: bool = False,
         revisar_cada_seg: float = 0.0,
         log_presion_cada_seg: float = 0.0,
+        ultimas_compras: int = 0,
     ) -> None:
         self.wss_endpoint = wss_endpoint
         self._impls = platform_impls
@@ -160,6 +161,9 @@ class Curva96Source:
         self.revisar_cada_seg = max(0.0, float(revisar_cada_seg or 0))
         self.log_presion_cada_seg = max(0.0, float(log_presion_cada_seg or 0))
         self._ultima_revision: dict[str, float] = {}
+        # 7-nov, Manu: "dos ultimas tx sean compras" (para no entrar justo
+        # cuando empieza a vender alguien). 0 = no se mira.
+        self.ultimas_compras = max(0, int(ultimas_compras or 0))
         self._ultimo_log_presion: dict[str, float] = {}
 
         self._probadas: set[str] = set()
@@ -396,13 +400,8 @@ class Curva96Source:
             return True
 
         self._cuenta("sin_presion")
-        if self.log_presion_cada_seg > 0:
-            ahora = monotonic()
-            if ahora - self._ultimo_log_presion.get(mint, -1e18) < self.log_presion_cada_seg:
-                return False
-            if len(self._ultimo_log_presion) >= _MAX_RECORDADAS:
-                self._ultimo_log_presion.clear()
-            self._ultimo_log_presion[mint] = ahora
+        if not self._toca_escribir(mint):
+            return False
         logger.info(
             "Evitado %s (%s): presión insuficiente en %.1fs — %d compradores, "
             "%.2f SOL compra, %.2f SOL venta, ratio %.2fx; mínimos %d, %.2f "
@@ -420,7 +419,7 @@ class Curva96Source:
         )
         return False
 
-    async def _evaluar(  # noqa: PLR0911
+    async def _evaluar(  # noqa: C901, PLR0911
         self, mint: str, token_callback: Callable[[TokenInfo], Awaitable[None]]
     ) -> None:
         """Comprueba una moneda que acaba de cruzar el umbral y la manda a comprar."""
@@ -438,6 +437,23 @@ class Curva96Source:
         # con mas compras que ventas. Si falla, puede volver a evaluarse en la
         # siguiente operacion mientras siga dentro de la ventana de curva.
         if not self._presion_suficiente(mint, mint[:6]):
+            self._probadas.discard(mint)
+            return
+
+        # LAS ULTIMAS OPERACIONES, COMPRAS (7-nov). La presion de 5 s puede dar
+        # bien mientras alguien ya esta vendiendo por detras; esto exige que
+        # nadie haya vendido en las ultimas N. Si falla, se vuelve a mirar en
+        # la siguiente operacion, como la presion.
+        if self.ultimas_compras > 0 and not volumen.ultimas_son_compra(
+            mint, self.ultimas_compras
+        ):
+            self._cuenta("ultimas_no_compras")
+            if self._toca_escribir(mint):
+                logger.info(
+                    "Evitado %s (%s): presion OK pero las ultimas %d operaciones "
+                    "no son todas compras",
+                    mint[:6], mint, self.ultimas_compras,
+                )
             self._probadas.discard(mint)
             return
 
@@ -567,6 +583,18 @@ class Curva96Source:
             if self._ya_probada(mint):
                 continue
             self._lanzar(mint, token_callback)
+
+    def _toca_escribir(self, mint: str) -> bool:
+        """True si se puede escribir otra linea de descarte de esta moneda."""
+        if self.log_presion_cada_seg <= 0:
+            return True
+        ahora = monotonic()
+        if ahora - self._ultimo_log_presion.get(mint, -1e18) < self.log_presion_cada_seg:
+            return False
+        if len(self._ultimo_log_presion) >= _MAX_RECORDADAS:
+            self._ultimo_log_presion.clear()
+        self._ultimo_log_presion[mint] = ahora
+        return True
 
     def _toca_esperar(self, mint: str) -> bool:
         """True si esta moneda se miro hace menos de `revisar_cada_seg`."""
