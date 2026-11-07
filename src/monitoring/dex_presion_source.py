@@ -38,6 +38,7 @@ import asyncio
 import json
 import time
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -84,6 +85,8 @@ class Pool:
     volumen_usd: float = 0.0
     liquidez_usd: float = 0.0
     precio_usd: float = 0.0
+    #: Segundos desde que se creo el pool, o None si GeckoTerminal no lo dice.
+    edad_seg: float | None = None
 
 
 def _id(rel: dict, clave: str) -> str:
@@ -109,6 +112,14 @@ def lee_pools(payload: object) -> list[Pool]:
         if not mint or mint in COTIZACION:
             continue
         m5 = ((a.get("transactions") or {}).get("m5")) or {}
+        try:
+            # El droplet corre Python 3.10: su fromisoformat no entiende la
+            # "Z" final con la que GeckoTerminal manda las fechas.
+            texto = str(a.get("pool_created_at")).replace("Z", "+00:00")
+            creado = datetime.fromisoformat(texto)
+            edad = time.time() - creado.timestamp()
+        except (TypeError, ValueError):
+            edad = None
         fuera.append(
             Pool(
                 mint=mint,
@@ -121,6 +132,7 @@ def lee_pools(payload: object) -> list[Pool]:
                 volumen_usd=_num((a.get("volume_usd") or {}).get("m5")),
                 liquidez_usd=_num(a.get("reserve_in_usd")),
                 precio_usd=_num(a.get("base_token_price_usd")) if base == mint else 0.0,
+                edad_seg=edad,
             )
         )
     return fuera
@@ -145,6 +157,12 @@ def presion_ok(p: Pool, cfg: dict) -> tuple[bool, str]:
         faltas.append(f"volumen {p.volumen_usd:,.0f} $")
     if p.liquidez_usd < float(cfg.get("min_liquidez_usd", 0)):
         faltas.append(f"liquidez {p.liquidez_usd:,.0f} $")
+    # 7-nov: "no compres monedas con menos de 10 minutos de vida".
+    min_edad = float(cfg.get("min_edad_min", 0)) * 60
+    if min_edad > 0 and (p.edad_seg is None or p.edad_seg < min_edad):
+        faltas.append(
+            "sin edad" if p.edad_seg is None else f"{p.edad_seg / 60:.1f} min de vida"
+        )
     return (
         not faltas,
         ", ".join(faltas) or f"{p.compradores} compradores, {ratio:.1f}x",

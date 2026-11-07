@@ -120,3 +120,38 @@ def test_el_bot_le_pasa_el_precio_de_sol_vivo(tmp_path, monkeypatch):
     assert f.min_mc_usd == 5600 and f.ultimas_compras == 2
     monkeypatch.setattr(ut, "_SOL_USD", 123.0)
     assert f._sol_usd() == 123.0
+
+
+def test_menos_de_10_minutos_no_y_se_vuelve_a_mirar(monkeypatch):
+    """7-nov "no compres monedas con menos de 10 minutos de vida"."""
+    import asyncio
+
+    f = _fuente(min_edad_seg=600)
+    monkeypatch.setattr(cs.volumen, "progreso_curva", lambda _m: (0.5, 40.0))
+    monkeypatch.setattr(cs.volumen, "edad_real", lambda _m: 300.0)
+    llamadas = []
+
+    async def _cb(*_a):
+        llamadas.append(1)
+
+    monkeypatch.setattr(
+        f, "_presion_suficiente", lambda *_a: llamadas.append("presion")
+    )
+    f._probadas.add("M")
+    asyncio.run(f._evaluar("M", _cb))
+    assert llamadas == [] and "M" not in f._probadas  # ni mira la presion
+    assert f._embudo["demasiado_nueva"] == 1
+    monkeypatch.setattr(cs.volumen, "edad_real", lambda _m: 601.0)
+    assert f._demasiado_joven("M") is False
+
+
+def test_la_estrategia_pide_10_minutos():
+    from pathlib import Path
+
+    import yaml
+
+    fl = yaml.safe_load(
+        (Path(__file__).resolve().parents[1] / "bots/bot-real-presion.yaml").read_text()
+    )["filters"]
+    assert fl["curva_96"]["min_edad_seg"] == 600 and fl["curva_96"]["max_edad_seg"] == 0
+    assert fl["dex_presion"]["min_edad_min"] == 10

@@ -7,6 +7,8 @@ falsea lo de fuera (saldo, Jupiter, DexScreener, RugCheck, GeckoTerminal)."""
 
 import asyncio
 import contextlib
+import time
+from datetime import datetime, timezone
 
 import aiohttp
 import pytest
@@ -49,6 +51,9 @@ def _corre(monkeypatch, tmp_path, ruta, segundos):
                         "name": "RAY / SOL",
                         "base_token_price_usd": "0.0001",
                         "reserve_in_usd": "40000",
+                        "pool_created_at": datetime.fromtimestamp(
+                            time.time() - 1800, tz=timezone.utc
+                        ).isoformat(),
                         "volume_usd": {"m5": "9000"},
                         "transactions": {"m5": {"buys": 90, "sells": 20, "buyers": 50}},
                     },

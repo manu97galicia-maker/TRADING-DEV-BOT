@@ -20,6 +20,8 @@ def _pool(base, quote, dex, buys=80, sells=20, buyers=45, vol="9000", liq="40000
             "name": "PRUEBA / SOL",
             "base_token_price_usd": "0.0001",
             "reserve_in_usd": liq,
+            # 30 minutos de vida: pasa el minimo de 10 (7-nov).
+            "pool_created_at": _hace(30),
             "volume_usd": {"m5": vol},
             "transactions": {"m5": {"buys": buys, "sells": sells, "buyers": buyers}},
         },
@@ -29,6 +31,15 @@ def _pool(base, quote, dex, buys=80, sells=20, buyers=45, vol="9000", liq="40000
             "dex": {"data": {"id": dex}},
         },
     }
+
+
+def _hace(minutos):
+    import time
+    from datetime import datetime, timezone
+
+    return datetime.fromtimestamp(
+        time.time() - minutos * 60, tz=timezone.utc
+    ).isoformat()
 
 
 CFG = {
@@ -215,3 +226,28 @@ def test_dentro_del_bot_real_compra_en_papel_con_su_salida(tmp_path, monkeypatch
     assert [g for g, _ in f.salida["tramos"]] == [0.50, 0.85, 1.20]
     assert f.salida["margen_tras_tp"] == 0.05 and f.salida["muerta_seg"] == 300
     assert "MonedaLimpia" in f._abiertas
+
+
+def test_dex_menos_de_10_minutos_no():
+    """7-nov "no compres monedas con menos de 10 minutos de vida": edad del pool."""
+    cfg = {**CFG, "min_edad_min": 10}
+
+    def _con_edad(minutos):
+        d = _pool("M", WSOL, "raydium")
+        if minutos is None:
+            del d["attributes"]["pool_created_at"]
+        else:
+            d["attributes"]["pool_created_at"] = _hace(minutos)
+        return dp.lee_pools({"data": [d]})[0]
+
+    assert not dp.presion_ok(_con_edad(5), cfg)[0]
+    assert dp.presion_ok(_con_edad(15), cfg)[0]
+    assert not dp.presion_ok(_con_edad(None), cfg)[0]  # sin fecha, no
+
+
+def test_fecha_con_z_como_la_manda_geckoterminal():
+    """El droplet corre 3.10: la "Z" final tiene que entenderse igual."""
+    d = _pool("M", WSOL, "raydium")
+    d["attributes"]["pool_created_at"] = "2020-01-01T00:00:00Z"
+    p = dp.lee_pools({"data": [d]})[0]
+    assert p.edad_seg is not None and p.edad_seg > 3600

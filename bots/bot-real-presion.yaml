@@ -181,6 +181,9 @@ filters:
     min_volumen_5m_usd: 5000
     min_liquidez_usd: 10000
     min_lp_bloqueada_pct: 90
+    # 7-nov: "no compres monedas con menos de 10 minutos de vida". En los DEX
+    # la edad es la del pool (lo que da GeckoTerminal); sin fecha, no se compra.
+    min_edad_min: 10
     max_posiciones_papel: 4
     importe_papel_sol: 0.15
     prioridad_compra_sol: 0.002
@@ -191,7 +194,10 @@ filters:
     buy_amount: 0
     max_compras: 0
     parar_tras_perdidas: 0
-    min_edad_seg: 0
+    # 7-nov: "no compres monedas con menos de 10 minutos de vida". Edad desde
+    # que se creo en la cadena. Una mas joven se vuelve a mirar cuando ya la
+    # tenga; una cuyo nacimiento no vio el bot (arranco despues) no se compra.
+    min_edad_seg: 600
     max_edad_seg: 0
     vela_seg: 1.0
     max_subida_vela: 0.35

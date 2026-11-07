@@ -438,6 +438,16 @@ class Curva96Source:
             return
         progreso, sol_curva = avance
 
+        # DEMASIADO JOVEN (7-nov, Manu: "no compres monedas con menos de 10
+        # minutos de vida"). Antes una moneda demasiado nueva quedaba
+        # descartada PARA SIEMPRE: la que se miraba a los 5 minutos no se
+        # volvia a mirar a los 10. Ahora se suelta y se vuelve a mirar en su
+        # siguiente operacion, cuando ya tenga la edad. Va lo primero porque
+        # es memoria y ahorra mirar la presion de las que no pueden comprarse.
+        if self._demasiado_joven(mint):
+            self._probadas.discard(mint)
+            return
+
         # MARKET CAP MINIMO (7-nov). Por debajo no se descarta: se vuelve a
         # mirar en la siguiente operacion, por si sube.
         if self.min_mc_usd > 0 and not self._llega_al_mc(mint):
@@ -599,6 +609,20 @@ class Curva96Source:
             if self._ya_probada(mint):
                 continue
             self._lanzar(mint, token_callback)
+
+    def _demasiado_joven(self, mint: str) -> bool:
+        """True si tiene edad conocida y es menor que `min_edad_seg`.
+
+        La edad DESCONOCIDA no se resuelve aqui: la sigue descartando
+        `_fuera_de_edad`, como siempre (sin edad no se puede asegurar nada).
+        """
+        if self.min_edad_seg <= 0:
+            return False
+        edad = volumen.edad_real(mint)
+        if edad is None or edad >= self.min_edad_seg:
+            return False
+        self._cuenta("demasiado_nueva")
+        return True
 
     def _llega_al_mc(self, mint: str) -> bool:
         """True si el market cap de la ultima operacion llega al minimo."""
