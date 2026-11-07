@@ -33,7 +33,7 @@ def test_config_rompe_10k():
     assert cv["ventana_presion"] == 5.0
     # "sin limite de operaciones", pero "cuidame de rugs": el freno de 3
     # perdidas seguidas se queda.
-    assert t["max_real_buys"] == 0 and t["max_posiciones"] == 4
+    assert t["max_real_buys"] == 0 and t["max_posiciones"] == 5
     assert t["max_perdidas_seguidas"] == 3
     # Nada mas: sin volumen, compradores ni edad.
     for k in (
@@ -65,7 +65,7 @@ def test_config_rompe_10k():
         abs(t["take_profit_sell_percentage"] * 1.40 - 1.0) < 1e-6
     )  # recupera lo invertido
     assert t["stop_a_entrada_tras_tp"] is True
-    assert t["max_posiciones_total"] == 4
+    assert t["max_posiciones_total"] == 5
     assert fl["paper_trade"] is False and fl["dex_presion"]["enabled"] is False
 
 

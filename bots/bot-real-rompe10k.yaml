@@ -31,7 +31,7 @@
 #   - Sin tope de compras en total (antes 1000). Maximo 3 a la vez.
 #   - Despues: "40% por operacion" (antes 50% del saldo total).
 #   - Despues: "25% cada operacion de saldo, maximo 4 simultaneas e
-#     infinitas operaciones" (antes 40% y 3).
+#     infinitas operaciones" (antes 40% y 3). Despues: "5 simultaneas".
 #   - Despues: "bajala a 56" -> entra entre el 56% y el 76% de la curva.
 #   - Despues: "entre el 51 y 65" -> entra entre el 51% y el 65%.
 #
@@ -65,9 +65,12 @@ trade:
   # entre las dos: cuenta las posiciones de todas antes de comprar.
   # 7-nov, despues: "maximo 3" (antes 4 y 4).
   # 7-nov, despues: "maximo 4 simultaneas" (antes 3 y 3).
-  max_posiciones: 4
-  max_posiciones_total: 4
-  # 7-nov: las mayhem van "aparte": sus posiciones no cuentan en estas 4.
+  # 7-nov, despues: "5 simultaneas" (antes 4). OJO: con fraccion_saldo 0.25
+  # solo caben 3 de verdad (cada compra pide su importe +9% de slippage
+  # libre, mas la reserva); para 5 haria falta ~18% por operacion.
+  max_posiciones: 5
+  max_posiciones_total: 5
+  # 7-nov: las mayhem van "aparte": sus posiciones no cuentan en estas 5.
   max_posiciones_total_ignora: [bot-real-mayhem]
   # 7-nov "sin limite de operaciones" (antes 1000). 0 = sin tope.
   # Despues: "infinitas operaciones" -> sigue en 0.
