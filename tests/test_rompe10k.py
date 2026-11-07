@@ -25,11 +25,11 @@ def test_config_rompe_10k():
     c = _cfg(YAML)
     cv, fl, t = c["filters"]["curva_96"], c["filters"], c["trade"]
     # 7-nov, despues: "bajala a 56" (antes 66%), solo hasta el 76%,
-    # sin filtro de market cap; "con fuerza" = presion de 5 s (4 y 1,5x).
+    # sin filtro de market cap; "con fuerza" = presion de 5 s (3 y 1,4x).
     assert cv["umbral"] == 0.56 and cv["tope"] == 0.76
     assert cv["min_mc_usd"] == 0 and cv["max_mc_usd"] == 0
     assert cv["ultimas_compras"] == 3
-    assert cv["min_compradores_ola"] == 4 and cv["min_presion_ratio"] == 1.5
+    assert cv["min_compradores_ola"] == 3 and cv["min_presion_ratio"] == 1.4
     assert cv["ventana_presion"] == 5.0
     # "sin limite de operaciones", pero "cuidame de rugs": el freno de 3
     # perdidas seguidas se queda.

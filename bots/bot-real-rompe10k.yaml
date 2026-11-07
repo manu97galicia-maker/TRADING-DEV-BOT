@@ -27,6 +27,7 @@
 #     Despues: "y curve la rompe al 66%" -> entra entre el 66% y el 76%.
 #   - CON FUERZA: en los ultimos 5 s, 4 compradores distintos o mas y 1,5
 #     veces mas SOL comprado que vendido. Y las 3 ultimas, compras.
+#     Despues: 3 compradores y 1,4 veces.
 #   - Sin tope de compras en total (antes 1000). Maximo 3 a la vez.
 #   - Despues: "40% por operacion" (antes 50% del saldo total).
 #   - Despues: "25% cada operacion de saldo, maximo 4 simultaneas e
@@ -258,9 +259,12 @@ filters:
     # compradores distintos y 1,5 veces mas SOL comprado que vendido (antes
     # 0 y 0: sin presion). El vigilante de la curva la mide el mismo en
     # cada operacion; si falta fuerza, la vuelve a mirar en la siguiente.
-    min_compradores_ola: 4
+    # 7-nov, despues: "en los ultimos 5 segundos han comprado 3 carteras
+    # distintas o mas, y se ha comprado 1,4 veces mas SOL del que se ha
+    # vendido" (antes 4 y 1,5x).
+    min_compradores_ola: 3
     ventana_presion: 5.0
-    min_presion_ratio: 1.5
+    min_presion_ratio: 1.4
     min_compra_sol: 0
   pumpfun_dev:
     enabled: false
