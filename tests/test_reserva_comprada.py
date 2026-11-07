@@ -12,7 +12,7 @@ from trading import reserva as r
 
 
 @pytest.fixture(autouse=True)
-def _carpeta(tmp_path, monkeypatch):
+def _carpeta(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(r, "CARPETA", tmp_path)
 
 

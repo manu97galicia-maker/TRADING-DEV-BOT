@@ -63,7 +63,7 @@ def _ruta(mint: str) -> Path:
 
 
 def _ruta_comprada(mint: str) -> Path:
-    return CARPETA / ("comprada_%s.json" % mint)
+    return CARPETA / f"comprada_{mint}.json"
 
 
 def _comprada_por(mint: str) -> str | None:
