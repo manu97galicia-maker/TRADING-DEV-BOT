@@ -1,0 +1,567 @@
+{
+ "_README": "Devs que mas lejos llegan, sacados de las listas que YA habia en el repo (Dune, GMGN y API de pump.fun, julio-septiembre de 2026). NO hay datos de Helius: el bot no guarda lo que lee. Ninguna fuente dice el pico de CADA moneda, asi que 'siempre por encima de 40k' no se puede confirmar: aqui va lo mas cercano. Nivel 1: todas sus monedas medidas pasaron 30k y la mediana es >= 40k. Nivel 2: mediana de pico >= 40k (la mitad de sus monedas por encima) con 3 o mas lanzamientos medidos. Sin los 26 de blacklist_devs.json. El bot NO usa esta lista.",
+ "_generado": "2026-11-07, pedido por Manu: 'Podrias hacer una lista de los que mas lejos llegan que superen siempre 40k market cap'",
+ "_count": 38,
+ "wallets": [
+  {
+   "wallet": "D6nDmCHzYXDAuDUNuAVdCFQuBp8jDNDbwndkT5Zpukx7",
+   "mediana_pico_usd": 314098,
+   "mejor_pico_usd": 314098,
+   "pct_monedas_sobre_30k": 100.0,
+   "lanzamientos_medidos": 2,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem"
+   ],
+   "nivel": "todas sus monedas pasaron 30k"
+  },
+  {
+   "wallet": "98R24arWkFnGeiQcpKhQZ1Tu9vcFyn2m7kZMzbyhphxZ",
+   "mediana_pico_usd": 230724,
+   "mejor_pico_usd": 230724,
+   "pct_monedas_sobre_30k": 100.0,
+   "lanzamientos_medidos": 2,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem"
+   ],
+   "nivel": "todas sus monedas pasaron 30k"
+  },
+  {
+   "wallet": "GtcQkJQv3HXiBYhqe6CLx4r7FERRaoCBtrkyxiLN2Sfg",
+   "mediana_pico_usd": 221324,
+   "mejor_pico_usd": 221324,
+   "pct_monedas_sobre_30k": 100.0,
+   "lanzamientos_medidos": 2,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem"
+   ],
+   "nivel": "todas sus monedas pasaron 30k"
+  },
+  {
+   "wallet": "71uPJ1Gve47gYcqQQQERu2roWCiAgaCZ1WpEwV1bwQ65",
+   "mediana_pico_usd": 127078,
+   "mejor_pico_usd": 127078,
+   "pct_monedas_sobre_30k": 100.0,
+   "lanzamientos_medidos": 2,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem"
+   ],
+   "nivel": "todas sus monedas pasaron 30k"
+  },
+  {
+   "wallet": "6YdM3DDL3bXXBqsWwAG7YziCjqcVBxDpuoBE88RMWqvh",
+   "mediana_pico_usd": 111776,
+   "mejor_pico_usd": 111776,
+   "pct_monedas_sobre_30k": 100.0,
+   "lanzamientos_medidos": 2,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem"
+   ],
+   "nivel": "todas sus monedas pasaron 30k"
+  },
+  {
+   "wallet": "8X7Kgngwc6i1NdgP68tmfpfjqtn7HKQYDcdG8N7jh5mu",
+   "mediana_pico_usd": 94794,
+   "mejor_pico_usd": 94794,
+   "pct_monedas_sobre_30k": 100.0,
+   "lanzamientos_medidos": 2,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem"
+   ],
+   "nivel": "todas sus monedas pasaron 30k"
+  },
+  {
+   "wallet": "GXqk4nhgC4x1AMuRWikd9E2ZyGqfhxH1anYXj8x4vXUx",
+   "mediana_pico_usd": 87011,
+   "mejor_pico_usd": 87011,
+   "pct_monedas_sobre_30k": 100.0,
+   "lanzamientos_medidos": 2,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "devs_unificados",
+    "mayhem_v2_raw",
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_mayhem",
+    "top_devs_nextbig"
+   ],
+   "nivel": "todas sus monedas pasaron 30k"
+  },
+  {
+   "wallet": "BiKEa7fnRGtRmgc9tgVoSXVacmFegB5SRhuHcrVDUk66",
+   "mediana_pico_usd": 83830,
+   "mejor_pico_usd": 83830,
+   "pct_monedas_sobre_30k": 100.0,
+   "lanzamientos_medidos": 3,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "devs_unificados",
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_quality"
+   ],
+   "nivel": "todas sus monedas pasaron 30k"
+  },
+  {
+   "wallet": "5RCWT2pNe79A9yMSXyW5cLbW6Z1k2rHW5Dhj8gKWZt8d",
+   "mediana_pico_usd": 71000,
+   "mejor_pico_usd": 71000,
+   "pct_monedas_sobre_30k": 100.0,
+   "lanzamientos_medidos": 2,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem"
+   ],
+   "nivel": "todas sus monedas pasaron 30k"
+  },
+  {
+   "wallet": "HZQy6u5r6eUuTjNpFtYcwZq91etdNViMwm9AJFcLnQpY",
+   "mediana_pico_usd": 57593,
+   "mejor_pico_usd": 57593,
+   "pct_monedas_sobre_30k": 100.0,
+   "lanzamientos_medidos": 2,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem"
+   ],
+   "nivel": "todas sus monedas pasaron 30k"
+  },
+  {
+   "wallet": "66onmcvu5jpN4dJoe9sYQYCnMbB5oWXHNAtoQfG2peki",
+   "mediana_pico_usd": 54981,
+   "mejor_pico_usd": 59548,
+   "pct_monedas_sobre_30k": 100.0,
+   "lanzamientos_medidos": 3,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_elite",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "top_devs_mayhem_66",
+    "top_devs_swing",
+    "top_devs_vol"
+   ],
+   "nivel": "todas sus monedas pasaron 30k"
+  },
+  {
+   "wallet": "Hi7Anr7jXamYLRPsqNxEXu4inuGJgsEjC9y1a9GEZQh",
+   "mediana_pico_usd": 45613,
+   "mejor_pico_usd": 45613,
+   "pct_monedas_sobre_30k": 100.0,
+   "lanzamientos_medidos": 2,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem"
+   ],
+   "nivel": "todas sus monedas pasaron 30k"
+  },
+  {
+   "wallet": "GVsSpUiYGVmus7t6whSPEJc7Se8B3GnRxFZbCwBuyBju",
+   "mediana_pico_usd": 43118,
+   "mejor_pico_usd": 43118,
+   "pct_monedas_sobre_30k": 100.0,
+   "lanzamientos_medidos": 2,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem"
+   ],
+   "nivel": "todas sus monedas pasaron 30k"
+  },
+  {
+   "wallet": "yHCxHBEaJW5tbndqC8JciSThr7U1cqLpdcsvHcx6PRe",
+   "mediana_pico_usd": 386800,
+   "mejor_pico_usd": 14401720,
+   "pct_monedas_sobre_30k": null,
+   "lanzamientos_medidos": 12,
+   "datos_de_mayhem": false,
+   "listas_donde_sale": [
+    "devs_unificados",
+    "top_devs",
+    "top_devs_elite",
+    "top_devs_final",
+    "top_devs_frecuentes11k",
+    "top_devs_freq3x",
+    "top_devs_giga200k",
+    "top_devs_highmedian",
+    "top_devs_init4k",
+    "top_devs_init5k16k",
+    "top_devs_med12k",
+    "top_devs_vol"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "6TyCCiF63ik3fcueJknuDCNGsgvgpH3dX5brkhNN2eJw",
+   "mediana_pico_usd": 297051,
+   "mejor_pico_usd": 297051,
+   "pct_monedas_sobre_30k": 50.0,
+   "lanzamientos_medidos": 11,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_200",
+    "top_devs_mayhem"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "FVZRwUp6E4m9jV4VumF8q7m8q3mF9fpikRrJSCCfFAdP",
+   "mediana_pico_usd": 204418,
+   "mejor_pico_usd": 204418,
+   "pct_monedas_sobre_30k": 50.0,
+   "lanzamientos_medidos": 26,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_200",
+    "top_devs_final",
+    "top_devs_freq",
+    "top_devs_mayhem"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "B7jDgX4GHRZbmykWqvNaNmqbGU4F9ebWKzFaaDyRiKuC",
+   "mediana_pico_usd": 191675,
+   "mejor_pico_usd": 285249,
+   "pct_monedas_sobre_30k": 50.0,
+   "lanzamientos_medidos": 4,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "GeBJSHK4WsGrz2HRvTbqvWGx4JRMpHfJG2ikzrYBDuwR",
+   "mediana_pico_usd": 168300,
+   "mejor_pico_usd": 43594694,
+   "pct_monedas_sobre_30k": null,
+   "lanzamientos_medidos": 10,
+   "datos_de_mayhem": false,
+   "listas_donde_sale": [
+    "devs_unificados",
+    "top_devs",
+    "top_devs_elite",
+    "top_devs_final",
+    "top_devs_giga200k",
+    "top_devs_highmedian",
+    "top_devs_init4k",
+    "top_devs_init5k16k",
+    "top_devs_med12k",
+    "top_devs_vol"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "8gsx257NbfXFve14fzWT2jTG6TXB6AukAEjUXTANMjk",
+   "mediana_pico_usd": 95691,
+   "mejor_pico_usd": 308479,
+   "pct_monedas_sobre_30k": 66.7,
+   "lanzamientos_medidos": 3,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "top_devs_mayhem_66"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "DzFtDS8N5shdCt7mVtByEJgP1LfSkBFkS9TZzuxYJyqc",
+   "mediana_pico_usd": 94252,
+   "mejor_pico_usd": 171329,
+   "pct_monedas_sobre_30k": 50.0,
+   "lanzamientos_medidos": 4,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "3GR8PBj4jgBDJYD4Rw7PZt7PMKogezvXeDCPUJd62zpD",
+   "mediana_pico_usd": 67852,
+   "mejor_pico_usd": 77769,
+   "pct_monedas_sobre_30k": 50.0,
+   "lanzamientos_medidos": 4,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "7FvWw8AsiQtXMm8fv1pVTbzZypmruUb7U7jW9xQoDymB",
+   "mediana_pico_usd": 67479,
+   "mejor_pico_usd": 73938,
+   "pct_monedas_sobre_30k": 50.0,
+   "lanzamientos_medidos": 4,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "8PAuKgUtE11cTcojeoHs8xd8WcJ8epqWnWfzZkTi8xZ1",
+   "mediana_pico_usd": 64800,
+   "mejor_pico_usd": 97083,
+   "pct_monedas_sobre_30k": 66.7,
+   "lanzamientos_medidos": 3,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "top_devs_mayhem_66"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "EhFRXUdTnJrdRgR9pEq9zx8562oETUKosoQhSPodRe5N",
+   "mediana_pico_usd": 62737,
+   "mejor_pico_usd": 291286,
+   "pct_monedas_sobre_30k": 66.7,
+   "lanzamientos_medidos": 3,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "top_devs_mayhem_66"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "9NT2EX7gQGRBWCh4NVsj5UEhB8LiRYQ3ZfzdTEvRUp9n",
+   "mediana_pico_usd": 55697,
+   "mejor_pico_usd": 319758,
+   "pct_monedas_sobre_30k": 50.0,
+   "lanzamientos_medidos": 4,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "CwdLMpzzi4o92JWMe7KNm7SKW6s6W7zv6VsZHR9D7huF",
+   "mediana_pico_usd": 54161,
+   "mejor_pico_usd": 92620,
+   "pct_monedas_sobre_30k": 50.0,
+   "lanzamientos_medidos": 4,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "FakkpbrUA3Nz3EdHfWVmJPAokSrfud4T27JTxorkVfkN",
+   "mediana_pico_usd": 52722,
+   "mejor_pico_usd": 134086,
+   "pct_monedas_sobre_30k": 50.0,
+   "lanzamientos_medidos": 4,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "AwkDaC2n9YfdmUru8J8sFCjsDmqqj7LrpLFo3SjB9DZ4",
+   "mediana_pico_usd": 51193,
+   "mejor_pico_usd": 278030,
+   "pct_monedas_sobre_30k": 66.7,
+   "lanzamientos_medidos": 4,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_elite",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "top_devs_mayhem_66",
+    "top_devs_swing",
+    "top_devs_vol"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "ARaPhgNjEgbPyX7fHJjK1ibuq8ciW38nC6GvaRPZPM5N",
+   "mediana_pico_usd": 50203,
+   "mejor_pico_usd": 52564,
+   "pct_monedas_sobre_30k": 50.0,
+   "lanzamientos_medidos": 4,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "5dUXg97Ltrjid2KVTQAb6p6PVZXBneHcgV1Z8A9xzKgg",
+   "mediana_pico_usd": 49200,
+   "mejor_pico_usd": 93053408,
+   "pct_monedas_sobre_30k": null,
+   "lanzamientos_medidos": 40,
+   "datos_de_mayhem": false,
+   "listas_donde_sale": [
+    "top_devs",
+    "top_devs_freq3x",
+    "top_devs_giga200k"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "1325y5zBuVAwToFo8WqZdYLvUyzxom5bu6wDiMGTy2X7",
+   "mediana_pico_usd": 47524,
+   "mejor_pico_usd": 153562,
+   "pct_monedas_sobre_30k": 50.0,
+   "lanzamientos_medidos": 6,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "HwKvWbr7KZYQF5DK1n3HXcyKNgytbP5obrH9cDV5eChH",
+   "mediana_pico_usd": 45885,
+   "mejor_pico_usd": 176495,
+   "pct_monedas_sobre_30k": 50.0,
+   "lanzamientos_medidos": 4,
+   "datos_de_mayhem": false,
+   "listas_donde_sale": [
+    "devs_unificados",
+    "top_devs_mayhem",
+    "top_devs_quality",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "HRqGhVwiv2kxVedrHieRCQP4m7AeJVzyAABQy2FP74Lu",
+   "mediana_pico_usd": 44150,
+   "mejor_pico_usd": 133884,
+   "pct_monedas_sobre_30k": 50.0,
+   "lanzamientos_medidos": 4,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "irb33boGE2xYPaFLPYxPcniLqFASD9gLvmm1Jyk7Rr6",
+   "mediana_pico_usd": 43373,
+   "mejor_pico_usd": 288957,
+   "pct_monedas_sobre_30k": 50.0,
+   "lanzamientos_medidos": 6,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "8LnVaugnRXtTgr3uNrpkbwFygC5KiyTZwbiXSm4J97NZ",
+   "mediana_pico_usd": 41654,
+   "mejor_pico_usd": 58346,
+   "pct_monedas_sobre_30k": 66.7,
+   "lanzamientos_medidos": 3,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "top_devs_mayhem_66"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "61p1fUje2qmvK7NBJCybpH3RQHDwuttcsf4qUgdeWp77",
+   "mediana_pico_usd": 40952,
+   "mejor_pico_usd": 46765,
+   "pct_monedas_sobre_30k": 50.0,
+   "lanzamientos_medidos": 4,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "HfNAjoBTHfFzSwv7itJECPwmYWn89nBVGNe4Ek2MPRKB",
+   "mediana_pico_usd": 40283,
+   "mejor_pico_usd": 294599,
+   "pct_monedas_sobre_30k": 60.0,
+   "lanzamientos_medidos": 5,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  },
+  {
+   "wallet": "9ZDfN3PtQVfEoNM5uA5hor2VrEjBfLWZH5QQKNNz6jB4",
+   "mediana_pico_usd": 40274,
+   "mejor_pico_usd": 50873,
+   "pct_monedas_sobre_30k": 66.7,
+   "lanzamientos_medidos": 3,
+   "datos_de_mayhem": true,
+   "listas_donde_sale": [
+    "mayhem_v2_raw",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "top_devs_mayhem_66"
+   ],
+   "nivel": "mediana >= 40k con 3+ lanzamientos"
+  }
+ ]
+}
