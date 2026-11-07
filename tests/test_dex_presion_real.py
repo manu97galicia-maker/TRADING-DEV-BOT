@@ -3,7 +3,7 @@ en REAL, por el bot de verdad montado desde su YAML: compra por Jupiter con
 una moneda de Raydium de 9 decimales y vende por TP o por stop. Solo se
 falsea lo de fuera (saldo, Jupiter, DexScreener, RugCheck, GeckoTerminal)."""
 
-# ruff: noqa: S101, SLF001, ANN001, ANN002, ANN003, ANN201, ANN202, ARG001, ANN204, PLR0915, C901, PLC0415
+# ruff: noqa: S101, SLF001, ANN001, ANN002, ANN003, ANN201, ANN202, ARG001, ANN204, PLR0913, PLR0915, C901, PLC0415, S105
 
 import asyncio
 import contextlib
