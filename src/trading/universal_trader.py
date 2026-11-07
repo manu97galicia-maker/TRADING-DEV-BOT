@@ -2468,6 +2468,8 @@ class UniversalTrader:
             exigir_ver_creacion=bool(cfg.get("exigir_ver_creacion", True)),
             heartbeat_interval=float(cfg.get("heartbeat_interval", 300)),
             paper_mode=self.paper_trade or self.paper_engine.enabled,
+            revisar_cada_seg=float(cfg.get("revisar_cada_seg", 0) or 0),
+            log_presion_cada_seg=float(cfg.get("log_presion_cada_seg", 0) or 0),
         )
         try:
             await source.run(self._on_dexpaid_token)

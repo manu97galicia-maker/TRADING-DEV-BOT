@@ -119,6 +119,8 @@ class Curva96Source:
         exigir_ver_creacion: bool = True,
         heartbeat_interval: float = 300,
         paper_mode: bool = False,
+        revisar_cada_seg: float = 0.0,
+        log_presion_cada_seg: float = 0.0,
     ) -> None:
         self.wss_endpoint = wss_endpoint
         self._impls = platform_impls
@@ -147,6 +149,18 @@ class Curva96Source:
         self.exigir_ver_creacion = bool(exigir_ver_creacion)
         self.heartbeat_interval = float(heartbeat_interval)
         self.paper_mode = bool(paper_mode)
+        # RITMO (7-nov, estrategia unica "cualquier moneda con presion"). Con
+        # el umbral a 0 se miran TODAS las monedas desde que nacen, y cada una
+        # que falla la presion se vuelve a mirar en su siguiente operacion: en
+        # un droplet de 1 vCPU eso son cientos de evaluaciones y de lineas de
+        # log por segundo. `revisar_cada_seg`: cada moneda se reevalua como
+        # mucho cada tantos segundos. `log_presion_cada_seg`: la linea de
+        # "presion insuficiente" de una moneda sale como mucho cada tantos
+        # segundos (el embudo la sigue contando siempre). 0 = como antes.
+        self.revisar_cada_seg = max(0.0, float(revisar_cada_seg or 0))
+        self.log_presion_cada_seg = max(0.0, float(log_presion_cada_seg or 0))
+        self._ultima_revision: dict[str, float] = {}
+        self._ultimo_log_presion: dict[str, float] = {}
 
         self._probadas: set[str] = set()
         self._en_vuelo: set[asyncio.Task] = set()
@@ -381,6 +395,14 @@ class Curva96Source:
         if suficiente:
             return True
 
+        self._cuenta("sin_presion")
+        if self.log_presion_cada_seg > 0:
+            ahora = monotonic()
+            if ahora - self._ultimo_log_presion.get(mint, -1e18) < self.log_presion_cada_seg:
+                return False
+            if len(self._ultimo_log_presion) >= _MAX_RECORDADAS:
+                self._ultimo_log_presion.clear()
+            self._ultimo_log_presion[mint] = ahora
         logger.info(
             "Evitado %s (%s): presión insuficiente en %.1fs — %d compradores, "
             "%.2f SOL compra, %.2f SOL venta, ratio %.2fx; mínimos %d, %.2f "
@@ -396,7 +418,6 @@ class Curva96Source:
             self.min_compra_sol,
             self.min_presion_ratio,
         )
-        self._cuenta("sin_presion")
         return False
 
     async def _evaluar(  # noqa: PLR0911
@@ -541,9 +562,23 @@ class Curva96Source:
             if progreso < self.umbral or progreso > self.tope:
                 continue
             self._cuenta("en_umbral")
+            if self._toca_esperar(mint):
+                continue
             if self._ya_probada(mint):
                 continue
             self._lanzar(mint, token_callback)
+
+    def _toca_esperar(self, mint: str) -> bool:
+        """True si esta moneda se miro hace menos de `revisar_cada_seg`."""
+        if self.revisar_cada_seg <= 0:
+            return False
+        ahora = monotonic()
+        if ahora - self._ultima_revision.get(mint, -1e18) < self.revisar_cada_seg:
+            return True
+        if len(self._ultima_revision) >= _MAX_RECORDADAS:
+            self._ultima_revision.clear()
+        self._ultima_revision[mint] = ahora
+        return False
 
     # -------------------------------------------------------------- heartbeat
 

@@ -12,8 +12,8 @@ SCRIPT = RAIZ / "deploy" / "arranca-tres-real.sh"
 TEXTO = SCRIPT.read_text(encoding="utf-8")
 NUEVAS = [
     "bots/bot-real-curva92.yaml",
-    "bots/bot-real-presion6k.yaml",
-    "bots/bot-real-presion15k.yaml",
+    # 7-nov: "elimina lo de 6k y 15k ... una unica estrategia".
+    "bots/bot-real-presion.yaml",
 ]
 
 
@@ -28,9 +28,9 @@ def test_sintaxis() -> None:
 def test_arranca_las_tres_con_apagado_y_solo_en_real() -> None:
     # 7-nov: "dejamos solo las estrategias de presion compradora".
     lista = next(x for x in TEXTO.splitlines() if x.startswith("ESTRATEGIAS="))
-    assert lista == (
-        'ESTRATEGIAS="bots/bot-real-presion6k.yaml bots/bot-real-presion15k.yaml"'
-    )
+    # Despues: "elimina lo de 6k y 15k ... una unica estrategia".
+    assert lista == 'ESTRATEGIAS="bots/bot-real-presion.yaml"'
+    assert "presion_real.log" in TEXTO
     # Y las que salen de la lista tambien se paran: pkill de todas.
     assert 'pkill -f "run_bot_process" ' in TEXTO
     assert 'timeout "$SEG"' in TEXTO
@@ -84,7 +84,9 @@ def test_curva92() -> None:
     assert total >= 1.0
 
 
-def test_presion6k() -> None:
+def test_presion_unica() -> None:
+    """7-nov: "cualquier moneda de pumpfun con esa presion, una unica
+    estrategia" (la presion de la de 6k, elegida por Manu)."""
     c = _cfg(NUEVAS[1])
     cv, fl = c["filters"]["curva_96"], c["filters"]
     # 7-nov "elimina el filtro de market cap".
@@ -109,25 +111,12 @@ def _tres_ventas_hasta_75(t: dict) -> None:
     assert abs(total - 1.0) < 1e-9
 
 
-def test_presion15k() -> None:
-    """7-nov: "presion compradora pero no tan estricta a partir de los 15.3k"."""
-    c = _cfg(NUEVAS[2])
-    cv, fl, t = c["filters"]["curva_96"], c["filters"], c["trade"]
-    p6 = _cfg(NUEVAS[1])["filters"]["curva_96"]
-    assert c["enabled"] is False
-    assert fl["min_entry_mc"] == 0  # 7-nov "elimina el filtro de market cap"
-    assert fl["pumpfun_dev"]["enabled"] is False
-    # Menos estricta que la de 6k en las tres medidas de presion.
-    assert cv["min_compradores_ola"] < p6["min_compradores_ola"]
-    assert cv["min_presion_ratio"] < p6["min_presion_ratio"]
-    assert cv["min_compra_sol"] < p6["min_compra_sol"]
-    assert cv["max_bundle_pct"] == 0.5 and cv["max_subida_vela"] == 0.35
-    # 7-nov "sube un poco volumen y presion": 5 en 5 s, 1,8x, 0,8 SOL.
-    # Despues, "un poco mas de volumen y presion": 6 / 2x / 1 SOL.
-    assert cv["min_compradores_ola"] == 6 and cv["min_presion_ratio"] == 2.0
-    assert cv["min_compra_sol"] == 1.0 and cv["min_compradores"] == 6
-    _tres_ventas_hasta_75(t)
-    assert "presion15k_real.log" in TEXTO
+def test_presion_unica_mira_cualquier_moneda_sin_inundar() -> None:
+    cv = _cfg(NUEVAS[1])["filters"]["curva_96"]
+    assert cv["umbral"] == 0.0 and cv["tope"] == 0.995
+    assert cv["revisar_cada_seg"] == 2.0 and cv["log_presion_cada_seg"] == 30.0
+    assert not (RAIZ / "bots/bot-real-presion6k.yaml").exists()
+    assert not (RAIZ / "bots/bot-real-presion15k.yaml").exists()
 
 
 def test_presion_sin_bundles_de_creacion() -> None:

@@ -5,7 +5,7 @@
 import pytest
 from test_tp_sl_en_vivo import _construir
 
-PRESION = ["bots/bot-real-presion6k.yaml", "bots/bot-real-presion15k.yaml"]
+PRESION = ["bots/bot-real-presion.yaml"]
 
 
 @pytest.mark.parametrize("yaml_rel", PRESION)

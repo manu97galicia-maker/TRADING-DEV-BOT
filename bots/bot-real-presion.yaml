@@ -1,3 +1,16 @@
+# ESTRATEGIA UNICA DE PRESION, pedida el 7-nov: "elimina lo de 6k y 15k,
+# ahora entra cualquier moneda de pumpfun o pumpswap con esa presion
+# compradora y volumen, una unica estrategia". Manu eligio la presion de la
+# de 6k y "solo pump.fun de momento" (PumpSwap queda pendiente: hay que
+# construir el vigilante de presion de los pools).
+#   - Sale de bot-real-presion6k.yaml (todo igual: salida, stop, tamano,
+#     prioridades, bundles, topes). Lo que cambia:
+#   - umbral 0: se mira CUALQUIER moneda de la curva, desde que nace hasta
+#     el 99,5% (antes desde el 45%, ~5,7k). La de 15,3k se borra.
+#   - revisar_cada_seg 2 y log_presion_cada_seg 30: con todas las monedas a
+#     la vista, cada una se reevalua como mucho cada 2 s y su linea de
+#     "presion insuficiente" sale como mucho cada 30 s (1 vCPU, 1 GB).
+#
 # CAMBIO DEL 7-NOV (Manu: "haces a veces 7 ventas, no hagas tantas que nos
 # funden a comision, haz 3" y "en total busco un 75% roi y stop ponlo al 18%
 # y elimina el filtro de market cap y sube un poco volumen y presion"):
@@ -37,7 +50,7 @@
 #   - Sin limite de operaciones simultaneas (max_posiciones 0, 7-nov: "pon
 #     sin limite de operaciones simultaneas"): manda el saldo; tope de
 #     seguridad del codigo, 40.
-name: REAL PRESION FUERTE DESDE 6K
+name: REAL PRESION (CUALQUIER MONEDA)
 env_file: .env
 rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
 wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
@@ -46,7 +59,7 @@ enabled: false
 separate_process: false
 platform: pump_fun
 trade:
-  nombre_estrategia: real-presion6k
+  nombre_estrategia: real-presion
   buy_amount: 0.25
   buy_amount_usd: 0
   # 7-nov: "20% por operacion" (antes 0.15).
@@ -158,7 +171,10 @@ filters:
     max_bundle_pct: 0.5
     max_bundle_pct_sin_historia: 0.35
     heartbeat_interval: 300
-    umbral: 0.45
+    # 7-nov "cualquier moneda": desde que nace (antes 0.45).
+    umbral: 0.0
+    revisar_cada_seg: 2.0
+    log_presion_cada_seg: 30.0
     # 7-nov "afloja un poco": antes 10 / 6 / 2.0 / 1.0.
     min_compradores: 8
     # 7-nov "un poco mas de presion y volumen": antes 4 / 1.5 / 0.5.
