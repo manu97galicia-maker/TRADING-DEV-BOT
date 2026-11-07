@@ -120,6 +120,9 @@ filters:
   max_entry_mc: 0
   max_buy_age: 120
   # 7-nov: estrategia SOLO de mayhem.
+  # 7-nov: "asegurate no rugs" -> eligio "dev con poco": no se compra si
+  # el creador tiene mas del 10% de la moneda.
+  max_dev_hold_pct: 0.10
   allow_mayhem: true
   require_mayhem: true
   ignorar_listas_de_devs: false

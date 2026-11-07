@@ -1,7 +1,7 @@
 """7-nov: "hazme una estrategia de mayhem tambien con volumen y presion
 buscando un roi de un 200-500% arriesgando 4$ por operacion"."""
 
-# ruff: noqa: S101, PLR2004, SLF001, ANN001, ANN201
+# ruff: noqa: S101, PLR2004, SLF001, ANN001, ANN002, ANN003, ANN201, ANN202, ANN204, PLC0415
 
 import os
 import time
@@ -90,3 +90,71 @@ def test_las_mayhem_no_cuentan_en_las_3_de_presion(tmp_path, monkeypatch):
     for f in tmp_path.glob("open_position_bot-real-presion__*.json"):
         os.utime(f, (viejo, viejo))
     assert not t._tope_comun_lleno()
+
+
+@pytest.mark.parametrize("yaml_rel", [MAYHEM, "bots/bot-real-presion.yaml"])
+def test_dev_con_mas_del_10_no_se_compra(yaml_rel, tmp_path, monkeypatch):
+    """7-nov "asegurate no rugs" -> "dev con poco": max 10% en el creador."""
+    import asyncio
+    from types import SimpleNamespace
+
+    import aiohttp
+    from solders.pubkey import Pubkey
+
+    t, _ = _construir(yaml_rel, tmp_path, monkeypatch)
+    assert t.max_dev_hold_pct == 0.10
+    tiene = {"n": 0.0}
+
+    class _Resp:
+        async def json(self, **_k):
+            return {
+                "result": {
+                    "value": [
+                        {
+                            "account": {
+                                "data": {
+                                    "parsed": {
+                                        "info": {
+                                            "tokenAmount": {"uiAmount": tiene["n"]}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+
+    class _Sesion:
+        def __init__(self, *_a, **_k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_a):
+            return False
+
+        def post(self, *_a, **_k):
+            r = _Resp()
+
+            class _Ctx:
+                async def __aenter__(self):
+                    return r
+
+                async def __aexit__(self, *_a):
+                    return False
+
+            return _Ctx()
+
+    monkeypatch.setattr(aiohttp, "ClientSession", _Sesion)
+    ficha = SimpleNamespace(
+        symbol="X",
+        creator=Pubkey.new_unique(),
+        mint=Pubkey.new_unique(),
+        token_total_supply=0,
+    )
+    tiene["n"] = 150_000_000.0  # 15% de 1.000 millones
+    assert asyncio.run(t._dev_holds_too_much(ficha)) is True
+    tiene["n"] = 50_000_000.0  # 5%
+    assert asyncio.run(t._dev_holds_too_much(ficha)) is False
