@@ -47,3 +47,15 @@ def test_prioridad_de_venta_0006(yaml_rel, tmp_path, monkeypatch):
     assert fijo == 100_000_000
     assert fijo * 60_000 / 1e6 / 1e9 == pytest.approx(0.006)
     assert t.fee_compra * 100_000 / 1e6 / 1e9 == pytest.approx(0.007)
+
+
+@pytest.mark.parametrize("yaml_rel", PRESION)
+def test_tope_comun_de_4_entre_las_dos(yaml_rel, tmp_path, monkeypatch):
+    """7-nov "maximo de posiciones abiertas 4": cuenta las de TODAS."""
+    t, _ = _construir(yaml_rel, tmp_path, monkeypatch)
+    assert t.max_posiciones == 4 and t.max_posiciones_total == 4
+    for i, quien in enumerate(["real-presion6k", "real-presion6k", "real-presion15k"]):
+        (tmp_path / f"open_position_{quien}__Mint{i}.json").write_text("{}")
+    assert t._abiertas_entre_todos() == 3 and not t._tope_comun_lleno()
+    (tmp_path / "open_position_real-presion15k__Mint9.json").write_text("{}")
+    assert t._tope_comun_lleno()

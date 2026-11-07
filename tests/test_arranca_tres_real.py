@@ -63,7 +63,9 @@ def test_reglas_comunes_a_las_tres() -> None:
         assert fl["paper_trade"] is False, f
         # 7-nov: "pon sin limite de operaciones simultaneas".
         # Despues, en las de presion: "maximo 3 operaciones simultaneas".
-        assert t["max_posiciones"] == (3 if "presion" in f else 0), f
+        # Despues: "maximo 4 simultaneas y maximo de posiciones abiertas 4".
+        assert t["max_posiciones"] == (4 if "presion" in f else 0), f
+        assert t.get("max_posiciones_total", 0) == (4 if "presion" in f else 0), f
 
 
 def test_curva92() -> None:

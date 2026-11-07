@@ -635,6 +635,10 @@ class UniversalTrader:
         # Perdidas seguidas antes de que la estrategia deje de comprar.
         # 0 = nunca para.
         max_perdidas_seguidas: int = 0,
+        # TOPE DE POSICIONES ENTRE TODOS LOS BOTS (7-nov, Manu: "maximo de
+        # posiciones abiertas 4"). Cuenta los marcadores de todas las
+        # estrategias que corren en esta carpeta. 0 = sin tope comun.
+        max_posiciones_total: int = 0,
         # Importe reducido para la compra inmediatamente despues de un SL.
         # 0 = usar siempre el importe normal.
         buy_amount_tras_sl: float = 0.0,
@@ -1432,6 +1436,7 @@ class UniversalTrader:
             [(tp_marcados, tp_sell_marcados)]
         ) if tp_marcados and tp_sell_marcados else []
         self.max_perdidas_seguidas = int(max_perdidas_seguidas or 0)
+        self.max_posiciones_total = int(max_posiciones_total or 0)
         self._perdidas_seguidas = 0
         #: REGIMEN APARTE para las monedas que no nacieron en pump.fun. Se
         #: cuentan solas porque son un experimento con menos red: no hay
@@ -2314,6 +2319,23 @@ class UniversalTrader:
             return len(self._open_position_paths())
         except OSError:
             return 0
+
+    def _abiertas_entre_todos(self) -> int:
+        """Posiciones abiertas de TODAS las estrategias de esta carpeta.
+
+        Cada bot deja `open_position_<estrategia>__<mint>.json` mientras vigila
+        una moneda, y todos arrancan en la misma carpeta: contar esos ficheros
+        es contar las posiciones de todos, sobreviva o no un reinicio.
+        """
+        try:
+            return len(list(self._open_pos_path.parent.glob("open_position*.json")))
+        except OSError:
+            return 0
+
+    def _tope_comun_lleno(self) -> bool:
+        """True si ya hay `max_posiciones_total` posiciones entre todos."""
+        tope = int(getattr(self, "max_posiciones_total", 0) or 0)
+        return tope > 0 and self._abiertas_entre_todos() >= tope
 
     def _fraccion_de_esta_compra(self) -> tuple[float, int]:
         """La fraccion que toca a la compra que se esta montando ahora.
@@ -5183,6 +5205,13 @@ class UniversalTrader:
             if self._position_semaphore.locked():
                 logger.info(
                     f"Max posiciones abiertas; {token_info.symbol} pasó el filtro pero no se compra"
+                )
+                return
+            if self._tope_comun_lleno():
+                logger.info(
+                    "Tope comun de %d posiciones entre todas las estrategias; "
+                    "%s pasó el filtro pero no se compra",
+                    self.max_posiciones_total, token_info.symbol,
                 )
                 return
             if self._otro_origen_agotado(token_info):
