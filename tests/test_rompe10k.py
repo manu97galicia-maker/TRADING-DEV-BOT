@@ -24,12 +24,19 @@ def _cfg(f):
 def test_config_rompe_10k():
     c = _cfg(YAML)
     cv, fl, t = c["filters"]["curva_96"], c["filters"], c["trade"]
-    assert cv["min_mc_usd"] == 10100 and cv["max_mc_usd"] == 12000
+    # 7-nov, despues: "que rompa el 71% de la bonding", solo hasta el 76%,
+    # sin filtro de market cap; "con fuerza" = presion de 5 s (4 y 1,5x).
+    assert cv["umbral"] == 0.71 and cv["tope"] == 0.76
+    assert cv["min_mc_usd"] == 0 and cv["max_mc_usd"] == 0
     assert cv["ultimas_compras"] == 3
-    # Nada mas: sin presion, volumen, compradores ni edad.
+    assert cv["min_compradores_ola"] == 4 and cv["min_presion_ratio"] == 1.5
+    assert cv["ventana_presion"] == 5.0
+    # "sin limite de operaciones", pero "cuidame de rugs": el freno de 3
+    # perdidas seguidas se queda.
+    assert t["max_real_buys"] == 0 and t["max_posiciones"] == 3
+    assert t["max_perdidas_seguidas"] == 3
+    # Nada mas: sin volumen, compradores ni edad.
     for k in (
-        "min_compradores_ola",
-        "min_presion_ratio",
         "min_compra_sol",
         "min_compradores",
         "min_compras_total",
@@ -147,3 +154,15 @@ def test_solo_se_queman_restos_de_menos_de_1_dolar(tmp_path, monkeypatch):
     queda["n"] = 10.0
     t.cleanup_force_close_with_burn = False  # sin la opcion, nunca
     assert asyncio.run(t._puede_quemar(ficha, precio)) is False
+
+
+def test_solo_entre_71_y_76_por_ciento(monkeypatch):
+    """Solo entra justo al romper el 71% de la curva; al 76% ya no."""
+    c = _cfg(YAML)["filters"]["curva_96"]
+    f = cs.Curva96Source("ws://x", None, None, umbral=c["umbral"], tope=c["tope"])
+    lanzadas = []
+    monkeypatch.setattr(f, "_lanzar", lambda m, _cb: lanzadas.append(m))
+    avances = {"A": 0.70, "B": 0.71, "C": 0.74, "D": 0.77, "E": 0.95}
+    monkeypatch.setattr(cs.volumen, "progreso_curva", lambda m: (avances[m], 0.0))
+    f._revisar(list(avances), None)
+    assert lanzadas == ["B", "C"]

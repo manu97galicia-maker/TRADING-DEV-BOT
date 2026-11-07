@@ -15,7 +15,20 @@
 #   - Posiciones: 3, contando las de la normal (comparten el tope de 3; las
 #     mayhem van aparte). Comparten saldo con la normal.
 #
-name: REAL ROMPE 10,1K
+# 7-nov, despues: "Que rompa con fuerza los 10.1k. Pon q rompa el 71% de la
+# bonding q no calcula rapido y pierdo tiempo. Sin limite de operaciones y
+# maximo 3 simultaneas". Manu eligio: presion de 5 segundos, solo entre el
+# 71% y el 76% de la curva, y "cuidame de rugs" (se queda el freno de 3
+# perdidas seguidas y todos los frenos anti-rug). Cambia:
+#   - ENTRA por la CURVA, no por market cap: entre el 71% y el 76%. El 71%
+#     es un market cap de 123,8 SOL (unos 10,1k $ con SOL a 82 $; con SOL
+#     mas caro, el mismo 71% son mas dolares). El 76% es el mismo margen que
+#     10,1k-12k: solo "justo al romper".
+#   - CON FUERZA: en los ultimos 5 s, 4 compradores distintos o mas y 1,5
+#     veces mas SOL comprado que vendido. Y las 3 ultimas, compras.
+#   - Sin tope de compras en total (antes 1000). Maximo 3 a la vez.
+#
+name: REAL ROMPE 71% CURVA
 env_file: .env
 rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
 wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
@@ -44,7 +57,9 @@ trade:
   max_posiciones_total: 3
   # 7-nov: las mayhem van "aparte": sus posiciones no cuentan en estas 3.
   max_posiciones_total_ignora: [bot-real-mayhem]
-  max_real_buys: 1000
+  # 7-nov "sin limite de operaciones" (antes 1000). 0 = sin tope.
+  # El freno de 3 perdidas seguidas se QUEDA ("cuidame de rugs").
+  max_real_buys: 0
   reiniciar_tanda: false
   # 7-nov: "deslizamiento 18%" (antes 35% en compra y venta). El de las
   # ventas de proteccion (stop, rug) se queda en 50%: si no entra, el
@@ -184,7 +199,9 @@ filters:
     prioridad_venta_sol: 0.001
   curva_96:
     enabled: true
-    tope: 0.995
+    # 7-nov "que rompa el 71% de la bonding": solo justo al romper, hasta el
+    # 76% (antes 0.995).
+    tope: 0.76
     buy_amount: 0
     max_compras: 0
     parar_tras_perdidas: 0
@@ -203,23 +220,29 @@ filters:
     max_bundle_pct: 0.5
     max_bundle_pct_sin_historia: 0.35
     heartbeat_interval: 300
-    # Se mira desde el 40% de la curva; compra al romper 10.100 $ y hasta
-    # 12.000 $ ("justo al romper").
-    umbral: 0.40
-    min_mc_usd: 10100
-    max_mc_usd: 12000
+    # 7-nov "pon q rompa el 71% de la bonding q no calcula rapido": entra
+    # al 71% de la curva (antes se miraba desde el 40% y compraba entre
+    # 10.100 $ y 12.000 $ de market cap). Sin filtro de market cap: la curva
+    # no depende del precio del SOL.
+    umbral: 0.71
+    min_mc_usd: 0
+    max_mc_usd: 0
     revisar_cada_seg: 2.0
     log_presion_cada_seg: 30.0
     # "las ultimas 3 tx sean compras".
     ultimas_compras: 3
-    # Sin presion, volumen ni compradores minimos.
+    # Sin volumen ni compradores minimos desde que nacio.
     min_compras_total: 0
     min_volumen_total_sol: 0
     min_volumen_reciente_sol: 0
     min_compradores: 0
-    min_compradores_ola: 0
+    # 7-nov "que rompa con fuerza": presion de los ultimos 5 s. Al menos 4
+    # compradores distintos y 1,5 veces mas SOL comprado que vendido (antes
+    # 0 y 0: sin presion). El vigilante de la curva la mide el mismo en
+    # cada operacion; si falta fuerza, la vuelve a mirar en la siguiente.
+    min_compradores_ola: 4
     ventana_presion: 5.0
-    min_presion_ratio: 0
+    min_presion_ratio: 1.5
     min_compra_sol: 0
   pumpfun_dev:
     enabled: false
