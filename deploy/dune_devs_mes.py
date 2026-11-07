@@ -130,35 +130,66 @@ def _error(e: Exception) -> str:
     """El error de Dune, sin la clave."""
     if isinstance(e, urllib.error.HTTPError):
         try:
-            cuerpo = e.read().decode()[:300]
+            cuerpo = e.read().decode()[:600]
         except Exception:  # noqa: BLE001
             cuerpo = ""
         return f"HTTP {e.code}: {cuerpo}"
     return type(e).__name__
 
 
+def _lanza(sql: str, clave: str, rendimiento: str) -> dict:
+    """Manda la consulta a Dune por la primera via que acepte.
+
+    7-nov: la primera prueba en el droplet dio "HTTP 400" en /sql/execute.
+    Se prueban, en orden: /sql/execute con y sin `performance`, y crear una
+    consulta (privada; si el plan no deja, publica: solo contiene el SQL) y
+    ejecutarla. Cada rechazo se imprime entero (sin la clave) para saber por
+    que.
+    """
+    intentos = [
+        (
+            "sql/execute",
+            f"{DUNE}/sql/execute",
+            {"sql": sql, "performance": rendimiento},
+        ),
+        ("sql/execute sin performance", f"{DUNE}/sql/execute", {"sql": sql}),
+    ]
+    for nombre, url, cuerpo in intentos:
+        try:
+            return _pide(url, clave, cuerpo)
+        except urllib.error.HTTPError as e:
+            print(f"  {nombre}: {_error(e)}")
+    for privada in (True, False):
+        try:
+            q = _pide(
+                f"{DUNE}/query",
+                clave,
+                {
+                    "name": "pump-bot devs del mes",
+                    "query_sql": sql,
+                    "is_private": privada,
+                },
+            )
+        except urllib.error.HTTPError as e:
+            print(
+                f"  crear consulta {'privada' if privada else 'publica'}: {_error(e)}"
+            )
+            continue
+        qid = q.get("query_id")
+        print(f"  consulta {'privada' if privada else 'publica'} creada en Dune: {qid}")
+        try:
+            return _pide(
+                f"{DUNE}/query/{qid}/execute", clave, {"performance": rendimiento}
+            )
+        except urllib.error.HTTPError as e:
+            print(f"  ejecutar consulta {qid}: {_error(e)}")
+            return _pide(f"{DUNE}/query/{qid}/execute", clave, {})
+    raise RuntimeError("Dune no acepto la consulta por ninguna via (ver arriba)")
+
+
 def dune_sql(sql: str, clave: str, rendimiento: str = "medium") -> list[dict]:
     """Ejecuta SQL en Dune y devuelve todas las filas."""
-    try:
-        ej = _pide(
-            f"{DUNE}/sql/execute", clave, {"sql": sql, "performance": rendimiento}
-        )
-    except urllib.error.HTTPError as e:
-        if e.code not in (404, 405):
-            raise RuntimeError("Dune rechazo la consulta: " + _error(e)) from None
-        print("  (sin /sql/execute: se crea una consulta privada y se ejecuta)")
-        q = _pide(
-            f"{DUNE}/query",
-            clave,
-            {
-                "name": "pump-bot devs del mes",
-                "query_sql": sql,
-                "is_private": True,
-            },
-        )
-        ej = _pide(
-            f"{DUNE}/query/{q['query_id']}/execute", clave, {"performance": rendimiento}
-        )
+    ej = _lanza(sql, clave, rendimiento)
     eid = ej.get("execution_id")
     if not eid:
         raise RuntimeError(f"Dune no devolvio ejecucion: {str(ej)[:200]}")

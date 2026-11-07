@@ -1,6 +1,6 @@
 """deploy/dune_devs_mes.py: los cortes de Manu sobre filas como las de Dune."""
 
-# ruff: noqa: S101, PLR2004, ANN001, ANN003, ANN201, ANN202, E741, SLF001
+# ruff: noqa: S101, PLR2004, ANN001, ANN003, ANN201, ANN202, E741, SLF001, PLC0415, ARG001
 
 import sys
 from pathlib import Path
@@ -89,3 +89,26 @@ def test_la_clave_no_se_imprime(monkeypatch, capsys):
     monkeypatch.setenv("DUNE_API_KEY", "secreta123")
     assert dd._clave() == "secreta123"
     assert "secreta123" not in capsys.readouterr().out
+
+
+def test_si_dune_rechaza_una_via_prueba_la_siguiente(monkeypatch, capsys):
+    """7-nov: /sql/execute dio HTTP 400 en el droplet."""
+    import io
+    import urllib.error
+
+    llamadas = []
+
+    def _pide(url, clave=None, cuerpo=None):
+        llamadas.append(url.rsplit("/v1/", 1)[1])
+        if url.endswith("/sql/execute"):
+            raise urllib.error.HTTPError(
+                url, 400, "Bad Request", {}, io.BytesIO(b"nope")
+            )
+        if url.endswith("/query"):
+            return {"query_id": 77}
+        return {"execution_id": "E1"}
+
+    monkeypatch.setattr(dd, "_pide", _pide)
+    assert dd._lanza("SELECT 1", "k", "medium") == {"execution_id": "E1"}
+    assert llamadas == ["sql/execute", "sql/execute", "query", "query/77/execute"]
+    assert "HTTP 400: nope" in capsys.readouterr().out

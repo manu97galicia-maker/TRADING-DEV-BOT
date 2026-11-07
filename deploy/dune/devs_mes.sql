@@ -80,7 +80,7 @@ tok AS (
 moda AS (
     SELECT dev, MAX_BY(cubo, n) AS moda_usd
     FROM (SELECT dev, FLOOR(pico_usd / 10000) * 10000 AS cubo, COUNT(*) AS n
-          FROM tok GROUP BY 1, 2)
+          FROM tok GROUP BY 1, 2) cubos
     GROUP BY 1
 )
 SELECT t.dev,
