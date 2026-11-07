@@ -226,7 +226,7 @@ def test_dentro_del_bot_real_compra_en_papel_con_su_salida(tmp_path, monkeypatch
     f = creadas[0]
     assert f.en_papel is True
     assert f.salida["stop"] == 0.22 and f.salida["trailing"] == 0.22
-    assert [g for g, _ in f.salida["tramos"]] == [0.50, 0.85, 1.20]
+    assert [g for g, _ in f.salida["tramos"]] == [0.50, 0.80]
     assert f.salida["margen_tras_tp"] == 0.05 and f.salida["muerta_seg"] == 300
     assert "MonedaLimpiapump" in f._abiertas
 

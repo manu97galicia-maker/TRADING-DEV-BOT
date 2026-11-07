@@ -196,7 +196,7 @@ def test_en_real_compra_y_vende_los_tres_tp(monkeypatch, tmp_path):
     assert e["compras"] == [(pytest.approx(0.329), 900, 2_000_000)]
     # 79,71% / 10,14% / 10,14% de LO COMPRADO (9 decimales bien contados),
     # slippage de venta 10%, prioridad de TP 0,001 SOL.
-    assert [v[0] for v in e["ventas"]] == [0.7971, 0.1014, 0.1014]
+    assert [v[0] for v in e["ventas"]] == [0.7971, 0.2029]
     assert all(v[1:] == (1000, 1_000_000) for v in e["ventas"])
 
 
@@ -213,4 +213,4 @@ def test_en_real_moneda_de_pumpfun_en_pumpswap(monkeypatch, tmp_path):
         monkeypatch, tmp_path, [1.0, 1.0, 1.2, 1.55, 1.9, 2.3, 2.3], 4, pumpswap=True
     )
     assert e["compras"] == [(pytest.approx(0.329), 900, 2_000_000)]
-    assert [v[0] for v in e["ventas"]] == [0.7971, 0.1014, 0.1014]
+    assert [v[0] for v in e["ventas"]] == [0.7971, 0.2029]

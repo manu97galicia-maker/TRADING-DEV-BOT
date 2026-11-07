@@ -115,10 +115,10 @@ trade:
   # 7-nov "haz 3 ventas" y "en total busco un 75% roi": TP1 +38% (79,71%),
   # +55% y +75% (mitad y mitad del resto).
   # 7-nov, despues: "+50%, +85%, +120%" (antes +55% / +75%).
-  tp2_gain: 0.85
-  tp2_sell: 0.1014492754
-  tp3_gain: 1.20
-  tp3_sell: 0.1014492753
+  # 7-nov, despues: "un 80% en segundos" -> +50% (79,71%) y el resto a +80%
+  # (antes +85% / +120%).
+  tp2_gain: 0.80
+  tp2_sell: 0.2028985507
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
@@ -234,7 +234,10 @@ filters:
     heartbeat_interval: 300
     # 7-nov "cualquier moneda": desde que nace (antes 0.45).
     # 7-nov, despues: "solo las que llegan al 91% de la bonding" (antes 0.0).
-    umbral: 0.91
+    # Y despues: low cap "a partir de 8k" (min_mc_usd 8000). Se empieza a
+    # mirar en el 40% de la curva (~4,9k con SOL a 90 $, ~8k con SOL a
+    # 150 $) para que el minimo lo ponga el market cap y no la curva.
+    umbral: 0.40
     revisar_cada_seg: 2.0
     # 7-nov: "dos ultimas tx sean compras". Con la presion OK, si en las 2
     # ultimas operaciones hay alguna venta, no se compra (se vuelve a mirar).
@@ -242,18 +245,22 @@ filters:
     ultimas_compras: 3
     # 7-nov: "minimo compras monedas de 5.6k de market cap". Por debajo no
     # se compra; se vuelve a mirar en la siguiente operacion.
-    min_mc_usd: 5600
+    # 7-nov, despues: low cap "a partir de 8k" (antes 5.600).
+    min_mc_usd: 8000
     # 7-nov: "buen volumen pero que entren muchas txs" -> eligio "60 compras
     # en total" desde que nacio (ademas de los 20 compradores distintos).
-    min_compras_total: 60
+    # 7-nov, despues: "baja bastante volumen y gente" -> 25 (antes 60).
+    min_compras_total: 25
     # 7-nov: "mas operaciones pero mayor volumen" -> eligio "30 SOL negociados"
     # (compras + ventas) desde que nacio.
-    min_volumen_total_sol: 30
+    # Y 10 SOL negociados (antes 30).
+    min_volumen_total_sol: 10
     log_presion_cada_seg: 30.0
     # 7-nov "afloja un poco": antes 10 / 6 / 2.0 / 1.0.
     # 7-nov: "mas volumen, quiero que haya muchas transacciones pero cogerlas
     # antes de que exploten" -> eligio "mas gente total": 20 (antes 8).
-    min_compradores: 20
+    # Y 8 compradores distintos desde que nacio (antes 20).
+    min_compradores: 8
     # 7-nov "un poco mas de presion y volumen": antes 4 / 1.5 / 0.5.
     # 7-nov "un poquito mas": 1.7 / 0.7 -> 1.8 / 0.8.
     # 7-nov "sube un poco": 5 / 1.8 / 0.8 -> 6 / 2.0 / 1.0.

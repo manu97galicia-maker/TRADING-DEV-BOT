@@ -117,7 +117,7 @@ def test_el_bot_le_pasa_el_precio_de_sol_vivo(tmp_path, monkeypatch):
 
     asyncio.run(t._run_curva96_mode())
     f = capturado["f"]
-    assert f.min_mc_usd == 5600 and f.ultimas_compras == 3
+    assert f.min_mc_usd == 8000 and f.ultimas_compras == 3  # despues: "a partir de 8k"
     monkeypatch.setattr(ut, "_SOL_USD", 123.0)
     assert f._sol_usd() == 123.0
 
@@ -154,7 +154,7 @@ def test_la_estrategia_pide_10_minutos():
         (Path(__file__).resolve().parents[1] / "bots/bot-real-presion.yaml").read_text()
     )["filters"]
     assert fl["curva_96"]["min_edad_seg"] == 600 and fl["curva_96"]["max_edad_seg"] == 0
-    assert fl["curva_96"]["min_compras_total"] == 60
+    assert fl["curva_96"]["min_compras_total"] == 25  # despues: "baja bastante"
     assert fl["dex_presion"]["min_edad_min"] == 10
 
 

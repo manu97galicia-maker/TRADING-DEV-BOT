@@ -105,29 +105,28 @@ def test_presion_unica() -> None:
     # Despues: "bajar un poco la presion" -> 6 / 2x / 1 SOL.
     assert cv["min_compradores_ola"] == 6 and cv["min_presion_ratio"] == 2.0
     # Despues: "mas gente total" -> 20 compradores en total (antes 8).
-    assert cv["min_compra_sol"] == 1.0 and cv["min_compradores"] == 20
-    assert cv["min_volumen_total_sol"] == 30  # "mayor volumen"
-    assert cv["min_mc_usd"] == 5600  # "minimo compras monedas de 5.6k"
+    # Despues: "baja bastante volumen y gente" -> 8 compradores, 25 compras y
+    # 10 SOL desde que nacio; low cap "a partir de 8k".
+    assert cv["min_compra_sol"] == 1.0 and cv["min_compradores"] == 8
+    assert cv["min_volumen_total_sol"] == 10 and cv["min_compras_total"] == 25
+    assert cv["min_mc_usd"] == 8000
     assert fl["pumpfun_dev"]["enabled"] is False
     _tres_ventas_hasta_75(c["trade"])
 
 
 def _tres_ventas_hasta_75(t: dict) -> None:
-    """7-nov "haz 3 ventas" y "en total busco un 75% roi"."""
-    assert t["mc_take_profit_tiers"] == [] and "tp4_gain" not in t
-    assert [t["take_profit_percentage"], t["tp2_gain"], t["tp3_gain"]] == [
-        0.50,
-        0.85,
-        1.20,
-    ]
-    total = t["take_profit_sell_percentage"] + t["tp2_sell"] + t["tp3_sell"]
+    """7-nov "haz 3 ventas" ... y despues "un 80% en segundos": +50% y +80%."""
+    assert t["mc_take_profit_tiers"] == [] and "tp3_gain" not in t
+    assert [t["take_profit_percentage"], t["tp2_gain"]] == [0.50, 0.80]
+    total = t["take_profit_sell_percentage"] + t["tp2_sell"]
     assert abs(total - 1.0) < 1e-9
 
 
 def test_presion_unica_mira_cualquier_moneda_sin_inundar() -> None:
     cv = _cfg(NUEVAS[1])["filters"]["curva_96"]
     # Despues: "solo las que llegan al 91% de la bonding".
-    assert cv["umbral"] == 0.91 and cv["tope"] == 0.995
+    # Despues: low cap "a partir de 8k": se mira desde el 40%.
+    assert cv["umbral"] == 0.40 and cv["tope"] == 0.995
     assert cv["vela2_seg"] == 30 and cv["max_subida_vela2"] == 0.60
     assert cv["revisar_cada_seg"] == 2.0 and cv["log_presion_cada_seg"] == 30.0
     assert not (RAIZ / "bots/bot-real-presion6k.yaml").exists()

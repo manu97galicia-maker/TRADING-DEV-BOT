@@ -194,12 +194,9 @@ def test_presion_tres_ventas_hasta_el_75(yaml_rel, tmp_path, monkeypatch):
     """7-nov "haz 3 ventas" y "busco un 75% de roi": +38% / +55% / +75% y
     no hay mas ventas aunque siga subiendo."""
     t, ut = _construir(yaml_rel, tmp_path, monkeypatch)
-    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.4, 1.51, 1.86, 2.21, 4.0])
-    assert [v[0] for v in ventas] == [
-        "tp_tier1_+50%",
-        "tp_tier2_+85%",
-        "tp_tier3_+120%",
-    ]
+    # Despues: "un 80% en segundos" -> +50% y el resto a +80%.
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.4, 1.51, 1.81, 2.5, 4.0])
+    assert [v[0] for v in ventas] == ["tp_tier1_+50%", "tp_tier2_+80%"]
     assert abs(sum(v[1] for v in ventas) - 1.0) < 1e-3
 
 
