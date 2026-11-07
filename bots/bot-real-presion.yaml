@@ -227,6 +227,9 @@ filters:
     # 7-nov: "minimo compras monedas de 5.6k de market cap". Por debajo no
     # se compra; se vuelve a mirar en la siguiente operacion.
     min_mc_usd: 5600
+    # 7-nov: "buen volumen pero que entren muchas txs" -> eligio "60 compras
+    # en total" desde que nacio (ademas de los 20 compradores distintos).
+    min_compras_total: 60
     log_presion_cada_seg: 30.0
     # 7-nov "afloja un poco": antes 10 / 6 / 2.0 / 1.0.
     # 7-nov: "mas volumen, quiero que haya muchas transacciones pero cogerlas

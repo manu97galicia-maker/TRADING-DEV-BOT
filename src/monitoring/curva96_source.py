@@ -126,6 +126,7 @@ class Curva96Source:
         ultimas_compras: int = 0,
         min_mc_usd: float = 0.0,
         sol_usd: Callable[[], float] | None = None,
+        min_compras_total: int = 0,
     ) -> None:
         self.wss_endpoint = wss_endpoint
         self._impls = platform_impls
@@ -173,6 +174,9 @@ class Curva96Source:
         # `min_entry_mc` ESPERA a que llegue al minimo y compraria con una
         # presion que ya no es la de ahora. 0 = no se mira.
         self.min_mc_usd = max(0.0, float(min_mc_usd or 0))
+        # 7-nov, Manu: "buen volumen pero que entren muchas txs" -> eligio
+        # "60 compras en total" desde que nacio. 0 = no se mira.
+        self.min_compras_total = max(0, int(min_compras_total or 0))
         self._sol_usd = sol_usd
         self._ultimo_log_presion: dict[str, float] = {}
 
@@ -465,6 +469,21 @@ class Curva96Source:
         if not self._presion_suficiente(mint, mint[:6]):
             self._probadas.discard(mint)
             return
+
+        # MUCHAS COMPRAS DESDE QUE NACIO (7-nov). Si no llega, se vuelve a
+        # mirar en la siguiente operacion.
+        if self.min_compras_total > 0:
+            compras = int(volumen.metricas_segunda_ola(mint).get("compras", 0) or 0)
+            if compras < self.min_compras_total:
+                self._cuenta("pocas_compras")
+                if self._toca_escribir(mint):
+                    logger.info(
+                        "Evitado %s (%s): presion OK pero solo %d compras desde "
+                        "que nacio (min %d)",
+                        mint[:6], mint, compras, self.min_compras_total,
+                    )
+                self._probadas.discard(mint)
+                return
 
         # LAS ULTIMAS OPERACIONES, COMPRAS (7-nov). La presion de 5 s puede dar
         # bien mientras alguien ya esta vendiendo por detras; esto exige que

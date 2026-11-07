@@ -154,4 +154,36 @@ def test_la_estrategia_pide_10_minutos():
         (Path(__file__).resolve().parents[1] / "bots/bot-real-presion.yaml").read_text()
     )["filters"]
     assert fl["curva_96"]["min_edad_seg"] == 600 and fl["curva_96"]["max_edad_seg"] == 0
+    assert fl["curva_96"]["min_compras_total"] == 60
     assert fl["dex_presion"]["min_edad_min"] == 10
+
+
+def test_60_compras_desde_que_nacio(monkeypatch):
+    """7-nov "que entren muchas txs" -> 60 compras en total."""
+    import asyncio
+
+    f = _fuente(min_compras_total=60)
+    monkeypatch.setattr(cs.volumen, "progreso_curva", lambda _m: (0.5, 40.0))
+    monkeypatch.setattr(f, "_sin_mecha_vertical", lambda *_a: True)
+    monkeypatch.setattr(f, "_presion_suficiente", lambda *_a: True)
+    monkeypatch.setattr(cs.volumen, "ultimas_son_compra", lambda *_a: True)
+    monkeypatch.setattr(cs.volumen, "vio_la_creacion", lambda _m: True)
+    monkeypatch.setattr(f, "_fuera_de_edad", lambda *_a: False)
+    monkeypatch.setattr(f, "_es_bundle", lambda *_a, **_k: False)
+    llamadas = []
+
+    async def _construye(*_a, **_k):
+        llamadas.append(1)
+
+    monkeypatch.setattr(cs, "build_pumpfun_token_info", _construye)
+    monkeypatch.setattr(
+        cs.volumen, "metricas_segunda_ola", lambda *_a, **_k: {"compras": 59}
+    )
+    f._probadas.add("M")
+    asyncio.run(f._evaluar("M", _construye))
+    assert llamadas == [] and "M" not in f._probadas
+    monkeypatch.setattr(
+        cs.volumen, "metricas_segunda_ola", lambda *_a, **_k: {"compras": 60}
+    )
+    asyncio.run(f._evaluar("M", _construye))
+    assert llamadas == [1]
