@@ -645,6 +645,10 @@ class UniversalTrader:
         # No deciden si se compra, solo cuanto y con que paciencia.
         devs_marcados: str | None = None,
         buy_amount_marcados: float = 0.0,
+        # Si los devs marcados se saltan el AUTO-BANEO por rugs. True es lo de
+        # siempre; dev1 lo pone en False (7-nov) porque Manu pidio "bloc dev
+        # rugs" y la lista de marcados no puede deshacerlo en silencio.
+        marcados_saltan_baneo: bool = True,
         # Techo absoluto de gasto por compra, en SOL, por encima de cualquier
         # otra via. Ver el comentario del TOPE DURO mas abajo.
         tope_compra_sol: float = 0.0,
@@ -1266,6 +1270,7 @@ class UniversalTrader:
                 buy_amount_marcados or buy_amount,
             )
         self.buy_amount_marcados = float(buy_amount_marcados or 0)
+        self.marcados_saltan_baneo = bool(marcados_saltan_baneo)
         # Maximo absoluto por compra, en SOL. 0 = sin tope. Se lee del YAML
         # como `tope_compra_sol`.
         self.tope_compra_sol = float(tope_compra_sol or 0)
@@ -1355,6 +1360,18 @@ class UniversalTrader:
         self._bote = Ganancia() if self.escala_por_sol_ganado > 0 else None
         self.horario = horario or {}
         self.dev_elite = dev_elite or {}
+        #: LISTA DE DEVS QUE SUELEN PASAR DE 30K (7-nov): los que esten en ella
+        #: salen con la escalera de `dev_elite`, aunque su tasa no llegue a
+        #: `dev_elite.min_rate`.
+        self._devs_elite_lista: set[str] = (
+            _load_creator_file(str(self.dev_elite["lista"]))
+            if self.dev_elite.get("lista") else set()
+        )
+        if self._devs_elite_lista:
+            logger.info(
+                "Lista de devs con salida propia (dev_elite): %d wallets",
+                len(self._devs_elite_lista),
+            )
         self.dev_mediana = dev_mediana or {}
         self.dev_buy = dev_buy or {}
         self.dip = dip or {}
@@ -3986,7 +4003,9 @@ class UniversalTrader:
                 # uno, esa decision manda sobre el contador automatico. La
                 # BLACKLIST MANUAL de arriba NO se salta -- esa es una decision
                 # explicita en sentido contrario y tiene que pesar mas.
-                if self._is_dev_blocked(*_ids) and not self._es_marcado(token_info):
+                if self._is_dev_blocked(*_ids) and not (
+                    self.marcados_saltan_baneo and self._es_marcado(token_info)
+                ):
                     self._descarta(
                         token_info,
                         f"dev bloqueado por {self.rugs_para_bloquear} rug(s)",
@@ -6091,10 +6110,18 @@ class UniversalTrader:
         """True si la moneda viene de un dev de la lista de confianza."""
         if not self._devs_marcados:
             return False
-        return bool(
-            {str(token_info.user), str(getattr(token_info, 'creator', '') or '')}
-            & self._devs_marcados
-        )
+        # 7-nov: tambien la cartera que la minteo, si la lanzo una plataforma
+        # ("El dev es el q mint", ver `_identidades_del_dev`).
+        ids = {str(token_info.user), str(getattr(token_info, 'creator', '') or '')}
+        return bool((ids | self._identidades_del_dev(token_info)) & self._devs_marcados)
+
+    def _en_lista_elite(self, token_info: TokenInfo) -> bool:
+        """True si el dev esta en `dev_elite.lista` (7-nov, devs de 30k+)."""
+        lista = getattr(self, "_devs_elite_lista", None)
+        if not lista:
+            return False
+        ids = {str(token_info.user), str(getattr(token_info, 'creator', '') or '')}
+        return bool((ids | self._identidades_del_dev(token_info)) & lista)
 
     def _anota_firma(self, mint: str, sig: str | None) -> None:
         """Guarda la firma de una compra o venta para la contabilidad real."""
@@ -6527,9 +6554,11 @@ class UniversalTrader:
         # Dos formas de ser elite: por tasa de migracion o por soler pumpear
         # alto. La segunda se marco al detectar la moneda (`_mints_elite`),
         # con el historial del creador recien traido de la API.
+        _en_lista = self._en_lista_elite(token_info)
         _elite = bool(self.dev_elite) and (
             _tasa >= float(self.dev_elite.get("min_rate", 1.0))
             or str(token_info.mint) in self._mints_elite
+            or _en_lista
         )
         if _elite:
             # Escalera completa, no solo el primer escalon: para un creador con
@@ -6546,7 +6575,8 @@ class UniversalTrader:
             if _t:
                 tiers = _t
             logger.info(
-                f"{token_info.symbol}: CREADOR BUENO ({_tasa * 100:.0f}% migrado) "
+                f"{token_info.symbol}: CREADOR BUENO "
+                f"({'en la lista de 30k+' if _en_lista else f'{_tasa * 100:.0f}% migrado'}) "
                 f"-> stop {float(self.dev_elite.get('stop_loss_percentage', 0)) * 100:.0f}% "
                 f"y escalera propia"
             )

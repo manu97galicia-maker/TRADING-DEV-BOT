@@ -150,3 +150,49 @@ def test_un_dev_vetado_que_mintea_por_plataforma_no_se_compra(monkeypatch, tmp_p
     # La plataforma sola no veta a nadie.
     otra = SimpleNamespace(mint=Pubkey.new_unique(), user=PLATAFORMA, creator=PLATAFORMA, symbol="O")
     assert not UniversalTrader._is_dev_blocked(yo, *UniversalTrader._identidades_del_dev(yo, otra))
+
+
+# --- Lista de devs buenos (7-nov) ---------------------------------------
+
+
+def _yo_con_listas(marcados=(), elite=()):
+    yo = object.__new__(UniversalTrader)
+    yo._devs_marcados = set(marcados)
+    yo._devs_elite_lista = set(elite)
+    return yo
+
+
+def test_un_dev_de_la_lista_que_mintea_por_plataforma_cuenta_como_marcado(monkeypatch):
+    persona, mint = Keypair().pubkey(), Pubkey.new_unique()
+    monkeypatch.setattr(pumpfun_dev, "_dev_por_mint", {str(mint): str(persona)})
+    ficha = SimpleNamespace(mint=mint, user=PLATAFORMA, creator=PLATAFORMA, symbol="P")
+    assert UniversalTrader._es_marcado(_yo_con_listas(marcados={str(persona)}), ficha)
+    assert not UniversalTrader._es_marcado(_yo_con_listas(marcados={"otro"}), ficha)
+
+
+def test_la_lista_elite_se_reconoce_por_cualquier_identidad():
+    persona = Keypair().pubkey()
+    ficha = SimpleNamespace(mint=Pubkey.new_unique(), user=persona, creator=persona, symbol="E")
+    assert UniversalTrader._en_lista_elite(_yo_con_listas(elite={str(persona)}), ficha)
+    assert not UniversalTrader._en_lista_elite(_yo_con_listas(), ficha)
+
+
+def test_los_marcados_no_se_saltan_el_baneo_por_rugs_si_se_pide():
+    from pathlib import Path
+
+    src = (Path(__file__).resolve().parents[1] / "src/trading/universal_trader.py").read_text()
+    assert "self.marcados_saltan_baneo and self._es_marcado(token_info)" in src
+    runner = (Path(__file__).resolve().parents[1] / "src/bot_runner.py").read_text()
+    assert 'marcados_saltan_baneo=cfg["trade"].get("marcados_saltan_baneo", True)' in runner
+
+
+def test_el_trader_carga_la_lista_elite_del_yaml(tmp_path, monkeypatch):
+    import json
+
+    lista = tmp_path / "e.json"
+    w = str(Keypair().pubkey())
+    lista.write_text(json.dumps({"wallets": [{"wallet": w}]}))
+    from trading import universal_trader as ut
+
+    cargado = ut._load_creator_file(str(lista))
+    assert cargado == {w}

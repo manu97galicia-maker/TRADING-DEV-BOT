@@ -54,7 +54,8 @@ def test_dev_con_minimo_un_uno_por_ciento_de_migradas() -> None:
     # No admite rutas alternativas (marcados o mediana).
     assert dev["compra_inmediata"] is True
     assert dev["timeout_seg"] >= 9
-    assert dev["strict_only"] is True
+    # 7-nov: en false para que la lista de 15k+ compre sin el 10%.
+    assert dev["strict_only"] is False
     # 6-nov: "pero bloc dev rugs" -> vuelven la blacklist y el auto-baneo.
     assert CFG["filters"]["ignorar_listas_de_devs"] is False
 
@@ -128,7 +129,7 @@ def test_plazas_que_el_nodo_vigila_y_reserva_para_vender() -> None:
 
 
 def test_salida_del_4_nov() -> None:
-    """TP 45% recupera lo invertido; el resto en 4 tramos hasta 20k."""
+    """TP 38% recupera lo invertido +10%; el resto en 5 tramos hasta 19k."""
     t = CFG["trade"]
     # 6-nov: "0.15 por compra", "0.1 compra" y por la noche "compre 0.25 sol".
     # En SOL fijos no depende del precio de SOL.
@@ -138,22 +139,21 @@ def test_salida_del_4_nov() -> None:
     assert t["fraccion_saldo"] == 0.35
     assert t["fraccion_base"] == "libre"
     assert t["stop_loss_percentage"] == 0.25
-    # 6-nov: "el tp recuperamos iniciales al hacer 45%".
-    assert t["take_profit_percentage"] == 0.45
-    # Lo vendido en el TP1 vale justo lo invertido: 1,45 x fraccion = 1.
-    assert abs(1.45 * t["take_profit_sell_percentage"] - 1.0) < 1e-9
+    # 7-nov: para los devs normales, "take profit como teniamos" (+38%,
+    # recupera lo invertido +10%).
+    assert t["take_profit_percentage"] == 0.38
+    assert abs(1.38 * t["take_profit_sell_percentage"] - 1.10) < 1e-9
     # Ningun otro peldano de porcentaje: los tramos de MC solo se arman
     # cuando TODOS los de porcentaje han saltado, y un tp2 lo retrasaria.
     for n in range(2, 7):
         assert f"tp{n}_gain" not in t and f"tp{n}_sell" not in t
     assert "tp_extra" not in t
-    # 6-nov por la noche: "el resto lo vendemos en 44 partes hasta los 20k"
-    # (4 partes iguales).
+    # 7-nov: los 5 tramos hasta 19k del 6-nov por la tarde.
     tramos = t["mc_take_profit_tiers"]
-    assert [x["target_mc"] for x in tramos] == [8000, 12000, 16000, 20000]
+    assert [x["target_mc"] for x in tramos] == [7000, 9000, 12000, 15000, 19000]
     resto = 1 - t["take_profit_sell_percentage"]
-    for x in tramos:
-        assert abs(x["sell"] - resto / 4) < 1e-9
+    for x, parte in zip(tramos, [0.30, 0.30, 0.15, 0.15, 0.10], strict=True):
+        assert abs(x["sell"] - resto * parte) < 1e-9
     # Entre el TP1 y los tramos se vende el 100%: no queda polvo.
     assert t["take_profit_sell_percentage"] + sum(x["sell"] for x in tramos) >= 1.0
 
@@ -272,3 +272,24 @@ def test_tras_el_tp1_el_stop_va_al_precio_de_compra() -> None:
     t = CFG["trade"]
     assert t["stop_a_entrada_tras_tp"] is True
     assert t["margen_stop_tras_tp"] == 0.0
+
+
+def test_devs_buenos_compran_y_los_de_30k_salen_distinto() -> None:
+    """7-nov: lista de 15k+ que compra sin el 10%; los de 30k+ recuperan al
+    +45% y dejan correr el resto en 4 ventas (30k/45k/60k/80k)."""
+    import json
+
+    t, f = CFG["trade"], CFG["filters"]
+    assert t["devs_marcados"] == "devs_buenos_15k.json"
+    assert t["marcados_saltan_baneo"] is False
+    raiz = FICHERO.parent.parent
+    buenos = {x["wallet"] for x in json.loads((raiz / t["devs_marcados"]).read_text())["wallets"]}
+    elite = {x["wallet"] for x in json.loads((raiz / f["dev_elite"]["lista"]).read_text())["wallets"]}
+    assert elite <= buenos and len(elite) < len(buenos)
+    e = f["dev_elite"]
+    assert e["min_rate"] > 1  # nadie entra por su tasa, solo por la lista
+    assert e["take_profit_percentage"] == 0.45
+    assert abs(1.45 * e["take_profit_sell_percentage"] - 1.0) < 1e-9
+    assert [x["target_mc"] for x in e["mc_take_profit_tiers"]] == [30000, 45000, 60000, 80000]
+    assert e["take_profit_sell_percentage"] + sum(x["sell"] for x in e["mc_take_profit_tiers"]) >= 1.0
+    assert e["stop_loss_percentage"] == t["stop_loss_percentage"]

@@ -72,6 +72,16 @@ trade:
   # Para que el nodo las vigile todas hubo que subir node.max_rps de 12 a 14
   # (ver abajo).
   max_posiciones: 7
+  # DEVS BUENOS GUARDADOS, pedido el 7-nov: "Junta en una lista todos los
+  # buenos dev que tenemos guardados que suelen superar 15k mc" + "tambien
+  # para comprar". A los de esta lista se les compra AUNQUE NO LLEGUEN al 10%
+  # de migradas (para eso `pumpfun_dev.strict_only: false`). Siguen mandando
+  # la edad (8 s), sin mayhem, la blacklist manual y el auto-baneo por rugs.
+  devs_marcados: "devs_buenos_15k.json"
+  # Los marcados NO se saltan el auto-baneo por rugs ("bloc dev rugs",
+  # 6-nov). Sin esta linea se lo saltarian (es lo que hace el codigo por
+  # defecto, pensado para otras estrategias).
+  marcados_saltan_baneo: false
   max_real_buys: 1000
   reiniciar_tanda: FALSE
   # DESLIZAMIENTO 35% AL COMPRAR Y AL VENDER, pedido el 6-nov: "Pon buy
@@ -91,37 +101,40 @@ trade:
   exit_strategy: "tp_sl"
   # SALIDA (4-nov). Stop -25%.
   #
-  # TP1 A +45%, RECUPERA LO INVERTIDO, pedido el 6-nov por la noche: "el tp
-  # recuperamos iniciales al hacer 45%". Venia de +38% recuperando lo
-  # invertido +10%.
-  #     1 / 1,45 = 0,6896551724  -> vende el 68,97% de la posicion.
-  #     Con 0,25 SOL: vende 0,25 x 1,45 x 0,6897 = 0,25 SOL (lo puesto).
-  #     Queda el 31,03% de la posicion, ya pagado.
+  # DOS SALIDAS SEGUN EL DEV, pedido el 7-nov: "mantén la estrategia actual
+  # ... take profit como teniamos; si en la lista hay alguno que supere
+  # habitualmente los 30k haces lo de recuperar iniciales al 45% de ganancia
+  # y dejas correr el resto en cuatro ventas".
   #
-  # ESE 31,03% SALE EN CUATRO PARTES IGUALES HASTA LOS 20k, pedido a la vez:
-  # "el resto lo vendemos en 44 partes hasta los 20k" (leido como 4 partes).
-  #     8.000 $ / 12.000 $ / 16.000 $ / 20.000 $ -> un 25% del resto cada uno
-  #     (7,759% de la posicion en cada tramo).
-  # Los niveles intermedios no se dijeron: Claude los repartio por igual
-  # hasta los 20k; se pueden cambiar. Venia de cinco tramos 7k-19k.
+  # 1) LA DE SIEMPRE (aqui abajo), para todos menos los de devs_30k.json. Es
+  #    la del 6-nov por la tarde (Manu eligio "+38% y 5 tramos a 19k"):
+  #    TP1 a +38% vende el 79,71% (1,10 / 1,38): recupera lo invertido +10%.
+  #    El 20,29% que queda sale por market cap:
+  #        7.000 $ -> 30%   9.000 $ -> 30%   12.000 $ -> 15%
+  #       15.000 $ -> 15%  19.000 $ -> 10%   (del resto)
+  # 2) LA DE LOS DEVS DE 30K+ (filters.dev_elite, mas abajo): TP1 a +45%
+  #    vende el 68,97% (1 / 1,45): recupera justo lo invertido. El 31,03%
+  #    que queda, en 4 partes iguales a 30k / 45k / 60k / 80k (Manu eligio
+  #    estos niveles).
   # Los porcentajes son DE LA POSICION ORIGINAL (universal_trader.py: "Sell
   # fractions are relative to the original buy"), y los tramos solo se arman
-  # cuando ya ha saltado el TP1.
-  # Los 20k SI son dolares de verdad: este market cap se calcula con el
-  # precio de SOL del momento, no con el de 91,24 del tope de entrada.
+  # cuando ya ha saltado el TP1. Los market caps son dolares de verdad (precio
+  # de SOL del momento).
   stop_loss_percentage: 0.25
-  take_profit_percentage: 0.45
-  take_profit_sell_percentage: 0.6896551724
+  take_profit_percentage: 0.38
+  take_profit_sell_percentage: 0.7971014493
   mc_take_profit_tiers:
-    - target_mc: 8000
-      sell: 0.0775862069
+    - target_mc: 7000
+      sell: 0.0608695652
+    - target_mc: 9000
+      sell: 0.0608695652
     - target_mc: 12000
-      sell: 0.0775862069
-    - target_mc: 16000
-      sell: 0.0775862069
+      sell: 0.0304347826
+    - target_mc: 15000
+      sell: 0.0304347826
     # El ultimo redondea hacia arriba para que no quede polvo sin vender.
-    - target_mc: 20000
-      sell: 0.0775862070
+    - target_mc: 19000
+      sell: 0.0202898552
   # TRAS EL TP1 EL STOP SE MUEVE AL PRECIO DE COMPRA, pedido el 6-nov por la
   # noche: "si toca el tp1 el sl se mueve al precio de compra". Venia de
   # entrada +3%.
@@ -355,8 +368,30 @@ filters:
     min_rate: 0.10
     compra_inmediata: true
     timeout_seg: 9
-    # Prohíbe rutas alternativas (marcados o mediana): todos deben pasar la regla.
-    strict_only: true
+    # EN FALSE DESDE EL 7-NOV: los devs de `trade.devs_marcados` (la lista de
+    # 15k+) compran sin pasar la regla del 10%; el resto si la tiene que
+    # pasar. La "puerta de mediana" sigue apagada (no hay `dev_mediana`).
+    strict_only: false
+
+  # SALIDA PROPIA PARA LOS DEVS DE 30K+ (7-nov), ver la explicacion junto al
+  # take profit. Solo la usan los devs de `lista`: min_rate 2.0 (un 200%)
+  # hace que nadie entre aqui por su tasa de migradas.
+  dev_elite:
+    lista: "devs_30k.json"
+    min_rate: 2.0
+    stop_loss_percentage: 0.25
+    take_profit_percentage: 0.45
+    take_profit_sell_percentage: 0.6896551724
+    mc_take_profit_tiers:
+      - target_mc: 30000
+        sell: 0.0775862069
+      - target_mc: 45000
+        sell: 0.0775862069
+      - target_mc: 60000
+        sell: 0.0775862069
+      # El ultimo redondea hacia arriba para que no quede polvo sin vender.
+      - target_mc: 80000
+        sell: 0.0775862070
 
 cleanup:
   mode: "post_session"

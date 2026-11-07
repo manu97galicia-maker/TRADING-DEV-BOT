@@ -1,0 +1,4761 @@
+{
+ "_README": "DEVS DE 30K+: los de devs_buenos_15k.json con mediana de pico >= 30.000 $. Pedido el 7-nov: 'si en la lista hay alguno que supere habitualmente los 30k haces lo de recuperar iniciales al 45% de ganancia y dejas correr el resto en cuatro ventas'. dev1 les aplica la salida de filters.dev_elite. Sacada de las listas guardadas en el repo (Dune, GMGN y API de pump.fun, julio-septiembre de 2026), sin los de blacklist_devs.json. `mediana_pico_usd` es la mediana del pico de sus monedas segun esas listas: OJO, 221 devs llevan 31.054 $, que en las listas de Dune es el valor de 'curva completada' (o un relleno en giga200k), no un pico medido. No se ha comprobado si siguen activos: para eso, deploy/macro_devs.py.",
+ "_count": 491,
+ "wallets": [
+  {
+   "wallet": "ANq7FDQrELwS9nMcT5foN9EZn8hR1SFHjjswcPnHuS1s",
+   "mediana_pico_usd": 654500,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "9zANeLtvaZb3ygsUPghvMAGwtT5TV6m5kyYXwUxo66JF",
+   "mediana_pico_usd": 504633,
+   "mejor_pico_usd": 504633,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "AekAehYSS9FGNSRDWNGPnG8JzUvWd6VjRe4H1JGyeNw4",
+   "mediana_pico_usd": 501340,
+   "mejor_pico_usd": 501340,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "6h4Mk1hhuQpUxSKZaSEX6RC23C77Bpi3ZvWmdLQkEMyv",
+   "mediana_pico_usd": 464600,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "EfoED7hXLGQWMjPGASRygT8nj22iSrjwmkVrMRzyYwDS",
+   "mediana_pico_usd": 436403,
+   "mejor_pico_usd": 436403,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "EWUJ8uLv1u5zgTALibfPaidgBGpAphD44bXdKhUguAcX",
+   "mediana_pico_usd": 396174,
+   "mejor_pico_usd": 396174,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "yHCxHBEaJW5tbndqC8JciSThr7U1cqLpdcsvHcx6PRe",
+   "mediana_pico_usd": 386800,
+   "mejor_pico_usd": 14401720,
+   "listas": [
+    "top_devs",
+    "top_devs_40k",
+    "top_devs_elite",
+    "top_devs_final",
+    "top_devs_frecuentes11k",
+    "top_devs_freq3x",
+    "top_devs_giga200k",
+    "top_devs_highmedian",
+    "top_devs_init4k",
+    "top_devs_init5k16k",
+    "top_devs_med12k",
+    "top_devs_vol",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "FbvwYxhZCsxajqadsy8hdUWnfFLy8tfmadNPXbvGnUwk",
+   "mediana_pico_usd": 343321,
+   "mejor_pico_usd": 343321,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "GUYDnqtypjFp9zpf3yekWVXBFUTueq2kbRXLyi6jBmUJ",
+   "mediana_pico_usd": 314765,
+   "mejor_pico_usd": 314765,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "D6nDmCHzYXDAuDUNuAVdCFQuBp8jDNDbwndkT5Zpukx7",
+   "mediana_pico_usd": 314098,
+   "mejor_pico_usd": 314098,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "FJ7s5greCThqqse4KJe87xeWs8ZqCC2tpxAQGNkZms2G",
+   "mediana_pico_usd": 309815,
+   "mejor_pico_usd": 309815,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "6TyCCiF63ik3fcueJknuDCNGsgvgpH3dX5brkhNN2eJw",
+   "mediana_pico_usd": 297051,
+   "mejor_pico_usd": 297051,
+   "listas": [
+    "top_devs_200",
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "WzzaBdMfb2DyPaqrUzisVUBoDAREqndA5sevDsFAwc3",
+   "mediana_pico_usd": 290592,
+   "mejor_pico_usd": 290592,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "9bRXg6zNYB5uW1JEZdbpKBVZLQRyRDXNnB5Ugi1nLQm7",
+   "mediana_pico_usd": 290200,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "3RLyeLsweSeDsXJHZRUEvpGbxYmHBVi4Mn698rGS52nk",
+   "mediana_pico_usd": 278545,
+   "mejor_pico_usd": 278545,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "7cPLfuCaE5kvE84ZXLybN5EZwZfgCm3ZS36AzNDyhUvp",
+   "mediana_pico_usd": 275289,
+   "mejor_pico_usd": 275289,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "4GJfrpbJ1czeQF6Ays1dGwoCcCyw5xu7PaW9x4ZmhR4V",
+   "mediana_pico_usd": 254554,
+   "mejor_pico_usd": 254554,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "BDuRByqSPQc6Pq77Y3M1cFRFey5gsN2oYWU7Si51THBi",
+   "mediana_pico_usd": 247138,
+   "mejor_pico_usd": 247138,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "5HkPqTxBYFwTkPpozJLMnsdeXDH6u3U3LdJ6o3hyCqsX",
+   "mediana_pico_usd": 246461,
+   "mejor_pico_usd": 246461,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "25NYL1qiVpD649mf6DzdCGyoGpVzngH2DggKe2FxpnZC",
+   "mediana_pico_usd": 234240,
+   "mejor_pico_usd": 234240,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "98R24arWkFnGeiQcpKhQZ1Tu9vcFyn2m7kZMzbyhphxZ",
+   "mediana_pico_usd": 230724,
+   "mejor_pico_usd": 230724,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "GWpkjZnjEkYf1gi5RqwFTnebjkwuVUdPzFXZ4ptuUZX6",
+   "mediana_pico_usd": 223479,
+   "mejor_pico_usd": 223479,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "GtcQkJQv3HXiBYhqe6CLx4r7FERRaoCBtrkyxiLN2Sfg",
+   "mediana_pico_usd": 221324,
+   "mejor_pico_usd": 221324,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "HrVGpvhB31KyBWRVfA3RgpuGK1eWmP7hiDiNk6gwqSyX",
+   "mediana_pico_usd": 212340,
+   "mejor_pico_usd": 212340,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "4zLJ9BCwcfVCqmYRAko2BY3kSrweTJjTanKgDXP7erQA",
+   "mediana_pico_usd": 210604,
+   "mejor_pico_usd": 210604,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "AaGXt84kAGDKm1Fty95APfrM4sirgK2vW3pXkR4PFAWL",
+   "mediana_pico_usd": 204516,
+   "mejor_pico_usd": 204516,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "FVZRwUp6E4m9jV4VumF8q7m8q3mF9fpikRrJSCCfFAdP",
+   "mediana_pico_usd": 204418,
+   "mejor_pico_usd": 204418,
+   "listas": [
+    "top_devs_200",
+    "top_devs_40k",
+    "top_devs_final",
+    "top_devs_freq",
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "4Q5LLWkgkpJ4McQ5C16fj5szFAhXEpqBUmYtpRZnAUei",
+   "mediana_pico_usd": 202800,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "Cx3CBLZrBiAZUCz5KCidKKsPhuExmHVWrz67ymE1a3gk",
+   "mediana_pico_usd": 194400,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "B7jDgX4GHRZbmykWqvNaNmqbGU4F9ebWKzFaaDyRiKuC",
+   "mediana_pico_usd": 191675,
+   "mejor_pico_usd": 285249,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "BmCzTL9wyC5jJqzdxVHWpfK4Qq49ELfizsgLkLTbP3wA",
+   "mediana_pico_usd": 185926,
+   "mejor_pico_usd": 185926,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "HsZzybS3t5TBNCbzFnJsaDHfZFSDGTCdhUaPXLPNnBGw",
+   "mediana_pico_usd": 185749,
+   "mejor_pico_usd": 185749,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "FBuoyRfWiFC9gCp4yX2ByVWvA4yy3hPRqAJAXab1VJvG",
+   "mediana_pico_usd": 179568,
+   "mejor_pico_usd": 179568,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8E5krQXH5YsSrB8sZnEyzPkJ9GLgRyJ25x7HJ6AiVC35",
+   "mediana_pico_usd": 175858,
+   "mejor_pico_usd": 175858,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "GeBJSHK4WsGrz2HRvTbqvWGx4JRMpHfJG2ikzrYBDuwR",
+   "mediana_pico_usd": 168300,
+   "mejor_pico_usd": 43594694,
+   "listas": [
+    "top_devs",
+    "top_devs_40k",
+    "top_devs_elite",
+    "top_devs_final",
+    "top_devs_giga200k",
+    "top_devs_highmedian",
+    "top_devs_init4k",
+    "top_devs_init5k16k",
+    "top_devs_med12k",
+    "top_devs_vol",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "2WvVyBL778JRaZfmPanZiyNfB8iFEapMmQb4j5tjjamH",
+   "mediana_pico_usd": 162748,
+   "mejor_pico_usd": 162748,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "2k28LJ9sTew7FFhPpqE72FzEK7MveB54iLBRcTVTP6Ee",
+   "mediana_pico_usd": 159263,
+   "mejor_pico_usd": 159263,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "9h6zgrGVZmYRRTkYrybCRNfcwrsFwihSE7rKfJxPV8UV",
+   "mediana_pico_usd": 149539,
+   "mejor_pico_usd": 149539,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "6Z9eqgpWq9jeAzKySh9GByi6Hqbc4qtWyfiEPKJqtLX6",
+   "mediana_pico_usd": 149470,
+   "mejor_pico_usd": 149470,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "5J18ijLDc6cjmgLPvno6gd9DZoeBrF4PyJtNSd2dYTeR",
+   "mediana_pico_usd": 144793,
+   "mejor_pico_usd": 144793,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "2SMsLWpRreXu3sgf5wu4Ag1wahkGXjiFfbd7bNqWVgZw",
+   "mediana_pico_usd": 143038,
+   "mejor_pico_usd": 143038,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "6zHMQY4C28CjdnokTzfF3m5wUS9viuTN9gEA5x62EKWm",
+   "mediana_pico_usd": 141917,
+   "mejor_pico_usd": 141917,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "BaMPdYP4h3uk46R1zNcX3QY4LU9iJDJfhsZPHg19DYhS",
+   "mediana_pico_usd": 138480,
+   "mejor_pico_usd": 138480,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "BjWoNrZZpdgB9wYaxSWWMzWthgWwBKVKX8h8EraH6gGL",
+   "mediana_pico_usd": 138311,
+   "mejor_pico_usd": 138311,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "LJ1pquLZQS6qGyduqokob12NVXCLwt1ZiLFXdin2VWG",
+   "mediana_pico_usd": 135073,
+   "mejor_pico_usd": 135073,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "LobKMPevxdSxTNQPwNk4yMRmLy5avBQjZwU1VRnrWK9",
+   "mediana_pico_usd": 129601,
+   "mejor_pico_usd": 129601,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "D2zmAGNauANjQTyUH6enyH3xnGGFJjfgT1Qi8AK1sbQe",
+   "mediana_pico_usd": 128549,
+   "mejor_pico_usd": 128549,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "DqJdZcTCXtMx6H6SZMV2CSBLVdfvdHG9rLciJB1VoLTd",
+   "mediana_pico_usd": 127700,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "71uPJ1Gve47gYcqQQQERu2roWCiAgaCZ1WpEwV1bwQ65",
+   "mediana_pico_usd": 127078,
+   "mejor_pico_usd": 127078,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "HyYNVYmnFmi87NsQqWzLJhUTPBKQUfgfhdbBa554nMFF",
+   "mediana_pico_usd": 126300,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "7tpV8EimanbqPqBbZD1ccMFNmtE8kxyHxn9gD1dZfagf",
+   "mediana_pico_usd": 126027,
+   "mejor_pico_usd": 126027,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "2AYisgaE4v6A6p9xqH129TSgdTsfHWqBzaucoLqsFzT3",
+   "mediana_pico_usd": 125549,
+   "mejor_pico_usd": 125549,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "5S9AhheNdznBbquW8XNCWnmGyyvB12pdCYSL5znLrCQm",
+   "mediana_pico_usd": 121371,
+   "mejor_pico_usd": 121371,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "2fMnvgdqUAhuRRxgYg4mRKYivZmQ4tMuSg7sM9UK1Fwt",
+   "mediana_pico_usd": 117677,
+   "mejor_pico_usd": 117677,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "Gp9vuVeszvLbMQbF1CN4ejGnbozVf7XWq11GmukXJ5yX",
+   "mediana_pico_usd": 116274,
+   "mejor_pico_usd": 116274,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "6YdM3DDL3bXXBqsWwAG7YziCjqcVBxDpuoBE88RMWqvh",
+   "mediana_pico_usd": 111776,
+   "mejor_pico_usd": 111776,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8Svft1iJw5ahVqDZ5xovsvJZrZgYo58EzhezGL6Yna2r",
+   "mediana_pico_usd": 111082,
+   "mejor_pico_usd": 111082,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "GSqUwnkFu8PZRW8xGDNNC4EsAWBQSeKut4xkEeojPG29",
+   "mediana_pico_usd": 111002,
+   "mejor_pico_usd": 111002,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "GgL7cVm8pmFUxTQVZZBNHf819ypXejWkaH21n3nP176A",
+   "mediana_pico_usd": 105098,
+   "mejor_pico_usd": 105098,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "BJAHmSvP1WxWUJoDKS3fxQ9yXnsytHv6thM5XahEuQdy",
+   "mediana_pico_usd": 104413,
+   "mejor_pico_usd": 104413,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "DENxVY85EjLQMGGcbCDhs41phm8R7RocA1bXCq63tbLg",
+   "mediana_pico_usd": 104226,
+   "mejor_pico_usd": 104226,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "9LAvAH3CV8BT7HrBgASQS2Mnt4GHpqsFaQkQSEm4pksg",
+   "mediana_pico_usd": 104052,
+   "mejor_pico_usd": 104052,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "5FrVb3JwBvyh2kqnkyr1khyZkiuLh3f6mdY53FzGyuCo",
+   "mediana_pico_usd": 103791,
+   "mejor_pico_usd": 103791,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "AB5t2m6WW5Fv2V37eXtbTfKk46cvSvwVGwjNGAvVEe1U",
+   "mediana_pico_usd": 99565,
+   "mejor_pico_usd": 99565,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "7eymc4NRwBZxtCyoUGRVii2taSX2sEpCeRyM5KmHCtDq",
+   "mediana_pico_usd": 98762,
+   "mejor_pico_usd": 98762,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "HQU8B3kDbc72RF6XCFccJUMezVtKj8wsucHnLwmBhCCo",
+   "mediana_pico_usd": 98022,
+   "mejor_pico_usd": 98022,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8gsx257NbfXFve14fzWT2jTG6TXB6AukAEjUXTANMjk",
+   "mediana_pico_usd": 95691,
+   "mejor_pico_usd": 308479,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "top_devs_mayhem_66",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8X7Kgngwc6i1NdgP68tmfpfjqtn7HKQYDcdG8N7jh5mu",
+   "mediana_pico_usd": 94794,
+   "mejor_pico_usd": 94794,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "DzFtDS8N5shdCt7mVtByEJgP1LfSkBFkS9TZzuxYJyqc",
+   "mediana_pico_usd": 94252,
+   "mejor_pico_usd": 171329,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "A6DnzASpywmxUJedMHXf91ZvzpuGyZUAD7FD2qmYdzG1",
+   "mediana_pico_usd": 93200,
+   "mejor_pico_usd": 93200,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "GXqk4nhgC4x1AMuRWikd9E2ZyGqfhxH1anYXj8x4vXUx",
+   "mediana_pico_usd": 87011,
+   "mejor_pico_usd": 87011,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_mayhem",
+    "top_devs_nextbig",
+    "devs_unificados",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "5dWDBouXv78pfTz9rSdhW5RHmoX4QMfmSnXW6EuVd4fR",
+   "mediana_pico_usd": 86170,
+   "mejor_pico_usd": 86170,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "2e8R2FVFt6CYVW3V4jgtPoFG9YXaJAAZjAxpMpYYVjZp",
+   "mediana_pico_usd": 85197,
+   "mejor_pico_usd": 85197,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "4vecbYpdPP8mSyZ9AcuJZz61dHQBXodZGSnqKT3qZPjw",
+   "mediana_pico_usd": 84335,
+   "mejor_pico_usd": 84335,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "BiKEa7fnRGtRmgc9tgVoSXVacmFegB5SRhuHcrVDUk66",
+   "mediana_pico_usd": 83830,
+   "mejor_pico_usd": 83830,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_quality",
+    "devs_unificados",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "7C7LBfsiG8HmCnZA8rjnY3Arun63bzrvvmEJFbfD5Ew5",
+   "mediana_pico_usd": 83818,
+   "mejor_pico_usd": 83818,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "6JmftQxgNYn5FtjDZueBzME4Zut8CUyZ51Hz5iy6TWaQ",
+   "mediana_pico_usd": 82614,
+   "mejor_pico_usd": 82614,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "G8E8nDvWyqi9zPEprdhKDJ8ZzCuXLxumtf8wsFj559xa",
+   "mediana_pico_usd": 80078,
+   "mejor_pico_usd": 80078,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "EmuN92UeXGH1rqprTtNfyCpS4ZcvsESKrcFv2mrftVPW",
+   "mediana_pico_usd": 79725,
+   "mejor_pico_usd": 79725,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "9Di6TDgz85Wr6TbeqayLmbZMhGtn4qeNvJQj1G2gQEv8",
+   "mediana_pico_usd": 78434,
+   "mejor_pico_usd": 78434,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "CgFZN43eyvaaWLGUMZRBwwxkTVJbyZiASWmkP6hbG5gV",
+   "mediana_pico_usd": 78196,
+   "mejor_pico_usd": 78196,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "DFHBWS4D2krzZ17SGK9Ag4TpVnhbivG6P2NeExE2RTiS",
+   "mediana_pico_usd": 75403,
+   "mejor_pico_usd": 75403,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "75hhavXtXJtHwsZewQ2jUcoBbZvb9BjdzKfV9C8bygYU",
+   "mediana_pico_usd": 74577,
+   "mejor_pico_usd": 74577,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "GU4ZCZ7nfA3XBybR1G3Q5YxXoq8fTvqqtv52thQxZ1Tm",
+   "mediana_pico_usd": 74553,
+   "mejor_pico_usd": 74553,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "25jZ7EwnKfZo2DZgHM27pbU5Tf54PYG8jc7qNL3gtkxG",
+   "mediana_pico_usd": 74431,
+   "mejor_pico_usd": 74431,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "CmopVWPRtxvVXNSrbRdtFYTKf7DiRd7qRBokVBPtGqcw",
+   "mediana_pico_usd": 74178,
+   "mejor_pico_usd": 74178,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "EmyCwXtm9BRoajb6pfmmQAyKNcpav3vE9MjMF1CNuP7N",
+   "mediana_pico_usd": 72250,
+   "mejor_pico_usd": 72250,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "HssxU1tv66q1AVDSexK2rro37tjaag83y61iBTinp7ns",
+   "mediana_pico_usd": 71700,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "5RCWT2pNe79A9yMSXyW5cLbW6Z1k2rHW5Dhj8gKWZt8d",
+   "mediana_pico_usd": 71000,
+   "mejor_pico_usd": 71000,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "GaCxR55PMKsvf2fiHCqfVSBKmBC6yvn8Wm1JUhBFwyxp",
+   "mediana_pico_usd": 69282,
+   "mejor_pico_usd": 69282,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "9tbG1buzi77PRPiE9dwpWvvyAqyzBEnGfVjAGzTZsWS8",
+   "mediana_pico_usd": 68604,
+   "mejor_pico_usd": 68604,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "83gFr6LaP93SZGDCJSXeUshHRG8hoNo53vf3w2hktcAR",
+   "mediana_pico_usd": 68077,
+   "mejor_pico_usd": 68077,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "3GR8PBj4jgBDJYD4Rw7PZt7PMKogezvXeDCPUJd62zpD",
+   "mediana_pico_usd": 67852,
+   "mejor_pico_usd": 77769,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "C8FA3ZF3HxgtyJEXmMY6QmkTswxhb48Ej7K7bC2bUxMr",
+   "mediana_pico_usd": 67509,
+   "mejor_pico_usd": 287100,
+   "listas": [
+    "top_devs_mayhem"
+   ]
+  },
+  {
+   "wallet": "7FvWw8AsiQtXMm8fv1pVTbzZypmruUb7U7jW9xQoDymB",
+   "mediana_pico_usd": 67479,
+   "mejor_pico_usd": 73938,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "FZJBfVcukfGKoTUV17aZj77Zt3r2orvueifqYBzHX2tg",
+   "mediana_pico_usd": 67208,
+   "mejor_pico_usd": 67208,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "Zu6CEoQ4NjZwhDf2ir2Va8Hf8xywYCeULQdUzpHh2Rh",
+   "mediana_pico_usd": 66986,
+   "mejor_pico_usd": 66986,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "FGANY9saYt1JA2anWFW3WsCDDUgFtaXRCQF2a1VEgYEo",
+   "mediana_pico_usd": 66501,
+   "mejor_pico_usd": 66501,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "DkaeemUgAM7PvRkux3Qu7jYQ5pEW95qd9tCRGS6DoCJF",
+   "mediana_pico_usd": 66168,
+   "mejor_pico_usd": 66168,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "45eR9YB6MvSATZBJBagj17X6GKLpzFSjhkKzsvBEiGkR",
+   "mediana_pico_usd": 66056,
+   "mejor_pico_usd": 66056,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "7aqhE4nQ8rSmPPXA1Zc6oSdUTL7KVv6fwqw9jqtnQRQL",
+   "mediana_pico_usd": 64931,
+   "mejor_pico_usd": 64931,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8PAuKgUtE11cTcojeoHs8xd8WcJ8epqWnWfzZkTi8xZ1",
+   "mediana_pico_usd": 64800,
+   "mejor_pico_usd": 97083,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "top_devs_mayhem_66",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "F4a8wwXn5PXGj1bryJamDPQ1PX1aWegCCgqNvNAoZVFF",
+   "mediana_pico_usd": 64482,
+   "mejor_pico_usd": 64482,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "9ehqEy9vEbcaw1htMhHySfSHDghLAx5bsHcra5H66rxf",
+   "mediana_pico_usd": 63692,
+   "mejor_pico_usd": 63692,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "7M6j4jCWMhaYT8ZSDPWVihgRbhMkKg974Jjbe9FcHdoo",
+   "mediana_pico_usd": 63174,
+   "mejor_pico_usd": 63174,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8jwE98kZpFgz2jyRFVhfXWx3atz35dPKYAuDyCGLpsKx",
+   "mediana_pico_usd": 63087,
+   "mejor_pico_usd": 63087,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "EEkLZRz8Y6h2TbXRvLNXA5R7Fku3q5xRCoyrNvbwZBSR",
+   "mediana_pico_usd": 63049,
+   "mejor_pico_usd": 63049,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "5SLx7jYuYWi1SPD6Grk9uN3tkM4EoPGAMf32H9m53fym",
+   "mediana_pico_usd": 63020,
+   "mejor_pico_usd": 63020,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "DPiQs7yP5WnBxN7RwttMKkrndmeTzeVZ69sxeAswxm8r",
+   "mediana_pico_usd": 63000,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "EhFRXUdTnJrdRgR9pEq9zx8562oETUKosoQhSPodRe5N",
+   "mediana_pico_usd": 62737,
+   "mejor_pico_usd": 291286,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "top_devs_mayhem_66",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "2Pff8DS83GkFkvRxeEQurv639baQKtbxcyfTdqCyz7n8",
+   "mediana_pico_usd": 62538,
+   "mejor_pico_usd": 62538,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "2YopSYAYH6hyaaFAWqoVpn84g86DXLNh5yVm6zwx5Lc8",
+   "mediana_pico_usd": 62298,
+   "mejor_pico_usd": 62298,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "4H9oby1yrj35Be4WG2mrUrojzvkuTyTQQSy5uWgQ5LyW",
+   "mediana_pico_usd": 62160,
+   "mejor_pico_usd": 62160,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "3vU5HSbmB4k29ezFPYeLxLtmzG2Z5Fqph1FtegMcptYd",
+   "mediana_pico_usd": 61200,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "H4PDfcfNfPKyaQKnahRxETFkbS59iKX86K6CQvK4GWmb",
+   "mediana_pico_usd": 60412,
+   "mejor_pico_usd": 60412,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "FvLgucDoeapn3bVKBQ7XXKeUvCQqY5TiTRx459YtVLwX",
+   "mediana_pico_usd": 60294,
+   "mejor_pico_usd": 60294,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "48rDohJJntXXq46ABVmCYxRvNpY5ueDqxMzKsFD133AA",
+   "mediana_pico_usd": 60122,
+   "mejor_pico_usd": 60122,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "FX6ua5coaj9p7qa6Q6dyVZzbWshpZHm56Kikg5B6h3dq",
+   "mediana_pico_usd": 59584,
+   "mejor_pico_usd": 59584,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8jmPNzP5ioMWm4WsRsuxaYHfVc9DqjecnaVwMUSFuMJz",
+   "mediana_pico_usd": 59400,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "DUGCzqjHU7gW31V6dfeb9roKxmgohj4KiD7PvjG1zsPN",
+   "mediana_pico_usd": 57715,
+   "mejor_pico_usd": 57715,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "HZQy6u5r6eUuTjNpFtYcwZq91etdNViMwm9AJFcLnQpY",
+   "mediana_pico_usd": 57593,
+   "mejor_pico_usd": 57593,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "HXgKiy1VSKR1q6usLXR31SBTRud7soJujuB5fks879Pr",
+   "mediana_pico_usd": 56220,
+   "mejor_pico_usd": 56220,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "9NT2EX7gQGRBWCh4NVsj5UEhB8LiRYQ3ZfzdTEvRUp9n",
+   "mediana_pico_usd": 55697,
+   "mejor_pico_usd": 319758,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "62q2rQKBm8NG6cPR7SXE9tSbQ8GHtouMiCohhkMy6tvz",
+   "mediana_pico_usd": 55154,
+   "mejor_pico_usd": 55154,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "66onmcvu5jpN4dJoe9sYQYCnMbB5oWXHNAtoQfG2peki",
+   "mediana_pico_usd": 54981,
+   "mejor_pico_usd": 59548,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_elite",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "top_devs_mayhem_66",
+    "top_devs_swing",
+    "top_devs_vol",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "22YqsYaN1yKCEP2UwANennz5qwXPHwaPwFauVt6pjwjj",
+   "mediana_pico_usd": 54792,
+   "mejor_pico_usd": 54792,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "934FdU5FRg8cZCfjVSa7fBkCXf6YMdt7CcgLoBdycsPM",
+   "mediana_pico_usd": 54664,
+   "mejor_pico_usd": 54664,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "CwdLMpzzi4o92JWMe7KNm7SKW6s6W7zv6VsZHR9D7huF",
+   "mediana_pico_usd": 54161,
+   "mejor_pico_usd": 92620,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "F2v2eEBiYxNNg8R5mi38koCSg1kPUEzXFw4mzZ4EY66F",
+   "mediana_pico_usd": 54124,
+   "mejor_pico_usd": 54124,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "AdvApXKYVV1DKhzB6a78bUG4v6EyTBtN9HqjwomaY5HB",
+   "mediana_pico_usd": 53941,
+   "mejor_pico_usd": 53941,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "FakkpbrUA3Nz3EdHfWVmJPAokSrfud4T27JTxorkVfkN",
+   "mediana_pico_usd": 52722,
+   "mejor_pico_usd": 134086,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8ueqeYWqPjRTF6qHnvgzFsY75bS9GWxijwarb1Vd6BSj",
+   "mediana_pico_usd": 52234,
+   "mejor_pico_usd": 52234,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "Az7qSn6icrwRUHhUsXuug1AchT5hwNX8spnZoWzy9pE6",
+   "mediana_pico_usd": 51324,
+   "mejor_pico_usd": 51324,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "AwkDaC2n9YfdmUru8J8sFCjsDmqqj7LrpLFo3SjB9DZ4",
+   "mediana_pico_usd": 51193,
+   "mejor_pico_usd": 278030,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_elite",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "top_devs_mayhem_66",
+    "top_devs_swing",
+    "top_devs_vol",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "Biv8VF2WVQFyPAMSPRo5A6MMQ3oGANaHup17B1SvDbZV",
+   "mediana_pico_usd": 51179,
+   "mejor_pico_usd": 51179,
+   "listas": [
+    "top_devs_freq",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "ARaPhgNjEgbPyX7fHJjK1ibuq8ciW38nC6GvaRPZPM5N",
+   "mediana_pico_usd": 50203,
+   "mejor_pico_usd": 52564,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8n5mZaRoTPWi9vKQ69gUjU76yRJHmDE1Y3Wf94ttYXVa",
+   "mediana_pico_usd": 50000,
+   "mejor_pico_usd": 50000,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "H8f8v81woNTmS1qJE1ohFvP7R88JHnEDLkzLxm9uQqHG",
+   "mediana_pico_usd": 49468,
+   "mejor_pico_usd": 49468,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "GFSPsnPPZDje6ARjTcva4c1Ckzur7Gv1Q1kDsnNadg9v",
+   "mediana_pico_usd": 49297,
+   "mejor_pico_usd": 49297,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "GHR3Q8cXaooNUeQJCvkqUfNvmzg7gPXrSR78mVzdaLU2",
+   "mediana_pico_usd": 49296,
+   "mejor_pico_usd": 49296,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "DVXe2w4497e4NCGueLJ4noDdMfa5tZkfQUYwStAnKBep",
+   "mediana_pico_usd": 49208,
+   "mejor_pico_usd": 49208,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "5dUXg97Ltrjid2KVTQAb6p6PVZXBneHcgV1Z8A9xzKgg",
+   "mediana_pico_usd": 49200,
+   "mejor_pico_usd": 93053408,
+   "listas": [
+    "top_devs",
+    "top_devs_40k",
+    "top_devs_freq3x",
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "AHr3eDD1XsdiFp4gy6wzYaxHYEU6JmCLa5DF4JSUU5SQ",
+   "mediana_pico_usd": 48987,
+   "mejor_pico_usd": 48987,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "ChvbsUTY4tmbpZrigLghyomdQNFXugNkMDawv8yX5M15",
+   "mediana_pico_usd": 48947,
+   "mejor_pico_usd": 48947,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "5uMvFwE9kBRc9rz3ZAxn3rfmVnCKA3BU9P6RvbcDWpGm",
+   "mediana_pico_usd": 48178,
+   "mejor_pico_usd": 48178,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "7diK9x8TM96nyGYJH6LMw9YR83nsBi72WPGZuPhssYoE",
+   "mediana_pico_usd": 48165,
+   "mejor_pico_usd": 48165,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "Db52aBM6cwwFdzrXAUd2LYRa8htPanMvs9gW4Kiigv7p",
+   "mediana_pico_usd": 47886,
+   "mejor_pico_usd": 47886,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "CU3Vp8H9N48bh4CTttLM4EcKnuHCyGNy6neVprjLrax",
+   "mediana_pico_usd": 47620,
+   "mejor_pico_usd": 47620,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "CPcSptPN2Y7vtpE9r1Ur5RnzB8BwWz4XhoWPUNGh475h",
+   "mediana_pico_usd": 47530,
+   "mejor_pico_usd": 47530,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "1325y5zBuVAwToFo8WqZdYLvUyzxom5bu6wDiMGTy2X7",
+   "mediana_pico_usd": 47524,
+   "mejor_pico_usd": 153562,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "BeFKCT3H8DU4wUPhfekdmqfs2JV8WXowrcMtGzQrBVTG",
+   "mediana_pico_usd": 47510,
+   "mejor_pico_usd": 47510,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "GdZNWatCsddw1YfR3d6JxT9quDQMTy23U1dftzZo1mRb",
+   "mediana_pico_usd": 47455,
+   "mejor_pico_usd": 47455,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "BNBD3WaZ8vtANMYwpVh47MmoPTnWVqUWuwhxSuPwSFaA",
+   "mediana_pico_usd": 47202,
+   "mejor_pico_usd": 47202,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "3g34VEVFJEmjdCrQ8Stvb4F8616m2JGGywFWVT6adtTc",
+   "mediana_pico_usd": 46919,
+   "mejor_pico_usd": 46919,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "6eBtnv3SBzH596GUQRfJhmWpzb1FEtrkBLT21PUTZPvp",
+   "mediana_pico_usd": 46023,
+   "mejor_pico_usd": 46023,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "5KTX7LZyoewhQ2keNCNQ6qQCXW9uermzr8r5K6uss4PY",
+   "mediana_pico_usd": 45900,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "HwKvWbr7KZYQF5DK1n3HXcyKNgytbP5obrH9cDV5eChH",
+   "mediana_pico_usd": 45885,
+   "mejor_pico_usd": 176495,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_quality",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "Hi7Anr7jXamYLRPsqNxEXu4inuGJgsEjC9y1a9GEZQh",
+   "mediana_pico_usd": 45613,
+   "mejor_pico_usd": 45613,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "7hfknL5epXYEgKGZkyqwLSQY4bnwT18macVUzPM2cNhi",
+   "mediana_pico_usd": 45286,
+   "mejor_pico_usd": 45286,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "4HbXUN7orfCv8BwMoNV8YRfhXgPfM9HmmcW3FPjHTQpG",
+   "mediana_pico_usd": 45056,
+   "mejor_pico_usd": 45056,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "4x3ePr8EEryyvxRavnkJaqCPF9Pd3BxdsJTQkndYeqCZ",
+   "mediana_pico_usd": 45000,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "Fm8SfgdduQSPeBcbR5XhZGucoXCU7yAza7zsEMH5sBKR",
+   "mediana_pico_usd": 44576,
+   "mejor_pico_usd": 44576,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "5uMMx88F3WkQDNuNnUCEUD2SSzxMHjtFCPVQGapXQAn",
+   "mediana_pico_usd": 44191,
+   "mejor_pico_usd": 44191,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "HRqGhVwiv2kxVedrHieRCQP4m7AeJVzyAABQy2FP74Lu",
+   "mediana_pico_usd": 44150,
+   "mejor_pico_usd": 133884,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "CK9CwHoxWPaktHP5Cu3MfQygv3qZHjWx2D6Zye64YiCw",
+   "mediana_pico_usd": 44126,
+   "mejor_pico_usd": 44126,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "AgLiZiYM5b4gQ6eZzHvq9D5Ktrcksnp51bFdezeAFmkS",
+   "mediana_pico_usd": 43897,
+   "mejor_pico_usd": 43897,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "Hi2MsNaFUcLLysmXUTFGfgmWrLnXqcN4zf76sZXXyCk6",
+   "mediana_pico_usd": 43757,
+   "mejor_pico_usd": 43757,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "BBPcu5FRL6D3t97AtyoS44jMGsyUXDAAHUXYKr53mX4g",
+   "mediana_pico_usd": 43738,
+   "mejor_pico_usd": 43738,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "5vuXeVTTChyrPLKMTaovUJoj4nipfyEM17ef1w5mxFK2",
+   "mediana_pico_usd": 43665,
+   "mejor_pico_usd": 43665,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "3uBtTEBAasuvETs45gEN3wtxUxe3GukfhTZAhcUBXPHB",
+   "mediana_pico_usd": 43621,
+   "mejor_pico_usd": 43621,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "AYE3Yddbuu3VSehJbSfiKwJn35fK25iZysx9HwgEecrp",
+   "mediana_pico_usd": 43378,
+   "mejor_pico_usd": 43378,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "irb33boGE2xYPaFLPYxPcniLqFASD9gLvmm1Jyk7Rr6",
+   "mediana_pico_usd": 43373,
+   "mejor_pico_usd": 288957,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "AzL5i37fQq4Sb3HWUPBvAxFdqDm63ystCchJZ1FATsQf",
+   "mediana_pico_usd": 43162,
+   "mejor_pico_usd": 43162,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "GVsSpUiYGVmus7t6whSPEJc7Se8B3GnRxFZbCwBuyBju",
+   "mediana_pico_usd": 43118,
+   "mejor_pico_usd": 43118,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "AbAMLXz2Md46ZDBiCTzNg6qHqA6DHobP2qoDsgxHmo4n",
+   "mediana_pico_usd": 43005,
+   "mejor_pico_usd": 43005,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "Eay4uLXdpEXCEV6RZFkyJxKLsa153Y4B4CELApBWfsMv",
+   "mediana_pico_usd": 42970,
+   "mejor_pico_usd": 42970,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "AzRrj7Jrcy3LPZHHsRtqMMVVxd182eHmssMA1DSdFfw9",
+   "mediana_pico_usd": 42793,
+   "mejor_pico_usd": 42793,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "PHVy1BRRBDUEK36de3TsqmXh8APdHuU8nGWbMwuotqw",
+   "mediana_pico_usd": 42745,
+   "mejor_pico_usd": 42745,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "2jwNgeauRV5Uc9uerJRvzADch2A4YFasLwmtnM1Xs1An",
+   "mediana_pico_usd": 42157,
+   "mejor_pico_usd": 42157,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "Gn4Yn64PdPDoDqKnMD153NofonBEx7tL8aRpdMwMrBDn",
+   "mediana_pico_usd": 41963,
+   "mejor_pico_usd": 41963,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8KqvdWqRSNtJcdn2expTa16X9dW119jbADkZmDEAVcyS",
+   "mediana_pico_usd": 41858,
+   "mejor_pico_usd": 41858,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8LnVaugnRXtTgr3uNrpkbwFygC5KiyTZwbiXSm4J97NZ",
+   "mediana_pico_usd": 41654,
+   "mejor_pico_usd": 58346,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "top_devs_mayhem_66",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "nicom4SDQP5PpqdMzJHGA5ZtLi3A8hCZxNjC4vQTBF5",
+   "mediana_pico_usd": 41641,
+   "mejor_pico_usd": 41641,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "2KQKDA9RtgB8wfGMcnGsKMfFY2BkktG2ETMtRPSAzB8C",
+   "mediana_pico_usd": 40958,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "61p1fUje2qmvK7NBJCybpH3RQHDwuttcsf4qUgdeWp77",
+   "mediana_pico_usd": 40952,
+   "mejor_pico_usd": 46765,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "6TAzG59RepPXWUU6CN4kbK46uSKXmaCPqaoVgJVKKqbB",
+   "mediana_pico_usd": 40857,
+   "mejor_pico_usd": 40857,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "Bf2K1m5NXh5ixBJ7sCJtkPqPSKCnx3HovZZPY6h1ar5D",
+   "mediana_pico_usd": 40703,
+   "mejor_pico_usd": 40703,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "6HMqqw6gPyeSk87REhXKnZispg4iBd79uXhNvV2aoQ28",
+   "mediana_pico_usd": 40350,
+   "mejor_pico_usd": 40350,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "782rvyWR4tDCrYryTH633d2hYDBLqm6QM9z2KEpj7WfQ",
+   "mediana_pico_usd": 40347,
+   "mejor_pico_usd": 40347,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "CZTFrjBYWvLSbpHR2JkaUJ3GMJesWFQcYDf9xjF4RkrN",
+   "mediana_pico_usd": 40286,
+   "mejor_pico_usd": 40286,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "HfNAjoBTHfFzSwv7itJECPwmYWn89nBVGNe4Ek2MPRKB",
+   "mediana_pico_usd": 40283,
+   "mejor_pico_usd": 294599,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "9ZDfN3PtQVfEoNM5uA5hor2VrEjBfLWZH5QQKNNz6jB4",
+   "mediana_pico_usd": 40274,
+   "mejor_pico_usd": 50873,
+   "listas": [
+    "top_devs_40k",
+    "top_devs_mayhem",
+    "top_devs_mayhem40k",
+    "top_devs_mayhem_66",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "AtYmyXTchg5dvHvdL7QzGYDe2zzBBdw6qA7tvCV3W175",
+   "mediana_pico_usd": 40187,
+   "mejor_pico_usd": 40187,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "FNPQZV1Fa9oVFSXehceokmzyZpPF63e6Rw3W95PCwnx7",
+   "mediana_pico_usd": 40158,
+   "mejor_pico_usd": 40158,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "BhYwCvUMngwGAkgKRCfnCJoGvxCV94a6wDrjeSGrCGVQ",
+   "mediana_pico_usd": 40151,
+   "mejor_pico_usd": 40151,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "J84CBKNBWiy2JY262PF31eRjPe8e1fGtvRSHNEzA3ai8",
+   "mediana_pico_usd": 39969,
+   "mejor_pico_usd": 39969,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8UqQuf6qKEuiga8g9j8AKzFK4LrwSZXkmVNNzJwfxXKC",
+   "mediana_pico_usd": 39915,
+   "mejor_pico_usd": 88468,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "2GUFR8zBza2tKgkWvbneG7Puam66bp5kYY1ZLPwcgzfZ",
+   "mediana_pico_usd": 39813,
+   "mejor_pico_usd": 39813,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8oBHcmdrmJd3pCwnBNaV8iw7rAkP7uUHVtHVSCdQs6MZ",
+   "mediana_pico_usd": 39790,
+   "mejor_pico_usd": 110844,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "4wcLkscW59MJUAoPAu5zA6aiKMZnbBRbVf5vm8BcGeVs",
+   "mediana_pico_usd": 39600,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "5Y2TBxJLLeP3koDNmeuwnCzk7ujhKSeS5xr92314kjN",
+   "mediana_pico_usd": 39563,
+   "mejor_pico_usd": 39563,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "7SJE1j21iDY5tdr8YVYtyNhYeRNaCs2A4gCgWschLhpw",
+   "mediana_pico_usd": 39169,
+   "mejor_pico_usd": 39169,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "5KGN9FXyhsWjXT5BSHbDTNmnqQD7oK6z6F9QAQmnfZQ1",
+   "mediana_pico_usd": 38931,
+   "mejor_pico_usd": 38931,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "4VLncn9MoFbPW4y7d6cSn6p8UR71bQXrVtxXBwzaJmUF",
+   "mediana_pico_usd": 38374,
+   "mejor_pico_usd": 38374,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "HGqgnVuNxVdfCBKFA8dYpPm2snZpG5pZU7etgKHR91QT",
+   "mediana_pico_usd": 38115,
+   "mejor_pico_usd": 38115,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "G5hakqawZXFkpt1ymA6o7tCGab5hgEcAWvQ8MrdGMTD2",
+   "mediana_pico_usd": 38016,
+   "mejor_pico_usd": 38016,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "HYhQBRswzRWq5cAzLdFs1SymJoxe7W4HQzp9KaPyUQkY",
+   "mediana_pico_usd": 37567,
+   "mejor_pico_usd": 37567,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "4qMCejQTWodiqsmu1dkFx94d9sLG6Y9qnGgpQ11GrWMH",
+   "mediana_pico_usd": 37486,
+   "mejor_pico_usd": 37486,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "Gxa4JqbQgv1u7m8ASap2hSoZjw8KaxXuiNKnrdYkZcjp",
+   "mediana_pico_usd": 37432,
+   "mejor_pico_usd": 37432,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "7zQs3sdQHj6g4YWsHAzyLjdBB3ixnXFbTZJTYNMwNA4",
+   "mediana_pico_usd": 36985,
+   "mejor_pico_usd": 61480,
+   "listas": [
+    "top_devs_mayhem",
+    "top_devs_mayhem_66",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "98CWQJcUidDwbncjrApAqs9X6p6v3cWUy2qCiXmtYbbF",
+   "mediana_pico_usd": 36969,
+   "mejor_pico_usd": 36969,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "BSY59UH2CvMAcE6hRpg4wgxJ81MryBRkY9GtpJ846wzp",
+   "mediana_pico_usd": 36700,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "Em73EcDVaqhEz41gAHmedBS4KP17yCc7jdSf3FaCEZEC",
+   "mediana_pico_usd": 36650,
+   "mejor_pico_usd": 36650,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "CugoCsW9mGbF4nSA6fwsEuN7f3WkQ2g9zmHkhKg5hPSW",
+   "mediana_pico_usd": 36615,
+   "mejor_pico_usd": 36615,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "12xGbX3EfL5MKM2wcd9VJjrwCEc748xWTFkjVPjooS1d",
+   "mediana_pico_usd": 36585,
+   "mejor_pico_usd": 36585,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "CnGsXYBgBCnU3ea2qHoNSyB4zSgrD1mnuKwUiYsHBvbh",
+   "mediana_pico_usd": 36318,
+   "mejor_pico_usd": 36318,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8SGpzbiPyRBJCmDw9BeJuuHG1f6K2Bu8Aij6Wia7n1Xg",
+   "mediana_pico_usd": 36300,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "8YN82dgRnVuacjjq8uRE3W6UkNAKAbE5aPYwYYVXXvaX",
+   "mediana_pico_usd": 36047,
+   "mejor_pico_usd": 36047,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "DJsefChR1fMxUNrEFAZ1c6VaQWMwbVD1TdZGbR8oseLT",
+   "mediana_pico_usd": 35802,
+   "mejor_pico_usd": 35802,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "6bWMxJJCKgt7bBfiKJVpup7g9dwVcuxZTEkBXgcvBpcG",
+   "mediana_pico_usd": 35732,
+   "mejor_pico_usd": 35732,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "39ZPo8CUxAXQFuc57EymAKVMTYtAXYsCnAKw74BW2Rac",
+   "mediana_pico_usd": 35400,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "2ysah329PPC7FryoAouHMgRSwi3SuT1Hi5rpKYNLedKo",
+   "mediana_pico_usd": 35093,
+   "mejor_pico_usd": 35093,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "24kYTgTkZhiywxB74BSt7u8m3hknxW1dNSRecbPVcQHQ",
+   "mediana_pico_usd": 35033,
+   "mejor_pico_usd": 35033,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "4xfvL6sMf5qZBGdhLKe5LWtG31BHUFo8SScBJp8tEXUV",
+   "mediana_pico_usd": 35011,
+   "mejor_pico_usd": 35011,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "AiLPiSpv4kHAUQVa2KKEBDwNgkPzQnefDoHQEc3qrp7g",
+   "mediana_pico_usd": 34885,
+   "mejor_pico_usd": 34885,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "HPtTQ9U142PoGimtw8XCncPQ55LuF56GPCACm8wJau7",
+   "mediana_pico_usd": 34863,
+   "mejor_pico_usd": 34863,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "41sGxo3xSmydsSHsJ1QuxDLrPzt9HKJk3xNC2i7R8j8C",
+   "mediana_pico_usd": 34710,
+   "mejor_pico_usd": 34710,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8xYhNo5ihN7ZwcHjFXySYFZoiwY8fS8jzJ3kjCxhooRc",
+   "mediana_pico_usd": 34672,
+   "mejor_pico_usd": 34672,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "H7zZ8zEDvbpLhf1h77HNDu2Zkv3tJfFFYyjD2EmXwVEs",
+   "mediana_pico_usd": 34619,
+   "mejor_pico_usd": 34619,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "9Hdj2LZwajaE8Fr63hYf7ChKtg6krcgtc73WLPtMq25k",
+   "mediana_pico_usd": 34513,
+   "mejor_pico_usd": 65333,
+   "listas": [
+    "top_devs_mayhem",
+    "top_devs_mayhem_66",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "HmBmSYwYEgEZuBUYuDs9xofyqBAkw4ywugB1d7R7sTGh",
+   "mediana_pico_usd": 34136,
+   "mejor_pico_usd": 34136,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "C8uMB1zLSsaR8mjDe9NqKLPuGM5sTwUBwfVDYLRK6CL4",
+   "mediana_pico_usd": 34100,
+   "mejor_pico_usd": 34100,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8aHUpUFzrqBVQdkXbmoZQ9f2zqbPjDWaypZkXqH5n1RS",
+   "mediana_pico_usd": 34069,
+   "mejor_pico_usd": 34069,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "B9oq3QToTTQ98UpvnmkJzzhKtoDRnthqjmoTRuSnYkpx",
+   "mediana_pico_usd": 33972,
+   "mejor_pico_usd": 33972,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "DJWUJVWSkkgEE7vb5jZXyhiZkzb1KrzgEVuSx2e5JC8P",
+   "mediana_pico_usd": 33968,
+   "mejor_pico_usd": 33968,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "FM6GjyuXvFK5uSuzWMSQjnZRv4wjhNxgRd6J5TQswgvs",
+   "mediana_pico_usd": 33922,
+   "mejor_pico_usd": 33922,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "DkAcSyVc1DCtgxS8w4rncgvzTGop5SUCPgHPsZNod6yW",
+   "mediana_pico_usd": 33856,
+   "mejor_pico_usd": 33856,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "6rCzKkKyYUTEX4cw3yBS9ShLYrvPUoo9Hb67wfkhB1Wc",
+   "mediana_pico_usd": 33750,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs"
+   ]
+  },
+  {
+   "wallet": "Bu6SV1o3Xn2S1PYye8cvrqjyF9ypiwEhkz3nb5nKmYbV",
+   "mediana_pico_usd": 33697,
+   "mejor_pico_usd": 48777,
+   "listas": [
+    "top_devs_mayhem",
+    "top_devs_mayhem_66",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8hF5AY4WZBE2EGVCPFZy1NU1F2WHAVf5gaBpTAZBSfVs",
+   "mediana_pico_usd": 33639,
+   "mejor_pico_usd": 33639,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "HGbF86QWUVVGRbkDj9bQ5dVv7jNce4L9Ft9K93ZoovMH",
+   "mediana_pico_usd": 33171,
+   "mejor_pico_usd": 33171,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "Ambf9GhDoLQUPkAMKK9RM5wtgXPZ89mCiPgo8awVGT6T",
+   "mediana_pico_usd": 32753,
+   "mejor_pico_usd": 32753,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "7fLvoqbpwMHWT3iJgN8VaM2ZCA5mwhNoU9RfPYDS3F71",
+   "mediana_pico_usd": 32743,
+   "mejor_pico_usd": 32743,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "EAwrUDKnLRaPhg8dR3z22nEU5qT2wPYFa1Yzn6bUd49C",
+   "mediana_pico_usd": 32428,
+   "mejor_pico_usd": 32428,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8HCeXY1Ny37z4hxN1CCdskjR5LbPtSiTAq97pVJ2UfQ8",
+   "mediana_pico_usd": 32422,
+   "mejor_pico_usd": 32422,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "Ai7v7G2JfAGaBceCqmRg33kvEjQb66HJAMTaHmJ2vYkV",
+   "mediana_pico_usd": 32330,
+   "mejor_pico_usd": 305877,
+   "listas": [
+    "top_devs_200",
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "F45kWWvvuYn4y2dsaDeyF7U6yiCtNTMweUHL1R5EAqyc",
+   "mediana_pico_usd": 32306,
+   "mejor_pico_usd": 32306,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "3cv6Y8uFBuBv788drsLSsR5TyCaxUpuP6pqRptg2tKie",
+   "mediana_pico_usd": 32189,
+   "mejor_pico_usd": 32189,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "AFzWjnY3VX1oZTrat4Hos3jtQUm46Tdma5B9TFsdcUy5",
+   "mediana_pico_usd": 32122,
+   "mejor_pico_usd": 32122,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "7m8VaWSHn79FL1bTLuK1U4oTFTmFL2FjWHQVVNJoejrk",
+   "mediana_pico_usd": 31857,
+   "mejor_pico_usd": 31857,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "BfozXW4nZ1vkBWtioV6FzfPkg25RenSxXgoe4Se1D6Z6",
+   "mediana_pico_usd": 31849,
+   "mejor_pico_usd": 31849,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "DD6jrWx6R9Xry3tYv6RTKg1izJV6aqc8YU9ukQwPWNNg",
+   "mediana_pico_usd": 31824,
+   "mejor_pico_usd": 65430,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "J56u8DRmFogJVFyR4bHbT6HJUV5HcPCM7BBEbJyvT6ew",
+   "mediana_pico_usd": 31759,
+   "mejor_pico_usd": 31759,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "CAfguGmLukE9tBCTxbgLYa1Gu4NQKosHfHUjAqYNZEP8",
+   "mediana_pico_usd": 31758,
+   "mejor_pico_usd": 31758,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "9BFA4xqXZdcDpwi35cnaTF23VkPTszHoADWHfcyE4Gb6",
+   "mediana_pico_usd": 31527,
+   "mejor_pico_usd": 31527,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "2rnm81cudERhgG9V4fQixGYtZEAb35M9X7s8SmM714FR",
+   "mediana_pico_usd": 31447,
+   "mejor_pico_usd": 82277,
+   "listas": [
+    "top_devs_mayhem",
+    "top_devs_mayhem_66",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8BrghdJjSGfp37BJxYCTZSqpXHDL14KxSrcPGWEKPqk",
+   "mediana_pico_usd": 31281,
+   "mejor_pico_usd": 31281,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "Fi5w88cRJoHbMoyGabcswipoptUy2mFRD4Tyxtn7sujq",
+   "mediana_pico_usd": 31152,
+   "mejor_pico_usd": 31152,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "8SXM5CDjWbEhGFAPnaFRWmmwphn6qFCEsGmwc1d4HBoB",
+   "mediana_pico_usd": 31119,
+   "mejor_pico_usd": 31119,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "B6btiuEgrwa5MHNkxH7csA7paDfCXns8ZTUJr3nds3CZ",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_200",
+    "top_devs_elite",
+    "top_devs_freq",
+    "top_devs_freq3x",
+    "top_devs_highmedian",
+    "top_devs_init4k",
+    "top_devs_init5k16k",
+    "top_devs_med12k",
+    "top_devs_nextbig",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "8tr2RQBBt3hGNbKNrCwvb7MwcHsW1JDwPEkjH35U7t8w",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 293338,
+   "listas": [
+    "top_devs_200",
+    "top_devs_frecuentes11k",
+    "top_devs_freq3x",
+    "top_devs_giga200k",
+    "top_devs_init4k",
+    "top_devs_med12k",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "7ufmve7ZSFCzuNcKRunYrGtyb2Ka1MXzkWwf7jZhVsmL",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_elite_top",
+    "top_devs_final",
+    "top_devs_frecuentes11k",
+    "top_devs_freq3x",
+    "top_devs_gemas",
+    "top_devs_highmedian",
+    "top_devs_init4k",
+    "top_devs_init5k16k",
+    "top_devs_med12k",
+    "top_devs_nextbig",
+    "top_devs_swing",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "CzwWvTVn39dSd4LiVc6W9gZxgu36737M2fcX4EWhquh4",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_elite_top",
+    "top_devs_final",
+    "top_devs_gemas",
+    "top_devs_highmedian",
+    "top_devs_init4k",
+    "top_devs_init5k16k",
+    "top_devs_swing",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "J6FAJ2Pz2htqoKUD1WLZJC9RTsRuF9oQYo8RxS3s6dnH",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 28872212,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_giga200k",
+    "top_devs_med12k",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "2fjnasKeqKS63myiKHqeVjaCKGEN75U4iPv6ZjsoJ8xa",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_highmedian",
+    "top_devs_init4k",
+    "top_devs_init5k16k",
+    "top_devs_med12k",
+    "top_devs_vol",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "DAEdBmTPEKM6xkwfzC3d411QUe6coKpkND6UURa4CvHC",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_final",
+    "top_devs_highmedian",
+    "top_devs_init4k",
+    "top_devs_init5k16k",
+    "top_devs_med12k",
+    "top_devs_nextbig",
+    "top_devs_swing",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "862TYSvRYoiHAK3F3WwTRYAfuGiQaGdxedN9AGvRGWo2",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_elite_top",
+    "top_devs_final",
+    "top_devs_gemas",
+    "top_devs_gemas_mas",
+    "top_devs_highmedian",
+    "top_devs_med12k",
+    "top_devs_nextbig",
+    "top_devs_premium",
+    "top_devs_swing",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "CmCeodBTk8wCn1P3mhgEwBVyrWfLR7khrJbvfag2h6pv",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_gemas",
+    "top_devs_gemas_mas",
+    "top_devs_highmedian",
+    "top_devs_nextbig",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "55Perpb3rnWxV6LsjZux3cmtXUossXQ4PDHVm4T2tca1",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 678999,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_giga200k",
+    "top_devs_nextbig",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "GCc5qzbbN8xjARVJPovDxfKTCyeqXeeRzhwPH5csKwY6",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_elite_top",
+    "top_devs_final",
+    "top_devs_gemas",
+    "top_devs_gemas_mas",
+    "top_devs_highmedian",
+    "top_devs_nextbig",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "3fKF8cbyWKU56fpFkrQ1E6zJoAh4mqArdsPoUE6ycTKL",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_gemas",
+    "top_devs_gemas_mas",
+    "top_devs_highmedian",
+    "top_devs_nextbig",
+    "top_devs_premium",
+    "top_devs_swing",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "9PQ9kNKj4hztTN26N3JaZ1To3rZRDu6rGiyzfC4JPETw",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_gemas",
+    "top_devs_gemas_mas",
+    "top_devs_highmedian",
+    "top_devs_nextbig",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "9C5qBGDMDrqU5SiJeWVvb3zy7uFaUQEgYqLinEhtZBSJ",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 9856346,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_giga200k",
+    "top_devs_highmedian",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "CugnUeoVe2oX6ER8vNSFy1pTYF6ZDVJTkHbwTSYtiCZs",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_gemas",
+    "top_devs_gemas_mas",
+    "top_devs_highmedian",
+    "top_devs_win60"
+   ]
+  },
+  {
+   "wallet": "2dU5gswrNoHXXTbJycpE3ZMUeoVEW9BEFMNKkhjRTByt",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_gemas_mas",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "top_devs_win60"
+   ]
+  },
+  {
+   "wallet": "7XagxGfFDhQKhQV1bEcHcDjnMjpQcwgwCAorvrAmyea8",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_gemas_mas",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "B8Y2oTnKQwerkbPeViXsiYbB32HYmnXuzgrzzHV3tE4R",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_elite_top",
+    "top_devs_final",
+    "top_devs_swing",
+    "top_devs_vol",
+    "top_devs_win60"
+   ]
+  },
+  {
+   "wallet": "9LUgfzet43ZdwdAzbvV5msQjGzx9g6sqvtgLaQyQAEog",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_elite_top",
+    "top_devs_final",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "ArSrjXsRUsLMjBTVKPrZsSKZtLAswMqC5C4G9t4NuNgo",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 14776254,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_giga200k",
+    "top_devs_nextbig",
+    "top_devs_vol",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "2hcbvVnPutVmXW6TbNEx6U1KuMiyFPWKwSjknzwCYiwX",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_elite_top",
+    "top_devs_final",
+    "top_devs_nextbig",
+    "top_devs_swing",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "3RbD4pN9NXnUzij4VSt5U7R8yESUaTTPbY7y26vVZDNe",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "4LXAFVZUUTdcqLCmgHq2NZmgLB2arRxp9wuYVa6rnx5C",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_elite_top",
+    "top_devs_final",
+    "top_devs_gemas_mas",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "top_devs_win60"
+   ]
+  },
+  {
+   "wallet": "EaZC5U93bbSn44kvuAno75qc3TeLbcPNDP58JVsYZDb7",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 73181820,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_giga200k",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "HoKiWhcU3YBN9f5Uxj1bBLkcWkw5iDEQbPiiU6EnYCwQ",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_elite_top",
+    "top_devs_final",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "top_devs_premium",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "2Vgmp9bTNzvj1D5XaFNdUtNDxaRFH2UGPJXrcUPVGj1B",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_elite_top",
+    "top_devs_final",
+    "top_devs_gemas_mas",
+    "top_devs_premium",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "FxUrNcTKrTzYRk4W4MxygXRtNmE8r3S5Vm7kMtoP9cdr",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 273262819,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_giga200k",
+    "top_devs_nextbig",
+    "top_devs_vol",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "7VzKD7nTQg9ypcJtT1cA34aa9wLGRHzjGvZNQx53r8WA",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "top_devs_premium",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "4LUcoS2imfQ14t4dmH273d6FV7Lx16ihV1wdagEdYjmR",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 18290229,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_giga200k",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "CKPaVEHqGNB8BUdWPr6J4PsbuHXs8EN455EkEtEYQCpk",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 36587473,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_giga200k",
+    "top_devs_nextbig",
+    "top_devs_vol",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "GF3aWh5zc5EX2LGhLDmVpPPrKdDN1qo5kXHbStEkXwyS",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 23463509,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_giga200k",
+    "top_devs_nextbig",
+    "top_devs_vol",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "D8PCqJxjSK9MzP2v4xFD4HxtVvLXEDjYnvUAixC9dryH",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "HWqpVCy2UDiY7N79qVumTMUeaXVXSQyDpoMmQ46ug1pX",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 49334097,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_giga200k",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "mq4rkHr5SxAqEVkfD4SXbNiX6WYqQSyA6nKzCUQuE93",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "5QLHSwFsXGhWNMz2mpVhkcFFUJhHW63rYXXoG52vPoCu",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "CiJSXoLCDJ2UHdRk4bTuXCESvrmjo27iD5NUQbMgiByg",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_gemas_mas",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "BC4NquoxAy4f5AHzJdpr5p4SFvSzSGaZc7BSeff7uFDb",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "CNHwH89QVwY6LdSTRRdYVdCEoo2YSGqNh51R136HejQn",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 10251012,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_giga200k",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "FFcNgJj4SV2eDMyDJRk8EWBX7w14hH3KUqVu77C7HtjQ",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "top_devs_premium",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "Gjp136Q24ikiMFX3HdioqzVFmVK3sqb9wePZwGmCJfxi",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_nextbig",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "HwgrAEFZgHqbeZJc4LfJpg3T4YQmChDuH2bNHsYQU9g3",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 12696727,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_giga200k",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "8YkLxc5WzjW7mV9DaHGVNPaaB9731ea1FFF57zqcgkpD",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite"
+   ]
+  },
+  {
+   "wallet": "7zH6nQN4C8G1sH7LH1sz8ZKhTPmiA5wTbYcWkikUSKw",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_gemas_mas",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "4a7XiutQp7spcV14sLw1uMw3GijUchp7oW5TVKJbkc52",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 21889675,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_giga200k",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "GimexNp8a6o8ABxMSREb4yR6oSspE6JpHTrVBzguek6q",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "ozDnyApycm95Zz9Y12PPoJ1Mp4Zx8pJiTLaFg2aB8QX",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "5uPpZMo6W9odwUCJxeLwR8RgDCG1SHcwj6522NvfHZf6",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "3iM6FfJiwnCj5s1TwKK2qNBg8zr6VEv12X3Gp2e2pRQ4",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 347026,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_final",
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "CVvJnDPcWdmUJN6YC4cHwBS2cJ9T8KoVh3xEwGquHYz1",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "top_devs_vol",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "Aj6cr5Q3iKpkuujnabSQyKfEb1ZQ1Z1LeeK6LEpTV8Xs",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_nextbig",
+    "top_devs_swing",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "5hoVSrmowAW7cSEC5Zhe3GbkMPXwgZc784UJNRQLjgxv",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 21221153,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_giga200k",
+    "top_devs_nextbig",
+    "top_devs_vol",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "Hi6WK6V9rVcGQ4iGSihps62g1EtJ9QAA32dUMuLts2C1",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "79ZGmaQQ9GveHWuHvdBexZUy1nKudGvc65J8b7GvV9fY",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "2kBJEUNjWNgDJwMjWbxgEeZ7krvH324mxwagoJgtmgGR",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "F5ExBJxM7zJhowwSBYGMTQVesxWvNzsPJhJTuXxLHiyZ",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_elite_top",
+    "top_devs_final",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "top_devs_premium",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "5WBmNHdezs9k4TYWTfS39uRCMG81pUKngMTuzAVq8w2M",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "3FiWnNDTZrKPbjPeMiTe2r5m5zygxSu57ePck5LUQp7d",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_elite_top",
+    "top_devs_final",
+    "top_devs_gemas",
+    "top_devs_highmedian",
+    "top_devs_init4k",
+    "top_devs_init5k16k",
+    "top_devs_med12k",
+    "top_devs_nextbig",
+    "top_devs_premium",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "DxQ1iNidsGap2kr14VdEzA8NheqXabfh6fRkvZQbnZVY",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 732044,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_elite_top",
+    "top_devs_final",
+    "top_devs_frecuentes11k",
+    "top_devs_freq3x",
+    "top_devs_gemas",
+    "top_devs_giga200k",
+    "top_devs_highmedian",
+    "top_devs_init4k",
+    "top_devs_init5k16k",
+    "top_devs_med12k",
+    "top_devs_nextbig",
+    "top_devs_premium",
+    "top_devs_swing",
+    "top_devs_vol",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "BhKodmPaiWX5T2zXXv3CJW6skk4b1hNWwSEEqH8fqGFd",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_elite_top",
+    "top_devs_final",
+    "top_devs_med12k",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "top_devs_win60"
+   ]
+  },
+  {
+   "wallet": "ALJ4P5QNyHeLEjpKGmA1eUfJHSEGQMjY8HLnDkSgjczb",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_elite",
+    "top_devs_elite_top",
+    "top_devs_final",
+    "top_devs_gemas_mas",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "top_devs_win60"
+   ]
+  },
+  {
+   "wallet": "Eh3q5AXnopCFULMLGv6QeVqpZhRvPgkWHBMKqNGQvQTX",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_final",
+    "top_devs_win60"
+   ]
+  },
+  {
+   "wallet": "744BxRKs7WKdb6T7jDNxLcJW8vqisRWQM5WfkjFqGf2v",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 13136725,
+   "listas": [
+    "top_devs_final",
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "49nSpmxwnTTyXujNm3zHqoin1mg1y1rKd1THXwJjYdLa",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas",
+    "top_devs_highmedian",
+    "top_devs_med12k",
+    "top_devs_quality",
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "BTdjaPaor31yqs1mggv6eaRJbEox8sE3MbyBCMEjHPbq",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "4bNoCzF8rHSQZMiQqQrM8Yb36vwr6dYyvCDbNzBkLET9",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "HTUNvpGG3D3kho9EyWa8PoLuYHYf77cR9pT5oqszdHjs",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "6fseJgiuGU4FNLhH5Ek5Yi4Qp4mUUu6dVXhX2gNJ3aP8",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "FTroG4aeMrXEVejLYgcwYHB88tbS8os3dDZCzh18MeRh",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "ARmXsApnsp78ziLGbwrBaS6Mi7uCvr5R5FRmaimdSfZp",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "DdJduJgqbjfo5GrUgw4xTbdSX2c7p6EfTdrFdDfqy7Fd",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "AbWeVqsyfHT7bB7FZYb5qswkcpj879fb8JDfhUUkcF9s",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "FPGuCZegYQSDZRoFfad9rCxzpT7TpGaqWQDgg8GokL8B",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "2yZnzgaC2NghYbdmN1YwhJDaMSSomjKaEnLsikkEAFiU",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "ApWpkd8tpPTdTFNihoYuF5en8Y27TQn4LAQTvvmf8faG",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "9k5LD7QZJzC7hR8GH23jAKAGG5JXyKvgcR1PFBvxQdv1",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "CT7TXtt1ZRobUk4TK5qPkWRqtT3c1qScZ2CfYZXKSZtN",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "2D699BTvL6G6ydAQrRmXcx3VuWDNkJs1WmthiXfYdtit",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "DfFjNc6rBbfaihDCFzYyepeNXmmFzLsN272kVuxKzQ4Z",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "9bchB9W9Pn9PKhjmSUNiuqdapoDkgUjYhDoMLhJPVRqp",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "GCMnackZv9fqC93jrk2du1QwBcSDztjYdvo7WhsMan7C",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "GmHGJdMymipZefqSFU5v2gh2fQdGZjAaX63ziVLbjZbu",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "7M1nj84mZ6pFM89zSK7UG9eHQr4EsNEXtbDTCgpTScZC",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "HS8pdCmXhxSvSSSaxNEqqABjSy6kgkV3oEZHEmG2hX33",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "CQLLBQW9deii6Sow4i1VJFjyLKBxLRS6E89NaDC6BEGz",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "E7WUBW175FdSHBtoT9XVfPT35P4oPpcMg3t15NHhwTwm",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "5n9KsxgRrJc4x8E7Zi8WHZDQrJxmg9ucDJigMT149Sx8",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "BMnA6BJd2xEpfPfVoy1sT2RJieQWdVbqNnVqdo55jZ6y",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "AyVQudTuHWFr6xpqXiSyxP1MQdm9AcvVY23Xqf2QUHpi",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "EF79Y2vuQubMAEbtz4XqFoCXCTzFuuTnDx3Vz8G31Fpf",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "C6GsAJupLB33xEvqErAYxnPWnNcFeyDwDpd5UqPfnYfZ",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "ErKVZPYady3LB2spmLCVCX5uF8R5ytpxiceTMJxujLhZ",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "Cqpjit97Pf8h8qTjcHwQFczL8JJwUGGYaqC69h7EWKLN",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "91tZzBEYwXf3smuHvzPvwQsGi271g4Lfyo5nVMUjosGh",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "2MZcyHss8B16QkhDQBbeLmDsjvGUG4wsApiudy1AC31g",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "42V2wz5tiLQvKY5AVS8V2uXnCfqEpNxtYi6XDrZjCJ3B",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "CFvFULPLd6Hk5QjvWhyN3JepMybjTCKCBMFbvhtsvbuE",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "FaHQ6E5BRJYubMW8L6cD9biHSAhi2twhXa49hdDX6PpF",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "AEoZKN5iKcozvzEYgByNH16544nuwYDUtXyda17EBz3i",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "CakD7SrFgeP5utFKqs1aZikgjxifK3y2nZ5nvLacRG7F",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "D1AgMwipkyYoGQmphTHs3VxCsG2gZo1Nm2wFTgndZ51E",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "3geKhG2S5vdg7rUN5aHPyQdY4dvCrbuhEcwGPwnw8Uy2",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "CUTPQHXW6Xxg6DFL5fjFTqHykMZUTvrQ7Qi1WGPcEzdT",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "6ueJnZLy4kdyZoat8gSWgADEbNAPbXsrFFWdLyNBHfM2",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "3GyjKcsQkpDuyoQrd4Ciz3QypoEpiMRDfFs4Cgz5fyXk",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "BMC6j1UFAubTD1BkWS592bK89DLge1pbRtkRSLojsdtH",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "BXGJXBemsPMRtzX5ZKscECy1NPHSyGkrwkugw3smCGVo",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "F4P9h8eWkwLR9NH8Bfndt8CnJp5AagtTaXGsEF6dwapf",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "5MhgRvTUjkWkGEjAZkRK8qgc6kB6z7UYtcUyJe3Kj6q4",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "6XdUvCLiudFWtWpcCuZEjgqFFLtxxrtVtY8fK8F8dpvJ",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "EggiAGo2LXt45WG3bb91zuYMuo8GSqXDEtGsAtZ94XQ9",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "FqoeFX1nLxH9aisuJprWsVUDsZ7mUkRYF5PEJ8qraPCy",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "9mthz7vdpgs8vjjqPLL438eDVGKeb2zqBYw5S3mxRryT",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "FNVsSxQjEtucEzWyuNwdJH2wVVhsaT5oWqYUc6haPQtz",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "3z7xQC2PSfixVJdMt23oGdew7fFzuboAYdcBAYSAX4Xg",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "3YpQRAGDCpraoXG9c9ntVaax9jRKPRSQQRXm7mg8YMiF",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "88g7tXbBFUvLKUNCQpVqR6UrugL7jFeGf5kpzJ5DTkks",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "9xdK3DkLZ8CCr3bvvFAXbNcWvAr8BJSyyWDVKwSLwRPF",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "951wq3qDowjKHaycrNaiRB5WpovYVKXnqhnrcKPh46zt",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "BeigSSuYKGK3XKNW58fuVFEYinNw5WUJ6MXGnxBb7Z7U",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "8wRr7k93rEHS9GiVAVGniAM3CHiAtW85AGv2qKXwF9Fk",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "48S8ne8cnCYeEhzkR7JAeocZ98bwuNRQ4pKkJ3u4VQpT",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "GCFyk8ZopGpo1HR25WhsVaP1h1p6ta44q9uHfq9Em8WB",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "Hu4YpHXYVD8Dw9vGzpqFPYzFGprLpWrXgbRQ8WtDQJ3a",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "4DrtsW86GarGJJeYrBwYCjoyMgDPG95QWSGhFHvCkU2s",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "top_devs_premium",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "9DPZGyDw3gg1vrd9nvPA6xsj86wdYEVugfSUbscw9ahx",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "6mxfP4nXD1MSXvCSbJP5NZi1RNojYKxNs5eHBoZBYDak",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "ANg3JLb5uRnjPggwCU4QcwTxhVn5mM2DfVwCifymGZGz",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "FExQWxmw6NqmcbpfnSVzmfEe46mzZ7UjaQNH6zbz5eee",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "8WuCFQnCqmaTNmTjw25UBjaTHXqDQQgYMXcgsDAKLFUz",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "5Gx8nvnthE236pJmMiFfFNeTc5fEBNtgeuBn3GeGeDnR",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "5wPuZfZyPQxuBUrmjN6RV31TdLsoxG6LuBMtwQAd9jUJ",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "3h7vhXCmuUvXEfYEbpQbcFQdSB7v1iBA1bqJRXoZn2VV",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "9Cik4BvJRcag1FLgCk1UBkAXdgLWd9fSoHMoWHjS4GXo",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "7WgTby15XjccLvoRjMTbjdGxotFj4bBcMuDksQU7XzWn",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "A95YPcDUkVUrmoKuBNRC8C3N69wethksqQxvqNpTzbcS",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "EtKNJYzTWu5ewnGEyu37bKoY569Kf43TrvzDbGEAbVSb",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "A697SEniU79su72YzGDM7tUNnWc6aPQ9FUxKJZuEauiq",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "8ihLV77aBWdAk4CpMMx8LH4915pZm6pc5t1DoMycz94n",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "HcNx7YFokv99hV4jfxe7TRyu5ArPMEpwtQqKrpqgAGYK",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "DfdJfVfhEdY3ZuCS5QF1DDMryeyEjH365Cr9ZoLGbXLP",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "8jaZKGBSUq83a2BdzTxtMkPUcGcgF7viVpPk9WMetrau",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "4Gtb3xN9yqSmTSpmVV8ocZWakBPxorA283jJv4bNsjBT",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "HnSkGGhxAwTYjzdxJTFg53MnZDziUxhjBbQinYeb2Fdd",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "F95HANfqvU9nVn1jhETsUkwdAKe2NnRR3BDY43yXGC7K",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "FAR4w1gJ5LTYQ7usnsrY5JCXJWypv6RL39wvZZ8b9tC7",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "4FncZQemyoVLx8drT5g3ujDd38HEKWXdFRSK4Eygi5x7",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "EUA3BRvTAWPKEcxhm7tCEppuNoevSBMCfKLaXAiAPNKA",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "GSex4Wf1RvQ6HTdbk6UQHXmGy5yv8mGvNqarAYoUAPrp",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "AWYxQx8z74jTPZHxgbYYefruudu9EJ2Vm72u7MxP5EaR",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "4ZtXk1FjRHHzdufddZbaGX4PVHct7VMfNgrtDgk25nwQ",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "9CFSkUvoPYwo5MXFsdK4tsHBR52hWyqyUFqmjBG5hfM4",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "CC3awTJiZK4iYaYr9MLtvuSXhq1ofErfAKV3xSdd6sWR",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "99WScSdgVsaytveK3ZaD8hkfFv4AVuau7wJbbtNzZNqv",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "5WirMKiB3WkJgUfBw5ZSCTtKmb9WRcfCQknbTFqqBqRa",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "CFsdzPb6KSpFG1KxdNkPs8Ufmszng99qXNkkzWEhDFde",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "F6zdbQP1nzdA5GYiCBhXP1enrNRkUkpb4Kn37HgGvffv",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_mas"
+   ]
+  },
+  {
+   "wallet": "9X1VTHyNdLcZNG66QkCRJVQinohBpPvktbxAxJAVQpu8",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "top_devs_swing",
+    "top_devs_vol",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "HhH3m3GjvQKrSF4auLHCTCJsKgXqBWnoqB2nMeBXFJsM",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 53338911,
+   "listas": [
+    "top_devs_giga200k",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "5dwwJkyF2KUcsgH8ndE3sYaZzS4KLQdCrxgARgzc9b3s",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 18178284,
+   "listas": [
+    "top_devs_giga200k",
+    "top_devs_med12k",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "C6uo2BAAdtTfYWj1EBhD432ahSstaLGEXw1wdEntzowZ",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 160762413,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "7G1SVcxsXNygh5MevMTbE58pnDFpnP7Bcmc7K4nAX2r8",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 115358683,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "AhRQM2TuofHF7zFEPLaTprpa5DazFQxktS5wQRWbWjKL",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 113849199,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "61gFM1uGBPvhgFW6bYmYp1obwzS61HtSuhqHkZfEg4ra",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 91718387,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "BxHEFAn1Yvow5VbYpAZZjfMvU7PAi36GQ5dYJ9qNrLYE",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 73152600,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "G733t5zje3EUKuuefaqdbksFksANm8Gvk6ZhH9yxzUen",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 68832874,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "8iTKSnCRQDpXwBPFGcxWAKiHeiH8aVxE73ML4fZwWqUo",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 67668512,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "5ypur73ENyiyEcWKeaqq37WZ8UhuoMmrEtDha2Tf8vPv",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 57401255,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "6QdGrtAeJNpMQaUJk82B7xezm4HevQ46Sh4QM9pRXnA3",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 54361956,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "6ErrkoyeoSBRENuZjvwdgf2R11qkXxJnzZRmRrhzehDK",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 51189609,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "31prhJC8UkEgNRnA4RDyxnQ4FybDELcxiCKrZXKNpAku",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 47765959,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "AvRhdGY3iFgPFZJuuYUEqj1eCoRKjwjYAHaUQwyuFEJu",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 43101084,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "BL8rKuoGS36MYuwLjmMqYAz7GSzm1CTQhao5LoQqxDhG",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 36183609,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "5xWaFvZUPtoJkGD8GgrAn27pr3oWzKMTNVrAaobpbXVu",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 33425783,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "AQWHvQY39NE2RF1Rgrwv6TuwgFugjLeU34wtZqtsJ2EC",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 32870018,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "4AMjDhoagg9sCTgn8wDQUGkmRbzfABqCUJNDrPDitqnY",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 31801608,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "3k5TjhPUfHZCNF6sKfqLaYeKVocNHeApBQekH6UXe9MN",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 31447548,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "G9iXafCCT7WaqZmxHZ1XU6a8rNYAL6SudG2AtytneDHf",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 28282349,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "2BbxFPC2pDcuaLxnpeuDzsQ3H3Aud21jANxcw8VnhJAV",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 27802399,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "2sRRtYn9rKjCJPszWZWzxpxZ6P7oTjMQwYPWMC6UhgGg",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 26740410,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "FMfqyahthPEaWdh9FU53ieJEwpMszufgASnWtyLTmH82",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 26720125,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "DFTmbMUNkXzf33EwqtQCnpJmaPVZN7KuhBFJV99jrckg",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 24302685,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "3dqHDyVmDtsxe7nnWAZRaKPeJCF1WVUUXsiQ5SYnr4HD",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 21821595,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "29eukVTGhYXp95Z2wdUS2mc6N2TV4Ar8owBs75q5jfwD",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 20392909,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "EmDm3susPtXSgRLwAYAWYCKNrCGjjje4UBxUQJvgsBDi",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 19739012,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "Gdr5hDtzhmNcMAEfAPzM66AuemTPoic5VUQuQ8EtY5aD",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 17864117,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "AviDCL8uPGhK1drahEaiVUVEcJS97yuKoou4582ZDXmM",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 16595911,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "9GeBFKpRoz9KYfYHMQvKr5HwuKZCWQFPNE2MpG93v5GH",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 12051920,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "HtvBxTCuBpMpUMjKuYHrbCHQoLXAvHMukkuE5rtE81TQ",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 10607521,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "EiyovsYEmhLGBdhq45kVLPn7Voua35Gj978ASebCHSSV",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 10539007,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "4Ewm2eM8cUyztuJbiLyUPjxXZKuwn43JEkqN1LMASFCY",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 9543429,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "HMRxEbqZ1BLE35KpXLTbPCX4XEwwLzb9Pu7tKuoT6uuN",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 6839310,
+   "listas": [
+    "top_devs_giga200k",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "FoLswxsbXHjpNDUoNYytBjixLE7dyBMe1DUkfzGLjoMu",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 6672773,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "FcxP5RZC2iayAiKT4T5vsweb24TnyHPEPVfExoJfWqqL",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 5878168,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "DhK5MdaWyNpcHa9kBmxJskaQyvXafR79E3kMnCJXaqR4",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 3776480,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "CCDo2xdLPtboxPkVE4zascCDQSmECNRkVFqidCcYMuVa",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 2438044,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "AV7PjXHL5JXZ1YoYRoN9Dsstg1x2UciBupMCXcJP8gUz",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 1302342,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "AbUViyPuuyKDbLYXsqAteZwqk9nvvWFpF9RNJ1qP3obx",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 609661,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "5RQ1UWATaMjjXC34BW6UusEUdEoCuNRECBW8nnHPiCGH",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 533228,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "2E94st2NZnzA943HBceijgkw75gXTTxch39yquMBfeQk",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 316943,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "69aiAKU3uJMxMLRkUEGFNt6nQ43PiVimE4ZbErJ7VSM1",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 292795,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "8i5U2uNBEuTc4zskYP14zbebDg2RSwrrG8REhEnJb97K",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": 231692,
+   "listas": [
+    "top_devs_giga200k"
+   ]
+  },
+  {
+   "wallet": "7KKtgq3nKBCGSZ6R2eRYwdMeLG7AAvHkCFa2X9WYq86d",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_med12k"
+   ]
+  },
+  {
+   "wallet": "APWfqBLvDZUkRPERdWPG9aA3ijn1Nh74XLMxBszJKjmq",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_nextbig",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "9RfUHPsdKx1eU8Y4EiDFHkzv8psfmLLcNhFa2Yk9mWcx",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_nextbig",
+    "top_devs_win60",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "BLK1ZJ3Ad2DKtsKMtz2urdJDnmxog9Hi2DTVnaDGrzVX",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "G68jPUQFQvUyQLTp2WsiNPckceT3X1meXYvWbpCXYCL4",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_swing",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "4X7ntRP7NbUz8dU3YYfRfz46C1bF3byUbKNNbeF6pL45",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "BQrL9ho2fLWS2VeLhftdouWP99Q8R5XZv7RNN24u7CkX",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "EdVKr3szxajGYvbAXdBhCmJdkGwo3Cd67wCw7NsB5mP4",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_win60"
+   ]
+  },
+  {
+   "wallet": "HJwmKcWFZvZhmU3exGsqTUFGsLnZpR7eyYKzuF3SySuu",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_win60"
+   ]
+  },
+  {
+   "wallet": "EMafkBt26eRqKRxrncAcTvaBRE2F3fmTEDs3pyRvGirw",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_win60"
+   ]
+  },
+  {
+   "wallet": "GR74nWKxvFT6yQ4yTpDs4Ni7amYtFZifh7WTvSqa31tU",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_win60"
+   ]
+  },
+  {
+   "wallet": "GbNzv8eB6wo7d4BnDXiZ2EJJfqMjYaWvgmP3rmfPuVrQ",
+   "mediana_pico_usd": 31054,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_win60"
+   ]
+  },
+  {
+   "wallet": "9BjcGY9ZfMvS13ozDRMwCaR2toE71hiLBXXvqBcGmeiU",
+   "mediana_pico_usd": 30964,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_freq3x",
+    "top_devs_gemas",
+    "top_devs_gemas_mas",
+    "top_devs_highmedian",
+    "top_devs_init4k",
+    "top_devs_init5k16k",
+    "top_devs_med12k",
+    "top_devs_premium",
+    "top_devs_quality",
+    "top_devs_swing",
+    "top_devs_vol",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "9XjiatS1JLdaLUjRDCGMzWejpntD4Wo1n2Exet4cyMMN",
+   "mediana_pico_usd": 30812,
+   "mejor_pico_usd": 30812,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "5AubfxeUqy6MZWEcTQaqGd7pMCQzcLA55EH66tq4z7cZ",
+   "mediana_pico_usd": 30779,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "AcTubYD4iokbrzouF6j3WMHahLB4Uwiy8RHuY8AGaenE",
+   "mediana_pico_usd": 30764,
+   "mejor_pico_usd": 36576,
+   "listas": [
+    "top_devs_mayhem",
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "EEtHC6SUq1mT4bh4uTZJt6fg6BCyy4bYZtsta7Mv5WQN",
+   "mediana_pico_usd": 30720,
+   "mejor_pico_usd": 30720,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "6t3J8Ba3u8mjdV5N2pvrDWjXa5fAxn6HFGKxFXnkSf6b",
+   "mediana_pico_usd": 30684,
+   "mejor_pico_usd": 30684,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "FefAY8zfhbzyMmyKZHNQ2wcGmyvZpAvdbvo6fsrZxTQx",
+   "mediana_pico_usd": 30524,
+   "mejor_pico_usd": 30524,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "GJDm4hxxm3bdzqNmbfNSxbfcEGj7GU6jDzhMUtnjBN82",
+   "mediana_pico_usd": 30481,
+   "mejor_pico_usd": 30481,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "Hcrr3q7o4PkBF2dvt1xc4VZCDHVbDvkmZ2gHeeb3JDVz",
+   "mediana_pico_usd": 30446,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "BikPmTU8yEM42sR9J3E6UCgTw6Hbza8Vadu7uuocj9LQ",
+   "mediana_pico_usd": 30419,
+   "mejor_pico_usd": 56238,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "GKbsycX8jQq8QBK2v7YTPMrxVjyBLvZX8MCvxq468bob",
+   "mediana_pico_usd": 30376,
+   "mejor_pico_usd": 30376,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "73BHz8F9DSy3NiJa2x6Jow35M1jkend9Aa7NgX1wJWov",
+   "mediana_pico_usd": 30256,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_swing",
+    "top_devs_swing_v2",
+    "top_devs_vol"
+   ]
+  },
+  {
+   "wallet": "oQ5gmywLj3LpLif8EoS5XF7m28sQ8v7chhqM9B5eUgL",
+   "mediana_pico_usd": 30189,
+   "mejor_pico_usd": 30189,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "6ZfJXVyis4nrvZYd9Au28yo1ExxRSvqbGEX6dHnLTuuv",
+   "mediana_pico_usd": 30184,
+   "mejor_pico_usd": 30184,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "3gWKh9nAunorwYXicoexdnbZ746vN3jKVsz7qDVJMrYP",
+   "mediana_pico_usd": 30101,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_gemas_extra",
+    "top_devs_gemas_extra_solidas",
+    "top_devs_gemas_mas",
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "A2DaAQbAHTQ6u7jypb3XzvTjQv15xHjNSSjtTRnibMtb",
+   "mediana_pico_usd": 30099,
+   "mejor_pico_usd": 30099,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  },
+  {
+   "wallet": "WnBVqVTaiJk5hNbcwbHiffRVnMdf1aaxNU5JkSpvGub",
+   "mediana_pico_usd": 30056,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "G36Ki3U33R88QmHfsVQT4QQVhkBQWG1bEE8zTWeSuGQy",
+   "mediana_pico_usd": 30039,
+   "mejor_pico_usd": null,
+   "listas": [
+    "top_devs_nextbig",
+    "devs_unificados"
+   ]
+  },
+  {
+   "wallet": "4V8D8ZYPeY7h6Tg1Tv1UW3S7hTdxDAqYHhSBxqRC2dy3",
+   "mediana_pico_usd": 30001,
+   "mejor_pico_usd": 30001,
+   "listas": [
+    "mayhem_v2_raw"
+   ]
+  }
+ ]
+}

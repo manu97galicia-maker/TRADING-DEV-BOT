@@ -368,6 +368,7 @@ async def start_bot(config_path: str, *, only_dev: bool = False):
             ),
             max_posiciones=cfg["trade"].get("max_posiciones", 0),
             devs_marcados=cfg["trade"].get("devs_marcados"),
+            marcados_saltan_baneo=cfg["trade"].get("marcados_saltan_baneo", True),
             buy_amount_marcados=cfg["trade"].get("buy_amount_marcados", 0),
             tope_compra_sol=cfg["trade"].get("tope_compra_sol", 0),
             fraccion_saldo=cfg["trade"].get("fraccion_saldo", 0),
