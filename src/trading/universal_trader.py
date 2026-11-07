@@ -45,6 +45,7 @@ from trading.panic import panic_time
 from trading.platform_aware import PlatformAwareBuyer, PlatformAwareSeller
 from trading.position import Position
 from trading.reserva import reserva as _reserva_moneda
+from trading.reserva import marca_comprada as _marca_comprada
 from trading.reserva import suelta as _suelta_moneda
 from trading.tiered_exit import (
     build_tiers,
@@ -5794,6 +5795,14 @@ class UniversalTrader:
         buy_reason: str | None = None,
     ) -> None:
         """Handle successful token purchase."""
+        # YA COMPRADA (7-nov, "cuidado con esto, me expones en dos compras"):
+        # ningun bot vuelve a comprar esta moneda en 24 h. Aqui y no en cada
+        # camino de compra, para que no se escape ninguno. Solo en real: un bot
+        # de papel no puede dejar sin comprar a uno de verdad.
+        if not getattr(self, "paper_trade", False):
+            _marca_comprada(
+                str(token_info.mint), str(getattr(self, "nombre_estrategia", "") or "?")
+            )
         # CUANTO SE TARDO EN ENTRAR. Es el dato que decide si una compra mala
         # fue mala idea o simplemente llego tarde, y hasta ahora habia que
         # sacarlo restando a mano las horas de dos lineas distintas del log.

@@ -22,6 +22,14 @@ compra tarda segundos.
 
 Que la reserva siga puesta despues de cerrar la posicion es a proposito: evita
 que otro bot vuelva a entrar en una moneda de la que se acaba de salir.
+
+YA COMPRADA (7-nov). Los diez minutos no bastaban: la estrategia de 6k
+compro una moneda a las 9:22, salio a las 9:24, la reserva caduco a las 9:32
+y la de 15,3k volvio a comprarla a las 9:37. Manu: "cuidado con esto, me
+expones en dos compras". Asi que una compra HECHA deja otra marca aparte,
+`comprada_<mint>.json`, que dura ``COMPRADA_SEG`` (24 h): mientras exista,
+ningun bot vuelve a comprar esa moneda. La caducidad corta de arriba sigue
+para lo suyo (un bot muerto a medias no bloquea la moneda).
 """
 
 from __future__ import annotations
@@ -38,6 +46,9 @@ logger = get_logger(__name__)
 #: Segundos tras los cuales una reserva se considera abandonada.
 CADUCIDAD_SEG = 600
 
+#: Segundos durante los que una moneda ya comprada no se vuelve a comprar.
+COMPRADA_SEG = 24 * 3600
+
 #: Carpeta de reservas, compartida por los tres bots.
 CARPETA = Path(__file__).resolve().parents[2] / "reservas"
 
@@ -51,24 +62,54 @@ def _ruta(mint: str) -> Path:
     return CARPETA / ("claim_%s.json" % mint)
 
 
+def _ruta_comprada(mint: str) -> Path:
+    return CARPETA / ("comprada_%s.json" % mint)
+
+
+def _comprada_por(mint: str) -> str | None:
+    """Quien la compro, si se compro hace menos de COMPRADA_SEG; si no, None."""
+    p = _ruta_comprada(mint)
+    try:
+        if time.time() - p.stat().st_mtime > COMPRADA_SEG:
+            return None
+    except OSError:
+        return None
+    try:
+        return str(json.loads(p.read_text(encoding="utf-8")).get("bot", "?"))
+    except Exception:  # noqa: BLE001
+        return "?"
+
+
+def marca_comprada(mint: str, quien: str) -> None:
+    """Apunta que ESTE bot ha comprado la moneda: nadie la recompra en 24 h."""
+    try:
+        CARPETA.mkdir(parents=True, exist_ok=True)
+        _ruta_comprada(mint).write_text(
+            json.dumps({"bot": quien, "ts": time.time()}), encoding="utf-8"
+        )
+    except OSError as exc:
+        logger.warning("RESERVA: no pude marcar %s como comprada (%s)", mint[:10], exc)
+
+
 def _barre() -> None:
     """Borra las reservas caducadas. Se llama de vez en cuando, no siempre."""
     global _cuenta
     _cuenta += 1
     if _cuenta % _CADA:
         return
-    corte = time.time() - CADUCIDAD_SEG
     borradas = 0
-    try:
-        for f in CARPETA.glob("claim_*.json"):
-            try:
-                if f.stat().st_mtime < corte:
-                    f.unlink(missing_ok=True)
-                    borradas += 1
-            except OSError:
-                pass
-    except OSError:
-        return
+    for patron, seg in (("claim_*.json", CADUCIDAD_SEG), ("comprada_*.json", COMPRADA_SEG)):
+        corte = time.time() - seg
+        try:
+            for f in CARPETA.glob(patron):
+                try:
+                    if f.stat().st_mtime < corte:
+                        f.unlink(missing_ok=True)
+                        borradas += 1
+                except OSError:
+                    pass
+        except OSError:
+            return
     if borradas:
         logger.debug("RESERVA: barridas %d reservas caducadas", borradas)
 
@@ -78,6 +119,13 @@ def reserva(mint: str, quien: str) -> bool:
     try:
         CARPETA.mkdir(parents=True, exist_ok=True)
         _barre()
+        ya = _comprada_por(mint)
+        if ya is not None:
+            logger.info(
+                "RESERVA: %s ya la compro %s en las ultimas 24 h; no la recompro",
+                mint[:10], ya,
+            )
+            return False
         p = _ruta(mint)
         # Reserva caducada = bot muerto a medias. Se borra y se vuelve a
         # intentar, que es mejor que dejar la moneda bloqueada para siempre.
