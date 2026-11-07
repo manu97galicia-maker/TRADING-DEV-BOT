@@ -58,3 +58,34 @@ def test_devs_activos_saca_los_mints() -> None:
                                       "header": {"numRequiredSignatures": 1},
                                       "instructions": [{"programIdIndex": 1, "accounts": [2, 0], "data": data}]}}}
     assert md.da.lanzamientos([tx], dev, time.time())["mints_recientes"] == ["MintAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"]
+
+
+def test_regla_del_bot() -> None:
+    assert md.cumple_la_regla({"migradas_total": 1, "pct_migradas": 10.0}) is True
+    assert md.cumple_la_regla({"migradas_total": 1, "pct_migradas": 9.1}) is False
+    assert md.cumple_la_regla({"migradas_total": 0, "pct_migradas": 0}) is False
+    assert md.cumple_la_regla(None) is False
+
+
+def test_la_regla_es_la_del_yaml() -> None:
+    import yaml
+
+    dev = yaml.safe_load((RAIZ / "bots/bot-paper-dev1-bloque2.yaml").read_text())["filters"]["pumpfun_dev"]
+    assert md.MIN_MIGRADAS == dev["min_migrations"]
+    assert md.MIN_PCT == dev["min_rate"] * 100
+
+
+def test_historial_usa_el_lector_del_bot(monkeypatch) -> None:
+    from monitoring import pumpfun_dev
+
+    async def falso(w):
+        if w == "MALO":
+            raise RuntimeError("sin respuesta del nodo")
+        return 20, 2
+
+    monkeypatch.setattr(pumpfun_dev, "_historial_tolerante", falso)
+    monkeypatch.setattr(md.da, "PAUSA", 0)
+    r = md.historial_con_helius(["BUENO", "MALO"], "http://nodo.invalid/?api-key=SECRETO")
+    assert r["BUENO"] == {"lanzadas_total": 20, "migradas_total": 2, "pct_migradas": 10.0}
+    assert "SECRETO" not in str(r["MALO"])
+    assert md.cumple_la_regla(r["BUENO"]) is True

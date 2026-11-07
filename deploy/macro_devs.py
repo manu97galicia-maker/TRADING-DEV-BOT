@@ -7,7 +7,10 @@ Para cada dev de todas las listas del repo (unos 800):
   1. GMGN (si hay GMGN_API_KEY en el .env): cuantas monedas ha lanzado,
      cuantas migraron, su porcentaje, cuando lanzo la ultima y su ATH.
   2. Helius (el del bot): si se ha movido en 30 dias y, a los que si, cuantas
-     monedas de pump.fun lanzo en 7 y 30 dias y cuales (ver devs_activos.py).
+     monedas de pump.fun lanzo en 7 y 30 dias y cuales (ver devs_activos.py),
+     y su % de migradas de TODO su historial, con el mismo lector con el que
+     el bot decide si compra. Se marca quien cumple la regla del bot
+     (>= 1 migrada y >= 10%).
   3. DexScreener (gratis, sin clave): de sus ultimas 5 monedas, cuantas tienen
      el perfil PAGADO (web/redes en DexScreener) y cuantas tienen boost.
   4. DEXTools (si hay DEXTOOLS_API_KEY): de sus ultimas 3 monedas, cuantas
@@ -45,6 +48,12 @@ SALIDA = Path("/root/macro_devs.json")
 GMGN_URL = "https://openapi.gmgn.ai/v1/user/created_tokens"
 DEX_URL = "https://api.dexscreener.com/latest/dex/tokens/"
 DEXT_URL = "https://public-api.dextools.io/{tier}/v2/token/solana/{mint}"
+#: Lo que exige el bot para comprar (bots/bot-paper-dev1-bloque2.yaml,
+#: pumpfun_dev): al menos 1 migrada y el 10%.
+MIN_MIGRADAS = 1
+MIN_PCT = 10.0
+#: Tiempo maximo para leer el historial entero de un dev.
+ESPERA_HISTORIAL = 40.0
 MUESTRA_DEX = 5
 MUESTRA_DEXT = 3
 MIN_MUESTRA = 2
@@ -113,6 +122,69 @@ def gmgn(wallet: str, clave: str) -> dict | None:
     if not isinstance(datos, dict) or str(datos.get("code")) != "0":
         return None
     return leer_gmgn(datos.get("data"))
+
+
+# --- % de migradas, con el mismo lector que usa el bot ----------------------
+
+
+def historial_con_helius(carteras: list[str], url: str) -> dict[str, dict]:
+    """(lanzadas, migradas, %) de cada dev, leidos de la cadena con Helius.
+
+    Es EXACTAMENTE el lector del bot (monitoring/pumpfun_dev.py,
+    `_historial_tolerante`): cuenta tambien las monedas minteadas a traves de
+    una plataforma, y lo ilegible cuenta como lanzada y no migrada. Asi el %
+    que sale aqui es el mismo con el que el bot decide si compra.
+    """
+    import asyncio  # noqa: PLC0415
+
+    import aiohttp  # noqa: PLC0415
+
+    from monitoring import pumpfun_dev  # noqa: PLC0415
+
+    fuera: dict[str, dict] = {}
+
+    async def todo() -> None:
+        async with aiohttp.ClientSession() as sesion:
+
+            async def post(cuerpo: dict) -> dict | None:
+                try:
+                    async with sesion.post(url, json=cuerpo, timeout=30) as r:
+                        return await r.json(content_type=None)
+                except Exception:  # noqa: BLE001
+                    return None
+
+            pumpfun_dev.usar_rpc_de_respaldo(post)
+            for n, w in enumerate(carteras, 1):
+                try:
+                    lanz, migr = await asyncio.wait_for(
+                        pumpfun_dev._historial_tolerante(w),  # noqa: SLF001
+                        timeout=ESPERA_HISTORIAL,
+                    )
+                    fuera[w] = {
+                        "lanzadas_total": lanz,
+                        "migradas_total": migr,
+                        "pct_migradas": round(100 * migr / lanz, 1) if lanz else 0.0,
+                    }
+                except Exception as e:  # noqa: BLE001
+                    texto = str(e) if type(e).__name__ in {
+                        "HistoryUnavailableError", "RuntimeError"} else ""
+                    fuera[w] = {"historial_error": da._tapa(  # noqa: SLF001
+                        f"{type(e).__name__}: {texto}")[:100]}
+                if n % 25 == 0:
+                    print(f"  {n}/{len(carteras)}")
+                await asyncio.sleep(da.PAUSA)
+
+    asyncio.run(todo())
+    return fuera
+
+
+def cumple_la_regla(h: dict | None) -> bool:
+    """Lo que el bot pide para comprar: >= 1 migrada y >= 10%."""
+    return bool(
+        h
+        and (h.get("migradas_total") or 0) >= MIN_MIGRADAS
+        and (h.get("pct_migradas") or 0) >= MIN_PCT
+    )
 
 
 # --- DexScreener -----------------------------------------------------------
@@ -222,6 +294,10 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
                 devs[w]["lanz"] = None
             time.sleep(da.PAUSA)
 
+        print(f"2b) % de migradas de los {len(vivos)} que se mueven (como el bot)...")
+        for w, h in historial_con_helius(vivos, rpc).items():
+            devs[w]["historial"] = h
+
     print("3/4 DexScreener: quien paga perfil y boost...")
     pendientes = {w: (devs[w].get("lanz") or {}).get("mints_recientes", [])[:MUESTRA_DEX]
                   for w in carteras}
@@ -253,6 +329,8 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             "estado": da.estado(d.get("ultima_tx_hace_dias"), lanz or None),
             "lanzadas_7d": lanz.get("lanzadas_7d"),
             "lanzadas_30d": lanz.get("lanzadas_30d"),
+            **(d.get("historial") or {}),
+            "cumple_regla_del_bot": cumple_la_regla(d.get("historial")),
             **(d.get("gmgn") or {}),
             "mediana_pico_de_las_listas": d.get("mediana_pico"),
             "mejor_pico_de_las_listas": d.get("mejor_pico"),
@@ -278,6 +356,14 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
     print("\n== ACTIVOS")
     for k in ("LANZA (7 dias)", "lanza (30 dias)", "se mueve, sin lanzar", "PARADO", "sin datos"):
         print(f"{sum(1 for f in filas if f['estado'] == k):6}  {k}")
+    regla = [f for f in filas if f["cumple_regla_del_bot"] and not f["en_blacklist"]]
+    regla.sort(key=lambda f: (-(f.get("pct_migradas") or 0), -(f.get("migradas_total") or 0)))
+    print(f"\n== ACTIVOS QUE CUMPLEN LA REGLA DEL BOT (>= {MIN_MIGRADAS} migrada y "
+          f">= {MIN_PCT:.0f}%): {len(regla)}")
+    for f in regla[:30]:
+        print(f"{f['wallet']}  {f['migradas_total']}/{f['lanzadas_total']} "
+              f"({f['pct_migradas']:.0f}%)  {f['estado']}  "
+              f"dex {f['dex_perfil_pagado']['con_pago']}/{f['dex_perfil_pagado']['medidas']}")
     if clave_gmgn:
         print("\n== MEJORES SEGUN GMGN (3+ lanzadas, por % migradas)")
         buenos = [f for f in filas if (f.get("gmgn_lanzadas") or 0) >= 3 and not f["en_blacklist"]]  # noqa: PLR2004
