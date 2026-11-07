@@ -114,8 +114,14 @@ filters:
     vela_seg: 1.0
     max_subida_vela: 0.35
     exigir_ver_creacion: false
-    max_carteras_primer_bloque: 0
-    max_sol_primer_bloque: 0
+    # 7-nov, Manu con la captura de LAGER (de ~2,5k a ~27k en el primer
+    # segundo y el dev lo vende todo a los 2 min): "no me compres este
+    # tipo". Estaban a 0 (apagados) porque venian copiados de dev1, no
+    # porque se pidiera. Se ponen los valores por defecto del codigo: si
+    # en el bloque de creacion compran mas de 3 carteras o entran mas de
+    # 2 SOL, es bundle y no se compra.
+    max_carteras_primer_bloque: 3
+    max_sol_primer_bloque: 2.0
     max_bundle_pct: 0.5
     max_bundle_pct_sin_historia: 0.35
     heartbeat_interval: 300

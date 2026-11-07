@@ -122,3 +122,12 @@ def test_presion15k() -> None:
     assert cv["min_compra_sol"] == 0.8 and cv["min_compradores"] == 6
     _tres_ventas_hasta_75(t)
     assert "presion15k_real.log" in TEXTO
+
+
+def test_presion_sin_bundles_de_creacion() -> None:
+    """7-nov "no me compres este tipo" (LAGER: el bloque de creacion la sube
+    de ~2,5k a ~27k y el dev vende todo a los 2 minutos)."""
+    for f in NUEVAS[1:]:
+        cv = _cfg(f)["filters"]["curva_96"]
+        assert cv["max_carteras_primer_bloque"] == 3, f
+        assert cv["max_sol_primer_bloque"] == 2.0, f
