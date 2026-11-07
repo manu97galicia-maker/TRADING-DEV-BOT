@@ -125,6 +125,7 @@ def lanzamientos(txs: list[dict], wallet: str, ahora: float) -> dict:
 
     crear = {bytes.fromhex("181ec828051c0777"), bytes.fromhex("d6904cec5f8b31b4")}
     tiempos: list[float] = []
+    mints: list[str] = []
     for tx in txs:
         try:
             msg = tx["transaction"]["message"]
@@ -142,15 +143,19 @@ def lanzamientos(txs: list[dict], wallet: str, ahora: float) -> dict:
             ixs = list(msg.get("instructions") or [])
             for interna in meta.get("innerInstructions") or []:
                 ixs.extend(interna.get("instructions") or [])
-            es_creacion = any(
-                isinstance(ix.get("programIdIndex"), int)
+            creaciones = [
+                ix for ix in ixs
+                if isinstance(ix.get("programIdIndex"), int)
                 and 0 <= ix["programIdIndex"] < len(todas)
                 and todas[ix["programIdIndex"]] == PUMP
                 and base58.b58decode(ix.get("data") or "")[:8] in crear
-                for ix in ixs
-            )
-            if es_creacion and tx.get("blockTime"):
+            ]
+            if creaciones and tx.get("blockTime"):
                 tiempos.append(float(tx["blockTime"]))
+                # La primera cuenta de create/create_v2 es el mint.
+                cuentas = creaciones[0].get("accounts") or []
+                if cuentas and isinstance(cuentas[0], int) and cuentas[0] < len(todas):
+                    mints.append(str(todas[cuentas[0]]))
         except (KeyError, TypeError, ValueError):
             continue
     return {
@@ -159,6 +164,8 @@ def lanzamientos(txs: list[dict], wallet: str, ahora: float) -> dict:
         "ultima_lanzada_hace_dias": round((ahora - max(tiempos)) / DIA, 1)
         if tiempos
         else None,
+        # Las mas recientes primero (las transacciones vienen de nueva a vieja).
+        "mints_recientes": mints[:10],
     }
 
 
@@ -185,17 +192,17 @@ def _rpc(url: str, metodo: str, params: list) -> object:
             with urllib.request.urlopen(peticion, timeout=20) as r:  # noqa: S310
                 datos = json.load(r)
             if datos.get("error"):
-                raise RuntimeError(str(datos["error"].get("message", ""))[:80])  # noqa: TRY003
+                raise RuntimeError(str(datos["error"].get("message", ""))[:80])
             return datos.get("result")
         except urllib.error.HTTPError as e:
             if e.code == 429 and intento < 2:  # noqa: PLR2004
                 time.sleep(2 + intento * 2)
                 continue
-            raise RuntimeError(f"HTTP {e.code}") from None
+            raise RuntimeError(f"HTTP {e.code}") from None  # noqa: TRY003
     return None
 
 
-def main() -> None:  # noqa: C901
+def main() -> None:  # noqa: C901, PLR0915
     from dotenv import load_dotenv  # noqa: PLC0415
 
     load_dotenv(RAIZ / ".env")
