@@ -48,7 +48,7 @@ def test_config_rompe_10k():
     # Los frenos contra rugs se quedan.
     assert fl["max_dev_hold_pct"] == 0.10 and fl["allow_mayhem"] is False
     assert cv["max_carteras_primer_bloque"] == 5 and cv["max_sol_primer_bloque"] == 9.0
-    assert cv["max_subida_vela"] == 0.35 and cv["max_subida_vela2"] == 0.60
+    assert cv["max_subida_vela"] == 0.54 and cv["max_subida_vela2"] == 0.60
     # Despues: "50% del total balance", TP +40% (recupera) / +90% / +140%,
     # SL en 7,4k de market cap y el trailing fijo en 22%.
     assert t["fraccion_saldo"] == 0.50 and t["fraccion_base"] == "cartera"

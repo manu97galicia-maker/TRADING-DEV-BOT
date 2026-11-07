@@ -210,7 +210,9 @@ filters:
     max_edad_seg: 0
     # Frenos contra mechas, como la normal.
     vela_seg: 1.0
-    max_subida_vela: 0.35
+    # 7-nov "quita lo del 35 y pon 54" (la mecha de 1 segundo): deja pasar
+    # subidas de hasta +54% en 1 s (antes +35%). La de 30 s sigue en +60%.
+    max_subida_vela: 0.54
     vela2_seg: 30
     max_subida_vela2: 0.60
     exigir_ver_creacion: false
