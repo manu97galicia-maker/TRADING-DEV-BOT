@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -107,11 +108,30 @@ def lanzamientos_al_dia(devs: list[dict]) -> float:
 
 
 # ------------------------------------------------------------------- red
+def limpia_clave(v: str) -> str:
+    """La clave sin la basura que mete la terminal al pegar.
+
+    7-nov: Dune respondia "HTTP 400: Bad Request" a TODO, incluso a crear una
+    consulta. La clave guardada acababa en "~": al pegar en `read`, la
+    terminal mete las marcas del pegado (ESC[200~ al principio y ESC[201~ al
+    final) y se guardaron con la clave. Una clave de Dune son letras y
+    numeros; se quitan esas marcas y cualquier otro caracter.
+    """
+    v = re.sub(r"\x1b\[20[01]~|\[20[01]~", "", v)
+    return re.sub(r"[^A-Za-z0-9_-]", "", v)
+
+
 def _clave() -> str | None:
     """La clave de Dune del .env, se llame como se llame (DUNE_API_KEY...)."""
     for k, v in os.environ.items():
         if "DUNE" in k.upper() and v.strip():
-            return v.strip()
+            limpia = limpia_clave(v)
+            if limpia != v.strip():
+                print(
+                    f"  (la clave de Dune traia {len(v.strip()) - len(limpia)} "
+                    "caracteres de mas del pegado; se usan sin ellos)"
+                )
+            return limpia or None
     return None
 
 

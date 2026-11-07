@@ -112,3 +112,16 @@ def test_si_dune_rechaza_una_via_prueba_la_siguiente(monkeypatch, capsys):
     assert dd._lanza("SELECT 1", "k", "medium") == {"execution_id": "E1"}
     assert llamadas == ["sql/execute", "sql/execute", "query", "query/77/execute"]
     assert "HTTP 400: nope" in capsys.readouterr().out
+
+
+def test_la_clave_pegada_con_basura_de_la_terminal_se_limpia():
+    """7-nov: la clave guardada acababa en "~" (marcas de pegado) y Dune
+    respondia 400 a todo."""
+    limpia = "0D48abcDEF123xyz"
+    for sucia in (
+        f"\x1b[200~{limpia}\x1b[201~",
+        f"[200~{limpia}[201~",
+        f"{limpia}~",
+        f" {limpia}\r",
+    ):
+        assert dd.limpia_clave(sucia) == limpia, repr(sucia)
