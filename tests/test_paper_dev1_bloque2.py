@@ -134,9 +134,9 @@ def test_salida_del_4_nov() -> None:
     # 6-nov: "0.15 por compra", "0.1 compra" y por la noche "compre 0.25 sol".
     # En SOL fijos no depende del precio de SOL.
     assert t["buy_amount_usd"] == 0
-    # 6-nov por la noche: "50% del sol balance" -> "35% sol balance". Manda
-    # el porcentaje, sobre el saldo libre.
-    assert t["fraccion_saldo"] == 0.35
+    # 7-nov: "compra en todas 15% del balance" (venia del 35%). Sobre el
+    # saldo libre.
+    assert t["fraccion_saldo"] == 0.15
     assert t["fraccion_base"] == "libre"
     assert t["stop_loss_percentage"] == 0.25
     # 7-nov: para los devs normales, "take profit como teniamos" (+38%,
@@ -268,10 +268,12 @@ def test_vende_la_moneda_muerta_al_minuto() -> None:
 
 
 def test_tras_el_tp1_el_stop_va_al_precio_de_compra() -> None:
-    """6-nov: "si toca el tp1 el sl se mueve al precio de compra"."""
+    """7-nov: tras el TP1 el stop va a compra +5% ("mas algo de ganancias");
+    y 3 perdidas seguidas paran la estrategia."""
     t = CFG["trade"]
     assert t["stop_a_entrada_tras_tp"] is True
-    assert t["margen_stop_tras_tp"] == 0.0
+    assert t["margen_stop_tras_tp"] == 0.05
+    assert t["max_perdidas_seguidas"] == 3
 
 
 def test_devs_buenos_compran_y_los_de_30k_salen_distinto() -> None:

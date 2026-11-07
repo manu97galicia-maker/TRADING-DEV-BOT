@@ -1,0 +1,126 @@
+# ESTRATEGIA "CURVA 92%", pedida el 7-nov: "que compre cualquier moneda con
+# presion compradora y volumen con bonding curve superada del 92%, sin mechas
+# de un segundo o posible pump and dump, y mismo sistema de tp y sl".
+# Generada a partir de bot-paper-dev1-bloque2.yaml (mismas comisiones,
+# deslizamiento, reserva, stop -25%, venta a los 5 min si va en rojo, blacklist
+# y auto-baneo por rugs, sin mayhem). Lo que cambia:
+#   - ENTRADA (filters.curva_96): cualquier dev; curva >= 92% (y < 99,5%),
+#     presion: >= 3 compradores distintos en 5 s, >= 1,5x compras/ventas y
+#     >= 0,2 SOL comprados en esa ventana; >= 8 compradores en total.
+#     SIN MECHA: no compra si sube mas de un 35% en una vela de 1 s.
+#     ANTI PUMP&DUMP: no compra si los mayores titulares tienen > 50% (35% si
+#     no se vio nacer).
+#   - SALIDA (Manu eligio "mismo TP1 y resto al migrar"): TP1 +38% vende el
+#     79,71% (recupera lo invertido +10%); el resto en 3 tramos iguales a
+#     +60%, +100% y +150%. Sin tramos por market cap (a 92% la moneda ya va
+#     por 30-35k).
+#   - 15% del SOL libre por compra, tras el TP1 el stop a compra +5%, y para
+#     tras 3 perdidas seguidas (igual que todas).
+#   - node.max_rps 8: comparte Helius con las otras dos estrategias.
+name: REAL CURVA 92% CON PRESION
+env_file: .env
+rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
+wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
+private_key: ${SOLANA_PRIVATE_KEY}
+enabled: false
+separate_process: false
+platform: pump_fun
+trade:
+  nombre_estrategia: real-curva92
+  buy_amount: 0.25
+  buy_amount_usd: 0
+  fraccion_saldo: 0.15
+  fraccion_base: libre
+  min_reserve_sol: 0.03
+  max_posiciones: 7
+  max_real_buys: 1000
+  reiniciar_tanda: false
+  buy_slippage: 0.35
+  sell_slippage: 0.35
+  sell_slippage_proteccion: 0.5
+  exit_strategy: tp_sl
+  stop_loss_percentage: 0.25
+  take_profit_percentage: 0.38
+  take_profit_sell_percentage: 0.7971014493
+  mc_take_profit_tiers: []
+  stop_a_entrada_tras_tp: true
+  margen_stop_tras_tp: 0.05
+  max_perdidas_seguidas: 3
+  stop_al_tp_tras_tp: false
+  vender_todo_en_stop: true
+  mc_stop_loss: 0
+  max_hold_time: 0
+  venta_muerta_seg: 300
+  venta_muerta_gain: 0.0
+  price_check_interval: 1
+  tp2_gain: 0.6
+  tp2_sell: 0.0676328502
+  tp3_gain: 1.0
+  tp3_sell: 0.0676328502
+  tp4_gain: 1.5
+  tp4_sell: 0.0676328504
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount_compra: 110000000
+  fixed_amount: 5714286
+  fixed_amount_venta_proteccion: 42424243
+  extra_percentage: 0.0
+  hard_cap: 110000000
+retries:
+  max_attempts: 1
+  wait_after_creation: 0
+  wait_after_buy: 0
+filters:
+  listener_type: logs
+  yolo_mode: true
+  paper_trade: false
+  paper_watch_secs: 600
+  max_token_age: 5
+  max_entry_mc: 0
+  max_buy_age: 60
+  allow_mayhem: false
+  require_mayhem: false
+  ignorar_listas_de_devs: false
+  min_first_block_buys: 0
+  max_first_block_buys: 0
+  min_first_block_usd: 0
+  max_first_block_usd: 0
+  buy_from_second_block: false
+  second_block_confirmation:
+    enabled: false
+    min_buyers: 0
+    min_buy_sol: 0
+    min_net_sol: 0
+    max_sells: 0
+  curva_96:
+    enabled: true
+    tope: 0.995
+    buy_amount: 0
+    max_compras: 0
+    parar_tras_perdidas: 0
+    min_edad_seg: 0
+    max_edad_seg: 0
+    vela_seg: 1.0
+    max_subida_vela: 0.35
+    exigir_ver_creacion: false
+    max_carteras_primer_bloque: 0
+    max_sol_primer_bloque: 0
+    max_bundle_pct: 0.5
+    max_bundle_pct_sin_historia: 0.35
+    heartbeat_interval: 300
+    umbral: 0.92
+    min_compradores: 8
+    min_compradores_ola: 3
+    ventana_presion: 5.0
+    min_presion_ratio: 1.5
+    min_compra_sol: 0.2
+  pumpfun_dev:
+    enabled: false
+  min_entry_mc: 0
+cleanup:
+  mode: post_session
+  force_close_with_burn: false
+  with_priority_fee: false
+node:
+  max_rps: 8

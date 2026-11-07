@@ -1,0 +1,130 @@
+# ESTRATEGIA "PRESION FUERTE DESDE 6K", pedida el 7-nov: "anade una que
+# compre aquella moneda con presion compradora fuerte y volumen minimo, 6k mc"
+# (Manu: "comprar a partir de 6k de MC"). Generada a partir de
+# bot-paper-dev1-bloque2.yaml (mismas comisiones, deslizamiento, reserva,
+# stop -25%, venta a los 5 min si va en rojo, blacklist y auto-baneo por
+# rugs, sin mayhem). Lo que cambia:
+#   - ENTRADA (filters.curva_96 + min_entry_mc): cualquier dev; se empieza a
+#     mirar con la curva al 45% (~5k) y se compra cuando el market cap pasa
+#     de 6.000 $ (min_entry_mc, en un plazo de 120 s) CON PRESION FUERTE:
+#     >= 6 compradores distintos en 5 s, >= 2x compras/ventas y >= 1 SOL
+#     comprado en esa ventana; >= 10 compradores en total. Sin mecha de 1 s
+#     (> 35%) y sin concentracion de titulares (> 50%).
+#   - SALIDA: la misma que dev1 para los devs normales: TP1 +38% (79,71%) y
+#     el resto a 7k / 9k / 12k / 15k / 19k. OJO: entrando a 6k+, el TP1 salta
+#     por encima de ~8,3k, asi que el tramo de 7k (y a veces el de 9k) se
+#     vende justo despues del TP1.
+#   - 15% del SOL libre por compra, tras el TP1 el stop a compra +5%, y para
+#     tras 3 perdidas seguidas (igual que todas).
+#   - node.max_rps 8: comparte Helius con las otras dos estrategias.
+name: REAL PRESION FUERTE DESDE 6K
+env_file: .env
+rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
+wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
+private_key: ${SOLANA_PRIVATE_KEY}
+enabled: false
+separate_process: false
+platform: pump_fun
+trade:
+  nombre_estrategia: real-presion6k
+  buy_amount: 0.25
+  buy_amount_usd: 0
+  fraccion_saldo: 0.15
+  fraccion_base: libre
+  min_reserve_sol: 0.03
+  max_posiciones: 7
+  max_real_buys: 1000
+  reiniciar_tanda: false
+  buy_slippage: 0.35
+  sell_slippage: 0.35
+  sell_slippage_proteccion: 0.5
+  exit_strategy: tp_sl
+  stop_loss_percentage: 0.25
+  take_profit_percentage: 0.38
+  take_profit_sell_percentage: 0.7971014493
+  mc_take_profit_tiers:
+  - target_mc: 7000
+    sell: 0.0608695652
+  - target_mc: 9000
+    sell: 0.0608695652
+  - target_mc: 12000
+    sell: 0.0304347826
+  - target_mc: 15000
+    sell: 0.0304347826
+  - target_mc: 19000
+    sell: 0.0202898552
+  stop_a_entrada_tras_tp: true
+  margen_stop_tras_tp: 0.05
+  max_perdidas_seguidas: 3
+  stop_al_tp_tras_tp: false
+  vender_todo_en_stop: true
+  mc_stop_loss: 0
+  max_hold_time: 0
+  venta_muerta_seg: 300
+  venta_muerta_gain: 0.0
+  price_check_interval: 1
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount_compra: 110000000
+  fixed_amount: 5714286
+  fixed_amount_venta_proteccion: 42424243
+  extra_percentage: 0.0
+  hard_cap: 110000000
+retries:
+  max_attempts: 1
+  wait_after_creation: 0
+  wait_after_buy: 0
+filters:
+  listener_type: logs
+  yolo_mode: true
+  paper_trade: false
+  paper_watch_secs: 600
+  max_token_age: 5
+  max_entry_mc: 0
+  max_buy_age: 120
+  allow_mayhem: false
+  require_mayhem: false
+  ignorar_listas_de_devs: false
+  min_first_block_buys: 0
+  max_first_block_buys: 0
+  min_first_block_usd: 0
+  max_first_block_usd: 0
+  buy_from_second_block: false
+  second_block_confirmation:
+    enabled: false
+    min_buyers: 0
+    min_buy_sol: 0
+    min_net_sol: 0
+    max_sells: 0
+  curva_96:
+    enabled: true
+    tope: 0.995
+    buy_amount: 0
+    max_compras: 0
+    parar_tras_perdidas: 0
+    min_edad_seg: 0
+    max_edad_seg: 0
+    vela_seg: 1.0
+    max_subida_vela: 0.35
+    exigir_ver_creacion: false
+    max_carteras_primer_bloque: 0
+    max_sol_primer_bloque: 0
+    max_bundle_pct: 0.5
+    max_bundle_pct_sin_historia: 0.35
+    heartbeat_interval: 300
+    umbral: 0.45
+    min_compradores: 10
+    min_compradores_ola: 6
+    ventana_presion: 5.0
+    min_presion_ratio: 2.0
+    min_compra_sol: 1.0
+  pumpfun_dev:
+    enabled: false
+  min_entry_mc: 6000
+cleanup:
+  mode: post_session
+  force_close_with_burn: false
+  with_priority_fee: false
+node:
+  max_rps: 8

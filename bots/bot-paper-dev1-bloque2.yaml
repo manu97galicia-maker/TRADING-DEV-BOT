@@ -50,7 +50,11 @@ trade:
   # confirmado NO SE COMPRA"), y si el droplet no llega a la web de precios,
   # no compra nunca. En SOL fijos el importe sale de `buy_amount` y no
   # depende de ningun precio. 0,2 SOL son unos 21 $ con el SOL a 105 $.
-  # 35% DEL SALDO DE SOL POR COMPRA, pedido el 6-nov por la noche ("35% sol
+  # 15% DEL SALDO DE SOL POR COMPRA, pedido el 7-nov ("compra en todas 15%
+  # del balance", y Manu confirmo que tambien esta). Venia del 35%. Con tres
+  # estrategias sobre la misma wallet, cada una coge el 15% de lo libre.
+  #
+  # (HISTORIA) 35% DEL SALDO DE SOL POR COMPRA, pedido el 6-nov por la noche ("35% sol
   # balance"). Venia del 50% (pedido un rato antes con "50% del sol
   # balance"; antes, 0,25 SOL fijos). Manda `fraccion_saldo` y
   # `buy_amount` ya no se usa (se deja escrito por si se vuelve a fijos).
@@ -63,7 +67,7 @@ trade:
   # las compras pequenas pesa mucho.
   buy_amount: 0.25
   buy_amount_usd: 0
-  fraccion_saldo: 0.35
+  fraccion_saldo: 0.15
   fraccion_base: "libre"
   min_reserve_sol: 0.03
   # 7 PLAZAS, pedido el 4-nov: "maximo 7 operaciones simultaneas". Venia
@@ -135,11 +139,15 @@ trade:
     # El ultimo redondea hacia arriba para que no quede polvo sin vender.
     - target_mc: 19000
       sell: 0.0202898552
-  # TRAS EL TP1 EL STOP SE MUEVE AL PRECIO DE COMPRA, pedido el 6-nov por la
-  # noche: "si toca el tp1 el sl se mueve al precio de compra". Venia de
-  # entrada +3%.
+  # TRAS EL TP1 EL STOP SE MUEVE A COMPRA +5%, pedido el 7-nov: "cuando
+  # salga tp1 el sl se mueve a precio compra mas algo de ganancias" (Manu
+  # eligio +5%). Venia de justo el precio de compra (6-nov).
   stop_a_entrada_tras_tp: true
-  margen_stop_tras_tp: 0.0
+  margen_stop_tras_tp: 0.05
+  # PARAR TRAS 3 PERDIDAS SEGUIDAS, pedido el 7-nov: "si alguna estrategia
+  # falla o nos da negativo tres resultados la paras". Deja de comprar hasta
+  # el siguiente arranque; lo abierto se sigue vendiendo.
+  max_perdidas_seguidas: 3
   stop_al_tp_tras_tp: false
   vender_todo_en_stop: true
   mc_stop_loss: 0
