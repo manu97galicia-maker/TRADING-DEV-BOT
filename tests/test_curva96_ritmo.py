@@ -80,7 +80,7 @@ def test_la_estrategia_pide_las_dos_ultimas_compras():
     cv = yaml.safe_load(
         (Path(__file__).resolve().parents[1] / "bots/bot-real-presion.yaml").read_text()
     )["filters"]["curva_96"]
-    assert cv["ultimas_compras"] == 2
+    assert cv["ultimas_compras"] == 3  # despues: "las 3 ultimas"
 
 
 def test_minimo_de_market_cap_5600(monkeypatch):
@@ -117,7 +117,7 @@ def test_el_bot_le_pasa_el_precio_de_sol_vivo(tmp_path, monkeypatch):
 
     asyncio.run(t._run_curva96_mode())
     f = capturado["f"]
-    assert f.min_mc_usd == 5600 and f.ultimas_compras == 2
+    assert f.min_mc_usd == 5600 and f.ultimas_compras == 3
     monkeypatch.setattr(ut, "_SOL_USD", 123.0)
     assert f._sol_usd() == 123.0
 

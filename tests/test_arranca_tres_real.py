@@ -49,7 +49,8 @@ def test_reglas_comunes_a_las_tres() -> None:
         t, fl = c["trade"], c["filters"]
         # 7-nov: "20% por operacion" en las de presion; el resto sigue en 15%.
         # Despues: "pon 30% por operacion".
-        pct = 0.30 if "presion" in f else 0.15
+        # Despues: "44% por operacion".
+        pct = 0.44 if "presion" in f else 0.15
         assert t["fraccion_saldo"] == pct and t["fraccion_base"] == "libre", f
         assert (
             t["stop_a_entrada_tras_tp"] is True and t["margen_stop_tras_tp"] == 0.05
@@ -66,8 +67,9 @@ def test_reglas_comunes_a_las_tres() -> None:
         # 7-nov: "pon sin limite de operaciones simultaneas".
         # Despues, en las de presion: "maximo 3 operaciones simultaneas".
         # Despues: "maximo 4 simultaneas y maximo de posiciones abiertas 4".
-        assert t["max_posiciones"] == (4 if "presion" in f else 0), f
-        assert t.get("max_posiciones_total", 0) == (4 if "presion" in f else 0), f
+        # Despues: "maximo 3".
+        assert t["max_posiciones"] == (3 if "presion" in f else 0), f
+        assert t.get("max_posiciones_total", 0) == (3 if "presion" in f else 0), f
 
 
 def test_curva92() -> None:

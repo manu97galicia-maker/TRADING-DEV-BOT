@@ -64,14 +64,16 @@ trade:
   buy_amount_usd: 0
   # 7-nov: "20% por operacion" (antes 0.15).
   # 7-nov, despues: "pon 30% por operacion" (antes 0.20).
-  fraccion_saldo: 0.30
+  # 7-nov, despues: "44% por operacion" (antes 0.30).
+  fraccion_saldo: 0.44
   fraccion_base: libre
   min_reserve_sol: 0.03
   # 7-nov: "maximo 4 simultaneas y maximo de posiciones abiertas 4"
   # (antes 3 por estrategia). 4 por estrategia y, ademas, 4 EN TOTAL
   # entre las dos: cuenta las posiciones de todas antes de comprar.
-  max_posiciones: 4
-  max_posiciones_total: 4
+  # 7-nov, despues: "maximo 3" (antes 4 y 4).
+  max_posiciones: 3
+  max_posiciones_total: 3
   max_real_buys: 1000
   reiniciar_tanda: false
   # 7-nov: "deslizamiento 18%" (antes 35% en compra y venta). El de las
@@ -220,7 +222,8 @@ filters:
     revisar_cada_seg: 2.0
     # 7-nov: "dos ultimas tx sean compras". Con la presion OK, si en las 2
     # ultimas operaciones hay alguna venta, no se compra (se vuelve a mirar).
-    ultimas_compras: 2
+    # 7-nov, despues: "las 3 ultimas sean compras" (antes 2).
+    ultimas_compras: 3
     # 7-nov: "minimo compras monedas de 5.6k de market cap". Por debajo no
     # se compra; se vuelve a mirar en la siguiente operacion.
     min_mc_usd: 5600

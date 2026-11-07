@@ -50,12 +50,13 @@ def test_prioridades_bajas(yaml_rel, tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("yaml_rel", PRESION)
-def test_tope_comun_de_4_entre_las_dos(yaml_rel, tmp_path, monkeypatch):
-    """7-nov "maximo de posiciones abiertas 4": cuenta las de TODAS."""
+def test_tope_comun_de_3(yaml_rel, tmp_path, monkeypatch):
+    """7-nov "maximo de posiciones abiertas 4" y despues "maximo 3": cuenta
+    las posiciones de TODAS las estrategias de la carpeta."""
     t, _ = _construir(yaml_rel, tmp_path, monkeypatch)
-    assert t.max_posiciones == 4 and t.max_posiciones_total == 4
-    for i, quien in enumerate(["real-presion6k", "real-presion6k", "real-presion15k"]):
+    assert t.max_posiciones == 3 and t.max_posiciones_total == 3
+    for i, quien in enumerate(["bot-real-presion", "bot-real-presion"]):
         (tmp_path / f"open_position_{quien}__Mint{i}.json").write_text("{}")
-    assert t._abiertas_entre_todos() == 3 and not t._tope_comun_lleno()
-    (tmp_path / "open_position_real-presion15k__Mint9.json").write_text("{}")
+    assert t._abiertas_entre_todos() == 2 and not t._tope_comun_lleno()
+    (tmp_path / "open_position_bot-otro__Mint9.json").write_text("{}")
     assert t._tope_comun_lleno()
