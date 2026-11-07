@@ -648,6 +648,9 @@ class UniversalTrader:
         # posiciones abiertas 4"). Cuenta los marcadores de todas las
         # estrategias que corren en esta carpeta. 0 = sin tope comun.
         max_posiciones_total: int = 0,
+        # Estrategias cuyas posiciones NO cuentan para ese tope comun (7-nov:
+        # las mayhem van "aparte"). Nombres de su YAML, sin extension.
+        max_posiciones_total_ignora: list[str] | None = None,
         # Importe reducido para la compra inmediatamente despues de un SL.
         # 0 = usar siempre el importe normal.
         buy_amount_tras_sl: float = 0.0,
@@ -1446,6 +1449,9 @@ class UniversalTrader:
         ) if tp_marcados and tp_sell_marcados else []
         self.max_perdidas_seguidas = int(max_perdidas_seguidas or 0)
         self.max_posiciones_total = int(max_posiciones_total or 0)
+        self.max_posiciones_total_ignora = [
+            str(x) for x in (max_posiciones_total_ignora or []) if x
+        ]
         self._perdidas_seguidas = 0
         #: REGIMEN APARTE para las monedas que no nacieron en pump.fun. Se
         #: cuentan solas porque son un experimento con menos red: no hay
@@ -2343,9 +2349,18 @@ class UniversalTrader:
         abiertas").
         """
         corte = time.time() - FICHA_VIVA_SEG
+        fuera = tuple(
+            f"open_position_{x}"
+            for x in getattr(self, "max_posiciones_total_ignora", None) or []
+        )
         try:
             fichas = self._open_pos_path.parent.glob("open_position*.json")
-            return sum(1 for f in fichas if f.stat().st_mtime >= corte)
+            return sum(
+                1
+                for f in fichas
+                if f.stat().st_mtime >= corte
+                and not (fuera and f.name.startswith(fuera))
+            )
         except OSError:
             return 0
 
@@ -4122,6 +4137,17 @@ class UniversalTrader:
             _es_mayhem = bool(getattr(token_info, "is_mayhem_mode", False))
             if not self.allow_mayhem and _es_mayhem:
                 self._descarta(token_info, "mayhem mode (allow_mayhem: false)")
+                return
+            # SOLO MAYHEM (7-nov, estrategia mayhem). Antes solo lo frenaba el
+            # comprador al final, como una compra FALLIDA: contaba para subir
+            # el slippage tras 3 fallidas y ensuciaba el log. Se frena aqui.
+            # Los devs marcados se saltan esta regla tambien en el comprador.
+            if (
+                getattr(self, "require_mayhem", False)
+                and not _es_mayhem
+                and not self._es_marcado(token_info)
+            ):
+                self._descarta(token_info, "no es mayhem (require_mayhem)")
                 return
 
             if not self._dentro_del_horario():

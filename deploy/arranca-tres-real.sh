@@ -31,7 +31,8 @@ ORIGEN="${ORIGEN:-origin}"
 #: 7-nov: "dejamos solo las estrategias de presion compradora": fuera dev1
 #: y la curva 92% (sus YAML siguen ahi; para volver, se anaden a esta lista).
 #: 7-nov, despues: "elimina lo de 6k y 15k ... una unica estrategia".
-ESTRATEGIAS="bots/bot-real-presion.yaml"
+#: 7-nov, despues: "hazme una estrategia de mayhem ... arriesgando 4$".
+ESTRATEGIAS="bots/bot-real-presion.yaml bots/bot-real-mayhem.yaml"
 #: Nombre corto del log de cada una. dev1 sigue en logs/dev1_real.log, que es
 #: el que leen porque-no-compra.sh y los comandos de siempre.
 log_de() {
@@ -39,6 +40,7 @@ log_de() {
     bot-paper-dev1-bloque2) echo "dev1_real.log" ;;
     bot-real-curva92) echo "curva92_real.log" ;;
     bot-real-presion) echo "presion_real.log" ;;
+    bot-real-mayhem) echo "mayhem_real.log" ;;
     *) echo "$(basename "$1" .yaml)_real.log" ;;
   esac
 }

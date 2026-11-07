@@ -29,7 +29,9 @@ def test_arranca_las_tres_con_apagado_y_solo_en_real() -> None:
     # 7-nov: "dejamos solo las estrategias de presion compradora".
     lista = next(x for x in TEXTO.splitlines() if x.startswith("ESTRATEGIAS="))
     # Despues: "elimina lo de 6k y 15k ... una unica estrategia".
-    assert lista == 'ESTRATEGIAS="bots/bot-real-presion.yaml"'
+    # Despues: "hazme una estrategia de mayhem ... arriesgando 4$".
+    assert lista == 'ESTRATEGIAS="bots/bot-real-presion.yaml bots/bot-real-mayhem.yaml"'
+    assert "mayhem_real.log" in TEXTO
     assert "presion_real.log" in TEXTO
     # Y las que salen de la lista tambien se paran: pkill de todas.
     assert 'pkill -f "run_bot_process" ' in TEXTO

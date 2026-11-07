@@ -74,6 +74,8 @@ trade:
   # 7-nov, despues: "maximo 3" (antes 4 y 4).
   max_posiciones: 3
   max_posiciones_total: 3
+  # 7-nov: las mayhem van "aparte": sus posiciones no cuentan en estas 3.
+  max_posiciones_total_ignora: [bot-real-mayhem]
   max_real_buys: 1000
   reiniciar_tanda: false
   # 7-nov: "deslizamiento 18%" (antes 35% en compra y venta). El de las
