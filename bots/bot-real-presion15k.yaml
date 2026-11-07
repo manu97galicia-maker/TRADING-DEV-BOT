@@ -1,0 +1,126 @@
+# ESTRATEGIA "PRESION SUAVE DESDE 15,3K", pedida el 7-nov: "anade una de
+# presion compradora pero no tan estricta pero a partir de los 15.3k mc".
+# Generada a partir de bot-real-presion6k.yaml (mismas comisiones,
+# deslizamiento, reserva, 15% del SOL libre, stop -25%, tras el TP1 stop a
+# compra +5%, venta a los 5 min si va en rojo, para tras 3 perdidas seguidas,
+# sin mayhem, blacklist y auto-baneo por rugs, sin limite de posiciones).
+# Lo que cambia:
+#   - ENTRADA: se empieza a mirar con la curva al 75% (~12,8k con SOL a
+#     91 $; si SOL pasa de ~109 $ el 75% ya cae por encima de 15,3k y se
+#     entra algo mas arriba, nunca por debajo) y se compra
+#     cuando el market cap pasa de 15.300 $ (min_entry_mc, en un plazo de
+#     120 s) con presion MAS SUAVE que la de 6k: >= 3 compradores distintos
+#     en 5 s (6k pide 6), >= 1,3x compras/ventas (6k: 2x) y >= 0,3 SOL
+#     comprados en esa ventana (6k: 1 SOL); >= 6 compradores en total (6k:
+#     10). Mismos frenos: sin mecha de 1 s (> 35%) y titulares <= 50%.
+#   - SALIDA: TP1 +38% (79,71%, recupera lo invertido +10%) y el resto en
+#     +60% / +100% / +150%, como la curva 92%. NO los tramos por market cap
+#     de 7k-19k: entrando a 15,3k, el TP1 salta por encima de ~21k y esos
+#     tramos se venderian todos de golpe justo despues.
+name: REAL PRESION SUAVE DESDE 15,3K
+env_file: .env
+rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
+wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
+private_key: ${SOLANA_PRIVATE_KEY}
+enabled: false
+separate_process: false
+platform: pump_fun
+trade:
+  nombre_estrategia: real-presion15k
+  buy_amount: 0.25
+  buy_amount_usd: 0
+  fraccion_saldo: 0.15
+  fraccion_base: libre
+  min_reserve_sol: 0.03
+  max_posiciones: 0
+  max_real_buys: 1000
+  reiniciar_tanda: false
+  buy_slippage: 0.35
+  sell_slippage: 0.35
+  sell_slippage_proteccion: 0.5
+  exit_strategy: tp_sl
+  stop_loss_percentage: 0.25
+  take_profit_percentage: 0.38
+  take_profit_sell_percentage: 0.7971014493
+  mc_take_profit_tiers: []
+  stop_a_entrada_tras_tp: true
+  margen_stop_tras_tp: 0.05
+  max_perdidas_seguidas: 3
+  stop_al_tp_tras_tp: false
+  vender_todo_en_stop: true
+  mc_stop_loss: 0
+  max_hold_time: 0
+  venta_muerta_seg: 300
+  venta_muerta_gain: 0.0
+  price_check_interval: 1
+  tp2_gain: 0.6
+  tp2_sell: 0.0676328502
+  tp3_gain: 1.0
+  tp3_sell: 0.0676328502
+  tp4_gain: 1.5
+  tp4_sell: 0.0676328504
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  fixed_amount_compra: 110000000
+  fixed_amount: 5714286
+  fixed_amount_venta_proteccion: 42424243
+  extra_percentage: 0.0
+  hard_cap: 110000000
+retries:
+  max_attempts: 1
+  wait_after_creation: 0
+  wait_after_buy: 0
+filters:
+  listener_type: logs
+  yolo_mode: true
+  paper_trade: false
+  paper_watch_secs: 600
+  max_token_age: 5
+  max_entry_mc: 0
+  max_buy_age: 120
+  allow_mayhem: false
+  require_mayhem: false
+  ignorar_listas_de_devs: false
+  min_first_block_buys: 0
+  max_first_block_buys: 0
+  min_first_block_usd: 0
+  max_first_block_usd: 0
+  buy_from_second_block: false
+  second_block_confirmation:
+    enabled: false
+    min_buyers: 0
+    min_buy_sol: 0
+    min_net_sol: 0
+    max_sells: 0
+  curva_96:
+    enabled: true
+    tope: 0.995
+    buy_amount: 0
+    max_compras: 0
+    parar_tras_perdidas: 0
+    min_edad_seg: 0
+    max_edad_seg: 0
+    vela_seg: 1.0
+    max_subida_vela: 0.35
+    exigir_ver_creacion: false
+    max_carteras_primer_bloque: 0
+    max_sol_primer_bloque: 0
+    max_bundle_pct: 0.5
+    max_bundle_pct_sin_historia: 0.35
+    heartbeat_interval: 300
+    umbral: 0.75
+    min_compradores: 6
+    min_compradores_ola: 3
+    ventana_presion: 5.0
+    min_presion_ratio: 1.3
+    min_compra_sol: 0.3
+  pumpfun_dev:
+    enabled: false
+  min_entry_mc: 15300
+cleanup:
+  mode: post_session
+  force_close_with_burn: false
+  with_priority_fee: false
+node:
+  max_rps: 8

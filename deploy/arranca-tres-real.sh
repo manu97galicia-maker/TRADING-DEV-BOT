@@ -26,9 +26,9 @@ RAMA=main
 # publico un momento, se puede pasar la direccion HTTPS:
 #   ORIGEN=https://github.com/manu97galicia-maker/Definitivo_bot.git bash /root/arranca-dev1.sh
 ORIGEN="${ORIGEN:-origin}"
-#: Las tres estrategias en real (7-nov): la del dev, la de la curva al 92% y
-#: la de presion desde 6k. Cada una con su log en logs/<nombre>_real.log.
-ESTRATEGIAS="bots/bot-paper-dev1-bloque2.yaml bots/bot-real-curva92.yaml bots/bot-real-presion6k.yaml"
+#: Las estrategias en real (7-nov): la del dev, la de la curva al 92%, la de
+#: presion desde 6k y la de presion suave desde 15,3k. Cada una con su log en logs/<nombre>_real.log.
+ESTRATEGIAS="bots/bot-paper-dev1-bloque2.yaml bots/bot-real-curva92.yaml bots/bot-real-presion6k.yaml bots/bot-real-presion15k.yaml"
 #: Nombre corto del log de cada una. dev1 sigue en logs/dev1_real.log, que es
 #: el que leen porque-no-compra.sh y los comandos de siempre.
 log_de() {
@@ -36,6 +36,7 @@ log_de() {
     bot-paper-dev1-bloque2) echo "dev1_real.log" ;;
     bot-real-curva92) echo "curva92_real.log" ;;
     bot-real-presion6k) echo "presion6k_real.log" ;;
+    bot-real-presion15k) echo "presion15k_real.log" ;;
     *) echo "$(basename "$1" .yaml)_real.log" ;;
   esac
 }

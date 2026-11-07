@@ -10,7 +10,11 @@ import yaml
 RAIZ = Path(__file__).resolve().parents[1]
 SCRIPT = RAIZ / "deploy" / "arranca-tres-real.sh"
 TEXTO = SCRIPT.read_text(encoding="utf-8")
-NUEVAS = ["bots/bot-real-curva92.yaml", "bots/bot-real-presion6k.yaml"]
+NUEVAS = [
+    "bots/bot-real-curva92.yaml",
+    "bots/bot-real-presion6k.yaml",
+    "bots/bot-real-presion15k.yaml",
+]
 
 
 def _cfg(f: str) -> dict:
@@ -70,3 +74,22 @@ def test_presion6k() -> None:
     assert cv["min_compradores_ola"] >= 6
     assert fl["pumpfun_dev"]["enabled"] is False
     assert [x["target_mc"] for x in c["trade"]["mc_take_profit_tiers"]] == [7000, 9000, 12000, 15000, 19000]
+
+
+def test_presion15k() -> None:
+    """7-nov: "presion compradora pero no tan estricta a partir de los 15.3k"."""
+    c = _cfg(NUEVAS[2])
+    cv, fl, t = c["filters"]["curva_96"], c["filters"], c["trade"]
+    p6 = _cfg(NUEVAS[1])["filters"]["curva_96"]
+    assert c["enabled"] is False
+    assert fl["min_entry_mc"] == 15300 and fl["max_buy_age"] > 0
+    assert fl["pumpfun_dev"]["enabled"] is False
+    # Menos estricta que la de 6k en las tres medidas de presion.
+    assert cv["min_compradores_ola"] < p6["min_compradores_ola"]
+    assert cv["min_presion_ratio"] < p6["min_presion_ratio"]
+    assert cv["min_compra_sol"] < p6["min_compra_sol"]
+    assert cv["max_bundle_pct"] == 0.5 and cv["max_subida_vela"] == 0.35
+    # Entrando a 15,3k los tramos de 7k-19k saltarian todos juntos: van por %.
+    assert t["mc_take_profit_tiers"] == []
+    assert [t["tp2_gain"], t["tp3_gain"], t["tp4_gain"]] == [0.60, 1.00, 1.50]
+    assert "presion15k_real.log" in TEXTO
