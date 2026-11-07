@@ -120,8 +120,10 @@ filters:
     # porque se pidiera. Se ponen los valores por defecto del codigo: si
     # en el bloque de creacion compran mas de 3 carteras o entran mas de
     # 2 SOL, es bundle y no se compra.
-    max_carteras_primer_bloque: 3
-    max_sol_primer_bloque: 2.0
+    # 7-nov, despues: "mas de 5 carteras, no compra; mas de 9 SOL, no
+    # compra" (antes 3 y 2.0).
+    max_carteras_primer_bloque: 5
+    max_sol_primer_bloque: 9.0
     max_bundle_pct: 0.5
     max_bundle_pct_sin_historia: 0.35
     heartbeat_interval: 300

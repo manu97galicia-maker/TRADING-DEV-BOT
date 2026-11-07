@@ -129,5 +129,6 @@ def test_presion_sin_bundles_de_creacion() -> None:
     de ~2,5k a ~27k y el dev vende todo a los 2 minutos)."""
     for f in NUEVAS[1:]:
         cv = _cfg(f)["filters"]["curva_96"]
-        assert cv["max_carteras_primer_bloque"] == 3, f
-        assert cv["max_sol_primer_bloque"] == 2.0, f
+        # Despues: "mas de 5 carteras ... mas de 9 SOL, no compra".
+        assert cv["max_carteras_primer_bloque"] == 5, f
+        assert cv["max_sol_primer_bloque"] == 9.0, f
