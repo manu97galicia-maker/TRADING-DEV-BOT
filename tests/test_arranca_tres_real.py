@@ -77,9 +77,9 @@ def test_presion6k() -> None:
     c = _cfg(NUEVAS[1])
     cv, fl = c["filters"]["curva_96"], c["filters"]
     assert fl["min_entry_mc"] == 6000 and fl["max_buy_age"] > 0  # sin ventana no se mira el MC
-    # 7-nov "un poco mas de presion y volumen": 5 en 5 s, 1,7x, 0,7 SOL, 8 en total.
-    assert cv["min_compradores_ola"] == 5 and cv["min_presion_ratio"] == 1.7
-    assert cv["min_compra_sol"] == 0.7 and cv["min_compradores"] == 8
+    # 7-nov "un poquito mas de presion y volumen": 5 en 5 s, 1,8x, 0,8 SOL, 8 en total.
+    assert cv["min_compradores_ola"] == 5 and cv["min_presion_ratio"] == 1.8
+    assert cv["min_compra_sol"] == 0.8 and cv["min_compradores"] == 8
     assert fl["pumpfun_dev"]["enabled"] is False
     assert [x["target_mc"] for x in c["trade"]["mc_take_profit_tiers"]] == [7000, 9000, 12000, 15000, 19000]
 
@@ -97,9 +97,9 @@ def test_presion15k() -> None:
     assert cv["min_presion_ratio"] < p6["min_presion_ratio"]
     assert cv["min_compra_sol"] < p6["min_compra_sol"]
     assert cv["max_bundle_pct"] == 0.5 and cv["max_subida_vela"] == 0.35
-    # 7-nov "un poco mas de presion y volumen": 4 en 5 s, 1,5x, 0,5 SOL.
-    assert cv["min_compradores_ola"] == 4 and cv["min_presion_ratio"] == 1.5
-    assert cv["min_compra_sol"] == 0.5 and cv["min_compradores"] == 6
+    # 7-nov "un poquito mas de presion y volumen": 4 en 5 s, 1,6x, 0,6 SOL.
+    assert cv["min_compradores_ola"] == 4 and cv["min_presion_ratio"] == 1.6
+    assert cv["min_compra_sol"] == 0.6 and cv["min_compradores"] == 6
     # Entrando a 15,3k los tramos de 7k-19k saltarian todos juntos: van por %.
     assert t["mc_take_profit_tiers"] == []
     assert [t["tp2_gain"], t["tp3_gain"], t["tp4_gain"]] == [0.60, 1.00, 1.50]
