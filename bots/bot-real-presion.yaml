@@ -162,15 +162,17 @@ filters:
   # PRESION EN LOS DEX, pedida el 7-nov: "puedes coger tambien de raydium
   # con mismas condiciones" y "anade pumpswap y meteora y bags, todos tienen
   # que ser liquidez locked". Ver monitoring/dex_presion_source.py.
-  #   - EN PAPEL (en_papel: true): simula con la misma salida del bot y
-  #     apunta cada cierre en logs/dex_presion_papel.jsonl. No firma nada.
-  #     Pasar a real = en_papel: false, cuando Manu lo diga.
+  #   - EN REAL desde el 7-nov (Manu: "de papel no, asegurate que en real va
+  #     bien"). Compra y vende por Jupiter con la prioridad y el slippage del
+  #     bot; las monedas de 9 decimales se cuentan bien (precio del DEX pasado
+  #     a la unidad del bot). Probado por el bot entero en
+  #     tests/test_dex_presion_real.py. en_papel: true lo vuelve a simular.
   #   - La presion es de 5 MINUTOS (GeckoTerminal), no de 5 segundos.
   #     Numeros propuestos el 7-nov, sin confirmar todavia por Manu.
   #   - Bags lanza en pools de Meteora: entra con el prefijo "meteora".
   dex_presion:
     enabled: true
-    en_papel: true
+    en_papel: false
     dex: [raydium, pumpswap, meteora]
     intervalo_seg: 20
     min_compradores_5m: 30

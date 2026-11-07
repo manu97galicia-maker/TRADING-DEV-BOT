@@ -163,7 +163,8 @@ def test_la_estrategia_lo_tiene_en_papel():
     c = yaml.safe_load(
         (Path(__file__).resolve().parents[1] / "bots/bot-real-presion.yaml").read_text()
     )["filters"]["dex_presion"]
-    assert c["enabled"] is True and c["en_papel"] is True
+    # Despues: "de papel no, asegurate que en real va bien".
+    assert c["enabled"] is True and c["en_papel"] is False
     assert c["dex"] == ["raydium", "pumpswap", "meteora"]
     assert c["min_lp_bloqueada_pct"] == 90
 
@@ -176,6 +177,7 @@ def test_dentro_del_bot_real_compra_en_papel_con_su_salida(tmp_path, monkeypatch
     from test_tp_sl_en_vivo import _construir
 
     t, _ = _construir("bots/bot-real-presion.yaml", tmp_path, monkeypatch)
+    t.dex_presion["en_papel"] = True  # esta prueba es la del papel
     assert "dex_presion" in t._fuentes_activas() and "curva96" in t._fuentes_activas()
     creadas = []
     original = dp.DexPresionSource.__init__

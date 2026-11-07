@@ -44,8 +44,8 @@ from trading.ganancia import Ganancia
 from trading.panic import panic_time
 from trading.platform_aware import PlatformAwareBuyer, PlatformAwareSeller
 from trading.position import Position
-from trading.reserva import reserva as _reserva_moneda
 from trading.reserva import marca_comprada as _marca_comprada
+from trading.reserva import reserva as _reserva_moneda
 from trading.reserva import suelta as _suelta_moneda
 from trading.tiered_exit import (
     build_tiers,
@@ -4359,10 +4359,10 @@ class UniversalTrader:
                     en_bloque_posterior_al_inicial as _bloque_dos,
                 )
                 from monitoring.volumen import metricas_segunda_ola as _segunda_ola
+                from monitoring.volumen import metricas_segundo_bloque as _second_block
                 from monitoring.volumen import operaciones as _n_ops
                 from monitoring.volumen import presion as _presion
                 from monitoring.volumen import sol_primer_bloque as _sol_first_block
-                from monitoring.volumen import metricas_segundo_bloque as _second_block
                 from monitoring.volumen import titulares as _n_tit
                 from monitoring.volumen import ultimas_son_compra as _ult_compra
                 from monitoring.volumen import volumen_sol as _vol_sol
@@ -6040,12 +6040,24 @@ class UniversalTrader:
             token_info.symbol,
             amount_sol,
         )
-        ok, firma, error, tokens = await jupiter_buy(
-            wallet.keypair,
-            str(token_info.mint),
-            amount_sol,
-            slippage_bps=int(self.buy_slippage * 10000),
+        # LA PRIORIDAD DEL BOT TAMBIEN EN JUPITER (7-nov). Sin esto Jupiter
+        # ponia la suya y la de la config (0,002 SOL) no contaba.
+        from trading.transaction_observer import PRIORITY_CAP  # noqa: PLC0415
+
+        # Si quien llama ya puso su tope (FourStrategyTrader), manda el suyo.
+        _cap = PRIORITY_CAP.set(
+            PRIORITY_CAP.get()
+            or self._lamports_prioridad(getattr(self, "fee_compra", 0), 100_000)
         )
+        try:
+            ok, firma, error, tokens = await jupiter_buy(
+                wallet.keypair,
+                str(token_info.mint),
+                amount_sol,
+                slippage_bps=int(self.buy_slippage * 10000),
+            )
+        finally:
+            PRIORITY_CAP.reset(_cap)
         if not ok or tokens <= 0:
             return TradeResult(
                 success=False,
@@ -6321,12 +6333,21 @@ class UniversalTrader:
             amount, _ = align_full_sell(amount, real, TOKEN_DECIMALS, full_exit=full_exit)
 
         _seller = self._vendedor_para(reason)
-        sell_result = await _seller.execute(
-            token_info,
-            token_amount=amount,
-            token_price=ref_price,
-            priority_fee_override=self._fee_de_venta_para(reason),
-        )
+        # UNA MONEDA DE LOS DEX NO TIENE CURVA DE PUMP.FUN (7-nov): la venta
+        # por la curva no tiene sentido y se va directa a Jupiter.
+        if (getattr(token_info, "additional_data", None) or {}).get("origen") == "dex_presion":
+            sell_result = TradeResult(
+                success=False,
+                platform=token_info.platform,
+                error_message="moneda de DEX: se vende por Jupiter",
+            )
+        else:
+            sell_result = await _seller.execute(
+                token_info,
+                token_amount=amount,
+                token_price=ref_price,
+                priority_fee_override=self._fee_de_venta_para(reason),
+            )
         if sell_result.success:
             self._fallos_venta.pop(mint, None)
             self._bloqueada_hasta.pop(mint, None)
@@ -6355,11 +6376,21 @@ class UniversalTrader:
         )
         try:
             from trading.jupiter_seller import jupiter_sell
+            from trading.transaction_observer import PRIORITY_CAP  # noqa: PLC0415
 
-            ok, sig, err, _sol_out = await jupiter_sell(
-                self.wallet.keypair, str(token_info.mint), amount,
-                slippage_bps=int(self._slippage_para(reason) * 10000),
+            _pfm = getattr(self, "priority_fee_manager", None)
+            _micro = self._fee_de_venta_para(reason) or getattr(_pfm, "fixed_fee", 0)
+            # Si quien llama ya puso su tope (FourStrategyTrader), manda el suyo.
+            _cap = PRIORITY_CAP.set(
+                PRIORITY_CAP.get() or self._lamports_prioridad(_micro, 60_000)
             )
+            try:
+                ok, sig, err, _sol_out = await jupiter_sell(
+                    self.wallet.keypair, str(token_info.mint), amount,
+                    slippage_bps=int(self._slippage_para(reason) * 10000),
+                )
+            finally:
+                PRIORITY_CAP.reset(_cap)
         except Exception as exc:  # noqa: BLE001
             ok, sig, err, _sol_out = False, None, str(exc), 0.0
         if ok:
@@ -7991,7 +8022,7 @@ class UniversalTrader:
         except Exception:  # noqa: BLE001 - registrar el moonbag nunca debe romper
             logger.debug("no pude registrar moonbag", exc_info=True)
 
-    async def _precio_dex(self, mint: str) -> float | None:
+    async def _precio_dex(self, mint: str) -> float | None:  # noqa: C901
         """Precio en SOL segun el DEX. Para cuando la curva ya no sirve.
 
         Cuando una moneda migra, la curva se vacia
@@ -8039,8 +8070,46 @@ class UniversalTrader:
                                 mejor, precio = liq, p
         except Exception:  # noqa: BLE001 - sin precio del DEX se sigue sin el
             precio = None
+        if precio is not None:
+            # MISMAS UNIDADES QUE EL RESTO DEL BOT (7-nov). Todo el bot cuenta
+            # los tokens como crudo / 10**6 (compra por Jupiter, saldo real,
+            # venta), que es lo correcto en pump.fun. DexScreener da el precio
+            # por moneda REAL: en una moneda de 9 decimales (mucho Raydium,
+            # Meteora, Bags) eso es 1.000 veces mas que lo que el bot llama
+            # "un token", y el vigilante veia +99.900% nada mas comprar. Se
+            # pasa el precio a la unidad del bot; con 6 decimales no cambia.
+            dec = await self._decimales_de(mint)
+            if dec is None:
+                precio = None
+            elif dec != TOKEN_DECIMALS:
+                precio = precio * 10 ** (TOKEN_DECIMALS - dec)
         self._precio_dex_cache[mint] = (ahora, precio)
         return precio
+
+    async def _decimales_de(self, mint: str) -> int | None:
+        """Decimales del mint (se leen una vez). Las de pump.fun, 6 sin leer."""
+        if mint.endswith("pump"):
+            return TOKEN_DECIMALS
+        cache = self.__dict__.setdefault("_decimales_cache", {})
+        if mint in cache:
+            return cache[mint]
+        try:
+            r = await self.solana_client.post_rpc(
+                {"jsonrpc": "2.0", "id": 1, "method": "getTokenSupply", "params": [mint]}
+            )
+            dec = int(((r or {}).get("result") or {}).get("value", {}).get("decimals"))
+        except (TypeError, ValueError, AttributeError):
+            return None
+        except Exception:  # noqa: BLE001 - sin decimales no hay precio fiable
+            return None
+        cache[mint] = dec
+        return dec
+
+    def _lamports_prioridad(self, microlamports: int | None, unidades: int) -> int | None:
+        """Comision de prioridad TOTAL en lamports, para pasarsela a Jupiter."""
+        if not microlamports:
+            return None
+        return max(1, round(int(microlamports) * int(unidades) / 1_000_000))
 
     async def _precio_sol_loop(self) -> None:
         """Refresca el precio de SOL cada hora y mueve los techos con el.
