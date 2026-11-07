@@ -33,7 +33,7 @@ def test_config_rompe_10k():
     assert cv["ventana_presion"] == 5.0
     # "sin limite de operaciones", pero "cuidame de rugs": el freno de 3
     # perdidas seguidas se queda.
-    assert t["max_real_buys"] == 0 and t["max_posiciones"] == 3
+    assert t["max_real_buys"] == 0 and t["max_posiciones"] == 4
     assert t["max_perdidas_seguidas"] == 3
     # Nada mas: sin volumen, compradores ni edad.
     for k in (
@@ -49,9 +49,9 @@ def test_config_rompe_10k():
     assert fl["max_dev_hold_pct"] == 0.10 and fl["allow_mayhem"] is False
     assert cv["max_carteras_primer_bloque"] == 5 and cv["max_sol_primer_bloque"] == 9.0
     assert cv["max_subida_vela"] == 0.54 and cv["max_subida_vela2"] == 0.60
-    # Despues: "40% por operacion" del total, TP +40% (recupera) / +90% / +140%,
+    # Despues: "25% cada operacion" del total, TP +40% (recupera) / +90% / +140%,
     # SL en 7,4k de market cap y el trailing fijo en 22%.
-    assert t["fraccion_saldo"] == 0.40 and t["fraccion_base"] == "cartera"
+    assert t["fraccion_saldo"] == 0.25 and t["fraccion_base"] == "cartera"
     assert t["stop_loss_percentage"] == 0 and t["mc_stop_loss"] == 7400
     assert t["trailing_stop_percentage"] == 0.22
     assert [t["take_profit_percentage"], t["tp2_gain"], t["tp3_gain"]] == [
@@ -65,7 +65,7 @@ def test_config_rompe_10k():
         abs(t["take_profit_sell_percentage"] * 1.40 - 1.0) < 1e-6
     )  # recupera lo invertido
     assert t["stop_a_entrada_tras_tp"] is True
-    assert t["max_posiciones_total"] == 3
+    assert t["max_posiciones_total"] == 4
     assert fl["paper_trade"] is False and fl["dex_presion"]["enabled"] is False
 
 
