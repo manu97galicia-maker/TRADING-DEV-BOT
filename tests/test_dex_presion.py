@@ -176,7 +176,8 @@ def test_la_estrategia_lo_tiene_en_papel():
     )["filters"]["dex_presion"]
     # Despues: "de papel no, asegurate que en real va bien".
     assert c["enabled"] is True and c["en_papel"] is False
-    assert c["dex"] == ["raydium", "pumpswap", "meteora"]
+    # Despues: "no compres mas que no sea pumpfun o pumpswap".
+    assert c["dex"] == ["pumpswap"] and c["solo_pumpfun"] is True
     assert c["min_lp_bloqueada_pct"] == 90
 
 
@@ -199,7 +200,7 @@ def test_dentro_del_bot_real_compra_en_papel_con_su_salida(tmp_path, monkeypatch
 
     async def _get(self, _s, url):
         if "geckoterminal" in url:
-            return {"data": [_pool("MonedaLimpia", WSOL, "pumpswap")]}
+            return {"data": [_pool("MonedaLimpiapump", WSOL, "pumpswap")]}
         return []
 
     async def _informe(self, _mint):
@@ -225,7 +226,7 @@ def test_dentro_del_bot_real_compra_en_papel_con_su_salida(tmp_path, monkeypatch
     assert f.salida["stop"] == 0.22 and f.salida["trailing"] == 0.22
     assert [g for g, _ in f.salida["tramos"]] == [0.50, 0.85, 1.20]
     assert f.salida["margen_tras_tp"] == 0.05 and f.salida["muerta_seg"] == 300
-    assert "MonedaLimpia" in f._abiertas
+    assert "MonedaLimpiapump" in f._abiertas
 
 
 def test_dex_menos_de_10_minutos_no():
@@ -251,3 +252,26 @@ def test_fecha_con_z_como_la_manda_geckoterminal():
     d["attributes"]["pool_created_at"] = "2020-01-01T00:00:00Z"
     p = dp.lee_pools({"data": [d]})[0]
     assert p.edad_seg is not None and p.edad_seg > 3600
+
+
+def test_solo_pumpswap_y_monedas_de_pumpfun():
+    """7-nov "no compres mas que no sea pumpfun o pumpswap" (tras comprar
+    5exB7..., que no era de pump.fun)."""
+    import asyncio
+
+    f = dp.DexPresionSource(
+        None, None, {"dex": ["pumpswap"], "solo_pumpfun": True}, {}, en_papel=True
+    )
+
+    async def _get(_s, url):
+        return {
+            "data": [
+                _pool("5exB7MsoFpk8sfw1XcZJ3cuknS9PK2Y8rBmfSe2HK8C6", WSOL, "raydium"),
+                _pool("OtraDeFueraXYZ", WSOL, "pumpswap"),
+                _pool("BuenaDePumpFunpump", WSOL, "pumpswap"),
+                _pool("BuenaPeroEnMeteorapump", WSOL, "meteora"),
+            ]
+        }
+
+    f._get = _get
+    assert [p.mint for p in asyncio.run(f._candidatas(None))] == ["BuenaDePumpFunpump"]

@@ -175,7 +175,10 @@ filters:
   dex_presion:
     enabled: true
     en_papel: false
-    dex: [raydium, pumpswap, meteora]
+    # 7-nov, despues: "no compres mas que no sea pumpfun o pumpswap" (antes
+    # raydium, pumpswap, meteora). Y solo monedas nacidas en pump.fun.
+    dex: [pumpswap]
+    solo_pumpfun: true
     intervalo_seg: 20
     min_compradores_5m: 30
     min_compras_5m: 50

@@ -26,7 +26,7 @@ class _SinCache(dict):
         return None
 
 
-def _corre(monkeypatch, tmp_path, ruta, segundos):
+def _corre(monkeypatch, tmp_path, ruta, segundos, *, pumpswap=False):
     from dexscreener.rugcheck import RugReport
     from interfaces.core import Platform, TokenInfo
     from monitoring import dex_presion_source as dp
@@ -37,7 +37,14 @@ def _corre(monkeypatch, tmp_path, ruta, segundos):
     t, _ = _construir("bots/bot-real-presion.yaml", tmp_path, monkeypatch)
     monkeypatch.setattr(reserva, "CARPETA", tmp_path / "reservas")
     t.dex_presion["en_papel"] = False
-    mint = str(Pubkey.new_unique())
+    if pumpswap:
+        # Lo que se compra ahora: moneda de pump.fun (6 decimales) en PumpSwap.
+        mint, dex, dec = "jTUbWrLUYNmEzZTuUwpLNU6z2DrnmVPGko51wF4pump", "pumpswap", 6
+    else:
+        # El caso dificil del codigo (9 decimales), con Raydium permitido solo
+        # en esta prueba: la config real ya no lo compra.
+        mint, dex, dec = str(Pubkey.new_unique()), "raydium", DEC
+        t.dex_presion.update({"dex": ["raydium"], "solo_pumpfun": False})
     e = {"compras": [], "ventas": [], "i": 0, "raw": 0, "vendido": 0}
 
     async def _get(self, _s, url):
@@ -60,7 +67,7 @@ def _corre(monkeypatch, tmp_path, ruta, segundos):
                     "relationships": {
                         "base_token": {"data": {"id": "solana_" + mint}},
                         "quote_token": {"data": {"id": "solana_" + WSOL}},
-                        "dex": {"data": {"id": "raydium"}},
+                        "dex": {"data": {"id": dex}},
                     },
                 }
             ]
@@ -84,7 +91,7 @@ def _corre(monkeypatch, tmp_path, ruta, segundos):
         from trading.transaction_observer import PRIORITY_CAP
 
         e["compras"].append((sol, slippage_bps, PRIORITY_CAP.get()))
-        e["raw"] = int(sol / PRECIO * 10**DEC)
+        e["raw"] = int(sol / PRECIO * 10**dec)
         return True, "SIGBUY", None, e["raw"] / 1e6  # el bot cuenta crudo/10**6
 
     async def _venta(kp, m, ui, decimals=6, slippage_bps=0, rpc=None):
@@ -106,7 +113,7 @@ def _corre(monkeypatch, tmp_path, ruta, segundos):
 
     async def _rpc(body):
         if body.get("method") == "getTokenSupply":
-            return {"result": {"value": {"decimals": DEC}}}
+            return {"result": {"value": {"decimals": dec}}}
         return {}
 
     async def _tokens(_ata):
@@ -155,6 +162,11 @@ def _corre(monkeypatch, tmp_path, ruta, segundos):
     monkeypatch.setattr(dp.DexPresionSource, "_get", _get)
     monkeypatch.setattr(dp.RugCheckClient, "get_report", _informe)
     monkeypatch.setattr(tb, "build_generic_token_info", _generica)
+
+    async def _de_pumpfun(m, *_a, **_k):
+        return await _generica(m, None)
+
+    monkeypatch.setattr(tb, "build_pumpfun_token_info", _de_pumpfun)
     monkeypatch.setattr(js, "jupiter_buy", _compra)
     monkeypatch.setattr(js, "jupiter_sell", _venta)
     monkeypatch.setattr(t.solana_client, "get_account_info", _cuenta)
@@ -193,3 +205,12 @@ def test_en_real_el_stop_vende_todo_con_su_prioridad(monkeypatch, tmp_path):
     assert len(e["compras"]) == 1
     # Stop -22%: todo, slippage de proteccion 50%, prioridad 0,002 SOL.
     assert e["ventas"] == [(1.0, 5000, 2_000_000)]
+
+
+def test_en_real_moneda_de_pumpfun_en_pumpswap(monkeypatch, tmp_path):
+    """Despues: "no compres mas que no sea pumpfun o pumpswap"."""
+    e = _corre(
+        monkeypatch, tmp_path, [1.0, 1.0, 1.2, 1.55, 1.9, 2.3, 2.3], 4, pumpswap=True
+    )
+    assert e["compras"] == [(pytest.approx(0.2068), 900, 2_000_000)]
+    assert [v[0] for v in e["ventas"]] == [0.7971, 0.1014, 0.1014]

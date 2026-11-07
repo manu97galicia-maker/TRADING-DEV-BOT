@@ -278,6 +278,10 @@ class DexPresionSource:
         self.salida = dict(salida or {})
         self.en_papel = bool(en_papel)
         self.prefijos = list(self.cfg.get("dex") or ["raydium", "pumpswap", "meteora"])
+        # 7-nov, Manu: "no compres mas que no sea pumpfun o pumpswap". Solo
+        # monedas nacidas en pump.fun (su mint acaba en "pump"): en PumpSwap
+        # tambien se negocian monedas de fuera, y esas no entran.
+        self.solo_pumpfun = bool(self.cfg.get("solo_pumpfun", False))
         self.intervalo = float(self.cfg.get("intervalo_seg", 20))
         self.min_lp = float(self.cfg.get("min_lp_bloqueada_pct", 90))
         self.max_papel = int(self.cfg.get("max_posiciones_papel", 4))
@@ -311,6 +315,8 @@ class DexPresionSource:
             if p.mint in vistos:
                 continue
             vistos.add(p.mint)
+            if self.solo_pumpfun and not p.mint.endswith("pump"):
+                continue
             if dex_permitido(p.dex, self.prefijos):
                 fuera.append(p)
             elif p.dex and p.dex not in self._dex_desconocidos:
