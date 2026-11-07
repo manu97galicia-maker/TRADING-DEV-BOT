@@ -132,11 +132,12 @@ def test_por_encima_del_stop_no_vende(bot, monkeypatch):
 
 
 @pytest.mark.parametrize("yaml_rel", ["bots/bot-real-presion.yaml"])
-def test_presion_stop_al_18(yaml_rel, tmp_path, monkeypatch):
-    """7-nov "stop ponlo al 18%": a -16% aguanta, a -19% vende todo."""
+def test_presion_stop_al_22(yaml_rel, tmp_path, monkeypatch):
+    """7-nov: "stop ponlo al 18%" y despues "stop -22": a -20% aguanta, a
+    -23% vende todo."""
     t, ut = _construir(yaml_rel, tmp_path, monkeypatch)
-    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 0.84, 0.84, 0.81])
-    assert ventas == [("stop_loss", 1.0, 0.81)]
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 0.80, 0.80, 0.77])
+    assert ventas == [("stop_loss", 1.0, 0.77)]
 
 
 def test_tp1_cobra_y_el_stop_sube_a_compra_mas_5(bot, monkeypatch):
@@ -147,9 +148,10 @@ def test_tp1_cobra_y_el_stop_sube_a_compra_mas_5(bot, monkeypatch):
     yaml_rel, t, ut = bot
     if "presion" in yaml_rel:
         # 7-nov "pon el primer tp en 50%": TP1 a 1,5; trailing 1,5 x 0,82 = 1,23.
-        ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.2, 1.4, 1.5, 1.25, 1.22])
+        # Stop -22% (despues): trailing 1,5 x 0,78 = 1,17.
+        ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.2, 1.4, 1.5, 1.2, 1.16])
         assert ventas[0] == ("tp_tier1_+50%", 0.7971, 1.5)
-        assert len(ventas) == 2 and ventas[1][2] == 1.22
+        assert len(ventas) == 2 and ventas[1][2] == 1.16
         assert abs(ventas[1][1] - 0.2029) < 1e-3
         return
     ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.2, 1.4, 1.2, 1.06, 1.06, 1.04])
@@ -161,12 +163,12 @@ def test_tp1_cobra_y_el_stop_sube_a_compra_mas_5(bot, monkeypatch):
 
 
 @pytest.mark.parametrize("yaml_rel", ["bots/bot-real-presion.yaml"])
-def test_presion_trailing_al_18_antes_del_tp1(yaml_rel, tmp_path, monkeypatch):
-    """Sube a +30% sin tocar el TP1 y cae un 18% desde ahi (1,3 x 0,82 =
-    1,066): vende todo en verde, por trailing, sin esperar al stop."""
+def test_presion_trailing_al_22_antes_del_tp1(yaml_rel, tmp_path, monkeypatch):
+    """Sube a +30% sin tocar el TP1 y cae un 22% desde ahi (1,3 x 0,78 =
+    1,014): vende todo, por trailing, sin esperar al stop."""
     t, ut = _construir(yaml_rel, tmp_path, monkeypatch)
-    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.3, 1.07, 1.06])
-    assert ventas == [("trailing_stop", 1.0, 1.06)]
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.3, 1.02, 1.01])
+    assert ventas == [("trailing_stop", 1.0, 1.01)]
 
 
 def test_la_moneda_muerta_se_vende_a_los_5_minutos(bot, monkeypatch):
@@ -192,8 +194,12 @@ def test_presion_tres_ventas_hasta_el_75(yaml_rel, tmp_path, monkeypatch):
     """7-nov "haz 3 ventas" y "busco un 75% de roi": +38% / +55% / +75% y
     no hay mas ventas aunque siga subiendo."""
     t, ut = _construir(yaml_rel, tmp_path, monkeypatch)
-    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.4, 1.51, 1.56, 1.76, 2.5, 4.0])
-    assert [v[0] for v in ventas] == ["tp_tier1_+50%", "tp_tier2_+55%", "tp_tier3_+75%"]
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.4, 1.51, 1.86, 2.21, 4.0])
+    assert [v[0] for v in ventas] == [
+        "tp_tier1_+50%",
+        "tp_tier2_+85%",
+        "tp_tier3_+120%",
+    ]
     assert abs(sum(v[1] for v in ventas) - 1.0) < 1e-3
 
 

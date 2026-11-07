@@ -55,7 +55,8 @@ def test_reglas_comunes_a_las_tres() -> None:
             t["stop_a_entrada_tras_tp"] is True and t["margen_stop_tras_tp"] == 0.05
         ), f
         # 7-nov "stop ponlo al 18%" en las de presion; el resto sigue en 25%.
-        assert t["stop_loss_percentage"] == (0.18 if "presion" in f else 0.25), f
+        # Despues: "+50%, +85%, +120% y stop -22".
+        assert t["stop_loss_percentage"] == (0.22 if "presion" in f else 0.25), f
         assert t["max_perdidas_seguidas"] == 3, f
         assert t["venta_muerta_seg"] == 300 and t["venta_muerta_gain"] == 0.0, f
         # Despues, en la de presion: "pon el primer tp en 50%".
@@ -105,8 +106,8 @@ def _tres_ventas_hasta_75(t: dict) -> None:
     assert t["mc_take_profit_tiers"] == [] and "tp4_gain" not in t
     assert [t["take_profit_percentage"], t["tp2_gain"], t["tp3_gain"]] == [
         0.50,
-        0.55,
-        0.75,
+        0.85,
+        1.20,
     ]
     total = t["take_profit_sell_percentage"] + t["tp2_sell"] + t["tp3_sell"]
     assert abs(total - 1.0) < 1e-9
