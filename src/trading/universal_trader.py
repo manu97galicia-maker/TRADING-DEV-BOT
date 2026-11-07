@@ -412,6 +412,10 @@ class UniversalTrader:
         venta_muerta_seg: float = 0.0,
         venta_bajo_entrada_seg: float = 0.0,
         venta_muerta_gain: float = 0.0,
+        # SLIPPAGE QUE SUBE TRAS COMPRAS FALLIDAS (7-nov, Manu: "si hay tres
+        # fallidas sube el slippage a 14%"). {"fallidas": 3, "slippage": 0.14}.
+        # None o vacio = desactivado.
+        subir_slippage_tras_fallidas: dict | None = None,
         # Tiered take-profit ladder (tier 1 = take_profit_percentage +
         # take_profit_sell_percentage; tiers 2/3 below). gain is fraction
         # above entry (x2 = 1.0), sell is fraction of the original position.
@@ -978,6 +982,12 @@ class UniversalTrader:
         #: se vende la posicion ENTERA, moonbag incluido. 0 lo desactiva.
         self.venta_bajo_entrada_seg = float(venta_bajo_entrada_seg or 0)
         self.venta_muerta_gain = float(venta_muerta_gain or 0)
+        _sub = dict(subir_slippage_tras_fallidas or {})
+        #: Compras fallidas SEGUIDAS que hacen subir el slippage de compra.
+        self.fallidas_para_subir_slippage = int(_sub.get("fallidas") or 0)
+        #: A cuanto sube el slippage de compra cuando se llega a esas fallidas.
+        self.slippage_tras_fallidas = float(_sub.get("slippage") or 0)
+        self._compras_fallidas_seguidas = 0
         self.price_check_interval = price_check_interval
         # Build the take-profit ladder. Tier 1 sells take_profit_sell_percentage
         # (default 100% for backward compatibility) at take_profit_percentage.
@@ -5672,6 +5682,7 @@ class UniversalTrader:
                         # La compra fallo: la moneda vuelve a estar libre para
                         # que otro bot pueda intentarla.
                         _suelta_moneda(_mint_str)
+                    self._anota_compra_para_slippage(ok=bool(buy_result.success))
                     if buy_result.success:
                         buy_reason = self._build_buy_reason(token_info, dev_stats)
                         await self._handle_successful_buy(
@@ -6394,6 +6405,37 @@ class UniversalTrader:
         if rapida > 0 and self._es_venta_protectora(reason):
             return rapida
         return None
+
+    def _anota_compra_para_slippage(self, *, ok: bool) -> None:
+        """Cuenta las compras fallidas seguidas y sube el slippage si toca.
+
+        Pedido el 7-nov: "si hay tres fallidas sube el slippage a 14%". Con un
+        slippage de compra bajo, la compra falla cuando el precio se mueve mas
+        de ese % mientras llega, que es justo lo que pasa en monedas con
+        presion. Tras N fallidas SEGUIDAS se sube, y se queda subido hasta que
+        el bot se reinicie. Una compra buena pone la cuenta a cero. Nunca baja
+        el slippage: si ya estaba por encima, no se toca.
+        """
+        # Con `getattr`: hay traders (FourStrategyTrader, tests) que se arman
+        # sin pasar por este `__init__`, y esto no puede tumbar una compra.
+        if ok:
+            self._compras_fallidas_seguidas = 0
+            return
+        self._compras_fallidas_seguidas = (
+            int(getattr(self, "_compras_fallidas_seguidas", 0)) + 1
+        )
+        n = int(getattr(self, "fallidas_para_subir_slippage", 0) or 0)
+        nuevo = float(getattr(self, "slippage_tras_fallidas", 0) or 0)
+        if n <= 0 or nuevo <= self.buy_slippage:
+            return
+        if self._compras_fallidas_seguidas < n:
+            return
+        logger.warning(
+            "SLIPPAGE DE COMPRA %.0f%% -> %.0f%%: %d compras fallidas seguidas",
+            self.buy_slippage * 100, nuevo * 100, self._compras_fallidas_seguidas,
+        )
+        self.buy_slippage = nuevo
+        self.buyer.slippage = nuevo
 
     def _es_venta_protectora(self, reason: str) -> bool:
         """True si esta venta existe para limitar perdidas.

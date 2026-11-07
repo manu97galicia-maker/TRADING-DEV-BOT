@@ -178,6 +178,9 @@ async def start_bot(config_path: str, *, only_dev: bool = False):
             abandonar_tras_seg=cfg["trade"].get("abandonar_tras_seg"),
             venta_muerta_seg=cfg["trade"].get("venta_muerta_seg", 0),
             venta_muerta_gain=cfg["trade"].get("venta_muerta_gain", 0),
+            subir_slippage_tras_fallidas=cfg["trade"].get(
+                "subir_slippage_tras_fallidas"
+            ),
             # Tiered take-profit ladder (partial sells + moonbag)
             take_profit_sell_percentage=cfg["trade"].get("take_profit_sell_percentage"),
             tp2_gain=cfg["trade"].get("tp2_gain"),

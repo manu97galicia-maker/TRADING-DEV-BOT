@@ -54,6 +54,11 @@ trade:
   # stop no sale.
   # 7-nov, despues: "slippage de compra 9%" (antes 18%).
   buy_slippage: 0.09
+  # 7-nov: "si hay tres fallidas sube el slippage a 14%". 3 compras
+  # fallidas SEGUIDAS -> slippage de compra al 14% hasta reiniciar.
+  subir_slippage_tras_fallidas:
+    fallidas: 3
+    slippage: 0.14
   sell_slippage: 0.18
   sell_slippage_proteccion: 0.5
   exit_strategy: tp_sl
@@ -82,8 +87,13 @@ priority_fees:
   enable_fixed: true
   # 7-nov: "prioridad de compra 0.007" (antes 0,011 SOL = 110000000).
   fixed_amount_compra: 70000000
-  fixed_amount: 5714286
-  fixed_amount_venta_proteccion: 42424243
+  # 7-nov: "prioridad de venta 0.006". La venta reserva 60.000 unidades:
+  #   6.000.000 lamports / 60.000 = 100.000.000 microlamports = 0,006 SOL
+  # Antes 0,00034 SOL (5714286) la normal y 0,0025 SOL (42424243) la de
+  # proteccion (stop, rug). Las dos a 0,006: el stop no puede ir con
+  # menos prisa que un take profit.
+  fixed_amount: 100000000
+  fixed_amount_venta_proteccion: 100000000
   extra_percentage: 0.0
   hard_cap: 110000000
 retries:
