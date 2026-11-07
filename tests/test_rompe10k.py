@@ -24,9 +24,9 @@ def _cfg(f):
 def test_config_rompe_10k():
     c = _cfg(YAML)
     cv, fl, t = c["filters"]["curva_96"], c["filters"], c["trade"]
-    # 7-nov, despues: "rompe al 66%" (antes 71%), solo hasta el 76%,
+    # 7-nov, despues: "bajala a 56" (antes 66%), solo hasta el 76%,
     # sin filtro de market cap; "con fuerza" = presion de 5 s (4 y 1,5x).
-    assert cv["umbral"] == 0.66 and cv["tope"] == 0.76
+    assert cv["umbral"] == 0.56 and cv["tope"] == 0.76
     assert cv["min_mc_usd"] == 0 and cv["max_mc_usd"] == 0
     assert cv["ultimas_compras"] == 3
     assert cv["min_compradores_ola"] == 4 and cv["min_presion_ratio"] == 1.5
@@ -156,13 +156,13 @@ def test_solo_se_queman_restos_de_menos_de_1_dolar(tmp_path, monkeypatch):
     assert asyncio.run(t._puede_quemar(ficha, precio)) is False
 
 
-def test_solo_entre_66_y_76_por_ciento(monkeypatch):
-    """Solo entra entre el 66% y el 76% de la curva."""
+def test_solo_entre_56_y_76_por_ciento(monkeypatch):
+    """Solo entra entre el 56% y el 76% de la curva."""
     c = _cfg(YAML)["filters"]["curva_96"]
     f = cs.Curva96Source("ws://x", None, None, umbral=c["umbral"], tope=c["tope"])
     lanzadas = []
     monkeypatch.setattr(f, "_lanzar", lambda m, _cb: lanzadas.append(m))
-    avances = {"A": 0.65, "B": 0.66, "C": 0.74, "D": 0.77, "E": 0.95}
+    avances = {"A": 0.55, "B": 0.56, "C": 0.74, "D": 0.77, "E": 0.95}
     monkeypatch.setattr(cs.volumen, "progreso_curva", lambda m: (avances[m], 0.0))
     f._revisar(list(avances), None)
     assert lanzadas == ["B", "C"]

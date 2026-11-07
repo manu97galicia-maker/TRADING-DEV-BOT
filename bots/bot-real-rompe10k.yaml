@@ -31,8 +31,9 @@
 #   - Despues: "40% por operacion" (antes 50% del saldo total).
 #   - Despues: "25% cada operacion de saldo, maximo 4 simultaneas e
 #     infinitas operaciones" (antes 40% y 3).
+#   - Despues: "bajala a 56" -> entra entre el 56% y el 76% de la curva.
 #
-name: REAL ROMPE 66% CURVA
+name: REAL ROMPE 56% CURVA
 env_file: .env
 rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
 wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
@@ -239,7 +240,9 @@ filters:
     # 7-nov, despues: "y curve la rompe al 66%" (antes 0.71). El 66% es un
     # market cap de 106,6 SOL. El tope sigue en el 76%: compra entre el 66%
     # y el 76%.
-    umbral: 0.66
+    # 7-nov, despues: "bajala a 56" (antes 0.66). El 56% es un market cap de
+    # 81,4 SOL. El tope sigue en el 76%: compra entre el 56% y el 76%.
+    umbral: 0.56
     min_mc_usd: 0
     max_mc_usd: 0
     revisar_cada_seg: 2.0
