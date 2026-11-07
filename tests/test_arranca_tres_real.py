@@ -26,8 +26,13 @@ def test_sintaxis() -> None:
 
 
 def test_arranca_las_tres_con_apagado_y_solo_en_real() -> None:
-    for f in ["bots/bot-paper-dev1-bloque2.yaml", *NUEVAS]:
-        assert f in TEXTO
+    # 7-nov: "dejamos solo las estrategias de presion compradora".
+    lista = next(x for x in TEXTO.splitlines() if x.startswith("ESTRATEGIAS="))
+    assert lista == (
+        'ESTRATEGIAS="bots/bot-real-presion6k.yaml bots/bot-real-presion15k.yaml"'
+    )
+    # Y las que salen de la lista tambien se paran: pkill de todas.
+    assert 'pkill -f "run_bot_process" ' in TEXTO
     assert 'timeout "$SEG"' in TEXTO
     assert 'grep -q "^  paper_trade: false" "$Y"' in TEXTO
     assert "dev1_real.log" in TEXTO  # el log de siempre no cambia
@@ -40,7 +45,9 @@ def test_reglas_comunes_a_las_tres() -> None:
     for f in ["bots/bot-paper-dev1-bloque2.yaml", *NUEVAS]:
         c = _cfg(f)
         t, fl = c["trade"], c["filters"]
-        assert t["fraccion_saldo"] == 0.15 and t["fraccion_base"] == "libre", f
+        # 7-nov: "20% por operacion" en las de presion; el resto sigue en 15%.
+        pct = 0.20 if "presion" in f else 0.15
+        assert t["fraccion_saldo"] == pct and t["fraccion_base"] == "libre", f
         assert t["stop_a_entrada_tras_tp"] is True and t["margen_stop_tras_tp"] == 0.05, f
         assert t["stop_loss_percentage"] == 0.25, f
         assert t["max_perdidas_seguidas"] == 3, f

@@ -28,7 +28,9 @@ RAMA=main
 ORIGEN="${ORIGEN:-origin}"
 #: Las estrategias en real (7-nov): la del dev, la de la curva al 92%, la de
 #: presion desde 6k y la de presion suave desde 15,3k. Cada una con su log en logs/<nombre>_real.log.
-ESTRATEGIAS="bots/bot-paper-dev1-bloque2.yaml bots/bot-real-curva92.yaml bots/bot-real-presion6k.yaml bots/bot-real-presion15k.yaml"
+#: 7-nov: "dejamos solo las estrategias de presion compradora": fuera dev1
+#: y la curva 92% (sus YAML siguen ahi; para volver, se anaden a esta lista).
+ESTRATEGIAS="bots/bot-real-presion6k.yaml bots/bot-real-presion15k.yaml"
 #: Nombre corto del log de cada una. dev1 sigue en logs/dev1_real.log, que es
 #: el que leen porque-no-compra.sh y los comandos de siempre.
 log_de() {
@@ -56,9 +58,9 @@ pkill -f "bot_runner.py" 2>/dev/null && sleep 3
 # SE PARAN LAS TRES ANTES DE NADA (7-nov). Este arrancador las vuelve a
 # lanzar todas con el codigo nuevo; dos procesos con el mismo fichero
 # comprarian dos veces sobre la misma wallet.
-for Y in $ESTRATEGIAS; do
-  pkill -f "run_bot_process.*$(basename "$Y" .yaml)" 2>/dev/null
-done
+# Se paran TODAS, no solo las de la lista (7-nov): al quitar dev1 y la curva
+# 92% de la lista, parando solo las de la lista esas dos seguian comprando.
+pkill -f "run_bot_process" 2>/dev/null
 sleep 3
 
 # UNA ACTUALIZACION A MEDIAS (6-nov): si un pull anterior choco, git se
