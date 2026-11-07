@@ -62,7 +62,8 @@ def test_reglas_comunes_a_las_tres() -> None:
         assert fl["allow_mayhem"] is False and fl["ignorar_listas_de_devs"] is False, f
         assert fl["paper_trade"] is False, f
         # 7-nov: "pon sin limite de operaciones simultaneas".
-        assert t["max_posiciones"] == 0, f
+        # Despues, en las de presion: "maximo 3 operaciones simultaneas".
+        assert t["max_posiciones"] == (3 if "presion" in f else 0), f
 
 
 def test_curva92() -> None:
@@ -140,5 +141,5 @@ def test_presion_prioridad_y_deslizamiento() -> None:
     for f in NUEVAS[1:]:
         c = _cfg(f)
         assert c["priority_fees"]["fixed_amount_compra"] == 70_000_000, f
-        assert c["trade"]["buy_slippage"] == 0.18, f
+        assert c["trade"]["buy_slippage"] == 0.09, f  # despues: "slippage de compra 9%"
         assert c["trade"]["sell_slippage"] == 0.18, f

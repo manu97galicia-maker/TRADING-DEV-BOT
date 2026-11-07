@@ -43,13 +43,17 @@ trade:
   fraccion_saldo: 0.30
   fraccion_base: libre
   min_reserve_sol: 0.03
-  max_posiciones: 0
+  # 7-nov, despues: "maximo 3 operaciones simultaneas" (antes 0 = sin
+  # limite, tambien pedido el 7-nov). Es por estrategia: cada bot cuenta
+  # las suyas.
+  max_posiciones: 3
   max_real_buys: 1000
   reiniciar_tanda: false
   # 7-nov: "deslizamiento 18%" (antes 35% en compra y venta). El de las
   # ventas de proteccion (stop, rug) se queda en 50%: si no entra, el
   # stop no sale.
-  buy_slippage: 0.18
+  # 7-nov, despues: "slippage de compra 9%" (antes 18%).
+  buy_slippage: 0.09
   sell_slippage: 0.18
   sell_slippage_proteccion: 0.5
   exit_strategy: tp_sl
