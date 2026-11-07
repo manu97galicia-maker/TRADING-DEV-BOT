@@ -70,12 +70,14 @@ trade:
   fraccion_saldo: 0.15
   fraccion_base: "libre"
   min_reserve_sol: 0.03
-  # 7 PLAZAS, pedido el 4-nov: "maximo 7 operaciones simultaneas". Venia
-  # de 5. 7 x 0,25 SOL = 1,75 SOL como maximo dentro a la vez (desde el
-  # 6-nov por la noche).
-  # Para que el nodo las vigile todas hubo que subir node.max_rps de 12 a 14
-  # (ver abajo).
-  max_posiciones: 7
+  # SIN LIMITE DE OPERACIONES SIMULTANEAS, pedido el 7-nov: "pon sin limite
+  # de operaciones simultaneas". Venia de 7 (4-nov). Con 0 manda el SALDO:
+  # cada compra es el 15% del SOL libre y no se compra por debajo de la
+  # reserva. El codigo guarda un tope de seguridad de 40
+  # (universal_trader.py, TOPE_DURO_POSICIONES) contra un fallo raro.
+  # Ojo: el nodo vigila bien unas max_rps / 2 posiciones a la vez (7 con 14);
+  # con mas, cada una se mira algo menos a menudo.
+  max_posiciones: 0
   # DEVS BUENOS GUARDADOS, pedido el 7-nov: "Junta en una lista todos los
   # buenos dev que tenemos guardados que suelen superar 15k mc" + "tambien
   # para comprar". A los de esta lista se les compra AUNQUE NO LLEGUEN al 10%

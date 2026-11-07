@@ -91,10 +91,11 @@ if [ -n "$(git status --porcelain --untracked-files=no)" ] \
 fi
 echo "Servidor igual que GitHub: $(git log -1 --format='%h %s')"
 
-# LA PUERTA: solo arranca si el fichero esta en real y con las 7 plazas.
-if ! grep -q "^  paper_trade: false" "$YAML" \
-   || ! grep -q "^  max_posiciones: 7" "$YAML"; then
-  echo "NO ARRANCA: el fichero no esta en real con 7 plazas"
+# LA PUERTA: solo arranca si el fichero esta en real. (Hasta el 7-nov pedia
+# tambien "max_posiciones: 7"; desde "sin limite de operaciones
+# simultaneas" es 0 y esa comprobacion habria bloqueado el arranque.)
+if ! grep -q "^  paper_trade: false" "$YAML"; then
+  echo "NO ARRANCA: el fichero no esta en real"
   exit 1
 fi
 

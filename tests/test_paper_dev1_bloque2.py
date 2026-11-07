@@ -120,11 +120,12 @@ def test_plazas_que_el_nodo_vigila_y_reserva_para_vender() -> None:
     vigilables = int(
         float(CFG["node"]["max_rps"]) * float(t["price_check_interval"]) / 2
     )
-    # 7 plazas pedidas el 4-nov; max_rps 14 para que el nodo vigile las 7.
-    assert t["max_posiciones"] == 7
-    assert t["max_posiciones"] <= vigilables, (
-        f"{t['max_posiciones']} plazas y el nodo solo vigila {vigilables}"
-    )
+    # 7-nov: "pon sin limite de operaciones simultaneas" (venia de 7). Manda
+    # el saldo. El nodo sigue vigilando bien solo `vigilables` a la vez, y el
+    # YAML lo tiene que decir para que no se olvide.
+    assert t["max_posiciones"] == 0
+    assert vigilables == 7
+    assert "max_rps / 2" in FICHERO.read_text(encoding="utf-8")
     assert float(t["min_reserve_sol"]) > 0
 
 

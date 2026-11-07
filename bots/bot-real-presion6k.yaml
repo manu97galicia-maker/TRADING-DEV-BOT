@@ -17,6 +17,9 @@
 #   - 15% del SOL libre por compra, tras el TP1 el stop a compra +5%, y para
 #     tras 3 perdidas seguidas (igual que todas).
 #   - node.max_rps 8: comparte Helius con las otras dos estrategias.
+#   - Sin limite de operaciones simultaneas (max_posiciones 0, 7-nov: "pon
+#     sin limite de operaciones simultaneas"): manda el saldo; tope de
+#     seguridad del codigo, 40.
 name: REAL PRESION FUERTE DESDE 6K
 env_file: .env
 rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
@@ -32,7 +35,7 @@ trade:
   fraccion_saldo: 0.15
   fraccion_base: libre
   min_reserve_sol: 0.03
-  max_posiciones: 7
+  max_posiciones: 0
   max_real_buys: 1000
   reiniciar_tanda: false
   buy_slippage: 0.35

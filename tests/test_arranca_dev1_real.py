@@ -26,7 +26,8 @@ def test_lleva_apagado_automatico() -> None:
 
 def test_solo_arranca_en_real_con_siete_plazas() -> None:
     assert 'grep -q "^  paper_trade: false"' in TEXTO
-    assert 'grep -q "^  max_posiciones: 7"' in TEXTO
+    # 7-nov: sin limite de posiciones; la puerta ya no pide 7.
+    assert 'grep -q "^  max_posiciones: 7"' not in TEXTO
 
 
 def test_el_bot_no_hereda_el_script_como_entrada() -> None:

@@ -44,6 +44,8 @@ def test_reglas_comunes_a_las_tres() -> None:
         assert t["take_profit_percentage"] == 0.38, f
         assert fl["allow_mayhem"] is False and fl["ignorar_listas_de_devs"] is False, f
         assert fl["paper_trade"] is False, f
+        # 7-nov: "pon sin limite de operaciones simultaneas".
+        assert t["max_posiciones"] == 0, f
 
 
 def test_curva92() -> None:
