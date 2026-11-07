@@ -84,7 +84,9 @@ trade:
   subir_slippage_tras_fallidas:
     fallidas: 3
     slippage: 0.14
-  sell_slippage: 0.18
+  # 7-nov: "reduce slippage" -> eligio "solo la venta a 10%" (antes 18%).
+  # La compra sigue en 9% (14% tras 3 fallidas) y el stop en 50%.
+  sell_slippage: 0.10
   sell_slippage_proteccion: 0.5
   exit_strategy: tp_sl
   # 7-nov, despues: "+50%, +85%, +120% y stop -22" (antes -18%). OJO: el
@@ -116,14 +118,19 @@ priority_fees:
   enable_dynamic: false
   enable_fixed: true
   # 7-nov: "prioridad de compra 0.007" (antes 0,011 SOL = 110000000).
-  fixed_amount_compra: 70000000
+  # 7-nov: "reducir mis costes enormemente asegurando que se ejecuten" ->
+  # eligio "baja fija": compra 0,002 SOL (antes 0,007):
+  #   2.000.000 lamports / 100.000 unidades = 20.000.000 microlamports
+  fixed_amount_compra: 20000000
   # 7-nov: "prioridad de venta 0.006". La venta reserva 60.000 unidades:
   #   6.000.000 lamports / 60.000 = 100.000.000 microlamports = 0,006 SOL
   # Antes 0,00034 SOL (5714286) la normal y 0,0025 SOL (42424243) la de
   # proteccion (stop, rug). Las dos a 0,006: el stop no puede ir con
   # menos prisa que un take profit.
-  fixed_amount: 100000000
-  fixed_amount_venta_proteccion: 100000000
+  # Y ventas de TP 0,001 SOL, venta del stop 0,002 SOL (antes las dos 0,006):
+  #   1.000.000 / 60.000 = 16.666.667   y   2.000.000 / 60.000 = 33.333.333
+  fixed_amount: 16666667
+  fixed_amount_venta_proteccion: 33333333
   extra_percentage: 0.0
   hard_cap: 110000000
 retries:
@@ -174,8 +181,8 @@ filters:
     min_lp_bloqueada_pct: 90
     max_posiciones_papel: 4
     importe_papel_sol: 0.15
-    prioridad_compra_sol: 0.007
-    prioridad_venta_sol: 0.006
+    prioridad_compra_sol: 0.002
+    prioridad_venta_sol: 0.001
   curva_96:
     enabled: true
     tope: 0.995
@@ -206,9 +213,14 @@ filters:
     # 7-nov: "dos ultimas tx sean compras". Con la presion OK, si en las 2
     # ultimas operaciones hay alguna venta, no se compra (se vuelve a mirar).
     ultimas_compras: 2
+    # 7-nov: "minimo compras monedas de 5.6k de market cap". Por debajo no
+    # se compra; se vuelve a mirar en la siguiente operacion.
+    min_mc_usd: 5600
     log_presion_cada_seg: 30.0
     # 7-nov "afloja un poco": antes 10 / 6 / 2.0 / 1.0.
-    min_compradores: 8
+    # 7-nov: "mas volumen, quiero que haya muchas transacciones pero cogerlas
+    # antes de que exploten" -> eligio "mas gente total": 20 (antes 8).
+    min_compradores: 20
     # 7-nov "un poco mas de presion y volumen": antes 4 / 1.5 / 0.5.
     # 7-nov "un poquito mas": 1.7 / 0.7 -> 1.8 / 0.8.
     # 7-nov "sube un poco": 5 / 1.8 / 0.8 -> 6 / 2.0 / 1.0.

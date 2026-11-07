@@ -2476,6 +2476,10 @@ class UniversalTrader:
             revisar_cada_seg=float(cfg.get("revisar_cada_seg", 0) or 0),
             log_presion_cada_seg=float(cfg.get("log_presion_cada_seg", 0) or 0),
             ultimas_compras=int(cfg.get("ultimas_compras", 0) or 0),
+            min_mc_usd=float(cfg.get("min_mc_usd", 0) or 0),
+            # El precio de SOL se actualiza en vivo en este modulo: se lee en
+            # cada llamada, no se copia al arrancar.
+            sol_usd=lambda: _SOL_USD,
         )
         try:
             await source.run(self._on_dexpaid_token)

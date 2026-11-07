@@ -52,6 +52,8 @@ logger = get_logger(__name__)
 #: Cuantas monedas se recuerdan como "ya probada". Solo hace falta que dure lo
 #: que tarda una moneda en migrar; con esto sobra de largo.
 _MAX_RECORDADAS = 20_000
+#: Monedas que emite pump.fun: precio por moneda x esto = market cap.
+_SUPPLY = 1_000_000_000
 
 #: Evaluaciones simultaneas. Cada una hace unas pocas llamadas al nodo para
 #: reconstruir la moneda; sin tope, una racha de migraciones a la vez se comeria
@@ -122,6 +124,8 @@ class Curva96Source:
         revisar_cada_seg: float = 0.0,
         log_presion_cada_seg: float = 0.0,
         ultimas_compras: int = 0,
+        min_mc_usd: float = 0.0,
+        sol_usd: Callable[[], float] | None = None,
     ) -> None:
         self.wss_endpoint = wss_endpoint
         self._impls = platform_impls
@@ -164,6 +168,12 @@ class Curva96Source:
         # 7-nov, Manu: "dos ultimas tx sean compras" (para no entrar justo
         # cuando empieza a vender alguien). 0 = no se mira.
         self.ultimas_compras = max(0, int(ultimas_compras or 0))
+        # 7-nov, Manu: "minimo compras monedas de 5.6k de market cap". Se mira
+        # aqui, con el precio de la ultima operacion, y no en el trader: alli
+        # `min_entry_mc` ESPERA a que llegue al minimo y compraria con una
+        # presion que ya no es la de ahora. 0 = no se mira.
+        self.min_mc_usd = max(0.0, float(min_mc_usd or 0))
+        self._sol_usd = sol_usd
         self._ultimo_log_presion: dict[str, float] = {}
 
         self._probadas: set[str] = set()
@@ -419,7 +429,7 @@ class Curva96Source:
         )
         return False
 
-    async def _evaluar(  # noqa: C901, PLR0911
+    async def _evaluar(  # noqa: C901, PLR0911, PLR0912
         self, mint: str, token_callback: Callable[[TokenInfo], Awaitable[None]]
     ) -> None:
         """Comprueba una moneda que acaba de cruzar el umbral y la manda a comprar."""
@@ -427,6 +437,12 @@ class Curva96Source:
         if avance is None:
             return
         progreso, sol_curva = avance
+
+        # MARKET CAP MINIMO (7-nov). Por debajo no se descarta: se vuelve a
+        # mirar en la siguiente operacion, por si sube.
+        if self.min_mc_usd > 0 and not self._llega_al_mc(mint):
+            self._probadas.discard(mint)
+            return
 
         # No persigue una subida vertical de un segundo.
         if not self._sin_mecha_vertical(mint, mint[:6]):
@@ -583,6 +599,18 @@ class Curva96Source:
             if self._ya_probada(mint):
                 continue
             self._lanzar(mint, token_callback)
+
+    def _llega_al_mc(self, mint: str) -> bool:
+        """True si el market cap de la ultima operacion llega al minimo."""
+        precio = volumen.precio_en_vivo(mint, 60.0)
+        sol_usd = float(self._sol_usd()) if self._sol_usd else 0.0
+        if not precio or sol_usd <= 0:
+            self._cuenta("mc_desconocido")
+            return False
+        if precio * _SUPPLY * sol_usd < self.min_mc_usd:
+            self._cuenta("bajo_mc_minimo")
+            return False
+        return True
 
     def _toca_escribir(self, mint: str) -> bool:
         """True si se puede escribir otra linea de descarte de esta moneda."""

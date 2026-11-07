@@ -96,7 +96,9 @@ def test_presion_unica() -> None:
     # 7-nov "sube un poco volumen y presion": 6 en 5 s, 2x, 1 SOL, 8 en total.
     # Despues, "un poco mas de volumen y presion": 7 / 2,2x / 1,2 SOL.
     assert cv["min_compradores_ola"] == 7 and cv["min_presion_ratio"] == 2.2
-    assert cv["min_compra_sol"] == 1.2 and cv["min_compradores"] == 8
+    # Despues: "mas gente total" -> 20 compradores en total (antes 8).
+    assert cv["min_compra_sol"] == 1.2 and cv["min_compradores"] == 20
+    assert cv["min_mc_usd"] == 5600  # "minimo compras monedas de 5.6k"
     assert fl["pumpfun_dev"]["enabled"] is False
     _tres_ventas_hasta_75(c["trade"])
 
@@ -135,6 +137,7 @@ def test_presion_prioridad_y_deslizamiento() -> None:
     """7-nov "prioridad de compra 0.007 y deslizamiento 18%"."""
     for f in NUEVAS[1:]:
         c = _cfg(f)
-        assert c["priority_fees"]["fixed_amount_compra"] == 70_000_000, f
+        # Despues: "reducir mis costes enormemente" -> 0,002 SOL de compra.
+        assert c["priority_fees"]["fixed_amount_compra"] == 20_000_000, f
         assert c["trade"]["buy_slippage"] == 0.09, f  # despues: "slippage de compra 9%"
-        assert c["trade"]["sell_slippage"] == 0.18, f
+        assert c["trade"]["sell_slippage"] == 0.10, f  # despues: venta a 10%

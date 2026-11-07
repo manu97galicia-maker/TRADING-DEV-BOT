@@ -1,6 +1,6 @@
 """7-nov: con el umbral a 0 (cualquier moneda) la fuente tiene que ir a ritmo."""
 
-# ruff: noqa: S101, SLF001, ANN001, ANN002, ANN003, ANN201, ANN202, ARG005, PLR2004, PLC0415
+# ruff: noqa: S101, SLF001, ANN001, ANN002, ANN003, ANN201, ANN202, ARG001, ARG005, PLR2004, PLC0415
 
 from monitoring import curva96_source as cs
 
@@ -81,3 +81,42 @@ def test_la_estrategia_pide_las_dos_ultimas_compras():
         (Path(__file__).resolve().parents[1] / "bots/bot-real-presion.yaml").read_text()
     )["filters"]["curva_96"]
     assert cv["ultimas_compras"] == 2
+
+
+def test_minimo_de_market_cap_5600(monkeypatch):
+    """7-nov "minimo compras monedas de 5.6k de market cap": por debajo no se
+    manda a comprar y la moneda queda para volver a mirar."""
+    f = _fuente(min_mc_usd=5600, sol_usd=lambda: 90.0)
+    # MC = precio x 1.000.000.000 x 90 $
+    monkeypatch.setattr(cs.volumen, "precio_en_vivo", lambda _m, _e: 5000 / 90 / 1e9)
+    assert f._llega_al_mc("M") is False and f._embudo["bajo_mc_minimo"] == 1
+    monkeypatch.setattr(cs.volumen, "precio_en_vivo", lambda _m, _e: 5700 / 90 / 1e9)
+    assert f._llega_al_mc("M") is True
+    monkeypatch.setattr(cs.volumen, "precio_en_vivo", lambda _m, _e: None)
+    assert f._llega_al_mc("M") is False  # sin precio no se afirma nada
+
+
+def test_el_bot_le_pasa_el_precio_de_sol_vivo(tmp_path, monkeypatch):
+    """La fuente lee el SOL del trader en cada llamada (se actualiza en vivo)."""
+    from test_tp_sl_en_vivo import _construir
+
+    t, ut = _construir("bots/bot-real-presion.yaml", tmp_path, monkeypatch)
+    capturado = {}
+    original = cs.Curva96Source.__init__
+
+    def _init(self, *a, **k):
+        original(self, *a, **k)
+        capturado["f"] = self
+
+    async def _run(self, _cb):
+        return None
+
+    monkeypatch.setattr(cs.Curva96Source, "__init__", _init)
+    monkeypatch.setattr(cs.Curva96Source, "run", _run)
+    import asyncio
+
+    asyncio.run(t._run_curva96_mode())
+    f = capturado["f"]
+    assert f.min_mc_usd == 5600 and f.ultimas_compras == 2
+    monkeypatch.setattr(ut, "_SOL_USD", 123.0)
+    assert f._sol_usd() == 123.0
