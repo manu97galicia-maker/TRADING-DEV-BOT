@@ -131,9 +131,7 @@ def test_por_encima_del_stop_no_vende(bot, monkeypatch):
     assert ventas == [("stop_loss", 1.0, cae)]
 
 
-@pytest.mark.parametrize(
-    "yaml_rel", ["bots/bot-real-presion.yaml"]
-)
+@pytest.mark.parametrize("yaml_rel", ["bots/bot-real-presion.yaml"])
 def test_presion_stop_al_18(yaml_rel, tmp_path, monkeypatch):
     """7-nov "stop ponlo al 18%": a -16% aguanta, a -19% vende todo."""
     t, ut = _construir(yaml_rel, tmp_path, monkeypatch)
@@ -162,9 +160,7 @@ def test_tp1_cobra_y_el_stop_sube_a_compra_mas_5(bot, monkeypatch):
     assert abs(parte - 0.2029) < 1e-3
 
 
-@pytest.mark.parametrize(
-    "yaml_rel", ["bots/bot-real-presion.yaml"]
-)
+@pytest.mark.parametrize("yaml_rel", ["bots/bot-real-presion.yaml"])
 def test_presion_trailing_al_18_antes_del_tp1(yaml_rel, tmp_path, monkeypatch):
     """Sube a +30% sin tocar el TP1 y cae un 18% desde ahi (1,3 x 0,82 =
     1,066): vende todo en verde, por trailing, sin esperar al stop."""
@@ -191,9 +187,7 @@ def test_en_verde_a_los_5_minutos_no_se_vende(bot, monkeypatch):
     assert segundos > 400
 
 
-@pytest.mark.parametrize(
-    "yaml_rel", ["bots/bot-real-presion.yaml"]
-)
+@pytest.mark.parametrize("yaml_rel", ["bots/bot-real-presion.yaml"])
 def test_presion_tres_ventas_hasta_el_75(yaml_rel, tmp_path, monkeypatch):
     """7-nov "haz 3 ventas" y "busco un 75% de roi": +38% / +55% / +75% y
     no hay mas ventas aunque siga subiendo."""
