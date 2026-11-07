@@ -33,8 +33,9 @@
 #   - Despues: "25% cada operacion de saldo, maximo 4 simultaneas e
 #     infinitas operaciones" (antes 40% y 3).
 #   - Despues: "bajala a 56" -> entra entre el 56% y el 76% de la curva.
+#   - Despues: "entre el 51 y 65" -> entra entre el 51% y el 65%.
 #
-name: REAL ROMPE 56% CURVA
+name: REAL ROMPE 51-65% CURVA
 env_file: .env
 rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
 wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
@@ -213,7 +214,8 @@ filters:
     enabled: true
     # 7-nov "que rompa el 71% de la bonding": solo justo al romper, hasta el
     # 76% (antes 0.995).
-    tope: 0.76
+    # 7-nov, despues: "entre el 51 y 65" (antes 0.76).
+    tope: 0.65
     buy_amount: 0
     max_compras: 0
     parar_tras_perdidas: 0
@@ -243,7 +245,9 @@ filters:
     # y el 76%.
     # 7-nov, despues: "bajala a 56" (antes 0.66). El 56% es un market cap de
     # 81,4 SOL. El tope sigue en el 76%: compra entre el 56% y el 76%.
-    umbral: 0.56
+    # 7-nov, despues: "entre el 51 y 65" (antes 0.56). 51% = 72,0 SOL de
+    # market cap; 65% = 103,6 SOL.
+    umbral: 0.51
     min_mc_usd: 0
     max_mc_usd: 0
     revisar_cada_seg: 2.0
