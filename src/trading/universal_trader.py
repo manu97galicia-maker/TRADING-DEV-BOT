@@ -6,9 +6,11 @@ Cleaned up to remove all platform-specific hardcoding.
 import asyncio
 import copy
 import json
+import os
 import re
 import subprocess
 import sys
+import time
 from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
@@ -171,6 +173,10 @@ _PUMP_TOTAL_SUPPLY = 1_000_000_000
 #: un fallo raro abra cientos. Antes era un 20 suelto dentro del codigo, que
 #: con "0" configurado se convertia en un tope invisible.
 TOPE_DURO_POSICIONES = 40
+#: Cada cuanto renueva su ficha una posicion vigilada, y cuanto vale una
+#: ficha sin renovar para el tope comun de posiciones (7-nov).
+LATIDO_FICHA_SEG = 60.0
+FICHA_VIVA_SEG = 300.0
 
 
 class _CurvaMigrada(Exception):  # noqa: N818
@@ -2326,16 +2332,42 @@ class UniversalTrader:
             return 0
 
     def _abiertas_entre_todos(self) -> int:
-        """Posiciones abiertas de TODAS las estrategias de esta carpeta.
+        """Posiciones VIGILADAS ahora de todas las estrategias de esta carpeta.
 
         Cada bot deja `open_position_<estrategia>__<mint>.json` mientras vigila
-        una moneda, y todos arrancan en la misma carpeta: contar esos ficheros
-        es contar las posiciones de todos, sobreviva o no un reinicio.
+        una moneda, y todos arrancan en la misma carpeta. Solo cuentan las
+        fichas renovadas en los ultimos `FICHA_VIVA_SEG` (ver `_latido_ficha`):
+        una ficha que nadie renueva es de una estrategia apagada o de un bot
+        caido, nadie la vigila, y contarla bloqueaba las compras para siempre
+        (7-nov: "asegurate que no quedan residuos que impidan tener posiciones
+        abiertas").
         """
+        corte = time.time() - FICHA_VIVA_SEG
         try:
-            return len(list(self._open_pos_path.parent.glob("open_position*.json")))
+            fichas = self._open_pos_path.parent.glob("open_position*.json")
+            return sum(1 for f in fichas if f.stat().st_mtime >= corte)
         except OSError:
             return 0
+
+    def _latido_ficha(self, mint: str, ultimo: float = -1e18) -> float:
+        """Renueva la hora de la ficha de esta posicion: sigue vigilada.
+
+        LATIDO (7-nov). Lo llama el vigilante en cada vuelta; como mucho cada
+        `LATIDO_FICHA_SEG` toca el fichero. El tope comun solo cuenta fichas
+        renovadas hace poco (`_abiertas_entre_todos`), asi que las que deja
+        una estrategia apagada o un bot caido no bloquean las compras.
+        Devuelve el instante del ultimo latido.
+        """
+        ahora = monotonic()
+        if ahora - ultimo < LATIDO_FICHA_SEG:
+            return ultimo
+        try:
+            ficha = self._open_position_path(mint)
+            if ficha.exists():
+                os.utime(ficha, None)
+        except (OSError, AttributeError):
+            pass
+        return ahora
 
     def _tope_comun_lleno(self) -> bool:
         """True si ya hay `max_posiciones_total` posiciones entre todos."""
@@ -6878,6 +6910,7 @@ class UniversalTrader:
         # compro ya migrada (por el pool), asi no se le pregunta a una curva
         # vacia ni la primera vez.
         _ya_migro = bool((token_info.additional_data or {}).get("migrated"))
+        _ultimo_latido = -1e18
 
         while remaining > 1e-9:
             if (monotonic() - start) >= abandon_after:
@@ -6964,6 +6997,11 @@ class UniversalTrader:
                             token_info.symbol, _sin_precio,
                         )
                     _sin_precio = 0
+
+                # La ficha sigue viva mientras se vigila (ver `_latido_ficha`).
+                _ultimo_latido = self._latido_ficha(
+                    str(token_info.mint), _ultimo_latido
+                )
 
                 # POLVO: lo que queda ya no vale la pena gestionar. Se suelta
                 # la plaza y se deja de mirar el precio.

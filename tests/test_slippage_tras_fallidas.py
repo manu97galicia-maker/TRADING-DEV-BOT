@@ -1,6 +1,6 @@
 """7-nov: "si hay tres fallidas sube el slippage a 14%" y las prioridades."""
 
-# ruff: noqa: S101, PLR2004, SLF001, ANN001, ANN201
+# ruff: noqa: S101, PLR2004, SLF001, ANN001, ANN201, PLC0415
 
 import pytest
 from test_tp_sl_en_vivo import _construir
@@ -60,3 +60,28 @@ def test_tope_comun_de_3(yaml_rel, tmp_path, monkeypatch):
     assert t._abiertas_entre_todos() == 2 and not t._tope_comun_lleno()
     (tmp_path / "open_position_bot-otro__Mint9.json").write_text("{}")
     assert t._tope_comun_lleno()
+
+
+@pytest.mark.parametrize("yaml_rel", PRESION)
+def test_fichas_viejas_no_bloquean(yaml_rel, tmp_path, monkeypatch):
+    """7-nov "asegurate que no quedan residuos que impidan tener posiciones
+    abiertas": las fichas que nadie vigila (estrategia apagada, bot caido)
+    no cuentan para el tope comun; las vigiladas si."""
+    import os
+    import time
+
+    t, _ = _construir(yaml_rel, tmp_path, monkeypatch)
+    viejo = time.time() - 3600
+    for i in range(5):  # cinco restos de estrategias apagadas
+        f = tmp_path / f"open_position_bot-paper-dev1-bloque2__Viejo{i}.json"
+        f.write_text("{}")
+        os.utime(f, (viejo, viejo))
+    assert t._abiertas_entre_todos() == 0 and not t._tope_comun_lleno()
+    # Una vigilada de verdad: su latido la mantiene viva.
+    mint = "MintVigilado111"
+    ficha = t._open_position_path(mint)
+    ficha.write_text("{}")
+    os.utime(ficha, (viejo, viejo))
+    assert t._abiertas_entre_todos() == 0
+    t._latido_ficha(mint)
+    assert t._abiertas_entre_todos() == 1
