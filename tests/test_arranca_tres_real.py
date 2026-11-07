@@ -52,7 +52,8 @@ def test_reglas_comunes_a_las_tres() -> None:
         # 7-nov: "20% por operacion" en las de presion; el resto sigue en 15%.
         # Despues: "pon 30% por operacion".
         # Despues: "44% por operacion".
-        pct = 0.44 if "presion" in f else 0.15
+        # Despues: "en normal pon 70% por operacion".
+        pct = 0.70 if "presion" in f else 0.15
         assert t["fraccion_saldo"] == pct and t["fraccion_base"] == "libre", f
         assert (
             t["stop_a_entrada_tras_tp"] is True and t["margen_stop_tras_tp"] == 0.05

@@ -191,9 +191,9 @@ def _corre(monkeypatch, tmp_path, ruta, segundos, *, pumpswap=False):
 
 def test_en_real_compra_y_vende_los_tres_tp(monkeypatch, tmp_path):
     e = _corre(monkeypatch, tmp_path, [1.0, 1.0, 1.2, 1.55, 1.9, 2.3, 2.3], 4)
-    # 44% de 0,47 SOL libres ("44% por operacion"), slippage 9%, prioridad
+    # 70% de 0,47 SOL libres ("en normal pon 70%"), slippage 9%, prioridad
     # 0,002 SOL.
-    assert e["compras"] == [(pytest.approx(0.2068), 900, 2_000_000)]
+    assert e["compras"] == [(pytest.approx(0.329), 900, 2_000_000)]
     # 79,71% / 10,14% / 10,14% de LO COMPRADO (9 decimales bien contados),
     # slippage de venta 10%, prioridad de TP 0,001 SOL.
     assert [v[0] for v in e["ventas"]] == [0.7971, 0.1014, 0.1014]
@@ -212,5 +212,5 @@ def test_en_real_moneda_de_pumpfun_en_pumpswap(monkeypatch, tmp_path):
     e = _corre(
         monkeypatch, tmp_path, [1.0, 1.0, 1.2, 1.55, 1.9, 2.3, 2.3], 4, pumpswap=True
     )
-    assert e["compras"] == [(pytest.approx(0.2068), 900, 2_000_000)]
+    assert e["compras"] == [(pytest.approx(0.329), 900, 2_000_000)]
     assert [v[0] for v in e["ventas"]] == [0.7971, 0.1014, 0.1014]
