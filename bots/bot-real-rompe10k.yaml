@@ -24,11 +24,13 @@
 #     es un market cap de 123,8 SOL (unos 10,1k $ con SOL a 82 $; con SOL
 #     mas caro, el mismo 71% son mas dolares). El 76% es el mismo margen que
 #     10,1k-12k: solo "justo al romper".
+#     Despues: "y curve la rompe al 66%" -> entra entre el 66% y el 76%.
 #   - CON FUERZA: en los ultimos 5 s, 4 compradores distintos o mas y 1,5
 #     veces mas SOL comprado que vendido. Y las 3 ultimas, compras.
 #   - Sin tope de compras en total (antes 1000). Maximo 3 a la vez.
+#   - Despues: "40% por operacion" (antes 50% del saldo total).
 #
-name: REAL ROMPE 71% CURVA
+name: REAL ROMPE 66% CURVA
 env_file: .env
 rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
 wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
@@ -46,7 +48,9 @@ trade:
   # 7-nov, despues: "en normal pon 70% por operacion" (antes 0.44).
   # 7-nov, despues: "50% del total balance" (antes 70% del libre). Base
   # "cartera" = el saldo total de la wallet, no solo lo libre.
-  fraccion_saldo: 0.50
+  # 7-nov, despues: "40% por operacion" (antes 0.50). Sigue sobre el saldo
+  # total de la wallet.
+  fraccion_saldo: 0.40
   fraccion_base: cartera
   min_reserve_sol: 0.03
   # 7-nov: "maximo 4 simultaneas y maximo de posiciones abiertas 4"
@@ -226,7 +230,10 @@ filters:
     # al 71% de la curva (antes se miraba desde el 40% y compraba entre
     # 10.100 $ y 12.000 $ de market cap). Sin filtro de market cap: la curva
     # no depende del precio del SOL.
-    umbral: 0.71
+    # 7-nov, despues: "y curve la rompe al 66%" (antes 0.71). El 66% es un
+    # market cap de 106,6 SOL. El tope sigue en el 76%: compra entre el 66%
+    # y el 76%.
+    umbral: 0.66
     min_mc_usd: 0
     max_mc_usd: 0
     revisar_cada_seg: 2.0

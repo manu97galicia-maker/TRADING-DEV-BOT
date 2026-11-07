@@ -24,9 +24,9 @@ def _cfg(f):
 def test_config_rompe_10k():
     c = _cfg(YAML)
     cv, fl, t = c["filters"]["curva_96"], c["filters"], c["trade"]
-    # 7-nov, despues: "que rompa el 71% de la bonding", solo hasta el 76%,
+    # 7-nov, despues: "rompe al 66%" (antes 71%), solo hasta el 76%,
     # sin filtro de market cap; "con fuerza" = presion de 5 s (4 y 1,5x).
-    assert cv["umbral"] == 0.71 and cv["tope"] == 0.76
+    assert cv["umbral"] == 0.66 and cv["tope"] == 0.76
     assert cv["min_mc_usd"] == 0 and cv["max_mc_usd"] == 0
     assert cv["ultimas_compras"] == 3
     assert cv["min_compradores_ola"] == 4 and cv["min_presion_ratio"] == 1.5
@@ -49,9 +49,9 @@ def test_config_rompe_10k():
     assert fl["max_dev_hold_pct"] == 0.10 and fl["allow_mayhem"] is False
     assert cv["max_carteras_primer_bloque"] == 5 and cv["max_sol_primer_bloque"] == 9.0
     assert cv["max_subida_vela"] == 0.54 and cv["max_subida_vela2"] == 0.60
-    # Despues: "50% del total balance", TP +40% (recupera) / +90% / +140%,
+    # Despues: "40% por operacion" del total, TP +40% (recupera) / +90% / +140%,
     # SL en 7,4k de market cap y el trailing fijo en 22%.
-    assert t["fraccion_saldo"] == 0.50 and t["fraccion_base"] == "cartera"
+    assert t["fraccion_saldo"] == 0.40 and t["fraccion_base"] == "cartera"
     assert t["stop_loss_percentage"] == 0 and t["mc_stop_loss"] == 7400
     assert t["trailing_stop_percentage"] == 0.22
     assert [t["take_profit_percentage"], t["tp2_gain"], t["tp3_gain"]] == [
@@ -156,13 +156,13 @@ def test_solo_se_queman_restos_de_menos_de_1_dolar(tmp_path, monkeypatch):
     assert asyncio.run(t._puede_quemar(ficha, precio)) is False
 
 
-def test_solo_entre_71_y_76_por_ciento(monkeypatch):
-    """Solo entra justo al romper el 71% de la curva; al 76% ya no."""
+def test_solo_entre_66_y_76_por_ciento(monkeypatch):
+    """Solo entra entre el 66% y el 76% de la curva."""
     c = _cfg(YAML)["filters"]["curva_96"]
     f = cs.Curva96Source("ws://x", None, None, umbral=c["umbral"], tope=c["tope"])
     lanzadas = []
     monkeypatch.setattr(f, "_lanzar", lambda m, _cb: lanzadas.append(m))
-    avances = {"A": 0.70, "B": 0.71, "C": 0.74, "D": 0.77, "E": 0.95}
+    avances = {"A": 0.65, "B": 0.66, "C": 0.74, "D": 0.77, "E": 0.95}
     monkeypatch.setattr(cs.volumen, "progreso_curva", lambda m: (avances[m], 0.0))
     f._revisar(list(avances), None)
     assert lanzadas == ["B", "C"]
