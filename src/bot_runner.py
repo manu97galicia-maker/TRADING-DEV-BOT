@@ -292,6 +292,7 @@ async def start_bot(config_path: str, *, only_dev: bool = False):
                 cfg["trade"].get("valor_minimo_posicion_usd", 1.0)
             ),
             curva_96=cfg.get("filters", {}).get("curva_96"),
+            dex_presion=cfg.get("filters", {}).get("dex_presion"),
             presion=cfg.get("filters", {}).get("presion"),
             holders=cfg.get("filters", {}).get("holders"),
             telegram_calls=cfg.get("filters", {}).get("telegram_calls"),

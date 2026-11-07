@@ -491,6 +491,9 @@ class UniversalTrader:
         birdeye_trending: dict | None = None,
         dextools_hotpools: dict | None = None,
         curva_96: dict | None = None,
+        # PRESION EN LOS DEX (7-nov): PumpSwap, Raydium y Meteora/Bags, con
+        # liquidez bloqueada. Ver monitoring/dex_presion_source.py.
+        dex_presion: dict | None = None,
         presion: dict | None = None,
         holders: dict | None = None,
         # Telegram-calls acquisition mode (disabled unless configured)
@@ -1516,6 +1519,7 @@ class UniversalTrader:
         self.birdeye_trending = birdeye_trending or {}
         self.dextools_hotpools = dextools_hotpools or {}
         self.curva_96 = curva_96 or {}
+        self.dex_presion = dex_presion or {}
         #: Compra por oleada de compradores distintos. Es la fuente que sale
         #: de lo medido: 27.241 monedas dijeron que lo que predice un pump no
         #: es el ratio compras/ventas sino cuanta GENTE DISTINTA entra.
@@ -1626,6 +1630,7 @@ class UniversalTrader:
         ("birdeye_trending", "birdeye"),
         ("dextools_hotpools", "dextools"),
         ("curva_96", "curva96"),
+        ("dex_presion", "dex_presion"),
         ("presion", "presion"),
         ("holders", "holders"),
         ("telegram_calls", "telegram"),
@@ -2475,6 +2480,33 @@ class UniversalTrader:
             await source.run(self._on_dexpaid_token)
         except asyncio.CancelledError:
             logger.info("Curva-casi-llena mode stopped")
+
+    async def _run_dex_presion_mode(self) -> None:
+        """Presion compradora en PumpSwap, Raydium y Meteora (7-nov)."""
+        from monitoring.dex_presion_source import DexPresionSource
+
+        cfg = self.dex_presion
+        salida = {
+            "tramos": [(t.gain, t.sell) for t in self.tp_tiers],
+            "stop": float(self.stop_loss_percentage or 0),
+            "trailing": float(self.trailing_stop_percentage or 0),
+            "margen_tras_tp": (
+                self.margen_stop_tras_tp if self.stop_a_entrada_tras_tp else 0.0
+            ),
+            "muerta_seg": float(self.venta_muerta_seg or 0),
+            "muerta_gain": float(self.venta_muerta_gain or 0),
+        }
+        source = DexPresionSource(
+            self.solana_client,
+            self.platform_implementations,
+            cfg,
+            salida,
+            en_papel=bool(cfg.get("en_papel", True)) or self.paper_trade,
+        )
+        try:
+            await source.run(self._on_dexpaid_token)
+        except asyncio.CancelledError:
+            logger.info("DEX presion mode stopped")
 
     async def _run_presion_mode(self) -> None:
         """Compra las monedas donde entra mucha gente distinta de golpe."""
