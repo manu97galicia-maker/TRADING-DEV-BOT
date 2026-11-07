@@ -33,7 +33,8 @@ ORIGEN="${ORIGEN:-origin}"
 #: 7-nov, despues: "elimina lo de 6k y 15k ... una unica estrategia".
 #: 7-nov, despues: "hazme una estrategia de mayhem ... arriesgando 4$".
 #: 7-nov, despues: "arranca solo las que llegan al 91%" -> solo presion.
-ESTRATEGIAS="bots/bot-real-presion.yaml"
+#: Despues: "maybheim tambien, pero prueba cinco veces y si ganamos otras cinco".
+ESTRATEGIAS="bots/bot-real-presion.yaml bots/bot-real-mayhem.yaml"
 #: Nombre corto del log de cada una. dev1 sigue en logs/dev1_real.log, que es
 #: el que leen porque-no-compra.sh y los comandos de siempre.
 log_de() {

@@ -31,7 +31,8 @@ def test_arranca_las_tres_con_apagado_y_solo_en_real() -> None:
     # Despues: "elimina lo de 6k y 15k ... una unica estrategia".
     # Despues: "hazme una estrategia de mayhem ... arriesgando 4$".
     # Despues: "arranca solo las que llegan al 91%" -> solo presion.
-    assert lista == 'ESTRATEGIAS="bots/bot-real-presion.yaml"'
+    # Despues: "maybheim tambien" (con tandas de 5).
+    assert lista == 'ESTRATEGIAS="bots/bot-real-presion.yaml bots/bot-real-mayhem.yaml"'
     assert "mayhem_real.log" in TEXTO
     assert "presion_real.log" in TEXTO
     # Y las que salen de la lista tambien se paran: pkill de todas.

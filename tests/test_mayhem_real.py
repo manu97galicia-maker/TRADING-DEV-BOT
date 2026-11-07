@@ -48,6 +48,9 @@ def test_config_de_la_mayhem():
         "ultimas_compras",
         "max_carteras_primer_bloque",
         "max_sol_primer_bloque",
+        "umbral",
+        "vela2_seg",
+        "max_subida_vela2",
     ):
         assert fl["curva_96"][k] == p["filters"]["curva_96"][k], k
     # Y la de presion sigue sin comprar mayhem.
@@ -158,3 +161,28 @@ def test_dev_con_mas_del_10_no_se_compra(yaml_rel, tmp_path, monkeypatch):
     assert asyncio.run(t._dev_holds_too_much(ficha)) is True
     tiene["n"] = 50_000_000.0  # 5%
     assert asyncio.run(t._dev_holds_too_much(ficha)) is False
+
+
+def test_mayhem_tandas_de_5_solo_si_gana(tmp_path, monkeypatch):
+    """7-nov: "prueba cinco veces y si ganamos otras cinco"."""
+    c = _cfg(MAYHEM)["trade"]
+    assert c["max_real_buys"] == 5 and c["reiniciar_tanda"] is True
+    assert c["tanda_solo_si_gana"] is True
+    t, _ = _construir(MAYHEM, tmp_path, monkeypatch)
+    # A medias: no se toca la tanda.
+    t._compras_de_la_tanda, t._pnl_tanda = 3, 0.5
+    assert t._decide_tanda_que_gana() is True
+    # Cinco hechas y en ganancia: se abre otra y el resultado vuelve a cero.
+    t._compras_de_la_tanda, t._pnl_tanda = 5, 0.01
+    assert t._decide_tanda_que_gana() is False and t._pnl_tanda == 0.0
+    assert t.reiniciar_tanda is True
+    # Cinco hechas y en perdida: se para.
+    t._compras_de_la_tanda, t._pnl_tanda = 5, -0.02
+    assert t._decide_tanda_que_gana() is True and t.reiniciar_tanda is False
+
+
+def test_sin_el_modo_las_tandas_siguen_como_antes(tmp_path, monkeypatch):
+    t, _ = _construir("bots/bot-real-presion.yaml", tmp_path, monkeypatch)
+    assert t.tanda_solo_si_gana is False
+    t._compras_de_la_tanda, t._pnl_tanda = 5, -1.0
+    assert t._decide_tanda_que_gana() is False

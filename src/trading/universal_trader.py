@@ -689,6 +689,12 @@ class UniversalTrader:
         compra_minima_sol: float = 0.0,
         escala_por_sol_ganado: float = 0.0,
         reiniciar_tanda: bool = True,
+        # TANDA QUE SOLO SIGUE SI GANA (7-nov, Manu con la mayhem: "prueba
+        # cinco veces y si ganamos otras cinco"). Con True la tanda solo se
+        # vuelve a abrir cuando se han hecho las `max_real_buys` compras, ya
+        # no queda ninguna abierta y la tanda acabo en GANANCIA; si acabo en
+        # perdida la estrategia se queda parada hasta reiniciarla.
+        tanda_solo_si_gana: bool = False,
         # FRANJA HORARIA en la que se opera, hora de España. Fuera de ella el
         # bot sigue mirando el flujo pero no compra. {inicio: 18, fin: 2} son
         # las seis de la tarde a las dos de la madrugada -- cruza medianoche, y
@@ -1384,6 +1390,9 @@ class UniversalTrader:
         #: False, `max_real_buys` es un tope de por vida: sirve para pruebas
         #: acotadas ("haz N operaciones y para") sin tener que vigilarlas.
         self.reiniciar_tanda = bool(reiniciar_tanda)
+        self.tanda_solo_si_gana = bool(tanda_solo_si_gana)
+        #: Resultado (SOL) de las posiciones cerradas de la tanda en curso.
+        self._pnl_tanda = 0.0
         self._bote = Ganancia() if self.escala_por_sol_ganado > 0 else None
         self.horario = horario or {}
         self.dev_elite = dev_elite or {}
@@ -7657,6 +7666,8 @@ class UniversalTrader:
         # aun asi sumaron dos strikes de la racha; con el tercero la estrategia
         # se paro sola sin motivo real.
         _para_racha = (_real + held_val) if _real is not None else net_sol
+        # Para decidir si la tanda sigue (tanda_solo_si_gana, 7-nov).
+        self._pnl_tanda = float(getattr(self, "_pnl_tanda", 0.0)) + float(_para_racha)
 
         # BOTE COMUN, FUERA DEL CONTADOR DE RACHA. Estaba metido dentro del
         # `if max_perdidas_seguidas > 0` y ninguno de los tres yaml define esa
@@ -8269,6 +8280,45 @@ class UniversalTrader:
                 continue
             await asyncio.sleep(3600)
 
+    def _decide_tanda_que_gana(self) -> bool:
+        """Con `tanda_solo_si_gana`: True si la tanda NO se reabre ahora.
+
+        Sin ese modo devuelve False y todo sigue como siempre. Con el:
+        - la tanda aun no ha hecho sus `max_real_buys` compras -> no se toca
+          el contador (se sigue comprando hasta completarla);
+        - completa y en ganancia -> se reabre (False) y el resultado vuelve
+          a cero para la tanda siguiente;
+        - completa y en perdida -> la estrategia se para: se apaga
+          `reiniciar_tanda`, el contador se queda lleno y no compra mas.
+        """
+        if not getattr(self, "tanda_solo_si_gana", False):
+            return False
+        if self._compras_de_la_tanda < self.max_real_buys:
+            return True
+        pnl = float(getattr(self, "_pnl_tanda", 0.0))
+        if pnl > 0:
+            logger.info(
+                "TANDA GANADORA: %d compras, %+.4f SOL. Se abre otra de %d.",
+                self._compras_de_la_tanda, pnl, self.max_real_buys,
+            )
+            self._pnl_tanda = 0.0
+            return False
+        logger.warning(
+            "TANDA PERDEDORA: %d compras, %+.4f SOL. La estrategia se PARA.",
+            self._compras_de_la_tanda, pnl,
+        )
+        self.reiniciar_tanda = False
+        try:
+            from monitoring.notifier import notify  # noqa: PLC0415
+
+            notify(
+                f"⛔ <b>{self.nombre_estrategia}</b>: tanda de "
+                f"{self._compras_de_la_tanda} en pérdida ({pnl:+.4f} SOL). Parada."
+            )
+        except Exception:  # noqa: BLE001
+            pass
+        return True
+
     async def _reinicia_tanda_loop(self) -> None:
         """Devuelve el contador de la tanda a cero cuando no queda nada abierto.
 
@@ -8295,6 +8345,8 @@ class UniversalTrader:
                 if not self.reiniciar_tanda or not self._compras_de_la_tanda:
                     continue
                 if list(Path().glob(f"open_position{self._state_suffix}_*.json")):
+                    continue
+                if self._decide_tanda_que_gana():
                     continue
                 logger.info(
                     "TANDA cerrada: %d compras hechas y ninguna posicion abierta. "

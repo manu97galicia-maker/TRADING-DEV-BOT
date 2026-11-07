@@ -43,8 +43,12 @@ trade:
   # 7-nov: "aparte: 3 mayhem mas" (no cuentan en las 3 de presion).
   max_posiciones: 3
   max_posiciones_total: 0
-  max_real_buys: 1000
-  reiniciar_tanda: false
+  # 7-nov: "prueba cinco veces y si ganamos otras cinco": tandas de 5
+  # compras; la siguiente solo se abre si la anterior acabo en ganancia.
+  # Si acaba en perdida se para hasta volver a arrancarla.
+  max_real_buys: 5
+  reiniciar_tanda: true
+  tanda_solo_si_gana: true
   # 7-nov: "deslizamiento 18%" (antes 35% en compra y venta). El de las
   # ventas de proteccion (stop, rug) se queda en 50%: si no entra, el
   # stop no sale.
@@ -183,6 +187,9 @@ filters:
     max_edad_seg: 0
     vela_seg: 1.0
     max_subida_vela: 0.35
+    # Como presion: tampoco si ha subido mas de un 60% en 30 s.
+    vela2_seg: 30
+    max_subida_vela2: 0.60
     exigir_ver_creacion: false
     # 7-nov, Manu con la captura de LAGER (de ~2,5k a ~27k en el primer
     # segundo y el dev lo vende todo a los 2 min): "no me compres este
@@ -198,7 +205,8 @@ filters:
     max_bundle_pct_sin_historia: 0.35
     heartbeat_interval: 300
     # 7-nov "cualquier moneda": desde que nace (antes 0.45).
-    umbral: 0.0
+    # 7-nov: "maybheim tambien" -> como presion: solo desde el 91% de la curva.
+    umbral: 0.91
     revisar_cada_seg: 2.0
     # 7-nov: "dos ultimas tx sean compras". Con la presion OK, si en las 2
     # ultimas operaciones hay alguna venta, no se compra (se vuelve a mirar).
