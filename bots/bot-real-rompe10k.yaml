@@ -1,0 +1,217 @@
+# ESTRATEGIA "ROMPE 10,1K", pedida el 7-nov: "compra todas las monedas que
+# rompan los 10.1k mc y las ultimas 3 tx sean compras, nueva estrategia".
+# Manu eligio: 70% como la normal, "justo al romper: 10,1k-12k", la venta de
+# la normal y "dejar los frenos" contra rugs.
+#
+# Sale de bot-real-presion.yaml (venta, stop, trailing, comisiones, 70% del
+# SOL libre, slippage, 3 perdidas seguidas). Lo que cambia:
+#   - ENTRA cuando el market cap esta entre 10.100 $ y 12.000 $ y las 3
+#     ultimas operaciones son compras. NADA MAS: sin presion de 5 s, sin
+#     volumen, sin compradores minimos, sin edad minima.
+#   - FRENOS QUE SE QUEDAN: dev con mas del 10% no; bundle al crearse (> 5
+#     carteras o > 9 SOL) no; mecha (+35% en 1 s o +60% en 30 s) no;
+#     carteras grandes > 50% no; lista negra y auto-baneo de devs; no
+#     recomprar la misma en 24 h.
+#   - Posiciones: 3, contando las de la normal (comparten el tope de 3; las
+#     mayhem van aparte). Comparten saldo con la normal.
+#
+name: REAL ROMPE 10,1K
+env_file: .env
+rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
+wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
+private_key: ${SOLANA_PRIVATE_KEY}
+enabled: false
+separate_process: false
+platform: pump_fun
+trade:
+  nombre_estrategia: real-rompe10k
+  buy_amount: 0.25
+  buy_amount_usd: 0
+  # 7-nov: "20% por operacion" (antes 0.15).
+  # 7-nov, despues: "pon 30% por operacion" (antes 0.20).
+  # 7-nov, despues: "44% por operacion" (antes 0.30).
+  # 7-nov, despues: "en normal pon 70% por operacion" (antes 0.44).
+  fraccion_saldo: 0.70
+  fraccion_base: libre
+  min_reserve_sol: 0.03
+  # 7-nov: "maximo 4 simultaneas y maximo de posiciones abiertas 4"
+  # (antes 3 por estrategia). 4 por estrategia y, ademas, 4 EN TOTAL
+  # entre las dos: cuenta las posiciones de todas antes de comprar.
+  # 7-nov, despues: "maximo 3" (antes 4 y 4).
+  max_posiciones: 3
+  max_posiciones_total: 3
+  # 7-nov: las mayhem van "aparte": sus posiciones no cuentan en estas 3.
+  max_posiciones_total_ignora: [bot-real-mayhem]
+  max_real_buys: 1000
+  reiniciar_tanda: false
+  # 7-nov: "deslizamiento 18%" (antes 35% en compra y venta). El de las
+  # ventas de proteccion (stop, rug) se queda en 50%: si no entra, el
+  # stop no sale.
+  # 7-nov, despues: "slippage de compra 9%" (antes 18%).
+  buy_slippage: 0.09
+  # 7-nov: "si hay tres fallidas sube el slippage a 14%". 3 compras
+  # fallidas SEGUIDAS -> slippage de compra al 14% hasta reiniciar.
+  subir_slippage_tras_fallidas:
+    fallidas: 3
+    slippage: 0.14
+  # 7-nov: "reduce slippage" -> eligio "solo la venta a 10%" (antes 18%).
+  # La compra sigue en 9% (14% tras 3 fallidas) y el stop en 50%.
+  sell_slippage: 0.10
+  sell_slippage_proteccion: 0.5
+  exit_strategy: tp_sl
+  # 7-nov, despues: "+50%, +85%, +120% y stop -22" (antes -18%). OJO: el
+  # trailing copia este valor, asi que tambien pasa a -22% desde el pico.
+  stop_loss_percentage: 0.22
+  # 7-nov, despues: "pon el primer tp en 50%" (antes 0.38). Sigue vendiendo
+  # el 79,71%: a +50% eso cobra lo invertido +20% (a +38% era +10%).
+  take_profit_percentage: 0.50
+  take_profit_sell_percentage: 0.7971014493
+  mc_take_profit_tiers: []
+  stop_a_entrada_tras_tp: true
+  margen_stop_tras_tp: 0.05
+  max_perdidas_seguidas: 3
+  stop_al_tp_tras_tp: false
+  vender_todo_en_stop: true
+  mc_stop_loss: 0
+  max_hold_time: 0
+  venta_muerta_seg: 300
+  venta_muerta_gain: 0.0
+  price_check_interval: 1
+  # 7-nov "haz 3 ventas" y "en total busco un 75% roi": TP1 +38% (79,71%),
+  # +55% y +75% (mitad y mitad del resto).
+  # 7-nov, despues: "+50%, +85%, +120%" (antes +55% / +75%).
+  # 7-nov, despues: "un 80% en segundos" -> +50% (79,71%) y el resto a +80%
+  # (antes +85% / +120%).
+  tp2_gain: 0.80
+  tp2_sell: 0.2028985507
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  # 7-nov: "prioridad de compra 0.007" (antes 0,011 SOL = 110000000).
+  # 7-nov: "reducir mis costes enormemente asegurando que se ejecuten" ->
+  # eligio "baja fija": compra 0,002 SOL (antes 0,007):
+  #   2.000.000 lamports / 100.000 unidades = 20.000.000 microlamports
+  fixed_amount_compra: 20000000
+  # 7-nov: "prioridad de venta 0.006". La venta reserva 60.000 unidades:
+  #   6.000.000 lamports / 60.000 = 100.000.000 microlamports = 0,006 SOL
+  # Antes 0,00034 SOL (5714286) la normal y 0,0025 SOL (42424243) la de
+  # proteccion (stop, rug). Las dos a 0,006: el stop no puede ir con
+  # menos prisa que un take profit.
+  # Y ventas de TP 0,001 SOL, venta del stop 0,002 SOL (antes las dos 0,006):
+  #   1.000.000 / 60.000 = 16.666.667   y   2.000.000 / 60.000 = 33.333.333
+  fixed_amount: 16666667
+  fixed_amount_venta_proteccion: 33333333
+  extra_percentage: 0.0
+  hard_cap: 110000000
+retries:
+  max_attempts: 1
+  wait_after_creation: 0
+  wait_after_buy: 0
+filters:
+  listener_type: logs
+  yolo_mode: true
+  paper_trade: false
+  paper_watch_secs: 600
+  max_token_age: 5
+  max_entry_mc: 0
+  max_buy_age: 120
+  # 7-nov: "asegurate no rugs" -> eligio "dev con poco": no se compra si
+  # el creador tiene mas del 10% de la moneda.
+  max_dev_hold_pct: 0.10
+  allow_mayhem: false
+  require_mayhem: false
+  ignorar_listas_de_devs: false
+  min_first_block_buys: 0
+  max_first_block_buys: 0
+  min_first_block_usd: 0
+  max_first_block_usd: 0
+  buy_from_second_block: false
+  second_block_confirmation:
+    enabled: false
+    min_buyers: 0
+    min_buy_sol: 0
+    min_net_sol: 0
+    max_sells: 0
+  # PRESION EN LOS DEX, pedida el 7-nov: "puedes coger tambien de raydium
+  # con mismas condiciones" y "anade pumpswap y meteora y bags, todos tienen
+  # que ser liquidez locked". Ver monitoring/dex_presion_source.py.
+  #   - EN REAL desde el 7-nov (Manu: "de papel no, asegurate que en real va
+  #     bien"). Compra y vende por Jupiter con la prioridad y el slippage del
+  #     bot; las monedas de 9 decimales se cuentan bien (precio del DEX pasado
+  #     a la unidad del bot). Probado por el bot entero en
+  #     tests/test_dex_presion_real.py. en_papel: true lo vuelve a simular.
+  #   - La presion es de 5 MINUTOS (GeckoTerminal), no de 5 segundos.
+  #     Numeros propuestos el 7-nov, sin confirmar todavia por Manu.
+  #   - Bags lanza en pools de Meteora: entra con el prefijo "meteora".
+  dex_presion:
+    # 7-nov: "solo las que llegan al 91% de la bonding": la parte de
+    # PumpSwap (monedas ya migradas) se apaga. true la vuelve a encender.
+    enabled: false
+    en_papel: false
+    # 7-nov, despues: "no compres mas que no sea pumpfun o pumpswap" (antes
+    # raydium, pumpswap, meteora). Y solo monedas nacidas en pump.fun.
+    dex: [pumpswap]
+    solo_pumpfun: true
+    intervalo_seg: 20
+    min_compradores_5m: 30
+    min_compras_5m: 50
+    min_ratio_5m: 2.0
+    min_volumen_5m_usd: 5000
+    min_liquidez_usd: 10000
+    min_lp_bloqueada_pct: 90
+    # 7-nov: "no compres monedas con menos de 10 minutos de vida". En los DEX
+    # la edad es la del pool (lo que da GeckoTerminal); sin fecha, no se compra.
+    min_edad_min: 10
+    max_posiciones_papel: 4
+    importe_papel_sol: 0.15
+    prioridad_compra_sol: 0.002
+    prioridad_venta_sol: 0.001
+  curva_96:
+    enabled: true
+    tope: 0.995
+    buy_amount: 0
+    max_compras: 0
+    parar_tras_perdidas: 0
+    # Sin edad minima (7-nov: "todas las que rompan los 10.1k").
+    min_edad_seg: 0
+    max_edad_seg: 0
+    # Frenos contra mechas, como la normal.
+    vela_seg: 1.0
+    max_subida_vela: 0.35
+    vela2_seg: 30
+    max_subida_vela2: 0.60
+    exigir_ver_creacion: false
+    # Frenos contra bundles, como la normal.
+    max_carteras_primer_bloque: 5
+    max_sol_primer_bloque: 9.0
+    max_bundle_pct: 0.5
+    max_bundle_pct_sin_historia: 0.35
+    heartbeat_interval: 300
+    # Se mira desde el 40% de la curva; compra al romper 10.100 $ y hasta
+    # 12.000 $ ("justo al romper").
+    umbral: 0.40
+    min_mc_usd: 10100
+    max_mc_usd: 12000
+    revisar_cada_seg: 2.0
+    log_presion_cada_seg: 30.0
+    # "las ultimas 3 tx sean compras".
+    ultimas_compras: 3
+    # Sin presion, volumen ni compradores minimos.
+    min_compras_total: 0
+    min_volumen_total_sol: 0
+    min_volumen_reciente_sol: 0
+    min_compradores: 0
+    min_compradores_ola: 0
+    ventana_presion: 5.0
+    min_presion_ratio: 0
+    min_compra_sol: 0
+  pumpfun_dev:
+    enabled: false
+  # 7-nov "elimina el filtro de market cap" (antes 6000).
+  min_entry_mc: 0
+cleanup:
+  mode: post_session
+  force_close_with_burn: false
+  with_priority_fee: false
+node:
+  max_rps: 8

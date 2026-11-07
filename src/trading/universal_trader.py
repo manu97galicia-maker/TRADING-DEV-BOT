@@ -2574,6 +2574,7 @@ class UniversalTrader:
             log_presion_cada_seg=float(cfg.get("log_presion_cada_seg", 0) or 0),
             ultimas_compras=int(cfg.get("ultimas_compras", 0) or 0),
             min_mc_usd=float(cfg.get("min_mc_usd", 0) or 0),
+            max_mc_usd=float(cfg.get("max_mc_usd", 0) or 0),
             min_compras_total=int(cfg.get("min_compras_total", 0) or 0),
             min_volumen_total_sol=float(cfg.get("min_volumen_total_sol", 0) or 0),
             vela2_seg=float(cfg.get("vela2_seg", 0) or 0),

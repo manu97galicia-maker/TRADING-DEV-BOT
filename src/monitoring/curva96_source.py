@@ -89,6 +89,7 @@ def build_curva96_heartbeat(
             # Los filtros del 7-nov (sin esto no se veia cual frenaba).
             f"  ↳ menos de la edad minima: {embudo.get('demasiado_nueva', 0)}",
             f"  ↳ market cap bajo el minimo: {embudo.get('bajo_mc_minimo', 0)}",
+            f"  ↳ market cap sobre el maximo: {embudo.get('sobre_mc_maximo', 0)}",
             f"  ↳ pocas compras desde que nacio: {embudo.get('pocas_compras', 0)}",
             f"  ↳ poco volumen desde que nacio: {embudo.get('poco_volumen', 0)}",
             f"  ↳ ultimas no todas compras: {embudo.get('ultimas_no_compras', 0)}",
@@ -140,6 +141,7 @@ class Curva96Source:
         max_subida_vela2: float = 0.0,
         min_volumen_reciente_sol: float = 0.0,
         ventana_volumen_reciente: float = 60.0,
+        max_mc_usd: float = 0.0,
     ) -> None:
         self.wss_endpoint = wss_endpoint
         self._impls = platform_impls
@@ -187,6 +189,9 @@ class Curva96Source:
         # `min_entry_mc` ESPERA a que llegue al minimo y compraria con una
         # presion que ya no es la de ahora. 0 = no se mira.
         self.min_mc_usd = max(0.0, float(min_mc_usd or 0))
+        # TECHO DE MARKET CAP (7-nov, estrategia "rompe 10,1k": "justo al
+        # romper, 10,1k-12k"). Por encima no se compra: se llegaria tarde. 0 = sin techo.
+        self.max_mc_usd = max(0.0, float(max_mc_usd or 0))
         # 7-nov, Manu: "buen volumen pero que entren muchas txs" -> eligio
         # "60 compras en total" desde que nacio. 0 = no se mira.
         self.min_compras_total = max(0, int(min_compras_total or 0))
@@ -491,7 +496,7 @@ class Curva96Source:
 
         # MARKET CAP MINIMO (7-nov). Por debajo no se descarta: se vuelve a
         # mirar en la siguiente operacion, por si sube.
-        if self.min_mc_usd > 0 and not self._llega_al_mc(mint):
+        if (self.min_mc_usd > 0 or self.max_mc_usd > 0) and not self._llega_al_mc(mint):
             self._probadas.discard(mint)
             return
 
@@ -717,8 +722,12 @@ class Curva96Source:
         if not precio or sol_usd <= 0:
             self._cuenta("mc_desconocido")
             return False
-        if precio * _SUPPLY * sol_usd < self.min_mc_usd:
+        mc = precio * _SUPPLY * sol_usd
+        if mc < self.min_mc_usd:
             self._cuenta("bajo_mc_minimo")
+            return False
+        if self.max_mc_usd > 0 and mc > self.max_mc_usd:
+            self._cuenta("sobre_mc_maximo")
             return False
         return True
 
