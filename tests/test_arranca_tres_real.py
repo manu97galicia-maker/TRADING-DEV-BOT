@@ -34,7 +34,9 @@ def test_arranca_las_tres_con_apagado_y_solo_en_real() -> None:
     # Despues: "maybheim tambien" (con tandas de 5).
     # Despues: "compra todas las que rompan los 10.1k ... nueva estrategia".
     # Despues: "mayhem no, solo la que rompe los 10k".
-    assert lista == 'ESTRATEGIAS="bots/bot-real-rompe10k.yaml"'
+    assert lista == (
+        'ESTRATEGIAS="bots/bot-real-rompe10k.yaml bots/bot-real-devs27.yaml"'
+    )
     assert "rompe10k_real.log" in TEXTO
     assert "mayhem_real.log" in TEXTO
     assert "presion_real.log" in TEXTO

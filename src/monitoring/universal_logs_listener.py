@@ -125,7 +125,15 @@ class UniversalLogsListener(BaseTokenListener):
                                 if isinstance(creator_address, str)
                                 else creator_address
                             )
-                            if creators is not None and str(token_info.user) not in creators:
+                            # 8-nov: tambien el campo `creator`. La lista de
+                            # devs de Dune usa `creator` (y `user` si falta):
+                            # si la moneda la firmo otra cartera, mirando
+                            # solo `user` el dev de la lista no se veria.
+                            _quien = {
+                                str(token_info.user),
+                                str(getattr(token_info, "creator", "") or ""),
+                            }
+                            if creators is not None and not (_quien & set(creators)):
                                 logger.info(
                                     "Token creator not in watch list. Skipping..."
                                 )

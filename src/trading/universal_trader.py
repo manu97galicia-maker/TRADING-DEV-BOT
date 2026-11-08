@@ -7226,7 +7226,12 @@ class UniversalTrader:
                             realized_sol += self._ultimo_cobro
                             remaining -= amount
                             mc_executed[i] = True
-                    if all(mc_executed):
+                    # CON SUELOS POR MARKET CAP SE SIGUE VIGILANDO (8-nov,
+                    # devs 27: "otro 10% si paso el millon lo vendes en 450k,
+                    # sino antes de 200k"). Ese 10% no tiene escalon: lo venden
+                    # los suelos. Si aqui se soltara como moonbag, nadie
+                    # miraria esos suelos y el 10% quedaria sin vender.
+                    if all(mc_executed) and not self.suelos_por_mc:
                         if remaining > 1e-9:
                             self._record_moonbag(
                                 token_info, remaining, entry_price, pool_address
