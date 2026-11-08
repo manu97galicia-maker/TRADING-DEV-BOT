@@ -93,6 +93,9 @@ def test_la_consulta_lleva_el_precio_de_sol_y_las_definiciones():
         "dev_vende_30m",
         "mc_10s",
         "top_share",
+        "APPROX_PERCENTILE(mc_minuto, 0.95)",
+        "ultimo_dex_usd",
+        "INTERVAL '10' second",
     ):
         assert palabra in sql
 

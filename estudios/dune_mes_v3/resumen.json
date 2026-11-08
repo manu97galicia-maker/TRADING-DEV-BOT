@@ -1,0 +1,26 @@
+{
+  "total_devs_dune": 31501,
+  "descartados_rug_mecha_concentracion": 30787,
+  "limpios": 714,
+  "activos_limpios_7d": 106,
+  "embudo_secuencial": {
+    "limpios": 714,
+    "activos_7d": 106,
+    "4_semanas": 0,
+    "migra_gt60": 0,
+    "mediana_gt20k": 0,
+    "moda_gt20k": 0,
+    "frec20k_ge60": 0
+  },
+  "listas": {
+    "activos_calidad": 0,
+    "superaron_300k": 26,
+    "superaron_1m": 17,
+    "suelen_80k": 0,
+    "pagan_dexscreener": 0,
+    "pagan_dex_frecuente": 0,
+    "boost_100": 1
+  },
+  "union_devs": 27,
+  "oportunidades_lanzamientos_dia": 0.9
+}

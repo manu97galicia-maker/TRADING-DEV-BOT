@@ -50,30 +50,60 @@ concentracion AS (
     SELECT mint, MAX(s) / NULLIF(SUM(s), 0) AS top_share
     FROM compras_cartera GROUP BY 1
 ),
-dex AS (
+dex_trades AS (
     SELECT CASE WHEN d.token_bought_mint_address IN (SELECT mint FROM creates)
                 THEN d.token_bought_mint_address ELSE d.token_sold_mint_address END AS mint,
-           APPROX_PERCENTILE(
-             d.amount_usd / NULLIF(CASE WHEN d.token_bought_mint_address IN (SELECT mint FROM creates)
-                                        THEN d.token_bought_amount ELSE d.token_sold_amount END, 0),
-             0.99) * 1e9 AS pico_dex_usd,
-           COUNT(*) AS trades_dex
+           d.block_time AS ts,
+           date_trunc('minute', d.block_time) AS minuto,
+           d.amount_usd / NULLIF(
+             CASE WHEN d.token_bought_mint_address IN (SELECT mint FROM creates)
+                  THEN d.token_bought_amount ELSE d.token_sold_amount END,
+             0
+           ) * 1e9 AS mc_usd
     FROM dex_solana.trades d
     WHERE d.block_time >= NOW() - INTERVAL '30' day
       AND d.project = 'pumpswap'
       AND d.amount_usd >= 50
       AND (d.token_bought_mint_address IN (SELECT mint FROM creates)
            OR d.token_sold_mint_address IN (SELECT mint FROM creates))
+),
+dex_minuto AS (
+    -- Una operacion aislada puede tener una cantidad o precio aberrante. El
+    -- pico post-migracion es el mejor minuto con al menos tres operaciones y
+    -- usa la mediana de ese minuto, no el maximo de una sola mecha.
+    SELECT mint, minuto, MIN(ts) AS primera_ts,
+           APPROX_PERCENTILE(mc_usd, 0.5) AS mc_minuto,
+           COUNT(*) AS trades_minuto
+    FROM dex_trades
+    WHERE mc_usd BETWEEN 1000 AND 1000000000
+    GROUP BY 1, 2
+    HAVING COUNT(*) >= 3
+),
+dex AS (
+    SELECT mint,
+           APPROX_PERCENTILE(mc_minuto, 0.95) AS pico_dex_usd,
+           MAX_BY(mc_minuto, minuto) AS ultimo_dex_usd,
+           MIN(primera_ts) AS primera_dex,
+           SUM(trades_minuto) AS trades_dex
+    FROM dex_minuto
     GROUP BY 1
 ),
 tok AS (
     SELECT p.*, COALESCE(x.top_share, 0) AS top_share,
            GREATEST(p.pico_curva_usd, COALESCE(dx.pico_dex_usd, 0)) AS pico_usd,
            p.trades + COALESCE(dx.trades_dex, 0) AS trades_total,
-           CASE WHEN p.dev_vende_30m >= 0.1 THEN 1 ELSE 0 END AS rug,
-           CASE WHEN p.mc_10s >= 3 * p.mc_inicio THEN 1 ELSE 0 END AS mecha,
+           CASE WHEN dx.mint IS NOT NULL THEN 1 ELSE 0 END AS migro_confirmado,
+           CASE WHEN p.dev_vende_30m >= 0.1
+                     OR (COALESCE(dx.pico_dex_usd, 0) > 0
+                         AND COALESCE(dx.ultimo_dex_usd, 0)
+                             < 0.10 * dx.pico_dex_usd)
+                THEN 1 ELSE 0 END AS rug,
+           CASE WHEN p.mc_10s >= 3 * p.mc_inicio
+                     OR dx.primera_dex <= c.creado + INTERVAL '10' second
+                THEN 1 ELSE 0 END AS mecha,
            CASE WHEN COALESCE(x.top_share, 0) > 0.30 THEN 1 ELSE 0 END AS misma_wallet
     FROM por_token p
+    JOIN creates c ON c.mint = p.mint
     LEFT JOIN concentracion x ON x.mint = p.mint
     LEFT JOIN dex dx ON dx.mint = p.mint
 ),
@@ -87,7 +117,7 @@ SELECT t.dev,
        COUNT(*) AS lanzamientos,
        COUNT(DISTINCT date_trunc('week', t.creado)) AS semanas_activas,
        COUNT_IF(t.creado >= NOW() - INTERVAL '7' day) AS lanz_7d,
-       ROUND(100.0 * AVG(t.migro), 1) AS pct_migra,
+       ROUND(100.0 * AVG(t.migro_confirmado), 1) AS pct_migra,
        ROUND(APPROX_PERCENTILE(t.pico_usd, 0.5)) AS mediana_usd,
        MAX(m.moda_usd) AS moda_usd,
        ROUND(100.0 * COUNT_IF(t.pico_usd >= 20000) / COUNT(*), 1) AS frec_20k,
