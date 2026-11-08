@@ -49,8 +49,8 @@ GMGN_URL = "https://openapi.gmgn.ai/v1/user/created_tokens"
 DEX_URL = "https://api.dexscreener.com/latest/dex/tokens/"
 DEXT_URL = "https://public-api.dextools.io/{tier}/v2/token/solana/{mint}"
 #: Lo que exige el bot para comprar (bots/bot-paper-dev1-bloque2.yaml,
-#: pumpfun_dev): al menos 1 migrada y el 10%.
-MIN_MIGRADAS = 1
+#: pumpfun_dev): al menos 2 migradas y el 10% (8-nov; antes 1 migrada).
+MIN_MIGRADAS = 2
 MIN_PCT = 10.0
 #: Tiempo maximo para leer el historial entero de un dev.
 ESPERA_HISTORIAL = 40.0

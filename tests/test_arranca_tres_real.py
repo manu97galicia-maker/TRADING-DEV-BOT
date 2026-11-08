@@ -35,7 +35,8 @@ def test_arranca_las_tres_con_apagado_y_solo_en_real() -> None:
     # Despues: "compra todas las que rompan los 10.1k ... nueva estrategia".
     # Despues: "mayhem no, solo la que rompe los 10k".
     assert lista == (
-        'ESTRATEGIAS="bots/bot-real-devs27.yaml bots/bot-real-presion512.yaml"'
+        'ESTRATEGIAS="bots/bot-real-devs27.yaml bots/bot-real-presion512.yaml '
+        'bots/bot-paper-dev1-bloque2.yaml"'
     )
     assert "rompe10k_real.log" in TEXTO
     assert "mayhem_real.log" in TEXTO
@@ -60,8 +61,11 @@ def test_reglas_comunes_a_las_tres() -> None:
         # Despues: "pon 30% por operacion".
         # Despues: "44% por operacion".
         # Despues: "en normal pon 70% por operacion".
-        pct = 0.70 if "presion" in f else 0.15
-        assert t["fraccion_saldo"] == pct and t["fraccion_base"] == "libre", f
+        # 8-nov, en dev1: "30% portfolio" (sobre la cartera entera).
+        dev1 = "dev1" in f
+        pct = 0.70 if "presion" in f else (0.30 if dev1 else 0.15)
+        base = "cartera" if dev1 else "libre"
+        assert t["fraccion_saldo"] == pct and t["fraccion_base"] == base, f
         assert (
             t["stop_a_entrada_tras_tp"] is True and t["margen_stop_tras_tp"] == 0.05
         ), f

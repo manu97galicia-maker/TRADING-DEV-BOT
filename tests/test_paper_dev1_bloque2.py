@@ -50,7 +50,8 @@ def test_dev_con_minimo_un_uno_por_ciento_de_migradas() -> None:
     dev = CFG["filters"]["pumpfun_dev"]
     assert dev["enabled"] is True
     assert dev["min_rate"] == 0.10
-    assert dev["min_migrations"] == 1
+    # 8-nov: "minimo 2 lanzamientos migrados y 10%".
+    assert dev["min_migrations"] == 2
     # No admite rutas alternativas (marcados o mediana).
     assert dev["compra_inmediata"] is True
     assert dev["timeout_seg"] >= 9
@@ -101,7 +102,8 @@ def test_la_compra_paga_doce_centimos_de_priority_fee() -> None:
     sol = microlamports * unidades / 1e6 / 1e9
     # 6-nov por la noche: "0.011 de prioridad" (antes 12 centimos, +0,003,
     # +0,005 y +0,005).
-    assert abs(sol - 0.011) < 1e-9, f"la compra paga {sol:.6f} SOL"
+    # 8-nov: "buy priority fee de 0.005".
+    assert abs(sol - 0.005) < 1e-9, f"la compra paga {sol:.6f} SOL"
     # Las ventas normales no se pidio subirlas: siguen como estaban.
     assert int(fees["fixed_amount"]) == 5714286
     # El tope no puede recortar la comision de entrada por debajo de lo pedido.
@@ -137,8 +139,9 @@ def test_salida_del_4_nov() -> None:
     assert t["buy_amount_usd"] == 0
     # 7-nov: "compra en todas 15% del balance" (venia del 35%). Sobre el
     # saldo libre.
-    assert t["fraccion_saldo"] == 0.15
-    assert t["fraccion_base"] == "libre"
+    # 8-nov: "30% portfolio", sobre la cartera entera.
+    assert t["fraccion_saldo"] == 0.30
+    assert t["fraccion_base"] == "cartera"
     assert t["stop_loss_percentage"] == 0.25
     # 7-nov: para los devs normales, "take profit como teniamos" (+38%,
     # recupera lo invertido +10%).

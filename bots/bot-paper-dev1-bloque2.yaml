@@ -67,8 +67,11 @@ trade:
   # las compras pequenas pesa mucho.
   buy_amount: 0.25
   buy_amount_usd: 0
-  fraccion_saldo: 0.15
-  fraccion_base: "libre"
+  # 8-nov: "30% portfolio" (antes 15% del SOL libre). Ahora sobre la cartera
+  # entera, como las otras estrategias que corren a la vez (27 devs al 60%
+  # y presion 5-12k al 25%).
+  fraccion_saldo: 0.30
+  fraccion_base: "cartera"
   min_reserve_sol: 0.03
   # SIN LIMITE DE OPERACIONES SIMULTANEAS, pedido el 7-nov: "pon sin limite
   # de operaciones simultaneas". Venia de 7 (4-nov). Con 0 manda el SALDO:
@@ -225,7 +228,9 @@ trade:
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
-  fixed_amount_compra: 110000000
+  # 8-nov: "buy priority fee de 0.005" -> 0,005 SOL por compra =
+  # 50.000.000 microlamports x 100.000 CU (antes 0,011 SOL).
+  fixed_amount_compra: 50000000
   fixed_amount: 5714286
   fixed_amount_venta_proteccion: 42_424_243
   extra_percentage: 0.0
@@ -372,9 +377,12 @@ filters:
   # si pasa, se compra sin esperar a edad, bloques, MC ni presión.
   # timeout_seg 9: el respaldo por la cadena espera como mucho 8 s; si no hay
   # dato en 9, no se compra (con dinero real, no saber no es que si).
+  # 8-nov: "minimo 2 lanzamientos migrados y 10% de tasa de migracion o
+  # mas" (antes 1 migrada y 10%). Con 2 de 20 pasa (10%); con 2 de 21 no;
+  # con 1 de 3 tampoco (falta la segunda migrada).
   pumpfun_dev:
     enabled: true
-    min_migrations: 1
+    min_migrations: 2
     min_rate: 0.10
     compra_inmediata: true
     timeout_seg: 9

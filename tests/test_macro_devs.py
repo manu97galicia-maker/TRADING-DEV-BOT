@@ -61,8 +61,10 @@ def test_devs_activos_saca_los_mints() -> None:
 
 
 def test_regla_del_bot() -> None:
-    assert md.cumple_la_regla({"migradas_total": 1, "pct_migradas": 10.0}) is True
-    assert md.cumple_la_regla({"migradas_total": 1, "pct_migradas": 9.1}) is False
+    # 8-nov: minimo 2 migradas y el 10%.
+    assert md.cumple_la_regla({"migradas_total": 2, "pct_migradas": 10.0}) is True
+    assert md.cumple_la_regla({"migradas_total": 1, "pct_migradas": 10.0}) is False
+    assert md.cumple_la_regla({"migradas_total": 2, "pct_migradas": 9.1}) is False
     assert md.cumple_la_regla({"migradas_total": 0, "pct_migradas": 0}) is False
     assert md.cumple_la_regla(None) is False
 

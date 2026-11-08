@@ -40,7 +40,9 @@ ORIGEN="${ORIGEN:-origin}"
 #: de Dune, en real. Va junto a la de la curva (comparten el tope de 5).
 #: Despues: 8 carteras de Manu -> snipe a las 2 "dev" y copia a las otras 6.
 #: 8-nov: "deja solo a los grandes dev y mete presion ... de 5-12k de mc".
-ESTRATEGIAS="bots/bot-real-devs27.yaml bots/bot-real-presion512.yaml"
+#: Despues: "monedas recien listadas ... minimo 2 migrados y 10%" -> dev1
+#: (30% de la cartera), las tres juntas.
+ESTRATEGIAS="bots/bot-real-devs27.yaml bots/bot-real-presion512.yaml bots/bot-paper-dev1-bloque2.yaml"
 #: Nombre corto del log de cada una. dev1 sigue en logs/dev1_real.log, que es
 #: el que leen porque-no-compra.sh y los comandos de siempre.
 log_de() {
