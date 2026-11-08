@@ -57,12 +57,24 @@ def test_300k_1m_y_80k():
             _dev(dev="A", n_300k=1),
             _dev(dev="B", n_300k=2, n_1m=1),
             _dev(dev="C", n_1m=1, lanz_7d=0),  # inactivo: fuera de 1m
-            _dev(dev="E", frec_80k=60.0, lanz_7d=0),  # 80k no exige actividad
+            _dev(dev="E", frec_80k=60.0, lanz_7d=0),  # inactivo: fuera de 80k
+            _dev(dev="F", frec_80k=60.0, lanz_7d=1),
         ]
     )
     assert [f["dev"] for f in l["superaron_300k"]] == ["A", "B"]
     assert [f["dev"] for f in l["superaron_1m"]] == ["B"]
-    assert [f["dev"] for f in l["suelen_80k"]] == ["E"]
+    assert [f["dev"] for f in l["suelen_80k"]] == ["F"]
+
+
+def test_pago_dex_solo_cuenta_orden_aprobada(monkeypatch):
+    respuestas = {
+        "ok": [{"type": "tokenAd", "status": "approved"}],
+        "pendiente": [{"type": "tokenProfile", "status": "processing"}],
+    }
+
+    monkeypatch.setattr(dd, "_pide", lambda url: respuestas[url.rsplit("/", 1)[-1]])
+    assert len(dd._ordenes_dexscreener("ok")) == 1
+    assert dd._ordenes_dexscreener("pendiente") == []
 
 
 def test_operaciones_al_dia():

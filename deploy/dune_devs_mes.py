@@ -93,7 +93,8 @@ def clasifica(filas: list[dict], cortes: dict | None = None) -> dict[str, list[d
         "suelen_80k": [
             f
             for f in buenos
-            if int(f.get("lanzamientos") or 0) >= 2
+            if activo(f)
+            and int(f.get("lanzamientos") or 0) >= 2
             and float(f.get("frec_80k") or 0) >= c["frec_80k"]
         ],
     }
@@ -258,8 +259,26 @@ def precio_sol() -> float:
         return 150.0
 
 
+def _ordenes_dexscreener(mint: str) -> list[dict]:
+    """Pedidos de pago de DexScreener para una moneda.
+
+    ``pair.info`` solo significa que la ficha tiene metadatos; no demuestra un
+    pago. La fuente autoritativa es ``/orders/v1`` y solo contamos estados
+    aprobados. El endpoint oficial limita esta ruta a 60 peticiones/minuto.
+    """
+    try:
+        ordenes = _pide(f"https://api.dexscreener.com/orders/v1/solana/{mint}")
+    except Exception:  # noqa: BLE001
+        return []
+    return [
+        o
+        for o in ordenes if isinstance(ordenes, list) and isinstance(o, dict)
+        if o.get("status") == "approved"
+    ]
+
+
 def dexscreener(mints: list[str], max_consultas: int) -> dict[str, dict]:
-    """Por moneda: si tiene un pago aprobado en DexScreener y sus boosts activos."""
+    """Por moneda: pagos aprobados y boosts activos de DexScreener."""
     fuera: dict[str, dict] = {}
     for i in range(0, min(len(mints), max_consultas), 30):
         lote = mints[i : i + 30]
@@ -272,10 +291,21 @@ def dexscreener(mints: list[str], max_consultas: int) -> dict[str, dict]:
         for p in pares if isinstance(pares, list) else []:
             m = ((p.get("baseToken") or {}).get("address")) or ""
             b = int(((p.get("boosts") or {}).get("active")) or 0)
-            fuera.setdefault(m, {"boosts": 0, "paga": False})
+            fuera.setdefault(m, {"boosts": 0, "paga": False, "tipos_pago": []})
             fuera[m]["boosts"] = max(fuera[m]["boosts"], b)
-            fuera[m]["paga"] = fuera[m]["paga"] or bool(p.get("info"))
         time.sleep(0.25)
+
+    # Una petición por mint: se limita a 60/minuto como exige la API oficial.
+    for mint in mints[:max_consultas]:
+        ordenes = _ordenes_dexscreener(mint)
+        dato = fuera.setdefault(
+            mint, {"boosts": 0, "paga": False, "tipos_pago": []}
+        )
+        dato["paga"] = bool(ordenes)
+        dato["tipos_pago"] = sorted(
+            {str(o.get("type")) for o in ordenes if o.get("type")}
+        )
+        time.sleep(1.02)
     return fuera
 
 
@@ -330,9 +360,19 @@ def main() -> None:
     dx = dexscreener(mints, a.max_dex)
     for f in candidatos:
         datos = [dx[m] for m in (f.get("mints") or []) if m in dx]
-        f["paga_dex"] = any(d["paga"] for d in datos)
+        pagadas = sum(bool(d["paga"]) for d in datos)
+        f["muestras_dex"] = len(datos)
+        f["monedas_dex_pagadas"] = pagadas
+        f["pct_monedas_dex_pagadas"] = round(100 * pagadas / len(datos), 1) if datos else 0
+        f["paga_dex"] = pagadas > 0
         f["max_boosts"] = max((d["boosts"] for d in datos), default=0)
     listas["pagan_dexscreener"] = [f for f in candidatos if f.get("paga_dex")]
+    listas["pagan_dex_frecuente"] = [
+        f
+        for f in candidatos
+        if int(f.get("monedas_dex_pagadas") or 0) >= 2
+        and float(f.get("pct_monedas_dex_pagadas") or 0) >= 50
+    ]
     listas["boost_100"] = [f for f in candidatos if f.get("max_boosts", 0) >= 100]
 
     for nombre, devs in listas.items():
