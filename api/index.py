@@ -18,6 +18,11 @@ SQL_FILE = ROOT / "deploy" / "dune" / "devs_mes.sql"
 
 def _dune(path: str, *, body: dict | None = None) -> tuple[int, dict]:
     raw_key = os.environ.get("DUNE_API_KEY", "").strip()
+    # A veces se pega la asignación completa en el campo Value de Vercel.
+    if "=" in raw_key and "DUNE" in raw_key.split("=", 1)[0].upper():
+        raw_key = raw_key.split("=", 1)[1]
+    if ":" in raw_key and "DUNE" in raw_key.split(":", 1)[0].upper():
+        raw_key = raw_key.split(":", 1)[1]
     # Las terminales móviles pueden guardar marcas de bracketed-paste o un
     # ``~`` final. Dune las interpreta como parte de la clave y responde 401.
     raw_key = re.sub(r"\x1b\[20[01]~|\[20[01]~", "", raw_key)
