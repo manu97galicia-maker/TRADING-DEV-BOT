@@ -414,6 +414,7 @@ async def start_bot(config_path: str, *, only_dev: bool = False):
             tanda_solo_si_gana=cfg["trade"].get("tanda_solo_si_gana", False),
             vender_antes_de_edad_seg=cfg["trade"].get("vender_antes_de_edad_seg", 0),
             vender_polvo=cfg["trade"].get("vender_polvo", False),
+            barrido_restos=cfg["trade"].get("barrido_restos"),
             max_real_buys=cfg.get("trade", {}).get("max_real_buys", 0),
             pumpfun_dev=cfg.get("filters", {}).get("pumpfun_dev"),
             copy_wallets=cfg.get("filters", {}).get("copy_wallets"),

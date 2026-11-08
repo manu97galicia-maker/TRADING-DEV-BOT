@@ -707,6 +707,10 @@ class UniversalTrader:
         # `valor_minimo_posicion_usd` se VENDE (antes se dejaba en la wallet) y
         # la posicion cuenta como cerrada, asi la limpieza cierra la cuenta.
         vender_polvo: bool = False,
+        # BARRIDO DE RESTOS (8-nov, Manu: "revisa cada poco que no queden
+        # pendientes saldos pequenos" -> "cada 10 min"). {cada_seg, max_usd}.
+        # Ver trading/barrido_restos.py. Vacio o cada_seg 0 = apagado.
+        barrido_restos: dict | None = None,
         # FRANJA HORARIA en la que se opera, hora de España. Fuera de ella el
         # bot sigue mirando el flujo pero no compra. {inicio: 18, fin: 2} son
         # las seis de la tarde a las dos de la madrugada -- cruza medianoche, y
@@ -1405,6 +1409,7 @@ class UniversalTrader:
         self.tanda_solo_si_gana = bool(tanda_solo_si_gana)
         self.vender_antes_de_edad_seg = max(0.0, float(vender_antes_de_edad_seg or 0))
         self.vender_polvo = bool(vender_polvo)
+        self.barrido_restos = dict(barrido_restos or {})
         #: Resultado (SOL) de las posiciones cerradas de la tanda en curso.
         self._pnl_tanda = 0.0
         self._bote = Ganancia() if self.escala_por_sol_ganado > 0 else None
@@ -1862,6 +1867,10 @@ class UniversalTrader:
             logger.info(f"RPC warm-up successful (getHealth passed: {health_resp})")
         except Exception as e:
             logger.warning(f"RPC warm-up failed: {e!s}")
+
+        # El barrido corre aparte, sea cual sea la fuente.
+        if float(self.barrido_restos.get("cada_seg") or 0) > 0:
+            self._tarea_barrido = asyncio.create_task(self._barrer_restos_cada())
 
         if self.copy_wallets.get("enabled"):
             logger.info("Copy-trading mode ENABLED (copia compras de wallets)")
@@ -2386,6 +2395,130 @@ class UniversalTrader:
             )
         except OSError:
             return 0
+
+    async def _barrer_restos_cada(self) -> None:
+        """Pasa el barrido de restos cada `barrido_restos.cada_seg` segundos."""
+        cada = float(self.barrido_restos.get("cada_seg") or 0)
+        max_usd = float(self.barrido_restos.get("max_usd", 1.0) or 1.0)
+        logger.info(
+            "BARRIDO DE RESTOS activo: cada %.0f min, quema y cierra lo que "
+            "valga menos de %.2f $ (nunca posiciones abiertas ni SOL)",
+            cada / 60, max_usd,
+        )
+        while True:
+            await asyncio.sleep(cada)
+            try:
+                await self._barrer_restos(max_usd)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception("Barrido de restos fallo; sigue en la proxima pasada")
+
+    async def _precio_resto(self, mint: str) -> float | None:
+        """Precio en SOL (unidad del bot) de un resto; None si no se sabe."""
+        if mint.endswith("pump"):
+            try:
+                impl = self.platform_implementations
+                curva = impl.address_provider.derive_pool_address(
+                    Pubkey.from_string(mint)
+                )
+                st = await impl.curve_manager.get_pool_state(
+                    curva, exigir_precio=False
+                )
+                precio = float(st.get("price_per_token") or 0)
+                if not st.get("complete") and precio > 0:
+                    return precio
+            except Exception:  # noqa: BLE001, S110 - sin curva se prueba el DEX
+                pass
+        return await self._precio_dex(mint)
+
+    async def _barrer_restos(self, max_usd: float = 1.0) -> dict[str, int]:
+        """Una pasada del barrido: cierra vacias y quema+cierra restos < max_usd.
+
+        Las decisiones viven en `trading.barrido_restos` (sin red, probadas).
+        """
+        from spl.token.instructions import (  # noqa: PLC0415
+            BurnParams,
+            CloseAccountParams,
+            burn,
+            close_account,
+        )
+
+        from trading import barrido_restos as br  # noqa: PLC0415
+
+        duenio = str(self.wallet.pubkey)
+        cuentas: list = []
+        for programa in (TOKEN_PROGRAM, TOKEN_2022_PROGRAM):
+            r = await self.solana_client.post_rpc(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "getTokenAccountsByOwner",
+                    "params": [
+                        duenio,
+                        {"programId": str(programa)},
+                        {"encoding": "jsonParsed", "commitment": "confirmed"},
+                    ],
+                }
+            )
+            cuentas += br.cuentas_de_la_respuesta(r, str(programa))
+        protegidos = br.mints_protegidos(self._open_pos_path.parent)
+        hechas = {"cerrar": 0, "quemar": 0}
+        for c in cuentas:
+            valor = None
+            if c.crudo > 0 and c.mint != br.WSOL and c.mint not in protegidos:
+                precio = await self._precio_resto(c.mint)
+                if precio:
+                    valor = c.crudo / 10**TOKEN_DECIMALS * precio * _SOL_USD
+            accion = br.decide(c, protegidos, valor, max_usd)
+            if accion == "dejar":
+                continue
+            programa = Pubkey.from_string(c.programa)
+            cuenta = Pubkey.from_string(c.direccion)
+            ixs = []
+            if accion == "quemar":
+                ixs.append(
+                    burn(
+                        BurnParams(
+                            account=cuenta,
+                            mint=Pubkey.from_string(c.mint),
+                            owner=self.wallet.pubkey,
+                            amount=c.crudo,
+                            program_id=programa,
+                        )
+                    )
+                )
+            ixs.append(
+                close_account(
+                    CloseAccountParams(
+                        account=cuenta,
+                        dest=self.wallet.pubkey,
+                        owner=self.wallet.pubkey,
+                        program_id=programa,
+                    )
+                )
+            )
+            try:
+                firma = await self.solana_client.build_and_send_transaction(
+                    ixs, self.wallet.keypair, skip_preflight=True
+                )
+                if await self.solana_client.confirm_transaction(firma):
+                    hechas[accion] += 1
+                    logger.info(
+                        "BARRIDO: %s %s (%s)",
+                        "quemado y cerrado" if accion == "quemar" else "cerrada vacia",
+                        c.mint,
+                        "sin valor" if valor is None else f"{valor:.2f} $",
+                    )
+            except Exception as e:  # noqa: BLE001 - una cuenta no para el resto
+                logger.warning("BARRIDO: no se pudo limpiar %s: %s", c.mint, e)
+        logger.info(
+            "BARRIDO DE RESTOS: %d cuentas miradas, %d vacias cerradas, %d restos "
+            "quemados (< %.2f $), %d protegidas por posiciones abiertas",
+            len(cuentas), hechas["cerrar"], hechas["quemar"], max_usd,
+            len(protegidos),
+        )
+        return hechas
 
     async def _puede_quemar(self, token_info: TokenInfo, precio: float) -> bool:
         """Si la limpieza puede QUEMAR lo que quede antes de cerrar la cuenta.

@@ -63,7 +63,7 @@ def test_reglas_comunes_a_las_tres() -> None:
         # Despues: "en normal pon 70% por operacion".
         # 8-nov, en dev1: "30% portfolio" (sobre la cartera entera).
         dev1 = "dev1" in f
-        pct = 0.70 if "presion" in f else (0.30 if dev1 else 0.15)
+        pct = 0.70 if "presion" in f else (0.60 if dev1 else 0.15)
         base = "cartera" if dev1 else "libre"
         assert t["fraccion_saldo"] == pct and t["fraccion_base"] == base, f
         assert (
@@ -82,8 +82,10 @@ def test_reglas_comunes_a_las_tres() -> None:
         # Despues, en las de presion: "maximo 3 operaciones simultaneas".
         # Despues: "maximo 4 simultaneas y maximo de posiciones abiertas 4".
         # Despues: "maximo 3".
-        assert t["max_posiciones"] == (3 if "presion" in f else 0), f
-        assert t.get("max_posiciones_total", 0) == (3 if "presion" in f else 0), f
+        # 8-nov, en dev1: "maximo dos operaciones a la vez".
+        tope = 3 if "presion" in f else (2 if dev1 else 0)
+        assert t["max_posiciones"] == tope, f
+        assert t.get("max_posiciones_total", 0) == tope, f
 
 
 def test_curva92() -> None:

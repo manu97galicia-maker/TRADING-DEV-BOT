@@ -36,7 +36,8 @@ trade:
   # total de la wallet.
   # 7-nov, despues: "pon 25% cada operacion de saldo" (antes 0.40). Sobre
   # el saldo total de la wallet; 4 abiertas = todo invertido.
-  fraccion_saldo: 0.25
+  # 8-nov: "60% del total sol" cada una (antes 0.25).
+  fraccion_saldo: 0.60
   fraccion_base: cartera
   min_reserve_sol: 0.03
   # 7-nov: "maximo 4 simultaneas y maximo de posiciones abiertas 4"
@@ -47,8 +48,10 @@ trade:
   # 7-nov, despues: "5 simultaneas" (antes 4). OJO: con fraccion_saldo 0.25
   # solo caben 3 de verdad (cada compra pide su importe +9% de slippage
   # libre, mas la reserva); para 5 haria falta ~18% por operacion.
-  max_posiciones: 5
-  max_posiciones_total: 5
+  # 8-nov: "maximo dos operaciones a la vez" entre las tres estrategias
+  # (devs 27, presion 5-12k y dev1). Antes 5 y 5.
+  max_posiciones: 2
+  max_posiciones_total: 2
   # 7-nov: las mayhem van "aparte": sus posiciones no cuentan en estas 5.
   max_posiciones_total_ignora: [bot-real-mayhem]
   # 7-nov "sin limite de operaciones" (antes 1000). 0 = sin tope.

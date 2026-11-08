@@ -15,12 +15,8 @@ from platforms.pumpfun.instruction_builder import PumpFunInstructionBuilder
 ROOT = Path(__file__).resolve().parents[1]
 FICHERO = ROOT / "bots" / "bot-paper-dev1-bloque2.yaml"
 CFG = yaml.safe_load(FICHERO.read_text(encoding="utf-8"))
-TRADER = (ROOT / "src" / "trading" / "universal_trader.py").read_text(
-    encoding="utf-8"
-)
-PAPER_LAUNCHER = (ROOT / "deploy" / "arranca-dev1-paper.sh").read_text(
-    encoding="utf-8"
-)
+TRADER = (ROOT / "src" / "trading" / "universal_trader.py").read_text(encoding="utf-8")
+PAPER_LAUNCHER = (ROOT / "deploy" / "arranca-dev1-paper.sh").read_text(encoding="utf-8")
 SOL_USD_REFERENCIA = 105.0
 
 
@@ -125,7 +121,8 @@ def test_plazas_que_el_nodo_vigila_y_reserva_para_vender() -> None:
     # 7-nov: "pon sin limite de operaciones simultaneas" (venia de 7). Manda
     # el saldo. El nodo sigue vigilando bien solo `vigilables` a la vez, y el
     # YAML lo tiene que decir para que no se olvide.
-    assert t["max_posiciones"] == 0
+    # 8-nov: "maximo dos operaciones a la vez" (entre las tres).
+    assert t["max_posiciones"] == 2 and t["max_posiciones_total"] == 2
     assert vigilables == 7
     assert "max_rps / 2" in FICHERO.read_text(encoding="utf-8")
     assert float(t["min_reserve_sol"]) > 0
@@ -140,7 +137,7 @@ def test_salida_del_4_nov() -> None:
     # 7-nov: "compra en todas 15% del balance" (venia del 35%). Sobre el
     # saldo libre.
     # 8-nov: "30% portfolio", sobre la cartera entera.
-    assert t["fraccion_saldo"] == 0.30
+    assert t["fraccion_saldo"] == 0.60
     assert t["fraccion_base"] == "cartera"
     assert t["stop_loss_percentage"] == 0.25
     # 7-nov: para los devs normales, "take profit como teniamos" (+38%,
@@ -172,6 +169,7 @@ def test_devs_con_rugs_bloqueados() -> None:
     assert CFG["filters"]["ignorar_listas_de_devs"] is False
     assert CFG["trade"].get("rugs_para_bloquear", 2) == 2
 
+
 def test_mayhem_no_es_un_filtro_adicional() -> None:
     assert CFG["filters"]["allow_mayhem"] is True
     assert CFG["filters"]["require_mayhem"] is False
@@ -192,9 +190,10 @@ def test_ninguna_otra_estrategia_real_arranca_sola() -> None:
         if "bsc" in f.name:
             continue
         c = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
-        if c.get("enabled", True) and (c.get("filters") or {}).get(
-            "paper_trade"
-        ) is False:
+        if (
+            c.get("enabled", True)
+            and (c.get("filters") or {}).get("paper_trade") is False
+        ):
             encendidas_en_real.append(f.name)
     assert encendidas_en_real == [], (
         f"arrancarian en real junto a dev1-bloque2: {encendidas_en_real}"
@@ -224,7 +223,9 @@ def test_ventana_de_edad_rechaza_pasados_ocho_segundos() -> None:
     from test_ventana_de_edad import _con_edad, _fuente
 
     c96 = CFG["filters"]["curva_96"]
-    f = _fuente(min_edad_seg=c96.get("min_edad_seg", 0), max_edad_seg=c96["max_edad_seg"])
+    f = _fuente(
+        min_edad_seg=c96.get("min_edad_seg", 0), max_edad_seg=c96["max_edad_seg"]
+    )
     _con_edad("nueva", 0.5)
     assert f._fuera_de_edad("nueva", "NUEVA") is False
     _con_edad("justa", 7.5)
@@ -259,7 +260,7 @@ def test_la_edad_se_revalida_justo_antes_de_comprar() -> None:
 
 def test_ni_marcados_ni_mediana_pueden_saltarse_el_uno_por_ciento() -> None:
     assert TRADER.count('self.pumpfun_dev.get("strict_only", False)') >= 3
-    assert 'or not self._es_marcado(token_info)' in TRADER
+    assert "or not self._es_marcado(token_info)" in TRADER
     assert 'not self.pumpfun_dev.get("strict_only", False)' in TRADER
 
 
@@ -289,13 +290,28 @@ def test_devs_buenos_compran_y_los_de_30k_salen_distinto() -> None:
     assert t["devs_marcados"] == "devs_buenos_15k.json"
     assert t["marcados_saltan_baneo"] is False
     raiz = FICHERO.parent.parent
-    buenos = {x["wallet"] for x in json.loads((raiz / t["devs_marcados"]).read_text())["wallets"]}
-    elite = {x["wallet"] for x in json.loads((raiz / f["dev_elite"]["lista"]).read_text())["wallets"]}
+    buenos = {
+        x["wallet"]
+        for x in json.loads((raiz / t["devs_marcados"]).read_text())["wallets"]
+    }
+    elite = {
+        x["wallet"]
+        for x in json.loads((raiz / f["dev_elite"]["lista"]).read_text())["wallets"]
+    }
     assert elite <= buenos and len(elite) < len(buenos)
     e = f["dev_elite"]
     assert e["min_rate"] > 1  # nadie entra por su tasa, solo por la lista
     assert e["take_profit_percentage"] == 0.45
     assert abs(1.45 * e["take_profit_sell_percentage"] - 1.0) < 1e-9
-    assert [x["target_mc"] for x in e["mc_take_profit_tiers"]] == [30000, 45000, 60000, 80000]
-    assert e["take_profit_sell_percentage"] + sum(x["sell"] for x in e["mc_take_profit_tiers"]) >= 1.0
+    assert [x["target_mc"] for x in e["mc_take_profit_tiers"]] == [
+        30000,
+        45000,
+        60000,
+        80000,
+    ]
+    assert (
+        e["take_profit_sell_percentage"]
+        + sum(x["sell"] for x in e["mc_take_profit_tiers"])
+        >= 1.0
+    )
     assert e["stop_loss_percentage"] == t["stop_loss_percentage"]

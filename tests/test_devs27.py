@@ -47,7 +47,7 @@ def test_config_devs27():
         {"alcanza": 240000, "suelo": 200000},
         {"alcanza": 1000000, "suelo": 450000},
     ]
-    assert t["max_posiciones_total"] == 5 and t["max_perdidas_seguidas"] == 3
+    assert t["max_posiciones_total"] == 2 and t["max_perdidas_seguidas"] == 3
     assert t["nombre_estrategia"] == "real-devs27"
 
 

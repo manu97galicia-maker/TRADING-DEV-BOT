@@ -70,7 +70,8 @@ trade:
   # 8-nov: "30% portfolio" (antes 15% del SOL libre). Ahora sobre la cartera
   # entera, como las otras estrategias que corren a la vez (27 devs al 60%
   # y presion 5-12k al 25%).
-  fraccion_saldo: 0.30
+  # 8-nov, despues: "60% del total sol" cada una (antes 0.30).
+  fraccion_saldo: 0.60
   fraccion_base: "cartera"
   min_reserve_sol: 0.03
   # SIN LIMITE DE OPERACIONES SIMULTANEAS, pedido el 7-nov: "pon sin limite
@@ -80,7 +81,10 @@ trade:
   # (universal_trader.py, TOPE_DURO_POSICIONES) contra un fallo raro.
   # Ojo: el nodo vigila bien unas max_rps / 2 posiciones a la vez (7 con 14);
   # con mas, cada una se mira algo menos a menudo.
-  max_posiciones: 0
+  # 8-nov: "maximo dos operaciones a la vez" entre las tres estrategias
+  # (devs 27, presion 5-12k y dev1). Antes 5 y 5.
+  max_posiciones: 2
+  max_posiciones_total: 2
   # DEVS BUENOS GUARDADOS, pedido el 7-nov: "Junta en una lista todos los
   # buenos dev que tenemos guardados que suelen superar 15k mc" + "tambien
   # para comprar". A los de esta lista se les compra AUNQUE NO LLEGUEN al 10%
