@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -16,7 +17,11 @@ SQL_FILE = ROOT / "deploy" / "dune" / "devs_mes.sql"
 
 
 def _dune(path: str, *, body: dict | None = None) -> tuple[int, dict]:
-    key = os.environ.get("DUNE_API_KEY", "").strip()
+    raw_key = os.environ.get("DUNE_API_KEY", "").strip()
+    # Las terminales móviles pueden guardar marcas de bracketed-paste o un
+    # ``~`` final. Dune las interpreta como parte de la clave y responde 401.
+    raw_key = re.sub(r"\x1b\[20[01]~|\[20[01]~", "", raw_key)
+    key = re.sub(r"[^A-Za-z0-9_-]", "", raw_key)
     if not key:
         return 503, {"error": "DUNE_API_KEY no configurada"}
     data = json.dumps(body).encode() if body is not None else None
