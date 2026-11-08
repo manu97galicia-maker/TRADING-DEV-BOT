@@ -56,10 +56,18 @@ log_de() {
     bot-real-snipe2devs) echo "snipe2devs_real.log" ;;
     bot-real-copia6) echo "copia6_real.log" ;;
     bot-real-presion512) echo "presion512_real.log" ;;
+    bot-real-mayhem2000) echo "mayhem2000_real.log" ;;
     *) echo "$(basename "$1" .yaml)_real.log" ;;
   esac
 }
 HORAS="${1:-9}"
+# SOLO LAS QUE SE NOMBREN (8-nov, estrategia mayhem 400-2000%). Si despues
+# de las horas vienen ficheros, se arrancan SOLO esos en vez de la lista de
+# arriba:  bash /root/arranca-tres.sh 24 bots/bot-real-mayhem2000.yaml
+if [ "$#" -gt 1 ]; then
+  shift
+  ESTRATEGIAS="$*"
+fi
 
 cd "$RAIZ" || { echo "NO ARRANCA: no existe $RAIZ"; exit 1; }
 
