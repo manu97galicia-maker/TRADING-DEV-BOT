@@ -33,8 +33,8 @@ def test_config_presion512():
     # Frenos anti-rug.
     assert fl["max_dev_hold_pct"] == 0.10 and fl["allow_mayhem"] is False
     assert cv["max_carteras_primer_bloque"] == 5 and cv["max_subida_vela2"] == 0.60
-    # 60%, todo a +45%, stop -22% (no el de 7.400 $).
-    assert t["fraccion_saldo"] == 0.60 and t["fraccion_base"] == "cartera"
+    # 70%, todo a +45%, stop -22% (no el de 7.400 $).
+    assert t["fraccion_saldo"] == 0.70 and t["fraccion_base"] == "cartera"
     assert t["take_profit_percentage"] == 0.45
     assert t["take_profit_sell_percentage"] == 1.0
     assert t["stop_loss_percentage"] == 0.22 and t["mc_stop_loss"] == 0

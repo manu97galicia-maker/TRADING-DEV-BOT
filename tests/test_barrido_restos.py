@@ -150,5 +150,5 @@ def test_config():
         "bots/bot-paper-dev1-bloque2.yaml",
     ):
         t = yaml.safe_load((RAIZ / f).read_text("utf-8"))["trade"]
-        assert t["fraccion_saldo"] == 0.60 and t["fraccion_base"] == "cartera", f
+        assert t["fraccion_saldo"] == 0.70 and t["fraccion_base"] == "cartera", f
         assert t["max_posiciones"] == 2 and t["max_posiciones_total"] == 2, f

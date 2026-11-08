@@ -137,7 +137,7 @@ def test_salida_del_4_nov() -> None:
     # 7-nov: "compra en todas 15% del balance" (venia del 35%). Sobre el
     # saldo libre.
     # 8-nov: "30% portfolio", sobre la cartera entera.
-    assert t["fraccion_saldo"] == 0.60
+    assert t["fraccion_saldo"] == 0.70
     assert t["fraccion_base"] == "cartera"
     assert t["stop_loss_percentage"] == 0.25
     # 7-nov: para los devs normales, "take profit como teniamos" (+38%,

@@ -37,7 +37,8 @@ trade:
   # 7-nov, despues: "pon 25% cada operacion de saldo" (antes 0.40). Sobre
   # el saldo total de la wallet; 4 abiertas = todo invertido.
   # 8-nov: "60% del total sol" cada una (antes 0.25).
-  fraccion_saldo: 0.60
+  # 8-nov, despues: "pon en todas a mayores 70% por operacion" (antes 0.60).
+  fraccion_saldo: 0.70
   fraccion_base: cartera
   min_reserve_sol: 0.03
   # 7-nov: "maximo 4 simultaneas y maximo de posiciones abiertas 4"

@@ -71,7 +71,8 @@ trade:
   # entera, como las otras estrategias que corren a la vez (27 devs al 60%
   # y presion 5-12k al 25%).
   # 8-nov, despues: "60% del total sol" cada una (antes 0.30).
-  fraccion_saldo: 0.60
+  # 8-nov, despues: "pon en todas a mayores 70% por operacion" (antes 0.60).
+  fraccion_saldo: 0.70
   fraccion_base: "cartera"
   min_reserve_sol: 0.03
   # SIN LIMITE DE OPERACIONES SIMULTANEAS, pedido el 7-nov: "pon sin limite

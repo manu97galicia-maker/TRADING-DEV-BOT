@@ -30,8 +30,8 @@ def test_config_devs27():
     assert fl["max_dev_hold_pct"] == 0.10 and fl["allow_mayhem"] is False
     # Stop en %: el de 7.400 $ venderia al instante una moneda recien nacida.
     assert t["stop_loss_percentage"] == 0.40 and t["mc_stop_loss"] == 0
-    # 8-nov: 60% del portfolio, prioridad de compra 0,02 SOL, sin trailing.
-    assert t["fraccion_saldo"] == 0.60 and t["fraccion_base"] == "cartera"
+    # 8-nov: 70% del portfolio, prioridad de compra 0,02 SOL, sin trailing.
+    assert t["fraccion_saldo"] == 0.70 and t["fraccion_base"] == "cartera"
     assert t["trailing_stop_percentage"] == 0
     pf = c["priority_fees"]
     assert pf["fixed_amount_compra"] * 100_000 / 1e15 == 0.02

@@ -63,7 +63,7 @@ def test_reglas_comunes_a_las_tres() -> None:
         # Despues: "en normal pon 70% por operacion".
         # 8-nov, en dev1: "30% portfolio" (sobre la cartera entera).
         dev1 = "dev1" in f
-        pct = 0.70 if "presion" in f else (0.60 if dev1 else 0.15)
+        pct = 0.70 if "presion" in f else (0.70 if dev1 else 0.15)
         base = "cartera" if dev1 else "libre"
         assert t["fraccion_saldo"] == pct and t["fraccion_base"] == base, f
         assert (
