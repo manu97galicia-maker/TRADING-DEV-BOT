@@ -29,7 +29,7 @@ def test_config_presion512():
     # "la presion de ahora" (la de la curva) y organica.
     assert cv["min_compradores_ola"] == 3 and cv["min_presion_ratio"] == 1.4
     assert cv["ventana_presion"] == 7.0 and cv["ultimas_compras"] == 2
-    assert cv["min_volumen_reciente_sol"] == 3.0 and cv["min_compradores"] == 30
+    assert cv["min_volumen_reciente_sol"] == 3.0 and cv["min_compradores"] == 45
     # Frenos anti-rug.
     assert fl["max_dev_hold_pct"] == 0.10 and fl["allow_mayhem"] is False
     assert cv["max_carteras_primer_bloque"] == 5 and cv["max_subida_vela2"] == 0.60

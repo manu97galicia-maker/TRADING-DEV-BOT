@@ -8,7 +8,7 @@
 #     comprado que vendido;
 #   - las 2 ultimas operaciones, compras;
 #   - 3 SOL negociados en el ultimo minuto;
-#   - 30 carteras distintas han comprado (organica).
+#   - 45 carteras distintas han comprado (organica; antes 30).
 # Mismos frenos anti-rug (dev 10%, bundle, mechas, carteras grandes, lista
 # negra, no repetir en 24 h). 25% de la cartera. Venta: todo a +45%.
 # Stop -22% desde la compra (el de 7.400 $ venderia al instante) y
@@ -265,7 +265,9 @@ filters:
     # al menos 30 carteras distintas han comprado desde que el bot la mira
     # (antes sin minimo). Si no llega, se vuelve a mirar en la siguiente
     # operacion.
-    min_compradores: 30
+    # 8-nov (presion 5-12k): "que tenga algo mas de volumen organico" ->
+    # eligio "45 compradores" distintos (antes 30).
+    min_compradores: 45
     # 7-nov "que rompa con fuerza": presion de los ultimos 5 s. Al menos 4
     # compradores distintos y 1,5 veces mas SOL comprado que vendido (antes
     # 0 y 0: sin presion). El vigilante de la curva la mide el mismo en
