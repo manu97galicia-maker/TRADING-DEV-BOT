@@ -51,28 +51,15 @@ def test_config_rompe_10k():
     assert fl["max_dev_hold_pct"] == 0.10 and fl["allow_mayhem"] is False
     assert cv["max_carteras_primer_bloque"] == 5 and cv["max_sol_primer_bloque"] == 9.0
     assert cv["max_subida_vela"] == 0.54 and cv["max_subida_vela2"] == 0.60
-    # Despues: "25% cada operacion" del total, TP +40% (recupera) / +90% / +140%,
+    # 8-nov "realizar todo en una venta al 45%": un solo TP del 100% a +45%;
     # SL en 7,4k de market cap y el trailing fijo en 22%.
     assert t["fraccion_saldo"] == 0.25 and t["fraccion_base"] == "cartera"
     assert t["stop_loss_percentage"] == 0 and t["mc_stop_loss"] == 7400
     assert t["trailing_stop_percentage"] == 0.22
-    assert [
-        t["take_profit_percentage"],
-        t["tp2_gain"],
-        t["tp3_gain"],
-        t["tp4_gain"],
-    ] == [
-        0.40,
-        1.00,
-        1.40,
-        1.80,
-    ]
-    resto = [t["tp2_sell"], t["tp3_sell"], t["tp4_sell"]]
-    total = t["take_profit_sell_percentage"] + sum(resto)
-    assert abs(total - 1.0) < 1e-9
-    assert (
-        abs(t["take_profit_sell_percentage"] * 1.40 - 1.0) < 1e-6
-    )  # recupera lo invertido
+    assert t["take_profit_percentage"] == 0.45
+    assert t["take_profit_sell_percentage"] == 1.0
+    for k in ("tp2_gain", "tp3_gain", "tp4_gain"):
+        assert t.get(k) is None, k
     assert t["stop_a_entrada_tras_tp"] is True
     assert t["max_posiciones_total"] == 5
     assert fl["paper_trade"] is False and fl["dex_presion"]["enabled"] is False
@@ -103,34 +90,17 @@ def test_solo_justo_al_romper(monkeypatch):
     assert f._embudo["sobre_mc_maximo"] == 1 and f._embudo["bajo_mc_minimo"] == 1
 
 
-def test_vende_40_100_140_180_y_stop_en_7400(tmp_path, monkeypatch):
-    """Con el vigilante de verdad y una entrada a 10.000 $: TP +40%
-    (recupera) y el resto en tres tercios a +100% / +140% / +180% (media
-    +140%), y el stop salta al bajar de 7.400 $."""
+def test_vende_todo_al_45_y_stop_en_7400(tmp_path, monkeypatch):
+    """Con el vigilante de verdad y una entrada a 10.000 $: una sola venta
+    del 100% a +45%, y el stop salta al bajar de 7.400 $."""
     monkeypatch.setattr(tv, "MC_ENTRADA", 10000.0)
     t, ut = _construir(YAML, tmp_path, monkeypatch)
-    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.41, 2.01, 2.41, 2.81, 3.0])
-    assert [v[0] for v in ventas] == [
-        "tp_tier1_+40%",
-        "tp_tier2_+100%",
-        "tp_tier3_+140%",
-        "tp_tier4_+180%",
-    ]
-    assert abs(sum(v[1] for v in ventas) - 1.0) < 1e-3
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.2, 1.46, 2.0, 3.0])
+    assert [v[0] for v in ventas] == ["tp_tier1_+45%"]
+    assert abs(ventas[0][1] - 1.0) < 1e-6
     t, ut = _construir(YAML, tmp_path, monkeypatch)
     ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 0.80, 0.75, 0.75, 0.73])
     assert ventas == [("stop_loss", 1.0, 0.73)]  # 7.300 $ < 7.400 $
-
-
-def test_tras_el_tp1_el_stop_sube(tmp_path, monkeypatch):
-    """ "Subes sl cuando toque tp1": tras +40% el resto sale en compra +5%."""
-    monkeypatch.setattr(tv, "MC_ENTRADA", 10000.0)
-    t, ut = _construir(YAML, tmp_path, monkeypatch)
-    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.41, 1.2, 1.06, 1.04])
-    assert ventas[0][0] == "tp_tier1_+40%" and len(ventas) == 2
-    # Sale por el trailing (pico 1,41 x 0,78 = 1,10) o por el suelo de compra
-    # +5%: nunca por debajo de compra +5%.
-    assert ventas[1][2] >= 1.05
 
 
 def test_el_resto_de_menos_de_1_dolar_se_vende(tmp_path, monkeypatch):

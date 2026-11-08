@@ -108,8 +108,11 @@ trade:
   # y subes sl cuando toque tp1": +40% vende el 71,43% (= lo invertido),
   # el resto mitad a +90% y mitad a +140%. Tras el TP1 el stop sube a
   # compra +5% (stop_a_entrada_tras_tp, como antes).
-  take_profit_percentage: 0.40
-  take_profit_sell_percentage: 0.7142857143
+  # 8-nov: "realizar todo en una venta al 45%" (antes +40% vendia el 71,43%
+  # y el resto en tres tercios a +100/+140/+180%). Ahora UNA sola venta:
+  # el 100% a +45%. Ahorra 0,003 SOL de prioridad por operacion.
+  take_profit_percentage: 0.45
+  take_profit_sell_percentage: 1.0
   mc_take_profit_tiers: []
   stop_a_entrada_tras_tp: true
   margen_stop_tras_tp: 0.05
@@ -129,18 +132,8 @@ trade:
   # 7-nov, despues: "+50%, +85%, +120%" (antes +55% / +75%).
   # 7-nov, despues: "un 80% en segundos" -> +50% (79,71%) y el resto a +80%
   # (antes +85% / +120%).
-  # 8-nov: "a parte de iniciales gestiona el restante para obtener un medio
-  # de 140% roi ... el resto de inicial espera lo que sobre, pues vende para
-  # que nos de eso, calcula tu en 3 ventas" (antes mitad a +90% y mitad a
-  # +140%, media +115%). El 28,57% que queda tras recuperar lo invertido
-  # sale en TRES ventas iguales a +100%, +140% y +180%: media +140%.
-  # Cada tercio es el 9,52% de la posicion. Son 4 ventas en total (antes 3).
-  tp2_gain: 1.00
-  tp2_sell: 0.0952380952
-  tp3_gain: 1.40
-  tp3_sell: 0.0952380952
-  tp4_gain: 1.80
-  tp4_sell: 0.0952380953
+  # 8-nov "realizar todo en una venta al 45%": sin TP2, TP3 ni TP4 (antes
+  # +100% / +140% / +180%, un tercio del resto cada uno).
 priority_fees:
   enable_dynamic: false
   enable_fixed: true
