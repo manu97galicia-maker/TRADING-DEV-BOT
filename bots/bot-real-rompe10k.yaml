@@ -273,7 +273,11 @@ filters:
     min_volumen_total_sol: 0
     min_volumen_reciente_sol: 3.0
     ventana_volumen_reciente: 60
-    min_compradores: 0
+    # 8-nov "que rompa ... organic, no mechado" -> eligio "mas organica":
+    # al menos 30 carteras distintas han comprado desde que el bot la mira
+    # (antes sin minimo). Si no llega, se vuelve a mirar en la siguiente
+    # operacion.
+    min_compradores: 30
     # 7-nov "que rompa con fuerza": presion de los ultimos 5 s. Al menos 4
     # compradores distintos y 1,5 veces mas SOL comprado que vendido (antes
     # 0 y 0: sin presion). El vigilante de la curva la mide el mismo en

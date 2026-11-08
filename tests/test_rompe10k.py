@@ -32,6 +32,7 @@ def test_config_rompe_10k():
     assert cv["min_volumen_reciente_sol"] == 3.0
     assert cv["ventana_volumen_reciente"] == 60
     assert cv["revisar_cada_seg"] == 0.5
+    assert cv["min_compradores"] == 30  # 8-nov "mas organica"
     assert cv["min_compradores_ola"] == 3 and cv["min_presion_ratio"] == 1.4
     assert cv["ventana_presion"] == 7.0
     # "sin limite de operaciones", pero "cuidame de rugs": el freno de 3
@@ -41,7 +42,6 @@ def test_config_rompe_10k():
     # Nada mas: sin volumen, compradores ni edad.
     for k in (
         "min_compra_sol",
-        "min_compradores",
         "min_compras_total",
         "min_volumen_total_sol",
         "min_edad_seg",
@@ -147,3 +147,28 @@ def test_solo_entre_46_y_65_por_ciento(monkeypatch):
     monkeypatch.setattr(cs.volumen, "progreso_curva", lambda m: (avances[m], 0.0))
     f._revisar(list(avances), None)
     assert lanzadas == ["B", "C"]
+
+
+def test_poca_gente_se_vuelve_a_mirar(monkeypatch):
+    """8-nov: con menos de 30 compradores no se descarta para siempre: se
+    suelta y se vuelve a mirar en la siguiente operacion."""
+    f = cs.Curva96Source(
+        "ws://x",
+        None,
+        None,
+        min_compradores=30,
+        umbral=0.46,
+        exigir_ver_creacion=False,
+    )
+    f._probadas.add("M")
+    monkeypatch.setattr(cs.volumen, "progreso_curva", lambda _m: (0.5, 30.0))
+    monkeypatch.setattr(
+        cs.volumen, "metricas_segunda_ola", lambda *_a, **_k: {"compradores": 12}
+    )
+    monkeypatch.setattr(f, "_demasiado_joven", lambda _m: False)
+    monkeypatch.setattr(f, "_sin_mecha_vertical", lambda *_a: True)
+    monkeypatch.setattr(f, "_presion_suficiente", lambda *_a: True)
+    monkeypatch.setattr(cs.volumen, "ultimas_son_compra", lambda *_a: True)
+    monkeypatch.setattr(cs.volumen, "volumen_sol", lambda *_a: 100.0)
+    asyncio.run(f._evaluar("M", None))
+    assert "M" not in f._probadas and f._embudo["poca_gente"] >= 1

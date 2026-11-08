@@ -213,6 +213,8 @@ class Curva96Source:
         self._ultimo_log_presion: dict[str, float] = {}
 
         self._probadas: set[str] = set()
+        #: Si el ultimo `_es_bundle` descarto solo por poca gente (8-nov).
+        self._fue_poca_gente = False
         self._en_vuelo: set[asyncio.Task] = set()
         self._last_heartbeat: float = 0.0
         self._embudo: dict[str, int] = {}
@@ -254,6 +256,10 @@ class Curva96Source:
                 para estas va mas apretado.
         """
         if not con_historia:
+            # Sin repetir cada medio segundo (8-nov): con `min_compradores`
+            # la moneda se vuelve a mirar en cada operacion.
+            if self._poca_gente(mint, symbol):
+                return True
             logger.info(
                 "%s (%s): no se vio nacer, así que el bloque de creación no "
                 "se puede mirar. Deciden los compradores distintos y la "
@@ -261,7 +267,7 @@ class Curva96Source:
                 symbol,
                 mint,
             )
-            return self._poca_gente(mint, symbol)
+            return False
 
         carteras = volumen.carteras_primer_bloque(mint)
         if (
@@ -306,6 +312,12 @@ class Curva96Source:
             return False
         compradores = int(volumen.metricas_segunda_ola(mint).get("compradores", 0) or 0)
         if compradores < self.min_compradores:
+            # Se vuelve a mirar en cada operacion: sin esto, una linea de log
+            # cada medio segundo por moneda.
+            self._cuenta("poca_gente")
+            self._fue_poca_gente = True
+            if not self._toca_escribir(mint):
+                return True
             logger.info(
                 "Descartada %s (%s): solo %d compradores distintos para una "
                 "curva casi llena (mín %d) — la subió un grupo pequeño",
@@ -314,7 +326,6 @@ class Curva96Source:
                 compradores,
                 self.min_compradores,
             )
-            self._cuenta("poca_gente")
             return True
         return False
 
@@ -595,7 +606,15 @@ class Curva96Source:
         # El bundle se mira ANTES de reconstruir la moneda: lo de arriba es
         # memoria y no cuesta nada, y reconstruirla son varias llamadas al nodo
         # que no hay por que gastar en algo que se va a descartar igual.
+        self._fue_poca_gente = False
         if self._es_bundle(mint, mint[:6], con_historia=con_historia):
+            # POCA GENTE, RE-EVALUABLE (8-nov, Manu: "que rompa ...
+            # organica"). Un bundle se descarta para siempre, pero tener
+            # pocos compradores AHORA no: una moneda con 25 al mirarla no se
+            # volvia a mirar aunque llegara a 30 un minuto despues (el mismo
+            # fallo que tenia la edad minima). Se suelta y se vuelve a mirar.
+            if self._fue_poca_gente:
+                self._probadas.discard(mint)
             return
 
         token_info = await build_pumpfun_token_info(
