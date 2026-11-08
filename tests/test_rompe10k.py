@@ -26,11 +26,14 @@ def test_config_rompe_10k():
     cv, fl, t = c["filters"]["curva_96"], c["filters"], c["trade"]
     # 7-nov, despues: "entre el 51 y 65" (antes 56-76%),
     # sin filtro de market cap; "con fuerza" = presion de 5 s (3 y 1,4x).
-    assert cv["umbral"] == 0.51 and cv["tope"] == 0.65
+    assert cv["umbral"] == 0.46 and cv["tope"] == 0.65
     assert cv["min_mc_usd"] == 0 and cv["max_mc_usd"] == 0
-    assert cv["ultimas_compras"] == 3
+    assert cv["ultimas_compras"] == 2
+    assert cv["min_volumen_reciente_sol"] == 3.0
+    assert cv["ventana_volumen_reciente"] == 60
+    assert cv["revisar_cada_seg"] == 0.5
     assert cv["min_compradores_ola"] == 3 and cv["min_presion_ratio"] == 1.4
-    assert cv["ventana_presion"] == 5.0
+    assert cv["ventana_presion"] == 7.0
     # "sin limite de operaciones", pero "cuidame de rugs": el freno de 3
     # perdidas seguidas se queda.
     assert t["max_real_buys"] == 0 and t["max_posiciones"] == 5
@@ -41,7 +44,6 @@ def test_config_rompe_10k():
         "min_compradores",
         "min_compras_total",
         "min_volumen_total_sol",
-        "min_volumen_reciente_sol",
         "min_edad_seg",
     ):
         assert cv[k] == 0, k
@@ -165,13 +167,13 @@ def test_solo_se_queman_restos_de_menos_de_1_dolar(tmp_path, monkeypatch):
     assert asyncio.run(t._puede_quemar(ficha, precio)) is False
 
 
-def test_solo_entre_51_y_65_por_ciento(monkeypatch):
-    """Solo entra entre el 51% y el 65% de la curva."""
+def test_solo_entre_46_y_65_por_ciento(monkeypatch):
+    """Solo entra entre el 46% y el 65% de la curva."""
     c = _cfg(YAML)["filters"]["curva_96"]
     f = cs.Curva96Source("ws://x", None, None, umbral=c["umbral"], tope=c["tope"])
     lanzadas = []
     monkeypatch.setattr(f, "_lanzar", lambda m, _cb: lanzadas.append(m))
-    avances = {"A": 0.50, "B": 0.51, "C": 0.64, "D": 0.66, "E": 0.95}
+    avances = {"A": 0.45, "B": 0.46, "C": 0.64, "D": 0.66, "E": 0.95}
     monkeypatch.setattr(cs.volumen, "progreso_curva", lambda m: (avances[m], 0.0))
     f._revisar(list(avances), None)
     assert lanzadas == ["B", "C"]

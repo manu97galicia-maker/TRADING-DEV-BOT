@@ -34,6 +34,8 @@
 #     infinitas operaciones" (antes 40% y 3). Despues: "5 simultaneas".
 #   - Despues: "bajala a 56" -> entra entre el 56% y el 76% de la curva.
 #   - Despues: "entre el 51 y 65" -> entra entre el 51% y el 65%.
+#   - 8-nov: 46%-65%, 2 ultimas compras + 3 SOL en el ultimo minuto,
+#     presion en 7 s y se vuelve a mirar cada 0,5 s.
 #
 name: REAL ROMPE 51-65% CURVA
 env_file: .env
@@ -258,17 +260,26 @@ filters:
     # 81,4 SOL. El tope sigue en el 76%: compra entre el 56% y el 76%.
     # 7-nov, despues: "entre el 51 y 65" (antes 0.56). 51% = 72,0 SOL de
     # market cap; 65% = 103,6 SOL.
-    umbral: 0.51
+    # 8-nov "como aflojo para que entren mas pero asegurar que subira
+    # fuerte" -> eligio "3 46-65": desde el 46% (antes 0.51). 46% = 64,2 SOL
+    # de market cap. El tope sigue en el 65%.
+    umbral: 0.46
     min_mc_usd: 0
     max_mc_usd: 0
-    revisar_cada_seg: 2.0
+    # 8-nov "2 ok": una moneda que no pasa se vuelve a mirar a los 0,5 s
+    # (antes 2 s). No afloja filtros: llega antes.
+    revisar_cada_seg: 0.5
     log_presion_cada_seg: 30.0
     # "las ultimas 3 tx sean compras".
-    ultimas_compras: 3
+    # 8-nov "4 okey sube volumen": 2 ultimas compras (antes 3) y, para que
+    # siga entrando solo lo fuerte, al menos 3 SOL negociados en el ultimo
+    # minuto (antes sin minimo).
+    ultimas_compras: 2
     # Sin volumen ni compradores minimos desde que nacio.
     min_compras_total: 0
     min_volumen_total_sol: 0
-    min_volumen_reciente_sol: 0
+    min_volumen_reciente_sol: 3.0
+    ventana_volumen_reciente: 60
     min_compradores: 0
     # 7-nov "que rompa con fuerza": presion de los ultimos 5 s. Al menos 4
     # compradores distintos y 1,5 veces mas SOL comprado que vendido (antes
@@ -277,8 +288,10 @@ filters:
     # 7-nov, despues: "en los ultimos 5 segundos han comprado 3 carteras
     # distintas o mas, y se ha comprado 1,4 veces mas SOL del que se ha
     # vendido" (antes 4 y 1,5x).
+    # 8-nov "5 pon 7 segundos": la presion se mide en los ultimos 7 s
+    # (antes 5 s); siguen 3 compradores y 1,4x.
     min_compradores_ola: 3
-    ventana_presion: 5.0
+    ventana_presion: 7.0
     min_presion_ratio: 1.4
     min_compra_sol: 0
   pumpfun_dev:
