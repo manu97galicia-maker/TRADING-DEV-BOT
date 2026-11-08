@@ -54,12 +54,19 @@ def test_config_rompe_10k():
     assert t["fraccion_saldo"] == 0.25 and t["fraccion_base"] == "cartera"
     assert t["stop_loss_percentage"] == 0 and t["mc_stop_loss"] == 7400
     assert t["trailing_stop_percentage"] == 0.22
-    assert [t["take_profit_percentage"], t["tp2_gain"], t["tp3_gain"]] == [
+    assert [
+        t["take_profit_percentage"],
+        t["tp2_gain"],
+        t["tp3_gain"],
+        t["tp4_gain"],
+    ] == [
         0.40,
-        0.90,
+        1.00,
         1.40,
+        1.80,
     ]
-    total = t["take_profit_sell_percentage"] + t["tp2_sell"] + t["tp3_sell"]
+    resto = [t["tp2_sell"], t["tp3_sell"], t["tp4_sell"]]
+    total = t["take_profit_sell_percentage"] + sum(resto)
     assert abs(total - 1.0) < 1e-9
     assert (
         abs(t["take_profit_sell_percentage"] * 1.40 - 1.0) < 1e-6
@@ -94,16 +101,18 @@ def test_solo_justo_al_romper(monkeypatch):
     assert f._embudo["sobre_mc_maximo"] == 1 and f._embudo["bajo_mc_minimo"] == 1
 
 
-def test_vende_40_90_140_y_stop_en_7400(tmp_path, monkeypatch):
-    """Con el vigilante de verdad y una entrada a 10.000 $ (compra al romper
-    10,1k): TP +40% / +90% / +140%, y el stop salta al bajar de 7.400 $."""
+def test_vende_40_100_140_180_y_stop_en_7400(tmp_path, monkeypatch):
+    """Con el vigilante de verdad y una entrada a 10.000 $: TP +40%
+    (recupera) y el resto en tres tercios a +100% / +140% / +180% (media
+    +140%), y el stop salta al bajar de 7.400 $."""
     monkeypatch.setattr(tv, "MC_ENTRADA", 10000.0)
     t, ut = _construir(YAML, tmp_path, monkeypatch)
-    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.41, 1.91, 2.41, 3.0])
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.41, 2.01, 2.41, 2.81, 3.0])
     assert [v[0] for v in ventas] == [
         "tp_tier1_+40%",
-        "tp_tier2_+90%",
+        "tp_tier2_+100%",
         "tp_tier3_+140%",
+        "tp_tier4_+180%",
     ]
     assert abs(sum(v[1] for v in ventas) - 1.0) < 1e-3
     t, ut = _construir(YAML, tmp_path, monkeypatch)
