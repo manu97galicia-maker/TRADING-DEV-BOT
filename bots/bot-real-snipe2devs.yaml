@@ -1,0 +1,302 @@
+# ESTRATEGIA "SNIPE 2 DEVS", pedida el 8-nov. Manu paso 8 carteras y marco
+# dos como "dev": "snipes a los que pone dev siempre compra por debajo de 4k
+# mc" y despues "de esos compra 25% del portfolio siempre por debajo de 4k y
+# tp recup inic al 38% y el resto lo vendes en 3 tandas 40% respecto la
+# anterior".
+#
+# QUE HACE: escucha las creaciones de pump.fun y compra en cuanto una de
+# estas dos carteras lanza una moneda (lista en devs_snipe_2.json), solo si
+# el market cap esta por debajo de 4.000 $. 25% de la cartera.
+#
+# Venta: +38% vende el 72,46% (recupera lo invertido); el resto en 3 tandas
+# iguales a x1,932, x2,705 y x3,787 (cada una +40% sobre la anterior).
+# Stop -40% hasta el primer TP; despues, compra +5%. Trailing apagado, como
+# en la de los 27. Comparte el tope de 5 posiciones con las demas.
+#
+name: REAL SNIPE 2 DEVS
+env_file: .env
+rpc_endpoint: ${SOLANA_NODE_RPC_ENDPOINT}
+wss_endpoint: ${SOLANA_NODE_WSS_ENDPOINT}
+private_key: ${SOLANA_PRIVATE_KEY}
+enabled: false
+separate_process: false
+platform: pump_fun
+trade:
+  nombre_estrategia: real-snipe2devs
+  buy_amount: 0.25
+  buy_amount_usd: 0
+  # 7-nov: "20% por operacion" (antes 0.15).
+  # 7-nov, despues: "pon 30% por operacion" (antes 0.20).
+  # 7-nov, despues: "44% por operacion" (antes 0.30).
+  # 7-nov, despues: "en normal pon 70% por operacion" (antes 0.44).
+  # 7-nov, despues: "50% del total balance" (antes 70% del libre). Base
+  # "cartera" = el saldo total de la wallet, no solo lo libre.
+  # 7-nov, despues: "40% por operacion" (antes 0.50). Sigue sobre el saldo
+  # total de la wallet.
+  # 7-nov, despues: "pon 25% cada operacion de saldo" (antes 0.40). Sobre
+  # el saldo total de la wallet; 4 abiertas = todo invertido.
+  # 8-nov (devs 27): "compras con el 75% del portfolio" (saldo total).
+  # "compra 25% del portfolio" (saldo total de la wallet).
+  fraccion_saldo: 0.25
+  fraccion_base: cartera
+  min_reserve_sol: 0.03
+  # 7-nov: "maximo 4 simultaneas y maximo de posiciones abiertas 4"
+  # (antes 3 por estrategia). 4 por estrategia y, ademas, 4 EN TOTAL
+  # entre las dos: cuenta las posiciones de todas antes de comprar.
+  # 7-nov, despues: "maximo 3" (antes 4 y 4).
+  # 7-nov, despues: "maximo 4 simultaneas" (antes 3 y 3).
+  # 7-nov, despues: "5 simultaneas" (antes 4). OJO: con fraccion_saldo 0.25
+  # solo caben 3 de verdad (cada compra pide su importe +9% de slippage
+  # libre, mas la reserva); para 5 haria falta ~18% por operacion.
+  max_posiciones: 5
+  max_posiciones_total: 5
+  # 7-nov: las mayhem van "aparte": sus posiciones no cuentan en estas 5.
+  max_posiciones_total_ignora: [bot-real-mayhem]
+  # 7-nov "sin limite de operaciones" (antes 1000). 0 = sin tope.
+  # Despues: "infinitas operaciones" -> sigue en 0.
+  # El freno de 3 perdidas seguidas se QUEDA ("cuidame de rugs").
+  max_real_buys: 0
+  reiniciar_tanda: false
+  # 7-nov: "deslizamiento 18%" (antes 35% en compra y venta). El de las
+  # ventas de proteccion (stop, rug) se queda en 50%: si no entra, el
+  # stop no sale.
+  # 7-nov, despues: "slippage de compra 9%" (antes 18%).
+  buy_slippage: 0.09
+  # 7-nov: "si hay tres fallidas sube el slippage a 14%". 3 compras
+  # fallidas SEGUIDAS -> slippage de compra al 14% hasta reiniciar.
+  subir_slippage_tras_fallidas:
+    fallidas: 3
+    slippage: 0.14
+  # 7-nov: "reduce slippage" -> eligio "solo la venta a 10%" (antes 18%).
+  # La compra sigue en 9% (14% tras 3 fallidas) y el stop en 50%.
+  sell_slippage: 0.10
+  sell_slippage_proteccion: 0.5
+  exit_strategy: tp_sl
+  # 7-nov, despues: "+50%, +85%, +120% y stop -22" (antes -18%). OJO: el
+  # trailing copia este valor, asi que tambien pasa a -22% desde el pico.
+  # 7-nov, despues: "pon SL en 7.4k" -> stop por market cap (mc_stop_loss)
+  # y SIN stop en %: el -22% saltaria antes y el de 7,4k no contaria nunca.
+  # 8-nov (devs 27): -22% desde la compra. Ver la cabecera: el stop por
+  # market cap no vale para monedas recien nacidas.
+  # 8-nov, despues: "sl 40%" hasta el x3 (antes -22%). Tras el x3 el stop
+  # sigue subiendo a compra +5% (Manu: "si, hasta el x3").
+  stop_loss_percentage: 0.40
+  # El trailing copiaba el stop en %; con este a 0 se apagaria en silencio.
+  # Se deja fijo en el 22% de siempre.
+  # 8-nov (devs 27): SIN trailing. Manu eligio "quitarlo aqui": con un 22%
+  # desde el pico vendia todo mucho antes de 100k/240k/1M.
+  trailing_stop_percentage: 0
+  # 7-nov, despues: "pon el primer tp en 50%" (antes 0.38). Sigue vendiendo
+  # el 79,71%: a +50% eso cobra lo invertido +20% (a +38% era +10%).
+  # 7-nov, despues: "tp hasta conseguir un 140%, recupera iniciales al 40%
+  # y subes sl cuando toque tp1": +40% vende el 71,43% (= lo invertido),
+  # el resto mitad a +90% y mitad a +140%. Tras el TP1 el stop sube a
+  # compra +5% (stop_a_entrada_tras_tp, como antes).
+  # 8-nov: "realizar todo en una venta al 45%" (antes +40% vendia el 71,43%
+  # y el resto en tres tercios a +100/+140/+180%). Ahora UNA sola venta:
+  # el 100% a +45%. Ahorra 0,003 SOL de prioridad por operacion.
+  # 8-nov: "tp recup inic al 38% y el resto lo vendes en 3 tandas 40%
+  # respecto la anterior". +38% vende el 72,46% (= lo invertido: 1/1,38).
+  # El 27,54% que queda, en tres partes iguales (9,18%), cada objetivo un
+  # 40% por encima del anterior: x1,38 -> x1,932 -> x2,705 -> x3,787.
+  take_profit_percentage: 0.38
+  take_profit_sell_percentage: 0.7246376812
+  tp2_gain: 0.932
+  tp2_sell: 0.0917874396
+  tp3_gain: 1.7048
+  tp3_sell: 0.0917874396
+  tp4_gain: 2.78672
+  tp4_sell: 0.0917874396
+  mc_take_profit_tiers: []
+  stop_a_entrada_tras_tp: true
+  margen_stop_tras_tp: 0.05
+  max_perdidas_seguidas: 3
+  stop_al_tp_tras_tp: false
+  vender_todo_en_stop: true
+  mc_stop_loss: 0
+  # 7-nov: "que no queden saldos menores a un dolar": lo que quede por debajo
+  # de 1 $ se vende en vez de dejarlo en la wallet.
+  vender_polvo: true
+  max_hold_time: 0
+  venta_muerta_seg: 300
+  venta_muerta_gain: 0.0
+  price_check_interval: 1
+  # 7-nov "haz 3 ventas" y "en total busco un 75% roi": TP1 +38% (79,71%),
+  # +55% y +75% (mitad y mitad del resto).
+  # 7-nov, despues: "+50%, +85%, +120%" (antes +55% / +75%).
+  # 7-nov, despues: "un 80% en segundos" -> +50% (79,71%) y el resto a +80%
+  # (antes +85% / +120%).
+  # 8-nov "realizar todo en una venta al 45%": sin TP2, TP3 ni TP4 (antes
+  # +100% / +140% / +180%, un tercio del resto cada uno).
+priority_fees:
+  enable_dynamic: false
+  enable_fixed: true
+  # 7-nov: "prioridad de compra 0.007" (antes 0,011 SOL = 110000000).
+  # 7-nov: "reducir mis costes enormemente asegurando que se ejecuten" ->
+  # eligio "baja fija": compra 0,002 SOL (antes 0,007):
+  #   2.000.000 lamports / 100.000 unidades = 20.000.000 microlamports
+  # Prioridad de compra 0,002 SOL (la de 0,02 SOL es solo de los 27 devs).
+  fixed_amount_compra: 20000000
+  # 7-nov: "prioridad de venta 0.006". La venta reserva 60.000 unidades:
+  #   6.000.000 lamports / 60.000 = 100.000.000 microlamports = 0,006 SOL
+  # Antes 0,00034 SOL (5714286) la normal y 0,0025 SOL (42424243) la de
+  # proteccion (stop, rug). Las dos a 0,006: el stop no puede ir con
+  # menos prisa que un take profit.
+  # Y ventas de TP 0,001 SOL, venta del stop 0,002 SOL (antes las dos 0,006):
+  #   1.000.000 / 60.000 = 16.666.667   y   2.000.000 / 60.000 = 33.333.333
+  fixed_amount: 16666667
+  fixed_amount_venta_proteccion: 33333333
+  extra_percentage: 0.0
+  hard_cap: 110000000
+retries:
+  max_attempts: 1
+  wait_after_creation: 0
+  wait_after_buy: 0
+filters:
+  listener_type: logs
+  yolo_mode: true
+  paper_trade: false
+  paper_watch_secs: 600
+  max_token_age: 5
+  # 8-nov: "siempre por debajo de 4k" de market cap.
+  max_entry_mc: 4000
+  # Compra al nacer, sin ventana de espera.
+  max_buy_age: 0
+  # 7-nov: "asegurate no rugs" -> eligio "dev con poco": no se compra si
+  # el creador tiene mas del 10% de la moneda.
+  max_dev_hold_pct: 0.10
+  allow_mayhem: false
+  require_mayhem: false
+  ignorar_listas_de_devs: false
+  # Solo los 2 devs marcados por Manu.
+  bro_address: "devs_snipe_2.json"
+  min_first_block_buys: 0
+  max_first_block_buys: 0
+  min_first_block_usd: 0
+  max_first_block_usd: 0
+  buy_from_second_block: false
+  second_block_confirmation:
+    enabled: false
+    min_buyers: 0
+    min_buy_sol: 0
+    min_net_sol: 0
+    max_sells: 0
+  # PRESION EN LOS DEX, pedida el 7-nov: "puedes coger tambien de raydium
+  # con mismas condiciones" y "anade pumpswap y meteora y bags, todos tienen
+  # que ser liquidez locked". Ver monitoring/dex_presion_source.py.
+  #   - EN REAL desde el 7-nov (Manu: "de papel no, asegurate que en real va
+  #     bien"). Compra y vende por Jupiter con la prioridad y el slippage del
+  #     bot; las monedas de 9 decimales se cuentan bien (precio del DEX pasado
+  #     a la unidad del bot). Probado por el bot entero en
+  #     tests/test_dex_presion_real.py. en_papel: true lo vuelve a simular.
+  #   - La presion es de 5 MINUTOS (GeckoTerminal), no de 5 segundos.
+  #     Numeros propuestos el 7-nov, sin confirmar todavia por Manu.
+  #   - Bags lanza en pools de Meteora: entra con el prefijo "meteora".
+  dex_presion:
+    # 7-nov: "solo las que llegan al 91% de la bonding": la parte de
+    # PumpSwap (monedas ya migradas) se apaga. true la vuelve a encender.
+    enabled: false
+    en_papel: false
+    # 7-nov, despues: "no compres mas que no sea pumpfun o pumpswap" (antes
+    # raydium, pumpswap, meteora). Y solo monedas nacidas en pump.fun.
+    dex: [pumpswap]
+    solo_pumpfun: true
+    intervalo_seg: 20
+    min_compradores_5m: 30
+    min_compras_5m: 50
+    min_ratio_5m: 2.0
+    min_volumen_5m_usd: 5000
+    min_liquidez_usd: 10000
+    min_lp_bloqueada_pct: 90
+    # 7-nov: "no compres monedas con menos de 10 minutos de vida". En los DEX
+    # la edad es la del pool (lo que da GeckoTerminal); sin fecha, no se compra.
+    min_edad_min: 10
+    max_posiciones_papel: 4
+    importe_papel_sol: 0.15
+    prioridad_compra_sol: 0.002
+    prioridad_venta_sol: 0.001
+  curva_96:
+    # Apagada: esta estrategia escucha las creaciones de los 27 devs.
+    enabled: false
+    # 7-nov "que rompa el 71% de la bonding": solo justo al romper, hasta el
+    # 76% (antes 0.995).
+    # 7-nov, despues: "entre el 51 y 65" (antes 0.76).
+    tope: 0.65
+    buy_amount: 0
+    max_compras: 0
+    parar_tras_perdidas: 0
+    # Sin edad minima (7-nov: "todas las que rompan los 10.1k").
+    min_edad_seg: 0
+    max_edad_seg: 0
+    # Frenos contra mechas, como la normal.
+    vela_seg: 1.0
+    # 7-nov "quita lo del 35 y pon 54" (la mecha de 1 segundo): deja pasar
+    # subidas de hasta +54% en 1 s (antes +35%). La de 30 s sigue en +60%.
+    max_subida_vela: 0.54
+    vela2_seg: 30
+    max_subida_vela2: 0.60
+    exigir_ver_creacion: false
+    # Frenos contra bundles, como la normal.
+    max_carteras_primer_bloque: 5
+    max_sol_primer_bloque: 9.0
+    max_bundle_pct: 0.5
+    max_bundle_pct_sin_historia: 0.35
+    heartbeat_interval: 300
+    # 7-nov "pon q rompa el 71% de la bonding q no calcula rapido": entra
+    # al 71% de la curva (antes se miraba desde el 40% y compraba entre
+    # 10.100 $ y 12.000 $ de market cap). Sin filtro de market cap: la curva
+    # no depende del precio del SOL.
+    # 7-nov, despues: "y curve la rompe al 66%" (antes 0.71). El 66% es un
+    # market cap de 106,6 SOL. El tope sigue en el 76%: compra entre el 66%
+    # y el 76%.
+    # 7-nov, despues: "bajala a 56" (antes 0.66). El 56% es un market cap de
+    # 81,4 SOL. El tope sigue en el 76%: compra entre el 56% y el 76%.
+    # 7-nov, despues: "entre el 51 y 65" (antes 0.56). 51% = 72,0 SOL de
+    # market cap; 65% = 103,6 SOL.
+    # 8-nov "como aflojo para que entren mas pero asegurar que subira
+    # fuerte" -> eligio "3 46-65": desde el 46% (antes 0.51). 46% = 64,2 SOL
+    # de market cap. El tope sigue en el 65%.
+    umbral: 0.46
+    min_mc_usd: 0
+    max_mc_usd: 0
+    # 8-nov "2 ok": una moneda que no pasa se vuelve a mirar a los 0,5 s
+    # (antes 2 s). No afloja filtros: llega antes.
+    revisar_cada_seg: 0.5
+    log_presion_cada_seg: 30.0
+    # "las ultimas 3 tx sean compras".
+    # 8-nov "4 okey sube volumen": 2 ultimas compras (antes 3) y, para que
+    # siga entrando solo lo fuerte, al menos 3 SOL negociados en el ultimo
+    # minuto (antes sin minimo).
+    ultimas_compras: 2
+    # Sin volumen ni compradores minimos desde que nacio.
+    min_compras_total: 0
+    min_volumen_total_sol: 0
+    min_volumen_reciente_sol: 3.0
+    ventana_volumen_reciente: 60
+    min_compradores: 0
+    # 7-nov "que rompa con fuerza": presion de los ultimos 5 s. Al menos 4
+    # compradores distintos y 1,5 veces mas SOL comprado que vendido (antes
+    # 0 y 0: sin presion). El vigilante de la curva la mide el mismo en
+    # cada operacion; si falta fuerza, la vuelve a mirar en la siguiente.
+    # 7-nov, despues: "en los ultimos 5 segundos han comprado 3 carteras
+    # distintas o mas, y se ha comprado 1,4 veces mas SOL del que se ha
+    # vendido" (antes 4 y 1,5x).
+    # 8-nov "5 pon 7 segundos": la presion se mide en los ultimos 7 s
+    # (antes 5 s); siguen 3 compradores y 1,4x.
+    min_compradores_ola: 3
+    ventana_presion: 7.0
+    min_presion_ratio: 1.4
+    min_compra_sol: 0
+  pumpfun_dev:
+    enabled: false
+  # 7-nov "elimina el filtro de market cap" (antes 6000).
+  min_entry_mc: 0
+cleanup:
+  # 7-nov: "que no queden saldos menores a un dolar". Se limpia al cerrar
+  # cada posicion (antes al final de la sesion, que con el apagado por tiempo
+  # puede no llegar) y se queman los restos, solo si valen menos de 1 $.
+  mode: after_sell
+  force_close_with_burn: true
+  with_priority_fee: false
+node:
+  max_rps: 8

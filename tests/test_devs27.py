@@ -29,9 +29,9 @@ def test_config_devs27():
     # Frenos anti-rug como la otra.
     assert fl["max_dev_hold_pct"] == 0.10 and fl["allow_mayhem"] is False
     # Stop en %: el de 7.400 $ venderia al instante una moneda recien nacida.
-    assert t["stop_loss_percentage"] == 0.22 and t["mc_stop_loss"] == 0
-    # 8-nov: 75% del portfolio, prioridad de compra 0,02 SOL, sin trailing.
-    assert t["fraccion_saldo"] == 0.75 and t["fraccion_base"] == "cartera"
+    assert t["stop_loss_percentage"] == 0.40 and t["mc_stop_loss"] == 0
+    # 8-nov: 60% del portfolio, prioridad de compra 0,02 SOL, sin trailing.
+    assert t["fraccion_saldo"] == 0.60 and t["fraccion_base"] == "cartera"
     assert t["trailing_stop_percentage"] == 0
     pf = c["priority_fees"]
     assert pf["fixed_amount_compra"] * 100_000 / 1e15 == 0.02
@@ -101,8 +101,8 @@ def test_tras_x3_el_stop_esta_en_compra_mas_5(tmp_path, monkeypatch):
     assert ventas[1][2] == 1.04 and abs(ventas[1][1] - 2 / 3) < 1e-3
 
 
-def test_antes_de_x3_stop_a_menos_22(tmp_path, monkeypatch):
+def test_antes_de_x3_stop_a_menos_40(tmp_path, monkeypatch):
     """Con el stop de 7.400 $ de la otra estrategia venderia nada mas comprar."""
-    ventas = _con_escalera(tmp_path, monkeypatch, [1.0, 1.0, 1.5, 0.9, 0.77])
-    assert ventas and ventas[0][0] == "stop_loss" and ventas[0][2] == 0.77
+    ventas = _con_escalera(tmp_path, monkeypatch, [1.0, 1.0, 1.5, 0.7, 0.59])
+    assert ventas and ventas[0][0] == "stop_loss" and ventas[0][2] == 0.59
     assert abs(ventas[0][1] - 1.0) < 1e-3

@@ -38,7 +38,8 @@ ORIGEN="${ORIGEN:-origin}"
 #: Despues: "mayhem no, solo la que rompe los 10k".
 #: 8-nov: "monta una estrategia para los de ultimos" -> copiar a los 27 devs
 #: de Dune, en real. Va junto a la de la curva (comparten el tope de 5).
-ESTRATEGIAS="bots/bot-real-rompe10k.yaml bots/bot-real-devs27.yaml"
+#: Despues: 8 carteras de Manu -> snipe a las 2 "dev" y copia a las otras 6.
+ESTRATEGIAS="bots/bot-real-rompe10k.yaml bots/bot-real-devs27.yaml bots/bot-real-snipe2devs.yaml bots/bot-real-copia6.yaml"
 #: Nombre corto del log de cada una. dev1 sigue en logs/dev1_real.log, que es
 #: el que leen porque-no-compra.sh y los comandos de siempre.
 log_de() {
@@ -49,6 +50,8 @@ log_de() {
     bot-real-mayhem) echo "mayhem_real.log" ;;
     bot-real-rompe10k) echo "rompe10k_real.log" ;;
     bot-real-devs27) echo "devs27_real.log" ;;
+    bot-real-snipe2devs) echo "snipe2devs_real.log" ;;
+    bot-real-copia6) echo "copia6_real.log" ;;
     *) echo "$(basename "$1" .yaml)_real.log" ;;
   esac
 }
