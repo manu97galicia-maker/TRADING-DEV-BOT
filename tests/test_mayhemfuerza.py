@@ -37,12 +37,14 @@ def test_config():
     # Venta y tamano de la mayhem 400-2000%.
     assert t["buy_amount"] == 0.04 and t["tope_compra_sol"] == 0.04
     assert t["fraccion_saldo"] == 0
-    assert [t["take_profit_percentage"], t["tp2_gain"], t["tp3_gain"]] == [
-        4.0,
-        9.0,
-        14.0,
-    ]
-    assert t["tp4_gain"] == 20.0 and t["tp4_sell"] == 0.25
+    # 9-nov: +120% recupera lo invertido; el resto a x3, x5 y x7; SL a +20%.
+    gan = [t["take_profit_percentage"], t["tp2_gain"], t["tp3_gain"], t["tp4_gain"]]
+    assert gan == [1.2, 2.0, 4.0, 6.0]
+    assert abs(t["take_profit_sell_percentage"] * 2.2 - 1) < 1e-6
+    resto = [t["tp2_sell"], t["tp3_sell"], t["tp4_sell"]]
+    assert max(resto) - min(resto) < 1e-9
+    assert abs(t["take_profit_sell_percentage"] + sum(resto) - 1) < 1e-9
+    assert t["stop_a_entrada_tras_tp"] is True and t["margen_stop_tras_tp"] == 0.20
     assert t["stop_loss_percentage"] == 0.70 and t["trailing_stop_percentage"] == 0
     assert t["venta_muerta_seg"] == 0 and t["vender_antes_de_edad_seg"] == 82800
     assert t["max_posiciones"] == 5 and t["max_posiciones_total"] == 0
@@ -88,8 +90,13 @@ def test_la_que_no_es_mayhem_se_descarta_para_siempre(monkeypatch):
 def test_escalera_y_stop(tmp_path, monkeypatch):
     monkeypatch.setattr(tv, "MC_ENTRADA", 4000.0)
     t, ut = _construir(YAML, tmp_path, monkeypatch)
-    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 5.01, 10.01, 15.01, 21.01])
-    assert [round(v[1], 2) for v in ventas] == [0.25, 0.25, 0.25, 0.25]
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 2.21, 3.01, 5.01, 7.01])
+    assert [round(v[1], 4) for v in ventas] == [0.4545, 0.1818, 0.1818, 0.1818]
+    # Tras el +120% el stop esta en compra +20%: a 1,19 vende el resto.
+    t, ut = _construir(YAML, tmp_path, monkeypatch)
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 2.21, 1.5, 1.19])
+    assert len(ventas) == 2 and ventas[1][2] == 1.19
+    assert abs(ventas[1][1] - 0.5455) < 1e-3
     t, ut = _construir(YAML, tmp_path, monkeypatch)
     ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 0.6, 0.35, 0.29])
     assert ventas and ventas[0][0] == "stop_loss" and ventas[0][2] == 0.29

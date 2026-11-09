@@ -10,9 +10,9 @@
 #   - 15 carteras distintas han comprado;
 #   - frenos anti-rug: dev con mas del 10% no, bundle al nacer, mechas,
 #     carteras grandes, lista negra, no repetir en 24 h.
-# VENTA (la de la mayhem 400-2000%): 0,04 SOL; 25% a x5, x10, x15 y x21;
-# stop -70% hasta la primera venta y despues compra +5%; sin trailing; a
-# las 23 h vende lo que quede. Hasta 5 a la vez.
+# VENTA: 0,04 SOL; +120% recupera lo invertido y el resto a x3, x5 y x7
+# (9-nov); stop -70% hasta la primera venta y despues compra +20%; sin
+# trailing; a las 23 h vende lo que quede. Hasta 5 a la vez.
 #
 name: REAL MAYHEM CON FUERZA
 env_file: .env
@@ -101,20 +101,27 @@ trade:
   # 8-nov: "realizar todo en una venta al 45%" (antes +40% vendia el 71,43%
   # y el resto en tres tercios a +100/+140/+180%). Ahora UNA sola venta:
   # el 100% a +45%. Ahorra 0,003 SOL de prioridad por operacion.
-  # Venta de la mayhem 400-2000%: 25% a x5 (+400%), x10, x15 y x21.
-  take_profit_percentage: 4.0
-  take_profit_sell_percentage: 0.25
-  tp2_gain: 9.0
-  tp2_sell: 0.25
-  tp3_gain: 14.0
-  tp3_sell: 0.25
-  tp4_gain: 20.0
-  tp4_sell: 0.25
+  # 9-nov: "take profit 120% recuperas inicial y SL sube a inicial +20%,
+  # los siguientes x3 x5 x7" (antes 25% a x5, x10, x15 y x21).
+  #   +120% (x2,2): vende el 45,45% = lo invertido (1/2,2).
+  #   El 54,55% que queda, en tres partes iguales (18,18%) a x3, x5 y x7.
+  # Tras el +120% el stop sube a compra +20% (margen_stop_tras_tp). Y como
+  # siempre en este bot, tras cada venta siguiente sube un escalon: tras el
+  # x3 queda en x2,2 +20% (x2,64), tras el x5 en x3 +20% (x3,6).
+  take_profit_percentage: 1.2
+  take_profit_sell_percentage: 0.4545454545
+  tp2_gain: 2.0
+  tp2_sell: 0.1818181818
+  tp3_gain: 4.0
+  tp3_sell: 0.1818181818
+  tp4_gain: 6.0
+  tp4_sell: 0.1818181819
   mc_take_profit_tiers: []
   # A las 23 h se vende lo que quede, antes de que acabe el mayhem.
   vender_antes_de_edad_seg: 82800
   stop_a_entrada_tras_tp: true
-  margen_stop_tras_tp: 0.05
+  # 9-nov: "SL sube a inicial +20%" (antes +5%).
+  margen_stop_tras_tp: 0.20
   max_perdidas_seguidas: 3
   stop_al_tp_tras_tp: false
   vender_todo_en_stop: true
