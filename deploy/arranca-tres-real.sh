@@ -58,6 +58,7 @@ log_de() {
     bot-real-presion512) echo "presion512_real.log" ;;
     bot-real-mayhem2000) echo "mayhem2000_real.log" ;;
     bot-real-mayhemfuerza) echo "mayhemfuerza_real.log" ;;
+    bot-real-mayhemrapida) echo "mayhemrapida_real.log" ;;
     *) echo "$(basename "$1" .yaml)_real.log" ;;
   esac
 }
