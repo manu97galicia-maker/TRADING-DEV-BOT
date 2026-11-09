@@ -8,7 +8,7 @@
 #     comprado que vendido (9-nov "afloja"; antes 3 y 1,4x);
 #   - las 2 ultimas operaciones, compras;
 #   - 15 carteras distintas han comprado;
-#   - 1 SOL negociado en el ultimo minuto (9-nov);
+#   - 2 SOL negociados en el ultimo minuto (9-nov);
 #   - frenos anti-rug: dev con mas del 10% no, bundle al nacer, mechas,
 #     carteras grandes, lista negra, no repetir en 24 h.
 # VENTA: 0,04 SOL; +120% recupera lo invertido y el resto a x3, x5 y x7
@@ -287,7 +287,8 @@ filters:
     min_volumen_total_sol: 0
     # 9-nov "asegura que hay algo de volumen" -> eligio "1 SOL en el ultimo
     # minuto" (antes sin minimo). Si no llega, se vuelve a mirar.
-    min_volumen_reciente_sol: 1.0
+    # Despues: "dos sol" (antes 1).
+    min_volumen_reciente_sol: 2.0
     ventana_volumen_reciente: 60
     # 8-nov "que rompa ... organic, no mechado" -> eligio "mas organica":
     # al menos 30 carteras distintas han comprado desde que el bot la mira
