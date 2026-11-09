@@ -8,11 +8,12 @@
 # alguna compra en el bloque de creacion. Con 5 ganadoras es poca muestra.
 #
 # QUE HACE: compra cualquier MAYHEM entre los 5 y los 20 s de vida si tuvo
-# alguna compra en el bloque de creacion (y no mas de 5). 0,025 SOL.
+# alguna compra en el bloque de creacion (y no mas de 5). 0,035 SOL.
 # 9-nov, despues: ademas volumen, tendencia y muchas operaciones (ver
 # filtros) y buscando el x10: +120% recupera, el resto a x3, x5 y x10.
 # Stop -50% hasta la primera venta, despues compra +20%. A los 2 MINUTOS
-# vende todo lo que quede. Hasta 5 a la vez. Sin freno de perdidas.
+# vende todo lo que quede. Hasta 7 a la vez, sin tope de operaciones en
+# total. Sin freno de perdidas.
 #
 name: REAL MAYHEM RAPIDA
 env_file: .env
@@ -26,9 +27,10 @@ trade:
   nombre_estrategia: real-mayhemrapida
   # 8-nov: "arriesgando 0.04 sol" por operacion, fijo.
   # 9-nov (mayhem rapida): 0,03 SOL fijos. Despues: "pon 0.025 sol".
-  buy_amount: 0.025
+  # Despues: "0.035 sol por operacion".
+  buy_amount: 0.035
   # Tope duro: ninguna via del bot puede comprar mas de esto.
-  tope_compra_sol: 0.025
+  tope_compra_sol: 0.035
   buy_amount_usd: 0
   # 7-nov: "20% por operacion" (antes 0.15).
   # 7-nov, despues: "pon 30% por operacion" (antes 0.20).
@@ -59,7 +61,8 @@ trade:
   # (devs 27, presion 5-12k y dev1). Antes 5 y 5.
   # Hasta 5 a la vez (0,20 SOL en total). Va por su cuenta: no cuenta las
   # posiciones de las otras estrategias.
-  max_posiciones: 5
+  # 9-nov: "maximo 7 simultaneas pero puedes hacer las que quieras" (antes 5).
+  max_posiciones: 7
   max_posiciones_total: 0
   # 7-nov: las mayhem van "aparte": sus posiciones no cuentan en estas 5.
   max_posiciones_total_ignora: [bot-real-mayhem]
