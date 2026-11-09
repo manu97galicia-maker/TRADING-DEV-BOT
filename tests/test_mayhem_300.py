@@ -104,3 +104,19 @@ def test_compara_encuentra_la_senal_que_separa():
     c = {x["senal"]: x for x in m3.compara(filas, 4.0)}
     assert c["compradores"]["mediana_ganadoras"] > c["compradores"]["mediana_resto"]
     assert c["compradores"]["mejor_corte"]["ventaja"] > 50
+
+
+def test_detalle_de_monedas_concretas(capsys):
+    """9-nov: "que paso para que se disparasen ... solo en estas" (--mints)."""
+    ops = [
+        op(0, DEV, 0.0, slot=100),
+        op(1, "A", 0.5, slot=100),
+        *[op(t, f"C{t}", 0.3, vtok=_vtok_para(1 + t / 10)) for t in range(2, 40)],
+        op(90, "Z", 1.0, vtok=_vtok_para(12)),
+        op(120, "V", 1.0, compra=False, vtok=_vtok_para(3)),
+    ]
+    m3.detalle_por_moneda({"MINTX": ops, "VACIA": []}, set())
+    out = capsys.readouterr().out
+    assert "== MINTX" in out and "pico x12.0" in out
+    assert "a los  5 s:" in out and "a los 30 s:" in out
+    assert "== VACIA" in out and "sin operaciones" in out

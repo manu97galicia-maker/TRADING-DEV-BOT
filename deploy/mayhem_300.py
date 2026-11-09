@@ -379,11 +379,51 @@ def imprime(
     print("ganadoras, es ruido.")
 
 
-async def _corre(a: argparse.Namespace, url: str) -> None:
+#: Momentos (segundos desde que nace) en los que se mira cada moneda pasada
+#: con --mints: asi se ve como iba construyendose antes de dispararse.
+MOMENTOS_DETALLE = (5, 10, 20, 30, 60)
+
+
+def detalle_por_moneda(ops_por: dict[str, list[dict]], comunes: set[str]) -> None:
+    """Moneda a moneda: que tenia a los 5/10/20/30/60 s y hasta donde llego."""
+    for m, ops in ops_por.items():
+        print(f"\n== {m}")
+        if not ops:
+            print("   sin operaciones en la curva (o no se pudieron leer)")
+            continue
+        nacer = mc_sol(ops[0])
+        pico = max(mc_sol(e) for e in ops)
+        i_pico = max(range(len(ops)), key=lambda i: mc_sol(ops[i]))
+        seg_pico = ops[i_pico]["timestamp"] - ops[0]["timestamp"]
+        print(
+            f"   mayhem: {ops[0].get('mayhem_mode')} · pico x{pico / nacer:.1f} desde "
+            f"que nacio, a los {seg_pico / 60:.1f} min · migro: "
+            f"{any(e.get('real_token_reserves') == 0 for e in ops)}"
+        )
+        for seg in MOMENTOS_DETALLE:
+            f = senales(ops, seg, comunes)
+            if not f:
+                continue
+            print(
+                f"   a los {seg:>2} s: compradores {f['compradores']:>3} · vendedores "
+                f"{f['vendedores']:>3} · {f['sol_comprado']:>6} SOL comprados · ratio "
+                f"{f['ratio_compra_venta']:>5} · ya x{f['subida_hasta_decision']} · "
+                f"desde aqui x{f['mult_desde_decision']:.1f} · bloque1 "
+                f"{f['bloque1_compradores']} carteras {f['bloque1_sol']} SOL · dev "
+                f"{f['dev_compra_sol']} SOL · cartera gorda {f['cartera_mas_gorda_pct']}%"
+            )
+
+
+async def _corre(a: argparse.Namespace, url: str) -> None:  # noqa: C901
     async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=120)) as s:
         lec = Lector(ad.Nodo(url, s))
-        print("== BUSCANDO MONEDAS MAYHEM", file=sys.stderr)
-        mints = sorted(await descubre(lec, a.horas, a.muestra))[: a.max_monedas]
+        if a.mints:
+            # 9-nov: "que paso para que se disparasen ... solo en estas": se
+            # miran SOLO las monedas que se pasan, sean o no mayhem.
+            mints = [m for m in a.mints.replace(",", " ").split() if m]
+        else:
+            print("== BUSCANDO MONEDAS MAYHEM", file=sys.stderr)
+            mints = sorted(await descubre(lec, a.horas, a.muestra))[: a.max_monedas]
         ops_por: dict[str, list[dict]] = {}
         for i, m in enumerate(mints, 1):
             print(f"  [{i}/{len(mints)}] {m}", file=sys.stderr)
@@ -398,11 +438,13 @@ async def _corre(a: argparse.Namespace, url: str) -> None:
     for m, ops in ops_por.items():
         if not ops or ops[0]["timestamp"] > corte_edad:
             continue  # recien nacida: aun no se sabe como acaba
-        if ops[0].get("mayhem_mode") is False:
+        if ops[0].get("mayhem_mode") is False and not a.mints:
             continue
         f = senales(ops, a.decision, comunes)
         if f:
             filas.append({"mint": m, **f})
+    if a.mints:
+        detalle_por_moneda(ops_por, comunes)
     comparacion = compara(filas, a.x) if filas else []
     imprime(filas, comparacion, a, comunes)
     gan = sorted(
@@ -449,6 +491,11 @@ def main() -> None:
         help="segundos desde que nace: cuando se compraria",
     )
     p.add_argument("--x", type=float, default=4.0, help="4 = +300%%")
+    p.add_argument(
+        "--mints",
+        default="",
+        help="solo estas monedas (separadas por espacio o coma), mayhem o no",
+    )
     p.add_argument(
         "--min-edad-min",
         type=float,
