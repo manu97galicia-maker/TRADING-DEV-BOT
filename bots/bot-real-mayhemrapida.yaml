@@ -11,7 +11,7 @@
 # alguna compra en el bloque de creacion (y no mas de 5). 0,025 SOL.
 # 9-nov, despues: ademas volumen, tendencia y muchas operaciones (ver
 # filtros) y buscando el x10: +120% recupera, el resto a x3, x5 y x10.
-# Stop -50% hasta la primera venta, despues compra +20%. A los 10 MINUTOS
+# Stop -50% hasta la primera venta, despues compra +20%. A los 2 MINUTOS
 # vende todo lo que quede. Hasta 5 a la vez. Sin freno de perdidas.
 #
 name: REAL MAYHEM RAPIDA
@@ -153,7 +153,9 @@ trade:
   # VENTA POR TIEMPO: se vende lo que quede, gane o pierda. Primero 3 min
   # (en el estudio mayhem_300 del 9-nov las ganadoras hacian pico en 1,2
   # min y ninguna migraba). Despues, buscando el x10: 10 minutos.
-  max_hold_time: 600
+  # 9-nov, despues: 2 minutos (antes 10). En las 5 analizadas el pico llego
+  # en menos de 1 min y a los 60 s ya estaban a la mitad.
+  max_hold_time: 120
   # Sin venta por moneda "muerta" a los 5 min: con un stop de -70% elegido
   # para dar margen, vender a los 5 min por ir en rojo lo contradiria.
   venta_muerta_seg: 0
@@ -207,14 +209,16 @@ filters:
   # de subir bastante y haya muchas operaciones" -> eligio "media". Se
   # espera hasta 60 s (antes 20) a que cumpla TODO esto:
   #   - 1,5 SOL negociados desde que nacio;
-  #   - 15 operaciones o mas;
-  #   - market cap ya +40% sobre el de nacer (3.400 $ con el SOL a ~86 $);
+  #   - 15 operaciones o mas (despues 8);
+  #   - market cap ya +40% sobre el de nacer (despues +90%, 4.600 $);
   #   - las 2 ultimas operaciones, compras ("pon solo una" y despues "pon 2");
   #   - en los ultimos 5 s, 1,3 veces mas SOL comprado que vendido.
   min_buy_age: 5
   max_buy_age: 60
   min_volumen_sol: 1.5
-  min_ops: 15
+  # 9-nov, despues (5 monedas analizadas: las ganadoras tenian pocas
+  # carteras): 8 operaciones (antes 15).
+  min_ops: 8
   # 9-nov, despues: "pon que haya una compra antes de comprar nosotros" ->
   # "pon solo una": basta con que la ULTIMA operacion sea una compra (antes 3).
   # Despues: "pon 2": las DOS ultimas operaciones, compras.
@@ -352,7 +356,10 @@ filters:
     enabled: false
   # 9-nov (mayhem rapida, "tendencia alcista"): +40% sobre el market cap
   # de nacer. Se espera a que llegue (dentro de los 60 s).
-  min_entry_mc: 3400
+  # 9-nov, despues: +90% (x1,9) sobre el de nacer, 4.600 $ con el SOL a ~86 $
+  # (antes +40%, 3.400 $). Las 2 ganadoras de las 5 analizadas iban ya x1,9-x3
+  # a los 20 s; las perdedoras se hundian.
+  min_entry_mc: 4600
 cleanup:
   # 7-nov: "que no queden saldos menores a un dolar". Se limpia al cerrar
   # cada posicion (antes al final de la sesion, que con el apagado por tiempo

@@ -26,8 +26,8 @@ def test_config():
     assert fl["curva_96"]["enabled"] is False
     assert fl["min_buy_age"] == 5 and fl["max_buy_age"] == 60
     # 9-nov "volumen, tendencia alcista y muchas operaciones" -> "media".
-    assert fl["min_volumen_sol"] == 1.5 and fl["min_ops"] == 15
-    assert fl["min_entry_mc"] == 3400 and fl["ultimas_tx_compra"] == 2
+    assert fl["min_volumen_sol"] == 1.5 and fl["min_ops"] == 8
+    assert fl["min_entry_mc"] == 4600 and fl["ultimas_tx_compra"] == 2
     assert fl["min_presion_ratio"] == 1.3 and fl["presion_seg"] == 5
     assert fl["min_first_block_buys"] == 1 and fl["max_first_block_buys"] == 5
     assert fl["max_dev_hold_pct"] == 0.10
@@ -41,7 +41,7 @@ def test_config():
     total += t["tp4_sell"]
     assert abs(total - 1) < 1e-9
     assert t["margen_stop_tras_tp"] == 0.20 and t["stop_a_entrada_tras_tp"] is True
-    assert t["max_hold_time"] == 600 and t["max_perdidas_seguidas"] == 0
+    assert t["max_hold_time"] == 120 and t["max_perdidas_seguidas"] == 0
     assert t["max_posiciones"] == 5
 
 
@@ -59,8 +59,8 @@ def test_stop_a_menos_50(tmp_path, monkeypatch):
     assert ventas and ventas[0][0] == "stop_loss" and ventas[0][2] == 0.49
 
 
-def test_a_los_10_minutos_vende_todo(tmp_path, monkeypatch):
-    """Ni TP ni stop: a los 600 s se vende lo que quede."""
+def test_a_los_2_minutos_vende_todo(tmp_path, monkeypatch):
+    """Ni TP ni stop: a los 120 s se vende lo que quede."""
     monkeypatch.setattr(tv, "MC_ENTRADA", 3000.0)
     t, ut = _construir(YAML, tmp_path, monkeypatch)
     ventas, _ = _recorrer(t, ut, monkeypatch, [1.0] * 5 + [1.3] * 900, max_s=60)
