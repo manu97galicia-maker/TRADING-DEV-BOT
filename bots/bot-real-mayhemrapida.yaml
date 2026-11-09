@@ -11,7 +11,7 @@
 # alguna compra en el bloque de creacion (y no mas de 5). 0,035 SOL.
 # 9-nov, despues: ademas volumen, tendencia y muchas operaciones (ver
 # filtros) y buscando el x10: +120% recupera, el resto a x3, x5 y x10.
-# Stop -50% hasta la primera venta, despues compra +20%. A los 2 MINUTOS
+# Stop -80% hasta la primera venta, despues compra +20%. A los 2 MINUTOS
 # vende todo lo que quede. Hasta 7 a la vez, sin tope de operaciones en
 # total. Sin freno de perdidas.
 #
@@ -96,8 +96,8 @@ trade:
   # sigue subiendo a compra +5% (Manu: "si, hasta el x3").
   # 8-nov: stop -70% (Manu eligio "-70%": deja mucho margen; casi solo
   # vende si es un dump de verdad).
-  # 9-nov (mayhem rapida): stop -50% hasta la primera venta.
-  stop_loss_percentage: 0.50
+  # 9-nov (mayhem rapida): stop -50% hasta la primera venta. Despues: "SL 80%".
+  stop_loss_percentage: 0.80
   # El trailing copiaba el stop en %; con este a 0 se apagaria en silencio.
   # Se deja fijo en el 22% de siempre.
   # 8-nov (devs 27): SIN trailing. Manu eligio "quitarlo aqui": con un 22%

@@ -33,7 +33,7 @@ def test_config():
     assert fl["max_dev_hold_pct"] == 0.10
     assert t["buy_amount"] == 0.035 and t["tope_compra_sol"] == 0.035
     assert t["fraccion_saldo"] == 0 and t["min_reserve_sol"] == 0.015
-    assert t["stop_loss_percentage"] == 0.50 and t["trailing_stop_percentage"] == 0
+    assert t["stop_loss_percentage"] == 0.80 and t["trailing_stop_percentage"] == 0
     gan = [t["take_profit_percentage"], t["tp2_gain"], t["tp3_gain"], t["tp4_gain"]]
     assert gan == [1.2, 2.0, 4.0, 9.0]  # +120%, x3, x5, x10
     assert abs(t["take_profit_sell_percentage"] * 2.2 - 1) < 1e-6
@@ -52,11 +52,11 @@ def test_escalera(tmp_path, monkeypatch):
     assert [round(v[1], 4) for v in ventas] == [0.4545, 0.1818, 0.1818, 0.1818]
 
 
-def test_stop_a_menos_50(tmp_path, monkeypatch):
+def test_stop_a_menos_80(tmp_path, monkeypatch):
     monkeypatch.setattr(tv, "MC_ENTRADA", 3000.0)
     t, ut = _construir(YAML, tmp_path, monkeypatch)
-    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 0.8, 0.49])
-    assert ventas and ventas[0][0] == "stop_loss" and ventas[0][2] == 0.49
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 0.5, 0.19])
+    assert ventas and ventas[0][0] == "stop_loss" and ventas[0][2] == 0.19
 
 
 def test_a_los_2_minutos_vende_todo(tmp_path, monkeypatch):
