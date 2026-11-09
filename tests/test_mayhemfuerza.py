@@ -30,7 +30,7 @@ def test_config():
     # Arranque con fuerza.
     assert cv["umbral"] == 0.0 and cv["min_mc_usd"] == 0
     assert cv["max_mc_usd"] == 10000
-    assert cv["min_compradores_ola"] == 3 and cv["min_presion_ratio"] == 1.4
+    assert cv["min_compradores_ola"] == 2 and cv["min_presion_ratio"] == 1.2
     assert cv["ventana_presion"] == 7.0 and cv["ultimas_compras"] == 2
     assert cv["min_compradores"] == 15 and cv["min_volumen_reciente_sol"] == 0
     assert fl["max_dev_hold_pct"] == 0.10
