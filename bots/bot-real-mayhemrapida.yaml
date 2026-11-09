@@ -8,7 +8,7 @@
 # alguna compra en el bloque de creacion. Con 5 ganadoras es poca muestra.
 #
 # QUE HACE: compra cualquier MAYHEM entre los 5 y los 20 s de vida si tuvo
-# alguna compra en el bloque de creacion (y no mas de 5). 0,03 SOL.
+# alguna compra en el bloque de creacion (y no mas de 5). 0,025 SOL.
 # Vende: +120% recupera lo invertido; el resto mitad a x3 y mitad a x5.
 # Stop -50% hasta la primera venta, despues compra +20%. A los 3 MINUTOS
 # vende todo lo que quede. Hasta 5 a la vez. Sin freno de perdidas.
@@ -24,10 +24,10 @@ platform: pump_fun
 trade:
   nombre_estrategia: real-mayhemrapida
   # 8-nov: "arriesgando 0.04 sol" por operacion, fijo.
-  # 9-nov (mayhem rapida): 0,03 SOL fijos.
-  buy_amount: 0.03
+  # 9-nov (mayhem rapida): 0,03 SOL fijos. Despues: "pon 0.025 sol".
+  buy_amount: 0.025
   # Tope duro: ninguna via del bot puede comprar mas de esto.
-  tope_compra_sol: 0.03
+  tope_compra_sol: 0.025
   buy_amount_usd: 0
   # 7-nov: "20% por operacion" (antes 0.15).
   # 7-nov, despues: "pon 30% por operacion" (antes 0.20).

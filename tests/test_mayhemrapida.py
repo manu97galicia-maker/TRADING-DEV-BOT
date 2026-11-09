@@ -27,7 +27,7 @@ def test_config():
     assert fl["min_buy_age"] == 5 and fl["max_buy_age"] == 20
     assert fl["min_first_block_buys"] == 1 and fl["max_first_block_buys"] == 5
     assert fl["max_dev_hold_pct"] == 0.10
-    assert t["buy_amount"] == 0.03 and t["tope_compra_sol"] == 0.03
+    assert t["buy_amount"] == 0.025 and t["tope_compra_sol"] == 0.025
     assert t["fraccion_saldo"] == 0 and t["min_reserve_sol"] == 0.015
     assert t["stop_loss_percentage"] == 0.50 and t["trailing_stop_percentage"] == 0
     gan = [t["take_profit_percentage"], t["tp2_gain"], t["tp3_gain"]]
