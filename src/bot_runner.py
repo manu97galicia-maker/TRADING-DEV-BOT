@@ -331,6 +331,9 @@ async def start_bot(config_path: str, *, only_dev: bool = False):
             min_first_block_usd=cfg.get("filters", {}).get(
                 "min_first_block_usd", 0.0
             ),
+            min_first_block_sol=cfg.get("filters", {}).get(
+                "min_first_block_sol", 0.0
+            ),
             max_first_block_usd=cfg.get("filters", {}).get(
                 "max_first_block_usd", 0.0
             ),

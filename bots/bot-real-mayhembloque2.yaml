@@ -3,7 +3,8 @@
 #
 # QUE HACE: cualquier moneda MAYHEM. En cuanto se ve una operacion en el
 # bloque siguiente al de creacion, compra, si en el bloque de creacion hubo
-# entre 1 y 5 compras y el dev no tiene mas del 10%. Sin esperar volumen,
+# entre 1 y 5 compras, al menos 0,4 SOL ("las que el dev compre 0.4 sol")
+# y el dev no tiene mas del 10%. Sin esperar volumen,
 # subida ni presion: en el bloque dos no hay nada de eso todavia.
 # (En las 5 monedas analizadas, la ganadora 68QSB tuvo 1 compra en el bloque
 # de creacion; la otra ganadora, 8VawSj, ninguna: es una pista debil.)
@@ -224,6 +225,11 @@ filters:
   # Y no un bundle grande al nacer.
   max_first_block_buys: 5
   min_first_block_usd: 0
+  # 9-nov: "compra las que el dev compre 0.4 sol": al menos 0,4 SOL comprados
+  # en el bloque de creacion (ahi va la compra del dev, sea de la cartera que
+  # sea). OJO: en las 5 mayhem analizadas el 9-nov ninguna llegaba (maximo
+  # 0,005 SOL), ni las dos ganadoras; se le dijo a Manu.
+  min_first_block_sol: 0.4
   max_first_block_usd: 0
   buy_from_second_block: true
   second_block_confirmation:

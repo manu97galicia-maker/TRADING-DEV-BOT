@@ -22,6 +22,7 @@ def test_entra_en_el_bloque_dos():
     assert fl["require_mayhem"] is True and fl["bro_address"] is None
     assert fl["buy_from_second_block"] is True and fl["max_buy_age"] == 3
     assert fl["min_first_block_buys"] == 1 and fl["max_first_block_buys"] == 5
+    assert fl["min_first_block_sol"] == 0.4  # "las que el dev compre 0.4 sol"
     # En el bloque dos no hay volumen, subida ni presion que medir.
     for k in ("min_buy_age", "min_volumen_sol", "min_ops", "ultimas_tx_compra"):
         assert not fl.get(k), k
@@ -55,3 +56,8 @@ def test_escalera(tmp_path, monkeypatch):
     t, ut = _construir(YAML, tmp_path, monkeypatch)
     ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 2.21, 3.01, 5.01, 10.01])
     assert [round(v[1], 4) for v in ventas] == [0.4545, 0.1818, 0.1818, 0.1818]
+
+
+def test_el_trader_recibe_el_minimo_en_sol(tmp_path, monkeypatch):
+    t, _ut = _construir(YAML, tmp_path, monkeypatch)
+    assert t.min_first_block_sol == 0.4 and t.buy_from_second_block is True

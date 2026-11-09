@@ -563,6 +563,10 @@ class UniversalTrader:
         # Rango de USD comprados en el bloque de creación. Se convierte usando
         # la misma cotización SOL/USD viva que emplea el resto del trader.
         min_first_block_usd: float = 0.0,
+        # MINIMO DE SOL EN EL BLOQUE DE CREACION (9-nov, Manu: "compra las que
+        # el dev compre 0.4 sol"). Como `min_first_block_usd` pero en SOL, para
+        # que no cambie con el precio del SOL. Ahi entra la compra del dev.
+        min_first_block_sol: float = 0.0,
         max_first_block_usd: float = 0.0,
         # No permite decidir la entrada hasta observar una operación en un slot
         # posterior al de creación, de modo que el primer bloque ya está cerrado.
@@ -1242,6 +1246,7 @@ class UniversalTrader:
         self.min_first_block_buys = int(min_first_block_buys or 0)
         self.max_first_block_buys = int(max_first_block_buys or 0)
         self.min_first_block_usd = float(min_first_block_usd or 0)
+        self.min_first_block_sol = float(min_first_block_sol or 0)
         self.max_first_block_usd = float(max_first_block_usd or 0)
         self.buy_from_second_block = bool(buy_from_second_block)
         self.second_block_confirmation = dict(second_block_confirmation or {})
@@ -4635,6 +4640,7 @@ class UniversalTrader:
                 or self.min_first_block_buys > 0
                 or self.max_first_block_buys > 0
                 or self.min_first_block_usd > 0
+                or self.min_first_block_sol > 0
                 or self.max_first_block_usd > 0
                 or self.buy_from_second_block
                 or self.second_block_confirmation.get("enabled")
@@ -4818,6 +4824,22 @@ class UniversalTrader:
                             token_info.symbol, _fb_usd, self.max_first_block_usd,
                         )
                         return
+                    if (
+                        self.min_first_block_sol > 0
+                        and _sol_first_block(str(token_info.mint))
+                        < self.min_first_block_sol
+                    ):
+                        if _en_bloque_dos:
+                            logger.info(
+                                "Evitado %s: %.3f SOL comprados en el bloque de "
+                                "creacion (min %.2f)",
+                                token_info.symbol,
+                                _sol_first_block(str(token_info.mint)),
+                                self.min_first_block_sol,
+                            )
+                            return
+                        await asyncio.sleep(_paso)
+                        continue
                     if (
                         self.min_first_block_usd > 0
                         and _fb_usd < self.min_first_block_usd
