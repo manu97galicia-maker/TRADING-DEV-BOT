@@ -35,7 +35,7 @@ def test_config():
     assert cv["min_compradores"] == 15 and cv["min_volumen_reciente_sol"] == 2.0
     assert fl["max_dev_hold_pct"] == 0.10
     # Venta y tamano de la mayhem 400-2000%.
-    assert t["buy_amount"] == 0.04 and t["tope_compra_sol"] == 0.04
+    assert t["buy_amount"] == 0.03 and t["tope_compra_sol"] == 0.03
     assert t["fraccion_saldo"] == 0
     # 9-nov: +120% recupera lo invertido; el resto a x3, x5 y x7; SL a +20%.
     gan = [t["take_profit_percentage"], t["tp2_gain"], t["tp3_gain"], t["tp4_gain"]]
@@ -49,7 +49,7 @@ def test_config():
     assert t["venta_muerta_seg"] == 0 and t["vender_antes_de_edad_seg"] == 82800
     assert t["max_posiciones"] == 5 and t["max_posiciones_total"] == 0
     assert t["max_perdidas_seguidas"] == 0  # 9-nov: "quita" el freno
-    assert t["min_reserve_sol"] == 0.014  # 9-nov: "con 9$ deja comprar"
+    assert t["min_reserve_sol"] == 0.015  # 9-nov: "con 9$ deja comprar"
 
 
 def test_la_que_no_es_mayhem_se_descarta_para_siempre(monkeypatch):

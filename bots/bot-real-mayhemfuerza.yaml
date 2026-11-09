@@ -11,7 +11,7 @@
 #   - 2 SOL negociados en el ultimo minuto (9-nov);
 #   - frenos anti-rug: dev con mas del 10% no, bundle al nacer, mechas,
 #     carteras grandes, lista negra, no repetir en 24 h.
-# VENTA: 0,04 SOL; +120% recupera lo invertido y el resto a x3, x5 y x7
+# VENTA: 0,03 SOL (9-nov; antes 0,04); +120% recupera lo invertido y el resto a x3, x5 y x7
 # (9-nov); stop -70% hasta la primera venta y despues compra +20%; sin
 # trailing; a las 23 h vende lo que quede. Hasta 5 a la vez.
 #
@@ -26,8 +26,9 @@ platform: pump_fun
 trade:
   nombre_estrategia: real-mayhemfuerza
   # 8-nov (mayhem con fuerza): 0,04 SOL fijos por operacion, con tope duro.
-  buy_amount: 0.04
-  tope_compra_sol: 0.04
+  # 9-nov: "compra 0.03 sol" (antes 0,04).
+  buy_amount: 0.03
+  tope_compra_sol: 0.03
   buy_amount_usd: 0
   # 7-nov: "20% por operacion" (antes 0.15).
   # 7-nov, despues: "pon 30% por operacion" (antes 0.20).
@@ -46,7 +47,8 @@ trade:
   # 9-nov: "con 9$ deja comprar, baja reserva" -> 0,014 SOL (antes 0,03).
   # Con ~0,10 SOL cabe una compra de 0,04 (pide 0,047 libres) y queda para
   # pagar las ventas.
-  min_reserve_sol: 0.014
+  # Despues: "0.015".
+  min_reserve_sol: 0.015
   # 7-nov: "maximo 4 simultaneas y maximo de posiciones abiertas 4"
   # (antes 3 por estrategia). 4 por estrategia y, ademas, 4 EN TOTAL
   # entre las dos: cuenta las posiciones de todas antes de comprar.
