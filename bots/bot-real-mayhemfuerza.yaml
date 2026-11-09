@@ -123,7 +123,10 @@ trade:
   stop_a_entrada_tras_tp: true
   # 9-nov: "SL sube a inicial +20%" (antes +5%).
   margen_stop_tras_tp: 0.20
-  max_perdidas_seguidas: 3
+  # 9-nov: "quita" el freno de 3 perdidas seguidas (antes 3). En esta
+  # estrategia lo normal es perder muchas pequenas (0,04 SOL) y ganar pocas
+  # grandes: con el freno se paraba sola pronto.
+  max_perdidas_seguidas: 0
   stop_al_tp_tras_tp: false
   vender_todo_en_stop: true
   mc_stop_loss: 0
