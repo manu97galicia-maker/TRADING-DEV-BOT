@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": null,
+  "outputDirectory": "server/static",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://159-89-19-12.sslip.io/api/$1" }
+  ]
+}

@@ -1,0 +1,39 @@
+[project]
+name = "sniper-deck"
+version = "0.1.0"
+description = "Panel privado para manejar el bot de sniping y su servidor"
+# 3.10 es lo que trae Ubuntu 22.04, que es donde vive el droplet.
+requires-python = ">=3.10"
+dependencies = [
+    "aiohttp>=3.9",
+    "PyYAML>=6.0",
+    "anthropic>=0.69",
+    # Firma de transacciones (wallet caliente): comprar/vender/enviar SOL.
+    # Import perezoso en server/wallet.py, así que el resto del panel funciona
+    # aunque no esté; sólo hace falta si PANEL_HOT_WALLET=true.
+    "solders>=0.21",
+    # Login por cara/huella (Face ID / Windows Hello). Import perezoso en
+    # server/webauthn_face.py: sin él, todo funciona menos el botón de Face ID.
+    "webauthn>=2.0",
+]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["server*"]
+
+[tool.ruff]
+# 110 rather than the usual 88/100: the tool descriptions the agent reads are
+# Spanish prose, and wrapping them makes them harder to review, not easier.
+line-length = 110
+# py310, para que ruff no vuelva a "arreglar" cosas que solo existen en 3.11+.
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S", "RET", "SIM"]
+ignore = ["S101", "S603", "S607"]
+
+[tool.ruff.lint.per-file-ignores]
+"server/ops.py" = ["S602"]  # run_shell is the documented, double-gated escape hatch

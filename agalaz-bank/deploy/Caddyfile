@@ -1,0 +1,35 @@
+# Caddy delante del panel: HTTPS automatico (Let's Encrypt) y cabeceras duras.
+#
+# Este host NO es el que tu abres en el movil. Tu sigues entrando por la URL de
+# Vercel; esto es solo el extremo cifrado al que Vercel reenvia /api/*, para que
+# ese tramo deje de viajar en texto plano.
+#
+# Sustituye API_HOST por el nombre que hayas elegido y apunta su DNS (registro A)
+# a 159.89.19.12. Hace falta un NOMBRE: Let's Encrypt no firma certificados para
+# una IP pelada.
+#
+#   Opcion A (fiable):  un subdominio tuyo, p.ej. api-banco.agalaz.com
+#   Opcion B (sin DNS): 159-89-19-12.sslip.io  -- resuelve solo a esa IP, cero
+#                       configuracion. Depende de un servicio de terceros y esos
+#                       dominios compartidos a veces chocan con los limites de
+#                       emision de Let's Encrypt; si falla, usa la opcion A.
+
+API_HOST {
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		# La UI es un unico fichero sin recursos externos: se puede cerrar del todo.
+		Content-Security-Policy "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+		-Server
+	}
+
+	# El panel escucha SOLO en loopback: a 8080 no se llega desde fuera.
+	# Caddy AÑADE su vision de quien llama al final de X-Forwarded-For, y el panel
+	# usa ese ultimo valor para el bloqueo por intentos (ver _client_ip). No
+	# sobreescribas la cabecera aqui: perderias esa garantia.
+	reverse_proxy 127.0.0.1:8080
+}

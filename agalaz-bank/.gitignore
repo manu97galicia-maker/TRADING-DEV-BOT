@@ -1,0 +1,24 @@
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Estado del panel (config de reparto de ganancias, etc.)
+state/
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+.DS_Store
+Thumbs.db
+
+# Salida generada por el research de devs
+research/dune/pumpfun_devs_ranked.csv
