@@ -2738,6 +2738,7 @@ class UniversalTrader:
             revisar_cada_seg=float(cfg.get("revisar_cada_seg", 0) or 0),
             log_presion_cada_seg=float(cfg.get("log_presion_cada_seg", 0) or 0),
             ultimas_compras=int(cfg.get("ultimas_compras", 0) or 0),
+            solo_mayhem=bool(cfg.get("solo_mayhem", False)),
             min_mc_usd=float(cfg.get("min_mc_usd", 0) or 0),
             max_mc_usd=float(cfg.get("max_mc_usd", 0) or 0),
             min_compras_total=int(cfg.get("min_compras_total", 0) or 0),

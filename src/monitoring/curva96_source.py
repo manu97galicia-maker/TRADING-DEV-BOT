@@ -133,6 +133,7 @@ class Curva96Source:
         revisar_cada_seg: float = 0.0,
         log_presion_cada_seg: float = 0.0,
         ultimas_compras: int = 0,
+        solo_mayhem: bool = False,
         min_mc_usd: float = 0.0,
         sol_usd: Callable[[], float] | None = None,
         min_compras_total: int = 0,
@@ -184,6 +185,11 @@ class Curva96Source:
         # 7-nov, Manu: "dos ultimas tx sean compras" (para no entrar justo
         # cuando empieza a vender alguien). 0 = no se mira.
         self.ultimas_compras = max(0, int(ultimas_compras or 0))
+        # SOLO MAYHEM (8-nov, "estrategia mayhem sin devs"). Que una moneda es
+        # mayhem solo se sabe al reconstruirla (lo dice su curva). Si no lo
+        # es, se descarta PARA SIEMPRE: eso no cambia, y asi no se vuelve a
+        # gastar una reconstruccion (llamadas al nodo) en ella.
+        self.solo_mayhem = bool(solo_mayhem)
         # 7-nov, Manu: "minimo compras monedas de 5.6k de market cap". Se mira
         # aqui, con el precio de la ultima operacion, y no en el trader: alli
         # `min_entry_mc` ESPERA a que llegue al minimo y compraria con una
@@ -622,6 +628,10 @@ class Curva96Source:
         )
         if token_info is None:
             self._cuenta("sin_construir")
+            return
+
+        if self.solo_mayhem and not getattr(token_info, "is_mayhem_mode", False):
+            self._cuenta("no_mayhem")
             return
 
         symbol = token_info.symbol or mint[:6]
