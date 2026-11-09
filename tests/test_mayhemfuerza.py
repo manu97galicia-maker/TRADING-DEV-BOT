@@ -49,6 +49,7 @@ def test_config():
     assert t["venta_muerta_seg"] == 0 and t["vender_antes_de_edad_seg"] == 82800
     assert t["max_posiciones"] == 5 and t["max_posiciones_total"] == 0
     assert t["max_perdidas_seguidas"] == 0  # 9-nov: "quita" el freno
+    assert t["min_reserve_sol"] == 0.014  # 9-nov: "con 9$ deja comprar"
 
 
 def test_la_que_no_es_mayhem_se_descarta_para_siempre(monkeypatch):

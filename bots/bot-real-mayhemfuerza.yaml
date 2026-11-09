@@ -43,7 +43,10 @@ trade:
   # 8-nov, despues: "pon en todas a mayores 70% por operacion" (antes 0.60).
   fraccion_saldo: 0
   fraccion_base: cartera
-  min_reserve_sol: 0.03
+  # 9-nov: "con 9$ deja comprar, baja reserva" -> 0,014 SOL (antes 0,03).
+  # Con ~0,10 SOL cabe una compra de 0,04 (pide 0,047 libres) y queda para
+  # pagar las ventas.
+  min_reserve_sol: 0.014
   # 7-nov: "maximo 4 simultaneas y maximo de posiciones abiertas 4"
   # (antes 3 por estrategia). 4 por estrategia y, ademas, 4 EN TOTAL
   # entre las dos: cuenta las posiciones de todas antes de comprar.
