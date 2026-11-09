@@ -9,8 +9,8 @@
 # (En las 5 monedas analizadas, la ganadora 68QSB tuvo 1 compra en el bloque
 # de creacion; la otra ganadora, 8VawSj, ninguna: es una pista debil.)
 #
-# VENTA (la de la mayhem rapida): 0,035 SOL; +120% recupera lo invertido y
-# el resto a x3, x5 y x10; stop -80% hasta la primera venta, despues compra
+# VENTA: 0,035 SOL; +35% recupera lo invertido y el resto a +90% y +150%
+# (9-nov; antes la de la mayhem rapida); stop -80% hasta la primera venta, despues compra
 # +20%; a los 2 minutos vende todo. Hasta 7 a la vez, sin tope de
 # operaciones ni freno de perdidas.
 #
@@ -123,19 +123,17 @@ trade:
   # 8-nov: "mayhem agresiva con alto roi tipo entre 400-2000%". Cuatro
   # ventas del 25%: x5 (+400%, ya recupera lo invertido +25%), x10 (+900%),
   # x15 (+1400%) y x21 (+2000%). Tras la primera, el stop sube a compra +5%.
-  # 9-nov (mayhem rapida): +120% (x2,2) vende el 45,45% = lo invertido; el
-  # resto en dos mitades a x3 y x5 (sin x7: el pico llega muy pronto).
-  take_profit_percentage: 1.2
-  take_profit_sell_percentage: 0.4545454545
-  # 9-nov, despues: "mismo sistema de TP y SL buscando el x10" -> eligio
-  # "x3, x5, x10 y 10 min": el 54,55% que queda tras recuperar, en tercios
-  # (18,18%) a x3, x5 y x10.
-  tp2_gain: 2.0
-  tp2_sell: 0.1818181818
-  tp3_gain: 4.0
-  tp3_sell: 0.1818181818
-  tp4_gain: 9.0
-  tp4_sell: 0.1818181819
+  # 9-nov (mayhem bloque 2): "toma iniciales 35% y luego en dos ventas
+  # objetivo 150% roi" (antes +120% recupera y x3/x5/x10).
+  #   +35%: vende el 74,07% = lo invertido (1/1,35).
+  #   El 25,93% que queda, en dos mitades (12,96%) a +90% y +150%.
+  # Tras el +35% el stop pasa a compra +20%; tras el +90%, a +35% +20% (+62%).
+  take_profit_percentage: 0.35
+  take_profit_sell_percentage: 0.7407407407
+  tp2_gain: 0.9
+  tp2_sell: 0.1296296296
+  tp3_gain: 1.5
+  tp3_sell: 0.1296296297
   mc_take_profit_tiers: []
   # VENDER ANTES DE QUE ACABE EL MAYHEM (dura 24 h): a las 23 h se vende lo
   # que quede, para que no se bloquee ni se congele.

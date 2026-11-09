@@ -30,17 +30,12 @@ def test_entra_en_el_bloque_dos():
     assert fl["max_dev_hold_pct"] == 0.10
 
 
-def test_misma_venta_y_tamano_que_la_rapida():
+def test_mismo_tamano_y_stop_que_la_rapida():
     a, b = _cfg()["trade"], _cfg("bots/bot-real-mayhemrapida.yaml")["trade"]
     for k in (
         "buy_amount",
         "tope_compra_sol",
         "stop_loss_percentage",
-        "take_profit_percentage",
-        "take_profit_sell_percentage",
-        "tp2_gain",
-        "tp3_gain",
-        "tp4_gain",
         "margen_stop_tras_tp",
         "max_hold_time",
         "max_posiciones",
@@ -49,13 +44,27 @@ def test_misma_venta_y_tamano_que_la_rapida():
     ):
         assert a[k] == b[k], k
     assert a["nombre_estrategia"] == "real-mayhembloque2"
+    # 9-nov: "toma iniciales 35% y luego en dos ventas objetivo 150% roi".
+    assert [a["take_profit_percentage"], a["tp2_gain"], a["tp3_gain"]] == [
+        0.35,
+        0.9,
+        1.5,
+    ]
+    assert not a.get("tp4_gain")
+    assert abs(a["take_profit_sell_percentage"] * 1.35 - 1) < 1e-6
+    total = a["take_profit_sell_percentage"] + a["tp2_sell"] + a["tp3_sell"]
+    assert abs(total - 1) < 1e-9
 
 
 def test_escalera(tmp_path, monkeypatch):
     monkeypatch.setattr(tv, "MC_ENTRADA", 2500.0)
     t, ut = _construir(YAML, tmp_path, monkeypatch)
-    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 2.21, 3.01, 5.01, 10.01])
-    assert [round(v[1], 4) for v in ventas] == [0.4545, 0.1818, 0.1818, 0.1818]
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.36, 1.91, 2.51])
+    assert [round(v[1], 4) for v in ventas] == [0.7407, 0.1296, 0.1296]
+    # Tras el +35% el stop esta en compra +20%.
+    t, ut = _construir(YAML, tmp_path, monkeypatch)
+    ventas, _ = _recorrer(t, ut, monkeypatch, [1.0, 1.36, 1.25, 1.19])
+    assert len(ventas) == 2 and ventas[1][2] == 1.19
 
 
 def test_el_trader_recibe_el_minimo_en_sol(tmp_path, monkeypatch):
