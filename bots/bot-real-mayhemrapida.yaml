@@ -209,13 +209,15 @@ filters:
   #   - 1,5 SOL negociados desde que nacio;
   #   - 15 operaciones o mas;
   #   - market cap ya +40% sobre el de nacer (3.400 $ con el SOL a ~86 $);
-  #   - las 3 ultimas operaciones, compras;
+  #   - la ultima operacion, una compra (despues "pon solo una"; antes 3);
   #   - en los ultimos 5 s, 1,3 veces mas SOL comprado que vendido.
   min_buy_age: 5
   max_buy_age: 60
   min_volumen_sol: 1.5
   min_ops: 15
-  ultimas_tx_compra: 3
+  # 9-nov, despues: "pon que haya una compra antes de comprar nosotros" ->
+  # "pon solo una": basta con que la ULTIMA operacion sea una compra (antes 3).
+  ultimas_tx_compra: 1
   min_presion_ratio: 1.3
   presion_seg: 5
   # 7-nov: "asegurate no rugs" -> eligio "dev con poco": no se compra si

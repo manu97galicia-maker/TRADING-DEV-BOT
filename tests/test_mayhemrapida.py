@@ -27,7 +27,7 @@ def test_config():
     assert fl["min_buy_age"] == 5 and fl["max_buy_age"] == 60
     # 9-nov "volumen, tendencia alcista y muchas operaciones" -> "media".
     assert fl["min_volumen_sol"] == 1.5 and fl["min_ops"] == 15
-    assert fl["min_entry_mc"] == 3400 and fl["ultimas_tx_compra"] == 3
+    assert fl["min_entry_mc"] == 3400 and fl["ultimas_tx_compra"] == 1
     assert fl["min_presion_ratio"] == 1.3 and fl["presion_seg"] == 5
     assert fl["min_first_block_buys"] == 1 and fl["max_first_block_buys"] == 5
     assert fl["max_dev_hold_pct"] == 0.10
